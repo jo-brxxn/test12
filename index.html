@@ -2205,6 +2205,7 @@ body.compact-view .rub-summary{display:block}
 .rub-summary{background:var(--bg5);border:1px solid var(--bd2);border-radius:var(--rs);padding:7px 10px;margin-bottom:8px}
 .rub-summary-lbl{font-size:var(--fs-2xs);letter-spacing:2px;color:var(--t3);font-weight:700;font-family:var(--ff-num);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
 .rub-summary-txt{width:100%;background:transparent;border:none;color:var(--t1);font-size:var(--fs-sm);line-height:1.6;outline:none;font-family:var(--ff-text);resize:none;overflow:hidden;min-height:30px}
+.rub-summary-view{color:var(--t1);font:400 var(--fs-sm)/1.5 var(--ff-text);cursor:text}
 .rub-summary-txt:focus{color:var(--t0)}
 .rub-summary-txt::placeholder{color:var(--t3)}
 /* Skill-Kritik 2026-08-02 (Foto-Referenz): keine umschliessende Rahmen-Karte
@@ -4315,7 +4316,7 @@ body.no-ui-anim .hud-live-dot{animation:none}
 .news-card-body .hl-row{padding-left:0;border-left-width:2px;padding-right:0}
 .hl-flip{font-family:var(--ff-num);font-size:var(--fs-2xs);font-weight:700;color:var(--blue);border:1px solid var(--blue);border-radius:var(--rss);padding:0 4px;white-space:nowrap}
 body.dense-mode #dashWidgets{gap:7px}
-body.dense-mode .dw{padding:9px 10px;margin-bottom:6px}
+body.dense-mode .dw{padding:9px 16px;margin-bottom:6px}  /* waagerecht 16 px bleiben: das ⓘ ragt mit Rand und Trefferflaeche 16 px hinaus (gemessen 10 px -> 6 px, 12 px -> 4 px Ueberlauf; layout-Waechter, 2026-10-11) */
 body.dense-mode .dw-hdr{margin-bottom:8px}
 body.dense-mode .dash-layout{gap:9px}
 body.dense-mode .hl-row{padding-top:3px;padding-bottom:3px}
@@ -4486,6 +4487,9 @@ body.dense-mode .cot-card,body.dense-mode .rub-card{margin-bottom:10px}
 .jr-fakt{grid-column:2/-1;font:400 var(--fs-xs)/1.4 var(--ff-text);color:var(--t2);overflow-wrap:anywhere}
 .jr-fakt i{color:var(--t3)}.jr-fakt b{color:var(--t1);font-weight:700}
 /* Fakten-Fenster: Etikett | Wert, keine Saetze */
+/* Punktliste statt Absatz (kurzHtml/kurzDom, Dauerregel "kein Fliesstext") */
+.kp{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+.kp li{margin:0}.kp b{color:var(--t0);font-weight:700}.kp i{color:var(--t2)}
 .kv{width:100%;border-collapse:collapse;font:400 var(--fs-sm)/1.45 var(--ff-text)}
 .kv th{width:38%;text-align:left;vertical-align:top;font-weight:600;color:var(--t3);padding:5px 10px 5px 0;border-bottom:1px solid var(--bd)}
 .kv td{color:var(--t1);padding:5px 0;border-bottom:1px solid var(--bd);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
@@ -6543,7 +6547,7 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-600 - Design preview (4 versions each for Seasonality, Retail, COT); PC animations follow the app switches; history rows as short facts; density Auto/Compact/Comfortable."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-600 - Design preview (4 versions each for Seasonality, Retail, COT); PC animations follow the app switches; history rows as short facts; density Auto/Compact/Comfortable; no prose anywhere - explanations as short points."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>

@@ -119,6 +119,16 @@ passenden Datei (oder `docs/CHANGELOG.md`) nachschlagen, nicht raten.
    + `check/typo.js` + `check/kartentitel.js`. Details:
    `docs/design-system.md` „Schrifthierarchie".
 
+10. **Kein Fließtext — kurz, knapp, strukturiert** (Nutzer-Regel 2026-10-11:
+    *„nirgendswo ein Fließtext immer nur in kurz und knapp die Infos
+    übersichtlich vlt manches fett geschrieben manches kursiv oder manches in
+    bias Farbe. So will ich das auch die ganze Webseite immer“*). Jeder neue
+    oder geänderte Text: Punkte statt Absatz, Etikett | Wert statt Satz,
+    Zahlen fett, Nebensachen kursiv, Richtung in Bias-Farbe. Bausteine:
+    `kurzHtml()`/`kurzDom()` (läuft automatisch in jedem `openM`-Fenster),
+    `faktenFenster()`, `hwZeile()`. Geprüft von `check/fliesstext.js`.
+    Details: `docs/design-system.md` „Kein Fließtext".
+
 ## Meta-Grundsatz: wo eine neue Regel hingehört
 
 **Jede dauerhafte Nutzer-Präferenz muss dokumentiert werden** (Nutzer-Wunsch

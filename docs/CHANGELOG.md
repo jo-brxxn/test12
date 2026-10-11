@@ -19807,3 +19807,20 @@ breit. Jetzt: `denseMode` dreiwertig (`auto` Standard), Auto = kompakt mit
 Maus ab 1280 px; kompakt = Padding/Abstände kleiner, Kopfreihe ab 1500 px
 4 Spalten. Emuliert: PC 1920 → dense, 4 Spalten; iPad 1194 Touch → nicht
 dense, 2 Spalten. Settings: Segment „Auto · Compact · Comfortable“.
+
+## 2026-10-11 — Dauerregel „Kein Fließtext“ app-weit umgesetzt
+
+Nutzer: *„So will ich das auch die ganze Webseite immer funktioniert halt das
+als Regel fest … Übersichtlichkeit und schnelle datenverfügbarkeit“* — per
+Rückfrage „Ja, alles jetzt“. Bestandsaufnahme vorher: 61 eindeutige
+Fließtextstellen (davon ~10 Tabellen-Fehlalarme). Umsetzung zentral statt 100
+Texte einzeln: `kurzHtml()`/`kurzDom()` (Satz = Punkt, Zahlen fett, Klammern
+kursiv, „Label:“ fett, überlange Sätze geteilt), automatisch in `openM` (jedes
+Fenster), in `openCardInfo`, `openSentInfoM`, der Indikator-Info, 10
+Hinweis-Blöcken auf den Seiten und den Card-Summaries (Punktliste, Klick =
+Bearbeiten). Wächter `check/fliesstext.js` (16 Tabs, Asset-Seite, 47 Fenster,
+Help): grün; Gegenprobe rot. Fund beim Bau: die erste Wächter-Fassung suchte
+Fenster unter `.modal-bg` — die heißen `.ov`, gemessen wurde also nichts.
+Nebenbei im Volllauf (`layout`): Kompaktmodus ließ das ⓘ in Dashboard-Karten
+6 px überstehen (negativer Rand + Trefferfläche = 16 px) → waagerechtes
+Polster der `.dw` bleibt 16 px.

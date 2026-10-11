@@ -1346,6 +1346,26 @@ hatte sie außerhalb des Bearbeitungsmodus bewusst keine Titelzeile, Wunsch
 vom 2026-07-27). Geprüft von `check/hierarchie.js` (Regel 4 dort) und
 `check/designregeln.js` K.
 
+## Kein Fließtext (Dauerregel seit 2026-10-11)
+
+Nutzer: *„Übersichtlichkeit und schnelle Datenverfügbarkeit und nicht in einem
+Text suchen bis ich finde was ich haben will“*.
+- **Ein Satz = ein Punkt.** Absätze werden zur Punktliste (`kurzHtml` für
+  Strings, `kurzDom` für fertiges DOM; `openM` ruft `kurzDom` für jedes
+  Fenster automatisch). Überlange Sätze (> 28 Wörter) werden am
+  Gedankenstrich, sonst am Komma/Doppelpunkt nahe der Mitte, sonst am
+  Bindewort geteilt.
+- **Etikett | Wert** für Fakten (`faktenFenster`, Tabelle `.kv`): Etikett grau,
+  Wert fett, Nebensache kursiv, Richtung in Bias-Farbe.
+- **Zeile = Titel fett · Kurzangabe kursiv**, Details per Klick (`hwZeile`,
+  History-Journal `jrZeileHtml`).
+- Zahlen automatisch fett (Jahreszahlen nicht), Klammern kursiv,
+  „Label: …“ am Satzanfang als fettes Etikett.
+- Card-Summaries: Lesen als Punktliste, Klick öffnet das Textfeld.
+- Ausnahmen: Nutzer-Notizen, Nachrichten-Schlagzeilen, Tabellen, Eingaben.
+- Wächter `check/fliesstext.js`: Block mit ≥ 2 Sätzen und ≥ 22 Wörtern oder
+  ≥ 40 Wörtern = Fund (alle Tabs, Asset-Seite, jedes ⓘ-Fenster, Help).
+
 ## Dichte: Auto / Compact / Comfortable (seit 2026-10-11)
 
 Nutzer: *„am pc … entstehen viele Lücken … da kann mehr Daten auf ein Fleck

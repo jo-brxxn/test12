@@ -2275,7 +2275,7 @@ function renderSymHistoryPanelRoh(id){
     // Fliesstext"): Titel fett + Kurzangabe kursiv, die Fakten per Klick.
     const jrFakt=['Journal',abgelaufen?`<i>details removed (kept ~${JR_TAGE} days)</i>`:`<i>records from ${escH(jrAbTxt)}</i>`];
     const modellHtml=(!jr.n&&bekannteGrenze&&delta!=null)
-      ?hwZeile('Score model changed',jrModellText(prevTag,dTag)||'earlier model',[['Day change',`<b style="color:${dCol}">${escH(dTxt||'0')}</b>`],['Includes','<i>new calculation, not only new data</i>'],['Model',escH(jrModellText(prevTag,dTag)||'an earlier score model')],parts.length?['Split','<i>see the card split below</i>']:null,jrFakt].filter(Boolean),'hw-modell')
+      ?hwZeile('Score model changed',(jrModellText(prevTag,dTag)||'earlier model').split(' (')[0],[['Day change',`<b style="color:${dCol}">${escH(dTxt||'0')}</b>`],['Includes','<i>new calculation, not only new data</i>'],['Model',escH(jrModellText(prevTag,dTag)||'an earlier score model')],parts.length?['Split','<i>see the card split below</i>']:null,jrFakt].filter(Boolean),'hw-modell')
       :(!jr.n&&unbekannteHerkunft)
       ?hwZeile('Model not tagged','before Aug 9, 26',[['Day change',`<b style="color:${dCol}">${escH(dTxt||'0')}</b>`],['Can include','<i>model updates and new data</i>']],'hw-modell'):'';
     // Nichts veroeffentlicht, nichts von Hand geaendert, nichts gealtert.
@@ -7251,7 +7251,11 @@ function getSym(){return syms.find(c=>c.id===selId)||syms[0];}
 // auch fuer einen, der erst spaeter dazukommt. ⚠ try/catch, weil openM
 // schon beim Laden des Moduls laufen kann (Erststart-Hilfe, Cloud-Fenster
 // aus dem Sperrbildschirm), bevor MODAL_GUARDS weiter unten existiert.
-function openM(id){document.getElementById(id).style.display='flex';try{guardArm(id);}catch(e){}}
+function openM(id){const el=document.getElementById(id);el.style.display='flex';try{guardArm(id);}catch(e){}
+  // Kein Fliesstext (Dauerregel 2026-10-11): jedes Fenster, das Absaetze oder
+  // mehrsaetzige Listenpunkte enthaelt, zeigt sie als Punkte. Eingabefelder
+  // und Notiz-Inhalte bleiben unberuehrt (kurzDom ueberspringt sie).
+  try{kurzDom(el);}catch(e){}}
 function closeM(id){document.getElementById(id).style.display='none';try{guardDisarm(id);}catch(e){}}
 
 // ── Schutz vor verlorenen Eingaben ─────────────────────────────────────
@@ -8616,7 +8620,8 @@ function openCardInfo(k){
   // ersten Lauf gefunden ("[news] ⓘ #1: Fenster blieb zu").
   const t=document.getElementById('mCardInfoTitle');if(t)t.textContent=e.t;
   const b=document.getElementById('mCardInfoBody');
-  if(b)b.innerHTML=e.b.map(p=>`<p>${p}</p>`).join('');
+  // Kein Fliesstext (Dauerregel 2026-10-11): jeder Absatz als Punktliste.
+  if(b)b.innerHTML=e.b.map(p=>`<div class="ie-sek">${kurzHtml(p)}</div>`).join('');
   openM('mCardInfo');
 }
 // ══ ASSET-MOTIV IM KOPF (Bild-Design, Nutzer-Wunsch 2026-09-22) ══════════
@@ -10890,7 +10895,12 @@ function renderRub(rub,ri,total){
         <div class="rub-summary-lbl">
           <span style="color:${bco}">▸ SUMMARY</span>
         </div>
-        <textarea class="rub-summary-txt" placeholder="Summarize the overall ${escH(rub.name)} picture here..." oninput="ar(this);getRub(${ri}).summary=this.value;saveSoon()" onchange="markUserEditTs();const r=getRub(${ri});r.summary=this.value;r._summarySig=rubSummarySig(getSym(),r);syncMacroRub(${ri});save()">${escH(rub.summary||'')}</textarea>
+        ${/* Kein Fliesstext (Dauerregel 2026-10-11): gelesen wird die Summary als
+             Punktliste (ein Satz = ein Punkt, Zahlen fett). Ein Klick darauf
+             zeigt das unveraenderte Textfeld zum Bearbeiten; beim Verlassen
+             steht wieder die Liste da (renderDetail baut neu). */''}
+        ${rub.summary?`<div class="rub-summary-view" role="button" tabindex="0" title="Click to edit" onclick="const t=this.nextElementSibling;this.style.display='none';t.style.display='';ar(t);t.focus()">${kurzHtml(escH(rub.summary))}</div>`:''}
+        <textarea class="rub-summary-txt"${rub.summary?' style="display:none"':''} placeholder="Summarize the overall ${escH(rub.name)} picture here..." oninput="ar(this);getRub(${ri}).summary=this.value;saveSoon()" onchange="markUserEditTs();const r=getRub(${ri});r.summary=this.value;r._summarySig=rubSummarySig(getSym(),r);syncMacroRub(${ri});save()" onblur="const v=this.previousElementSibling;if(v&&v.classList.contains('rub-summary-view')&&this.value.trim()){v.innerHTML=kurzHtml(escH(this.value));v.style.display='';this.style.display='none';}">${escH(rub.summary||'')}</textarea>
       </div>
       <!-- INDICATORS -->
       ${renderIndsTable(rub,ri)}
@@ -11548,6 +11558,92 @@ function indErklHtml(sym,rub,ind){
   if(ind.info)html+=`<div class="ie-sek"><div class="ie-kopf">Your notes</div><div class="ie-hinweis">${escH(ind.info)}</div></div>`;
   return html;
 }
+// ── KEIN FLIESSTEXT: Absatz -> Stichpunkte (Dauerregel 2026-10-11) ───────
+// Nutzer: "nirgendswo ein Fliesstext immer nur in kurz und knapp die Infos
+// uebersichtlich vlt manches fett geschrieben manches kursiv oder manches in
+// bias Farbe. So will ich das auch die ganze Webseite immer funktioniert halt
+// das als Regel fest ... schnelle datenverfuegbarkeit und nicht in einem Text
+// suchen". kurzHtml() macht aus einem Absatz (HTML-String, schon escaped)
+// eine Punktliste: ein Satz = ein Punkt, "Label: Rest" -> **Label** Rest,
+// Zahlen fett, Klammern kursiv. Getrennt wird nur ausserhalb von Tags und nur,
+// wenn kein Inline-Tag offen ist - sonst zerreisst ein <b> ueber zwei Punkte.
+function kurzSaetze(html){
+  const teile=[];let start=0,tiefe=0,i=0;const offen=[];
+  while(i<html.length){
+    const c=html[i];
+    if(c==='<'){const j=html.indexOf('>',i);if(j<0)break;const tag=html.slice(i,j+1);
+      const m=tag.match(/^<\/?([a-z0-9]+)/i);
+      if(m&&!/\/>$/.test(tag)&&!/^<(br|img|hr|input)\b/i.test(tag)){if(tag[1]==='/')offen.pop();else offen.push(m[1]);}
+      i=j+1;continue;}
+    // Satzende: . ! ? ohne offenes Inline-Tag, danach Leerraum (ein
+    // Dezimalpunkt hat eine Ziffer dahinter und faellt so heraus).
+    if((c==='.'||c==='!'||c==='?'||c===';')&&!offen.length&&/\s/.test(html[i+1]||'')){
+      const rest=html.slice(i+1).trimStart();
+      const semi=c===';';
+      if((semi||/^[A-Z0-9“"(<·•]/.test(rest))&&!/\b(e\.g|i\.e|vs|approx|ca|etc|No|no)$/.test(html.slice(Math.max(0,i-6),i))){teile.push(html.slice(start,semi?i:i+1).trim());start=i+1;}
+    }
+    i++;
+  }
+  const rest=html.slice(start).trim();if(rest)teile.push(rest);
+  // Ein sehr langer Satz wird zusaetzlich am Gedankenstrich geteilt.
+  const woerter=t=>t.replace(/<[^>]+>/g,'').split(/\s+/).length;
+  const gross=x=>x.charAt(0).toUpperCase()+x.slice(1);
+  // Ein sehr langer Satz wird zusaetzlich geteilt: zuerst am Gedankenstrich,
+  // sonst am Komma ausserhalb von Klammern/Tags, das der Mitte am naechsten ist.
+  const teilen=(t,tiefe3=0)=>{
+    if(woerter(t)<=28||tiefe3>6)return[t];
+    if(/ [—–-] /.test(t))return t.split(/ [—–-] /).flatMap((x,k)=>teilen(k?gross(x):x,tiefe3+1));
+    if(woerter(t)<=35)return[t];
+    // Trennstelle: Komma oder Doppelpunkt ausserhalb von Klammern UND Tags
+    // (offene Inline-Tags wie <b> duerfen nicht zerrissen werden).
+    let tiefe2=0,inTag=false,best=-1;const offen2=[];const mitte=t.length/2;
+    for(let k=0;k<t.length;k++){const c=t[k];
+      if(c==='<'){const j=t.indexOf('>',k);const tag=t.slice(k,j+1);if(/^<\//.test(tag))offen2.pop();else if(!/\/>$|^<br/i.test(tag))offen2.push(1);k=j;continue;}
+      if(c==='(')tiefe2++;else if(c===')')tiefe2--;
+      else if((c===','||c===':')&&!tiefe2&&!offen2.length&&t[k+1]===' '&&(best<0||Math.abs(k-mitte)<Math.abs(best-mitte)))best=k;}
+    if(best>0)return[...teilen(t.slice(0,best+(t[best]===':'?1:0)),tiefe3+1),...teilen(gross(t.slice(best+2)),tiefe3+1)];
+    // Kein Komma: am Bindewort nahe der Mitte (nur ausserhalb von Tags).
+    const bw=[...t.matchAll(/ (and|because|so|which|while|but|where|when) /g)].filter(m=>!/<[^>]*$/.test(t.slice(0,m.index)));
+    if(bw.length){const m=bw.reduce((x,y)=>Math.abs(y.index-mitte)<Math.abs(x.index-mitte)?y:x);
+      return[...teilen(t.slice(0,m.index),tiefe3+1),...teilen(gross(t.slice(m.index+1)),tiefe3+1)];}
+    return[t];
+  };
+  return teile.filter(Boolean).flatMap(teilen).map(t=>/^[a-z]/.test(t)?gross(t):t);
+}
+function kurzSatzHtml(satz){
+  // "Label: Rest" -> fettes Etikett (nur kurze Etiketten ohne Tag darin)
+  let s2=satz.replace(/^([A-Z][^<:.]{1,38}):\s+/,(m,l)=>`<b>${l}</b> `);
+  // Zahlen fett, Klammern kursiv - nur in Textstuecken, nie in Tags
+  return s2.split(/(<[^>]+>)/).map((x,k)=>k%2?x:x
+    .replace(/(\([^()<>]{2,80}\))/g,'<i>$1</i>')
+    .replace(/(^|[\s(·])([±+−-]?\d+(?:[.,]\d+)?\s?(?:%|pp|bp|pts?|×)?)(?=[\s).,;:·]|$)/g,(m,v,z)=>/^(19|20)\d\d$/.test(z)?m:v+'<b>'+z+'</b>')).join('');
+}
+function kurzHtml(html){
+  const s1=kurzSaetze(String(html||''));
+  if(s1.length<=1)return kurzSatzHtml(s1[0]||'');
+  return`<ul class="kp">${s1.map(x=>`<li>${kurzSatzHtml(x)}</li>`).join('')}</ul>`;
+}
+// Dasselbe auf ein fertiges DOM-Stueck: jeder <p> mit mehr als einem Satz wird
+// zur Punktliste (fuer Fenster, deren Inhalt als HTML-Block gepflegt ist).
+function kurzDom(root){
+  if(!root)return;
+  // Listenpunkte mit mehreren Saetzen werden zu mehreren Punkten.
+  root.querySelectorAll('li').forEach(li=>{
+    if(li.closest('table,[contenteditable],.note-body')||li.querySelector('ul,ol,table'))return;
+    const s1=kurzSaetze(li.innerHTML);
+    if(s1.length<=1){if(!li.dataset.kurz){li.innerHTML=kurzSatzHtml(li.innerHTML);li.dataset.kurz='1';}return;}
+    const neu=s1.map(x=>{const n=document.createElement('li');n.innerHTML=kurzSatzHtml(x);n.dataset.kurz='1';return n;});
+    li.replaceWith(...neu);
+  });
+  root.querySelectorAll('p,.help-p').forEach(p=>{
+    if(p.closest('.kp,table,[contenteditable],.note-body,form'))return;
+    const s1=kurzSaetze(p.innerHTML);
+    if(s1.length<=1){p.innerHTML=kurzSatzHtml(p.innerHTML);return;}
+    const ul=document.createElement('ul');ul.className='kp';
+    ul.innerHTML=s1.map(x=>`<li>${kurzSatzHtml(x)}</li>`).join('');
+    p.replaceWith(ul);
+  });
+}
 // ── FAKTEN-FENSTER: kein Fliesstext, nur Etikett | Wert ─────────────────
 // Nutzer-Regel 2026-10-11 ("nirgendswo ein Fliesstext immer nur in kurz und
 // knapp die Infos uebersichtlich ... fett ... kursiv ... in bias Farbe").
@@ -11620,7 +11716,7 @@ function openInfoM(ri,ii){
   const zaehl=_infoIi>=0?indZaehlText(_sym,_rub,obj):rubrikZusammensetzungText(_sym,obj);
   const stdTxt=[stdBasis,zaehl?'How it counts: '+zaehl:null].filter(Boolean).join('\n\n')||null;
   if(std){
-    if(stdTxt){std.textContent=stdTxt;std.style.display='';if(notesLbl)notesLbl.style.display='';}
+    if(stdTxt){std.innerHTML=stdTxt.split('\n\n').map(t=>`<div class="ie-sek">${kurzHtml(escH(t))}</div>`).join('');std.style.display='';if(notesLbl)notesLbl.style.display='';}
     else{std.style.display='none';if(notesLbl)notesLbl.style.display='none';}
   }
   document.getElementById('mInfoTxt').value=obj.info||'';
@@ -15522,7 +15618,7 @@ function staleNotifyHtml(){
       <span class="stale-notify-age">${x.cycles}× overdue</span>
     </button>`).join('')}
     ${rest>0?`<div class="stale-notify-more">and ${rest} more</div>`:''}
-    <div class="stale-notify-note">A release more than ${IND_STALE_CYCLES} of its own cycles overdue stops counting — it is either badly delayed or the series was discontinued. The value stays visible on the asset page.</div>
+    <div class="stale-notify-note">${kurzHtml(`A release more than ${IND_STALE_CYCLES} of its own cycles overdue stops counting — it is either badly delayed or the series was discontinued. The value stays visible on the asset page.`)}</div>
   </div>`;
 }
 // Meldung fuer den Fall "Release war faellig, keine Quelle hat geliefert".
@@ -15543,7 +15639,7 @@ function awaitingNotifyHtml(){
       <span class="stale-notify-age">${x.days}d ago</span>
     </button>`).join('')}
     ${rest>0?`<div class="stale-notify-more">and ${rest} more</div>`:''}
-    <div class="stale-notify-note">The calendar knows the release happened, but none of the sources delivered a number. Nothing is estimated — the card keeps the last confirmed value and says so, so you can look it up yourself if it matters.</div>
+    <div class="stale-notify-note">${kurzHtml(`The calendar knows the release happened, but none of the sources delivered a number. Nothing is estimated — the card keeps the last confirmed value and says so, so you can look it up yourself if it matters.`)}</div>
   </div>`;
 }
 // Dashboard-Meldung fuer fehlgeschlagene Live-Datenabrufe (DATA_LIVE_OK,
@@ -15559,7 +15655,7 @@ function dataFeedStaleNotifyHtml(){
   if(!failed.length)return'';
   return`<div class="stale-notify-card">
     <div class="stale-notify-hd">${icn('clock',13)}<span>Live data unavailable: ${failed.map(k=>DATA_SRC_LABEL[k]).join(', ')}</span></div>
-    <div class="stale-notify-note">The last live fetch failed for the source${failed.length>1?'s':''} above — values shown may be from an earlier update, not estimated or replaced.</div>
+    <div class="stale-notify-note">${kurzHtml(`The last live fetch failed for the source${failed.length>1?'s':''} above — values shown may be from an earlier update, not estimated or replaced.`)}</div>
   </div>`;
 }
 function cotNotifyHtml(){
@@ -17274,7 +17370,7 @@ function corrRegimeCardHtml(){
       ${linien}<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.9"/>
       <text x="${W-padR}" y="${(y(jetzt)-5).toFixed(1)}" font-size="11" font-weight="700" fill="${col}" text-anchor="end" font-family="var(--ff-num)">${jetzt>0?'+':''}${jetzt.toFixed(2)}</text>
     </svg></div>
-    <div class="edge-note">Rolling ${corrWin}-day Pearson r of daily log returns, ${zeige.length} windows shown (${escH(zeige[0][0])} to ${escH(zeige[zeige.length-1][0])}). The range over this period is ${spanne.toFixed(2)} — a wide range means the relationship between these two is not stable, and a hedge or a correlated pair of positions built on the current number can stop working without either market doing anything unusual.</div>
+    <div class="edge-note">${kurzHtml(`Rolling ${corrWin}-day Pearson r of daily log returns, ${zeige.length} windows shown (${escH(zeige[0][0])} to ${escH(zeige[zeige.length-1][0])}). The range over this period is ${spanne.toFixed(2)} — a wide range means the relationship between these two is not stable, and a hedge or a correlated pair of positions built on the current number can stop working without either market doing anything unusual.`)}</div>
   </div>`;
 }
 function renderCorrCard(){
@@ -17356,7 +17452,7 @@ function renderMatrixRoh(){
     <div class="mx-card-title"><span>${icn('bars',15)} Currency Strength</span><small>Score · surprise (30d beats−misses) · history now in the "Trends" tab</small>${abInfoBtn('Currency Strength',['Ranks the eight major currencies by their <b>current score</b> — the same score as on each asset page. Bar length is relative to the strongest absolute score.','<b>Surprise</b> counts the data releases of the last 30 days that had a forecast: beats minus misses over the total. It shows whether recent data has been coming in better or worse than expected.'])}</div>
     <div class="mx-rank-head"><div class="mx-rank-pos">#</div><div class="mx-rank-id">CCY</div><div class="mx-rank-bar-wrap"></div><div class="mx-rank-score">Score</div><div class="mx-rank-surp">Surprise</div></div>
     ${rankRows}
-    <div class="mx-surp-legend">Surprise = data releases of the last 30 days: beats − misses / total releases with a forecast. E.g. <b>+1/2</b> = 2 releases, net 1 more beat than miss; <b style="color:var(--red)">−7/7</b> = all 7 came in below forecast. <b>0</b> without "/" = no rated releases in the window.</div>
+    <div class="mx-surp-legend">${kurzHtml(`Surprise = data releases of the last 30 days: beats − misses / total releases with a forecast. E.g. <b>+1/2</b> = 2 releases, net 1 more beat than miss; <b style="color:var(--red)">−7/7</b> = all 7 came in below forecast. <b>0</b> without "/" = no rated releases in the window.`)}</div>
   </div>
   <div class="mx-card">
     <div class="mx-card-title"><span>${icn('flame',15)} Pair Strength Heatmap</span><small>Row score − Column score · blue = long row / short column, red = opposite</small>${abInfoBtn('Pair Strength Heatmap',['Every cell is the <b>row score minus the column score</b> — the score spread of that pair.','Blue = the row currency is stronger (long row / short column), red = the column currency is stronger. The darker the cell, the larger the gap.','A relative ranking built from the scores — not a price forecast.'])}</div>
@@ -18011,7 +18107,7 @@ function renderTrendsRoh(){
     if(!dSet.has(e[0])||e[1]==null)return;
     if(scoreHistEntryCurrent(e))neuPunkte++;else altPunkte++;
   }));
-  let html=rangeBar+(altPunkte&&neuPunkte?`<div class="tr-modelnote">${altPunkte} of ${altPunkte+neuPunkte} recorded points in this range come from an earlier version of the score model. They are shown unchanged &ndash; each one is the value that was valid on that day &ndash; but a step at the changeover is the model change, not a market move.</div>`:'');
+  let html=rangeBar+(altPunkte&&neuPunkte?`<div class="tr-modelnote">${kurzHtml(`${altPunkte} of ${altPunkte+neuPunkte} recorded points in this range come from an earlier version of the score model. They are shown unchanged &ndash; each one is the value that was valid on that day &ndash; but a step at the changeover is the model change, not a market move.`)}</div>`:'');
   if(trendsFilter!=='ALL'&&trendsFilter!=='FX'){
     const scoreMap={},biasMap={};(scoreHist[trendsFilter]||[]).forEach(e=>{if(e[1]!=null&&isFinite(e[1])){scoreMap[e[0]]=e[1];biasMap[e[0]]=e[5]||scoreBias(e[1]);}});
     html+=scoreVsPriceCard(dates,scoreMap,14,colorOverride,priceSeriesFor(trendsFilter),'Total Score vs Price',biasMap);
@@ -20752,7 +20848,8 @@ const SENT_INFO={
 function openSentInfoM(key){
   const t=SENT_INFO[key];if(!t)return;
   document.getElementById('sentInfoTitle').textContent=t[0];
-  document.getElementById('sentInfoBody').innerHTML=t[1];
+  const sb=document.getElementById('sentInfoBody');sb.innerHTML=t[1];
+  kurzDom(sb);   // kein Fliesstext (Dauerregel 2026-10-11)
   openM('mSentInfo');
 }
 const iBtn=key=>`<button class="rinfo" style="vertical-align:middle;margin-left:6px" onclick="openSentInfoM('${key}')" title="What is this? How to read it">i</button>`;
@@ -23647,7 +23744,7 @@ function termStructureCardHtml(){
     <div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:360px;height:auto">
       ${yLabels}${achse}${linien}
     </svg></div>
-    <div class="edge-note">Each line steps at that bank's own meeting dates, so the steps do not line up — that is the point. Where two lines diverge, the rate gap between those two currencies is expected to widen; where they converge, it narrows. Derived from the same futures curve as the probability cards, not from a separate source.</div>
+    <div class="edge-note">${kurzHtml(`Each line steps at that bank's own meeting dates, so the steps do not line up — that is the point. Where two lines diverge, the rate gap between those two currencies is expected to widen; where they converge, it narrows. Derived from the same futures curve as the probability cards, not from a separate source.`)}</div>
   </div>`;
 }
 // ⚠ Nutzer-Vorgabe 2026-09-06: "ich will das da nicht mehr die Diagramme
@@ -23699,7 +23796,7 @@ function renderRateProbRoh(){
   }).join('');
   el.innerHTML=`<div class="cot-card">
     <div class="cot-card-title">Market rate expectations${iBtn('rateprob')}</div>
-    <div class="rpl-note">Where the market prices the next policy moves. Each row opens the source for that central bank directly — the Fed at the CME FedWatch Tool, the others at their own page on rateprobability.com.</div>
+    <div class="rpl-note">${kurzHtml(`Where the market prices the next policy moves. Each row opens the source for that central bank directly — the Fed at the CME FedWatch Tool, the others at their own page on rateprobability.com.`)}</div>
     <div class="rpl-list">${karten}</div>
   </div>`;
 }
@@ -24309,7 +24406,7 @@ function realRateTableHtml(){
       <td>${r.nominal.toFixed(2)}%</td><td>${r.cpi.toFixed(1)}%</td>
       <td class="${col(r.real)}"><b>${r.real>0?'+':''}${r.real.toFixed(2)}%</b></td></tr>`).join('')}
     </tbody></table>
-    <div class="edge-note">${FX.length-rows.length>0?(FX.length-rows.length)+' currencies are missing because no current headline CPI value has arrived for them. ':''}A positive real rate means the central bank is paying more than inflation takes away — the classic argument for a currency, and the reason two currencies with the same nominal rate are not equally attractive.</div>
+    <div class="edge-note">${kurzHtml(`${FX.length-rows.length>0?(FX.length-rows.length)+' currencies are missing because no current headline CPI value has arrived for them. ':''}A positive real rate means the central bank is paying more than inflation takes away — the classic argument for a currency, and the reason two currencies with the same nominal rate are not equally attractive.`)}</div>
   </div>`;
 }
 // Zinsdifferenz gegen den Kurs. Zeigt, ob eine Paarbewegung vom Zinsabstand
@@ -24333,7 +24430,7 @@ function spreadCardHtml(){
   return`<div class="cot-card" style="margin-top:12px">${kopf}${chart}
     <div class="tr-legend"><span class="tr-leg-item"><span class="tr-leg-dot" style="background:var(--blue)"></span>${escH(b+' − '+q+' '+spreadTenor+' yield')}</span>
       <span class="tr-leg-item"><span class="tr-leg-dash"></span>Price</span></div>
-    <div class="edge-note">${serie.length} common trading days. When the two lines diverge, the pair is moving on something other than the rate gap.</div>
+    <div class="edge-note">${kurzHtml(`${serie.length} common trading days. When the two lines diverge, the pair is moving on something other than the rate gap.`)}</div>
   </div>`;
 }
 function spreadChart(serie,px,b,q){
@@ -25517,7 +25614,7 @@ setInterval(()=>{
 // Wunsch 2026-08-25) - Details/Methodik: docs/module-split.md. Namen per
 // echtem JS-Parser (acorn) aus dem Top-Level-Scope dieses Moduls ermittelt,
 // nie per Regex/Handschrift.
-Object.assign(window,{faktenFenster,hwDetail,jrDetail,
+Object.assign(window,{faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
