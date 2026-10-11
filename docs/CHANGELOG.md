@@ -19827,4 +19827,5 @@ Polster der `.dw` bleibt 16 px.
 - Volllauf 600b (`cards`, 390 px): Makro-Karten 16 px über dem Rand. Ursache:
   die Design-Vorschau (`.vp-grid`, `minmax(300px,1fr)`) erzwang eine
   Mindestbreite der einspaltigen `.ab-cards`-Spalte (332 statt 306 px) →
-  `minmax(min(300px,100%),1fr)` + `min-width:0`.
+  `minmax(min(300px,100%),1fr)` + `min-width:0`; dazu (`kartenlook`) die
+  Heatmap mit festen 6 Spalten → `auto-fill, minmax(52px,1fr)`, Boxen `overflow:hidden`.
