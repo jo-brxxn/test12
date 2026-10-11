@@ -38,9 +38,9 @@
 //      Knoepfe erkennbar (>= 0,4) - vorher Kalender-× 0,20, Undo/Redo 0,22
 //   K) Runde 2/Paket B: Waehrungsstaerke ab Mittellinie je Vorzeichen,
 //      Watchlist einzeilig ohne Entfernen-×, Price-Karte max. 2
-//      Bedienzeilen ohne Einzelknopf, Majors-Titel, COT-/Retail-Balken wieder
-//      wie vor 591 (26 px, volle Deckkraft, keine Fuge - Nutzer 2026-10-06
-//      "Komplett wie vor 591")
+//      Bedienzeilen ohne Einzelknopf, Majors-Titel. (Die COT-/Retail-Balken-
+//      Regel "wie vor 591" ist seit 2026-10-11 durch check/positionen.js
+//      ersetzt - neue Darstellung auf Nutzer-Wunsch.)
 //   N) kein Bearbeitungsmodus mehr fuer Dashboard und Indikatoren (Nutzer
 //      2026-10-07: "Entfern den Bearbeitungsmodus wenn ich was bearbeiten
 //      will frag ich dich", per Rueckfrage "Dashboard + Indikatoren"): keine
@@ -440,23 +440,10 @@ const oeffne = (p, z) => p.evaluate(z => { const [a, v] = z.split(':'); if (a ==
         return out; });
       na.forEach(x => fail('N BEARBEITEN', x));
     }
-    // COT- und Retail-Balken liegen auf ihren eigenen Seiten (auf dem Dashboard
-    // gibt es keine - dort gesucht, lief die Pruefung ins Leere)
+    // K5 (COT-/Retail-Balken 26 px "wie vor 591") ist am 2026-10-11 entfallen:
+    // beide zeigen jetzt die neue Darstellung (Nutzer-Wahl) - geprueft von
+    // check/positionen.js.
     const k5 = [];
-    for (const [z, sel] of [['cot', '.cot-bar'], ['sent:retail', '.sent-bar']]) {
-      await oeffne(p, z); await p.waitForTimeout(1100);
-      const r = await p.evaluate(sel => { const e = [...document.querySelectorAll(sel)].filter(x => x.offsetParent);
-        const alpha = c => { const m = String(c).match(/rgba?\(([^)]+)\)/); if (!m) return 1; const t = m[1].split(',').map(Number); return t.length > 3 ? t[3] : 1; };
-        const teile = e.flatMap(x => [...x.children]);
-        return { n: e.length, hoch: e.filter(x => Math.abs(x.getBoundingClientRect().height - 26) > 0.6).map(x => Math.round(x.getBoundingClientRect().height)),
-          blass: teile.filter(t => t.getBoundingClientRect().width > 0 && alpha(getComputedStyle(t).backgroundColor) < 0.99 && getComputedStyle(t).backgroundImage === 'none').length,
-          fuge: teile.filter(t => /inset/.test(getComputedStyle(t).boxShadow)).length }; }, sel);
-      if (!r.n) k5.push(`${z}: keine ${sel}-Balken gefunden`);
-      else { if (r.hoch.length) k5.push(`${z}: ${r.hoch.length} Balken ${r.hoch[0]} px hoch (wie vor 591: 26)`);
-        if (r.blass) k5.push(`${z}: ${r.blass} Balkenteile mit Deckkraft < 1 (wie vor 591: volle Farbe)`);
-        if (r.fuge) k5.push(`${z}: ${r.fuge} Balkenteile mit Fuge (wie vor 591: keine)`); }
-      n.k += r.n;
-    }
     [...k1.out, ...k3, ...k4, ...k5].forEach(x => fail(`K RUNDE2 ${vw}`, x));
     n.k += k1.n.rank + k1.n.wl;
     await p.close();

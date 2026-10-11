@@ -19721,3 +19721,30 @@ untersten karten … sollen direkt an den anderen dran hängen“*.
   (risk-asset-name 5/26 px). „bottom bottom bottom“ als dritte Zeile
   zurück; `scrollfuell` D prüft jetzt mit allen Kartentypen auf
   Spaltenbreite ≥ 150 px (Gegenprobe: 0 px gemeldet).
+
+## 2026-10-11 — VERSION-CHECK-598: COT und Retail in neuer Darstellung (gleiche Daten)
+
+Nutzer: *„Ich will für retail Sentiment und cot eine neue Darstellung der
+Daten haben. Es sollen die Daten gleich bleiben aber anders dargestellt gib
+mir Vorschläge über eine Frage“*. Gewählt: COT „Linie mit Score-Zonen“,
+Retail „Abweichung von 50 %“, Ort „Asset-Karten + Tabs“.
+
+- **COT-Karte:** Long-Quote als Linie, Zonen ≥ 60 % long/short getönt,
+  Endpunkt als HTML-Punkt (im gestreckten SVG wäre ein Kreis eine Ellipse).
+  Kopf: Quote groß in Zonenfarbe + w/w-Pfeil; Fußzeile Long/Short/w/w weg,
+  Kontrakte im Tooltip. Y-Achse mit 60/50/40 an den echten Linien (gemessen
+  ±1 px).
+- **COT-Tab:** Verlauf ohne Kontrakt-Balken/-Achse (Kontrakte im Tooltip und
+  in der Tabelle), Linie + Zonen + Endwert; vs Price und Hover unverändert.
+  Asset-Liste = Abweichung von 50 % mit 60/40-Strichen (gleiche Sprache wie
+  Retail).
+- **Retail:** Karte und Sentiment-Tab je Zeile Balken von 50 % zur
+  Mehrheitsseite, Striche bei 65/35, Text „94% long“/„80% short“; Broker-
+  Quote ungedreht, Contrarian-Chip im Tab bleibt. Verläufe (Einzelbuch-
+  Karte, Tab) als Linie mit Zonen statt 100-%-Stapelbalken.
+- Handy (390 px): Skala-Zahlen schoben sich zu „35%50%65%“ ineinander →
+  Container-Query blendet erst die Schwellen-Zahlen, dann short/long aus
+  (Striche bleiben). Spur im Tab dort ~66 px.
+- `designregeln` K5 (26-px-Balken „wie vor 591“) entfällt; `seasretail` liest
+  `.pd-row` (data-lang/data-kurz); neuer Wächter `check/positionen.js` mit
+  Gegenprobe.

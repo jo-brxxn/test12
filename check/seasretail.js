@@ -252,10 +252,12 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
       ((window.SENTIMENT_DATA || {}).retail || []).forEach(x => { if (x && x.sym) roh[String(x.sym).toUpperCase()] = Math.round(+x.long); });
       const kachel = [...document.querySelectorAll('.ab-tile')].find(t => /Retail Positioning/.test(t.textContent || ''));
       if (!kachel) return { fehlt: true };
-      const zeilen = [...kachel.querySelectorAll('.ab-bar-row:not(.ab-bar-hd)')].map(e => ({
-        name: ((e.querySelector('.ab-bar-n') || {}).textContent || '').trim(),
-        lang: parseInt((((e.querySelector('.ab-bar-l') || {}).textContent) || '').replace('%', ''), 10),
-        kurz: parseInt((((e.querySelector('.ab-bar-r') || {}).textContent) || '').replace('%', ''), 10),
+      // Zeilen seit 2026-10-11 als "Abweichung von 50 %" (.pd-row) - die
+      // Quote steht in data-lang/data-kurz, der Text zeigt die Mehrheitsseite.
+      const zeilen = [...kachel.querySelectorAll('.pd-row:not(.pd-hd)')].map(e => ({
+        name: ((e.querySelector('.pd-n') || {}).textContent || '').trim(),
+        lang: Math.round(+e.dataset.lang),
+        kurz: Math.round(+e.dataset.kurz),
         markiert: [...e.querySelectorAll('.ab-bar-me')].map(x => x.textContent),
       }));
       const big = ((kachel.querySelector('.ab-big') || {}).textContent || '').trim();

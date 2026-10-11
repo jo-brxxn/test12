@@ -1346,6 +1346,26 @@ hatte sie außerhalb des Bearbeitungsmodus bewusst keine Titelzeile, Wunsch
 vom 2026-07-27). Geprüft von `check/hierarchie.js` (Regel 4 dort) und
 `check/designregeln.js` K.
 
+## COT und Retail: Positionierung (seit 2026-10-11)
+
+Nutzer: *„Es sollen die Daten gleich bleiben aber anders dargestellt“* —
+per Rückfrage gewählt, gilt in Asset-Karten **und** Tabs:
+- **COT = Linie mit Score-Zonen.** Long-Quote als Linie (`--t0`), Zonen ab
+  `COT_NETZ_AB` (60 %) blau oben / rot unten getönt, Schwellen gestrichelt,
+  50 % gepunktet; Endpunkt in Zonenfarbe. Karte: Quote groß + w/w-Pfeil über
+  dem Chart, Kontraktzahlen nur im Tooltip (keine Fußzeile mehr). Tab: keine
+  Kontrakt-Balken/-Achse mehr, Kontrakte im Tooltip und in der Tabelle.
+- **Retail = Abweichung von 50 %.** Je Zeile eine Spur 0–100 %, Balken von
+  der Mitte zur Mehrheitsseite (Blau long, Rot short, volle Farbe), Striche
+  bei `RETAIL_AB` (65/35 %), Text „68% long“ / „71% short“. Broker-Quote
+  ungedreht, eigenes Kürzel hervorgehoben (`.ab-bar-me`). Die Asset-Liste
+  im COT-Tab nutzt dieselbe Zeile mit 60/40 %.
+- Retail-Verläufe (Karte bei Einzelbüchern, Sentiment-Tab) = Linie mit
+  Zonen ab 65 %; der Netto-Chart mit Kurs im Tab bleibt.
+- Bausteine: `posZonenSvg`, `posAbwZeile`, `posAbwKopf` (`js/main.js`),
+  CSS `.pd-*` / `.pos-*`. Geprüft: `check/positionen.js` (Zahlen = Daten,
+  Balken px-genau zwischen 50 % und Quote, Schwellen, Zonen).
+
 ## COT-Verlauf: vs Price und 10-Jahres-Historie (seit 2026-09-27)
 
 - Einzel-Asset-Ansicht: Werkzeugzeile über dem Chart — links **vs Price**
@@ -1354,7 +1374,7 @@ vom 2026-07-27). Geprüft von `check/hierarchie.js` (Regel 4 dort) und
   letzter Schluss ≤ Tag, höchstens 5 Tage alt), in **Kontraktrichtung**:
   CFTC-Futures laufen gegen USD — EUR = EUR/USD, JPY = Yen in USD
   (1/USDJPY), USD = Dollar-Index. NICHT der Korb der Asset-Seite.
-  Eigene Preis-Achse ganz rechts, Kontrakte-Achse bleibt am Plot.
+  Eigene Preis-Achse ganz rechts (die Kontrakte-Achse ist seit 2026-10-11 weg).
 - Historie: `cot_hist.json` (Workflow, ~10 Jahre, per CFTC-Kontraktcode),
   lazy geladen wie `price_hist.json`; bei vielen Reports schmalere Balken
   statt Scrollen, Datum mit Jahr, ausgedünnt nach Platz.
@@ -1586,10 +1606,8 @@ auch bei Vorzeichen — sonst widerspräche der Balken der grauen Zahl); die
 Richtung trägt die Lage. Beim Einblenden wachsen linke Balken von der
 Mitte aus (`transform-origin:right`). Geprüft: `designregeln` K.
 
-**N — Flächen leise, Farbe am Wert (Runde 2).** Teil-vom-Ganzen-Balken
-(COT long/short, Retail long/short) sind 12 px hoch, 70 % Deckkraft, mit
-2 px Kartenfarbe zwischen den Segmenten; die Zahlen daneben tragen die volle
-Bias-Farbe. Säulen in Indikator-Charts 56 % des Spaltenplatzes **ohne
+**N — Flächen leise, Farbe am Wert (Runde 2).** (COT-/Retail-Balken: seit
+2026-10-11 eigene Darstellung, siehe „COT und Retail: Positionierung".) Säulen in Indikator-Charts 56 % des Spaltenplatzes **ohne
 Deckel** (der 14-px-Deckel aus 591 ist seit 2026-10-06 auf Nutzer-Wunsch
 wieder weg: *„die Balken so schmal … macht das wie vorher überall also nur
 das"*), 80 % Deckkraft bleibt; die Wertzahl darüber steht ab Spalte × 0,56

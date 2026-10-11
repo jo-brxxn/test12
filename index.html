@@ -905,11 +905,49 @@ svg.ic{vertical-align:-2px;flex:none}
 .ci-body p:last-child{margin-bottom:0}
 .ci-body b{color:var(--t0);font-weight:700}
 .ab-bars{display:flex;flex-direction:column;gap:5px}
-.ab-bar-row{display:flex;align-items:center;gap:6px;min-width:0}
-.ab-bar-n{flex:0 0 78px;font:700 var(--fs-2xs)/1 var(--ff-num);color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ab-bar-l,.ab-bar-r{flex:0 0 30px;font:700 var(--fs-2xs)/1 var(--ff-num);color:var(--t3);text-align:right}
-.ab-bar{flex:1 1 auto;display:flex;height:9px;border-radius:99px;overflow:hidden;background:var(--bg4);min-width:40px;box-shadow:inset 0 0 0 1px var(--bd)}
-.ab-bar-in{display:block;height:100%}
+/* ── POSITIONIERUNG: Abweichung von 50 % + Linie mit Score-Zonen ─────────
+   Nutzer-Wahl 2026-10-11 (posAbwZeile / posZonenSvg in js/main.js). Eine
+   Zeile: Name | Spur 0-100 % mit Mittellinie und zwei Schwellen-Strichen,
+   der Balken waechst von der Mitte zur Mehrheitsseite | "68% long".
+   Klein in der Asset-Karte, .pd-gross in den Tabs (COT, Sentiment). */
+.pd-list{gap:6px}
+.pd-row{display:flex;align-items:center;gap:8px;min-width:0}
+.pd-n{flex:0 0 auto;min-width:64px;font:700 var(--fs-xs)/1.2 var(--ff-text);color:var(--t2);white-space:nowrap}
+.pd-track{flex:1 1 auto;position:relative;height:12px;min-width:60px;background:var(--bg4);border-radius:3px}
+.pd-mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--t3);transform:translateX(-.5px)}
+.pd-th{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--t3);opacity:.75}
+.pd-bar{position:absolute;top:0;bottom:0;border-radius:2px}
+.pd-v{flex:0 0 auto;min-width:68px;text-align:right;font:600 var(--fs-xs)/1.2 var(--ff-text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pd-v b{font-weight:800}
+.pd-hd .pd-track{background:none;height:14px}
+.pd-hd .pd-n{color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.pd-sk{position:absolute;top:0;transform:translateX(-50%);font:600 var(--fs-2xs)/14px var(--ff-text);color:var(--t3);white-space:nowrap}
+.pd-sk:first-child{transform:none}.pd-sk:last-child{transform:translateX(-100%)}
+/* Schmale Spur (Handy, schmale Kartenspalte): die Skala-Beschriftung
+   schiebt sich sonst ineinander ("35%50%65%" gemessen bei 122 px). Erst
+   fallen die Schwellen-Zahlen weg (die Striche bleiben), dann short/long. */
+.pd-hd .pd-track{container-type:inline-size}
+@container (max-width:230px){.pd-sk-th{display:none}}
+@container (max-width:120px){.pd-sk-w{display:none}}
+@media(max-width:640px){.pd-gross .pd-n{min-width:0}.pd-gross .pd-v{min-width:0;font-size:var(--fs-sm)}.pd-gross .pd-row{gap:6px}.pd-gross .sent-chip{min-width:0;padding:4px 4px}}
+.pd-gross .pd-row{gap:10px;padding:4px 0}
+.pd-gross .pd-n{min-width:84px;font-size:14px;color:var(--t1)}
+.pd-gross .pd-track{height:22px;border-radius:5px}
+.pd-gross .pd-hd .pd-track{height:16px}
+.pd-gross .pd-v{min-width:96px;font-size:var(--fs-base)}
+.pd-gross .pd-row[onclick]{cursor:pointer}
+@media (hover:hover){.pd-gross .pd-row[onclick]:hover .pd-n{color:var(--blue)}}
+/* COT-Karte: Stand gross ueber der Linie, Endpunkt als HTML-Punkt (im
+   gestreckten SVG waere ein Kreis eine Ellipse), Y-Achse mit Schwellen. */
+.pos-kopf{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin:0 0 6px}
+.pos-wert{font:800 var(--fs-xl)/1 var(--ff-text);font-variant-numeric:tabular-nums}
+.pos-wert-l{font:600 var(--fs-sm)/1 var(--ff-text);color:var(--t2)}
+.pos-wow{margin-left:auto;font:700 var(--fs-sm)/1 var(--ff-text);font-variant-numeric:tabular-nums;background:var(--bg3);border-radius:5px;padding:4px 7px}
+.pos-wow-l{font-weight:600;color:var(--t3)}
+.pos-plot{position:relative;flex:1 1 auto;min-height:0}
+.pos-ende{position:absolute;right:0;width:9px;height:9px;border-radius:50%;transform:translate(50%,-50%);box-shadow:0 0 0 2px var(--card);pointer-events:none}
+.ab-yax.pos-yax{position:relative;display:block;min-width:30px;margin-bottom:15px}
+.pos-yax span{position:absolute;right:0;transform:translateY(-50%)}
 /* Zwei gleich hohe Haelften mit der Nulllinie dazwischen - dadurch skalieren
    die Balken mit der Kachel statt in festen Pixeln zu kleben. */
 .ab-seas{display:flex;align-items:stretch;gap:3px;height:52px}
@@ -919,11 +957,6 @@ svg.ic{vertical-align:-2px;flex:none}
    in der schmalsten Spalte stehen sie sonst uebereinander ausserhalb der
    Karte. Haarlinie darueber, damit sie als Abschluss lesbar sind und nicht
    als weitere Zeile des Inhalts. */
-/* Kopfzeile ueber den Balken: ohne sie steht neben "EUR/USD" die Zahl 63,
-   waehrend der Broker 37 fuehrt - richtig gerechnet, aber eine Falle. */
-.ab-bar-hd .ab-bar-n,.ab-bar-hd .ab-bar-l,.ab-bar-hd .ab-bar-r{color:var(--t3);font-weight:600;
-  text-transform:uppercase;letter-spacing:.05em}
-.ab-bar-hd .ab-bar{background:none;box-shadow:none;height:1px}
 /* ⚠ .ab-bar-inv (das ⇄ fuer eine gedrehte Quote) ist am 2026-09-14 weggefallen:
    die Kachel dreht nichts mehr, sie zeigt die Broker-Quote. An seine Stelle
    tritt .ab-bar-me - das Kuerzel DIESES Assets im Paarnamen, damit auf einen
@@ -3060,14 +3093,8 @@ body.res-return-active #resBackBar{display:flex}
 .cot-card-title .cct-src{color:var(--blue)}
 .cot-card-title small{font-weight:500;color:var(--t3);font-size:var(--fs-sm);font-family:var(--ff-num)}
 .cot-bars{padding:11px 15px}
-.cot-bar-row{display:flex;align-items:center;gap:9px;padding:5px 0;cursor:pointer}
-.cot-bar-sym{width:80px;flex-shrink:0;font-size:14px;font-weight:700;color:var(--t1);white-space:nowrap;display:flex;align-items:center}
-.cot-bar-long-lbl{width:44px;flex-shrink:0;text-align:right;font-size:var(--fs-base);font-weight:800;color:var(--green);font-family:var(--ff-num)}
-.cot-bar-short-lbl{width:44px;flex-shrink:0;text-align:left;font-size:var(--fs-base);font-weight:800;color:var(--red);font-family:var(--ff-num)}
-.cot-bar{flex:1;display:flex;height:26px;border-radius:6px;overflow:hidden;background:var(--bg4)}
-.cot-bar-long{background:linear-gradient(90deg,var(--green-lt,#2E7BE0),var(--green));min-width:0;transition:width .3s}
-.cot-bar-short{background:linear-gradient(90deg,var(--red-dk,#A50D16),var(--red));min-width:0;transition:width .3s}
-@media (hover:hover){.cot-bar-row:hover .cot-bar-sym{color:var(--blue)}}
+/* Asset-Liste: posAbwZeile (.pd-*) seit 2026-10-11 - die 26-px-Long/Short-
+   Balken (.cot-bar*) sind weg. */
 .cot-scroll{overflow-x:auto;padding:6px 4px 10px}
 .cot-hist-wrap{padding:10px 8px;position:relative;touch-action:pan-y}
 /* Indikator-Verlaufschart (Nutzer-Wunsch 2026-07-14) */
@@ -4999,8 +5026,6 @@ body.no-ui-anim .tgl-track,body.no-ui-anim .tgl-track::after{transition:none}
    fertige Animation mit "both" bleibt als Effekt am Element haengen und wird
    vom Browser bei jedem Bild weiter mitgefuehrt (2026-10-03, Performance).
    Ausnahme: .tr-halo-fade endet bei .7 und braucht deshalb "both". */
-@keyframes cotBarIn{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
-.cot-bar-in{animation:cotBarIn var(--enter-dur) cubic-bezier(.2,.7,.3,1) backwards}
 @keyframes trDraw{0%{stroke-dashoffset:1}100%{stroke-dashoffset:0}}
 .tr-line-in{stroke-dasharray:1;animation:trDraw var(--enter-dur) ease}
 @keyframes trFadeIn{0%{opacity:0}100%{opacity:1}}
@@ -5553,9 +5578,7 @@ body.anim-enter:not(.no-data-anim) .rank-bar,
 body.anim-enter:not(.no-data-anim) .mx-rank-bar,
 body.anim-enter:not(.no-data-anim) .risk-asset-bar,
 body.anim-enter:not(.no-data-anim) .perf-bar,
-body.anim-enter:not(.no-data-anim) .esi-bar,
-body.anim-enter:not(.no-data-anim) .cot-bar-long,
-body.anim-enter:not(.no-data-anim) .cot-bar-short{
+body.anim-enter:not(.no-data-anim) .esi-bar{
   transform-origin:left center;animation:dataBarIn var(--enter-dur) cubic-bezier(.22,.9,.3,1) both}
 body.anim-enter:not(.no-data-anim) #dashWidgets>.dash-zone>.dw{
   animation:dataCardIn var(--enter-dur) ease-out both}
@@ -5567,8 +5590,7 @@ body.anim-enter:not(.no-data-anim) #dashWidgets>.dash-zone>.dw:nth-child(4){anim
 @media (prefers-reduced-motion:reduce){
   svg.ic{animation:none!important}
   body.anim-enter .rank-bar,body.anim-enter .mx-rank-bar,body.anim-enter .risk-asset-bar,
-  body.anim-enter .perf-bar,body.anim-enter .esi-bar,body.anim-enter .cot-bar-long,
-  body.anim-enter .cot-bar-short,body.anim-enter #dashWidgets>.dash-zone>.dw{animation:none!important}
+  body.anim-enter .perf-bar,body.anim-enter .esi-bar,body.anim-enter #dashWidgets>.dash-zone>.dw{animation:none!important}
 }
 
 /* Hintergrund-Fenster: jede Dauerschleife haelt an. */
@@ -6276,16 +6298,12 @@ select.px-panel-sel,select.res-sfield,select.dw-sel,select.bt-sel{height:var(--h
 .rank-div>.rank-bar.neg,.rank-div>.mx-rank-bar.neg{border-radius:5px 0 0 5px}
 .rank-null{position:absolute;left:50%;top:0;bottom:0;width:1px;margin-left:-.5px;background:var(--bd2)}
 body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.no-data-anim) .rank-div>.mx-rank-bar.neg{transform-origin:right center}
-/* R10 (591, "Farbflaechen leiser": COT-/Retail-Balken 12 px, 70 % Deckkraft,
-   2 px Fuge) am 2026-10-06 auf Nutzer-Wunsch KOMPLETT zurueckgenommen ("mach
-   die Balken da wo du sie sonst noch veraendert hast wie davor" - per
-   Rueckfrage "Komplett wie vor 591"). COT: es gelten wieder die Grundregeln
-   (.cot-bar 26 px, Radius 6, Verlauf). Retail wie vor 591: 26 px, Radius 5,
-   volle Bias-Farbe, keine Fuge - als Klasse statt der frueheren Inline-Farbe
-   (im Standard-Theme dieselben Werte wie BC, in anderen Themes deren Farben). */
-.sent-bar{flex:1;display:flex;height:26px;border-radius:5px;overflow:hidden;min-width:0}
-.sent-bar-l{background:var(--green);min-width:0}
-.sent-bar-s{background:var(--red);min-width:0}
+/* R10/K5 (26-px-Long/Short-Balken fuer COT und Retail, zuletzt 2026-10-06
+   "komplett wie vor 591") am 2026-10-11 durch die neue Darstellung ersetzt:
+   Abweichung von 50 % (.pd-*) - Nutzer: "Es sollen die Daten gleich bleiben
+   aber anders dargestellt". Der Chip vor jeder Retail-Zeile traegt weiter
+   das Contrarian-Signal. */
+.sent-chip{flex:none;min-width:74px;text-align:center;font:800 var(--fs-sm)/1.2 var(--ff-text);border:1px solid;border-radius:5px;padding:4px 6px;white-space:nowrap}
 /* R8 Dashboard-Karten. Majors: Kartentitel wie jede Karte (Nutzerwahl
    2026-10-05; hebt die Regel vom 2026-07-27 auf, das Label nur im
    Bearbeitungsmodus zu zeigen). */
@@ -6430,11 +6448,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-597 - Info button sits in the top text line of the expanded indicator row; History card fills its row; mouse wheel over a card scrolls the page; dashboard bottom cards hang directly in their columns."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-598 - New display for COT and retail positioning (same data): COT as a long-share line with shaded score zones, retail rows as bars from the 50% centre with threshold ticks - on the asset cards and in the COT and Sentiment tabs."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-597</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-598</span>
     </span>
   </div>
   <div class="hdr-r">

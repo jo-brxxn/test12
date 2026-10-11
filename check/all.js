@@ -59,6 +59,7 @@ const PRUEFUNGEN = [
   { n: 'zellen',     d: 'Werte-Zellen der Indikator-Tabellen: kein Ueberlauf, kein Satz, kein Deutsch', f: 'check/zellen.js', args: [], browser: true },
   { n: 'zeitfilter', d: 'Zeitfilter: gross 3M..10Y/Max, Mini 6M/1Y/6Y/Max, nur mit Daten, rechtsbuendig', f: 'check/zeitfilter.js', args: [], browser: true },
   { n: 'trend',      d: 'Trend 1D/4H: EMA20 +-0,25 ATR, 1D in Node nachgerechnet, Schalter, Overlay', f: 'check/trend.js', args: [], browser: true },
+  { n: 'positionen', d: 'COT als Linie mit Score-Zonen, Retail/COT-Liste als Abweichung von 50 % - gleiche Zahlen, Balken px-genau', f: 'check/positionen.js', args: [], browser: true },
   { n: 'scrollfuell', d: 'Mausrad ueber Karten scrollt die Seite, History fuellt ihre Reihe, ⓘ in der Quellenzeile, Dashboard-Karten direkt aneinander', f: 'check/scrollfuell.js', args: [], browser: true },
   { n: 'tabellenfest', d: 'Innere Scrollbereiche federn nicht ueber ihre Raender (overscroll none)', f: 'check/tabellenfest.js', args: [], browser: true },
   { n: 'regeln',    d: 'COT, Rendite-Trends, 2Y-Zinsdifferenz, Carry, Rohstoffe, Score-Fenster, Momentum weg', f: 'check/regeln.js', args: [], browser: true },

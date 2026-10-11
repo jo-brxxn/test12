@@ -9444,42 +9444,75 @@ function abCotId(assetId){
 // app-weiten Hover-Mechanismus (chartHoverWrap), der mehrere Charts
 // nebeneinander kann. Die Farben sind die aus dem Bild des Nutzers:
 // Blau = Long, Rot = Short, schwarze Linie = Long %.
+// ── POSITIONIERUNG: SCORE-ZONEN UND ABWEICHUNG VON 50 % ────────────────
+// Nutzer 2026-10-11: "Ich will fuer retail Sentiment und cot eine neue
+// Darstellung der Daten haben. Es sollen die Daten gleich bleiben aber anders
+// dargestellt" - per Rueckfrage gewaehlt:
+//   COT    "Linie mit Score-Zonen": die Long-Quote als Linie, die Baender ab
+//          der Score-Schwelle (COT_NETZ_AB) getoent - man sieht sofort, ob die
+//          Quote gerade Punkte gibt. Kontraktzahlen stehen im Tooltip.
+//   Retail "Abweichung von 50 %": je Zeile ein Balken von der Mitte zur
+//          Mehrheitsseite, Striche an der Score-Schwelle (RETAIL_AB).
+//   Ort    Asset-Karten UND Tabs (COT, Sentiment) - ueberall dieselbe Sprache;
+//          die Asset-Liste im COT-Tab nimmt deshalb auch die 50-%-Zeilen.
+// Farbe = Seite der Positionierung (Blau long, Rot short), wie bisher.
+// Getoente Zonen fuer eine 0-100-%-Achse. y(p) bildet Prozent auf die
+// SVG-Hoehe ab, x0/x1 begrenzen die Flaeche, ab ist die Score-Schwelle.
+function posZonenSvg(y,x0,x1,ab,ns){
+  const ve=ns?' vector-effect="non-scaling-stroke"':'';
+  const r=(a,b,f)=>`<rect class="pos-zone" x="${x0}" y="${Math.min(y(a),y(b)).toFixed(1)}" width="${(x1-x0).toFixed(1)}" height="${Math.abs(y(a)-y(b)).toFixed(1)}" fill="${f}" fill-opacity=".1"/>`;
+  const l=(p,dash,op)=>`<line x1="${x0}" y1="${y(p).toFixed(1)}" x2="${x1}" y2="${y(p).toFixed(1)}" stroke="var(--t3)" stroke-width="1" stroke-dasharray="${dash}" opacity="${op}"${ve}/>`;
+  return r(100,ab,BC.bull)+r(100-ab,0,BC.bear)+l(ab,'4,3',.7)+l(100-ab,'4,3',.7)+l(50,'1,3',.5);
+}
+// Farbe eines Werts je nach Zone (in der Zone: Seite, dazwischen neutral).
+function posZonenFarbe(p,ab){return p>=ab?BC.bull:p<=100-ab?BC.bear:'var(--t2)';}
+// Eine Zeile "Abweichung von 50 %". lang = Long-Quote 0-100 (unveraendert,
+// bei Retail die Broker-Quote), ab = Score-Schwelle. Der Balken waechst von
+// der Mitte zur Mehrheitsseite; Striche markieren ab und 100-ab.
+function posAbwZeile(o){
+  const L=Math.max(0,Math.min(100,+o.lang)),K=100-L;
+  const lang=L>=50,links=lang?50:L,breite=Math.abs(L-50);
+  const mehr=lang?L:K,seite=lang?'long':'short',farbe=lang?BC.bull:BC.bear;
+  const wert=o.nachkomma?mehr.toFixed(o.nachkomma):Math.round(mehr);
+  return`<div class="pd-row${o.cls?' '+o.cls:''}" data-lang="${L}" data-kurz="${K}"${o.onclick?` onclick="${o.onclick}"`:''}${o.title?` title="${escH(o.title)}"`:''}>
+    <span class="pd-n"${o.tip?` title="${escH(o.tip)}"`:''}>${o.nameHtml}</span>
+    <span class="pd-track"><span class="pd-th" style="left:${100-o.ab}%"></span><span class="pd-mid"></span><span class="pd-th" style="left:${o.ab}%"></span><span class="pd-bar" style="left:${links}%;width:${breite}%;background:${farbe}"></span></span>
+    <span class="pd-v" style="color:${farbe}"><b>${wert}%</b> ${seite}</span>${o.extra||''}
+  </div>`;
+}
+// Kopfzeile dazu: Skala mit 50 % in der Mitte und den beiden Schwellen.
+function posAbwKopf(name,ab){
+  return`<div class="pd-row pd-hd"><span class="pd-n">${escH(name)}</span>
+    <span class="pd-track"><span class="pd-sk pd-sk-w" style="left:0">short</span><span class="pd-sk pd-sk-th" style="left:${100-ab}%">${100-ab}%</span><span class="pd-sk" style="left:50%">50%</span><span class="pd-sk pd-sk-th" style="left:${ab}%">${ab}%</span><span class="pd-sk pd-sk-w" style="left:100%">long</span></span>
+    <span class="pd-v"></span></div>`;
+}
 function abCotChart(hist){
   const W=240,H=100;
   const h=(hist||[]).filter(e=>e&&isFinite(+e.long)&&isFinite(+e.short)&&(+e.long + +e.short)>0);
   if(h.length<2)return{leer:true,html:AB_LEER('Not enough COT reports yet — the history builds up with each weekly release.')};
-  const maxStack=Math.max(...h.map(e=>(+e.long)+(+e.short)))*1.08||1;
-  const bw=Math.max(2,(W/h.length)*0.66);
-  const yVal=v=>H-(v/maxStack)*H;
   const yPct=p=>H-(p/100)*H;
-  let sv=`<line x1="0" y1="${yPct(50).toFixed(1)}" x2="${W}" y2="${yPct(50).toFixed(1)}" stroke="var(--bd2)" stroke-width="1" stroke-dasharray="2,3" vector-effect="non-scaling-stroke"/>`;
+  const xOf=i=>(i/(h.length-1))*W;
+  let sv=posZonenSvg(yPct,0,W,COT_NETZ_AB,true);
   const linie=[],pts=[];
   h.forEach((e,i)=>{
-    const x=(i+0.5)*(W/h.length)-bw/2, mx=x+bw/2;
-    const L=+e.long,S=+e.short,tot=L+S;
-    const lh=H-yVal(L), sh=H-yVal(S);
-    sv+=`<rect x="${x.toFixed(2)}" y="${(H-lh).toFixed(1)}" width="${bw.toFixed(2)}" height="${lh.toFixed(1)}" fill="${BC.bull}"/>`;
-    sv+=`<rect x="${x.toFixed(2)}" y="${(H-lh-sh).toFixed(1)}" width="${bw.toFixed(2)}" height="${sh.toFixed(1)}" fill="${BC.bear}"/>`;
-    const lp=L/tot*100;
-    linie.push(mx.toFixed(1)+','+yPct(lp).toFixed(1));
+    const L=+e.long,S=+e.short,lp=L/(L+S)*100;
+    linie.push(xOf(i).toFixed(1)+','+yPct(lp).toFixed(1));
     const m=cotHistRowMetrics(e,h[i-1]||null);
-    pts.push({fx:mx/W,fy:yPct(lp)/H,col:BC.bull,
+    pts.push({fx:xOf(i)/W,fy:yPct(lp)/H,col:posZonenFarbe(lp,COT_NETZ_AB),
       tip:`<div class="chv-tip-d">COT · ${escH(tagMitWochentag(e.date))}</div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:${BC.bull}">Long</span><b>${lp.toFixed(1)}% · ${cotNum(L)}</b></div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:${BC.bear}">Short</span><b>${(100-lp).toFixed(1)}% · ${cotNum(S)}</b></div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">w/w change</span><b>${m&&m.dNetPct!=null?cotPct(m.dNetPct,true).replace('%','pp'):'–'}</b></div>`});
   });
-  // Zweimal gezeichnet: die weisse Unterlage haelt die schwarze Linie auch
-  // ueber den dunklen Balken lesbar - dieselbe Loesung wie im COT-Tab.
-  sv+=`<polyline points="${linie.join(' ')}" fill="none" stroke="#fff" stroke-width="3.2" opacity=".5" vector-effect="non-scaling-stroke"/>`;
-  sv+=`<polyline points="${linie.join(' ')}" fill="none" stroke="#000" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
+  sv+=`<polyline points="${linie.join(' ')}" fill="none" stroke="var(--t0)" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
   const svg=`<svg class="ab-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${sv}</svg>`;
-  const achse=[h[0].date,h[h.length-1].date].map(d=>{
-    return`<span>${escH(fmtDayShort(d,true))}</span>`;   // mit Jahr (Nutzer-Regel 2026-09-17)
-  }).join('');
+  // Endpunkt als HTML - im gestreckten SVG waere ein Kreis eine Ellipse.
+  const lz=h[h.length-1],lpz=+lz.long/(+lz.long + +lz.short)*100;
+  const ende=`<span class="pos-ende" style="top:${(100-lpz).toFixed(1)}%;background:${posZonenFarbe(lpz,COT_NETZ_AB)}"></span>`;
+  const achse=[h[0].date,h[h.length-1].date].map(d=>`<span>${escH(fmtDayShort(d,true))}</span>`).join('');   // mit Jahr (Nutzer-Regel 2026-09-17)
   return{leer:false,berichte:h.length,html:`<div class="ab-plot">
-    <div class="ab-plot-main">${chartHoverWrap(svg,pts,'height:100%')}<div class="ab-xax">${achse}</div></div>
-    <div class="ab-yax"><span>100%</span><span>50%</span><span>0%</span></div>
+    <div class="ab-plot-main"><div class="pos-plot">${chartHoverWrap(svg,pts,'height:100%')}${ende}</div><div class="ab-xax">${achse}</div></div>
+    <div class="ab-yax pos-yax"><span style="top:0">100%</span><span style="top:${100-COT_NETZ_AB}%">${COT_NETZ_AB}%</span><span style="top:50%">50%</span><span style="top:${COT_NETZ_AB}%">${100-COT_NETZ_AB}%</span><span style="top:100%">0%</span></div>
   </div>`};
 }
 
@@ -9563,17 +9596,17 @@ function abRetailVerlauf(sym){
   r.forEach((e,i)=>{
     const L=Math.round(+e[1]);
     pts.push(x(i).toFixed(1)+','+y(L).toFixed(1));
-    hp.push({fx:x(i)/W,fy:y(L)/H,col:L>=60?BC.bear:L<=40?BC.bull:BC.neu,
+    hp.push({fx:x(i)/W,fy:y(L)/H,col:posZonenFarbe(L,RETAIL_AB),
       tip:`<div class="chv-tip-d">${escH(sym)} · ${escH(tagMitWochentag(e[0]))}</div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:${BC.bull}">Long</span><b>${L}%</b></div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:${BC.bear}">Short</span><b>${100-L}%</b></div>`});
   });
   const svg=`<svg class="ab-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-    <line x1="0" y1="${y(50).toFixed(1)}" x2="${W}" y2="${y(50).toFixed(1)}" stroke="var(--bd2)" stroke-width="1" stroke-dasharray="2,3" vector-effect="non-scaling-stroke"/>
-    <polyline points="${pts.join(' ')}" fill="none" stroke="${BC.bull}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+    ${posZonenSvg(y,0,W,RETAIL_AB,true)}
+    <polyline points="${pts.join(' ')}" fill="none" stroke="var(--t0)" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
   </svg>`;
   return{punkte:r.length,html:`<div class="ab-rtv">
-    <div class="ab-rtv-t">Long share over time <span>${r.length} readings · 50% line dashed</span></div>
+    <div class="ab-rtv-t">Long share over time <span>${r.length} readings · shaded from ${RETAIL_AB}% on one side</span></div>
     <div class="ab-plot"><div class="ab-plot-main">${chartHoverWrap(svg,hp,'height:100%')}</div><div class="ab-yax"><span>100%</span><span>50%</span><span>0%</span></div></div></div>`};
 }
 
@@ -10262,23 +10295,18 @@ function abGrafikHtml(art,c){
     if(!m)return abTileZ('cot','COT Positioning','',AB_LEER('The latest COT report carries no usable long/short figures for this contract.'));
     const ch=abCotChart(s.history);
     const stand=COT_DATA.report_date?fmtDayHdr(COT_DATA.report_date):'–';
-    // Nutzer 2026-09-13: "ganz unten in der karte steht einfach long: ...
-    // short: ... ww change: ... also bischen anders geschrieben aber so ca."
-    // Die Wochenaenderung bekommt einen leichten Rahmen (Nutzer: "markier die
-    // wow Zahl leicht") - sie ist die Zahl, die man woechentlich liest, die
-    // anderen beiden sind der Stand. Bewusst nur ein getoentes Feld, kein
-    // Farbblock: die Zahl traegt ihre Richtung schon als Schriftfarbe.
-    const fuss=`<div class="ab-foot">
-        <span><span class="ab-foot-l">Long</span> <b style="color:${BC.bull}">${m.longPct.toFixed(1)}%</b> <span class="ab-foot-n">${cotNum(m.L)}</span></span>
-        <span><span class="ab-foot-l">Short</span> <b style="color:${BC.bear}">${m.shortPct.toFixed(1)}%</b> <span class="ab-foot-n">${cotNum(m.S)}</span></span>
-        <span class="ab-foot-hl" title="Week-over-week change of the long share — the value that moves">
-          <span class="ab-foot-l">w/w change</span> <b style="color:${cotColor(m.dNetPct)}">${cotPct(m.dNetPct,true).replace('%','pp')}</b></span>
-      </div>`;
+    // ⚠ Seit 2026-10-11 (Linie mit Score-Zonen) steht der Stand UEBER dem
+    // Chart: Long-Quote gross in Zonenfarbe, w/w-Aenderung als Pfeil
+    // daneben (vorher Fusszeile Long/Short/w/w, Nutzer 2026-09-13). Die
+    // Kontraktzahlen stehen im Tooltip jedes Berichts.
+    const wow=m.dNetPct;
+    const kopf=`<div class="pos-kopf"><b class="pos-wert" style="color:${posZonenFarbe(m.longPct,COT_NETZ_AB)}">${m.longPct.toFixed(1)}%</b><span class="pos-wert-l">long</span>
+        <span class="pos-wow" style="color:${cotColor(wow)}" title="Week-over-week change of the long share — the value that moves">${wow==null?'–':(wow>0?'▲ ':wow<0?'▼ ':'')+cotPct(wow,true).replace('%','pp')} <span class="pos-wow-l">w/w</span></span></div>`;
     return abTileZ('cot','COT Positioning',
       `<span class="ab-tile-s">as of ${escH(stand)}</span>`,
-      `${ch.html}${fuss}${abCotScoreZeile(c)}`,null,
+      `${kopf}${ch.html}${abCotScoreZeile(c)}`,null,
       ['Large speculators (CFTC Legacy, non-commercial) — the reporting group whose positioning the score reads.',
-       'Blue is long contracts, red is short, the black line is the long share.'+(ch.leer?'':` The chart covers ${ch.berichte} weekly reports.`),
+       `The line is their long share. Shaded zones: ${COT_NETZ_AB}% or more long (blue) and ${COT_NETZ_AB}% or more short (red) — inside a zone the position counts toward the score.`+(ch.leer?'':` The chart covers ${ch.berichte} weekly reports; tap a point for the contract numbers.`),
        'How it counts: '+cotRegelText()]);
   }
   if(art==='retail'){
@@ -10301,12 +10329,9 @@ function abGrafikHtml(art,c){
       const tip=z.vorn
         ?`${z.lang}% of the broker book is long ${z.name}. ${c.id} is the base currency here, so that is ${z.lang}% long ${c.id}.`
         :`${z.lang}% of the broker book is long ${z.name}. ${c.id} is the QUOTE currency here, so being long this pair means being short ${c.id} — ${z.langAsset}% long ${c.id}.`;
-      return`<div class="ab-bar-row"><span class="ab-bar-n" title="${escH(tip)}">${nameHtml}</span>
-      <span class="ab-bar-l">${z.lang}%</span>
-      <span class="ab-bar"><span class="ab-bar-in" style="width:${z.lang}%;background:${BC.bull}"></span><span class="ab-bar-in" style="width:${z.kurz}%;background:${BC.bear}"></span></span>
-      <span class="ab-bar-r">${z.kurz}%</span></div>`;}).join('');
-    const kopf=`<div class="ab-bar-row ab-bar-hd"><span class="ab-bar-n">Pair</span>
-      <span class="ab-bar-l">long</span><span class="ab-bar"></span><span class="ab-bar-r">short</span></div>`;
+      // Abweichung von 50 % (Nutzer-Wahl 2026-10-11), Broker-Quote ungedreht.
+      return posAbwZeile({nameHtml,lang:z.lang,ab:RETAIL_AB,tip});}).join('');
+    const kopf=posAbwKopf('Pair',RETAIL_AB);
     // Verlauf, wenn der Feed schon einen hat. Bewusst nur fuer EIN Buch
     // (Gold, Silber, BTC, Nasdaq) - bei einer Waehrung waeren es sieben
     // Linien in einer Kachel von 240px Breite.
@@ -10326,7 +10351,7 @@ function abGrafikHtml(art,c){
     return abTileZ('retail','Retail Positioning',
       `<span class="ab-tile-s">${zeilen.length===1?'1 book':zeilen.length+' pairs'}</span>`,
       `<div class="ab-big" style="color:${biasCss(schnitt>=60?'bear':schnitt<=40?'bull':'neu')}" title="The same book seen from ${escH(c.id)}'s own side — this is what the score reads. The rows below are the broker's quote, unchanged.">${schnitt}% long ${escH(c.id)}</div>
-       <div class="ab-bars">${kopf}${bars}</div>
+       <div class="ab-bars pd-list">${kopf}${bars}</div>
        ${verlauf?verlauf.html:''}
        <div class="ab-foot">
          <span><span class="ab-foot-l">≥${RETAIL_AB}% long ${escH(c.id)}</span> <b>${einseitig}/${zeilen.length}</b></span>
@@ -10334,7 +10359,7 @@ function abGrafikHtml(art,c){
          <span><span class="ab-foot-l">Average</span> <b>${schnitt}% long ${escH(c.id)}</b></span>
        </div>
        ${abScoreZeile(c,RETAIL_IND_NAME,rb&&rb.grund)}`,null,
-      [`The rows are the broker's own quote, exactly as published — the same numbers as the Sentiment tab.`]
+      [`The rows are the broker's own quote, exactly as published — the same numbers as the Sentiment tab. Each bar grows from the 50% centre toward the side the majority is on; the ticks mark ${RETAIL_AB}% long and ${RETAIL_AB}% short.`]
         .concat(mehrfach?[`${escH(c.id)} is highlighted in each pair so its side is visible. Where it is the quote currency, long the pair means short ${escH(c.id)}; the figure at the top turns the whole book onto ${escH(c.id)}'s side.`]:[])
         .concat([`Read against the crowd: a one-sided retail book counts the other way.`,escH(retailRegelText())]));
   }
@@ -18268,48 +18293,38 @@ function cotHistChart(history,availWidth,meta,opt){
   if(!Array.isArray(history)||history.length<2)return'';
   const n=history.length;
   const preis=opt&&Array.isArray(opt.preis)&&opt.preis.some(v=>v!=null)?opt.preis:null;
-  // Mit Kurs: zweite Achse ganz rechts (Kontrakte bleiben direkt am Plot).
+  // ⚠ Seit 2026-10-11 "Linie mit Score-Zonen" (Nutzer-Wahl, siehe
+  // posZonenSvg): keine Kontrakt-Balken und keine Kontrakt-Achse mehr - die
+  // Zahlen stehen im Tooltip und in der Tabelle darunter. Die Rasterung je
+  // Bericht (perBar/barW) bleibt, Hover und Kurslinie haengen daran.
+  // Mit Kurs: zweite Achse ganz rechts; ohne Platz fuer die Endmarke.
   const leftPad=44,rightPad=preis?118:52,topPad=10,chartH=360,bottomPad=26;
-  // Viele Reports (bis 10 Jahre): schmalere Balken statt 8000 px Scrollen.
+  // Viele Reports (bis 10 Jahre): schmalere Raster statt 8000 px Scrollen.
   const minPerBar=n>80?0.8:16;
   const usableW=Math.max((availWidth||0)-leftPad-rightPad,n*minPerBar);
   const perBar=usableW/n,barW=Math.max(n>80?0.6:4,perBar*0.62);
   const w=leftPad+rightPad+n*perBar,h=topPad+chartH+bottomPad;
   const y0=topPad+chartH;
-  const rawMax=Math.max(...history.map(e=>(+e.long||0)+(+e.short||0)));
-  const ax=cotNiceAxis(rawMax);
   const yPct=p=>y0-(p/100)*chartH;
-  const yVal=v=>y0-(v/ax.max)*chartH;
   if(meta)Object.assign(meta,{leftPad,rightPad,topPad,chartH,bottomPad,perBar,barW,n,y0,yPct,preis});
   let svg=`<svg class="cot-hist-svg" width="${w.toFixed(1)}" height="${h}" viewBox="0 0 ${w.toFixed(1)} ${h}">`;
-  // Linke Achse (0-100%, alle 25%)
-  for(let p=0;p<=100;p+=25){
-    const y=yPct(p);
+  const xR=leftPad+n*perBar;
+  svg+=posZonenSvg(yPct,leftPad,xR,COT_NETZ_AB,false);
+  // Linke Achse: 0/50/100 und die beiden Score-Schwellen (fett)
+  [0,100-COT_NETZ_AB,50,COT_NETZ_AB,100].forEach(p=>{
+    const y=yPct(p),sw=p===COT_NETZ_AB||p===100-COT_NETZ_AB;
     svg+=`<line x1="${leftPad}" y1="${y.toFixed(1)}" x2="${(leftPad-4).toFixed(1)}" y2="${y.toFixed(1)}" style="stroke:var(--t3)" stroke-width="1"/>`;
-    svg+=`<text x="${leftPad-7}" y="${(y+3).toFixed(1)}" text-anchor="end" style="font-size:var(--fs-2xs);fill:var(--t3)">${p}%</text>`;
-  }
-  // Graue 50%-Referenzlinie ueber die gesamte Breite
-  const y50=yPct(50);
-  svg+=`<line x1="${leftPad}" y1="${y50.toFixed(1)}" x2="${(leftPad+n*perBar).toFixed(1)}" y2="${y50.toFixed(1)}" style="stroke:var(--t3)" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/>`;
-  // Rechte Achse (0-ax.max, Schritt ax.step)
-  for(let v=0;v<=ax.max;v+=ax.step){
-    const y=yVal(v);
-    const xR=leftPad+n*perBar;
-    svg+=`<line x1="${xR}" y1="${y.toFixed(1)}" x2="${(xR+4).toFixed(1)}" y2="${y.toFixed(1)}" style="stroke:var(--t3)" stroke-width="1"/>`;
-    svg+=`<text x="${xR+7}" y="${(y+3).toFixed(1)}" text-anchor="start" style="font-size:var(--fs-2xs);fill:var(--t3)">${cotNum(v)}</text>`;
-  }
-  // Balken + Datumsbeschriftung
+    svg+=`<text x="${leftPad-7}" y="${(y+3).toFixed(1)}" text-anchor="end" style="font-size:var(--fs-2xs);fill:${sw?'var(--t1)':'var(--t3)'};font-weight:${sw?700:400}">${p}%</text>`;
+  });
+  // Linie der Long-Quote + Datumsbeschriftung
   const lblJede=Math.max(1,Math.ceil(64/perBar));
-  const linePts=[];
+  const linePts=[];let letzt=null;
   history.forEach((e,i)=>{
     const x=leftPad+i*perBar;
     const L=+e.long||0,S=+e.short||0;
-    const longH=(L/ax.max)*chartH,shortH=(S/ax.max)*chartH;
-    const barDelay=`animation-delay:${Math.min(i*16,500)}ms`;
-    svg+=`<rect class="cot-bar-in" style="${barDelay}" x="${x.toFixed(1)}" y="${(y0-longH).toFixed(1)}" width="${barW.toFixed(1)}" height="${longH.toFixed(1)}" fill="${BC.bull}"/>`;
-    svg+=`<rect class="cot-bar-in" style="${barDelay}" x="${x.toFixed(1)}" y="${(y0-longH-shortH).toFixed(1)}" width="${barW.toFixed(1)}" height="${shortH.toFixed(1)}" fill="${BC.bear}"/>`;
     const tot=L+S,lp=tot>0?L/tot*100:50;
     linePts.push((x+barW/2).toFixed(1)+','+yPct(lp).toFixed(1));
+    if(i===n-1)letzt={x:x+barW/2,y:yPct(lp),lp};
     // Datum mit Jahr (Dauerregel), ausgeduennt nach Platz: ~64 px je Label.
     // Letzter Report immer beschriftet; ein regulaeres Label zu nah davor faellt weg.
     if(i===n-1||(i%lblJede===0&&(n-1-i)>=lblJede&&(i===0||i>=lblJede*1.5))){
@@ -18318,9 +18333,13 @@ function cotHistChart(history,availWidth,meta,opt){
       svg+=`<text x="${(an==='start'?x:an==='end'?x+barW:lx).toFixed(1)}" y="${(y0+14).toFixed(1)}" text-anchor="${an}" style="font-size:var(--fs-2xs);fill:var(--t3)">${escH(d)}</text>`;
     }
   });
-  const linePtsStr=linePts.join(' ');
-  svg+=`<polyline points="${linePtsStr}" fill="none" stroke="#fff" stroke-width="3.4" opacity="0.55"/>`;
-  svg+=`<polyline points="${linePtsStr}" fill="none" stroke="#000" stroke-width="1.6"/>`;
+  svg+=`<polyline points="${linePts.join(' ')}" fill="none" stroke="var(--t0)" stroke-width="2" stroke-linejoin="round"/>`;
+  // Endpunkt in Zonenfarbe mit Wert rechts daneben
+  if(letzt){
+    const col=posZonenFarbe(letzt.lp,COT_NETZ_AB);
+    svg+=`<circle cx="${letzt.x.toFixed(1)}" cy="${letzt.y.toFixed(1)}" r="5" fill="${col}" stroke="var(--card)" stroke-width="2"/>`;
+    svg+=`<text x="${(letzt.x+9).toFixed(1)}" y="${(letzt.y+4).toFixed(1)}" style="font-size:var(--fs-sm);font-weight:800;fill:${col}">${letzt.lp.toFixed(1)}%</text>`;
+  }
   // vs Price: gestrichelte Kurslinie auf den Report-Tagen der Balken, eigene
   // Achse ganz rechts (Beschriftung in der Linienfarbe).
   if(preis){
@@ -18431,8 +18450,8 @@ function cotChartShowIdx(i){
   let dt;try{const d=new Date(e.date+'T00:00:00');dt=d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'2-digit'});}catch(err){dt=e.date;}
   const tip=document.getElementById('cotHoverTip');if(!tip)return;
   tip.innerHTML=`<div class="cot-tip-date">${escH(dt)}</div>
-    <div class="cot-tip-row"><span>Net Bullish Positioning</span><b style="color:${BC.bull}">${m.longPct.toFixed(1)}%</b></div>
-    <div class="cot-tip-row"><span>Net Bearish Positioning</span><b style="color:${BC.bear}">${m.shortPct.toFixed(1)}%</b></div>
+    <div class="cot-tip-row"><span>Net Bullish Positioning</span><b style="color:${BC.bull}">${m.longPct.toFixed(1)}% · ${cotNum(m.L)}</b></div>
+    <div class="cot-tip-row"><span>Net Bearish Positioning</span><b style="color:${BC.bear}">${m.shortPct.toFixed(1)}% · ${cotNum(m.S)}</b></div>
     <div class="cot-tip-row"><span>Δ Net % (wk)</span><b style="color:${cotBiasColor(m.dNetPct)}">${m.dNetPct==null?'–':cotPct(m.dNetPct,true)}</b></div>${meta.preis?`<div class="cot-tip-row"><span>Price (report day)</span><b>${escH(cotPreisTxt(meta.preis[i]))}</b></div>`:''}`;
   tip.style.display='block';
   const wrapRect=wrap.getBoundingClientRect(),svgRect=svg.getBoundingClientRect();
@@ -21327,15 +21346,14 @@ function renderRetailBars(D){
     // zu schmal fuer die eigene Zahl, die verschwand komplett) - dadurch immer
     // lesbar, egal wie schmal ein Segment wird. Klick auf die Zeile waehlt das
     // Symbol im Filter (setSentSym), genau wie die Dropdown-Auswahl.
-    return`<div class="sent-bar-row" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;cursor:pointer" onclick="setSentSym('${escJH(r.sym)}')" title="Open ${escH(r.sym)} history">
-      <div style="flex:none;width:74px;text-align:center;font-weight:800;font-size:var(--fs-sm);color:${tag};background:${tag}14;border:1px solid ${tag}44;border-radius:5px;padding:4px 4px;font-family:var(--ff-num)" title="${cb==='bear'?'Crowd heavily long → contrarian bearish':cb==='bull'?'Crowd heavily short → contrarian bullish':'Balanced positioning'}">${escH(r.sym)}</div>
-      <span style="flex:none;width:30px;text-align:right;font-size:var(--fs-xs);font-weight:700;color:${BC.bull}">${L}%</span>
-      <div class="sent-bar"><div class="sent-bar-l" style="width:${L}%" title="${L}% of retail traders are long"></div><div class="sent-bar-s" style="width:${S}%" title="${S}% of retail traders are short"></div></div>
-      <span style="flex:none;width:30px;text-align:left;font-size:var(--fs-xs);font-weight:700;color:${BC.bear}">${S}%</span>
-    </div>`;
+    // Abweichung von 50 % (Nutzer-Wahl 2026-10-11): Balken von der Mitte zur
+    // Mehrheitsseite, Striche bei RETAIL_AB. Der Chip davor bleibt das
+    // Contrarian-Signal (Farbe = was es fuer das Asset bedeutet).
+    const chip=`<span class="sent-chip" style="color:${tag};background:${tag}14;border-color:${tag}44" title="${cb==='bear'?'Crowd heavily long → contrarian bearish':cb==='bull'?'Crowd heavily short → contrarian bullish':'Balanced positioning'}">${escH(r.sym)}</span>`;
+    return posAbwZeile({nameHtml:chip,lang:L,ab:RETAIL_AB,onclick:`setSentSym('${escJH(r.sym)}')`,title:`${r.sym}: ${L}% long / ${S}% short — click for the history`});
   }).join('');
-  const legend=`<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--t3);margin:2px 0 10px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${BC.bull};vertical-align:middle"></i> % long (crowd bullish)</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${BC.bear};vertical-align:middle"></i> % short (crowd bearish)</span><span>Tag = <b>contrarian</b> signal</span></div>`;
-  return`<div class="cot-card">${hdr}<div style="padding:12px 14px">${multiBar}${legend}${rows}</div></div>`;
+  const legend=`<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--t3);margin:2px 0 10px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${BC.bull};vertical-align:middle"></i> crowd mostly long</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${BC.bear};vertical-align:middle"></i> crowd mostly short</span><span>bar starts at 50% · ticks at ${RETAIL_AB}%</span><span>Tag = <b>contrarian</b> signal</span></div>`;
+  return`<div class="cot-card">${hdr}<div style="padding:12px 14px">${multiBar}${legend}<div class="pd-list pd-gross">${posAbwKopf('Market',RETAIL_AB)}${rows}</div></div></div>`;
 }
 // ── Retail Sentiment History: Net Positioning (Long%-Short%) vs. Preis +
 // darunter der Long/Short-Verlauf als 100%-Stacked-Bar (Nutzer-Wunsch
@@ -21371,7 +21389,7 @@ function renderRetailHistory(D,sym,hdr){
     </div>
     ${netChart}
     <div style="text-align:center;font-size:var(--fs-sm);color:var(--t2);margin:6px 0 16px">Latest: <b style="color:${lastNet>=0?BC.bull:BC.bear}">${lastNet>0?'+':''}${lastNet.toFixed(0)}%</b> net ${lastNet>=0?'long':'short'} (${last[1].toFixed(0)}% long / ${last[2].toFixed(0)}% short) — ${fmtDayHdr(last[0])}</div>
-    <div style="font-size:var(--fs-sm);color:var(--t3);margin-bottom:4px">Long % / Short % split</div>
+    <div style="font-size:var(--fs-sm);color:var(--t3);margin-bottom:4px">Long share · shaded from ${RETAIL_AB}% on one side (counts toward the score)</div>
     ${stackChart}
     ${hasPrice?'':'<div style="padding:6px 0 0;color:var(--t3);font-size:var(--fs-xs)">No price history yet for this market &ndash; it grows once price_data.json has a matching date.</div>'}
   </div></div>`;
@@ -21424,20 +21442,18 @@ function retailNetChart(series,priceSeries){
 // 100%-Stacked Long/Short-Balken pro Tag (gleiche Blau/Rot-Konvention wie die
 // Snapshot-Balken oben - kein neuer Farb-Code eingefuehrt).
 function retailStackChart(series){
+  // ⚠ Seit 2026-10-11 keine 100-%-Stapelbalken mehr, sondern die Long-Quote
+  // als Linie mit Score-Zonen ab RETAIL_AB (dieselbe Sprache wie COT).
   const n=series.length;
   const W=760,H=190,padL=36,padR=16,padT=14,padB=30;
-  const bw=Math.max(2,(W-padL-padR)/n*0.72);
-  const xOf=i=>padL+(i+0.5)/n*(W-padL-padR);
+  const xOf=i=>padL+(n>1?i/(n-1):0.5)*(W-padL-padR);
   const yOf=v=>padT+(1-v/100)*(H-padT-padB);
-  const gy=[0,20,40,60,80,100].map(t=>`<line x1="${padL}" y1="${yOf(t).toFixed(1)}" x2="${(W-padR).toFixed(1)}" y2="${yOf(t).toFixed(1)}" stroke="var(--bd)" stroke-width="0.5"/><text x="${(padL-6).toFixed(1)}" y="${(yOf(t)+3).toFixed(1)}" text-anchor="end" style="font-size:var(--fs-2xs);fill:var(--t3)">${t}%</text>`).join('');
-  const bars=series.map((e,i)=>{
-    const L=e[1],x=xOf(i)-bw/2;
-    const yLong=yOf(L),yZero=yOf(0),yTop=yOf(100);
-    return`<rect x="${x.toFixed(1)}" y="${yLong.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(yZero-yLong,0).toFixed(1)}" fill="${BC.bull}"/><rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(yLong-yTop,0).toFixed(1)}" fill="${BC.bear}"/>`;
-  }).join('');
+  const gy=[0,100-RETAIL_AB,50,RETAIL_AB,100].map(t=>`<text x="${(padL-6).toFixed(1)}" y="${(yOf(t)+3).toFixed(1)}" text-anchor="end" style="font-size:var(--fs-2xs);fill:${t===50||t===0||t===100?'var(--t3)':'var(--t1)'};font-weight:${t===RETAIL_AB||t===100-RETAIL_AB?700:400}">${t}%</text>`).join('');
+  const linie=series.map((e,i)=>xOf(i).toFixed(1)+','+yOf(e[1]).toFixed(1)).join(' ');
   let xlab='';const idxs=pcXTickIdx(n,7);idxs.forEach(i=>{const anch=i===0?'start':i===n-1?'end':'middle';xlab+=`<text x="${xOf(i).toFixed(1)}" y="${H-padB+16}" text-anchor="${anch}" style="font-size:var(--fs-2xs);fill:var(--t3)">${escH(pcXLabel(series[i][0]))}</text>`;});
-  const svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-width:100%">${gy}${bars}${xlab}</svg>`;
-  const hpts=series.map((e,i)=>({fx:xOf(i)/W,fy:yOf(e[1])/H,col:BC.bull,tip:`<div class="chv-tip-d">${escH(fmtDayHdr(e[0]))}</div><b>${e[1].toFixed(0)}%</b> long / <b>${e[2].toFixed(0)}%</b> short`}));
+  const lz=series[n-1],col=posZonenFarbe(lz[1],RETAIL_AB);
+  const svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-width:100%">${posZonenSvg(yOf,padL,W-padR,RETAIL_AB,false)}${gy}<polyline points="${linie}" fill="none" stroke="var(--t0)" stroke-width="2" stroke-linejoin="round"/><circle cx="${xOf(n-1).toFixed(1)}" cy="${yOf(lz[1]).toFixed(1)}" r="5" fill="${col}" stroke="var(--card)" stroke-width="2"/>${xlab}</svg>`;
+  const hpts=series.map((e,i)=>({fx:xOf(i)/W,fy:yOf(e[1])/H,col:posZonenFarbe(e[1],RETAIL_AB),tip:`<div class="chv-tip-d">${escH(fmtDayHdr(e[0]))}</div><b>${e[1].toFixed(0)}%</b> long / <b>${e[2].toFixed(0)}%</b> short`}));
   return chartHoverWrap(svg,hpts);
 }
 // ── Put-Call Ratio: Stufenlinien-Chart mit Schwellen + Contrarian-Zonen ──
@@ -22583,15 +22599,14 @@ function renderCotRoh(){
   // einseitige Spekulanten-Positionierung erhoeht das Risiko scharfer
   // Gegenbewegungen (Squeeze), sobald der Trend kippt.
   const COT_CROWDED_PCT=80;
-  const bars=rows.map(r=>{
+  // Abweichung von 50 % (Nutzer-Wahl 2026-10-11) - dieselbe Zeile wie Retail,
+  // Schwellen-Striche an der COT-Score-Schwelle.
+  const bars=posAbwKopf('Asset',COT_NETZ_AB)+rows.map(r=>{
     const lp=r.m.longPct,sp=r.m.shortPct;
     const crowded=lp>=COT_CROWDED_PCT||sp>=COT_CROWDED_PCT;
-    return`<div class="cot-bar-row" onclick="pickCotFilter('${r.id}')" title="Show ${escH(r.name)} positioning detail — stays on this COT tab">
-      <div class="cot-bar-sym">${escH(r.name)}${crowded?`<span class="cot-crowded" title="${lp>=COT_CROWDED_PCT?lp.toFixed(0)+'% long':sp.toFixed(0)+'% short'} - extremely one-sided positioning raises the risk of a sharp squeeze in the other direction">⚠</span>`:''}</div>
-      <div class="cot-bar-long-lbl">${lp.toFixed(0)}%</div>
-      <div class="cot-bar"><div class="cot-bar-long" style="width:${lp.toFixed(1)}%"></div><div class="cot-bar-short" style="width:${sp.toFixed(1)}%"></div></div>
-      <div class="cot-bar-short-lbl">${sp.toFixed(0)}%</div>
-    </div>`;
+    const warn=crowded?`<span class="cot-crowded" title="${lp>=COT_CROWDED_PCT?lp.toFixed(0)+'% long':sp.toFixed(0)+'% short'} - extremely one-sided positioning raises the risk of a sharp squeeze in the other direction">⚠</span>`:'';
+    return posAbwZeile({nameHtml:escH(r.name)+warn,lang:lp,ab:COT_NETZ_AB,
+      onclick:`pickCotFilter('${r.id}')`,title:`${r.name}: ${lp.toFixed(1)}% long / ${sp.toFixed(1)}% short — click for the positioning detail`});
   }).join('');
   // Detail table sorted by week-over-week net % change (largest swing first).
   const date=COT_DATA.report_date?fmtDayHdr(COT_DATA.report_date):'–';
@@ -22643,7 +22658,7 @@ function renderCotRoh(){
     const p3=cotPct3yOf(cotFilter);
     const p3Note=p3?`<div class="cot-meta">3-year percentile: today&#39;s net positioning is at the <b>${Math.round(p3.pct)}th percentile</b> of its own last ~3 years (${p3.n} weekly reports)${p3.pct>=90?` · <span style="color:var(--amber)">⚠ historically extreme long — crowded trade, contrarian caution</span>`:p3.pct<=10?` · <span style="color:var(--amber)">⚠ historically extreme short — crowded trade, contrarian caution</span>`:''} · display-only</div>`:'';
     histCard=`<div class="cot-card">
-      <div class="cot-card-title"><span>Positioning History — ${escH(COT_NAME[cotFilter]||cotFilter)}</span>${fCrowded}<small>1 bar = 1 COT report · blue = Long contracts · red = Short contracts (right scale) · black line = Long % (left scale)${cotVsPrice&&pxReihe?' · dashed = price (far right scale)':''} · hover/tap a bar for details</small></div>
+      <div class="cot-card-title"><span>Positioning History — ${escH(COT_NAME[cotFilter]||cotFilter)}</span>${fCrowded}<small>line = Long % of large speculators, one point per COT report · shaded = ${COT_NETZ_AB}% or more on one side (counts toward the score)${cotVsPrice&&pxReihe?' · dashed = price (far right scale)':''} · hover/tap for contracts and the weekly change</small></div>
       <div style="padding:10px 14px 0">${chartLeisteHtml(vsBtn,zeitBar)}</div>${ladeHinweis}
       ${chartSvg?`<div class="cot-hist-wrap" id="cotHistWrap"><div class="cot-tip" id="cotHoverTip" style="display:none"></div>${chartSvg}</div>`:`<div class="cot-empty">Not enough report history yet — it builds up automatically as the hourly data job runs.</div>`}
     </div>`+p3Note;
@@ -22685,8 +22700,8 @@ function renderCotRoh(){
     </tr>`;}).join('');
   }
   const barsCard=cotFilter?'':`<div class="cot-card">
-      <div class="cot-card-title"><span>${icn('bars',15)} Net Long / Short %</span><small>blue = Long · red = Short · sorted by long share · click opens the symbol</small>${abInfoBtn('Net Long / Short %',['Positions of <b>non-commercial (speculative) traders</b> from the CFTC Commitments of Traders report. Blue is the share of their open contracts that is long, red the share that is short.','Sorted from most long to most short. From '+80+'% on one side the positioning counts as <b>crowded</b> — one-sided bets that tend to unwind sharply once the trend turns.','The report reflects Tuesday\'s positions and is published on Friday. Click a row to open that symbol.'])}</div>
-      <div class="cot-bars">${bars}</div>
+      <div class="cot-card-title"><span>${icn('bars',15)} Net Long / Short %</span><small>bar from the 50% centre to the majority side · ticks at ${COT_NETZ_AB}% · sorted by long share · click opens the symbol</small>${abInfoBtn('Net Long / Short %',['Positions of <b>non-commercial (speculative) traders</b> from the CFTC Commitments of Traders report. Each bar starts at 50% and grows toward the side the majority is on — blue long, red short. The dashed ticks mark '+COT_NETZ_AB+'% on either side: from there the position counts toward the score.','Sorted from most long to most short. From '+80+'% on one side the positioning counts as <b>crowded</b> — one-sided bets that tend to unwind sharply once the trend turns.','The report reflects Tuesday\'s positions and is published on Friday. Click a row to open that symbol.'])}</div>
+      <div class="cot-bars pd-list pd-gross">${bars}</div>
     </div>`;
   el.innerHTML=ctrl+multiFilter+`
     <div class="cot-meta">Report as of: <b>${escH(date)}</b>${escH(_ageTxt)}${_pubTxt} · Source: CFTC (Legacy, Non-Commercial) · data reflects positioning as of Tuesday's close${_stale}</div>
