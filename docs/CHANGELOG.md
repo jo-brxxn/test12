@@ -19824,3 +19824,7 @@ Fenster unter `.modal-bg` — die heißen `.ov`, gemessen wurde also nichts.
 Nebenbei im Volllauf (`layout`): Kompaktmodus ließ das ⓘ in Dashboard-Karten
 6 px überstehen (negativer Rand + Trefferfläche = 16 px) → waagerechtes
 Polster der `.dw` bleibt 16 px.
+- Volllauf 600b (`cards`, 390 px): Makro-Karten 16 px über dem Rand. Ursache:
+  die Design-Vorschau (`.vp-grid`, `minmax(300px,1fr)`) erzwang eine
+  Mindestbreite der einspaltigen `.ab-cards`-Spalte (332 statt 306 px) →
+  `minmax(min(300px,100%),1fr)` + `min-width:0`.

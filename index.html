@@ -914,10 +914,10 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
    Klein in der Asset-Karte, .pd-gross in den Tabs (COT, Sentiment). */
 .pd-list{gap:6px}
 /* ── DESIGN-VORSCHAU (temporaer, 2026-10-11, vorschauHtml) ── */
-.vp{background:var(--card);border:2px dashed var(--bd2);border-radius:12px;padding:14px;margin-top:8px}
+.vp{background:var(--card);border:2px dashed var(--bd2);border-radius:12px;padding:14px;margin-top:8px;min-width:0}
 .vp-kopf{font:800 var(--fs-kt)/1.2 var(--ff-text);color:var(--t0);margin-bottom:10px}.vp-kopf span{font:500 var(--fs-xs)/1 var(--ff-text);color:var(--t3);margin-left:8px}
 .vp-sek{margin-top:14px}.vp-sek-t{font:700 var(--fs-md)/1.2 var(--ff-text);color:var(--t1);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
-.vp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.vp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:10px}
 .vp-box{border:1px solid var(--bd);border-radius:10px;padding:10px;background:var(--bg2);min-width:0}
 .vp-v{display:inline-block;font:800 var(--fs-xs)/1 var(--ff-text);color:#fff;background:var(--ui-act,#1B2746);border-radius:4px;padding:4px 7px}
 .vp-t{font:700 var(--fs-sm)/1.3 var(--ff-text);color:var(--t1);margin:6px 0 8px}
