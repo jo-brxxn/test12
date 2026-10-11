@@ -4319,6 +4319,21 @@ body.dense-mode .dw{padding:9px 10px;margin-bottom:6px}
 body.dense-mode .dw-hdr{margin-bottom:8px}
 body.dense-mode .dash-layout{gap:9px}
 body.dense-mode .hl-row{padding-top:3px;padding-bottom:3px}
+/* Kompakt (Auto am PC / Compact): weniger Luft, mehr Spalten auf breiten
+   Schirmen - Schriftgroessen bleiben (Hierarchie-Regel), nur Abstaende und
+   Spalten aendern sich. Nutzer-Wahl 2026-10-11. */
+body.dense-mode .pc{padding:10px 12px}
+body.dense-mode .ab-cards,body.dense-mode .ab-cards>.ab-orow{gap:10px}
+body.dense-mode .ab-tile,body.dense-mode .ab-ktile,body.dense-mode .ab-ntile,body.dense-mode .ab-ptile,body.dense-mode .abc-cal{padding:10px 12px}
+body.dense-mode .ab-tile-hd{margin-bottom:8px}
+body.dense-mode .rub-hdr{padding:10px 12px 8px}
+body.dense-mode .cot-card-title{padding:10px 12px 9px}
+body.dense-mode .cot-card,body.dense-mode .rub-card{margin-bottom:10px}
+@media(min-width:1500px){body.dense-mode .ab-cards>.ab-orow{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.seg3{display:inline-flex;border:1px solid var(--bd2);border-radius:8px;overflow:hidden;flex:none}
+.seg3 button{height:34px;padding:0 12px;border:none;background:none;font:600 var(--fs-sm)/1 var(--ff-text);color:var(--t2);cursor:pointer}
+.seg3 button+button{border-left:1px solid var(--bd2)}
+.seg3 button.on{background:var(--ui-act);color:#fff}
 /* ⚠ Die Kurve darf die Zeile nicht sprengen: mit 64px lief die Karte auf
    dem kleinen Desktop 11px ueber (Layout-Waechter). Jetzt schmaler UND
    schrumpfbar, und der Balken daneben darf ebenfalls schrumpfen. */
@@ -6528,11 +6543,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-599 - Temporary design preview on the asset page: four versions each for Seasonality, Retail and COT to pick from."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-600 - Design preview (4 versions each for Seasonality, Retail, COT); PC animations follow the app switches; history rows as short facts; density Auto/Compact/Comfortable."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-599</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-600</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -7158,8 +7173,8 @@ window.fxLogoSvg=function(art){
     </div>
     <div class="set-sec">Layout</div>
     <div class="set-row">
-      <span class="set-row-txt">Dense<span class="set-row-sub">tighter cards, more on one screen</span></span>
-      <label class="tgl"><input type="checkbox" id="denseToggleBtn" onchange="toggleDenseMode()"><span class="tgl-track"></span></label>
+      <span class="set-row-txt">Density<span class="set-row-sub"><b>Auto</b>: compact with a mouse on wide screens, roomy on touch</span></span>
+      <div class="seg3" id="denseSeg"><button data-v="auto" onclick="setDenseMode('auto')">Auto</button><button data-v="compact" onclick="setDenseMode('compact')">Compact</button><button data-v="comfy" onclick="setDenseMode('comfy')">Comfortable</button></div>
     </div>
     <div class="set-sec">Notifications</div>
     <div class="set-row">

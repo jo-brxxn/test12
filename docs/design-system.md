@@ -1346,6 +1346,20 @@ hatte sie außerhalb des Bearbeitungsmodus bewusst keine Titelzeile, Wunsch
 vom 2026-07-27). Geprüft von `check/hierarchie.js` (Regel 4 dort) und
 `check/designregeln.js` K.
 
+## Dichte: Auto / Compact / Comfortable (seit 2026-10-11)
+
+Nutzer: *„am pc … entstehen viele Lücken … da kann mehr Daten auf ein Fleck
+während das am iPad zu klein wäre“* — per Rückfrage „Automatisch + Schalter“.
+- **Auto** (Standard): kompakt bei `(hover:hover) and (pointer:fine) and
+  (min-width:1280px)` — PC mit Maus. iPad (1194 px, Touch) bleibt groß.
+- Settings → Layout → Density: Auto · Compact · Comfortable (synchronisiert,
+  `denseMode`).
+- Kompakt ändert **nur Abstände und Spalten**, nie die Schriftgrößen
+  (Hierarchie-Regel): Kartenpadding 10/12, Abstände 10 px, Asset-Kopfreihe
+  ab 1500 px **vier** Karten nebeneinander statt 2×2.
+- Neue Seiten/Karten: Abstände so bauen, dass `body.dense-mode` sie
+  verkleinern kann (keine festen Inline-Abstände).
+
 ## COT und Retail: Positionierung (seit 2026-10-11)
 
 Nutzer: *„Es sollen die Daten gleich bleiben aber anders dargestellt“* —

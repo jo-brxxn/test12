@@ -6616,7 +6616,7 @@ function exportData(){
 function importData(input){
   const f=input.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=!!_imp.denseMode;try{localStorage.setItem('fxpro_dense',denseMode?'1':'0');}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=FX_THEME_IDS.includes(_imp.fxTheme)?_imp.fxTheme:'';try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();renderFxThemeGrid();}if(_imp.appBg!==undefined){appBg=APP_BG_IDS.includes(_imp.appBg)?_imp.appBg:'';try{appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');}catch(e){}applyAppBg();renderAppBgGrid();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
+  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=FX_THEME_IDS.includes(_imp.fxTheme)?_imp.fxTheme:'';try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();renderFxThemeGrid();}if(_imp.appBg!==undefined){appBg=APP_BG_IDS.includes(_imp.appBg)?_imp.appBg:'';try{appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');}catch(e){}applyAppBg();renderAppBgGrid();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
   r.readAsText(f);input.value='';
 }
 
@@ -7142,7 +7142,7 @@ async function cloudPullRoh(manual,forceOverwrite){
       if(!prefPending&&typeof cd.newsSeenTs==='string'&&cd.newsSeenTs>newsSeenTs){newsSeenTs=cd.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}
       if(!prefPending&&cd.pinEnabled!==undefined){pinEnabled=cd.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}
       if(!prefPending&&cd.assetAnimEnabled!==undefined){assetAnimEnabled=cd.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}
-      if(!prefPending&&cd.denseMode!==undefined){denseMode=!!cd.denseMode;try{localStorage.setItem('fxpro_dense',denseMode?'1':'0');}catch(e){}applyDenseMode();updDenseToggleBtn();}
+      if(!prefPending&&cd.denseMode!==undefined){denseMode=normDense(cd.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}
       // ⚠ !==undefined, nicht truthy: das aktuelle Design ist der LEERE
       // String. Mit einem truthy-Check kaeme "zurueck auf Terminal Pro" nie
       // auf dem anderen Geraet an - derselbe Fall wie bei designHue/null.
@@ -24592,18 +24592,37 @@ function setAppBg(i){
   applyAppBg();renderAppBgGrid();
   try{cloudAutoSync();}catch(e){}
 }
-let denseMode=localStorage.getItem('fxpro_dense')==='1';
-function applyDenseMode(){document.body.classList.toggle('dense-mode',denseMode);}
-function updDenseToggleBtn(){const b=document.getElementById('denseToggleBtn');if(b)b.checked=!!denseMode;}
-function toggleDenseMode(){
-  denseMode=!denseMode;
-  try{localStorage.setItem('fxpro_dense',denseMode?'1':'0');}catch(e){}
+// ── DICHTE: Auto / Compact / Comfortable (Nutzer-Wahl 2026-10-11) ────────
+// Nutzer: "am pc ist ja alles deutlich groesser als am iPad aber dadurch
+// entstehen auch viele Luecken wie kann ich das am pc kompakter bekommen da
+// kann mehr Daten auf ein Fleck waehrend das am iPad zu klein waere" - per
+// Rueckfrage "Automatisch + Schalter". denseMode ist seit 2026-10-11 dreiwertig:
+//   'auto'  (Standard) kompakt mit Maus (hover + feiner Zeiger) UND ab 1280 px
+//           - das iPad (1194 px, Touch) bleibt gross, auch mit Trackpad
+//   true    immer kompakt ("Compact")      false  nie ("Comfortable")
+// Gespeichert als 'auto'/'1'/'0', synchronisiert wie bisher (alte Geraete
+// kannten nur true/false - normDense nimmt beides an).
+function normDense(v){return v==='auto'||v==null?'auto':(v===true||v==='1'||v===1);}
+let denseMode=normDense((()=>{try{return localStorage.getItem('fxpro_dense');}catch(e){return null;}})());
+const DENSE_MQ=(()=>{try{return matchMedia('(hover: hover) and (pointer: fine) and (min-width: 1280px)');}catch(e){return null;}})();
+function denseAktiv(){return denseMode===true||(denseMode==='auto'&&!!(DENSE_MQ&&DENSE_MQ.matches));}
+function applyDenseMode(){document.body.classList.toggle('dense-mode',denseAktiv());}
+try{DENSE_MQ&&DENSE_MQ.addEventListener('change',()=>{if(denseMode==='auto'){applyDenseMode();if(curPage==='dash')renderDash();}});}catch(e){}
+function denseSpeicherwert(){return denseMode==='auto'?'auto':denseMode?'1':'0';}
+function updDenseToggleBtn(){
+  const w=denseMode==='auto'?'auto':denseMode?'compact':'comfy';
+  document.querySelectorAll('#denseSeg [data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===w));
+}
+function setDenseMode(v){
+  denseMode=v==='compact'?true:v==='comfy'?false:'auto';
+  try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}
   localStorage.setItem('fxpro_updated',new Date().toISOString());
   _lsUpdatedSeen=localStorage.getItem('fxpro_updated');
   markPrefEdit();cloudAutoSync();
   applyDenseMode();updDenseToggleBtn();
   if(curPage==='dash')renderDash();
 }
+function toggleDenseMode(){setDenseMode(denseAktiv()?'comfy':'compact');}
 function updUiAnimToggleBtn(){const b=document.getElementById('uiAnimToggleBtn');if(b)b.checked=uiAnimEnabled;}
 function updDataAnimToggleBtn(){const b=document.getElementById('dataAnimToggleBtn');if(b)b.checked=dataAnimEnabled;}
 function toggleUiAnimEnabled(){
@@ -25719,7 +25738,7 @@ Object.assign(window,{faktenFenster,hwDetail,jrDetail,
   realRateInfo,yieldSpreadSeries,carryRows,carryRowHTML,setRealRateSort,realRateTableHtml,setSpreadPair,
   setSpreadTenor,spreadCardHtml,spreadChart,renderCarry,openHelpM,maybeShowFirstRunHelp,LOCK_HASH,updPinToggleBtn,
   togglePinEnabled,applyAssetAnim,updAssetAnimToggleBtn,toggleAssetAnimEnabled,applyUiAnim,
-  applyDataAnim,applyDenseMode,updDenseToggleBtn,toggleDenseMode,updUiAnimToggleBtn,updDataAnimToggleBtn,
+  applyDataAnim,applyDenseMode,updDenseToggleBtn,toggleDenseMode,setDenseMode,updUiAnimToggleBtn,updDataAnimToggleBtn,
   toggleUiAnimEnabled,toggleDataAnimEnabled,allAnimOn,updAllAnimToggleBtn,toggleAllAnim,updTelegramToggleBtn,
   toggleTelegramEnabled,checkLockCode,lockKey,lockBack,updLockDots,unlockApp,flushAndSave,
   cloudSyncNow,_seedCleaned,_researchCalChanged,bootFetchScoreFeeds,fetchScoreHistServer,applyScoreHistServerFeed,

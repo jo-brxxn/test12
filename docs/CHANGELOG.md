@@ -19795,3 +19795,15 @@ vlt manches fett geschrieben manches kursiv oder manches in bias Farbe“*.
 - Kopfzeile kurz („2 changes today“, „Journal since 18:11 · …“).
 - `check/journal.js` I misst jetzt `.jr-fakt` statt `.jr-why`; C/J („set by
   you“) grün, weil die Handänderung in der Kurzzeile steht.
+
+## 2026-10-11 — Dichte am PC: Auto (Maus = kompakt) + Schalter
+
+Nutzer: *„am pc isr ja alles deutlich größer als am iPad aber dadurch entstehen
+auch viele Lücken wie kann ich das am pc kompakter bekommen … Wie lösen Profis
+das Problem“* — Antwort: Dichte nach Eingabegerät (Bloomberg/Koyfin,
+Material/Fluent „Compact/Comfortable“), gewählt „Automatisch + Schalter“.
+Gemessen vorher bei 1920 px: Asset-Kopfreihe fest 2×2, jede Karte ~893 px
+breit. Jetzt: `denseMode` dreiwertig (`auto` Standard), Auto = kompakt mit
+Maus ab 1280 px; kompakt = Padding/Abstände kleiner, Kopfreihe ab 1500 px
+4 Spalten. Emuliert: PC 1920 → dense, 4 Spalten; iPad 1194 Touch → nicht
+dense, 2 Spalten. Settings: Segment „Auto · Compact · Comfortable“.

@@ -37,7 +37,7 @@ Auto" = null ankommt), `setupCcyFilter`/`setupFxOnly`
 `'d,h'`, seit 2026-09-25), `pxChartTyp` (Candles | Line fuer ALLE
 Preis-Charts, `'candle'`/`'line'`, seit 2026-09-26), `cotVsPrice` (Kurslinie im
 COT-Verlauf an/aus, seit 2026-09-27), `telegramEnabled`,
-`newsSeenTs`, `denseMode`, `appBg` (Hintergrund-Wahl: leer = Current,
+`newsSeenTs`, `denseMode` (seit 2026-10-11 dreiwertig: `'auto'`/`true`/`false`, gespeichert `auto`/`1`/`0`, `normDense()` nimmt alte Booleans an), `appBg` (Hintergrund-Wahl: leer = Current,
 sonst `white`/`marble-light`/`marble-vivid`/`marble-dark`; ⚠ die erlaubten
 Werte stehen doppelt — in `APP_BGS` in `js/main.js` und in der Frueh-Weiche
 im `<head>` von `index.html`, die den Wert setzen muss, BEVOR die erste
