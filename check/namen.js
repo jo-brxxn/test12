@@ -16,6 +16,11 @@
 //      per Ellipse/overflow gekuerzt (scrollWidth > clientWidth);
 //   B) Set-ups: der Preis-Chip ragt nie in seine Nachbarzelle (er gibt Platz
 //      ab, indem die Tagesveraenderung umbricht).
+//   C) Set-ups-Zeilen sind FEST (Nutzer 2026-10-11: "nichts nach links und
+//      rechts scrollbar ... teilweise steht der Score bei Non fx Sachen weiter
+//      links"): keine Zeile laesst sich seitlich verschieben (alle 43 waren
+//      Scroll-Container mit Ueberhang - eine gewischte Zeile zeigte Score und
+//      Stern versetzt), und die Score-Zellen jeder Spalte enden buendig.
 //   node check/namen.js [--gegenprobe]   (alte 72-px-Spalte mit Ellipse)
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
@@ -25,7 +30,8 @@ const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 const BREIT = 'DejaVu Sans';
 const GP_CSS = '.setups-col-rows{grid-template-columns:minmax(72px,1fr) minmax(0,auto) auto auto auto!important}' +
-  '.setups-cols .sym-row .dw-pname{overflow:hidden!important;text-overflow:ellipsis!important}';
+  '.setups-cols .sym-row .dw-pname{overflow:hidden!important;text-overflow:ellipsis!important}' +
+  '.setups-cols .sym-row{overflow-x:auto!important;touch-action:auto!important}';
 
 (async () => {
   const b = await chromium.launch();
@@ -74,6 +80,22 @@ const GP_CSS = '.setups-col-rows{grid-template-columns:minmax(72px,1fr) minmax(0
       return { raus, n };
     });
     if (chip.raus) fail('CHIP UEBER NACHBAR ' + ort, `${chip.raus} von ${chip.n} Preis-Chips in Set-ups ragen in die Δ-Zelle`);
+    // C) Set-ups-Zeilen fest + Score-Kanten je Spalte buendig
+    const fest = await p.evaluate(() => {
+      let scroll = 0, n = 0; const versatz = [];
+      document.querySelectorAll('#pgPairs .setups-col-rows').forEach((c, ci) => {
+        const kanten = new Set();
+        c.querySelectorAll('.sym-row').forEach(r => {
+          n++; r.scrollLeft = 40; if (r.scrollLeft > 0) scroll++; r.scrollLeft = 0;
+          const s = r.querySelector('.row-score'); if (s) kanten.add(Math.round(s.getBoundingClientRect().right));
+        });
+        if (kanten.size > 1) versatz.push(`Spalte ${ci + 1}: Score-Kanten ${[...kanten].join('/')}px`);
+      });
+      return { scroll, n, versatz };
+    });
+    if (fest.n < 10) fail('ZU WENIG SET-UPS-ZEILEN ' + ort, `nur ${fest.n}`);
+    if (fest.scroll) fail('ZEILE SCROLLBAR ' + ort, `${fest.scroll} von ${fest.n} Set-ups-Zeilen lassen sich seitlich verschieben`);
+    fest.versatz.forEach(x => fail('SCORE VERSETZT ' + ort, x));
     // Asset-Seite + Dashboard mit allen Kartentypen (nur im Test, nicht gespeichert)
     await p.evaluate(() => gotoSym('GOLD')); await p.waitForTimeout(800);
     let r = await scan('Asset GOLD'); r.out.forEach(x => fail('NAME GEKUERZT ' + ort, x)); geprueft += r.n;
@@ -87,9 +109,9 @@ const GP_CSS = '.setups-col-rows{grid-template-columns:minmax(72px,1fr) minmax(0
   if (breitDa === false) fail('BREITE SCHRIFT FEHLT', `"${BREIT}" ist auf diesem Rechner nicht installiert - der Stellvertreter fuer die iPad-Schrift greift nicht`);
   if (geprueft < 500) fail('ZU WENIG GEMESSEN', `nur ${geprueft} Namensstellen gefunden`);
   if (GEGENPROBE) {
-    const ok = F.some(x => x.startsWith('NAME GEKUERZT'));
-    console.log(ok ? `namen --gegenprobe: ok (alte 72-px-Spalte wird gemeldet, ${F.length} Befunde)` : 'namen --gegenprobe: FEHLER - nicht gemeldet'); process.exit(ok ? 0 : 1);
+    const ok = F.some(x => x.startsWith('NAME GEKUERZT')) && F.some(x => x.startsWith('ZEILE SCROLLBAR'));
+    console.log(ok ? `namen --gegenprobe: ok (alte 72-px-Spalte + scrollbare Set-ups-Zeilen werden gemeldet, ${F.length} Befunde)` : 'namen --gegenprobe: FEHLER - nicht gemeldet'); process.exit(ok ? 0 : 1);
   }
   if (F.length) { console.log(`namen: ${F.length} Befund(e)`); [...new Set(F)].slice(0, 30).forEach(x => console.log('  ' + x)); process.exit(1); }
-  console.log(`namen: ok (${geprueft} Namensstellen auf allen Tabs, Asset-Seite und Dashboard mit allen Kartentypen, 4 Breiten mit breiter Ersatzschrift + 1180 normal: keiner gekuerzt, Set-ups-Chips bleiben in ihrer Zelle)`);
+  console.log(`namen: ok (${geprueft} Namensstellen auf allen Tabs, Asset-Seite und Dashboard mit allen Kartentypen, 4 Breiten mit breiter Ersatzschrift + 1180 normal: keiner gekuerzt, Set-ups-Chips bleiben in ihrer Zelle, Set-ups-Zeilen fest mit buendigen Score-Kanten)`);
 })().catch(e => { console.log('namen: ABBRUCH ' + e.message); process.exit(1); });

@@ -19861,3 +19861,37 @@ designänderungen nicht nur bei den Karten umsetzen sondern überall“*.
   angebundener neuer Schlüssel (`fxpro_kontext_slots`) wurde dadurch als „ohne
   Sync“ gemeldet. Jetzt zählen beide Körper; Gegenprobe (Pull-Zeile entfernt)
   meldet weiterhin „fehlt: cloudPull“.
+
+## 2026-10-11 (spät) — VERSION-CHECK-602: COT-Prozentlinie, Set-ups-Zeilen fest
+
+Nutzer: *„Bei cot auch noch eine Prozentlinie hinzufügen. Bei der set ups
+page will ich das da in den Symbol Namen nichts nach links und rechts
+scrollbar ist es soll fest sein und trotzdem alles zu sehen und da steht
+nicht alles perfekt untereinander also teilweise steht der Score bei Non fx
+Sachen weiter links“*
+
+**COT:** Long-Quote in % als Linie über den gespiegelten Balken.
+- Karte (`abCotChart`): linke Achse Kontrakte, rechte Achse 100/50/0 %.
+- Tab (`cotHistChart`): rechte %-Achse, Kursachse 88 px weiter rechts,
+  Hover-Punkt sitzt auf der %-Linie (`meta.yDot`).
+
+**Set-ups — gemessen (Chromium, 1180/820/1366/390, breite Ersatzschrift):**
+- Vorher: **43 von 43** Zeilen Scroll-Container (`.sym-row{overflow-x:auto}`
+  aus der Grundregel), Inhalt 1 px breiter als die Zeile → jede Zeile
+  seitlich wischbar; eine gewischte Zeile zeigt Score/Stern versetzt
+  (mit der breiteren iPad-Schrift mehr als 1 px).
+- Score-Kanten je Spalte ungewischt bündig (auch mit markierten Zeilen und
+  1-px-Rand) — der Versatz entsteht nur durch das Wischen.
+- Fix: `.setups-cols .sym-row{overflow:visible;touch-action:pan-y}` →
+  **0 von 43** wischbar.
+- Fehlerklasse: alle übrigen `.sym-row` auf allen Tabs + Dashboard mit allen
+  Kartentypen (1180 + 390, breite Schrift) gemessen → keine wischbare Zeile.
+- Wächter: `check/namen.js` C (wischbar + Score-Kanten je Spalte),
+  Gegenprobe mit der alten Regel meldet rot.
+- ⚠ Nicht auf echtem Safari geprüft (keine WebKit-Engine hier).
+
+**Nebenbefund:** `check/yachse.js` meldete die neuen Seasonality-Monatszeilen
+(Version 601) als „ohne Y-Beschriftung“ — die Zahlen stehen rechts in
+`.sz-zahlen`, Geschwister der Spur. Suche ab `.sz`; Gegenprobe blendet
+`.sz-zahlen` aus.
+

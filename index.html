@@ -913,6 +913,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
    der Balken waechst von der Mitte zur Mehrheitsseite | "68% long".
    Klein in der Asset-Karte, .pd-gross in den Tabs (COT, Sentiment). */
 .pd-list{gap:6px}
+.ab-yax.ab-yax-l{align-items:flex-start;margin-bottom:15px}
 /* Kontext-Karte: Zahnrad links neben dem ⓘ (2026-10-11) */
 .ab-tile-hd>.ab-gear{margin-left:auto;flex:none;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:none;color:var(--t2);border-radius:6px;cursor:pointer;padding:0}
 @media (hover:hover){.ab-tile-hd>.ab-gear:hover{background:var(--bg3);color:var(--t0)}}
@@ -4609,6 +4610,15 @@ body.dense-mode .cot-card,body.dense-mode .rub-card{margin-bottom:10px}
   .setups-cols .sym-row{grid-template-columns:subgrid}
 }
 .setups-cols .sym-row{padding-left:6px;padding-right:6px}
+/* ⚠ Set-ups-Zeilen sind FEST (Nutzer 2026-10-11, iPad: "in den Symbol Namen
+   nichts nach links und rechts scrollbar es soll fest sein und trotzdem alles
+   zu sehen ... teilweise steht der Score bei Non fx Sachen weiter links").
+   Die Grundregel .sym-row{overflow-x:auto} machte jede Zeile zu einem eigenen
+   Scrollbereich - auf Touch seitlich wischbar, und ein Scroll-Container im
+   Subgrid ist der Kandidat fuer die Verschiebung in Safari. Hier passt jede
+   Zeile per Konstruktion (Namensspalte max-content, Chip bricht um), also
+   braucht sie keinen Scrollbereich. */
+.setups-cols .sym-row{overflow:visible;touch-action:pan-y}
 /* FX-Bias-Karte: nur noch die FX-Majors in EINER vollen Spalte (die uebrigen
    Assets stehen in der Heatmap-Karte). Die Zeilen teilen sich per Subgrid
    dieselben Spaltenbreiten, damit Name/Chip/Score/Badge/Stern in JEDER Zeile
@@ -6537,11 +6547,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-601 - Seasonality as month rows with this year's price line, COT as mirrored long/short bars with the numbers below, retail rows from 50%, context card with a gear to choose slot 1-3; PC animations, history facts, density modes, no prose."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-602 - COT with a long-% line over the mirrored bars (right scale), set-ups rows fixed (no sideways scrolling, scores aligned)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-601</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-602</span>
     </span>
   </div>
   <div class="hdr-r">

@@ -32,7 +32,7 @@ const ZIELE = ['regime', 'dash', 'mx', 'trends', 'cot', 'sent:retail', 'sent:put
   const perr = []; p.on('pageerror', e => perr.push(String(e)));
   await p.goto(URL); await wartenBisDatenDa(p);
   await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(id => { const e = document.getElementById(id); if (e) e.remove(); }); });
-  if (GEGENPROBE) { await p.addStyleTag({ content: '.y-lbl,.ab-yax,.cax-y{display:none!important}' }); await p.evaluate(() => { window.__dataEigeneSkala = true; }); }
+  if (GEGENPROBE) { await p.addStyleTag({ content: '.y-lbl,.ab-yax,.cax-y,.sz-zahlen{display:none!important}' }); await p.evaluate(() => { window.__dataEigeneSkala = true; }); }
   let n = 0;
   for (const z of ZIELE) {
     await p.evaluate(z => {
@@ -56,7 +56,10 @@ const ZIELE = ['regime', 'dash', 'mx', 'trends', 'cot', 'sent:retail', 'sent:put
       [...document.querySelectorAll('svg')].filter(s => vis(s) && !s.closest('button,.k-ic,.logo,.ahead-motif,.lg-loop,.lg-frei,.globe-host,.sent-gauge,.gauge,.fxlogo')).forEach(s => {
         const q = s.getBoundingClientRect(); if (q.width < 140 || q.height < 70) return;
         if (s.querySelector('text') && [...s.querySelectorAll('text')].length === 0) return;
-        const box = s.closest('.ab-plot,.ab-rtv,.ab-k,.ind-hist-wrap,.histl,.bt-pfad,.cax,.px-chart') || s.parentElement.parentElement || s.parentElement;
+        // .sz = Saisonalitaet als Monatszeilen (2026-10-11): Y = Monatsnamen, die
+        // Zahlen (avg / this yr) stehen je Zeile rechts in .sz-zahlen - Geschwister
+        // der Spur, deshalb ab dem ganzen Block suchen.
+        const box = s.closest('.sz,.ab-plot,.ab-rtv,.ab-k,.ind-hist-wrap,.histl,.bt-pfad,.cax,.px-chart') || s.parentElement.parentElement || s.parentElement;
         const suche = box.parentElement || box;
         const kand = [...suche.querySelectorAll('text,span,div')].filter(e => vis(e) && e.children.length === 0 && zahl(e.textContent));
         const rand = kand.filter(e => { const r = e.getBoundingClientRect(); if (r.top < q.top - 6 || r.bottom > q.bottom + 6) return false; return r.right <= q.left + Math.max(60, q.width * .1) || r.left >= q.right - Math.max(70, q.width * .1); });

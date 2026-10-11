@@ -9626,9 +9626,14 @@ function abCotChart(hist){
   const mx=Math.max(...h.map(e=>Math.max(+e.long,+e.short)))*1.05||1;
   const bw=Math.max(1.5,(W/h.length)*0.7),mid=H/2;
   let sv=`<line x1="0" y1="${mid}" x2="${W}" y2="${mid}" stroke="var(--t3)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
-  const pts=[];
+  const pts=[],linie=[];
+  // Long-Prozentlinie (Nutzer 2026-10-11: "Bei cot auch noch eine
+  // Prozentlinie hinzufuegen"): eigene Skala 0-100 % ueber die volle Hoehe,
+  // rechts beschriftet, weisse Unterlage fuer Lesbarkeit ueber den Balken.
+  const yP=p=>H-(p/100)*H;
   h.forEach((e,i)=>{
     const x=(i+0.5)*(W/h.length)-bw/2,L=+e.long,S=+e.short,lp=L/(L+S)*100;
+    linie.push((x+bw/2).toFixed(2)+','+yP(lp).toFixed(1));
     const hl=L/mx*(mid-1),hs=S/mx*(mid-1);
     sv+=`<rect x="${x.toFixed(2)}" y="${(mid-hl).toFixed(1)}" width="${bw.toFixed(2)}" height="${hl.toFixed(1)}" fill="${BC.bull}"/>`;
     sv+=`<rect x="${x.toFixed(2)}" y="${mid}" width="${bw.toFixed(2)}" height="${hs.toFixed(1)}" fill="${BC.bear}"/>`;
@@ -9639,11 +9644,13 @@ function abCotChart(hist){
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:${BC.bear}">Short</span><b>${(100-lp).toFixed(1)}% · ${cotNum(S)}</b></div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">w/w change</span><b>${m&&m.dNetPct!=null?cotPct(m.dNetPct,true).replace('%','pp'):'–'}</b></div>`});
   });
+  sv+=`<polyline points="${linie.join(' ')}" fill="none" stroke="#fff" stroke-width="3.2" opacity=".6" vector-effect="non-scaling-stroke"/><polyline points="${linie.join(' ')}" fill="none" stroke="var(--t0)" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
   const svg=`<svg class="ab-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${sv}</svg>`;
   const achse=[h[0].date,h[h.length-1].date].map(d=>`<span>${escH(fmtDayShort(d,true))}</span>`).join('');   // mit Jahr (Nutzer-Regel 2026-09-17)
   return{leer:false,berichte:h.length,html:`<div class="ab-plot">
+    <div class="ab-yax ab-yax-l"><span style="color:${BC.bull}">${cotNum(mx)}</span><span>0</span><span style="color:${BC.bear}">${cotNum(mx)}</span></div>
     <div class="ab-plot-main">${chartHoverWrap(svg,pts,'height:100%')}<div class="ab-xax">${achse}</div></div>
-    <div class="ab-yax"><span style="color:${BC.bull}">${cotNum(mx)}</span><span>0</span><span style="color:${BC.bear}">${cotNum(mx)}</span></div>
+    <div class="ab-yax"><span>100%</span><span>50%</span><span>0%</span></div>
   </div>`};
 }
 
@@ -10440,7 +10447,7 @@ function abGrafikHtml(art,c){
       `<span class="ab-tile-s">as of ${escH(stand)}</span>`,
       `${ch.html}${fuss}${abCotScoreZeile(c)}`,null,
       ['Large speculators (CFTC Legacy, non-commercial) — the reporting group whose positioning the score reads.',
-       'Blue bars up = long contracts, red bars down = short contracts, one report per column on one scale.'+(ch.leer?'':` The chart covers ${ch.berichte} weekly reports; tap a column for the numbers.`),
+       'Blue bars up = long contracts, red bars down = short contracts (left scale). The line is the long share in % (right scale).'+(ch.leer?'':` The chart covers ${ch.berichte} weekly reports; tap a column for the numbers.`),
        'How it counts: '+cotRegelText()]);
   }
   if(art==='retail'){
@@ -18525,7 +18532,7 @@ function cotHistChart(history,availWidth,meta,opt){
   // ⚠ Seit 2026-10-11 GESPIEGELTE BALKEN (Nutzer-Wahl Version 4): Long-
   // Kontrakte nach oben, Short nach unten, eine Skala (links). Kontrakte und
   // Prozente im Tooltip und in der Tabelle darunter.
-  const leftPad=58,rightPad=preis?118:16,topPad=10,chartH=360,bottomPad=26;
+  const leftPad=58,rightPad=preis?150:44,topPad=10,chartH=360,bottomPad=26;
   // Viele Reports (bis 10 Jahre): schmalere Balken statt 8000 px Scrollen.
   const minPerBar=n>80?0.8:16;
   const usableW=Math.max((availWidth||0)-leftPad-rightPad,n*minPerBar);
@@ -18535,7 +18542,7 @@ function cotHistChart(history,availWidth,meta,opt){
   const ax=cotNiceAxis(Math.max(...history.map(e=>Math.max(+e.long||0,+e.short||0))));
   const yL=v=>mid-(v/ax.max)*(chartH/2),yS=v=>mid+(v/ax.max)*(chartH/2);
   const yPct=p=>y0-(p/100)*chartH;
-  const yDot=i=>yL(+history[i].long||0);
+  const yDot=i=>{const L=+history[i].long||0,S=+history[i].short||0;return y0-((L+S>0?L/(L+S)*100:50)/100)*chartH;};
   if(meta)Object.assign(meta,{leftPad,rightPad,topPad,chartH,bottomPad,perBar,barW,n,y0,yPct,yDot,preis});
   let svg=`<svg class="cot-hist-svg" width="${w.toFixed(1)}" height="${h}" viewBox="0 0 ${w.toFixed(1)} ${h}">`;
   const xR=leftPad+n*perBar;
@@ -18558,6 +18565,11 @@ function cotHistChart(history,availWidth,meta,opt){
       svg+=`<text x="${(an==='start'?x:an==='end'?x+barW:lx).toFixed(1)}" y="${(y0+14).toFixed(1)}" text-anchor="${an}" style="font-size:var(--fs-2xs);fill:var(--t3)">${escH(d)}</text>`;
     }
   });
+  // Long-Prozentlinie mit eigener Achse rechts am Plot (0-100 %).
+  const yPr=p=>y0-(p/100)*chartH;
+  const lp=history.map((e,i)=>{const L=+e.long||0,S=+e.short||0;return(leftPad+i*perBar+barW/2).toFixed(1)+','+yPr(L+S>0?L/(L+S)*100:50).toFixed(1);}).join(' ');
+  svg+=`<polyline points="${lp}" fill="none" stroke="#fff" stroke-width="3.4" opacity=".6"/><polyline points="${lp}" fill="none" stroke="var(--t0)" stroke-width="1.8" stroke-linejoin="round"/>`;
+  [0,50,100].forEach(p=>{const y=yPr(p);svg+=`<text x="${(xR+6).toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="start" style="font-size:var(--fs-2xs);fill:var(--t1)">${p}%</text>`;});
   svg+=`<text x="${leftPad+4}" y="${(topPad+12).toFixed(1)}" style="font-size:var(--fs-2xs);font-weight:700;fill:${BC.bull}">▲ LONG</text><text x="${leftPad+4}" y="${(y0-4).toFixed(1)}" style="font-size:var(--fs-2xs);font-weight:700;fill:${BC.bear}">▼ SHORT</text>`;
   // vs Price: gestrichelte Kurslinie auf den Report-Tagen der Balken, eigene
   // Achse ganz rechts (Beschriftung in der Linienfarbe).
@@ -18566,7 +18578,7 @@ function cotHistChart(history,availWidth,meta,opt){
     let pLo=Math.min(...pv),pHi=Math.max(...pv);const pad=(pHi-pLo)*0.08||Math.abs(pHi||1)*0.02;pLo-=pad;pHi+=pad;
     const yP=v=>topPad+(1-(v-pLo)/((pHi-pLo)||1))*chartH;
     if(meta){meta.yP=yP;}
-    const xP=leftPad+n*perBar+56;
+    const xP=leftPad+n*perBar+88;
     achsenTicks(pLo,pHi,5).forEach(v=>{const y=yP(v);svg+=`<line x1="${xP-4}" y1="${y.toFixed(1)}" x2="${xP}" y2="${y.toFixed(1)}" stroke="var(--t0)" stroke-width="1"/><text class="y-lbl" x="${xP+3}" y="${(y+3).toFixed(1)}" text-anchor="start" style="font-size:var(--fs-2xs);fill:var(--t0)">${escH(cotPreisTxt(v))}</text>`;});
     let d='',auf=false;
     preis.forEach((v,i)=>{if(v==null){auf=false;return;}const x=(leftPad+i*perBar+barW/2).toFixed(1),y=yP(v).toFixed(1);d+=(auf?' L':' M')+x+' '+y;auf=true;});
@@ -22878,7 +22890,7 @@ function renderCotRoh(){
     const p3=cotPct3yOf(cotFilter);
     const p3Note=p3?`<div class="cot-meta">3-year percentile: today&#39;s net positioning is at the <b>${Math.round(p3.pct)}th percentile</b> of its own last ~3 years (${p3.n} weekly reports)${p3.pct>=90?` · <span style="color:var(--amber)">⚠ historically extreme long — crowded trade, contrarian caution</span>`:p3.pct<=10?` · <span style="color:var(--amber)">⚠ historically extreme short — crowded trade, contrarian caution</span>`:''} · display-only</div>`:'';
     histCard=`<div class="cot-card">
-      <div class="cot-card-title"><span>Positioning History — ${escH(COT_NAME[cotFilter]||cotFilter)}</span>${fCrowded}<small>1 column = 1 COT report · blue up = long contracts · red down = short contracts${cotVsPrice&&pxReihe?' · dashed = price (far right scale)':''} · hover/tap for % and the weekly change</small></div>
+      <div class="cot-card-title"><span>Positioning History — ${escH(COT_NAME[cotFilter]||cotFilter)}</span>${fCrowded}<small>1 column = 1 COT report · blue up = long contracts · red down = short contracts (left scale) · line = long % (right scale)${cotVsPrice&&pxReihe?' · dashed = price (far right scale)':''} · hover/tap for % and the weekly change</small></div>
       <div style="padding:10px 14px 0">${chartLeisteHtml(vsBtn,zeitBar)}</div>${ladeHinweis}
       ${chartSvg?`<div class="cot-hist-wrap" id="cotHistWrap"><div class="cot-tip" id="cotHoverTip" style="display:none"></div>${chartSvg}</div>`:`<div class="cot-empty">Not enough report history yet — it builds up automatically as the hourly data job runs.</div>`}
     </div>`+p3Note;

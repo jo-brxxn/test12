@@ -1399,6 +1399,9 @@ per Rückfrage gewählt, gilt in Asset-Karten **und** Tabs:
   Karte: darunter wieder die Fußzeile Long %/Kontrakte · Short %/Kontrakte ·
   w/w (hinterlegt). Tab-Verlauf: dieselben Balken, Achse in Kontrakten,
   „▲ LONG / ▼ SHORT“, vs Price unverändert.
+  **Prozentlinie** (Nutzer 2026-10-11): über den Balken die Long-Quote in %
+  als Linie, rechte Achse 0/50/100 %, linke Achse = Kontrakte (Karte und
+  Tab; im Tab steht die Kursachse bei vs Price rechts daneben).
 - **Seasonality = Monatszeilen ab 0** (Version 1 ohne Up-Spalte): je Monat
   ein Balken von der 0-Linie, Punkte + gestrichelte Linie = Verlauf dieses
   Jahres („Kurslinie“), laufender Monat hinterlegt, Signal-Monate fett,
@@ -1767,3 +1770,12 @@ dieselbe Zahl, mit der der Carry im Score rechnet (`carryDetails`), und die das
 Carry-Fenster beim Antippen öffnet. Fehlt eine Rendite, steht keine Plakette da
 (Regel 4). Bis 2026-10-07: Leitzins-Differenz (wich ab, z. B. EUR/CAD +0,40
 statt −0,14).
+
+## Set-ups-Zeilen sind fest (seit 2026-10-11)
+
+Nutzer: *„in den Symbol Namen nichts nach links und rechts scrollbar es
+soll fest sein und trotzdem alles zu sehen“*. `.setups-cols .sym-row` hat
+`overflow:visible` + `touch-action:pan-y` — nie ein eigener
+Scroll-Bereich. Platz schafft die Spalte (Name max-content, Chip bricht
+um), nicht ein Wischen. Geprüft: `check/namen.js` C.
+
