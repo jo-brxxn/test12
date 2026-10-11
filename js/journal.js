@@ -613,6 +613,71 @@ function jrTitel(p,l){
   }
 }
 
+// ── STRUKTURIERTE FAKTEN STATT SATZ (2026-10-11) ───────────────────────────
+// Nutzer 2026-10-11: "ich will eine Ueberschrift kurz zu was hat sich geaendert
+// also cpi oder retail Sentiment usw und dann wie stark und wenn ich dadrauf
+// klicke steht da nirgendswo ein Fliesstext immer nur in kurz und knapp die
+// Infos uebersichtlich vlt manches fett geschrieben manches kursiv oder manches
+// in bias Farbe" - als Dauerregel fuer die ganze Seite (docs/design-system.md
+// "Kein Fliesstext"). jrWarum() bleibt fuer die Zeitleiste/Konsole; angezeigt
+// werden jetzt diese Fakten: `art` (kursiv, was passiert ist), `kurz` (fett,
+// der neue Stand) und `zeilen` [Etikett, Wert-HTML] fuer das Klick-Fenster.
+function jrQuelle(symId,p,l,e,name){
+  const ende=e.t||l.t;
+  let m=p.a==='bias'||p.a==='regelwechsel'?jrManuellAm(symId,name,e.bt,ende):null,woanders='';
+  if(!m&&p.a==='bias'){try{const q=isNonFx(symId)?macroCcyFor(symId):null;if(q){m=jrManuellAm(q,name,e.bt,ende);if(m)woanders=' on '+q;}}catch(_){}}
+  if(m)return'<b>you</b>'+escH(woanders)+' · '+escH(jrUhr(m.t));
+  if(l.q==='sync')return'<i>other device (sync)</i>';
+  if(l.q==='undo')return'<i>undo / redo</i>';
+  if(l.q==='manual')return'<b>you</b>';
+  return'<i>automatic</i>';
+}
+function jrBiasHtml(b){return`<b style="color:${BC[b]||'var(--t2)'}">${escH(JR_BIAS_TXT[b]||b||'–')}</b>`;}
+function jrFakten(p,l,e,symId){
+  const alt=jrT(l,p.o),neu=jrT(l,p.n),name=p.k!=null?jrName(p,l):'';
+  const z=[];const add=(k,v)=>{if(v!=null&&v!=='')z.push([k,v]);};
+  const dcRoh=r2((+p.cn||0)-(+p.co||0)),fak=dcRoh?Math.abs((+p.v||0)/dcRoh):null;
+  const teil=()=>{add('Score part',`${escH(jrZahl(p.co))} → <b style="color:${jrFarbe((+p.cn||0)-(+p.co||0))}">${escH(jrZahl(p.cn))}</b>`);
+    if(fak&&Math.abs(fak-1)>0.005)add('Comparability',`×${fak.toFixed(2)} → <b>${escH(jrZahl(p.v))}</b> on the shown score`);};
+  const modell=()=>{if(p.m)add('Model',`<i>also changed — ${escH(jrModellText(e.bg,l.tag)||'new calculation')}</i>`);};
+  let art='',kurz='';
+  switch(p.a){
+    case'neu':art='Added to the card';kurz=neu;add('Now',escH(neu));break;
+    case'weg':art='Removed from the card';kurz=alt;add('Was',escH(alt));break;
+    case'alt':art='Aged out';kurz=p.d?'last release '+fmtDayShort(p.d):'';add('Last release',p.d?escH(fmtDayShort(p.d)):'');add('Limit',`<b>${IND_STALE_CYCLES}</b> own release cycles`);add('Until','<i>a new release arrives</i>');break;
+    case'frisch':art='Counts again';kurz=neu;add('Release',p.d?escH(fmtDayShort(p.d)):'');add('Now',escH(neu));break;
+    case'anzeige':art='Display-only ↔ scored';break;
+    case'regelwechsel':art='Hand rating ↔ rule points';kurz=neu;add('Now',escH(neu));break;
+    case'rel':{art={r:'New release',b:'New yield reading',c:'New COT report',s:'New reading',h:'New value'}[p.y]||'New reading';kurz=neu;
+      add('Now',`<b>${escH(neu)}</b>`+(p.d?` <i>${escH(fmtDayShort(p.d))}</i>`:''));add('Before',escH(alt)+(p.da?` <i>${escH(fmtDayShort(p.da))}</i>`:''));break;}
+    case'wert':art='Value updated';kurz=neu;add('Now',`<b>${escH(neu)}</b>`+(p.d?` <i>${escH(fmtDayShort(p.d))}</i>`:''));add('Before',escH(alt));break;
+    case'regel':{art='Rule input changed';kurz=neu;add('Now',`<b>${escH(neu)}</b>`);add('Before',escH(alt));const rg=jrRegelText(p);if(rg)add('Rule',`<i>${escH(rg)}</i>`);break;}
+    case'bias':art='Rating changed';kurz=(JR_BIAS_TXT[p.bo]||p.bo)+' → '+(JR_BIAS_TXT[p.bn]||p.bn);add('Rating',jrBiasHtml(p.bo)+' → '+jrBiasHtml(p.bn));if(neu&&neu!=='set by hand')add('Based on',escH(neu));break;
+    case'gew':art='Base weight changed';kurz=p.wo+' → '+p.wn;add('Weight',`${escH(String(p.wo))} → <b>${escH(String(p.wn))}</b>`);add('½ weight for','<i>no forecast · core/headline pairs · small weekly COT shifts</i>');break;
+    case'cmp':{art='Comparability factor';kurz='×'+(+p.cfo).toFixed(2)+' → ×'+(+p.cfn).toFixed(2);
+      add('Factor',`×${(+p.cfo).toFixed(2)} → <b>×${(+p.cfn).toFixed(2)}</b>`);add('FX-major average',`${(+p.ro).toFixed(2)} → <b>${(+p.rn).toFixed(2)}</b>`);
+      add('Own count',`${escH(String(p.no))} → <b>${escH(String(p.nn))}</b>`);add('Unscaled score',`<b>${escH(jrZahl(p.roh))}</b>`);const wer=jrT(l,p.w);if(wer)add('Count changed at',escH(wer));break;}
+    case'rund':art='Rounding to one decimal';kurz=jrZahl3(p.xo)+' → '+jrZahl3(p.xn);add('Exact',`${escH(jrZahl3(p.xo))} → <b>${escH(jrZahl3(p.xn))}</b>`);add('Shown',`${escH(jrScoreTxt(e.f))} → <b>${escH(jrScoreTxt(e.o))}</b>`);break;
+    default:art='Recalculated, inputs unchanged';
+  }
+  if(!['cmp','rund'].includes(p.a)){teil();modell();}
+  const q=jrQuelle(symId,p,l,e,name);
+  add('Source',q);
+  // Von Hand gesetzt gehoert in die Kurzzeile, nicht nur ins Fenster.
+  if(q.startsWith('<b>you</b>'))kurz=(kurz?kurz+' · ':'')+'set by you';
+  else if(l.q==='sync'&&p.a==='bias')kurz=(kurz?kurz+' · ':'')+'from another device';
+  return{art,kurz,zeilen:z};
+}
+// Fakten-Register fuer das Klick-Fenster (Zeilen-HTML wird nicht in onclick-
+// Attribute gepackt). Ein Neuaufbau der History fuellt es neu.
+const JR_DET=[];
+function jrDetailMerken(d){JR_DET.push(d);if(JR_DET.length>4000){JR_DET.splice(0,2000);_jrDetWeg+=2000;}return JR_DET.length-1+_jrDetWeg;}
+let _jrDetWeg=0;
+function jrDetail(i){
+  const d=JR_DET[i-_jrDetWeg];if(!d)return;
+  const W=typeof window!=='undefined'?window:{};
+  if(W.faktenFenster)W.faktenFenster(d.titel,[{kopf:d.art,wert:d.v,zeilen:d.zeilen,liste:d.liste,hinweis:d.hinweis}]);
+}
 // ── Anzeige: ein Tag der History ────────────────────────────────────────────
 // Gruppiert die Teile aller Eintraege eines Tages:
 //   - diskrete Ursachen (Release, Regel, Bias, Alterungsgrenze ...) je Indikator,
@@ -625,17 +690,25 @@ const JR_STETIG_TEXT={dec:'Every release loses weight as it gets older: after '+
   mkt:'How strongly an indicator counts also depends on how much the price moved on its past release days compared with all days. New prices shift this measurement slightly.',
   mag:'The size of a surprise is measured against the average miss of that indicator’s own history; a new release in the history shifts that yardstick.',
   faktor:'Several weighting factors of the same indicator moved at once.'};
+const JR_STETIG_KURZ={dec:'Releases lose weight with age',mkt:'Market relevance re-measured',mag:'Surprise scale re-measured',faktor:'Several weighting factors'};
+const JR_STETIG_KURZ_WARUM={dec:'half weight after '+DECAY_HALFLIFE_CYCLES+' own release cycles — time alone, no new data',
+  mkt:'price moves on past release days vs. all days — new prices shift it',
+  mag:'surprise measured against the indicator\u2019s own average miss',faktor:'surprise size, age and market relevance moved together'};
 function jrFarbe(v){return v>0.0049?BC.bull:v<-0.0049?BC.bear:'var(--t3)';}
 function jrPfeil(v){return v>0.0049?'▲':v<-0.0049?'▼':'◆';}
 function jrBetrag(v){const n=r2(v);return n===0?'±0.00':jrZahl(n);}
 function jrKlein(v){return Math.abs(r2(v))>=0.01?jrZahl(v):(v>0?'+<0.01':v<0?'−<0.01':'±0.00');}
+// Eine Ursache = eine Zeile: Pfeil, Name fett, Karte, Betrag in Bias-Farbe;
+// darunter EINE Kurzzeile (Art kursiv · neuer Stand fett). Klick oeffnet die
+// Fakten als Tabelle - kein Satz, kein Absatz (Nutzer-Regel 2026-10-11).
 function jrZeileHtml(o){
   const col=jrFarbe(o.v);
-  return`<div class="jr-z">
+  const n=jrDetailMerken({titel:o.titel+(o.karte?' · '+o.karte:''),art:o.art,v:o.v,zeilen:o.zeilen||[],liste:o.liste||null,hinweis:o.hinweis||''});
+  return`<div class="jr-z" role="button" tabindex="0" onclick="jrDetail(${n})" title="Details">
     <span class="jr-pf" style="color:${col}">${jrPfeil(o.v)}</span>
     <span class="jr-nm">${escH(o.titel)}${o.karte?` <span class="jr-kt">${escH(o.karte)}</span>`:''}</span>
     <span class="jr-v" style="color:${col};border-color:${col}">${escH(jrBetrag(o.v))}</span>
-    <div class="jr-why">${escH(o.warum)}${o.regel?`<details class="jr-regel"><summary>How this rule scores</summary>${escH(o.regel)}</details>`:''}</div>
+    <div class="jr-fakt"><i>${escH(o.art||'')}</i>${o.kurz?` · <b>${escH(o.kurz)}</b>`:''}</div>
   </div>`;
 }
 function jrTagesBlock(symId,datum,info){
@@ -657,11 +730,11 @@ function jrTagesBlock(symId,datum,info){
     if(g.gk==='rund')return;
     const t0=g.teile[0],mehrere=g.teile.length>1;
     if(g.gk.startsWith('k:')){
-      const warum=mehrere
-        ?g.teile.map(x=>jrUhr(x.t)+' ('+jrBetrag(x.p.v)+'): '+jrWarum(x.p,x.l,x.e,symId)).join(' · ')
-        :jrWarum(t0.p,t0.l,t0.e,symId);
-      const rg=(t0.p.a==='regel')?jrRegelText(t0.p):'';
-      zeilen.push({v:g.v,titel:jrTitel(t0.p,t0.l),karte:jrKarte(t0.p,t0.l),warum,regel:rg});
+      // Mehrere Aenderungen desselben Indikators an einem Tag: die letzte
+      // bestimmt die Kurzzeile, alle stehen mit Uhrzeit im Fenster.
+      const tN=g.teile[g.teile.length-1],f=jrFakten(tN.p,tN.l,tN.e,symId);
+      const liste=mehrere?g.teile.map(x=>{const fx=jrFakten(x.p,x.l,x.e,symId);return[jrUhr(x.t),`<b style="color:${jrFarbe(x.p.v)}">${escH(jrBetrag(x.p.v))}</b> <i>${escH(fx.art)}</i>${fx.kurz?' · '+escH(fx.kurz):''}`];}):null;
+      zeilen.push({v:g.v,titel:jrTitel(t0.p,t0.l),karte:jrKarte(t0.p,t0.l),art:f.art+(mehrere?' ×'+g.teile.length:''),kurz:f.kurz,zeilen:f.zeilen,liste});
     }else if(JR_STETIG.has(g.gk)||g.gk==='modell'){
       // Die groessten Einzelposten aller Eintraege des Tages je Indikator
       // zusammenfuehren; was darunter liegt, steht als Rest mit Summe da.
@@ -681,15 +754,18 @@ function jrTagesBlock(symId,datum,info){
       const auf=liste.map(y=>y.name+(y.d?' ('+fmtDayShort(y.d)+')':'')+' '+jrKlein(y.v)
         +(g.gk!=='modell'&&y.fo!=null?' ['+jrFaktorText(g.gk,y.fo,y.fn)+']':'')).join(', ')
         +(Math.abs(rest)>=0.0005?', other indicators together '+jrKlein(rest):'');
-      const kopf=g.gk==='modell'
-        ?'Same data, new calculation — '+jrModellText(t0.e.bg,t0.l.tag)+'.'
-        :JR_STETIG_TEXT[g.gk];
-      zeilen.push({v:g.v,titel:jrTitel(t0.p,t0.l)+(nGes?' ('+nGes+(nGes===1?' indicator':' indicators')+')':''),karte:'',
-        warum:kopf+' By indicator: '+auf+'.'});
+      const listeF=liste2(liste);
+      function liste2(li){const r=li.map(y=>[y.name+(y.d?' · '+fmtDayShort(y.d):''),`<b style="color:${jrFarbe(y.v)}">${escH(jrKlein(y.v))}</b>`+(g.gk!=='modell'&&y.fo!=null?` <i>${escH(jrFaktorText(g.gk,y.fo,y.fn))}</i>`:'')]);
+        if(Math.abs(rest)>=0.0005)r.push(['Other indicators',`<b style="color:${jrFarbe(rest)}">${escH(jrKlein(rest))}</b>`]);return r;}
+      void auf;
+      zeilen.push({v:g.v,titel:jrTitel(t0.p,t0.l),karte:'',art:g.gk==='modell'?'Same data, new calculation':JR_STETIG_KURZ[g.gk],
+        kurz:nGes?nGes+(nGes===1?' indicator':' indicators'):'',
+        zeilen:g.gk==='modell'?[['Model',`<i>${escH(jrModellText(t0.e.bg,t0.l.tag)||'')}</i>`]]:[['Why',`<i>${escH(JR_STETIG_KURZ_WARUM[g.gk]||'')}</i>`]],liste:listeF});
     }else if(g.gk==='cmp'){
       const erst=g.teile[0].p,letzt=g.teile[g.teile.length-1].p;
-      const warum=mehrere?g.teile.map(x=>jrUhr(x.t)+' ('+jrBetrag(x.p.v)+'): '+jrWarum(x.p,x.l,x.e,symId)).join(' · '):jrWarum(erst,t0.l,t0.e,symId);
-      zeilen.push({v:g.v,titel:'Comparability factor ×'+(+erst.cfo).toFixed(2)+' → ×'+(+letzt.cfn).toFixed(2),karte:'',warum});
+      const f=jrFakten(letzt,g.teile[g.teile.length-1].l,g.teile[g.teile.length-1].e,symId);
+      if(mehrere)f.zeilen.unshift(['Factor today',`×${(+erst.cfo).toFixed(2)} → <b>×${(+letzt.cfn).toFixed(2)}</b> <i>${g.teile.length} steps</i>`]);
+      zeilen.push({v:g.v,titel:'Comparability factor',karte:'',art:'Scaling to the FX majors',kurz:'×'+(+erst.cfo).toFixed(2)+' → ×'+(+letzt.cfn).toFixed(2),zeilen:f.zeilen});
     }
   });
   zeilen.sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
@@ -699,17 +775,17 @@ function jrTagesBlock(symId,datum,info){
   const gr=gruppen.get('rund');
   if(rest){
     const p0=gr?gr.teile[0].p:null,p1=gr?gr.teile[gr.teile.length-1].p:null;
-    zeilen.push({v:rest,titel:'Rounding to one decimal',karte:'',
-      warum:'The score is shown with one decimal'+(p0?': exactly it went from '+jrZahl3(p0.xo)+' to '+jrZahl3(p1.xn)+', displayed as '+jrScoreTxt(erste.f)+' → '+jrScoreTxt(letzte.o):'')
-        +'. This line is the difference between that rounding and the exact amounts above, so the lines add up to the change shown.'});
+    zeilen.push({v:rest,titel:'Rounding',karte:'',art:'Shown with one decimal',kurz:p0?jrZahl3(p0.xo)+' → '+jrZahl3(p1.xn):'',
+      zeilen:[p0?['Exact',`${escH(jrZahl3(p0.xo))} → <b>${escH(jrZahl3(p1.xn))}</b>`]:null,['Shown',`${escH(jrScoreTxt(erste.f))} → <b>${escH(jrScoreTxt(letzte.o))}</b>`],['This line','<i>difference so the lines add up to the day change</i>']].filter(Boolean)});
   }
   // Abgleich mit dem aufgezeichneten Tageswert: was davor lag, ohne Journal.
   let abgleich='';
   if(inf.histDelta!=null&&isFinite(inf.histDelta)){
     const lueck=Math.round((inf.histDelta-jrDelta)*10)/10;
-    if(Math.abs(lueck)>=0.05)abgleich=jrZeileHtml({v:lueck,titel:'Not covered by the journal',karte:'',
-      warum:'The day change is measured from the recorded value of the previous day ('+jrScoreTxt(inf.prevScore)+(inf.prevDatum?', '+fmtDayShort(inf.prevDatum):'')+'); the first journal entry of this day starts from '+jrScoreTxt(erste.f)
-        +'. The difference happened while this asset was not yet recorded by the journal (it records from '+(beginn?fmtDayShort(jrTagVon(beginn))+' '+jrUhr(beginn):'—')+') or on a device without it, so its causes were not captured.'});
+    if(Math.abs(lueck)>=0.05)abgleich=jrZeileHtml({v:lueck,titel:'Not in the journal',karte:'',art:'Cause not captured',kurz:'before journal / other device',
+      zeilen:[['Previous day',`<b>${escH(jrScoreTxt(inf.prevScore))}</b>`+(inf.prevDatum?` <i>${escH(fmtDayShort(inf.prevDatum))}</i>`:'')],
+        ['Journal starts at',`<b>${escH(jrScoreTxt(erste.f))}</b>`],['Journal records from',beginn?escH(fmtDayShort(jrTagVon(beginn))+' '+jrUhr(beginn)):'–'],
+        ['Why','<i>moved before the journal ran, or on a device without it</i>']]});
   }
   const zeitleiste=eintraege.map(({e,l,t})=>{
     const d=Math.round((e.o-e.f)*10)/10;
@@ -732,23 +808,24 @@ function jrKopfHtml(symId,live,prevScore,prevDatum,nHeute){
   const beginn=jrBeginn(symId);
   const heute=todayStr();
   let dritte;
-  if(nHeute)dritte=nHeute+' recorded '+(nHeute===1?'change':'changes')+' today — every cause is listed in today\u2019s row';
+  // Kurz statt Satz (Nutzer-Regel "kein Fliesstext", 2026-10-11).
+  if(nHeute)dritte=nHeute+' '+(nHeute===1?'change':'changes')+' today';
   else if(!d)dritte='No change today';
-  else if(beginn&&jrTagVon(beginn)===heute)dritte='The score journal started today at '+jrUhr(beginn)+'; today\u2019s change happened before that and is explained from the recorded values in today\u2019s row';
-  else dritte='Today\u2019s change was recorded without the journal (another device or an older version) — see today\u2019s row';
+  else if(beginn&&jrTagVon(beginn)===heute)dritte='Journal since '+jrUhr(beginn)+' · earlier change from recorded values';
+  else dritte='Not in journal · other device / older version';
   return`<div class="jr-kopf"><span class="jr-k1">Current score <b style="color:${jrFarbe(live)}">${escH(jrScoreTxt(live))}</b></span>`
     +`<span class="jr-k2">Today <b style="color:${col}">${d==null?'no earlier day recorded':escH((d>0?'+':d<0?'':'±')+d)}</b>${d!=null&&prevDatum?` <span class="jr-k3">vs ${escH(fmtDayShort(prevDatum))} (${escH(jrScoreTxt(prevScore))})</span>`:''}</span>`
-    +`<span class="jr-k2">${escH(dritte)}</span></div>`;
+    +`<span class="jr-k2"><i>${escH(dritte)}</i></span></div>`;
 }
 
-export {JOURNAL_KEY,JR_MODELL_NOTIZ,JR_TAGE,scoreJournal,loadScoreJournal,jrSeit,jrErfassen,jrBootFertig,jrSperren,jrFreigeben,
+export {jrDetail,JOURNAL_KEY,JR_MODELL_NOTIZ,JR_TAGE,scoreJournal,loadScoreJournal,jrSeit,jrErfassen,jrBootFertig,jrSperren,jrFreigeben,
   jrAnlassMerken,jrAktiv,mergeScoreJournal,jrUebernehmen,jrKette,jrBeginn,jrEintraegeAm,jrTagVon,jrUhr,jrWarum,jrTitel,
   jrName,jrKarte,jrZahl,jrScoreTxt,jrModellText,jrModellNr,jrKeyTeile,jrSchnappschuss,jrVergleich,JR_STETIG,
   jrTagesBlock,jrKopfHtml};
 // Fuer die Waechter (check/journal.js) und die Konsole.
 if(typeof window!=='undefined'){
   Object.defineProperty(window,'scoreJournal',{get:()=>scoreJournal,configurable:true});
-  Object.assign(window,{jrErfassen,jrKette,jrEintraegeAm,jrVergleich,jrSchnappschuss,mergeScoreJournal,jrUebernehmen,JR_MODELL_NOTIZ,jrAktiv,jrTagesBlock,jrModellText,
+  Object.assign(window,{jrDetail,jrErfassen,jrKette,jrEintraegeAm,jrVergleich,jrSchnappschuss,mergeScoreJournal,jrUebernehmen,JR_MODELL_NOTIZ,jrAktiv,jrTagesBlock,jrModellText,
     // Nur fuer die Gegenprobe in check/journal.js (Journal kuenstlich stilllegen).
     jrSperren,jrFreigeben});
 }

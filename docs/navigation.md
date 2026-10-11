@@ -708,10 +708,12 @@ pauschalen Deckel (520px gegen 285px echten Inhalt) war die sichtbare
 Bewegung nach rund 90ms vorbei, weil die Kurve vorzeitig am Deckel ankam -
 gemessen laeuft sie jetzt ueber die vollen ~240ms in beide Richtungen.
 
-**Beide Nutzer-Schalter sind angebunden:** `body.no-ui-anim` (Animations-
-Schalter in den Einstellungen) und `prefers-reduced-motion` - dieselbe
-Pflicht wie bei der Gleiter/Boost-Sequenz, die genau daran schon einmal
-gescheitert ist.
+**Angebunden ist der App-Schalter** `body.no-ui-anim` (Animations-Schalter
+in den Einstellungen). ⚠ Seit 2026-10-11 NICHT mehr `prefers-reduced-motion`:
+unter Windows mit „Animationseffekte aus“ meldet Chrome reduzierte Bewegung,
+und die App lief am PC ohne jede Animation (Nutzer: *„am pc funktioniert die
+start Animation nicht“*). Neue Animationen hängen nur an den App-Schaltern;
+Wächter `check/pcbewegung.js`.
 
 ## ⚠ NAV-LEISTE: konstante Breite + gleichmaessige Icon-Abstaende
 

@@ -297,7 +297,7 @@ function statisch() {
       const m = document.getElementById('mHist');
       const titel = document.getElementById('mHistTitle');
       const fs = e => parseFloat(getComputedStyle(e).fontSize);
-      const sel = ['.jr-kopf', '.jr-kopf b', '.jr-nm', '.jr-kt', '.jr-v', '.jr-why', '.jr-regel summary', '.jr-lauf summary', '.jr-l'];
+      const sel = ['.jr-kopf', '.jr-kopf b', '.jr-nm', '.jr-kt', '.jr-v', '.jr-fakt', '.jr-lauf summary', '.jr-l'];
       const out = [];
       sel.forEach(q => m.querySelectorAll(q).forEach(e => { const rr = e.getBoundingClientRect(); if (rr.width && rr.height) out.push({ q, fs: fs(e) }); }));
       const res = { titel: titel ? fs(titel) : null, werte: out, gefunden: [...new Set(out.map(o => o.q))] };
@@ -308,7 +308,7 @@ function statisch() {
   const SKALA = [30, 24, 22, 17, 15, 13, 12, 11, 10, 14, 16, 18];
   const frei = i1.werte.filter(o => !SKALA.includes(Math.round(o.fs * 10) / 10));
   const zuGross = i1.werte.filter(o => i1.titel && o.fs >= i1.titel);
-  if (!i1.gefunden.includes('.jr-nm') || !i1.gefunden.includes('.jr-why')) rot(`Keine sichtbaren Journal-Zeilen im Fenster (${i1.gefunden.join(', ') || 'nichts'}) - die Stufe misst nichts`);
+  if (!i1.gefunden.includes('.jr-nm') || !i1.gefunden.includes('.jr-fakt')) rot(`Keine sichtbaren Journal-Zeilen im Fenster (${i1.gefunden.join(', ') || 'nichts'}) - die Stufe misst nichts`);
   else if (frei.length) rot(`Freie Schriftgroessen: ${[...new Set(frei.map(o => o.q + ' ' + o.fs + 'px'))].join(', ')}`);
   else if (zuGross.length) rot(`Journal-Text so gross wie der Fenstertitel (${i1.titel}px): ${[...new Set(zuGross.map(o => o.q))].join(', ')}`);
   else gruen(`${i1.werte.length} Journal-Textelemente (${i1.gefunden.length} Arten), alle aus der Skala und unter dem Titel (${i1.titel}px)`);

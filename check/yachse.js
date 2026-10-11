@@ -53,7 +53,8 @@ const ZIELE = ['regime', 'dash', 'mx', 'trends', 'cot', 'sent:retail', 'sent:put
       const vis = e => { const q = e.getBoundingClientRect(); if (!(q.width > 0 && q.height > 0)) return false; for (let x = e; x; x = x.parentElement) { const cs = getComputedStyle(x); if (cs.display === 'none' || cs.visibility === 'hidden') return false; } return true; };
       const zahl = t => /^[−\-+]?\$?[\d.,]+\s*(%|pp|w|k|K|M|B|bp)?$/.test(t.trim());
       const out = [];
-      [...document.querySelectorAll('svg')].filter(s => vis(s) && !s.closest('button,.k-ic,.logo,.ahead-motif,.lg-loop,.lg-frei,.globe-host,.sent-gauge,.gauge,.fxlogo')).forEach(s => {
+      // .vp = temporaere Design-Vorschau (2026-10-11, vorschauHtml) - Skizzen zum Auswaehlen, keine Daten-Charts.
+      [...document.querySelectorAll('svg')].filter(s => vis(s) && !s.closest('button,.k-ic,.logo,.ahead-motif,.lg-loop,.lg-frei,.globe-host,.sent-gauge,.gauge,.fxlogo,.vp')).forEach(s => {
         const q = s.getBoundingClientRect(); if (q.width < 140 || q.height < 70) return;
         if (s.querySelector('text') && [...s.querySelectorAll('text')].length === 0) return;
         const box = s.closest('.ab-plot,.ab-rtv,.ab-k,.ind-hist-wrap,.histl,.bt-pfad,.cax,.px-chart') || s.parentElement.parentElement || s.parentElement;

@@ -512,7 +512,9 @@ svg.ic{vertical-align:-2px;flex:none}
   .mover-row:hover{transform:translateY(-1.5px);box-shadow:var(--shadow-card)}
   .dw:hover{box-shadow:var(--shadow-pop)}
 }
-@media (prefers-reduced-motion:reduce){.btn,.ab,.mover-row,.ind-card,.rub-card,.dw{transition:none}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-anim .ind-card,body.no-ui-anim .rub-card,body.no-ui-anim .dw{transition:none}
 /* .45 statt .22 (Nutzerwahl 2026-10-05): Undo/Redo wirkten bei 22 % wie ein
    Darstellungsfehler - deaktiviert soll erkennbar sein, nicht verschwinden. */
 .btn:disabled{opacity:.45;cursor:default}
@@ -1727,9 +1729,9 @@ svg.ic{vertical-align:-2px;flex:none}
    Einstellungen und die Systemeinstellung "Bewegung reduzieren". */
 body.no-ui-anim .np-sub-wrap,body.no-ui-anim .np-arrow,body.no-ui-anim .np-lbl,
 body.no-ui-anim #navSidebar{transition:none}
-@media(prefers-reduced-motion:reduce){
-  .np-sub-wrap,.np-arrow,.np-lbl,#navSidebar{transition:none}
-}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .np-sub-wrap,body.no-ui-anim .np-arrow,body.no-ui-anim .np-lbl,body.no-ui-anim #navSidebar{transition:none}
 .tab-menu{position:fixed;z-index:100001;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rss);box-shadow:var(--shadow-pop);padding:5px;min-width:185px;display:flex;flex-direction:column;gap:2px}
 .tab-menu-item{text-align:left;background:transparent;border:none;color:var(--t1);font-size:var(--fs-base);padding:9px 11px;border-radius:7px;cursor:pointer;white-space:nowrap;font-family:var(--ff-text)}
 @media (hover:hover){.tab-menu-item:hover{background:var(--bg4);color:var(--t0)}}
@@ -3054,7 +3056,9 @@ body.res-return-active #resBackBar{display:flex}
 .cd-heute{display:inline-block;margin-left:2px;font:900 1.12em/1 var(--ff-num);
   color:var(--live);transform:translateY(.5px);animation:cdPuls 1.9s ease-in-out infinite}
 @keyframes cdPuls{0%,100%{opacity:1}50%{opacity:.45}}
-@media (prefers-reduced-motion:reduce){.cd-heute{animation:none}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .cd-heute{animation:none}
 /* "As of / Next" ueber jedem Vergleichs-Chart */
 .px-asof{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px;margin:0 0 8px;font:500 var(--fs-xs)/1.4 var(--ff-num);color:var(--t2)}
 .px-asof-lbl{font:700 var(--fs-2xs)/1.3 var(--ff-num);letter-spacing:.7px;text-transform:uppercase;color:var(--t3)}
@@ -3322,7 +3326,9 @@ body.res-return-active #resBackBar{display:flex}
    siehe toggleIndDetailRow(). */
 @keyframes indDataReveal{0%{opacity:0;transform:translateY(-4px)}100%{opacity:1;transform:translateY(0)}}
 .ind-data-body.ind-data-reveal{animation:indDataReveal .18s ease-out both}
-@media(prefers-reduced-motion:reduce){.ind-data-body.ind-data-reveal{animation:none}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .ind-data-body.ind-data-reveal{animation:none}
 /* ── FULL PAGE ── */
 .pc{padding:14px;overflow-y:auto;overflow-x:auto;overscroll-behavior-x:none;flex:1;min-height:0;min-width:0;-webkit-overflow-scrolling:touch}
 /* ── PAIRS ── */
@@ -3728,7 +3734,9 @@ body{font-feature-settings:'tnum' 1,'zero' 1,'ss01' 1;font-variant-numeric:tabul
    siehe CLAUDE.md-Grundsatz "nie erfundene Werte". */
 .globe-ping{transform-origin:center;animation:globePing 2.2s ease-out infinite}
 @keyframes globePing{0%{r:5;stroke-opacity:.8}100%{r:15;stroke-opacity:0}}
-@media(prefers-reduced-motion:reduce){.globe-ping{animation:none;stroke-opacity:0}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .globe-ping{animation:none;stroke-opacity:0}
 /* Rote Positionslichter an den Fluegelspitzen des Jets (Nutzer-Wunsch
    2026-07-28) - echtes Flugzeug-Blinklicht-Verhalten (hartes An/Aus statt
    weichem Fade, daher steps(1) statt ease). Dauerhafte Ambient-Animation
@@ -3738,7 +3746,9 @@ body{font-feature-settings:'tnum' 1,'zero' 1,'ss01' 1;font-variant-numeric:tabul
    statt blinkendes Licht. */
 .globe-jet-light{animation:globeJetBlink 1.1s steps(1) infinite}
 @keyframes globeJetBlink{0%,44%{opacity:1}45%,100%{opacity:.15}}
-@media(prefers-reduced-motion:reduce){.globe-jet-light{animation:none;opacity:.55}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .globe-jet-light{animation:none;opacity:.55}
 /* Boost (Nutzer-Wunsch 2026-07-28, Nachbesserung "deutlich deutlich laenger
    groesser und farbenvoller"): Nachbrenner-Flammen + Fluegel-Luftwirbel, nur
    waehrend .globe-vehicle.boosting sichtbar. --boost-i (0..1, von
@@ -3771,7 +3781,9 @@ body{font-feature-settings:'tnum' 1,'zero' 1,'ss01' 1;font-variant-numeric:tabul
    (scaleY/scaleX per calc()), eine Transform-Keyframe wuerde diesen Wert
    waehrend der Animation komplett ueberschreiben statt ihn zu ergaenzen. */
 @keyframes jetFlameFlicker{0%{filter:brightness(.9) saturate(1.05) hue-rotate(0deg);opacity:.86}30%{filter:brightness(1.55) saturate(1.4) hue-rotate(7deg);opacity:1}55%{filter:brightness(1.05) saturate(1.15) hue-rotate(-3deg);opacity:.9}80%{filter:brightness(1.4) saturate(1.3) hue-rotate(4deg);opacity:1}100%{filter:brightness(.88) saturate(1.05) hue-rotate(-5deg);opacity:.88}}
-@media(prefers-reduced-motion:reduce){.globe-jet-flame{animation:none;transform:scaleY(calc(.32 + var(--boost-i,0)*1.35))}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .globe-jet-flame{animation:none;transform:scaleY(calc(.32 + var(--boost-i,0)*1.35))}
 /* Blur NUR auf der Erdoberflaeche (.globe-planet = Ozean+Landflaeche),
    NICHT auf Flugzeug/Flammen/Sweep/Markern/Bezel (Nutzer-Korrektur
    2026-07-28: "Flugzeug soll immer zu sehen bleiben"). Getrennt von
@@ -3785,7 +3797,9 @@ body{font-feature-settings:'tnum' 1,'zero' 1,'ss01' 1;font-variant-numeric:tabul
    dauerhaften/grossflaechigen Effekten unproblematisch - und deutlich
    kleiner als die fruehere Aurora-Flaeche. */
 .globe-host.boosting .globe-planet{filter:blur(calc(var(--boost-blur,0)*9px))}
-@media(prefers-reduced-motion:reduce){.globe-host.boosting .globe-planet{filter:none}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .globe-host.boosting .globe-planet{filter:none}
 /* Ankunfts-Puls (Nutzer-Wunsch 2026-07-27): einmaliger, kraeftigerer
    Ausschlag am Zielpunkt, sobald das Auto/Schiff ankommt - danach oeffnet
    sich die Waehrung (gotoSym). Eigene Klasse statt .globe-ping-Wiederver-
@@ -3817,7 +3831,9 @@ body{font-feature-settings:'tnum' 1,'zero' 1,'ss01' 1;font-variant-numeric:tabul
 .globe-hud-scan{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.05;overflow:hidden}
 .globe-hud-scan::before{content:'';position:absolute;left:0;right:0;top:-42px;bottom:0;background:repeating-linear-gradient(0deg,#dff4ff 0 1px,transparent 1px 3px);animation:globeScanDrift 7s linear infinite}
 @keyframes globeScanDrift{0%{transform:translateY(0)}100%{transform:translateY(42px)}}
-@media(prefers-reduced-motion:reduce){.globe-hud-scan::before{animation:none}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .globe-hud-scan::before{animation:none}
 /* Zusaetzliche HUD-Badges (Nutzer-Wunsch 2026-07-27 "noch mehr
    Ueberwachungsmodus-Objekte"): "TRACKING" oben mittig zwischen den Eck-
    Klammern, "SIGNAL" unten mittig - beides reine Modus-/Status-Label wie
@@ -3837,12 +3853,16 @@ body{font-feature-settings:'tnum' 1,'zero' 1,'ss01' 1;font-variant-numeric:tabul
 .globe-host.boosting svg{position:relative;z-index:3}
 .globe-hud-badge b{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--hud);box-shadow:0 0 5px 1px rgba(95,208,255,.7);animation:pulse-badge 1.4s ease-in-out infinite}
 .globe-hud-badge.bottom b{animation-delay:.7s}
-@media(prefers-reduced-motion:reduce){.globe-hud-badge b{animation:none}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .globe-hud-badge b{animation:none}
 /* Blinkender "MONITORING"-Punkt - gleiche Konvention wie der bestehende
    .live-dot im Header (pulse-badge-artig), eigene Klasse statt Wiederver-
    wendung, da .live-dot fix auf Rot gesetzt ist und hier Blau passender ist. */
 .hud-live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--hud);box-shadow:0 0 6px 1px rgba(95,208,255,.7);animation:pulse-badge 1.4s ease-in-out infinite}
-@media(prefers-reduced-motion:reduce){.hud-live-dot{animation:none}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .hud-live-dot{animation:none}
 /* Readout-Leiste + Intel-Feed unter dem Globus-Panel - dichtes Terminal-
    Layout (Monospace, klein), damit die Karte trotz neuer Infos nicht viel
    hoeher wird. */
@@ -4417,6 +4437,11 @@ body.dense-mode .hl-row{padding-top:3px;padding-bottom:3px}
 .hw-d4 .histp-brk{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px}
 .hw-c{font:700 var(--fs-2xs)/1.4 var(--ff-num);border:1px solid var(--bd);border-radius:5px;padding:1px 6px;white-space:nowrap;cursor:help}
 .hw-none{font:500 var(--fs-xs)/1.45 var(--ff-num);color:var(--t3);font-style:italic}
+/* Kurzzeile statt Satz (Nutzer-Regel "kein Fliesstext", 2026-10-11): Titel
+   fett, Kurzangabe kursiv, Klick = Fakten-Fenster (hwZeile/faktenFenster). */
+.hw-k{font-style:normal;color:var(--t2)}.hw-k b{color:var(--t1);font-weight:700}.hw-k i{color:var(--t3)}
+.hw-k[onclick],.jr-z[onclick]{cursor:pointer;border-radius:5px}
+@media (hover:hover){.hw-k[onclick]:hover,.jr-z[onclick]:hover{background:var(--bg3)}}
 /* Alterungs-Zeile: gehoert sichtbar zu den Ursachen, ist aber keine
    Veroeffentlichung - deshalb bernsteinfarben abgesetzt statt in Bias-Farbe
    ueber die ganze Zeile. */
@@ -4443,7 +4468,15 @@ body.dense-mode .hl-row{padding-top:3px;padding-bottom:3px}
 .jr-nm{font:600 var(--fs-sm)/1.35 var(--ff-text);color:var(--t1);min-width:0;overflow-wrap:anywhere}
 .jr-kt{font:700 var(--fs-2xs)/1.3 var(--ff-num);color:var(--t3);border:1px solid var(--bd);border-radius:4px;padding:0 5px;margin-left:4px;white-space:nowrap}
 .jr-v{font:800 var(--fs-2xs)/1.3 var(--ff-num);border:1px solid;border-radius:20px;padding:1px 6px;white-space:nowrap}
-.jr-why{grid-column:2/-1;font:400 var(--fs-xs)/1.45 var(--ff-text);color:var(--t2);overflow-wrap:anywhere}
+.jr-fakt{grid-column:2/-1;font:400 var(--fs-xs)/1.4 var(--ff-text);color:var(--t2);overflow-wrap:anywhere}
+.jr-fakt i{color:var(--t3)}.jr-fakt b{color:var(--t1);font-weight:700}
+/* Fakten-Fenster: Etikett | Wert, keine Saetze */
+.kv{width:100%;border-collapse:collapse;font:400 var(--fs-sm)/1.45 var(--ff-text)}
+.kv th{width:38%;text-align:left;vertical-align:top;font-weight:600;color:var(--t3);padding:5px 10px 5px 0;border-bottom:1px solid var(--bd)}
+.kv td{color:var(--t1);padding:5px 0;border-bottom:1px solid var(--bd);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kv tr:last-child th,.kv tr:last-child td{border-bottom:none}
+.kv-kopf{display:flex;align-items:baseline;gap:10px;margin:0 0 8px;font:600 var(--fs-md)/1.3 var(--ff-text);color:var(--t2)}
+.kv-wert{margin-left:auto;font:800 var(--fs-lg)/1 var(--ff-text);font-variant-numeric:tabular-nums}
 .jr-regel{margin-top:2px}
 .jr-regel summary,.jr-lauf summary{cursor:pointer;color:var(--t3);font:600 var(--fs-xs)/1.4 var(--ff-text)}
 .jr-lauf{margin-top:2px;border-top:1px dashed var(--bd);padding-top:4px}
@@ -5105,7 +5138,9 @@ body.no-ui-anim .tgl-track,body.no-ui-anim .tgl-track::after{transition:none}
 @keyframes popoverInCenter{0%{opacity:0;transform:translate(-50%,-50%) scale(.95)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 .bias-picker{animation:popoverInCenter .16s cubic-bezier(.2,.8,.3,1) both}
 .tab-menu{animation:popoverIn .16s cubic-bezier(.2,.8,.3,1) both}
-@media(prefers-reduced-motion:reduce){.bias-picker,.tab-menu{animation:none}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
 /* ── SKELETON-SHIMMER (Platzhalter beim ersten Laden) ── */
 .skel{display:inline-block;height:11px;border-radius:4px;vertical-align:middle;background:linear-gradient(90deg,rgba(128,151,176,.10) 25%,rgba(128,151,176,.30) 50%,rgba(128,151,176,.10) 75%);background-size:200% 100%;animation:skelShimmer 1.2s ease-in-out infinite}
 @keyframes skelShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
@@ -5629,12 +5664,10 @@ body.anim-enter:not(.no-data-anim) #dashWidgets>.dash-zone>.dw:nth-child(2){anim
 body.anim-enter:not(.no-data-anim) #dashWidgets>.dash-zone>.dw:nth-child(3){animation-delay:.1s}
 body.anim-enter:not(.no-data-anim) #dashWidgets>.dash-zone>.dw:nth-child(4){animation-delay:.15s}
 
-/* Ein System-Wunsch nach Ruhe wiegt schwerer als jede dieser Regeln. */
-@media (prefers-reduced-motion:reduce){
-  svg.ic{animation:none!important}
-  body.anim-enter .rank-bar,body.anim-enter .mx-rank-bar,body.anim-enter .risk-asset-bar,
-  body.anim-enter .perf-bar,body.anim-enter .esi-bar,body.anim-enter #dashWidgets>.dash-zone>.dw{animation:none!important}
-}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim svg.ic{animation:none!important}
+body.no-ui-anim.anim-enter .rank-bar,body.no-ui-anim.anim-enter .mx-rank-bar,body.no-ui-anim.anim-enter .risk-asset-bar,body.no-ui-anim.anim-enter .perf-bar,body.no-ui-anim.anim-enter .esi-bar,body.no-ui-anim.anim-enter #dashWidgets>.dash-zone>.dw{animation:none!important}
 
 /* Hintergrund-Fenster: jede Dauerschleife haelt an. */
 body.anim-paused *,body.anim-paused *::before,body.anim-paused *::after{animation-play-state:paused!important}
@@ -5719,7 +5752,9 @@ body.anim-paused *,body.anim-paused *::before,body.anim-paused *::after{animatio
    erreichten das Panel nicht: die Sammelregel body.no-ui-anim .np-sub-wrap
    (0,2,1) verlor gegen #navSidebar .np-sub-wrap (1,1,0). */
 body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
-@media(prefers-reduced-motion:reduce){#navSidebar .np-sub-wrap{transition:none}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 /* Eintraege im Panel: Zeile mit Symbol + Name, wie die Asset-Zeilen. */
 #navSidebar .np-sub-wrap:not(.np-assets) .np.np-sub{flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;
   width:100%;padding:8px 12px;border:none;border-radius:8px;text-align:left;white-space:nowrap;
@@ -5988,7 +6023,9 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 .fxlogo.lg-lade>.lg-b{animation:lgBogenEin .7s 1.2s cubic-bezier(.45,0,.2,1) both}
 @keyframes lgKerzeLade{0%{transform:scaleY(0);opacity:0}15%{opacity:1}100%{transform:scaleY(1);opacity:1}}
 body.no-ui-anim .fxlogo.lg-einmal>.lg-k,body.no-ui-anim .fxlogo.lg-einmal>.lg-b{animation:none}
-@media(prefers-reduced-motion:reduce){.fxlogo>.lg-k,.fxlogo>.lg-b{animation:none!important}}
+/* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
+   prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
+body.no-ui-anim .fxlogo>.lg-k,body.no-ui-anim .fxlogo>.lg-b{animation:none!important}
 /* Logo in freier Kartenflaeche (lgKarte in js/main.js): gedaempft, reine
    Dekoration, faengt keine Klicks. Farben aus den Tokens der jeweiligen
    Vorlage - weiss waere auf hellen Karten unsichtbar. */

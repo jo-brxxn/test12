@@ -19761,3 +19761,37 @@ auf Skala, Kacheln, Ring + Liste · COT: Linie mit Zonen (aktuell),
 Netto-Balken, Positions-Schiene, gespiegelte Balken). Echte Asset-Daten,
 nicht im Score. Wird nach der Auswahl wieder entfernt (`vorschauHtml`,
 `.vp-*`).
+
+## 2026-10-11 — PC (Windows + Chrome): Start-Animation lief nicht
+
+Nutzer: *„am pc funktioniert die start Animation nicht und Check auch noch
+andere Sachen am pc geht vieles nicht“* (Windows + Chrome/Edge). Nachgestellt
+mit 1920×1080 und `reducedMotion:'reduce'` (das meldet Chrome, wenn in Windows
+„Animationseffekte“ aus ist): Lade-Logo `animation-name: none`. Ursache: 15
+`@media (prefers-reduced-motion)`-Blöcke + `wischErlaubt()` schalteten
+Lade-Logo, Seitenwechsel, Einblendungen, Globus-Effekte ab. Fix: alle Blöcke
+auf `body.no-ui-anim` (App-Schalter „UI-Animationen“, synchronisiert)
+umgestellt, JS-Abfrage entfernt → danach `lgKerzeLade`. Durchklick 16 Seiten +
+60 Bedienelemente bei 1920 px mit reduzierter Bewegung: 0 JS-Fehler (nur
+gesperrte Netzwerkziele der Sandbox). Wächter `check/pcbewegung.js`
+(Gegenprobe: alte Regel → rot).
+
+## 2026-10-11 — History-Karte: Überschrift je Änderung, Klick = Fakten statt Satz
+
+Nutzer: *„ich will eine Überschrift kurz zu was hat sich geändert also cpi
+oder retail Sentiment usw und dann wie stark und wenn ich dadrauf klicke steht
+da nirgendswo ein Fließtext immer nur in kurz und knapp die Infos übersichtlich
+vlt manches fett geschrieben manches kursiv oder manches in bias Farbe“*.
+- Journal-Zeile: Pfeil · **Name** · Karte · Betrag (Bias-Farbe); darunter
+  eine Kurzzeile *Art* · **neuer Stand** (z. B. *New release* · **3.8%**,
+  *Rating changed* · **bullish → bearish · set by you**). Klick →
+  Fakten-Fenster (`faktenFenster`): Etikett | Wert, Werte fett/kursiv/
+  Bias-Farbe, bei mehreren Änderungen eines Tages eine Aufstellung mit Uhrzeit.
+  `jrFakten()` ersetzt `jrWarum()` in der Anzeige.
+- Tage ohne Journal (Modellwechsel, „No release“, „No change“, „Not in the
+  journal“, n/r, „Also released“): statt Sätzen `hwZeile` (Titel fett ·
+  Kurzangabe kursiv), Fakten per Klick. Release-Zeilen ebenfalls klickbar
+  (Actual, Forecast/prev, Wirkung am Tag, Beitrag heute).
+- Kopfzeile kurz („2 changes today“, „Journal since 18:11 · …“).
+- `check/journal.js` I misst jetzt `.jr-fakt` statt `.jr-why`; C/J („set by
+  you“) grün, weil die Handänderung in der Kurzzeile steht.

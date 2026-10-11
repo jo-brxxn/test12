@@ -11,7 +11,7 @@ import {RG_CCYS,REGIME_MIN_BED,regimeStand,rgKurve,rgRealzins,rgVix,rgVol,rgSpre
 // (Nutzer-Auftrag 2026-09-26, siehe Kopf von journal.js). Zirkulaerer Import
 // wie bei regime.js - journal.js liest syms/trendAssets/scoreLog von hier.
 import {scoreJournal,loadScoreJournal,jrErfassen,jrBootFertig,jrSperren,jrFreigeben,jrAnlassMerken,jrUebernehmen,
-  jrTagesBlock,jrKopfHtml,jrBeginn,jrSeit,jrTagVon,jrUhr,jrModellText,JR_TAGE,JOURNAL_KEY} from './journal.js';
+  jrTagesBlock,jrKopfHtml,jrDetail,jrBeginn,jrSeit,jrTagVon,jrUhr,jrModellText,JR_TAGE,JOURNAL_KEY} from './journal.js';
 // Kalender-Event ↔ Score-Indikator-Muster: eigene Datei ohne Browser-Bezug,
 // damit der Kalender-Workflow dieselben Muster laden kann (2026-10-06).
 import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL_RESEARCH_MATCHERS,isScoreDrivingEvent,periodLabel} from './event-matchers.js';
@@ -2136,7 +2136,17 @@ function renderSymHistoryPanelRoh(id){
         :ev.cot?`prev ${(ev.previous!=null&&ev.previous!=='')?escH(ev.previous):'–'}`
         :ev.sent?''
         :`fc ${(ev.forecast!=null&&ev.forecast!=='')?escH(ev.forecast):'–'} · prev ${(ev.previous!=null&&ev.previous!=='')?escH(ev.previous):'–'}`;
-      return`<div class="histp-evt">
+      // Klick = Fakten (Nutzer-Regel 2026-10-11): was, wie stark, Werte.
+      HW_DET.push({titel:ev.name,kurz:effWert==null?'effect not recorded':'effect '+fmtHistEff(effWert),zeilen:[
+        ['Released',escH(fmtDayHdr(d.date))+(ev.time&&evtTimeValid(ev.time)?' · '+escH(ev.time):'')],
+        ['Actual',acv],
+        ev.bond?['vs 21d avg',escH(ev.previous!=null&&ev.previous!==''?String(ev.previous):'–')]:ev.cot?['Previous',escH(ev.previous!=null&&ev.previous!==''?String(ev.previous):'–')]:ev.sent?null:['Forecast · prev',`${escH(ev.forecast!=null&&ev.forecast!==''?String(ev.forecast):'–')} · ${escH(ev.previous!=null&&ev.previous!==''?String(ev.previous):'–')}`],
+        ['Effect this day',effWert==null?'<i>not recorded (continuous row, before the journal)</i>':`<b style="color:${col}">${escH(eff)}</b>`],
+        ev.sc!=null?['Counts today',`<b>${escH(fmtHistEff(ev.sc))}</b>`]:null,
+        effWert===0?['Why 0',`<i>${escH(histZeroReason(ev))}</i>`]:null].filter(Boolean)});
+      if(HW_DET.length>4000){HW_DET.splice(0,2000);_hwDetWeg+=2000;}
+      const nDet=HW_DET.length-1+_hwDetWeg;
+      return`<div class="histp-evt" role="button" tabindex="0" onclick="hwDetail(${nDet})" style="cursor:pointer">
         <span class="histp-time">${ev.time&&evtTimeValid(ev.time)?escH(ev.time):''}</span>
         <span class="histp-arrow" style="color:${col}">${arr}</span>
         <span class="histp-name" title="${escH(ev.name)}">${escH(ev.name)}</span>
@@ -2261,10 +2271,13 @@ function renderSymHistoryPanelRoh(id){
       ?`The score journal recorded this day, but its details have been removed since — they are kept for about ${JR_TAGE} days, less when storage is tight.`
       :`This day predates the score journal, which records every change with its cause from ${jrAbTxt}.`;
     // Modellwechsel als eigene, ausdrueckliche Ursache (Tage ohne Journal).
+    // ⚠ Seit 2026-10-11 keine Saetze mehr in der Zeile (Nutzer-Regel "kein
+    // Fliesstext"): Titel fett + Kurzangabe kursiv, die Fakten per Klick.
+    const jrFakt=['Journal',abgelaufen?`<i>details removed (kept ~${JR_TAGE} days)</i>`:`<i>records from ${escH(jrAbTxt)}</i>`];
     const modellHtml=(!jr.n&&bekannteGrenze&&delta!=null)
-      ?`<div class="hw-none hw-modell">Score model changed between these two days: ${escH(jrModellText(prevTag,dTag)||'an earlier score model')}. The change of ${escH(dTxt||'0')} therefore includes the new calculation, not only new data${parts.length?' — the card split below shows where it landed':''}. ${escH(jrLueckeTxt)}</div>`
+      ?hwZeile('Score model changed',jrModellText(prevTag,dTag)||'earlier model',[['Day change',`<b style="color:${dCol}">${escH(dTxt||'0')}</b>`],['Includes','<i>new calculation, not only new data</i>'],['Model',escH(jrModellText(prevTag,dTag)||'an earlier score model')],parts.length?['Split','<i>see the card split below</i>']:null,jrFakt].filter(Boolean),'hw-modell')
       :(!jr.n&&unbekannteHerkunft)
-      ?`<div class="hw-none hw-modell">One of these two days was recorded before the score model was tagged (before Aug 9, 26), so the change of ${escH(dTxt||'0')} can include model updates as well as new data.</div>`:'';
+      ?hwZeile('Model not tagged','before Aug 9, 26',[['Day change',`<b style="color:${dCol}">${escH(dTxt||'0')}</b>`],['Can include','<i>model updates and new data</i>']],'hw-modell'):'';
     // Nichts veroeffentlicht, nichts von Hand geaendert, nichts gealtert.
     // ⚠ Der Nutzer wollte hier ausdruecklich "No data released" lesen und
     // KEINE zusammengefasste Sammelzeile ("jeden tag einzeln"). Der Satz
@@ -2279,46 +2292,38 @@ function renderSymHistoryPanelRoh(id){
     // exakt bei 1,843 -> 1,854 (+0,011) und zeigte trotzdem +1,8 -> +1,9.
     const exaktHeute=(histRaw[d.date]!=null&&histCmp[d.date]!=null)?histRaw[d.date]*histCmp[d.date]:null;
     const exaktVor=(prevDate&&histRaw[prevDate]!=null&&histCmp[prevDate]!=null)?histRaw[prevDate]*histCmp[prevDate]:null;
-    const exaktTxt=(exaktHeute!=null&&exaktVor!=null)
-      ?` Exactly the score went from ${(exaktVor>0?'+':'')+exaktVor.toFixed(3)} to ${(exaktHeute>0?'+':'')+exaktHeute.toFixed(3)} (${(exaktHeute-exaktVor>=0?'+':'')+(exaktHeute-exaktVor).toFixed(3)})`
-        +(Math.abs(exaktHeute-exaktVor)<0.1&&delta&&Math.abs(delta)<=0.1?', so the shown change of '+dTxt+' is mostly the rounding to one decimal.':'.')
-      :'';
-    let leerTxt='';
+    const exaktZeilen=(exaktHeute!=null&&exaktVor!=null)?[['Exact',`${escH((exaktVor>0?'+':'')+exaktVor.toFixed(3))} → <b>${escH((exaktHeute>0?'+':'')+exaktHeute.toFixed(3))}</b> <i>(${escH((exaktHeute-exaktVor>=0?'+':'')+(exaktHeute-exaktVor).toFixed(3))})</i>`]].concat(Math.abs(exaktHeute-exaktVor)<0.1&&delta&&Math.abs(delta)<=0.1?[['Mostly','<i>rounding to one decimal</i>']]:[]):[];
+    let leer='';
     if(!jr.n&&!evs.length&&!manual.length&&!alterung.length){
+      const dz=['Day change',`<b style="color:${dCol}">${escH(dTxt||'0')}</b>`];
       if(bekannteGrenze){
-        // Der Modellwechsel steht schon ausdruecklich darueber - hier nur noch
-        // die Tatsache, kein zweiter Erklaerungsversuch derselben Zahl.
-        leerTxt='No data released on this day.'+exaktTxt;
+        leer=hwZeile('No release','model change above',exaktZeilen);
       }else if(!delta){
-        leerTxt=!vorJournal
-          ?(jr.offen?`No change: the app was open ${jrUhr(jr.offen[0])}–${jrUhr(jr.offen[1])} and the score did not move.`
-                    :'No change: no device had the app open on this day, so the value is the last one synced.')
-          :'No data released and no change.';
+        leer=!vorJournal
+          ?(jr.offen?hwZeile('No change',`app open ${jrUhr(jr.offen[0])}–${jrUhr(jr.offen[1])}`,[['App open',`<b>${escH(jrUhr(jr.offen[0]))}–${escH(jrUhr(jr.offen[1]))}</b>`],['Score','<i>did not move</i>']])
+                    :hwZeile('No change','app not open — last synced value',[['App','<i>not open on any device</i>'],['Value','<i>last one synced</i>']]))
+          :hwZeile('No release, no change','',null);
       }else if(!vorJournal){
-        leerTxt=`The recorded value moved ${dTxt}, but the score journal (recording since ${jrAbTxt}) captured no change on this day — this value was recorded by a device without the journal or by the server from an older sync.`;
+        leer=hwZeile('Not in the journal',`moved ${dTxt}`,[dz,['Journal','<i>captured no change</i>'],['Recorded by','<i>a device without the journal, or the server (older sync)</i>'],['Journal since',escH(jrAbTxt)]]);
       }else{
-        // ⚠ Nur sagen, was feststeht. "the move came from weighting" war eine
-        // Vermutung: an einem Tag ohne Release bewegen sich auch die laufend
-        // gemessenen Zeilen (COT, Retail, Trend, Renditen), und die stehen hier
-        // nicht als Ereignis. Genannt werden deshalb alle MOEGLICHEN Quellen.
-        leerTxt=`No data released — but the score moved ${dTxt}.`+exaktTxt
-          +(parts.length?' The card split below shows where it landed.'
-            :(!histAgeShow?' Switch on "Ageing" above to see whether the age limit caused it.'
-              :zerlegbar?' The recorded card values show no movement of 0.1 or more on any card.'
-              :' One of the two days was recorded without the card values needed to split it.'))
-          +(histAgeShow?' Nothing crossed the age limit.':'')
-          +` Possible sources, not split one by one for this day: ageing of releases, market relevance, the comparability factor and the continuously measured rows (COT, retail, trend, yields). ${jrLueckeTxt}`;
+        // ⚠ Nur sagen, was feststeht: an einem Tag ohne Release bewegen sich
+        // auch die laufend gemessenen Zeilen - alle MOEGLICHEN Quellen.
+        leer=hwZeile('No release',`moved ${dTxt}`,[dz].concat(exaktZeilen,
+          parts.length?[['Split','<i>see the card split below</i>']]
+            :!histAgeShow?[['Ageing','<i>switch on "Ageing" above to check the age limit</i>']]
+            :zerlegbar?[['Cards','<i>no card moved by 0.1 or more</i>']]:[['Cards','<i>one day lacks the card values to split</i>']],
+          histAgeShow?[['Age limit','<i>nothing crossed it</i>']]:[],
+          [['Possible sources','<i>ageing · market relevance · comparability factor · COT · retail · trend · yields</i>'],jrFakt]));
       }
     }
-    const leer=leerTxt?`<div class="hw-none">${escH(leerTxt)}</div>`:'';
-    const exaktZeile=(!jr.n&&!leerTxt&&delta&&!parts.length&&exaktTxt)?`<div class="hw-none">Day change ${escH(dTxt)}.${escH(exaktTxt)}</div>`:'';
-    const nrHinweis=(!jr.n&&nichtAufgezeichnet)?`<div class="hw-none">n/r = not recorded: ${nichtAufgezeichnet===1?'this row is':'these rows are'} measured continuously (COT, yields, sentiment), and ${abgelaufen?'the journal details of this day have been removed since':'before the score journal their effect per day was not stored'}.${parts.length?' Their card’s recorded movement is in the split below.':''}</div>`:'';
+    const exaktZeile=(!jr.n&&!leer&&delta&&!parts.length&&exaktZeilen.length)?hwZeile('Day change '+dTxt,'exact values',exaktZeilen):'';
+    const nrHinweis=(!jr.n&&nichtAufgezeichnet)?hwZeile('n/r = not recorded',`${nichtAufgezeichnet} continuous ${nichtAufgezeichnet===1?'row':'rows'}`,[['Rows','<i>COT · yields · sentiment — measured continuously</i>'],['Effect per day',abgelaufen?'<i>journal details removed since</i>':'<i>not stored before the journal</i>'],parts.length?['Split','<i>card movement in the split below</i>']:null].filter(Boolean)):'';
     // An Journal-Tagen stehen die Ursachen exakt im Journal. Veroeffentlichungen,
     // die den Score NICHT bewegt haben (im Rahmen der Erwartung, oder die
     // Einstufung war schon vorher dieselbe), gehoeren trotzdem in die Zeile -
     // sonst fragt man sich, wo der CPI des Tages geblieben ist.
     const ohneWirkung=jr.n?evs.filter(ev=>ev.scWirkung===0):[];
-    const ohneHtml=ohneWirkung.length?`<div class="hw-none">Also released on this day without moving the score: ${escH(ohneWirkung.map(ev=>ev.name+' '+(ev.actual!=null&&ev.actual!==''?ev.actual:'')+(ev.forecast!=null&&ev.forecast!==''&&!ev.bond?' vs fc '+ev.forecast:'')).join(', '))}.</div>`:'';
+    const ohneHtml=ohneWirkung.length?hwZeile('Also released, no score effect',ohneWirkung.map(ev=>ev.name).join(' · '),ohneWirkung.map(ev=>[ev.name,`<b>${escH(ev.actual!=null&&ev.actual!==''?String(ev.actual):'–')}</b>`+(ev.forecast!=null&&ev.forecast!==''&&!ev.bond?` <i>fc ${escH(String(ev.forecast))}</i>`:'')])):'';
     return{date:d.date,score:dayScore,delta,has,isToday,
       ursache:!!(evs.length||manual.length||alterung.length||jr.n),
       scoreCol,scoreLbl,scoreTip,dCol,dTxt,bekannteGrenze,jrN:jr.n,
@@ -11135,7 +11140,15 @@ let _wischOv=null,_wischLaeuft=false,_wischBereit=false;  // _wischOv: gemerkter
 function wischErlaubt(){
   if(!_wischBereit)return false;               // nicht beim Start der App
   if(document.body.classList.contains('no-ui-anim'))return false;
-  try{if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return false;}catch(e){}
+  // ⚠ KEIN prefers-reduced-motion mehr (2026-10-11). Nutzer am PC (Windows +
+  // Chrome): "am pc funktioniert die start Animation nicht". Ursache: unter
+  // Windows ist "Animationseffekte" oft aus - Chrome meldet dann
+  // prefers-reduced-motion:reduce, und die App schaltete Lade-Logo, Seiten-
+  // wechsel und Einblendungen ab. Die App hat eigene, geraeteuebergreifend
+  // synchronisierte Schalter (Settings: UI-/Daten-/Asset-Animationen); die
+  // entscheiden jetzt allein - auch in der CSS (body.no-ui-anim statt der
+  // frueheren @media-Bloecke). Vorlauf: 2026-07-28 wollte der Nutzer die
+  // Globus-Animation schon einmal ausdruecklich trotz Systemeinstellung.
   // Pruefskripte fahren ohne Wisch (sie messen Pixel direkt nach dem
   // Wechsel) - ausser dem eigenen Waechter check/wisch.js, der ihn anschaltet.
   if(navigator.webdriver&&!window.__wischTest)return false;
@@ -11535,6 +11548,33 @@ function indErklHtml(sym,rub,ind){
   if(ind.info)html+=`<div class="ie-sek"><div class="ie-kopf">Your notes</div><div class="ie-hinweis">${escH(ind.info)}</div></div>`;
   return html;
 }
+// ── FAKTEN-FENSTER: kein Fliesstext, nur Etikett | Wert ─────────────────
+// Nutzer-Regel 2026-10-11 ("nirgendswo ein Fliesstext immer nur in kurz und
+// knapp die Infos uebersichtlich ... fett ... kursiv ... in bias Farbe").
+// Abschnitte: {kopf (kursiv, was passiert ist), wert (Betrag in Bias-Farbe),
+// zeilen [[Etikett, Wert-HTML]], liste [[Zeit/Name, Wert-HTML]], hinweis}.
+// Werte-HTML wird vom Aufrufer gebaut (escaped) - fett/kursiv/Farbe dort.
+function faktenFenster(titel,abschnitte){
+  const t=document.getElementById('mCardInfoTitle');if(t)t.textContent=titel;
+  const b=document.getElementById('mCardInfoBody');if(!b)return;
+  b.innerHTML=(abschnitte||[]).map(a=>{
+    const wert=a.wert!=null&&isFinite(a.wert)?`<b class="kv-wert" style="color:${a.wert>0.0049?BC.bull:a.wert<-0.0049?BC.bear:'var(--t3)'}">${a.wert>0?'+':''}${(Math.round(a.wert*100)/100).toFixed(2)}</b>`:'';
+    const tab=z=>z&&z.length?`<table class="kv">${z.map(([k,v])=>`<tr><th>${escH(k)}</th><td>${v}</td></tr>`).join('')}</table>`:'';
+    return`<div class="ie-sek">${a.kopf||wert?`<div class="kv-kopf">${a.kopf?`<i>${escH(a.kopf)}</i>`:''}${wert}</div>`:''}${tab(a.zeilen)}${a.liste&&a.liste.length?`<div class="ie-kopf" style="margin-top:10px">Breakdown</div>${tab(a.liste)}`:''}${a.hinweis?`<div class="ie-hinweis">${a.hinweis}</div>`:''}</div>`;
+  }).join('');
+  openM('mCardInfo');
+}
+// Register fuer kurze History-Zeilen ausserhalb des Journals (Tage ohne
+// Journal, Modellwechsel, "keine Aenderung"): Zeile = Titel fett + Kurzangabe
+// kursiv, Klick = Fakten-Fenster.
+const HW_DET=[];let _hwDetWeg=0;
+function hwZeile(titel,kurz,zeilen,cls){
+  HW_DET.push({titel,kurz,zeilen});
+  if(HW_DET.length>4000){HW_DET.splice(0,2000);_hwDetWeg+=2000;}
+  const n=HW_DET.length-1+_hwDetWeg;
+  return`<div class="hw-none hw-k${cls?' '+cls:''}"${zeilen&&zeilen.length?` role="button" tabindex="0" onclick="hwDetail(${n})" title="Details"`:''}><b>${escH(titel)}</b>${kurz?` · <i>${escH(kurz)}</i>`:''}</div>`;
+}
+function hwDetail(n){const d=HW_DET[n-_hwDetWeg];if(d)faktenFenster(d.titel,[{kopf:d.kurz,zeilen:d.zeilen}]);}
 function openIndErkl(indId){
   const ind=findIndById(indId);if(!ind)return;
   const sym=getSym();let rub=null;
@@ -25458,7 +25498,7 @@ setInterval(()=>{
 // Wunsch 2026-08-25) - Details/Methodik: docs/module-split.md. Namen per
 // echtem JS-Parser (acorn) aus dem Top-Level-Scope dieses Moduls ermittelt,
 // nie per Regex/Handschrift.
-Object.assign(window,{
+Object.assign(window,{faktenFenster,hwDetail,jrDetail,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
