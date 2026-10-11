@@ -19829,3 +19829,9 @@ Polster der `.dw` bleibt 16 px.
   Mindestbreite der einspaltigen `.ab-cards`-Spalte (332 statt 306 px) →
   `minmax(min(300px,100%),1fr)` + `min-width:0`; dazu (`kartenlook`) die
   Heatmap mit festen 6 Spalten → `auto-fill, minmax(52px,1fr)`, Boxen `overflow:hidden`.
+- Volllauf 600b weiter: `designregeln` F — im Kompaktmodus ragten ⓘ-
+  Trefferflächen (inset −7,5 px) in Zeitregler (Performance, GOLD-Price) bzw.
+  wurden am Rand abgeschnitten (Data). Gegenprobe mit ausgeschaltetem Kompakt
+  grün → Kopfzeilen-Abstand und Seitenpolster werden im Kompaktmodus nicht
+  mehr verkleinert. `erklaerung` zählte nur `<p>` als Gliederung → zählt jetzt
+  auch Punkte/Abschnitte/Fakten-Zeilen (neue Struktur der Dauerregel).

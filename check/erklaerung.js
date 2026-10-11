@@ -106,7 +106,9 @@ for (const datei of ['js/main.js', 'js/score.js', 'js/calendar.js', 'js/data-fee
         return { ok: true, id: ov.id, titel: (h3 ? h3.textContent : '').trim().slice(0, 30),
           zeichen: m.textContent.trim().length,
           // Nur fuer die KARTEN-Erklaerung: ein Absatz je Gedanke.
-          absaetze: ov.id === 'mCardInfo' && cb ? cb.querySelectorAll('p').length : null,
+          // Seit 2026-10-11 (Dauerregel "kein Fliesstext") gliedern Punkte (li),
+          // Abschnitte (.ie-sek) und Fakten-Zeilen (tr) statt Absaetzen (p).
+          absaetze: ov.id === 'mCardInfo' && cb ? cb.querySelectorAll('p,li,.ie-sek,tr').length : null,
           mittigX: Math.abs((mb.left + mb.width / 2) - window.innerWidth / 2),
           mittigY: Math.abs((mb.top + mb.height / 2) - window.innerHeight / 2) };
       });
