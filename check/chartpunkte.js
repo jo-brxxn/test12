@@ -11,7 +11,12 @@
 //      jede %-Lage (Punkte UND Achsenbeschriftung)
 //   B) Historie (Karte + Fenster): jeder Punkt sitzt auf einem Knick der
 //      Linie (±0,5 px)
-//   node check/chartpunkte.js [--gegenprobe]  (Polster zurueck in die Box -> rot)
+//   C) Punkte dezent (Nutzer 2026-10-11: "zu fett mach die deutlich kleiner
+//      und dezenter ... und ueberall wo du die sonst noch benutzt"): der
+//      sichtbare Klickpunkt (.cax-p::after) <= 5 px im Ruhezustand,
+//      Seasonality-Kurspunkte (.sz-p) <= 6 px.
+//   node check/chartpunkte.js [--gegenprobe]  (Polster zurueck in die Box +
+//      alte 9-px-Punkte -> rot)
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const { chromium } = require(PW);
@@ -24,7 +29,7 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
   await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) {} });
   const perr = []; p.on('pageerror', e => perr.push(String(e)));
   await p.goto(URL); await wartenBisDatenDa(p);
-  if (GEGENPROBE) await p.addStyleTag({ content: '.histl .cax{padding:4px 6px}' });
+  if (GEGENPROBE) await p.addStyleTag({ content: '.histl .cax{padding:4px 6px}.cax-p::after,.sz-p{width:9px!important;height:9px!important}' });
   await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); gotoSym('EUR'); });
   await p.waitForTimeout(1200);
   const mess = (ort) => p.evaluate(ort => {
@@ -45,13 +50,22 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
     return o;
   }, ort);
   const r1 = await mess('Asset-Seite');
+  // C) Punktgroessen
+  const gross = await p.evaluate(() => {
+    const out = []; let n = 0;
+    document.querySelectorAll('.cax-p:not(.on)').forEach(e => { if (!e.offsetParent) return; n++; const w = parseFloat(getComputedStyle(e, '::after').width); if (w > 5.01) out.push(`Klickpunkt ${w}px`); });
+    document.querySelectorAll('.sz-p').forEach(e => { if (!e.offsetParent) return; n++; const w = e.getBoundingClientRect().width; if (w > 6.01) out.push(`Seasonality-Punkt ${w}px`); });
+    return { out, n };
+  });
+  if (!gross.n) fail('KEINE PUNKTE', 'keine Klick-/Seasonality-Punkte zum Messen');
+  [...new Set(gross.out)].forEach(x => fail('PUNKT ZU GROSS', x));
   await p.evaluate(() => openHistModal('EUR')); await p.waitForTimeout(900);
   const r2 = await mess('History-Fenster');
   [r1, r2].forEach(r => { r.box.forEach(x => fail('BEZUGSBOX', x)); r.pkt.forEach(x => fail('PUNKT', x)); });
   if (!r1.n && !r2.n) fail('KEINE PUNKTE', 'Historie ohne Punkte - nichts geprueft');
   perr.forEach(x => fail('JS-FEHLER', x));
   await b.close();
-  if (GEGENPROBE) { if (F.length) { console.log(`chartpunkte --gegenprobe: ok (rot wie erwartet, ${F.length} Befund(e))`); process.exit(0); } console.log('chartpunkte --gegenprobe: FEHLER - Waechter bleibt gruen'); process.exit(1); }
+  if (GEGENPROBE) { if (F.some(f => f.startsWith('PUNKT ZU GROSS')) && F.some(f => f.startsWith('BEZUGSBOX') || f.startsWith('PUNKT:'))) { console.log(`chartpunkte --gegenprobe: ok (rot wie erwartet, ${F.length} Befund(e))`); process.exit(0); } console.log('chartpunkte --gegenprobe: FEHLER - Waechter bleibt gruen'); process.exit(1); }
   if (F.length) { console.log(`chartpunkte: ${F.length} Befund(e)`); F.slice(0, 20).forEach(f => console.log('  ' + f)); process.exit(1); }
   console.log(`chartpunkte: ok (${r1.n + r2.n} Punkte auf dem Knick, jede .cax-Box = SVG)`);
 })().catch(e => { console.log('chartpunkte: ABBRUCH ' + e.message); process.exit(1); });

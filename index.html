@@ -298,7 +298,7 @@ body{font-family:var(--ff-text);background-image:linear-gradient(180deg,rgba(27,
      als die 4,91/4,93 von vorher auf der helleren Karte. Der Abstand zu
      --t1 (#33405C) bleibt erhalten, die Hierarchie also auch. */
   --t0:#141B2E;--t1:#33405C;--t2:#444E65;--t3:#515C74;
-  --green:#0B5FCC;--red:#DC2430;--amber:#55617A;--due:#B45309;--due-rgb:180,83,9;--star:#55617A;--blue:#0B5FCC;--purple:#6B5FA8;--success:#137036;--live:#D93A34;
+  --green:#0B5FCC;--red:#DC2430;--amber:#55617A;--due:#B45309;--cotl:#E09B00;--due-rgb:180,83,9;--star:#55617A;--blue:#0B5FCC;--purple:#6B5FA8;--success:#137036;--live:#D93A34;
   --green-rgb:11,95,204;--red-rgb:220,36,48;--amber-rgb:85,97,122;
   --star-rgb:85,97,122;--blue-rgb:11,95,204;--purple-rgb:107,95,168;--success-rgb:19,112,54;--t3-rgb:87,99,123;
   /* Etwas straffere Radien (Terminal-Optik statt "weich&luxurioes"). */
@@ -934,7 +934,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
 .sz-b{position:absolute;top:22%;bottom:22%;border-radius:2px}
 .sz-null{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--t3)}
 .sz-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.sz-p{position:absolute;width:7px;height:7px;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 1.5px var(--card);pointer-events:none}
+.sz-p{position:absolute;width:5px;height:5px;border-radius:50%;transform:translate(-50%,-50%);background:var(--t0);pointer-events:none}
 .sz-z{display:grid;grid-template-columns:54px 54px;text-align:right;font:600 var(--fs-xs)/var(--sz-h,17px) var(--ff-text);font-variant-numeric:tabular-nums}
 .sz-z.on{color:var(--t0)}
 .sz-zk{line-height:1.2}
@@ -945,7 +945,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
 .sz-gross .sz-n,.sz-gross .sz-z{font-size:var(--fs-sm)}
 .sz-gross .sz-kopf,.sz-gross .sz-body{grid-template-columns:44px minmax(0,1fr) auto;column-gap:14px}
 .sz-gross .sz-z{grid-template-columns:72px 72px}
-.sz-gross .sz-p{width:9px;height:9px}
+.sz-gross .sz-p{width:6px;height:6px}
 .pd-row{display:flex;align-items:center;gap:8px;min-width:0}
 .pd-n{flex:0 0 auto;min-width:64px;font:700 var(--fs-xs)/1.2 var(--ff-text);color:var(--t2);white-space:nowrap}
 .pd-track{flex:1 1 auto;position:relative;height:12px;min-width:60px;background:var(--bg4);border-radius:3px}
@@ -980,7 +980,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
 .pos-wow{margin-left:auto;font:700 var(--fs-sm)/1 var(--ff-text);font-variant-numeric:tabular-nums;background:var(--bg3);border-radius:5px;padding:4px 7px}
 .pos-wow-l{font-weight:600;color:var(--t3)}
 .pos-plot{position:relative;flex:1 1 auto;min-height:0}
-.pos-ende{position:absolute;right:0;width:9px;height:9px;border-radius:50%;transform:translate(50%,-50%);box-shadow:0 0 0 2px var(--card);pointer-events:none}
+.pos-ende{position:absolute;right:0;width:6px;height:6px;border-radius:50%;transform:translate(50%,-50%);box-shadow:0 0 0 1.5px var(--card);pointer-events:none}
 .ab-yax.pos-yax{position:relative;display:block;min-width:30px;margin-bottom:15px}
 .pos-yax span{position:absolute;right:0;transform:translateY(-50%)}
 /* Zwei gleich hohe Haelften mit der Nulllinie dazwischen - dadurch skalieren
@@ -1242,7 +1242,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   --bg0:#FFFFFF;--bg1:#FAFAFB;--bg2:#F5F6F9;--bg3:#EEF0F4;--bg4:#E5E7EE;--bg5:#E4E7EE;--bg6:#D3D8E2;
   --bd:rgba(28,29,33,.12);--bd2:rgba(28,29,33,.22);
   --t0:#16171A;--t1:#2C2F36;--t2:#3B3F47;--t3:#4A4F59;--t3-rgb:74,79,89;
-  --green:#2C51C7;--red:#B02B26;--amber:#535966;--due:#B45309;--due-rgb:180,83,9;--star:#535966;--blue:#2C51C7;--purple:#6B4CC4;--success:#0F6B3C;--live:#C4302B;
+  --green:#2C51C7;--red:#B02B26;--amber:#535966;--due:#B45309;--cotl:#E09B00;--due-rgb:180,83,9;--star:#535966;--blue:#2C51C7;--purple:#6B4CC4;--success:#0F6B3C;--live:#C4302B;
   --green-rgb:44,81,199;--red-rgb:176,43,38;--amber-rgb:83,89,102;--star-rgb:83,89,102;--blue-rgb:44,81,199;--purple-rgb:107,76,196;--success-rgb:15,107,60;
   --accent:#4B55B8;--accent-rgb:75,85,184;
   --a-infl:#93670F;--a-rate:#5F45AB;--a-lab:#136B60;--a-grow:#9C5117;--a-cot:#1A6E89;
@@ -1263,7 +1263,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   --bg0:#FFFFFF;--bg1:#F6F9FC;--bg2:#F4F7FB;--bg3:#EBF1F8;--bg4:#E2EAF3;--bg5:#DDE6F1;--bg6:#C9D5E5;
   --bd:rgba(10,37,64,.13);--bd2:rgba(10,37,64,.24);
   --t0:#0A2540;--t1:#243851;--t2:#3A495C;--t3:#465A73;--t3-rgb:70,90,115;
-  --green:#0B57B8;--red:#B0322A;--amber:#4E5F74;--due:#B45309;--due-rgb:180,83,9;--star:#4E5F74;--blue:#0B57B8;--purple:#6A4BDD;--success:#0C6B41;--live:#C93326;
+  --green:#0B57B8;--red:#B0322A;--amber:#4E5F74;--due:#B45309;--cotl:#E09B00;--due-rgb:180,83,9;--star:#4E5F74;--blue:#0B57B8;--purple:#6A4BDD;--success:#0C6B41;--live:#C93326;
   --green-rgb:11,87,184;--red-rgb:176,50,42;--amber-rgb:78,95,116;--star-rgb:78,95,116;--blue-rgb:11,87,184;--purple-rgb:106,75,221;--success-rgb:12,107,65;
   --accent:#4F46D6;--accent-rgb:79,70,214;
   --a-infl:#96660F;--a-rate:#5E42AC;--a-lab:#0F6E5F;--a-grow:#A2551A;--a-cot:#186D87;
@@ -1284,7 +1284,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   --bg0:#FFFFFF;--bg1:#FAFAFA;--bg2:#F6F6F6;--bg3:#F0F0F0;--bg4:#E9E9E9;--bg5:#E4E4E4;--bg6:#D0D0D0;
   --bd:rgba(0,0,0,.14);--bd2:rgba(0,0,0,.26);
   --t0:#000000;--t1:#242424;--t2:#383838;--t3:#4A4A4A;--t3-rgb:74,74,74;
-  --green:#0B4BA8;--red:#A81F17;--amber:#4A4A4A;--due:#B45309;--due-rgb:180,83,9;--star:#4A4A4A;--blue:#0B4BA8;--purple:#4E3F8C;--success:#0F5C33;--live:#B32B26;
+  --green:#0B4BA8;--red:#A81F17;--amber:#4A4A4A;--due:#B45309;--cotl:#E09B00;--due-rgb:180,83,9;--star:#4A4A4A;--blue:#0B4BA8;--purple:#4E3F8C;--success:#0F5C33;--live:#B32B26;
   --green-rgb:11,75,168;--red-rgb:168,31,23;--amber-rgb:74,74,74;--star-rgb:74,74,74;--blue-rgb:11,75,168;--purple-rgb:78,63,140;--success-rgb:15,92,51;
   --accent:#1F1F1F;--accent-rgb:31,31,31;
   --a-infl:#7C540F;--a-rate:#4F3A8C;--a-lab:#105C50;--a-grow:#8A4714;--a-cot:#155C74;
@@ -1305,7 +1305,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   --bg0:#FFFFFF;--bg1:#FBFBFA;--bg2:#F7F6F3;--bg3:#F1F0EC;--bg4:#EBEAE5;--bg5:#E5E3DE;--bg6:#D5D2CB;
   --bd:rgba(55,53,47,.14);--bd2:rgba(55,53,47,.25);
   --t0:#191817;--t1:#302E28;--t2:#423E3A;--t3:#524E48;--t3-rgb:82,78,72;
-  --green:#1461B0;--red:#A93125;--amber:#55514A;--due:#B45309;--due-rgb:180,83,9;--star:#55514A;--blue:#1461B0;--purple:#6B44AD;--success:#0F6039;--live:#BE3826;
+  --green:#1461B0;--red:#A93125;--amber:#55514A;--due:#B45309;--cotl:#E09B00;--due-rgb:180,83,9;--star:#55514A;--blue:#1461B0;--purple:#6B44AD;--success:#0F6039;--live:#BE3826;
   --green-rgb:20,97,176;--red-rgb:169,49,37;--amber-rgb:85,81,74;--star-rgb:85,81,74;--blue-rgb:20,97,176;--purple-rgb:107,68,173;--success-rgb:15,96,57;
   --accent:#1B6FC4;--accent-rgb:27,111,196;
   --a-infl:#8F6113;--a-rate:#5B41A0;--a-lab:#136759;--a-grow:#964E17;--a-cot:#166583;
@@ -1340,7 +1340,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   --bg0:#161616;--bg1:#1C1C1C;--bg2:#262626;--bg3:#212121;--bg4:#2C2C2C;--bg5:#333333;--bg6:#474747;
   --bd:rgba(255,255,255,.16);--bd2:rgba(255,255,255,.30);
   --t0:#F4F4F4;--t1:#E0E4E9;--t2:#C6CBD0;--t3:#AEB4BB;--t3-rgb:174,180,187;
-  --green:#78A9FF;--red:#FF8389;--amber:#A8B0B8;--due:#F0913A;--due-rgb:240,145,58;--star:#A8B0B8;--blue:#78A9FF;--purple:#BE95FF;--success:#5CD17E;--live:#FF9DA2;
+  --green:#78A9FF;--red:#FF8389;--amber:#A8B0B8;--due:#F0913A;--cotl:#FFCB52;--due-rgb:240,145,58;--star:#A8B0B8;--blue:#78A9FF;--purple:#BE95FF;--success:#5CD17E;--live:#FF9DA2;
   --green-rgb:120,169,255;--red-rgb:255,131,137;--amber-rgb:168,176,184;--star-rgb:168,176,184;--blue-rgb:120,169,255;--purple-rgb:190,149,255;--success-rgb:92,209,126;
   --accent:#78C7FF;--accent-rgb:120,199,255;
   --a-infl:#E3B23C;--a-rate:#B48CFF;--a-lab:#5FE3E1;--a-grow:#FF9E52;--a-cot:#5CC2F0;
@@ -1374,7 +1374,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   --bg0:#0A101C;--bg1:#111A2B;--bg2:#16223A;--bg3:#131D31;--bg4:#1B2740;--bg5:#22304C;--bg6:#2C3D5E;
   --bd:rgba(150,180,225,.18);--bd2:rgba(150,180,225,.32);
   --t0:#EEF3FB;--t1:#D5DFEF;--t2:#BCC8DA;--t3:#A3B2CB;--t3-rgb:163,178,203;
-  --green:#7DBBFF;--red:#FF8C87;--amber:#A2B0C6;--due:#F0913A;--due-rgb:240,145,58;--star:#A2B0C6;--blue:#7DBBFF;--purple:#BCA2FF;--success:#5ACF92;--live:#FF9A93;
+  --green:#7DBBFF;--red:#FF8C87;--amber:#A2B0C6;--due:#F0913A;--cotl:#FFCB52;--due-rgb:240,145,58;--star:#A2B0C6;--blue:#7DBBFF;--purple:#BCA2FF;--success:#5ACF92;--live:#FF9A93;
   --green-rgb:125,187,255;--red-rgb:255,140,135;--amber-rgb:162,176,198;--star-rgb:162,176,198;--blue-rgb:125,187,255;--purple-rgb:188,162,255;--success-rgb:90,207,146;
   --accent:#6FCBE8;--accent-rgb:111,203,232;
   --a-infl:#EBBA55;--a-rate:#B49CFF;--a-lab:#4FD3BF;--a-grow:#F59B5C;--a-cot:#5FC0E0;
@@ -1408,7 +1408,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   --bg0:#17181B;--bg1:#1D1F23;--bg2:#232529;--bg3:#1F2126;--bg4:#282B31;--bg5:#31353C;--bg6:#41454E;
   --bd:rgba(255,255,255,.15);--bd2:rgba(255,255,255,.28);
   --t0:#F2F3F5;--t1:#DBDEE3;--t2:#C0C4CB;--t3:#A7ADB6;--t3-rgb:167,173,182;
-  --green:#82B8F5;--red:#F58A86;--amber:#A6ADB8;--due:#F0913A;--due-rgb:240,145,58;--star:#A6ADB8;--blue:#82B8F5;--purple:#BBA4E8;--success:#63C68C;--live:#FA9691;
+  --green:#82B8F5;--red:#F58A86;--amber:#A6ADB8;--due:#F0913A;--cotl:#FFCB52;--due-rgb:240,145,58;--star:#A6ADB8;--blue:#82B8F5;--purple:#BBA4E8;--success:#63C68C;--live:#FA9691;
   --green-rgb:130,184,245;--red-rgb:245,138,134;--amber-rgb:166,173,184;--star-rgb:166,173,184;--blue-rgb:130,184,245;--purple-rgb:187,164,232;--success-rgb:99,198,140;
   --accent:#A8CBDC;--accent-rgb:168,203,220;
   --a-infl:#DFB25A;--a-rate:#AF9AE0;--a-lab:#57C0AE;--a-grow:#E5975A;--a-cot:#78B8D2;
@@ -1442,7 +1442,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   --bg0:#2E3440;--bg1:#333B48;--bg2:#3B4252;--bg3:#374050;--bg4:#3E4756;--bg5:#454F60;--bg6:#4F5A6E;
   --bd:rgba(216,222,233,.20);--bd2:rgba(216,222,233,.34);
   --t0:#ECEFF4;--t1:#E0E6EF;--t2:#CFD6E1;--t3:#BDC7D6;--t3-rgb:189,199,214;
-  --green:#9EC1DE;--red:#EE9AA0;--amber:#B4BFCE;--due:#F0913A;--due-rgb:240,145,58;--star:#B4BFCE;--blue:#9EC1DE;--purple:#D2AECB;--success:#8FD4A8;--live:#F2A8AC;
+  --green:#9EC1DE;--red:#EE9AA0;--amber:#B4BFCE;--due:#F0913A;--cotl:#FFCB52;--due-rgb:240,145,58;--star:#B4BFCE;--blue:#9EC1DE;--purple:#D2AECB;--success:#8FD4A8;--live:#F2A8AC;
   --green-rgb:158,193,222;--red-rgb:238,154,160;--amber-rgb:180,191,206;--star-rgb:180,191,206;--blue-rgb:158,193,222;--purple-rgb:210,174,203;--success-rgb:143,212,168;
   --accent:#A6D3E0;--accent-rgb:166,211,224;
   --a-infl:#E6C87F;--a-rate:#C7ACDD;--a-lab:#83D8C6;--a-grow:#E7A67F;--a-cot:#A3CCE0;
@@ -1476,7 +1476,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   --bg0:#002B36;--bg1:#03313D;--bg2:#073642;--bg3:#053742;--bg4:#0A3E4A;--bg5:#0F4753;--bg6:#175665;
   --bd:rgba(147,161,161,.24);--bd2:rgba(147,161,161,.40);
   --t0:#EEE8D5;--t1:#DCD6C4;--t2:#BEC7C4;--t3:#ADB7B4;--t3-rgb:173,183,180;
-  --green:#7CBCEC;--red:#F58C86;--amber:#A6B2B0;--due:#F0913A;--due-rgb:240,145,58;--star:#A6B2B0;--blue:#7CBCEC;--purple:#CBA6E4;--success:#78CE8A;--live:#FA968E;
+  --green:#7CBCEC;--red:#F58C86;--amber:#A6B2B0;--due:#F0913A;--cotl:#FFCB52;--due-rgb:240,145,58;--star:#A6B2B0;--blue:#7CBCEC;--purple:#CBA6E4;--success:#78CE8A;--live:#FA968E;
   --green-rgb:124,188,236;--red-rgb:245,140,134;--amber-rgb:166,178,176;--star-rgb:166,178,176;--blue-rgb:124,188,236;--purple-rgb:203,166,228;--success-rgb:120,206,138;
   --accent:#6FC7D4;--accent-rgb:111,199,212;
   --a-infl:#E0BC4A;--a-rate:#B79BE6;--a-lab:#55CBB8;--a-grow:#EA9F52;--a-cot:#5FC0D8;
@@ -3185,7 +3185,7 @@ body.no-ui-anim .cd-heute{animation:none}
    Wischen/Verschieben des Diagramms (Nutzer-Wunsch 2026-07-11). */
 .chv{position:relative;touch-action:pan-y}
 .chv-line{position:absolute;top:4px;bottom:22px;width:1px;background:var(--t3);opacity:.55;pointer-events:none}/* top/height setzt attachChartHovers: die Linie laeuft vom gewaehlten Punkt senkrecht bis zum Boden des Diagramms, nicht ueber die volle Hoehe */
-.chv-dot{position:absolute;width:10px;height:10px;border-radius:50%;border:2px solid #fff;background:transparent;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.45)}
+.chv-dot{position:absolute;width:7px;height:7px;border-radius:50%;border:1.5px solid #fff;background:transparent;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.45)}
 .chv-tip{position:absolute;z-index:6;background:var(--bg5);border:1px solid var(--bd2);border-radius:var(--rs);padding:6px 9px;font-family:var(--ff-num);font-size:var(--fs-xs);line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.4);pointer-events:none;white-space:nowrap;transform:translate(-50%,calc(-100% - 10px))}
 .chv-tip b{color:var(--t0)}.chv-tip .chv-tip-d{color:var(--t3);font-size:var(--fs-2xs);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px}
 .cot-tip-date{font-weight:700;color:var(--t1);margin-bottom:4px;font-size:var(--fs-2xs);letter-spacing:.3px;text-transform:uppercase}
@@ -4533,12 +4533,15 @@ body.dense-mode .cot-card,body.dense-mode .rub-card{margin-bottom:10px}
 .seas-hit{font:500 14px/1 var(--ff-num)}
 /* Klickpunkte: rund bleibt rund. Im gestreckten SVG waren sie Ellipsen. */
 .cax-pkt{position:absolute;inset:0;pointer-events:none}
-.cax-p{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;padding:0;
-  border-radius:50%;background:var(--pc);border:1.4px solid #fff;cursor:pointer;
-  pointer-events:auto;box-shadow:0 0 0 .5px rgba(0,0,0,.12)}
-.cax-p:hover{width:13px;height:13px;margin:-6.5px 0 0 -6.5px}
-.cax-p.on{width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-width:2px;
-  box-shadow:0 0 0 2px rgba(var(--blue-rgb),.3)}
+.cax-p{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;padding:0;border:0;
+  border-radius:50%;background:transparent;cursor:pointer;pointer-events:auto}
+/* Nutzer 2026-10-11: "die Punkte ... zu fett mach die deutlich kleiner und
+   dezenter". Sichtbar nur 5 px (vorher 9 px + weisser Ring), die
+   Trefferflaeche bleibt 18 px. */
+.cax-p::after{content:"";position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;
+  border-radius:50%;background:var(--pc);opacity:.85}
+.cax-p:hover::after{width:7px;height:7px;margin:-3.5px 0 0 -3.5px;opacity:1}
+.cax-p.on::after{width:7px;height:7px;margin:-3.5px 0 0 -3.5px;opacity:1;box-shadow:0 0 0 2px rgba(var(--blue-rgb),.3)}
 .histl{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:4px 6px}
 .histl-empty{font:500 var(--fs-xs)/1.5 var(--ff-num);color:var(--t3);font-style:italic;padding:14px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs)}
 /* ⚠ ZWEI Klebe-Ebenen, nicht eine. Mit nur der Spaltenzeile klebend
@@ -6339,7 +6342,7 @@ select.px-panel-sel,select.res-sfield,select.dw-sel,select.bt-sel{height:var(--h
 .px-card.on{border-color:var(--ui-act);box-shadow:0 0 0 2px rgba(var(--ui-act-rgb),.30)}
 .hl-topic.on{border-left-color:var(--ui-act)}
 .hl-att.on,.hl-att.on span{border-color:var(--ui-act);color:var(--ui-act)}
-.cax-p.on{box-shadow:0 0 0 2px rgba(var(--ui-act-rgb),.35)}
+.cax-p.on::after{box-shadow:0 0 0 2px rgba(var(--ui-act-rgb),.35)}
 .search-row.sel{outline-color:rgba(var(--ui-act-rgb),.45)}
 /* In der DUNKLEN Seitenleiste waere Navy auf Navy unsichtbar - dort gilt
    die Aktiv-Farbe der Leiste selbst (wie bei den Hauptpunkten). */
@@ -6547,11 +6550,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-602 - COT with a long-% line over the mirrored bars (right scale), set-ups rows fixed (no sideways scrolling, scores aligned)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-603 - Seasonality bars and this-year line on their own scales, smaller chart dots everywhere, COT long-% line in amber."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-602</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-603</span>
     </span>
   </div>
   <div class="hdr-r">

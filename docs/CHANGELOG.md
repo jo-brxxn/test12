@@ -19895,3 +19895,28 @@ Sachen weiter links“*
 `.sz-zahlen`, Geschwister der Spur. Suche ab `.sz`; Gegenprobe blendet
 `.sz-zahlen` aus.
 
+## 2026-10-11 (Nacht) — VERSION-CHECK-603: Seasonality-Skalen, dezente Punkte, COT-Linie sichtbar
+
+Nutzer: *„Die ausschläge der Balken in seasonality sind zu klein und die
+Punkte bei history und beim Preis bei seasonality sind zu fett mach die
+deutlich kleiner und dezenter und überall wo du die sonst noch benutzt
+auch. Bei cot positioning fehlt noch die prozentlinie“*
+
+**Seasonality — gemessen:** gemeinsame Skala, Maximum aus Durchschnitten
+UND Monatsbewegungen dieses Jahres → längster Balken nutzte nur
+5–64 % der halben Breite (OIL 5 %, NAS 21 %, GOLD 36 %, BTC 64 %).
+Rückfrage → „Zwei getrennte Skalen“. Balken = eigenes Maximum (100 %),
+Kurslinie = eigenes; Legende „own scale“; Info-Text angepasst.
+Kurspunkte jetzt dunkel (`--t0`): blaue Punkte auf blauen Balken waren
+ohne weißen Ring unsichtbar.
+
+**Punkte:** `.cax-p` sichtbar 9 px + 1,4 px weißer Ring → 5 px (Hover/aktiv
+7 px), Trefferfläche 18 px (Punkt = `::after`). Gleiche Klasse überall:
+`.sz-p` 7/9 → 5/6 px, `.pos-ende` 9 → 6 px, `.chv-dot` 10 → 7 px.
+Wächter `check/chartpunkte.js` C mit Gegenprobe (9-px-Punkte → rot).
+
+**COT:** Die Linie war seit 602 im Branch, live stand noch 598. Rückfrage
+zur Sichtbarkeit (sie liegt meist bei 35–65 % = auf der Fuge der Balken) →
+„Über den Balken, auffällig“: Amber `--cotl` in allen Themes, 2,6 px
+(Karte) / 3 px (Tab), dunkle Unterlage, Untertitel „amber line“.
+

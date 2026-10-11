@@ -8,9 +8,9 @@
 // Geprueft fuer jedes Asset mit Saisonalitaet (Asset-Seite, 1280px):
 //   A) je Monat mit Kursdaten des laufenden Jahres (seasCurYearReturns - die
 //      Reihe des Seasonality-Tabs) genau ein Punkt, sonst keiner;
-//   B) Punkt und Balken auf EINER Skala: 0-Linie = Spurmitte, Balkenbreite =
-//      |avg|/max * 48% der Spur, Punkt-x = 50% + v/max * 48%, max ueber
-//      Balken UND Punkte (+-1px);
+//   B) ZWEI Skalen (Nutzer-Wahl 2026-10-11): 0-Linie = Spurmitte,
+//      Balkenbreite = |avg|/maxAvg * 48% der Spur, Punkt-x = 50% +
+//      v/maxCy * 48% (+-1px) - der laengste Balken fuellt die Breite;
 //   C) Punkt auf der Mitte seiner Monatszeile, Linie durch alle Punkte;
 //   D) kein Schalter in der Kachel (fest, nicht abschaltbar), Legende da.
 //   node check/seasvsprice.js [--gegenprobe]   (Punkte per CSS ausgeblendet)
@@ -42,7 +42,8 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
       const A = SEASONALITY_DATA.assets[id];
       const cy = seasCurYearReturns(id, A.inv) || {};
       const monate = A.months.slice().sort((a, b) => a[0] - b[0]);
-      const max = Math.max(...monate.map(m => Math.abs(+m[1])), ...Object.values(cy).filter(isFinite).map(Math.abs)) || 1;
+      const max = Math.max(...monate.map(m => Math.abs(+m[1]))) || 1;
+      const maxCy = Math.max(0, ...Object.values(cy).filter(isFinite).map(Math.abs)) || 1;
       const spur = t.querySelector('.sz-rows').getBoundingClientRect();
       const zeilen = [...t.querySelectorAll('.sz-r')];
       const dots = [...t.querySelectorAll('.sz-p')].filter(d => getComputedStyle(d).display !== 'none' && d.getBoundingClientRect().width > 0);
@@ -63,7 +64,7 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
         if (!d) { fehler.push(`A ${nr}: kein Punkt, obwohl ${cy[nr].toFixed(2)}% vorliegt`); return; }
         n++;
         const q = d.getBoundingClientRect();
-        const x = q.left + q.width / 2, sollX = spur.left + (0.5 + cy[nr] / max * 0.48) * spur.width;
+        const x = q.left + q.width / 2, sollX = spur.left + (0.5 + cy[nr] / maxCy * 0.48) * spur.width;
         if (Math.abs(x - sollX) > 1) fehler.push(`B ${nr}: Punkt bei ${(x - spur.left).toFixed(1)}px statt ${(sollX - spur.left).toFixed(1)}px`);
         if (Math.abs(q.top + q.height / 2 - mitte) > 1) fehler.push(`C ${nr}: Punkt nicht auf der Zeilenmitte`);
       });
@@ -78,10 +79,10 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
     geprueft++; punkte += r.n;
     r.fehler.slice(0, 3).forEach(x => fail(id, x));
     if (r.knopf) fail(id + ' D', 'die Kachel hat einen Schalter - das laufende Jahr muss fest drin sein');
-    if (r.mitDaten && !r.leg) fail(id + ' D', 'Legende "This year (price)" fehlt');
+    if (r.mitDaten && !r.leg) fail(id + ' D', 'Legende "This year (price) · own scale" fehlt');
   }
   if (perr.length) fail('Seitenfehler', perr.slice(0, 3).join(' | '));
   await b.close();
   if (F.length) { console.log('✗ Seasonality vs Price:\n  ' + F.slice(0, 20).join('\n  ')); process.exit(1); }
-  console.log(`✓ Seasonality vs Price: ${geprueft} Kacheln, ${punkte} Monatspunkte auf der Balkenskala (Monatszeilen), Linie durch alle Punkte, kein Schalter`);
+  console.log(`✓ Seasonality vs Price: ${geprueft} Kacheln, ${punkte} Monatspunkte, Balken und Kurslinie je auf eigener Skala (Monatszeilen), Linie durch alle Punkte, kein Schalter`);
 })().catch(e => { console.log('✗ seasvsprice: ' + e.message); process.exit(1); });

@@ -9588,17 +9588,24 @@ function posAbwKopf(name,ab){
 function seasZeilenHtml(months,curMon,cy,gross){
   const mo=months.slice().sort((a,b)=>a[0]-b[0]);
   cy=cy||{};
-  const max=Math.max(...mo.map(m=>Math.abs(+m[1])),...Object.values(cy).filter(isFinite).map(Math.abs))||1;
-  const xp=v=>50+(+v)/max*48;                     // Prozent der Spurbreite
+  // ZWEI Skalen (Nutzer-Wahl 2026-10-11 auf Rueckfrage): mit einer gemeinsamen
+  // Skala bestimmten die Monatsbewegungen dieses Jahres das Maximum - der
+  // laengste Durchschnitts-Balken nutzte nur 5-64 % der Breite (Oel 5 %,
+  // Gold 36 %). Jetzt fuellen die Balken die Breite auf ihre eigene Skala,
+  // die Kurslinie auf ihre eigene; die exakten Zahlen stehen rechts.
+  const max=Math.max(...mo.map(m=>Math.abs(+m[1])))||1;
+  const maxCy=Math.max(0,...Object.values(cy).filter(isFinite).map(Math.abs))||1;
+  const xp=v=>50+(+v)/max*48;                     // Prozent der Spurbreite (Balken)
+  const xc=v=>50+(+v)/maxCy*48;                   // dito, Kurslinie
   const n=mo.length,hp=[];
   const pct=v=>(v>0?'+':'')+(+v).toFixed(2)+'%';
   const namen=mo.map(([nr])=>`<span class="sz-n${nr===curMon?' on':''}">${SEAS_MON[nr-1]}</span>`).join('');
   const balken=mo.map(([nr,avg])=>{const a=+avg,w=Math.abs(a)/max*48;
     return`<span class="sz-r${nr===curMon?' on':''}"><i class="sz-b" style="left:${a>=0?50:50-w}%;width:${w}%;background:${a>=0?BC.bull:BC.bear}"></i></span>`;}).join('');
   // Kurslinie dieses Jahres: Punkte als HTML (rund), Linie als gestrecktes SVG
-  const pk=mo.map(([nr],i)=>cy[nr]!=null?{x:xp(cy[nr]),y:(i+0.5)/n*100,nr}:null).filter(Boolean);
+  const pk=mo.map(([nr],i)=>cy[nr]!=null?{x:xc(cy[nr]),y:(i+0.5)/n*100,nr}:null).filter(Boolean);
   const linie=pk.length>1?`<svg class="sz-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pk.map(q=>q.x.toFixed(2)+','+q.y.toFixed(2)).join(' ')}" fill="none" stroke="var(--t0)" stroke-width="1.6" stroke-dasharray="4,3" vector-effect="non-scaling-stroke"/></svg>`:'';
-  const punkte=pk.map(q=>`<b class="sz-p" style="left:${q.x.toFixed(2)}%;top:${q.y.toFixed(2)}%;background:${cy[q.nr]>=0?BC.bull:BC.bear}"></b>`).join('');
+  const punkte=pk.map(q=>`<b class="sz-p" style="left:${q.x.toFixed(2)}%;top:${q.y.toFixed(2)}%"></b>`).join('');
   const zahlen=mo.map(([nr,avg,hit])=>{const a=+avg,sig=(a>=0&&hit>=SEAS_HIT_HOCH)||(a<0&&hit<=SEAS_HIT_TIEF);
     return`<span class="sz-z${nr===curMon?' on':''}"><span style="color:${a>=0?BC.bull:BC.bear}">${sig?'<b>':''}${pct(a)}${sig?'</b>':''}</span><span class="sz-cy">${cy[nr]!=null?pct(cy[nr]):'–'}</span></span>`;}).join('');
   mo.forEach(([nr,avg,hit,jahre],i)=>hp.push({fx:xp(avg)/100,fy:(i+0.5)/n,col:+avg>=0?BC.bull:BC.bear,
@@ -9611,7 +9618,7 @@ function seasZeilenHtml(months,curMon,cy,gross){
     <div class="sz-body"><div class="sz-namen">${namen}</div>
       <div class="sz-spur">${chartHoverWrap(`<div class="sz-rows">${balken}<i class="sz-null"></i>${linie}${punkte}</div>`,hp,'height:100%')}</div>
       <div class="sz-zahlen">${zahlen}</div></div>
-    ${pk.length?'<div class="sz-leg"><span class="sz-leg-l"></span>This year (price)</div>':''}
+    ${pk.length?'<div class="sz-leg"><span class="sz-leg-l"></span>This year (price) · <i>own scale</i></div>':''}
   </div>`;
 }
 // ── COT: gespiegelte Balken (Nutzer-Wahl 2026-10-11, Version 4) ─────────
@@ -9644,7 +9651,10 @@ function abCotChart(hist){
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:${BC.bear}">Short</span><b>${(100-lp).toFixed(1)}% · ${cotNum(S)}</b></div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">w/w change</span><b>${m&&m.dNetPct!=null?cotPct(m.dNetPct,true).replace('%','pp'):'–'}</b></div>`});
   });
-  sv+=`<polyline points="${linie.join(' ')}" fill="none" stroke="#fff" stroke-width="3.2" opacity=".6" vector-effect="non-scaling-stroke"/><polyline points="${linie.join(' ')}" fill="none" stroke="var(--t0)" stroke-width="1.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+  // Nutzer 2026-10-11 (Rueckfrage "Ueber den Balken, auffaellig"): die Linie
+  // liegt meist bei 35-65 % = auf der Fuge der Balken -> Amber (--cotl) + dick
+  // + dunkle Unterlage, damit sie sich von Blau UND Rot abhebt.
+  sv+=`<polyline points="${linie.join(' ')}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="4.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><polyline points="${linie.join(' ')}" fill="none" stroke="var(--cotl)" stroke-width="2.6" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
   const svg=`<svg class="ab-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${sv}</svg>`;
   const achse=[h[0].date,h[h.length-1].date].map(d=>`<span>${escH(fmtDayShort(d,true))}</span>`).join('');   // mit Jahr (Nutzer-Regel 2026-09-17)
   return{leer:false,berichte:h.length,html:`<div class="ab-plot">
@@ -10447,7 +10457,7 @@ function abGrafikHtml(art,c){
       `<span class="ab-tile-s">as of ${escH(stand)}</span>`,
       `${ch.html}${fuss}${abCotScoreZeile(c)}`,null,
       ['Large speculators (CFTC Legacy, non-commercial) — the reporting group whose positioning the score reads.',
-       'Blue bars up = long contracts, red bars down = short contracts (left scale). The line is the long share in % (right scale).'+(ch.leer?'':` The chart covers ${ch.berichte} weekly reports; tap a column for the numbers.`),
+       'Blue bars up = long contracts, red bars down = short contracts (left scale). The amber line is the long share in % (right scale).'+(ch.leer?'':` The chart covers ${ch.berichte} weekly reports; tap a column for the numbers.`),
        'How it counts: '+cotRegelText()]);
   }
   if(art==='retail'){
@@ -10542,7 +10552,7 @@ function abGrafikHtml(art,c){
      </div>
      ${abScoreZeile(c,SEAS_IND_NAME,sb&&sb.grund)}`,null,
     [`Average calendar-month move over ${cur?cur[3]:'–'} years, from ${escH(A.proxy||'a long-run price proxy')}${A.inv?', inverted so the sign matches this asset':''}.`,
-     `The dashed line is this year's actual move month by month on the same scale, so you see at a glance whether ${escH(new Date().getFullYear()+'')} follows the pattern.`,
+     `The dashed line is this year's actual move month by month on its own scale (exact values in the right column), so you see at a glance whether ${escH(new Date().getFullYear()+'')} follows the pattern.`,
      `"Aligned" means the average return and the hit rate point the same way — ${escH(SEAS_MON[jetzt-1])} ${stark?'does':'does not'}.`,
      escH(seasRegelText())]);
 }
@@ -18568,7 +18578,7 @@ function cotHistChart(history,availWidth,meta,opt){
   // Long-Prozentlinie mit eigener Achse rechts am Plot (0-100 %).
   const yPr=p=>y0-(p/100)*chartH;
   const lp=history.map((e,i)=>{const L=+e.long||0,S=+e.short||0;return(leftPad+i*perBar+barW/2).toFixed(1)+','+yPr(L+S>0?L/(L+S)*100:50).toFixed(1);}).join(' ');
-  svg+=`<polyline points="${lp}" fill="none" stroke="#fff" stroke-width="3.4" opacity=".6"/><polyline points="${lp}" fill="none" stroke="var(--t0)" stroke-width="1.8" stroke-linejoin="round"/>`;
+  svg+=`<polyline points="${lp}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="5" stroke-linejoin="round"/><polyline points="${lp}" fill="none" stroke="var(--cotl)" stroke-width="3" stroke-linejoin="round"/>`;
   [0,50,100].forEach(p=>{const y=yPr(p);svg+=`<text x="${(xR+6).toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="start" style="font-size:var(--fs-2xs);fill:var(--t1)">${p}%</text>`;});
   svg+=`<text x="${leftPad+4}" y="${(topPad+12).toFixed(1)}" style="font-size:var(--fs-2xs);font-weight:700;fill:${BC.bull}">▲ LONG</text><text x="${leftPad+4}" y="${(y0-4).toFixed(1)}" style="font-size:var(--fs-2xs);font-weight:700;fill:${BC.bear}">▼ SHORT</text>`;
   // vs Price: gestrichelte Kurslinie auf den Report-Tagen der Balken, eigene
@@ -22890,7 +22900,7 @@ function renderCotRoh(){
     const p3=cotPct3yOf(cotFilter);
     const p3Note=p3?`<div class="cot-meta">3-year percentile: today&#39;s net positioning is at the <b>${Math.round(p3.pct)}th percentile</b> of its own last ~3 years (${p3.n} weekly reports)${p3.pct>=90?` · <span style="color:var(--amber)">⚠ historically extreme long — crowded trade, contrarian caution</span>`:p3.pct<=10?` · <span style="color:var(--amber)">⚠ historically extreme short — crowded trade, contrarian caution</span>`:''} · display-only</div>`:'';
     histCard=`<div class="cot-card">
-      <div class="cot-card-title"><span>Positioning History — ${escH(COT_NAME[cotFilter]||cotFilter)}</span>${fCrowded}<small>1 column = 1 COT report · blue up = long contracts · red down = short contracts (left scale) · line = long % (right scale)${cotVsPrice&&pxReihe?' · dashed = price (far right scale)':''} · hover/tap for % and the weekly change</small></div>
+      <div class="cot-card-title"><span>Positioning History — ${escH(COT_NAME[cotFilter]||cotFilter)}</span>${fCrowded}<small>1 column = 1 COT report · blue up = long contracts · red down = short contracts (left scale) · <b style="color:var(--cotl)">amber line</b> = long % (right scale)${cotVsPrice&&pxReihe?' · dashed = price (far right scale)':''} · hover/tap for % and the weekly change</small></div>
       <div style="padding:10px 14px 0">${chartLeisteHtml(vsBtn,zeitBar)}</div>${ladeHinweis}
       ${chartSvg?`<div class="cot-hist-wrap" id="cotHistWrap"><div class="cot-tip" id="cotHoverTip" style="display:none"></div>${chartSvg}</div>`:`<div class="cot-empty">Not enough report history yet — it builds up automatically as the hourly data job runs.</div>`}
     </div>`+p3Note;

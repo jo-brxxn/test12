@@ -1402,11 +1402,18 @@ per Rückfrage gewählt, gilt in Asset-Karten **und** Tabs:
   **Prozentlinie** (Nutzer 2026-10-11): über den Balken die Long-Quote in %
   als Linie, rechte Achse 0/50/100 %, linke Achse = Kontrakte (Karte und
   Tab; im Tab steht die Kursachse bei vs Price rechts daneben).
+  **Auffällig** (Nutzer-Wahl): Amber `--cotl` (hell `#E09B00`, dunkel
+  `#FFCB52`), 2,6–3 px, dunkle Unterlage — sie liegt meist auf der Fuge
+  der Balken und muss sich von Blau und Rot abheben.
 - **Seasonality = Monatszeilen ab 0** (Version 1 ohne Up-Spalte): je Monat
   ein Balken von der 0-Linie, Punkte + gestrichelte Linie = Verlauf dieses
   Jahres („Kurslinie“), laufender Monat hinterlegt, Signal-Monate fett,
   Trefferquote im Tooltip/Fuß. `seasZeilenHtml()` in Karte und Tab
   (`.sz-gross`).
+  **Zwei Skalen** (Nutzer-Wahl 2026-10-11): Balken auf ihr eigenes Maximum
+  (längster Balken = volle halbe Breite), Kurslinie auf ihr eigenes;
+  Legende „own scale“, exakte Werte rechts. Kurspunkte dunkel (`--t0`),
+  5 px (Tab 6 px).
 - **Retail = Abweichung von 50 %.** Je Zeile eine Spur 0–100 %, Balken von
   der Mitte zur Mehrheitsseite (Blau long, Rot short, volle Farbe), Striche
   bei `RETAIL_AB` (65/35 %), Text „68% long“ / „71% short“. Broker-Quote
@@ -1778,4 +1785,12 @@ soll fest sein und trotzdem alles zu sehen“*. `.setups-cols .sym-row` hat
 `overflow:visible` + `touch-action:pan-y` — nie ein eigener
 Scroll-Bereich. Platz schafft die Spalte (Name max-content, Chip bricht
 um), nicht ein Wischen. Geprüft: `check/namen.js` C.
+
+## Chart-Punkte dezent (seit 2026-10-11)
+
+Nutzer: *„die Punkte … zu fett mach die deutlich kleiner und dezenter und
+überall“*. Sichtbarer Punkt **5 px** (Hover/aktiv 7 px), kein weißer Ring;
+die Trefferfläche bleibt 18 px (`.cax-p` transparent, Punkt =
+`::after`). Seasonality `.sz-p` 5/6 px, Retail-Endpunkt `.pos-ende` 6 px,
+Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 
