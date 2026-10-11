@@ -19856,3 +19856,8 @@ designänderungen nicht nur bei den Karten umsetzen sondern überall“*.
   `{"EUR":[null,"p:GOLD",null]}`, Kachel zeigt „GOLD · Gold“ ohne Bias-Wort.
 - Design-Vorschau entfernt (`vorschauHtml`, `.vp-*`, Ausnahmen in `yachse`
   und `fliesstext`).
+- `rules` (Sync-Regel) las nur die Hülle `cloudPush`/`cloudPull` — die Arbeit
+  steht seit `syncSeriell` in `cloudPushRoh`/`cloudPullRoh`. Ein korrekt
+  angebundener neuer Schlüssel (`fxpro_kontext_slots`) wurde dadurch als „ohne
+  Sync“ gemeldet. Jetzt zählen beide Körper; Gegenprobe (Pull-Zeile entfernt)
+  meldet weiterhin „fehlt: cloudPull“.

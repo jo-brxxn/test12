@@ -378,7 +378,11 @@ function varsFuerKey(quelle, key) {
 }
 if (neueKeys.length) {
   const jetztHtml = aktuellerCode();
-  const push = fnKoerper(jetztHtml, 'cloudPush'), pull = fnKoerper(jetztHtml, 'cloudPull');
+  // cloudPush/cloudPull sind seit der Serialisierung (syncSeriell) nur Huellen
+  // um cloudPushRoh/cloudPullRoh - die eigentliche Arbeit steht dort. Beide
+  // Koerper zaehlen (Fund 2026-10-11: ein korrekt angebundener neuer
+  // Schluessel wurde als "ohne Sync" gemeldet, weil nur die Huelle gelesen wurde).
+  const push = fnKoerper(jetztHtml, 'cloudPush') + fnKoerper(jetztHtml, 'cloudPushRoh'), pull = fnKoerper(jetztHtml, 'cloudPull') + fnKoerper(jetztHtml, 'cloudPullRoh');
   const fehlt = [];
   neueKeys.forEach(k => {
     const vs = varsFuerKey(jetztHtml, k);
