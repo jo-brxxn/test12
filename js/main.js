@@ -10623,12 +10623,81 @@ function renderAssetBoard(c){
       ${ASSET_CARDS.map(n=>{const i=idx(n);return`<div class="ab-col">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('')}
       ${abReihenTitel('Positioning')}
       ${ASSET_GRAPHS.map(a=>`<div class="ab-col">${abGrafikHtml(a,c)}</div>`).join('')}
+      ${vorschauHtml(c)}
     </div>
     ${/* Die Notizen-Karte ist hier weg (Nutzer: "entfern die Notes Karte
          sodass dann die Charts da fetter hinpassen") - angepinnt stehen sie
          jetzt oben in der Kopfreihe. Das Kontext-Band bekommt dadurch die
          volle Breite. */''}
     <div class="ab-lower">${abKontextHtml(c)}</div>
+  </div>`;
+}
+
+// ══ DESIGN-VORSCHAU (TEMPORAER, 2026-10-11) ═════════════════════════════
+// Nutzer 2026-10-11: "bau mal auf der Webseite alle Versionen untereinander
+// ein und benenn sie Version 1 usw und mach auch das gleiche bei retail und
+// cot dann guck ich mir das an und sag dir was du final umsetzen sollst ...
+// mach einfach sehr schnell das es sehbar ist". Reine Ansicht zum Auswaehlen:
+// echte Daten des Assets, wo sie einfach greifbar sind; nichts davon geht in
+// den Score. Wird nach der Entscheidung wieder entfernt (vorschauHtml + .vp-*).
+function vorschauHtml(c){
+  const box=(n,titel,inhalt)=>`<div class="vp-box"><div class="vp-v">Version ${n}</div><div class="vp-t">${escH(titel)}</div>${inhalt}</div>`;
+  const leer=t=>`<div class="vp-leer">${escH(t)}</div>`;
+  const sek=(titel,boxen)=>`<div class="vp-sek"><div class="vp-sek-t">${escH(titel)}</div><div class="vp-grid">${boxen.join('')}</div></div>`;
+  const pct=v=>(v>0?'+':'')+(+v).toFixed(2)+'%';
+  const col=v=>v>=0?BC.bull:BC.bear;
+  // ── Seasonality ──
+  const SA=SEASONALITY_DATA&&SEASONALITY_DATA.assets?SEASONALITY_DATA.assets[c.id]:null;
+  let seas=[leer('No seasonality data for this asset.')];
+  if(SA&&Array.isArray(SA.months)&&SA.months.length){
+    const mo=SA.months.slice().sort((a,b)=>a[0]-b[0]);
+    let cy={};try{cy=seasCurYearReturns(c.id,SA.inv)||{};}catch(e){}
+    const jetzt=new Date().getMonth()+1;
+    const mx=Math.max(...mo.map(m=>Math.abs(+m[1])))||1;
+    // V1 Monatszeilen ab 0
+    const v1=`<div class="vp-rows"><div class="vp-row vp-hd"><span class="vp-n"></span><span class="vp-trk"></span><span class="vp-num">avg</span><span class="vp-num">up</span><span class="vp-num">this yr</span></div>${mo.map(([nr,avg,hit])=>{const w=Math.abs(avg)/mx*50;const sig=(avg>0&&hit>=60)||(avg<0&&hit<=40);
+      return`<div class="vp-row${nr===jetzt?' on':''}"><span class="vp-n">${nr===jetzt?'▶ ':''}${SEAS_MON[nr-1]}</span><span class="vp-trk"><i class="vp-mid"></i><i class="vp-bar" style="left:${avg>=0?50:50-w}%;width:${w}%;background:${col(avg)}"></i></span><span class="vp-num" style="color:${col(avg)}">${sig?'<b>':''}${pct(avg)}${sig?'</b>':''}</span><span class="vp-num">${hit}%</span><span class="vp-num vp-dim">${cy[nr]!=null?pct(cy[nr]):'–'}</span></div>`;}).join('')}
+      </div>`;
+    // V2 Heatmap
+    const v2=`<div class="vp-heat">${mo.map(([nr,avg,hit])=>{const a=Math.min(1,Math.abs(avg)/mx);return`<div class="vp-hz${nr===jetzt?' on':''}" style="background:${col(avg)}${Math.round(20+a*200).toString(16).padStart(2,'0')}"><b>${SEAS_MON[nr-1]}</b><span>${pct(avg)}</span><span>${hit}% up</span>${cy[nr]!=null?`<i>${cy[nr]>=0?'▲':'▼'} ${pct(cy[nr])}</i>`:''}</div>`;}).join('')}</div>`;
+    // V3 Saisonkurve kumuliert
+    const W=300,H=120;let kum=0,kumY=0;const pa=[[0,0]],py=[[0,0]];
+    mo.forEach(([nr,avg])=>{kum+=+avg;pa.push([nr,kum]);if(cy[nr]!=null){kumY+=cy[nr];py.push([nr,kumY]);}});
+    const vals=[...pa,...py].map(p=>p[1]);const lo=Math.min(...vals,0),hi=Math.max(...vals,0),sp=(hi-lo)||1;
+    const X=nr=>nr/12*W,Y=v=>H-6-(v-lo)/sp*(H-12);
+    const v3=`<svg class="vp-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><rect x="${X(jetzt-1)}" y="0" width="${W/12}" height="${H}" fill="var(--bg4)"/><line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--t3)" stroke-dasharray="2,3" vector-effect="non-scaling-stroke"/><polyline points="${pa.map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="none" stroke="var(--t0)" stroke-width="2" vector-effect="non-scaling-stroke"/>${py.length>1?`<polyline points="${py.map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="none" stroke="${BC.bull}" stroke-width="2" stroke-dasharray="5,3" vector-effect="non-scaling-stroke"/>`:''}</svg><div class="vp-leg"><span><b>—</b> average path (cum. ${pct(kum)})</span><span style="color:${BC.bull}"><b>- -</b> this year (${pct(kumY)})</span></div><div class="vp-xax">${SEAS_MON.map(m=>`<span>${m[0]}</span>`).join('')}</div>`;
+    // V4 Signal-Matrix
+    const v4=`<div class="vp-mat"><i class="vp-q vp-q1"></i><i class="vp-q vp-q3"></i><i class="vp-mx"></i><i class="vp-my"></i>${mo.map(([nr,avg,hit])=>`<span class="vp-pt${nr===jetzt?' on':''}" style="left:${50+avg/mx*45}%;top:${100-hit}%;background:${col(avg)}" title="${SEAS_MON[nr-1]}: ${pct(avg)}, ${hit}% up">${nr===jetzt?SEAS_MON[nr-1]:''}</span>`).join('')}<span class="vp-ax vp-axx">avg return →</span><span class="vp-ax vp-axy">hit rate ↑</span></div>`;
+    seas=[box(1,'Month rows from 0',v1),box(2,'Year heatmap',v2),box(3,'Cumulative seasonal curve',v3),box(4,'Signal matrix',v4)];
+  }
+  // ── Retail ──
+  let ret=[leer('No retail book for this asset.')];
+  const rz=(()=>{try{return abRetailZeilen(c.id)||[];}catch(e){return[];}})();
+  if(rz.length){
+    const v1=`<div class="pd-list">${posAbwKopf('Pair',RETAIL_AB)}${rz.map(z=>posAbwZeile({nameHtml:escH(z.name),lang:z.lang,ab:RETAIL_AB})).join('')}</div>`;
+    const v2=`<div class="vp-rows">${rz.map(z=>`<div class="vp-row"><span class="vp-n">${escH(z.name)}</span><span class="vp-trk vp-zones"><i class="vp-mid"></i><i class="vp-dot" style="left:${z.lang}%;background:${z.lang>=50?BC.bull:BC.bear}"></i></span><span class="vp-num">${z.lang}%</span></div>`).join('')}</div>`;
+    const v3=`<div class="vp-tiles">${rz.map(z=>{const a=Math.abs(z.lang-50)/50;const f=z.lang>=50?BC.bull:BC.bear;return`<div class="vp-tile" style="border-color:${f};background:${f}${Math.round(15+a*120).toString(16).padStart(2,'0')}"><b>${escH(z.name)}</b><span>${z.lang>=50?z.lang+'% L':(100-z.lang)+'% S'}</span></div>`;}).join('')}</div>`;
+    const avg=Math.round(rz.reduce((a,z)=>a+z.langAsset,0)/rz.length);
+    const v4=`<div class="vp-ringwrap"><div class="vp-ring" style="background:conic-gradient(${BC.bull} 0 ${avg}%,${BC.bear} ${avg}% 100%)"><span>${avg}%</span></div><div><b>${avg}% long ${escH(c.id)}</b><div class="vp-dim">${rz.filter(z=>z.langAsset>=RETAIL_AB||z.langAsset<=100-RETAIL_AB).length}/${rz.length} one-sided</div></div></div><div class="vp-list">${rz.map(z=>`<div><span>${escH(z.name)}</span><b style="color:${z.lang>=50?BC.bull:BC.bear}">${z.lang}% long</b></div>`).join('')}</div>`;
+    ret=[box(1,'Deviation from 50% (current)',v1),box(2,'Dots on a scale',v2),box(3,'Tiles by strength',v3),box(4,'Ring + list',v4)];
+  }
+  // ── COT ──
+  let cot=[leer('No COT contract for this asset.')];
+  const cid=abCotId(c.id),S=cid&&COT_DATA&&COT_DATA.symbols?COT_DATA.symbols[cid]:null;
+  const hh=S&&Array.isArray(S.history)?S.history.filter(e=>e&&(+e.long + +e.short)>0):[];
+  if(hh.length>=2){
+    const v1=abCotChart(hh).html;
+    const net=hh.map(e=>+e.long - +e.short),nmx=Math.max(...net.map(Math.abs))||1,W=300,H=120,bw=W/hh.length*0.7;
+    const v2=`<svg class="vp-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="0" x2="${W}" y1="${H/2}" y2="${H/2}" stroke="var(--t3)" vector-effect="non-scaling-stroke"/>${net.map((v,i)=>{const h=Math.abs(v)/nmx*(H/2-4);return`<rect x="${(i+0.15)*W/hh.length}" y="${v>=0?H/2-h:H/2}" width="${bw}" height="${h}" fill="${col(v)}" opacity="${i===net.length-1?1:.55}"/>`;}).join('')}</svg><div class="vp-leg"><span>Net contracts now <b style="color:${col(net[net.length-1])}">${cotSigned(net[net.length-1])}</b></span><span>w/w ${cotSigned(net[net.length-1]-net[net.length-2])}</span></div>`;
+    const lp=hh.map(e=>+e.long/(+e.long + +e.short)*100),lo=Math.min(...lp),hi=Math.max(...lp),jetzt=lp[lp.length-1],vor=lp[lp.length-2];
+    const v3=`<div class="vp-rail"><i class="vp-rng" style="left:${lo}%;width:${hi-lo}%"></i><i class="vp-mid"></i><i class="vp-mk vp-ghost" style="left:${vor}%"></i><i class="vp-mk" style="left:${jetzt}%;background:${posZonenFarbe(jetzt,COT_NETZ_AB)}"></i></div><div class="vp-leg"><span>0% short</span><span>range ${hh.length} reports: ${lo.toFixed(0)}–${hi.toFixed(0)}%</span><span>100% long</span></div><div class="vp-leg"><span>now <b>${jetzt.toFixed(1)}%</b></span><span class="vp-dim">last ${vor.toFixed(1)}%</span><span>w/w <b style="color:${col(jetzt-vor)}">${(jetzt-vor>0?'+':'')+(jetzt-vor).toFixed(1)}pp</b></span></div>`;
+    const mx2=Math.max(...hh.map(e=>Math.max(+e.long,+e.short)))||1;
+    const v4=`<svg class="vp-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="0" x2="${W}" y1="${H/2}" y2="${H/2}" stroke="var(--t3)" vector-effect="non-scaling-stroke"/>${hh.map((e,i)=>{const hl=+e.long/mx2*(H/2-4),hs=+e.short/mx2*(H/2-4);return`<rect x="${(i+0.15)*W/hh.length}" y="${H/2-hl}" width="${bw}" height="${hl}" fill="${BC.bull}"/><rect x="${(i+0.15)*W/hh.length}" y="${H/2}" width="${bw}" height="${hs}" fill="${BC.bear}"/>`;}).join('')}</svg><div class="vp-leg"><span style="color:${BC.bull}">▲ long ${cotNum(hh[hh.length-1].long)}</span><span style="color:${BC.bear}">▼ short ${cotNum(hh[hh.length-1].short)}</span></div>`;
+    cot=[box(1,'Line with score zones (current)',v1),box(2,'Net bars around zero',v2),box(3,'Position rail',v3),box(4,'Mirrored bars',v4)];
+  }
+  return`<div class="vp" style="grid-column:1/-1">
+    <div class="vp-kopf">Design preview <span>temporary · pick a version per block, then this section is removed</span></div>
+    ${sek('Seasonality',seas)}${sek('Retail Positioning',ret)}${sek('COT Positioning',cot)}
   </div>`;
 }
 

@@ -19748,3 +19748,16 @@ Retail „Abweichung von 50 %“, Ort „Asset-Karten + Tabs“.
 - `designregeln` K5 (26-px-Balken „wie vor 591“) entfällt; `seasretail` liest
   `.pd-row` (data-lang/data-kurz); neuer Wächter `check/positionen.js` mit
   Gegenprobe.
+
+## 2026-10-11 — VERSION-CHECK-599: Design-Vorschau (temporär) für Seasonality, Retail, COT
+
+Nutzer: *„bau mal auf der Webseite alle Versionen untereinander ein und benenn
+sie Version 1 usw und mach auch das gleiche bei retail und cot dann guck ich
+mir das an und sag dir was du final umsetzen sollst … mach einfach sehr
+schnell“*. Asset-Seite, unter „Positioning“: Block „Design preview“ mit je
+Version 1–4 (Seasonality: Monatszeilen ab 0, Jahres-Heatmap, kumulierte
+Saisonkurve, Signal-Matrix · Retail: Abweichung von 50 % (aktuell), Punkte
+auf Skala, Kacheln, Ring + Liste · COT: Linie mit Zonen (aktuell),
+Netto-Balken, Positions-Schiene, gespiegelte Balken). Echte Asset-Daten,
+nicht im Score. Wird nach der Auswahl wieder entfernt (`vorschauHtml`,
+`.vp-*`).
