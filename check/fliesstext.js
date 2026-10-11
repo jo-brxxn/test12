@@ -9,7 +9,7 @@
 //   - zwei oder mehr Saetze hat und mindestens 22 Woerter, oder
 //   - als ein einziger Satz 40 Woerter oder mehr lang ist.
 // Ausgenommen: Tabellen, Eingabefelder, Nutzer-Notizen, Nachrichten-
-// Schlagzeilen (fremde Texte), die temporaere Design-Vorschau.
+// Schlagzeilen (fremde Texte).
 // Loesung im Code: kurzHtml()/kurzDom() (Satz = Punkt, Zahlen fett, Klammern
 // kursiv), faktenFenster() (Etikett | Wert), hwZeile() (Titel · Kurzangabe).
 //   node check/fliesstext.js [--gegenprobe]   (Gegenprobe: ein Absatz mit
@@ -29,7 +29,7 @@ const F = [];
   await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); });
   const scan = ort => p.evaluate(ort => {
     const out = [];
-    const AUS = 'script,style,svg,table,textarea,input,select,.vp,.hl-row,.news-card,.note-body,.res-note,.aqn-n,.nt-item-tx,.res-body,.hl-title,.ni-body';
+    const AUS = 'script,style,svg,table,textarea,input,select,.hl-row,.news-card,.note-body,.res-note,.aqn-n,.nt-item-tx,.res-body,.hl-title,.ni-body';
     [...document.querySelectorAll('body *')].forEach(e => {
       if (!e.offsetParent && getComputedStyle(e).position !== 'fixed') return;
       if (e.closest(AUS)) return;

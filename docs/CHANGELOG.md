@@ -19835,3 +19835,24 @@ Polster der `.dw` bleibt 16 px.
   grün → Kopfzeilen-Abstand und Seitenpolster werden im Kompaktmodus nicht
   mehr verkleinert. `erklaerung` zählte nur `<p>` als Gliederung → zählt jetzt
   auch Punkte/Abschnitte/Fakten-Zeilen (neue Struktur der Dauerregel).
+
+## 2026-10-11 (abends) — VERSION-CHECK-601: Auswahl aus der Vorschau umgesetzt, Kontext-Slots
+
+Nutzer: *„Bei seasonality will ich version 1 aber ohne die up Spalte dafür soll
+die Grafik größer und in der Grafik dann noch die preislinie. Und dann bei cot
+will ich Version 4 aber mit mehr Daten die dadrunter stehen wie vorher. Und
+retail will ich Version 1. und bei der context Karte will ich links neben dem i
+ein Zahnrad … Slot 1 2 und 3 … alle Charts zur Auswahl … gut sortiert … Und die
+designänderungen nicht nur bei den Karten umsetzen sondern überall“*.
+- Seasonality: `seasZeilenHtml` (Karte + Tab), Up-Spalte weg, Kurslinie des
+  laufenden Jahres als Punkte + gestrichelte Linie. `seasretail` 6 misst jetzt
+  die Monatszeile statt der Spalte.
+- COT: gespiegelte Balken in Karte (`abCotChart`) und Tab (`cotHistChart`,
+  Hover-Punkt auf dem Long-Balken über `meta.yDot`), Fußzeile Long/Short/w/w
+  zurück. `positionen` A/D auf die neue Form umgestellt.
+- Retail: Version 1 war schon überall umgesetzt.
+- Kontext-Karte: Zahnrad + Fenster mit 3 Slots, 40 Charts in 9 Gruppen,
+  `kontextSlots` mit Vier-Ecken-Sync. Getestet: EUR Slot 2 → GOLD, gespeichert
+  `{"EUR":[null,"p:GOLD",null]}`, Kachel zeigt „GOLD · Gold“ ohne Bias-Wort.
+- Design-Vorschau entfernt (`vorschauHtml`, `.vp-*`, Ausnahmen in `yachse`
+  und `fliesstext`).

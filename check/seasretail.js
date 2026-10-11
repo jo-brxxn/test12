@@ -178,7 +178,11 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
   await p.evaluate(() => gotoSym('EUR'));
   await p.waitForTimeout(800);
   const r3 = await p.evaluate(() => {
-    const sb = [...document.querySelectorAll('.ab-seas .ab-sb')];
+    // Seit 2026-10-11 Monatszeilen (seasZeilenHtml): eine Zeile je Monat,
+    // der laufende traegt .on und eine eigene Flaeche; das Kuerzel steht in
+    // der Namensspalte (.sz-n.on).
+    const sb = [...document.querySelectorAll('.ab-tile .sz-r')];
+    const namen = [...document.querySelectorAll('.ab-tile .sz-n')];
     if (!sb.length) return { fehlt: true };
     const on = sb.filter(e => e.classList.contains('on'));
     const kuerzel = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -187,7 +191,7 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
     const messe = e => {
       const cs = getComputedStyle(e);
       return { bg: cs.backgroundColor, schatten: cs.boxShadow,
-               l: (e.querySelector('.ab-sb-l') || {}).textContent || '' };
+               l: ((namen[sb.indexOf(e)] || {}).textContent || '').trim()[0] || '' };
     };
     return { n: sb.length, nOn: on.length, jetzt,
              markiert: on.length === 1 ? messe(on[0]) : null,
@@ -196,7 +200,7 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
   });
   if (r3.fehlt) fail('MONATS-MARKIERUNG', 'keine Seasonality-Kachel auf der Asset-Seite gefunden');
   else {
-    if (r3.n !== 12) fail('MONATS-MARKIERUNG', `${r3.n} Monatsspalten statt 12`);
+    if (r3.n !== 12) fail('MONATS-MARKIERUNG', `${r3.n} Monatszeilen statt 12`);
     if (r3.nOn !== 1) fail('MONATS-MARKIERUNG', `${r3.nOn} Spalten tragen .on - genau eine darf es sein`);
     if (r3.markiert && r3.markiert.l !== r3.jetzt)
       fail('MONATS-MARKIERUNG', `markiert ist "${r3.markiert.l}", laufender Monat ist "${r3.jetzt}"`);

@@ -6609,14 +6609,14 @@ function saveSoon(){
 function exportData(){
   const data=JSON.parse(snap());
   data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.scoreMode=scoreMode;
-  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
+  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
   a.download='fx-analyst-'+new Date().toISOString().slice(0,10)+'.json';a.click();
 }
 function importData(input){
   const f=input.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=FX_THEME_IDS.includes(_imp.fxTheme)?_imp.fxTheme:'';try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();renderFxThemeGrid();}if(_imp.appBg!==undefined){appBg=APP_BG_IDS.includes(_imp.appBg)?_imp.appBg:'';try{appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');}catch(e){}applyAppBg();renderAppBgGrid();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
+  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=FX_THEME_IDS.includes(_imp.fxTheme)?_imp.fxTheme:'';try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();renderFxThemeGrid();}if(_imp.appBg!==undefined){appBg=APP_BG_IDS.includes(_imp.appBg)?_imp.appBg:'';try{appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');}catch(e){}applyAppBg();renderAppBgGrid();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
   r.readAsText(f);input.value='';
 }
 
@@ -6971,7 +6971,7 @@ async function cloudPushRoh(manual){
     // zuruecksetzen - siehe cloudPull-Kommentar).
     const z0=_userEditZaehler;
     const gesendet=snap();
-    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
+    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
     // "Fetch score snapshot from cloud sync" Schritt -> score_hist.json,
@@ -7175,6 +7175,7 @@ async function cloudPullRoh(manual,forceOverwrite){
         if(cd.setupYieldsOnly!==undefined){setupYieldsOnly=cd.setupYieldsOnly;try{localStorage.setItem('fxpro_setup_yieldsonly',setupYieldsOnly?'1':'0');}catch(e){}}
         if(cd.abChartRange!==undefined){setAbChartRangeVal(cd.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}
         if(cd.abTrendLinien!==undefined){setAbTrendLinienVal(cd.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}
+        if(cd.kontextSlots!==undefined){setKontextSlotsVal(cd.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}
         if(cd.cotVsPrice!==undefined&&!!cd.cotVsPrice!==cotVsPrice){setCotVsPriceVal(cd.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}if(curPage==='cot')renderCot();}
         if(cd.pxChartTyp!==undefined&&cd.pxChartTyp!==pxChartTyp){setPxChartTypVal(cd.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}pxTypNeuZeichnen();}
         if(cd.regimeCcy!==undefined){setRegimeCcyVal(cd.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}if(curPage==='regime')renderRegime();}
@@ -9367,17 +9368,92 @@ function abKontextReihe(art,assetId){
     case 'nas':   return{reihe:preisReiheLang('NAS'),einheit:'',quelle:'NAS',feed:'price'};
     case 'ccy':   {const q=YIELD_CCY[assetId]||'USD';return{reihe:preisReiheAnzeige(q),einheit:'',quelle:q,feed:'price'};}
     case 'vix':   {const D=SENTIMENT_DATA;const v=D&&D.vix;return{reihe:v&&Array.isArray(v.series)?v.series:null,einheit:'',quelle:'VIX',feed:'sentiment'};}
-    default:      return{reihe:null,einheit:'',quelle:null,feed:null};
+    default:{
+      const m=String(art).match(/^(p|b2|b10):(.+)$/);
+      if(m&&m[1]==='p'){const id=m[2];return{reihe:FX.includes(id)?preisReiheAnzeige(id):preisReiheLang(id),einheit:'',quelle:id,feed:'price'};}
+      if(m)return{reihe:zu2(bondSeriesOhlc(m[2],m[1]==='b2'?'2Y Bond Yield':'10Y Bond Yield')),einheit:'%',quelle:m[2],feed:'bond'};
+      return{reihe:null,einheit:'',quelle:null,feed:null};
+    }
   }
 }
+// ── KONTEXT-KARTE: Slots 1-3 selbst waehlen (Nutzer 2026-10-11) ─────────
+// "bei der context Karte will ich links neben dem i ein Zahnrad das soll die
+// settings dafuer oeffnen und dann kann man fuer Slot 1 2 und 3 nochmal selber
+// einstellen was man da sehen will mach da einfach alle Charts zur Auswahl die
+// die Webseite aktuell empfaengt aber gut sortiert und geordnet".
+// kontextSlots = {assetId: [art1, art2, art3]} - leer/null je Slot = Standard
+// aus assetContextFor(). Nutzer-Praeferenz -> Vier-Ecken-Sync wie
+// abTrendLinien (docs/state-sync.md): Export, Import, Push, Pull.
+// Arten: die festen Schluessel aus KONTEXT_ART (y2, y10, dxy ...) plus
+//   'p:<ASSET>'  Kursreihe eines Assets (FX als Korb wie in der Price-Karte)
+//   'b2:<CCY>' / 'b10:<CCY>'  2Y / 10Y-Rendite einer Waehrung
+let kontextSlots=(()=>{try{const v=JSON.parse(localStorage.getItem('fxpro_kontext_slots')||'{}');return v&&typeof v==='object'?v:{};}catch(e){return{};}})();
+function setKontextSlotsVal(v){kontextSlots=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};}
+function kontextDef(art){
+  if(KONTEXT_ART[art])return KONTEXT_ART[art];
+  const m=String(art).match(/^(p|b2|b10):(.+)$/);if(!m)return null;
+  if(m[1]==='p'){const sy=syms.find(x=>x.id===m[2]);return{titel:sy?(sy.name&&sy.name!==sy.id?sy.id+' · '+sy.name:sy.id):m[2],art:'chart',ziel:m[2]};}
+  const tz=Object.keys(YIELD_CCY).find(k=>YIELD_CCY[k]===m[2]);
+  return{titel:m[2]+(m[1]==='b2'?' 2Y Yield':' 10Y Yield'),art:'chart',ziel:tz||null};
+}
+// Alle Charts, die gerade Daten haben - gruppiert und sortiert.
+function kontextKatalog(){
+  const hat=r=>Array.isArray(r)&&r.length>1;
+  const gruppen=[];
+  const add=(name,liste)=>{const l=liste.filter(x=>x&&hat(abKontextReihe(x.k,'USD').reihe));if(l.length)gruppen.push({name,l});};
+  const ccys=[...new Set(FX.concat(Object.values(YIELD_CCY)))];
+  add('Bond yields — 2Y',ccys.map(c=>({k:'b2:'+c,t:c+' 2Y'})));
+  add('Bond yields — 10Y',ccys.map(c=>({k:'b10:'+c,t:c+' 10Y'})));
+  const KL=[['fx','Currencies (basket)'],['metal','Metals'],['energy','Energy'],['index','Indices'],['stock','Stocks'],['crypto','Crypto'],['yield','Yield assets']];
+  KL.forEach(([kl,name])=>add(name,syms.filter(x=>assetCls(x.id)===kl).sort((a,b)=>a.id.localeCompare(b.id)).map(x=>({k:'p:'+x.id,t:x.id+(x.name&&x.name!==x.id?' · '+x.name:'')}))));
+  add('Volatility',[{k:'vix',t:'VIX (S&P 500 volatility)'}]);
+  return gruppen;
+}
+function kontextStandard(c){return assetContextFor(c.id,assetCls(c.id)).filter(a=>a!=='cb');}
+function kontextArten(c){
+  const std=kontextStandard(c),eig=kontextSlots[c.id]||[];
+  return[0,1,2].map(i=>eig[i]&&kontextDef(eig[i])?eig[i]:std[i]).filter(Boolean);
+}
+function kontextSlotsSpeichern(){
+  try{
+    localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));
+    localStorage.setItem('fxpro_updated',new Date().toISOString());
+    markLsUpdatedSeen();markPrefEdit();cloudAutoSync();
+  }catch(e){alert('The context setting could not be saved: '+(e&&e.message||e));}
+}
+function setKontextSlot(assetId,i,art){
+  const c=syms.find(x=>x.id===assetId);if(!c)return;
+  const std=kontextStandard(c);
+  const a=(kontextSlots[assetId]||[]).slice(0,3);while(a.length<3)a.push(null);
+  a[i]=art&&art!==std[i]?art:null;
+  if(a.every(x=>!x))delete kontextSlots[assetId];else kontextSlots[assetId]=a;
+  kontextSlotsSpeichern();renderDetail();openKontextSettings(assetId);
+}
+function resetKontextSlots(assetId){delete kontextSlots[assetId];kontextSlotsSpeichern();renderDetail();openKontextSettings(assetId);}
+function openKontextSettings(assetId){
+  const c=syms.find(x=>x.id===assetId);if(!c)return;
+  const kat=kontextKatalog(),akt=kontextArten(c),std=kontextStandard(c);
+  const sel=i=>`<select class="ksel" onchange="setKontextSlot('${escJH(assetId)}',${i},this.value)">
+      <optgroup label="Default"><option value="${escH(std[i]||'')}"${akt[i]===std[i]?' selected':''}>${escH((kontextDef(std[i])||{}).titel||'–')} (default)</option></optgroup>
+      ${kat.map(g=>`<optgroup label="${escH(g.name)}">${g.l.map(x=>`<option value="${escH(x.k)}"${akt[i]===x.k&&akt[i]!==std[i]?' selected':''}>${escH(x.t)}</option>`).join('')}</optgroup>`).join('')}
+    </select>`;
+  const t=document.getElementById('mCardInfoTitle');if(t)t.textContent='Context charts — '+c.id;
+  const b=document.getElementById('mCardInfoBody');if(!b)return;
+  b.innerHTML=`<table class="kv">${[0,1,2].map(i=>`<tr><th>Slot ${i+1}</th><td>${sel(i)}</td></tr>`).join('')}</table>
+    <div class="ie-hinweis">${kat.reduce((n,g)=>n+g.l.length,0)} charts with data · grouped by type · <i>saved and synced</i></div>
+    ${kontextSlots[assetId]?`<button class="btn" style="margin-top:10px" onclick="resetKontextSlots('${escJH(assetId)}')">Reset to default</button>`:''}`;
+  openM('mCardInfo');
+}
 function abKontextHtml(c){
-  const arten=assetContextFor(c.id,assetCls(c.id));
+  // Seit 2026-10-11: Slots aus den Einstellungen (Zahnrad), sonst Standard.
+  const std0=assetContextFor(c.id,assetCls(c.id));
+  const arten=(std0.includes('cb')?['cb']:[]).concat(kontextArten(c));
   // ⚠ ERST alle Reihen einsammeln, DANN zeichnen. Die x-Achse muss fuer alle
   // Kacheln dieselbe sein; bei MAX steht ihr Anfang erst fest, wenn man den
   // fruehesten Tag ueber ALLE Reihen kennt. Wer die Achse pro Kachel bildet,
   // hat wieder drei Charts mit drei Zeitraeumen nebeneinander.
   const quellen=arten.map(a=>{
-    const d=KONTEXT_ART[a];
+    const d=kontextDef(a);
     if(!d||d.art==='rate')return null;
     return{art:a,d,...abKontextReihe(a,c.id)};
   }).filter(Boolean);
@@ -9394,10 +9470,13 @@ function abKontextHtml(c){
     if(ch.leer)return`<div class="ab-k">
       <div class="ab-k-t ab-k-go"${klick}>${escH(d.titel)}</div>${ch.html}</div>`;
     const roh=ch.pct>0.15?'bull':ch.pct<-0.15?'bear':'neu';
-    const dreht=abDreht(a,assetCls(c.id));
-    const b=yieldBiasFor(a,assetCls(c.id),roh);
+    // Selbst gewaehlte Charts (Zahnrad) haben keine festgelegte Wirkung auf
+    // dieses Asset - dort steht kein Bias-Wort (Regel 4: nicht raten).
+    const fest=!!KONTEXT_ART[a];
+    const dreht=fest&&abDreht(a,assetCls(c.id));
+    const b=fest?yieldBiasFor(a,assetCls(c.id),roh):null;
     return`<div class="ab-k">
-      <div class="ab-k-t ab-k-go"${klick}>${escH(d.titel)}${abBiasWort(b)}</div>
+      <div class="ab-k-t ab-k-go"${klick}>${escH(d.titel)}${b?abBiasWort(b):''}</div>
       ${ch.html}
       <div class="ab-k-s" style="color:${biasCss(roh)}"${ch.dochte<ch.tage?` title="${escH(abDochtGrund(feed))}"`:''}>${ch.pct>0?'+':''}${ch.pct.toFixed(2)}%<span class="ab-k-n">${ch.spaeter?' · feed starts '+escH(ch.von):''}${dreht?' · inverse for this asset':''}</span></div>
     </div>`;
@@ -9413,7 +9492,7 @@ function abKontextHtml(c){
   // Der Zeitfilter gilt fuer ALLE Kacheln gleichzeitig.
   const regler=abRegler(c.id,'Show % of daily candles in every chart');
   return`<div class="ab-ktile">
-    <div class="ab-tile-hd">${abTileIcon('Context')}<span class="ab-tile-t">Context</span>${rate}${abInfoBtn('Context',['The markets that move this asset most, on the same time axis as its price: bond yields of the relevant currency, the dollar or equity indices, depending on the asset.','The word next to each title says whether that move is <b>bullish or bearish for this asset</b> — for some pairs a rise is bearish (e.g. rising yields for gold). Policy rate = the current central-bank rate.','Candles or a line and the time range work exactly as in the Price card.'])}</div>
+    <div class="ab-tile-hd">${abTileIcon('Context')}<span class="ab-tile-t">Context</span>${rate}<button class="ab-gear" onclick="event.stopPropagation();openKontextSettings('${escJH(c.id)}')" title="Choose the charts of slot 1, 2 and 3" aria-label="Context chart settings">${icn('gear',15)}</button>${abInfoBtn('Context',['The markets that move this asset most, on the same time axis as its price: bond yields of the relevant currency, the dollar or equity indices, depending on the asset.','The word next to each title says whether that move is <b>bullish or bearish for this asset</b> — for some pairs a rise is bearish (e.g. rising yields for gold). Policy rate = the current central-bank rate.','Candles or a line and the time range work exactly as in the Price card.'])}</div>
     ${chartLeisteHtml(chartTypSchalterHtml(),`<span class="ab-rgs">${regler}</span>`)}
     <div class="ab-kgrid">${kacheln}</div>
   </div>`;
@@ -9496,33 +9575,75 @@ function posAbwKopf(name,ab){
     <span class="pd-track"><span class="pd-sk pd-sk-w" style="left:0">short</span><span class="pd-sk pd-sk-th" style="left:${100-ab}%">${100-ab}%</span><span class="pd-sk" style="left:50%">50%</span><span class="pd-sk pd-sk-th" style="left:${ab}%">${ab}%</span><span class="pd-sk pd-sk-w" style="left:100%">long</span></span>
     <span class="pd-v"></span></div>`;
 }
+// ── SEASONALITY: Monatszeilen ab 0 + Kurslinie (Nutzer-Wahl 2026-10-11) ──
+// Nutzer: "Bei seasonality will ich version 1 aber ohne die up Spalte dafuer
+// soll die Grafik groesser und in der Grafik dann noch die preislinie" - und
+// "nicht nur bei den Karten ... sondern ueberall". Je Monat eine Zeile: der
+// Balken waechst von der 0-Linie nach rechts (Plus, blau) oder links (Minus,
+// rot); der Punkt ist der tatsaechliche Monatsverlauf dieses Jahres, die
+// gestrichelte Linie verbindet die Punkte (= die Kurslinie des Jahres). Der
+// laufende Monat ist hinterlegt, Monate mit Score-Signal (Schnitt und
+// Trefferquote einig, seasBiasFor) stehen fett. Die Trefferquote steht im
+// Tooltip und in der Fusszeile - nicht als Spalte.
+function seasZeilenHtml(months,curMon,cy,gross){
+  const mo=months.slice().sort((a,b)=>a[0]-b[0]);
+  cy=cy||{};
+  const max=Math.max(...mo.map(m=>Math.abs(+m[1])),...Object.values(cy).filter(isFinite).map(Math.abs))||1;
+  const xp=v=>50+(+v)/max*48;                     // Prozent der Spurbreite
+  const n=mo.length,hp=[];
+  const pct=v=>(v>0?'+':'')+(+v).toFixed(2)+'%';
+  const namen=mo.map(([nr])=>`<span class="sz-n${nr===curMon?' on':''}">${SEAS_MON[nr-1]}</span>`).join('');
+  const balken=mo.map(([nr,avg])=>{const a=+avg,w=Math.abs(a)/max*48;
+    return`<span class="sz-r${nr===curMon?' on':''}"><i class="sz-b" style="left:${a>=0?50:50-w}%;width:${w}%;background:${a>=0?BC.bull:BC.bear}"></i></span>`;}).join('');
+  // Kurslinie dieses Jahres: Punkte als HTML (rund), Linie als gestrecktes SVG
+  const pk=mo.map(([nr],i)=>cy[nr]!=null?{x:xp(cy[nr]),y:(i+0.5)/n*100,nr}:null).filter(Boolean);
+  const linie=pk.length>1?`<svg class="sz-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pk.map(q=>q.x.toFixed(2)+','+q.y.toFixed(2)).join(' ')}" fill="none" stroke="var(--t0)" stroke-width="1.6" stroke-dasharray="4,3" vector-effect="non-scaling-stroke"/></svg>`:'';
+  const punkte=pk.map(q=>`<b class="sz-p" style="left:${q.x.toFixed(2)}%;top:${q.y.toFixed(2)}%;background:${cy[q.nr]>=0?BC.bull:BC.bear}"></b>`).join('');
+  const zahlen=mo.map(([nr,avg,hit])=>{const a=+avg,sig=(a>=0&&hit>=SEAS_HIT_HOCH)||(a<0&&hit<=SEAS_HIT_TIEF);
+    return`<span class="sz-z${nr===curMon?' on':''}"><span style="color:${a>=0?BC.bull:BC.bear}">${sig?'<b>':''}${pct(a)}${sig?'</b>':''}</span><span class="sz-cy">${cy[nr]!=null?pct(cy[nr]):'–'}</span></span>`;}).join('');
+  mo.forEach(([nr,avg,hit,jahre],i)=>hp.push({fx:xp(avg)/100,fy:(i+0.5)/n,col:+avg>=0?BC.bull:BC.bear,
+    tip:`<div class="chv-tip-d">${SEAS_MON[nr-1]} · ${jahre} years</div>`
+      +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">Average</span><b style="color:${+avg>=0?BC.bull:BC.bear}">${pct(avg)}</b></div>`
+      +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">Up in</span><b>${hit}% of years</b></div>`
+      +(cy[nr]!=null?`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">This year</span><b style="color:${cy[nr]>=0?BC.bull:BC.bear}">${pct(cy[nr])}</b></div>`:'')}));
+  return`<div class="sz${gross?' sz-gross':''}">
+    <div class="sz-kopf"><span></span><span class="sz-sk"><span>−</span><span>0</span><span>+</span></span><span class="sz-z sz-zk"><span>avg</span><span class="sz-cy">this yr</span></span></div>
+    <div class="sz-body"><div class="sz-namen">${namen}</div>
+      <div class="sz-spur">${chartHoverWrap(`<div class="sz-rows">${balken}<i class="sz-null"></i>${linie}${punkte}</div>`,hp,'height:100%')}</div>
+      <div class="sz-zahlen">${zahlen}</div></div>
+    ${pk.length?'<div class="sz-leg"><span class="sz-leg-l"></span>This year (price)</div>':''}
+  </div>`;
+}
+// ── COT: gespiegelte Balken (Nutzer-Wahl 2026-10-11, Version 4) ─────────
+// "bei cot will ich Version 4 aber mit mehr Daten die dadrunter stehen wie
+// vorher": Long-Kontrakte als Balken nach oben (blau), Short nach unten (rot),
+// ein Bericht je Spalte, gemeinsame Skala - beide Seiten direkt vergleichbar.
+// Darunter wieder die Fusszeile Long/Short (% + Kontrakte) und w/w.
 function abCotChart(hist){
   const W=240,H=100;
   const h=(hist||[]).filter(e=>e&&isFinite(+e.long)&&isFinite(+e.short)&&(+e.long + +e.short)>0);
   if(h.length<2)return{leer:true,html:AB_LEER('Not enough COT reports yet — the history builds up with each weekly release.')};
-  const yPct=p=>H-(p/100)*H;
-  const xOf=i=>(i/(h.length-1))*W;
-  let sv=posZonenSvg(yPct,0,W,COT_NETZ_AB,true);
-  const linie=[],pts=[];
+  const mx=Math.max(...h.map(e=>Math.max(+e.long,+e.short)))*1.05||1;
+  const bw=Math.max(1.5,(W/h.length)*0.7),mid=H/2;
+  let sv=`<line x1="0" y1="${mid}" x2="${W}" y2="${mid}" stroke="var(--t3)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  const pts=[];
   h.forEach((e,i)=>{
-    const L=+e.long,S=+e.short,lp=L/(L+S)*100;
-    linie.push(xOf(i).toFixed(1)+','+yPct(lp).toFixed(1));
+    const x=(i+0.5)*(W/h.length)-bw/2,L=+e.long,S=+e.short,lp=L/(L+S)*100;
+    const hl=L/mx*(mid-1),hs=S/mx*(mid-1);
+    sv+=`<rect x="${x.toFixed(2)}" y="${(mid-hl).toFixed(1)}" width="${bw.toFixed(2)}" height="${hl.toFixed(1)}" fill="${BC.bull}"/>`;
+    sv+=`<rect x="${x.toFixed(2)}" y="${mid}" width="${bw.toFixed(2)}" height="${hs.toFixed(1)}" fill="${BC.bear}"/>`;
     const m=cotHistRowMetrics(e,h[i-1]||null);
-    pts.push({fx:xOf(i)/W,fy:yPct(lp)/H,col:posZonenFarbe(lp,COT_NETZ_AB),
+    pts.push({fx:(x+bw/2)/W,fy:(mid-hl)/H,col:BC.bull,
       tip:`<div class="chv-tip-d">COT · ${escH(tagMitWochentag(e.date))}</div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:${BC.bull}">Long</span><b>${lp.toFixed(1)}% · ${cotNum(L)}</b></div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:${BC.bear}">Short</span><b>${(100-lp).toFixed(1)}% · ${cotNum(S)}</b></div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">w/w change</span><b>${m&&m.dNetPct!=null?cotPct(m.dNetPct,true).replace('%','pp'):'–'}</b></div>`});
   });
-  sv+=`<polyline points="${linie.join(' ')}" fill="none" stroke="var(--t0)" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
   const svg=`<svg class="ab-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${sv}</svg>`;
-  // Endpunkt als HTML - im gestreckten SVG waere ein Kreis eine Ellipse.
-  const lz=h[h.length-1],lpz=+lz.long/(+lz.long + +lz.short)*100;
-  const ende=`<span class="pos-ende" style="top:${(100-lpz).toFixed(1)}%;background:${posZonenFarbe(lpz,COT_NETZ_AB)}"></span>`;
   const achse=[h[0].date,h[h.length-1].date].map(d=>`<span>${escH(fmtDayShort(d,true))}</span>`).join('');   // mit Jahr (Nutzer-Regel 2026-09-17)
   return{leer:false,berichte:h.length,html:`<div class="ab-plot">
-    <div class="ab-plot-main"><div class="pos-plot">${chartHoverWrap(svg,pts,'height:100%')}${ende}</div><div class="ab-xax">${achse}</div></div>
-    <div class="ab-yax pos-yax"><span style="top:0">100%</span><span style="top:${100-COT_NETZ_AB}%">${COT_NETZ_AB}%</span><span style="top:50%">50%</span><span style="top:${COT_NETZ_AB}%">${100-COT_NETZ_AB}%</span><span style="top:100%">0%</span></div>
+    <div class="ab-plot-main">${chartHoverWrap(svg,pts,'height:100%')}<div class="ab-xax">${achse}</div></div>
+    <div class="ab-yax"><span style="color:${BC.bull}">${cotNum(mx)}</span><span>0</span><span style="color:${BC.bear}">${cotNum(mx)}</span></div>
   </div>`};
 }
 
@@ -10305,18 +10426,21 @@ function abGrafikHtml(art,c){
     if(!m)return abTileZ('cot','COT Positioning','',AB_LEER('The latest COT report carries no usable long/short figures for this contract.'));
     const ch=abCotChart(s.history);
     const stand=COT_DATA.report_date?fmtDayHdr(COT_DATA.report_date):'–';
-    // ⚠ Seit 2026-10-11 (Linie mit Score-Zonen) steht der Stand UEBER dem
-    // Chart: Long-Quote gross in Zonenfarbe, w/w-Aenderung als Pfeil
-    // daneben (vorher Fusszeile Long/Short/w/w, Nutzer 2026-09-13). Die
-    // Kontraktzahlen stehen im Tooltip jedes Berichts.
-    const wow=m.dNetPct;
-    const kopf=`<div class="pos-kopf"><b class="pos-wert" style="color:${posZonenFarbe(m.longPct,COT_NETZ_AB)}">${m.longPct.toFixed(1)}%</b><span class="pos-wert-l">long</span>
-        <span class="pos-wow" style="color:${cotColor(wow)}" title="Week-over-week change of the long share — the value that moves">${wow==null?'–':(wow>0?'▲ ':wow<0?'▼ ':'')+cotPct(wow,true).replace('%','pp')} <span class="pos-wow-l">w/w</span></span></div>`;
+    // Fusszeile wie vor 598 (Nutzer 2026-10-11: "mit mehr Daten die dadrunter
+    // stehen wie vorher"; ursprünglich 2026-09-13 "long: ... short: ... ww
+    // change"). Die Wochenaenderung ist leicht hinterlegt - sie ist die Zahl,
+    // die man woechentlich liest.
+    const fuss=`<div class="ab-foot">
+        <span><span class="ab-foot-l">Long</span> <b style="color:${BC.bull}">${m.longPct.toFixed(1)}%</b> <span class="ab-foot-n">${cotNum(m.L)}</span></span>
+        <span><span class="ab-foot-l">Short</span> <b style="color:${BC.bear}">${m.shortPct.toFixed(1)}%</b> <span class="ab-foot-n">${cotNum(m.S)}</span></span>
+        <span class="ab-foot-hl" title="Week-over-week change of the long share — the value that moves">
+          <span class="ab-foot-l">w/w change</span> <b style="color:${cotColor(m.dNetPct)}">${cotPct(m.dNetPct,true).replace('%','pp')}</b></span>
+      </div>`;
     return abTileZ('cot','COT Positioning',
       `<span class="ab-tile-s">as of ${escH(stand)}</span>`,
-      `${kopf}${ch.html}${abCotScoreZeile(c)}`,null,
+      `${ch.html}${fuss}${abCotScoreZeile(c)}`,null,
       ['Large speculators (CFTC Legacy, non-commercial) — the reporting group whose positioning the score reads.',
-       `The line is their long share. Shaded zones: ${COT_NETZ_AB}% or more long (blue) and ${COT_NETZ_AB}% or more short (red) — inside a zone the position counts toward the score.`+(ch.leer?'':` The chart covers ${ch.berichte} weekly reports; tap a point for the contract numbers.`),
+       'Blue bars up = long contracts, red bars down = short contracts, one report per column on one scale.'+(ch.leer?'':` The chart covers ${ch.berichte} weekly reports; tap a column for the numbers.`),
        'How it counts: '+cotRegelText()]);
   }
   if(art==='retail'){
@@ -10390,36 +10514,6 @@ function abGrafikHtml(art,c){
   // Vorzeichen-Drehung). Die Skala umfasst Balken UND Linie, sonst liefe ein
   // starker Monat des laufenden Jahres aus der Kachel.
   let cy={};try{cy=seasCurYearReturns(c.id,A.inv)||{};}catch(e){cy={};}
-  const max=Math.max(...monate.map(m=>Math.abs(+m[1])),...Object.values(cy).filter(isFinite).map(Math.abs))||1;
-  const cyY=v=>(50-v/max*50).toFixed(2);
-  const hp=[];
-  const balken=monate.map((mo,i)=>{
-    const[nr,avg,hit,jahre]=mo;
-    const pct=(Math.abs(+avg)/max*100).toFixed(1);
-    const f=biasCss(+avg>=0?'bull':'bear');
-    hp.push({fx:(i+0.5)/12,fy:+avg>=0?0.3:0.7,col:f,
-      tip:`<div class="chv-tip-d">${SEAS_MON[nr-1]} · ${jahre} years</div>`
-        +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">Average</span><b style="color:${f}">${+avg>0?'+':''}${(+avg).toFixed(2)}%</b></div>`
-        +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">Up in</span><b>${hit}% of years</b></div>`
-        +(cy[nr]!=null?`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">This year so far</span><b style="color:${biasCss(cy[nr]>=0?'bull':'bear')}">${cy[nr]>0?'+':''}${cy[nr].toFixed(2)}%</b></div>`:'')});
-    // Punkt des laufenden Jahres + Strich zum naechsten Monat. Beides sitzt
-    // IN der Balkenflaeche der Spalte (.ab-sb-bars), die Null ist deren Mitte
-    // - dieselbe Bezugslinie wie die Balken, ohne nachtraegliches Messen.
-    const nx=cy[nr+1];
-    const cyHtml=cy[nr]==null?'':`${nx!=null?`<svg class="ab-sb-cyl" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="${cyY(cy[nr])}" x2="100" y2="${cyY(nx)}" vector-effect="non-scaling-stroke"/></svg>`:''}<b class="ab-sb-cy" style="top:${cyY(cy[nr])}%"></b>`;
-    // ⚠ Der laufende Monat wird MARKIERT, nicht nur eingefaerbt (Nutzer
-    // 2026-09-14: "in der Grafik wird auch immer der aktuelle Monat
-    // markiert"). Bis hierher tat `.on` nur eines: das Monatskuerzel
-    // bekam die Akzentfarbe - bei zwoelf 14px breiten Spalten nicht zu
-    // finden. Jetzt traegt die Spalte selbst eine getoente Flaeche mit
-    // Rahmen, der Balken volle Deckkraft, und das Kuerzel steht als
-    // Kapsel darunter. Der Balken des laufenden Monats ist damit auch
-    // dann auffindbar, wenn sein Ausschlag der kleinste im Jahr ist.
-    return`<span class="ab-sb${nr===jetzt?' on':''}"${nr===jetzt?` title="Current month — ${escH(SEAS_MON[nr-1])}"`:''}>
-      <span class="ab-sb-bars"><span class="ab-sb-up">${+avg>=0?`<i style="height:${pct}%;background:${f}"></i>`:''}</span>
-      <span class="ab-sb-dn">${+avg<0?`<i style="height:${pct}%;background:${f}"></i>`:''}</span>${cyHtml}</span>
-      <span class="ab-sb-l">${SEAS_MON[nr-1][0]}</span></span>`;
-  }).join('');
   const cur=monate.find(m=>m[0]===jetzt);
   // ⚠ Durchschnitt UND Trefferquote gehoeren zusammen. OIL im September:
   // +0,32% im Schnitt, aber nur in 38% der Jahre ueberhaupt gestiegen -
@@ -10433,8 +10527,7 @@ function abGrafikHtml(art,c){
   return abTileZ('seas','Seasonality',
     `<span class="ab-tile-s">${escH(A.proxy||'')} · ${cur?cur[3]:'–'}y</span>`,
     `<div class="ab-big" style="color:${cur?biasCss(+cur[1]>=0?'bull':'bear'):'var(--t3)'}">${cur?`${+cur[1]>0?'+':''}${(+cur[1]).toFixed(2)}% in ${SEAS_MON[jetzt-1]}`:'–'}</div>
-     ${chartHoverWrap(`<div class="ab-seas">${balken}</div>`,hp,'flex:1 1 auto;display:flex;min-height:64px')}
-     ${Object.keys(cy).length?`<div class="ab-seas-leg"><span class="tr-leg-dash"></span>This year so far</div>`:''}
+     ${seasZeilenHtml(monate,jetzt,cy,false)}
      <div class="ab-foot">
        <span><span class="ab-foot-l">Up in</span> <b>${cur?cur[2]:'–'}%</b> <span class="ab-foot-n">of years</span></span>
        <span><span class="ab-foot-l">Sample</span> <b>${cur?cur[3]:'–'}</b> <span class="ab-foot-n">years</span></span>
@@ -10633,81 +10726,12 @@ function renderAssetBoard(c){
       ${ASSET_CARDS.map(n=>{const i=idx(n);return`<div class="ab-col">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('')}
       ${abReihenTitel('Positioning')}
       ${ASSET_GRAPHS.map(a=>`<div class="ab-col">${abGrafikHtml(a,c)}</div>`).join('')}
-      ${vorschauHtml(c)}
     </div>
     ${/* Die Notizen-Karte ist hier weg (Nutzer: "entfern die Notes Karte
          sodass dann die Charts da fetter hinpassen") - angepinnt stehen sie
          jetzt oben in der Kopfreihe. Das Kontext-Band bekommt dadurch die
          volle Breite. */''}
     <div class="ab-lower">${abKontextHtml(c)}</div>
-  </div>`;
-}
-
-// ══ DESIGN-VORSCHAU (TEMPORAER, 2026-10-11) ═════════════════════════════
-// Nutzer 2026-10-11: "bau mal auf der Webseite alle Versionen untereinander
-// ein und benenn sie Version 1 usw und mach auch das gleiche bei retail und
-// cot dann guck ich mir das an und sag dir was du final umsetzen sollst ...
-// mach einfach sehr schnell das es sehbar ist". Reine Ansicht zum Auswaehlen:
-// echte Daten des Assets, wo sie einfach greifbar sind; nichts davon geht in
-// den Score. Wird nach der Entscheidung wieder entfernt (vorschauHtml + .vp-*).
-function vorschauHtml(c){
-  const box=(n,titel,inhalt)=>`<div class="vp-box"><div class="vp-v">Version ${n}</div><div class="vp-t">${escH(titel)}</div>${inhalt}</div>`;
-  const leer=t=>`<div class="vp-leer">${escH(t)}</div>`;
-  const sek=(titel,boxen)=>`<div class="vp-sek"><div class="vp-sek-t">${escH(titel)}</div><div class="vp-grid">${boxen.join('')}</div></div>`;
-  const pct=v=>(v>0?'+':'')+(+v).toFixed(2)+'%';
-  const col=v=>v>=0?BC.bull:BC.bear;
-  // ── Seasonality ──
-  const SA=SEASONALITY_DATA&&SEASONALITY_DATA.assets?SEASONALITY_DATA.assets[c.id]:null;
-  let seas=[leer('No seasonality data for this asset.')];
-  if(SA&&Array.isArray(SA.months)&&SA.months.length){
-    const mo=SA.months.slice().sort((a,b)=>a[0]-b[0]);
-    let cy={};try{cy=seasCurYearReturns(c.id,SA.inv)||{};}catch(e){}
-    const jetzt=new Date().getMonth()+1;
-    const mx=Math.max(...mo.map(m=>Math.abs(+m[1])))||1;
-    // V1 Monatszeilen ab 0
-    const v1=`<div class="vp-rows"><div class="vp-row vp-hd"><span class="vp-n"></span><span class="vp-trk"></span><span class="vp-num">avg</span><span class="vp-num">up</span><span class="vp-num">this yr</span></div>${mo.map(([nr,avg,hit])=>{const w=Math.abs(avg)/mx*50;const sig=(avg>0&&hit>=60)||(avg<0&&hit<=40);
-      return`<div class="vp-row${nr===jetzt?' on':''}"><span class="vp-n">${nr===jetzt?'▶ ':''}${SEAS_MON[nr-1]}</span><span class="vp-trk"><i class="vp-mid"></i><i class="vp-bar" style="left:${avg>=0?50:50-w}%;width:${w}%;background:${col(avg)}"></i></span><span class="vp-num" style="color:${col(avg)}">${sig?'<b>':''}${pct(avg)}${sig?'</b>':''}</span><span class="vp-num">${hit}%</span><span class="vp-num vp-dim">${cy[nr]!=null?pct(cy[nr]):'–'}</span></div>`;}).join('')}
-      </div>`;
-    // V2 Heatmap
-    const v2=`<div class="vp-heat">${mo.map(([nr,avg,hit])=>{const a=Math.min(1,Math.abs(avg)/mx);return`<div class="vp-hz${nr===jetzt?' on':''}" style="background:${col(avg)}${Math.round(20+a*200).toString(16).padStart(2,'0')}"><b>${SEAS_MON[nr-1]}</b><span>${pct(avg)}</span><span>${hit}% up</span>${cy[nr]!=null?`<i>${cy[nr]>=0?'▲':'▼'} ${pct(cy[nr])}</i>`:''}</div>`;}).join('')}</div>`;
-    // V3 Saisonkurve kumuliert
-    const W=300,H=120;let kum=0,kumY=0;const pa=[[0,0]],py=[[0,0]];
-    mo.forEach(([nr,avg])=>{kum+=+avg;pa.push([nr,kum]);if(cy[nr]!=null){kumY+=cy[nr];py.push([nr,kumY]);}});
-    const vals=[...pa,...py].map(p=>p[1]);const lo=Math.min(...vals,0),hi=Math.max(...vals,0),sp=(hi-lo)||1;
-    const X=nr=>nr/12*W,Y=v=>H-6-(v-lo)/sp*(H-12);
-    const v3=`<svg class="vp-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><rect x="${X(jetzt-1)}" y="0" width="${W/12}" height="${H}" fill="var(--bg4)"/><line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--t3)" stroke-dasharray="2,3" vector-effect="non-scaling-stroke"/><polyline points="${pa.map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="none" stroke="var(--t0)" stroke-width="2" vector-effect="non-scaling-stroke"/>${py.length>1?`<polyline points="${py.map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="none" stroke="${BC.bull}" stroke-width="2" stroke-dasharray="5,3" vector-effect="non-scaling-stroke"/>`:''}</svg><div class="vp-leg"><span><b>—</b> average path (cum. ${pct(kum)})</span><span style="color:${BC.bull}"><b>- -</b> this year (${pct(kumY)})</span></div><div class="vp-xax">${SEAS_MON.map(m=>`<span>${m[0]}</span>`).join('')}</div>`;
-    // V4 Signal-Matrix
-    const v4=`<div class="vp-mat"><i class="vp-q vp-q1"></i><i class="vp-q vp-q3"></i><i class="vp-mx"></i><i class="vp-my"></i>${mo.map(([nr,avg,hit])=>`<span class="vp-pt${nr===jetzt?' on':''}" style="left:${50+avg/mx*45}%;top:${100-hit}%;background:${col(avg)}" title="${SEAS_MON[nr-1]}: ${pct(avg)}, ${hit}% up">${nr===jetzt?SEAS_MON[nr-1]:''}</span>`).join('')}<span class="vp-ax vp-axx">avg return →</span><span class="vp-ax vp-axy">hit rate ↑</span></div>`;
-    seas=[box(1,'Month rows from 0',v1),box(2,'Year heatmap',v2),box(3,'Cumulative seasonal curve',v3),box(4,'Signal matrix',v4)];
-  }
-  // ── Retail ──
-  let ret=[leer('No retail book for this asset.')];
-  const rz=(()=>{try{return abRetailZeilen(c.id)||[];}catch(e){return[];}})();
-  if(rz.length){
-    const v1=`<div class="pd-list">${posAbwKopf('Pair',RETAIL_AB)}${rz.map(z=>posAbwZeile({nameHtml:escH(z.name),lang:z.lang,ab:RETAIL_AB})).join('')}</div>`;
-    const v2=`<div class="vp-rows">${rz.map(z=>`<div class="vp-row"><span class="vp-n">${escH(z.name)}</span><span class="vp-trk vp-zones"><i class="vp-mid"></i><i class="vp-dot" style="left:${z.lang}%;background:${z.lang>=50?BC.bull:BC.bear}"></i></span><span class="vp-num">${z.lang}%</span></div>`).join('')}</div>`;
-    const v3=`<div class="vp-tiles">${rz.map(z=>{const a=Math.abs(z.lang-50)/50;const f=z.lang>=50?BC.bull:BC.bear;return`<div class="vp-tile" style="border-color:${f};background:${f}${Math.round(15+a*120).toString(16).padStart(2,'0')}"><b>${escH(z.name)}</b><span>${z.lang>=50?z.lang+'% L':(100-z.lang)+'% S'}</span></div>`;}).join('')}</div>`;
-    const avg=Math.round(rz.reduce((a,z)=>a+z.langAsset,0)/rz.length);
-    const v4=`<div class="vp-ringwrap"><div class="vp-ring" style="background:conic-gradient(${BC.bull} 0 ${avg}%,${BC.bear} ${avg}% 100%)"><span>${avg}%</span></div><div><b>${avg}% long ${escH(c.id)}</b><div class="vp-dim">${rz.filter(z=>z.langAsset>=RETAIL_AB||z.langAsset<=100-RETAIL_AB).length}/${rz.length} one-sided</div></div></div><div class="vp-list">${rz.map(z=>`<div><span>${escH(z.name)}</span><b style="color:${z.lang>=50?BC.bull:BC.bear}">${z.lang}% long</b></div>`).join('')}</div>`;
-    ret=[box(1,'Deviation from 50% (current)',v1),box(2,'Dots on a scale',v2),box(3,'Tiles by strength',v3),box(4,'Ring + list',v4)];
-  }
-  // ── COT ──
-  let cot=[leer('No COT contract for this asset.')];
-  const cid=abCotId(c.id),S=cid&&COT_DATA&&COT_DATA.symbols?COT_DATA.symbols[cid]:null;
-  const hh=S&&Array.isArray(S.history)?S.history.filter(e=>e&&(+e.long + +e.short)>0):[];
-  if(hh.length>=2){
-    const v1=abCotChart(hh).html;
-    const net=hh.map(e=>+e.long - +e.short),nmx=Math.max(...net.map(Math.abs))||1,W=300,H=120,bw=W/hh.length*0.7;
-    const v2=`<svg class="vp-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="0" x2="${W}" y1="${H/2}" y2="${H/2}" stroke="var(--t3)" vector-effect="non-scaling-stroke"/>${net.map((v,i)=>{const h=Math.abs(v)/nmx*(H/2-4);return`<rect x="${(i+0.15)*W/hh.length}" y="${v>=0?H/2-h:H/2}" width="${bw}" height="${h}" fill="${col(v)}" opacity="${i===net.length-1?1:.55}"/>`;}).join('')}</svg><div class="vp-leg"><span>Net contracts now <b style="color:${col(net[net.length-1])}">${cotSigned(net[net.length-1])}</b></span><span>w/w ${cotSigned(net[net.length-1]-net[net.length-2])}</span></div>`;
-    const lp=hh.map(e=>+e.long/(+e.long + +e.short)*100),lo=Math.min(...lp),hi=Math.max(...lp),jetzt=lp[lp.length-1],vor=lp[lp.length-2];
-    const v3=`<div class="vp-rail"><i class="vp-rng" style="left:${lo}%;width:${hi-lo}%"></i><i class="vp-mid"></i><i class="vp-mk vp-ghost" style="left:${vor}%"></i><i class="vp-mk" style="left:${jetzt}%;background:${posZonenFarbe(jetzt,COT_NETZ_AB)}"></i></div><div class="vp-leg"><span>0% short</span><span>range ${hh.length} reports: ${lo.toFixed(0)}–${hi.toFixed(0)}%</span><span>100% long</span></div><div class="vp-leg"><span>now <b>${jetzt.toFixed(1)}%</b></span><span class="vp-dim">last ${vor.toFixed(1)}%</span><span>w/w <b style="color:${col(jetzt-vor)}">${(jetzt-vor>0?'+':'')+(jetzt-vor).toFixed(1)}pp</b></span></div>`;
-    const mx2=Math.max(...hh.map(e=>Math.max(+e.long,+e.short)))||1;
-    const v4=`<svg class="vp-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="0" x2="${W}" y1="${H/2}" y2="${H/2}" stroke="var(--t3)" vector-effect="non-scaling-stroke"/>${hh.map((e,i)=>{const hl=+e.long/mx2*(H/2-4),hs=+e.short/mx2*(H/2-4);return`<rect x="${(i+0.15)*W/hh.length}" y="${H/2-hl}" width="${bw}" height="${hl}" fill="${BC.bull}"/><rect x="${(i+0.15)*W/hh.length}" y="${H/2}" width="${bw}" height="${hs}" fill="${BC.bear}"/>`;}).join('')}</svg><div class="vp-leg"><span style="color:${BC.bull}">▲ long ${cotNum(hh[hh.length-1].long)}</span><span style="color:${BC.bear}">▼ short ${cotNum(hh[hh.length-1].short)}</span></div>`;
-    cot=[box(1,'Line with score zones (current)',v1),box(2,'Net bars around zero',v2),box(3,'Position rail',v3),box(4,'Mirrored bars',v4)];
-  }
-  return`<div class="vp" style="grid-column:1/-1">
-    <div class="vp-kopf">Design preview <span>temporary · pick a version per block, then this section is removed</span></div>
-    ${sek('Seasonality',seas)}${sek('Retail Positioning',ret)}${sek('COT Positioning',cot)}
   </div>`;
 }
 
@@ -18498,53 +18522,43 @@ function cotHistChart(history,availWidth,meta,opt){
   if(!Array.isArray(history)||history.length<2)return'';
   const n=history.length;
   const preis=opt&&Array.isArray(opt.preis)&&opt.preis.some(v=>v!=null)?opt.preis:null;
-  // ⚠ Seit 2026-10-11 "Linie mit Score-Zonen" (Nutzer-Wahl, siehe
-  // posZonenSvg): keine Kontrakt-Balken und keine Kontrakt-Achse mehr - die
-  // Zahlen stehen im Tooltip und in der Tabelle darunter. Die Rasterung je
-  // Bericht (perBar/barW) bleibt, Hover und Kurslinie haengen daran.
-  // Mit Kurs: zweite Achse ganz rechts; ohne Platz fuer die Endmarke.
-  const leftPad=44,rightPad=preis?118:52,topPad=10,chartH=360,bottomPad=26;
-  // Viele Reports (bis 10 Jahre): schmalere Raster statt 8000 px Scrollen.
+  // ⚠ Seit 2026-10-11 GESPIEGELTE BALKEN (Nutzer-Wahl Version 4): Long-
+  // Kontrakte nach oben, Short nach unten, eine Skala (links). Kontrakte und
+  // Prozente im Tooltip und in der Tabelle darunter.
+  const leftPad=58,rightPad=preis?118:16,topPad=10,chartH=360,bottomPad=26;
+  // Viele Reports (bis 10 Jahre): schmalere Balken statt 8000 px Scrollen.
   const minPerBar=n>80?0.8:16;
   const usableW=Math.max((availWidth||0)-leftPad-rightPad,n*minPerBar);
   const perBar=usableW/n,barW=Math.max(n>80?0.6:4,perBar*0.62);
   const w=leftPad+rightPad+n*perBar,h=topPad+chartH+bottomPad;
-  const y0=topPad+chartH;
+  const y0=topPad+chartH,mid=topPad+chartH/2;
+  const ax=cotNiceAxis(Math.max(...history.map(e=>Math.max(+e.long||0,+e.short||0))));
+  const yL=v=>mid-(v/ax.max)*(chartH/2),yS=v=>mid+(v/ax.max)*(chartH/2);
   const yPct=p=>y0-(p/100)*chartH;
-  if(meta)Object.assign(meta,{leftPad,rightPad,topPad,chartH,bottomPad,perBar,barW,n,y0,yPct,preis});
+  const yDot=i=>yL(+history[i].long||0);
+  if(meta)Object.assign(meta,{leftPad,rightPad,topPad,chartH,bottomPad,perBar,barW,n,y0,yPct,yDot,preis});
   let svg=`<svg class="cot-hist-svg" width="${w.toFixed(1)}" height="${h}" viewBox="0 0 ${w.toFixed(1)} ${h}">`;
   const xR=leftPad+n*perBar;
-  svg+=posZonenSvg(yPct,leftPad,xR,COT_NETZ_AB,false);
-  // Linke Achse: 0/50/100 und die beiden Score-Schwellen (fett)
-  [0,100-COT_NETZ_AB,50,COT_NETZ_AB,100].forEach(p=>{
-    const y=yPct(p),sw=p===COT_NETZ_AB||p===100-COT_NETZ_AB;
-    svg+=`<line x1="${leftPad}" y1="${y.toFixed(1)}" x2="${(leftPad-4).toFixed(1)}" y2="${y.toFixed(1)}" style="stroke:var(--t3)" stroke-width="1"/>`;
-    svg+=`<text x="${leftPad-7}" y="${(y+3).toFixed(1)}" text-anchor="end" style="font-size:var(--fs-2xs);fill:${sw?'var(--t1)':'var(--t3)'};font-weight:${sw?700:400}">${p}%</text>`;
-  });
-  // Linie der Long-Quote + Datumsbeschriftung
+  // Linke Achse: Kontrakte nach oben (long) und unten (short)
+  for(let v=0;v<=ax.max;v+=ax.step){
+    [[yL(v),BC.bull],[yS(v),BC.bear]].forEach(([y,c],k)=>{if(k&&!v)return;
+      svg+=`<line x1="${leftPad}" y1="${y.toFixed(1)}" x2="${xR}" y2="${y.toFixed(1)}" stroke="var(--bd)" stroke-width="${v?0.5:1}"/>`;
+      svg+=`<text x="${leftPad-7}" y="${(y+3).toFixed(1)}" text-anchor="end" style="font-size:var(--fs-2xs);fill:${v?c:'var(--t3)'}">${cotNum(v)}</text>`;});
+  }
   const lblJede=Math.max(1,Math.ceil(64/perBar));
-  const linePts=[];let letzt=null;
   history.forEach((e,i)=>{
     const x=leftPad+i*perBar;
     const L=+e.long||0,S=+e.short||0;
-    const tot=L+S,lp=tot>0?L/tot*100:50;
-    linePts.push((x+barW/2).toFixed(1)+','+yPct(lp).toFixed(1));
-    if(i===n-1)letzt={x:x+barW/2,y:yPct(lp),lp};
+    svg+=`<rect x="${x.toFixed(1)}" y="${yL(L).toFixed(1)}" width="${barW.toFixed(1)}" height="${(mid-yL(L)).toFixed(1)}" fill="${BC.bull}"/>`;
+    svg+=`<rect x="${x.toFixed(1)}" y="${mid.toFixed(1)}" width="${barW.toFixed(1)}" height="${(yS(S)-mid).toFixed(1)}" fill="${BC.bear}"/>`;
     // Datum mit Jahr (Dauerregel), ausgeduennt nach Platz: ~64 px je Label.
-    // Letzter Report immer beschriftet; ein regulaeres Label zu nah davor faellt weg.
     if(i===n-1||(i%lblJede===0&&(n-1-i)>=lblJede&&(i===0||i>=lblJede*1.5))){
       const d=fmtDayShort(e.date,true);
       const lx=x+barW/2,an=i===0?'start':i===n-1?'end':'middle';
       svg+=`<text x="${(an==='start'?x:an==='end'?x+barW:lx).toFixed(1)}" y="${(y0+14).toFixed(1)}" text-anchor="${an}" style="font-size:var(--fs-2xs);fill:var(--t3)">${escH(d)}</text>`;
     }
   });
-  svg+=`<polyline points="${linePts.join(' ')}" fill="none" stroke="var(--t0)" stroke-width="2" stroke-linejoin="round"/>`;
-  // Endpunkt in Zonenfarbe mit Wert rechts daneben
-  if(letzt){
-    const col=posZonenFarbe(letzt.lp,COT_NETZ_AB);
-    svg+=`<circle cx="${letzt.x.toFixed(1)}" cy="${letzt.y.toFixed(1)}" r="5" fill="${col}" stroke="var(--card)" stroke-width="2"/>`;
-    svg+=`<text x="${(letzt.x+9).toFixed(1)}" y="${(letzt.y+4).toFixed(1)}" style="font-size:var(--fs-sm);font-weight:800;fill:${col}">${letzt.lp.toFixed(1)}%</text>`;
-  }
+  svg+=`<text x="${leftPad+4}" y="${(topPad+12).toFixed(1)}" style="font-size:var(--fs-2xs);font-weight:700;fill:${BC.bull}">▲ LONG</text><text x="${leftPad+4}" y="${(y0-4).toFixed(1)}" style="font-size:var(--fs-2xs);font-weight:700;fill:${BC.bear}">▼ SHORT</text>`;
   // vs Price: gestrichelte Kurslinie auf den Report-Tagen der Balken, eigene
   // Achse ganz rechts (Beschriftung in der Linienfarbe).
   if(preis){
@@ -18649,7 +18663,7 @@ function cotChartShowIdx(i){
   const m=cotHistRowMetrics(e,prev);if(!m)return;
   const dot=svg.querySelector('#cotHoverDot'),vline=svg.querySelector('#cotHoverVLine');
   const x=meta.leftPad+i*meta.perBar+meta.barW/2;
-  const y=meta.yPct(m.longPct);
+  const y=meta.yDot?meta.yDot(i):meta.yPct(m.longPct);
   if(dot){dot.setAttribute('cx',x.toFixed(1));dot.setAttribute('cy',y.toFixed(1));dot.style.display='block';}
   if(vline){vline.setAttribute('x1',x.toFixed(1));vline.setAttribute('x2',x.toFixed(1));vline.style.display='block';}
   let dt;try{const d=new Date(e.date+'T00:00:00');dt=d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'2-digit'});}catch(err){dt=e.date;}
@@ -22864,7 +22878,7 @@ function renderCotRoh(){
     const p3=cotPct3yOf(cotFilter);
     const p3Note=p3?`<div class="cot-meta">3-year percentile: today&#39;s net positioning is at the <b>${Math.round(p3.pct)}th percentile</b> of its own last ~3 years (${p3.n} weekly reports)${p3.pct>=90?` · <span style="color:var(--amber)">⚠ historically extreme long — crowded trade, contrarian caution</span>`:p3.pct<=10?` · <span style="color:var(--amber)">⚠ historically extreme short — crowded trade, contrarian caution</span>`:''} · display-only</div>`:'';
     histCard=`<div class="cot-card">
-      <div class="cot-card-title"><span>Positioning History — ${escH(COT_NAME[cotFilter]||cotFilter)}</span>${fCrowded}<small>line = Long % of large speculators, one point per COT report · shaded = ${COT_NETZ_AB}% or more on one side (counts toward the score)${cotVsPrice&&pxReihe?' · dashed = price (far right scale)':''} · hover/tap for contracts and the weekly change</small></div>
+      <div class="cot-card-title"><span>Positioning History — ${escH(COT_NAME[cotFilter]||cotFilter)}</span>${fCrowded}<small>1 column = 1 COT report · blue up = long contracts · red down = short contracts${cotVsPrice&&pxReihe?' · dashed = price (far right scale)':''} · hover/tap for % and the weekly change</small></div>
       <div style="padding:10px 14px 0">${chartLeisteHtml(vsBtn,zeitBar)}</div>${ladeHinweis}
       ${chartSvg?`<div class="cot-hist-wrap" id="cotHistWrap"><div class="cot-tip" id="cotHoverTip" style="display:none"></div>${chartSvg}</div>`:`<div class="cot-empty">Not enough report history yet — it builds up automatically as the hourly data job runs.</div>`}
     </div>`+p3Note;
@@ -23197,14 +23211,13 @@ function renderSeasonalityRoh(){
   // dem tatsaechlichen Kursverlauf des laufenden Jahres, kein Toggle/keine
   // sichtbare Option - siehe seasCurYearReturns()-Kommentar oben.
   const curYear=seasCurYearReturns(seasAsset,A.inv);
-  const cyLegend=Object.keys(curYear).length?`<div class="tr-legend" style="margin-top:6px"><span class="tr-leg-item"><span class="tr-leg-dash"></span>This year so far</span></div>`:'';
   // Filter jetzt IM Karten-Titel oben rechts, wie bei Retail Sentiment/
   // Put-Call/Net Options Flow (Nutzer-Wunsch 2026-08-31: "Asset Filter
   // sollen ueberall einheitlich sein... immer oben rechts") - vorher stand
   // er als eigene Zeile UEBER der Karte, keins der anderen Tabs macht das so.
   const chartCard=`<div class="cot-card">
     <div class="cot-card-title">Monthly Seasonality — ${escH(COT_NAME[seasAsset]||seasAsset)}${iBtn('seas')}<span style="margin-left:auto">${filt}</span><small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">15y stats · proxy: ${proxyLink} · ${escH(upd)}</small></div>
-    <div style="padding:12px 14px;overflow-x:auto">${seasBarChart(A.months,curMon,curYear)}${curLine}${cyLegend}</div>
+    <div style="padding:12px 14px">${seasZeilenHtml(A.months,curMon,curYear,true)}${curLine}</div>
   </div>`;
   // Kompakte Uebersicht: der AKTUELLE Monat quer ueber alle Assets,
   // staerkster historischer Rueckenwind zuerst.
@@ -25614,7 +25627,7 @@ setInterval(()=>{
 // Wunsch 2026-08-25) - Details/Methodik: docs/module-split.md. Namen per
 // echtem JS-Parser (acorn) aus dem Top-Level-Scope dieses Moduls ermittelt,
 // nie per Regex/Handschrift.
-Object.assign(window,{faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,
+Object.assign(window,{faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
@@ -25950,6 +25963,7 @@ Object.defineProperty(window,'cotVsPrice',{get:()=>cotVsPrice,set:v=>{setCotVsPr
 Object.defineProperty(window,'COT_HIST',{get:()=>COT_HIST,set:v=>{COT_HIST=v;},configurable:true});
 Object.defineProperty(window,'pxChartTyp',{get:()=>pxChartTyp,set:v=>{setPxChartTypVal(v);},configurable:true});
 Object.defineProperty(window,'abTrendLinien',{get:()=>abTrendLinien,set:v=>{abTrendLinien=v;},configurable:true});
+Object.defineProperty(window,'kontextSlots',{get:()=>kontextSlots,set:v=>{setKontextSlotsVal(v);},configurable:true});
 Object.defineProperty(window,'PRICE_HIST',{get:()=>PRICE_HIST,set:v=>{PRICE_HIST=v;},configurable:true});
 Object.defineProperty(window,'PRICE_HIST_META',{get:()=>PRICE_HIST_META,set:v=>{PRICE_HIST_META=v;},configurable:true});
 Object.defineProperty(window,'TREND_DATA',{get:()=>TREND_DATA,set:v=>{TREND_DATA=v;},configurable:true});

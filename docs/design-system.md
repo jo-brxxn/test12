@@ -1346,6 +1346,15 @@ hatte sie außerhalb des Bearbeitungsmodus bewusst keine Titelzeile, Wunsch
 vom 2026-07-27). Geprüft von `check/hierarchie.js` (Regel 4 dort) und
 `check/designregeln.js` K.
 
+## Kontext-Karte: Slots selbst wählen (seit 2026-10-11)
+
+Zahnrad links neben dem ⓘ → Fenster „Context charts — ASSET“ mit Slot 1–3,
+Auswahl aus allen Charts mit Daten, gruppiert (Renditen 2Y/10Y, Währungen,
+Metalle, Energie, Indizes, Aktien, Krypto, Rendite-Assets, Volatilität);
+„Reset to default“. Gespeichert je Asset (`kontextSlots`, synchronisiert).
+Selbst gewählte Charts tragen **kein** Bullish/Bearish-Wort (Wirkung aufs
+Asset nicht festgelegt — Regel 4).
+
 ## Kein Fließtext (Dauerregel seit 2026-10-11)
 
 Nutzer: *„Übersichtlichkeit und schnelle Datenverfügbarkeit und nicht in einem
@@ -1384,11 +1393,17 @@ während das am iPad zu klein wäre“* — per Rückfrage „Automatisch + Scha
 
 Nutzer: *„Es sollen die Daten gleich bleiben aber anders dargestellt“* —
 per Rückfrage gewählt, gilt in Asset-Karten **und** Tabs:
-- **COT = Linie mit Score-Zonen.** Long-Quote als Linie (`--t0`), Zonen ab
-  `COT_NETZ_AB` (60 %) blau oben / rot unten getönt, Schwellen gestrichelt,
-  50 % gepunktet; Endpunkt in Zonenfarbe. Karte: Quote groß + w/w-Pfeil über
-  dem Chart, Kontraktzahlen nur im Tooltip (keine Fußzeile mehr). Tab: keine
-  Kontrakt-Balken/-Achse mehr, Kontrakte im Tooltip und in der Tabelle.
+- **COT = gespiegelte Balken** (Nutzer-Wahl Version 4, 2026-10-11 abends —
+  ersetzt die „Linie mit Score-Zonen“ vom Nachmittag): Long-Kontrakte nach
+  oben (blau), Short nach unten (rot), ein Bericht je Spalte, eine Skala.
+  Karte: darunter wieder die Fußzeile Long %/Kontrakte · Short %/Kontrakte ·
+  w/w (hinterlegt). Tab-Verlauf: dieselben Balken, Achse in Kontrakten,
+  „▲ LONG / ▼ SHORT“, vs Price unverändert.
+- **Seasonality = Monatszeilen ab 0** (Version 1 ohne Up-Spalte): je Monat
+  ein Balken von der 0-Linie, Punkte + gestrichelte Linie = Verlauf dieses
+  Jahres („Kurslinie“), laufender Monat hinterlegt, Signal-Monate fett,
+  Trefferquote im Tooltip/Fuß. `seasZeilenHtml()` in Karte und Tab
+  (`.sz-gross`).
 - **Retail = Abweichung von 50 %.** Je Zeile eine Spur 0–100 %, Balken von
   der Mitte zur Mehrheitsseite (Blau long, Rot short, volle Farbe), Striche
   bei `RETAIL_AB` (65/35 %), Text „68% long“ / „71% short“. Broker-Quote
