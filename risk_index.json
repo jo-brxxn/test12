@@ -1,6 +1,6 @@
 {
  "date": "2026-10-11",
- "value": 0.137,
+ "value": 0.136,
  "label": "NEUTRAL",
  "percentile": 61,
  "components": [
@@ -3208,7 +3208,7 @@
   ],
   [
    "2026-10-11",
-   0.137
+   0.136
   ]
  ],
  "method": "Mean z-score of 20-day changes in VIX, Gold, AUDUSD, USDJPY (positive = risk aversion)"
