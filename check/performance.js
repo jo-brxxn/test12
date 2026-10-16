@@ -47,6 +47,16 @@
 //   --gegenprobe-text      Textwechsel-Filter aus (window.__gpNurText)   -> C rot
 //   --gegenprobe-doppelt   alter Ablauf showTab('cur') + selSym          -> D rot
 //   --gegenprobe-smil      Wellen-SMIL wieder in den Vorlagen             -> E rot
+//   --gegenprobe-chv       Aufraeumen der Chart-Registry aus               -> F rot
+//   --gegenprobe-globus    Kugel wieder in jedem Bild neu gezeichnet       -> G rot
+// (F, seit 2026-10-16) Speicher: nach 60 Seiten-/Asset-Wechseln haelt die
+//      Hover-Registry der Charts (_chvReg) nur Eintraege fuer Charts, die im
+//      Dokument stehen (+ eine Runde Puffer). Vorher wuchs sie unbegrenzt:
+//      +3,5 MB Heap je 40 Wechsel, 250.000 Zeichenketten nach 80 Wechseln.
+// (G, seit 2026-10-16) Overview-Kugel im Normaltempo hoechstens 40
+//      Neuzeichnungen je Sekunde (Bewegung < 0,5 px je Bild wird nicht
+//      gezeichnet) - vorher 60, gemessen ~1.760 ms Rechenzeit je 5 s im
+//      Leerlauf, danach ~1.180. Der Radar-Strahl laeuft weiter in jedem Bild.
 const fs = require('fs');
 const path = require('path');
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
@@ -56,7 +66,9 @@ const GP_FILL = process.argv.includes('--gegenprobe-fill');
 const GP_TEXT = process.argv.includes('--gegenprobe-text');
 const GP_DOPPELT = process.argv.includes('--gegenprobe-doppelt');
 const GP_SMIL = process.argv.includes('--gegenprobe-smil');
-const GP = GP_PUNKTE || GP_FILL || GP_TEXT || GP_DOPPELT || GP_SMIL;
+const GP_CHV = process.argv.includes('--gegenprobe-chv');
+const GP_GLOBUS = process.argv.includes('--gegenprobe-globus');
+const GP = GP_PUNKTE || GP_FILL || GP_TEXT || GP_DOPPELT || GP_SMIL || GP_CHV || GP_GLOBUS;
 
 const MAX_GLEICHZEITIG = 400;   // Trends nachher ~110, vorher 3363
 const MAX_FERTIG = 3;           // pageFadeIn/detailFadeIn halten bewusst (transform-Kontext), sonst 0
@@ -67,7 +79,7 @@ const MAX_MESSUNGEN = 20;       // nachher 0 auf allen Seiten, COT vorher ~500
 const ERLAUBT_MALEND = {
   aiTick: 'laeuft nur noch auf der pausierten Abtast-Probe (.ai-probe), die den Filmstreifen baut - E prueft, dass sie nirgends live laeuft',
   aiTickDot: 'wie aiTick',
-  globePing: 'Overview-Globus: SVG, die Kugel wird ohnehin in jedem Bild neu gezeichnet',
+  globePing: 'Overview-Globus: SVG, die Kugel wird ohnehin fortlaufend neu gezeichnet (G begrenzt den Takt)',
   jetFlameFlicker: 'Overview-Globus: SVG-Jet, wie globePing',
   skelShimmer: 'laeuft nur, solange ein Platzhalter laedt',
 };
@@ -209,6 +221,33 @@ function statisch() {
     if (r.filme < r.sichtbar) rot(`${name}: nur ${r.filme} von ${r.sichtbar} sichtbaren animierbaren Symbolen zeigen ihren Film`); else z.push(`${r.filme}/${r.sichtbar} Symbole als Film`);
     if (z.length === 3) gruen(`${name.padEnd(10)} ${z.join(' · ')}`);
   }
+
+  // ── F) Hover-Registry der Charts waechst nicht ───────────────────────────
+  console.log('F) Speicher: Chart-Registry nach 60 Wechseln');
+  if (GP_CHV) await p.evaluate(() => { window.__gpKeinChvAufr = true; });
+  for (let i = 0; i < 60; i++) {
+    await p.evaluate(i => { const ids = ['EUR', 'USD', 'GOLD', 'JPY', 'NAS']; if (i % 2) gotoSym(ids[i % 5]); else showTab(['dash', 'trends', 'mx', 'cot', 'pairs', 'over'][i % 6]); }, i);
+    await p.waitForTimeout(90);
+  }
+  await p.evaluate(() => showTab('dash')); await p.waitForTimeout(2300); await p.evaluate(() => { showTab('trends'); }); await p.waitForTimeout(600);
+  const reg = await p.evaluate(() => ({ n: Object.keys(window._chvReg || {}).length, dom: document.querySelectorAll('.chv[data-chv]').length }));
+  if (reg.n > reg.dom * 2 + 150) rot(`Chart-Registry haelt ${reg.n} Eintraege, im Dokument stehen ${reg.dom} Charts - sie waechst mit jedem Aufbau`);
+  else gruen(`Chart-Registry ${reg.n} Eintraege bei ${reg.dom} Charts im Dokument`);
+
+  // ── G) Overview-Kugel: Takt der Neuzeichnung ─────────────────────────────
+  console.log('G) Overview-Kugel: Neuzeichnungen je Sekunde im Normaltempo');
+  await p.evaluate(gp => { if (gp) window.__gpGlobusJedesBild = true; showTab('over'); }, GP_GLOBUS);
+  await p.waitForTimeout(2500);
+  const gl = await p.evaluate(async () => {
+    const pfad = document.querySelector('[data-layer="landshape"] path'); if (!pfad) return null;
+    let n = 0; const mo = new MutationObserver(ms => { n += ms.filter(m => m.attributeName === 'd').length; });
+    mo.observe(pfad, { attributes: true });
+    let bilder = 0; const t0 = performance.now(); await new Promise(r => { const f = () => { bilder++; if (performance.now() - t0 < 2000) requestAnimationFrame(f); else r(); }; requestAnimationFrame(f); });
+    mo.disconnect(); return { n, bilder, s: (performance.now() - t0) / 1000 };
+  });
+  if (!gl) rot('Overview-Kugel nicht gefunden');
+  else { const jeS = gl.n / gl.s; if (jeS > 40) rot(`Kugel ${jeS.toFixed(0)}x je Sekunde neu gezeichnet (${gl.bilder} Bilder) - Bewegung unter 0,5 px wird mitgezeichnet`); else gruen(`Kugel ${jeS.toFixed(0)} Neuzeichnungen je Sekunde bei ${(gl.bilder / gl.s).toFixed(0)} Bildern`); }
+  await p.evaluate(() => { window.__gpGlobusJedesBild = false; showTab('dash'); });
 
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));
   await b.close();

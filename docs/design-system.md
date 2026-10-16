@@ -1402,6 +1402,11 @@ per Rückfrage gewählt, gilt in Asset-Karten **und** Tabs:
   **Prozentlinie** (Nutzer 2026-10-11): über den Balken die Long-Quote in %
   als Linie, rechte Achse 0/50/100 %, linke Achse = Kontrakte (Karte und
   Tab; im Tab steht die Kursachse bei vs Price rechts daneben).
+  **Wochenänderung = Long-Anteil in Prozentpunkten** (`dNetPct` =
+  longPct − prevLongPct): Spalte/Tooltip heißen „Δ Long % (wk)“, die
+  Indikatorzeile „WoW Change in Long Share (pp)“ (`IND_ANZEIGE_NAME`, der
+  interne Schlüssel bleibt). Bis 2026-10-16 stand „Δ Net %“ — die Netto-Quote
+  bewegt sich doppelt so stark (EUR −5,3 statt angezeigt −2,6).
   **Auffällig** (Nutzer-Wahl): Amber `--cotl` (hell `#E09B00`, dunkel
   `#FFCB52`), 2,6–3 px, dunkle Unterlage — sie liegt meist auf der Fuge
   der Balken und muss sich von Blau und Rot abheben.

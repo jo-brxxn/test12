@@ -19920,8 +19920,69 @@ zur Sichtbarkeit (sie liegt meist bei 35–65 % = auf der Fuge der Balken) →
 „Über den Balken, auffällig“: Amber `--cotl` in allen Themes, 2,6 px
 (Karte) / 3 px (Tab), dunkle Unterlage, Untertitel „amber line“.
 
+## 2026-10-16 — VERSION-CHECK-604: Prüfdurchgang Bugs, Performance, Score (/goal)
 
-## VERSION-CHECK-604 (2026-10-16) — Score-Modell 21: Niveau-Block („wie steht die Zahl gegen ihr Normal“)
+Nutzer: *„such nach Performance Problemen oder bugs usw und entfern sie bis
+alles problemlos läuft. Nimm auch nochmal den Score unter die Lupe und
+generell alles wo er benutz und gezeigt wird. Rechne alles nach und stell
+sicher das nichts falsches ist“*
+
+**Bugs — Klick-Durchlauf** (jeder sichtbare Knopf auf allen 16 Tabs, 3
+Asset-Seiten, Paar-Übersicht, eine Ebene in jedem geöffneten Fenster;
+1440 / 1180 Touch / 820 Touch / 390 Touch): je 2.601 Klicks, **0 App-Fehler**.
+⚠ `check/runtime.js` ist dabei halb blind (alte Tab-Namen, `.mov` statt `.ov`);
+der eigene Durchlauf zuerst auch — nach einem Neuaufbau verloren die Knöpfe
+ihre Markierung und wurden still übersprungen (Gegenprobe mit kaputtem
+`openCardInfo` blieb grün). Umgebaut auf Signatur + Vorkommen.
+
+**Score — unabhängig nachgerechnet** (eigene Implementierung, 557 Indikatoren,
+23 Assets, 28 Paare, Stärke-Noten). Gefunden:
+- Doppelrundung im Vergleichsfaktor → Modell 21 (siehe score-model.md).
+- **Matrix-Heatmap ohne Carry:** 36 von 56 Zellen ≠ Paar-Score, bis 1,0,
+  USD/CHF −0,9 statt +0,1. Jetzt `pairScore()`.
+- **Paar-Übersicht „Pair score vs price“ ohne Carry** (eigene Kopie der
+  Trends-Reihe, obwohl ihr Hinweis „Same series as the Trends tab“ sagte).
+  Jetzt eine Funktion `pairScoreTagesReihe` für beide.
+- **Stärke-Note mit UTC-Datum:** Berlin 00:30 → heutiger Live-Wert (−2,2) als
+  Vergangenheit, gestern fehlte. Klasse: 8 weitere „heute/Grenze aus
+  toISOString“ (Bereichsfilter, News „Today“, ESI-Reihe, Export-Dateiname) →
+  `isoLokal()`/`todayStr()`.
+- **COT „Δ Net % (wk)“** zeigte die Änderung des Long-Anteils (EUR −2,6), die
+  Netto-Quote fiel um −5,3. Beschriftung jetzt „Δ Long % (wk)“, Indikatorzeile
+  „WoW Change in Long Share (pp)“, Einheit pp.
+- Doku: Retail-Abschnitt beschrieb noch die Regel von vor Modell 15.
+- Alle 267 sichtbaren Score-Zahlen = Rechnung; Bias-Farbe vs. Zahl 0
+  Widersprüche (Schwelle bleibt bewusst roh, Entscheid 2026-07-06).
+
+**Performance — gemessen:**
+| | vorher | nachher |
+|---|---|---|
+| Overview Leerlauf je 5 s | ~1.760 ms | ~1.180 ms |
+| Heap nach 160 Wechseln | 16 → 36 MB, stetig | 16 → 24 MB, flach |
+| Score-Kette beim Laden | 366 ms | 210 ms |
+- Kugel: nur bei ≥ 0,5 px Bewegung neu zeichnen, Unterpixel-Punkte aus,
+  `Math.round` statt `toFixed`, aus dem Bild → aus. Bildtakt unverändert
+  16,7 ms, 0 verspätete Bilder.
+- Leck: `_chvReg` (Retainer-Kette per Heap-Schnappschuss) räumt sich auf.
+- `indCycleIsGuess` gemerkt.
+- Bewusst NICHT: 6 Dashboard-Aufbauten beim Start (einer je Feed, ~70 ms) —
+  Zusammenlegen spart Rechenzeit, nicht Wartezeit, und ändert die synchrone
+  Render-Semantik, auf die sich viele Stellen verlassen.
+
+**Wächter:** neu `check/scorenachrechnung.js` (A–E), `check/performance.js`
+F + G; alle mit Gegenprobe rot.
+
+**Nachtrag Volllauf 604:** `check/cards.js` bei 390 px im Data-Tab: „Jul 14, 26“
+(257–305) und „Oct 14, 26“ (302–353) überlappten. Ursache in `indHistChart`:
+der Abstand des letzten Labels wurde in Indizes geschätzt (60 % eines Schritts),
+das rechtsbündige Label rückt aber um seine ganze Breite nach links. Jetzt
+Pixel-Boxen (Breite aus der Zeichenzahl); überlappt das letzte (neueste Datum)
+das vorige, fällt das vorige. 390 px: Oct 24 · Mar 11 · Oct 14; 1180 px: 7
+Labels, 32 px Luft am Ende. Außerdem `check/fliesstext.js`: COT-Meta-Zeile mit
+42 Wörtern („older than usual — a release may have been delayed“) → kurze Fakten.
+
+
+## VERSION-CHECK-605 (2026-10-16) — Score-Modell 22: Niveau-Block („wie steht die Zahl gegen ihr Normal“)
 
 **Auftrag (/goal):** „schau dir das Scoresystem an und lies dich schlau im Internet bei Banken,
 Hedgefonds usw., generell Smart Money … es ist aktuell viel actual vs forecast, aber nicht: ist
@@ -20011,10 +20072,9 @@ nachgerechnet. Die Gegenprobe `__nivAbsolut` liefert 22 Befunde.
   absolute Nicht-FX-Zeile. Danach pendelte der Bias zwischen beiden Rechnungen
   (`check/score.js` F: „Feed nicht idempotent“). Niveau-Zeilen werden jetzt nicht mehr
   gespiegelt; `applyNiveauFeed` setzt Richtung und Punkte selbst.
-- **Zwei Funde, die schon auf `main` rot waren** (geprüft mit einer sauberen Kopie von
-  `origin/main`, beide hängen am Datum):
-  - `check/fliesstext.js`: Die COT-Meta-Zeile hatte mit Verspätungs-Hinweis 42 Wörter.
-    Gekürzt auf „Report … · CFTC Legacy, non-commercial · Tuesday close · ⚠ release late“.
-  - `check/cards.js`: Im Data-Panel bei 390 px überlappten „Jul 14, 26“ und „Oct 14, 26“
-    um 3 px. Die x-Beschriftung in `indHistChart` wählt die Labels jetzt von rechts nach
-    links nach ihrer tatsächlichen Breite aus statt nur nach dem Index-Abstand.
+- **Zwei Funde, die schon auf `main` rot waren** (`check/fliesstext.js` COT-Meta-Zeile 42 Wörter,
+  `check/cards.js` x-Labels im Data-Panel bei 390 px 3 px überlappend): Eine parallele
+  Sitzung hat beide gleichzeitig behoben (173f8d0d, 3280f4ac). Beim Zusammenführen gilt
+  deren Fassung, meine Fassung ist verworfen.
+- **Nummern:** Dieselbe Sitzung belegte VERSION-CHECK-604 und Score-Modell 21
+  (Vergleichsfaktor ohne Zwischenrundung). Dieser Stand ist deshalb 605 bzw. Modell 22.

@@ -2,7 +2,7 @@
 //
 // Nutzer 2026-10-16: "es ist aktuell viel actual vs forecast aber nicht ist
 // die Inflation ueber Target und wie weit usw gleiches gilt fuer alle anderen
-// Zahlen und Daten. Wie bekommt man das darein?" (Modell 21, docs/score-model.md).
+// Zahlen und Daten. Wie bekommt man das darein?" (Modell 22, docs/score-model.md).
 // Hier UNABHAENGIG aus ind_data.json nachgerechnet und gegen die Zeilen der
 // acht Waehrungen gehalten:
 //   A) Inflation vs Target: Ø Headline+Core y/y (USD: PCE) minus offizielles Ziel;

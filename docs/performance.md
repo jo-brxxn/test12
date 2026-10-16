@@ -92,3 +92,21 @@ Hauptthread im Leerlauf (vorher 28 %/33 %), Wisch bei 4× Drossel Median
 
 ⚠ Nicht in WebKit gemessen (Download in der Cloud-Umgebung gesperrt) — die
 iPad-Prüfung steht beim Nutzer aus (Stand 2026-10-03).
+
+## 9. Nichts zeichnen, was man nicht sieht — und Register räumen sich selbst auf
+
+(Prüfdurchgang 2026-10-16, gemessen.)
+- **Overview-Kugel:** neu gezeichnet wird nur, wenn sich die Oberfläche seit
+  dem letzten Bild um ≥ 0,5 px bewegt hätte (Normaltempo 0,35 px je Bild →
+  jedes zweite Bild); Boost/Schub/Ziehen weiter jedes Bild, der Radar-Strahl
+  immer. Küstenpunkte < 0,6 px Abstand werden ausgelassen, `Math.round`
+  statt `toFixed`. Aus dem Bild gescrollt → gar nicht. Leerlauf vorher
+  ~1.760 ms je 5 s, danach ~1.180 (Rest: HUD-Animationen und Muster-Ebenen,
+  GPU). `check/performance.js` G.
+- **Register mit Zähler-IDs** (`_chvReg` der Chart-Tooltips) löschen
+  Einträge, deren Element nicht mehr im Dokument steht. Vorher +3,5 MB je 40
+  Seitenwechsel, unbegrenzt. `check/performance.js` F. Neue Register dieser
+  Art brauchen dasselbe (oder eine Obergrenze wie `HW_DET`/`JR_DET`).
+- **Merker statt Neurechnen** auch für `indCycleIsGuess` (Array-Identität
+  von `chartHist`): Score-Kette beim Laden 366 → 210 ms.
+

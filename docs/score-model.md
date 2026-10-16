@@ -52,7 +52,7 @@ Einschätzungen, überall neutral), der Edge-Tab. **Nicht im Score:** Momentum
 Geprüft von `check/regeln.js` (Zinsdifferenz und Rohstoffe unabhängig aus den
 Rohdateien nachgerechnet) und `check/seasretail.js` (Retail-Tabelle).
 
-## ⚠️ Niveau-Block (seit Modell 21, 2026-10-16): „wie steht die Zahl gegen ihr Normal“
+## ⚠️ Niveau-Block (seit Modell 22, 2026-10-16): „wie steht die Zahl gegen ihr Normal“
 
 Nutzer: *„es ist aktuell viel actual vs forecast aber nicht ist die Inflation
 über Target und wie weit usw gleiches gilt für alle anderen Zahlen“*. Bis
@@ -60,7 +60,7 @@ Modell 20 maß der Score fast nur **Überraschungen** (Actual vs Forecast) –
 ein kurzer Horizont (Citi baute den CESI für kurzfristige FX-Signale, er
 kehrt per Konstruktion zur Null zurück). Der Niveau-Block ergänzt den
 mittleren Horizont, wie ihn Quant-Research für FX nutzt (Quellen und
-Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-604). Sechs Zeilen mit **festen
+Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-605). Sechs Zeilen mit **festen
 Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
 
 | Zeile | Karte | Messung | Stufen |
@@ -127,7 +127,7 @@ bleiben"*. Umsetzung: `js/journal.js`, Herleitung und Messwerte in
 | Normierung (nur Modus `normalized`) | ×0,4 bis ×1,8 | drei gemessene Faktoren, siehe unten |
 | **Saisonalitaet** | ±0,5 | seit 2026-09-14, siehe unten |
 | **Retail-Positionierung** | ±0,5 / ±1 | seit 2026-09-14, gegen die Menge, siehe unten |
-| **Niveau-Block** | feste Punkte, je Zeile max ±0,75/±1 | seit Modell 21: Inflation vs Ziel, Realzins vs Peers, Arbeitsmarkt/Löhne/Wachstum gegen 10-J-Normal, PMI vs 50 – siehe Abschnitt oben |
+| **Niveau-Block** | feste Punkte, je Zeile max ±0,75/±1 | seit Modell 22: Inflation vs Ziel, Realzins vs Peers, Arbeitsmarkt/Löhne/Wachstum gegen 10-J-Normal, PMI vs 50 – siehe Abschnitt oben |
 
 ### Saisonalitaet und Retail (seit 2026-09-14)
 
@@ -148,13 +148,14 @@ hoechstens 40 %. Die Doppelbedingung traegt: OIL steht im September bei
 haette Rueckenwind in den Score geschrieben. Nie `sbull`/`sbear`, also nie
 mehr als ±0,5.
 
-**Retail** (`retailBiasFor`, `RETAIL_EXTREM=85` / `RETAIL_MILD=60`): gegen die
-Menge. Ab 85/15 volle ∓1, ab 60/40 nur ∓0,5, zwischen 40 und 60 nichts.
-⚠ Bei einer **Waehrung** zaehlt der Anteil ihrer **Paare** auf einer Seite,
-bei einem **Einzel-Asset** der Anteil des **Buches** — das sind dieselben
-Schwellen auf derselben Skala (3 von 5 Paaren = 60 %, 5 von 5 = 100 %), nicht
-zwei Regeln. Mit sieben USD-Paaren heisst das 5/7 (71 %) mild, 6/7 (86 %)
-extrem.
+**Retail** (`retailBiasFor`, seit Modell 15 / 2026-09-24): gegen die Menge,
+**je Paar eine Stimme** (auf das Asset gedreht): ≥ `RETAIL_AB`=65 % long → −0,5,
+≤ 35 % → +0,5, dazwischen 0; ist das Extrem in 5 Tagen um ≥ 3 Punkte weiter
+gewachsen → doppelt (±1). Währung = Durchschnitt ihrer Paare, Einzel-Asset =
+das eine Buch; höchstens ±1 (`ind.pkt`).
+⚠ Bis 2026-10-16 stand hier noch die alte Regel von 2026-09-14
+(`RETAIL_EXTREM=85`/`RETAIL_MILD=60`, Anteil der Paare) — der Code rechnet
+seit Modell 15 nach der Paar-Stimmen-Regel oben (Prüfdurchgang 2026-10-16).
 
 **Kein `research.date`** bei beiden, mit Absicht: es sind Zustaende, keine
 Veroeffentlichungen. Mit Datum wuerde `indOverdueCycles` einen 15-Jahres-
@@ -560,3 +561,29 @@ in zwei Faellen, in denen die App die noetige Grundlage nicht hat:
 Dieselbe Ueberlegung wie beim aelteren `SCORE_ZERO`-Ausschluss: keine Marke
 fuer einen Grund, den es so nicht gibt. Geprueft von `check/score.js`,
 Abschnitt E2 (stellt den Feed-Ausfall an Kopien echter Indikatoren nach).
+
+**20 → 21 (2026-10-16, Prüfdurchgang „rechne alles nach“):** `symCmpFactor`
+rundet den Vergleichsfaktor auf 4 statt 2 Stellen. Vorher Doppelrundung
+(Faktor 2 Stellen, Ergebnis 1 Stelle): unabhängig nachgerechnet lagen
+GBYIELD 5,0 statt 5,1, CAYIELD −2,2 statt −2,3, AUYIELD −5,8 statt −5,9.
+Alle übrigen 20 Assets und alle Paare unverändert. Die Stärke-Note baut sich
+dadurch neu auf (`–/10`, 10 Tage).
+
+## Wo der Paar-Score gezeigt wird: IMMER `pairScore()` (mit Carry)
+
+Set-ups, Dashboard, Watchlist, Score-Fenster, Trends (Paar-Modus), Paar-
+Übersicht und — seit 2026-10-16 — die **Matrix-Heatmap** zeigen dieselbe Zahl:
+Basis minus Kurswährung (je Vergleichs-Score) **plus Carry**. Die Tagesreihe
+für Trends und Paar-Übersicht kommt aus EINER Funktion
+(`pairScoreTagesReihe`). Gemessen vor dem Fix: Heatmap 36 von 56 Zellen
+falsch (USD/CHF −0,9 statt +0,1), Paar-Übersicht ohne Carry. Geprüft von
+`check/scorenachrechnung.js` (B, C).
+
+## „Heute“ ist der LOKALE Tag
+
+`recordScoreHist` schreibt `todayStr()` (lokal). Jeder Vergleich mit „heute“
+muss dasselbe nehmen — nie `new Date().toISOString().slice(0,10)` (UTC). Bis
+2026-10-16 nahm `symOwnHistory` das UTC-Datum: zwischen 00:00 und 02:00
+Berlin zählte die Stärke-Note den heutigen Live-Tag als Vergangenheit und
+ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
+

@@ -64,6 +64,7 @@ const PRUEFUNGEN = [
   { n: 'positionen', d: 'COT als Linie mit Score-Zonen, Retail/COT-Liste als Abweichung von 50 % - gleiche Zahlen, Balken px-genau', f: 'check/positionen.js', args: [], browser: true },
   { n: 'scrollfuell', d: 'Mausrad ueber Karten scrollt die Seite, History fuellt ihre Reihe, ⓘ in der Quellenzeile, Dashboard-Karten direkt aneinander', f: 'check/scrollfuell.js', args: [], browser: true },
   { n: 'tabellenfest', d: 'Innere Scrollbereiche federn nicht ueber ihre Raender (overscroll none)', f: 'check/tabellenfest.js', args: [], browser: true },
+  { n: 'scorenachrechnung', d: 'Score unabhaengig nachgerechnet (Indikator bis Paar, Staerke), jede angezeigte Score-Zahl, Datumsgrenze', f: 'check/scorenachrechnung.js', args: [], browser: true },
   { n: 'regeln',    d: 'COT, Rendite-Trends, 2Y-Zinsdifferenz, Carry, Rohstoffe, Score-Fenster, Momentum weg', f: 'check/regeln.js', args: [], browser: true },
   { n: 'niveau', d: 'Niveau-Block: Inflation vs Ziel, Realzins, Arbeitsmarkt, Loehne, Wachstum, PMI gegen ihr Normal - relativ zu den Peers, unabhaengig nachgerechnet', f: 'check/niveau.js', args: [], browser: true },
   { n: 'kartentitel', d: 'Kartentitel einheitlich, Info-i blau und kleiner, Notizen in Bias-Farbe', f: 'check/kartentitel.js', args: [], browser: true },
