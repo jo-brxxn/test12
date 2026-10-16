@@ -252,6 +252,7 @@ function globeFuelTick(dtMs,thrustI){
 }
 function stopGlobe(){
   if(_globeRAF){cancelAnimationFrame(_globeRAF);_globeRAF=null;}
+  _globeHosts.forEach(st=>{try{st.io&&st.io.disconnect();}catch(e){}});
   _globeHosts=[];_globeMode='auto';_globeVel=GLOBE_AUTO_VEL;_globeDrag=null;
   _globeVehicleBusy=false;
 }
@@ -332,12 +333,21 @@ function globePathD(pts,lon0,R,cx,cy){
     const sinl=sl*c0-cl*s0,cosl=cl*c0+sl*s0;
     _gpX[i]=R*cf*sinl;_gpY[i]=-R*(cL*sf-sL*cf*cosl);_gpV[i]=(sL*sf+cL*cf*cosl)>0?1:0;
   }
-  let d='';
-  const add=(x,y)=>{d+=(d?'L':'M')+(cx+x).toFixed(1)+' '+(cy+y).toFixed(1);};
+  // ⚠ Punkte unter einem Pixel Abstand zum zuletzt gezeichneten werden
+  // ausgelassen (2026-10-16, Pruefdurchgang Performance). Gemessen: 14.000
+  // Kuestenpunkte je Bild, Pfad 104 KB, die Overview stand im LEERLAUF bei
+  // 2.123 ms Rechenzeit je 5 s (~42 % CPU) - globePathD 566 ms,
+  // setAttribute 359 ms, Rendern 750 ms je 4 s. Auf einer 648-px-Kugel liegt
+  // der Grossteil der Punkte keine 0,6 px auseinander; sichtbar aendert das
+  // Auslassen nichts. Horizont-Uebergaenge werden nie ausgelassen.
+  const MIN_PX=0.6;
+  let d='',lx=1e9,ly=1e9;
+  const add=(x,y)=>{d+=(d?'L':'M')+(Math.round((cx+x)*10)/10)+' '+(Math.round((cy+y)*10)/10);lx=x;ly=y;};   // Math.round statt toFixed: gleiche Zahl, ~3x schneller
   for(let i=0;i<n;i++){
     const j=i+1<n?i+1:0;
-    if(_gpV[i])add(_gpX[i],_gpY[i]);
-    if(_gpV[i]!==_gpV[j]){const h=globeHorizonPoint(pts[i],pts[j],lon0,R);add(h.x,h.y);}
+    const wechsel=_gpV[i]!==_gpV[j];
+    if(_gpV[i]&&(wechsel||Math.abs(_gpX[i]-lx)>=MIN_PX||Math.abs(_gpY[i]-ly)>=MIN_PX))add(_gpX[i],_gpY[i]);
+    if(wechsel){const h=globeHorizonPoint(pts[i],pts[j],lon0,R);add(h.x,h.y);}
   }
   return d?d+'Z':'';
 }
@@ -830,6 +840,9 @@ function startGlobes(){
     return globeCollectRefs(h,size);
   }).filter(Boolean);
   _globeHosts.forEach(globeUpdateOne); // sofortiger, vollstaendiger erster Aufbau (alle Layer in einem Zug)
+  // Aus dem Bild gescrollt -> keine Geometrie rechnen (2026-10-16). Die Laenge
+  // laeuft weiter, beim Zurueckscrollen steht die Kugel also richtig.
+  _globeHosts.forEach(st=>{st.sichtbar=true;try{st.io=new IntersectionObserver(es=>{st.sichtbar=es[es.length-1].isIntersecting;});st.io.observe(st.host);}catch(e){}});
   // Schubregler-Anzeige resyncen (Nutzer-Wunsch 2026-07-28): der Regler-DOM
   // (.globe-throttle) liegt AUSSERHALB von .globe-host, wird also bei jedem
   // Dashboard-Re-Render (renderDash() baut das Widget-HTML neu, z.B.
@@ -914,7 +927,23 @@ function startGlobes(){
         _globeLon=(_globeLon+dt*GLOBE_AUTO_VEL)%360;
       } // 'drag': Position wird direkt per Pointermove gesetzt, hier nichts tun
       globeFuelTick(dt,thrustI);
-      _globeHosts.forEach(globeUpdateOne);
+      // Nur neu zeichnen, wenn sich die Oberflaeche seit dem letzten Bild um
+      // mindestens 0,5 px bewegt haette (2026-10-16, Pruefdurchgang
+      // Performance). Normaltempo 0,004 Grad/ms = 0,35 px je Bild auf der
+      // 648-px-Kugel - bisher wurde also jedes zweite Bild fuer eine
+      // unsichtbare Bewegung komplett neu gerechnet und gezeichnet (Overview
+      // im Leerlauf ~1.300 ms je 5 s allein fuer die Kugel). Boost, Schub und
+      // Ziehen bewegen mehr als 0,5 px je Bild und zeichnen damit weiter in
+      // jedem Bild; die Bewegung bleibt gleichmaessig (Schritt < 1 px).
+      _globeHosts.forEach(st=>{
+        if(st.sichtbar===false)return;
+        const weg=st.lonGez==null?1e9:Math.abs(((_globeLon-st.lonGez+540)%360)-180)*Math.PI/180*st.R;
+        // Der Radar-Strahl dreht unabhaengig von der Kugel (4,5 s je Umlauf) und
+        // laeuft deshalb weiter in jedem Bild - ein einzelnes Attribut.
+        // window.__gpGlobusJedesBild: nur fuer die Gegenprobe in check/performance.js (G).
+        if(weg<0.5&&_globeMode!=='drag'&&!window.__gpGlobusJedesBild){globeUpdateSweep(st);return;}
+        st.lonGez=_globeLon;globeUpdateOne(st);
+      });
     }
     _globeRAF=requestAnimationFrame(frame);
   };

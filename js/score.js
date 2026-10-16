@@ -12,7 +12,7 @@
 // Bidirektional mit js/main.js verbunden (Muster: docs/module-split.md).
 import {BC,FX} from './constants.js';
 import {IND_DATA_FEED,PRICE_DATA_FEED,priceSeriesFor,BOND_DATA_FEED} from './data-feeds.js';
-import {DATA_LIVE_OK,IND_AUTO_RUBS,IND_EVENT_MATCHERS,calEvts,cloudAutoSync,escH,evtMatchesSym,getSym,macroCcyFor,markLsUpdatedSeen,markPrefEdit,openM,parseNumLike,parsePolicyRate,periodLabel,rateInfo,recomputeAuto,resolvePairPriceSeries,SENTIMENT_DATA,rerender,save,scoreHist,selId,setSuppressBiasFlipAlerts,stripPeriodSuffix,syms,todayStr} from './main.js';
+import {DATA_LIVE_OK,IND_AUTO_RUBS,IND_EVENT_MATCHERS,calEvts,cloudAutoSync,escH,evtMatchesSym,getSym,macroCcyFor,markLsUpdatedSeen,markPrefEdit,openM,parseNumLike,parsePolicyRate,periodLabel,rateInfo,recomputeAuto,indName,resolvePairPriceSeries,SENTIMENT_DATA,rerender,save,scoreHist,selId,setSuppressBiasFlipAlerts,stripPeriodSuffix,syms,todayStr} from './main.js';
 
 function bCol(b){return(b==='bull'||b==='sbull')?'var(--green)':(b==='bear'||b==='sbear')?'var(--red)':'var(--amber)';}
 function bRC(b){return(b==='bull'||b==='sbull')?'#0B5FCC20':(b==='bear'||b==='sbear')?'#DC243020':'#55617A20';}
@@ -67,7 +67,7 @@ function indGroupPartners(ind,rub){
       if(i===ind)return false;
       const b=stripPeriodSuffix(i.name).base;
       return b!==base&&group.includes(b);
-    }).map(i=>i.displayName||i.name);
+    }).map(i=>indName(i));
     if(partners.length)return partners;
   }
   return null;
@@ -305,7 +305,20 @@ function indCycleTextDays(ind){
 // bleibt der Notnagel, dort ist irgendein Wert noetig und er wirkt weich; die
 // Altersgrenze dagegen ist eine harte Aussage ueber den Indikator und
 // unterbleibt jetzt, solange der Zyklus nur geraten ist.
+// Merker wie bei indCycleDays (Array-Identitaet von chartHist + Turnus-Text):
+// ohne ihn kostete die Funktion beim Laden 177 ms Eigenzeit - sie laeuft ueber
+// indIsStale fuer JEDEN Indikator bei JEDER Score-Rechnung und sortiert dabei
+// jedes Mal die Datumsliste neu (gemessen 2026-10-16).
 function indCycleIsGuess(ind){
+  const h0=Array.isArray(ind.chartHist)?ind.chartHist:null,iv=ind.interval||'';
+  if(ind._guessCache!==undefined&&ind._guessSrc===h0&&ind._guessIv===iv)return ind._guessCache;
+  const out=indCycleIsGuessRoh(ind);
+  try{Object.defineProperty(ind,'_guessCache',{value:out,writable:true,enumerable:false,configurable:true});
+      Object.defineProperty(ind,'_guessSrc',{value:h0,writable:true,enumerable:false,configurable:true});
+      Object.defineProperty(ind,'_guessIv',{value:iv,writable:true,enumerable:false,configurable:true});}catch(e){}
+  return out;
+}
+function indCycleIsGuessRoh(ind){
   if(indCycleTextDays(ind))return false;            // Turnus steht am Indikator
   const h=Array.isArray(ind.chartHist)?ind.chartHist:[];
   const ds=h.map(e=>e&&e[0]).filter(Boolean).sort();
@@ -659,7 +672,7 @@ function staleIndicators(){
       if(!indIsStale(i))return;      // deckt auch den SCORE_ZERO-Ausschluss ab
       const c=indOverdueCycles(i);
       if(c==null)return;
-      out.push({sym:s.id,name:i.displayName||i.name,date:i.research.date,
+      out.push({sym:s.id,name:indName(i),date:i.research.date,
         cycles:Math.round(c*10)/10,cycle:Math.round(indCycleDays(i))});
     }));
   });
@@ -728,7 +741,7 @@ function awaitingIndicators(){
       (r.indicators||[]).forEach(i=>{
         const ev=indAwaitingEvent(s.id,i);
         if(!ev)return;
-        out.push({sym:s.id,name:i.displayName||i.name,event:ev.name,date:ev.date,
+        out.push({sym:s.id,name:indName(i),event:ev.name,date:ev.date,
           days:Math.max(0,Math.round((Date.now()-new Date(ev.date+'T12:00').getTime())/864e5)),
           had:(i.research&&i.research.date)||null});
       });
@@ -876,7 +889,7 @@ function fmtScNum(v){v=Math.round(v*100)/100;return(v>0?'+':'')+v;}
 // Berechnung, damit das Modal nie von der echten Rechnung abweichen kann.
 function scoreInfoIndRow(ind,rub){
   const p=indScoreParts(ind,rub);
-  const nm=ind.displayName||ind.name;
+  const nm=indName(ind);
   const r=ind.research||{};
   const biasCls=(ind.bias==='bull'||ind.bias==='sbull')?'bull':(ind.bias==='bear'||ind.bias==='sbear')?'bear':'';
 
@@ -1075,7 +1088,7 @@ function openDataQuality(symId){
       const hl=indHalfLifeDays(ind);
       const mkt=indMarketWeight(ind,symId);
       const nb=indNormBreakdown(ind,symId,rub);
-      rows.push({rub:rub.name,name:ind.displayName||ind.name,
+      rows.push({rub:rub.name,name:indName(ind),
         n:st.n,median:st.median,medianAbs:st.medianAbs,scale:st.scale,
         cyc,hl,mkt,z:nb.z,norm:nb.total,
         stale:indIsStale(ind),over:indOverdueCycles(ind),
@@ -1145,7 +1158,7 @@ const SW_KARTEN_NAME={'COT Data':'Positioning & sentiment'};
 const SW_REIHENFOLGE=['Inflation','Interest Rates','Labour Market','Economic Growth','COT Data'];
 function swBias(n){return n>=3?'Bullish':n<=-3?'Bearish':'Neutral';}
 function swIndZeile(i,rub){
-  const p=indScoreParts(i,rub),nm=i.displayName||i.name,r=i.research||{};
+  const p=indScoreParts(i,rub),nm=indName(i),r=i.research||{};
   const kurz=p.stale?'out of date — counts 0':p.zero?'shown only':(r.actual!=null?String(r.actual):'');
   return`<details class="sw-ind"><summary><span class="sw-ind-n">${escH(nm)}</span><span class="sw-ind-m">${escH(kurz)}</span>`
     +`<span class="sw-pill" style="color:${p.total>0?BC.bull:p.total<0?BC.bear:'var(--t3)'}">${fmtScNum(p.total)}</span></summary>`
@@ -1641,10 +1654,16 @@ function fxRefCount(){
   _fxRefCountCache=cs.length?cs.reduce((a,s)=>a+symTrackedCount(s),0)/cs.length:1;
   return _fxRefCountCache;
 }
+// ⚠ Seit Modell 21 (2026-10-16) auf 4 Stellen statt 2. Der Faktor wurde
+// VOR der Multiplikation auf 2 Stellen gerundet und das Ergebnis danach noch
+// einmal auf 1 Stelle - eine Doppelrundung. Unabhaengig nachgerechnet (alle
+// 23 Assets) lagen GBYIELD 5,0 statt 5,1, CAYIELD -2,2 statt -2,3 und
+// AUYIELD -5,8 statt -5,9 daneben. 4 Stellen sind fuer ein Ergebnis auf
+// 1 Stelle exakt (Fehler < 0,001) und bleiben im Score-Fenster lesbar.
 function symCmpFactor(sym){
   const n=symTrackedCount(sym);
   if(!n)return 1;
-  return Math.round(fxRefCount()/n*100)/100;
+  return Math.round(fxRefCount()/n*10000)/10000;
 }
 function symScoreCmp(sym){
   return Math.round(symScore(sym)*symCmpFactor(sym)*10)/10;
@@ -1778,7 +1797,9 @@ function symScoreCmp(sym){
 // 19 -> 20 (2026-09-28): Rohstoffe fuer AUD/NZD/CAD ueber den 1D-EMA20 statt
 // ueber die 1-Monats-Veraenderung (Nutzer): ausserhalb ±0,25 x ATR14 ±0,5,
 // ab 10 Tagen auf derselben Seite ±0,75, ab 20 ±1, mal Exportgewicht.
-const SCORE_MODEL_VERSION=20;
+// 20 -> 21 (2026-10-16, Pruefdurchgang "rechne alles nach"): Vergleichsfaktor
+// ohne Zwischenrundung auf 2 Stellen (symCmpFactor) - bis 0,1 Unterschied.
+const SCORE_MODEL_VERSION=21;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.
@@ -1803,7 +1824,10 @@ function symScoreAvg(sym){
 // einheitliche Skala.
 function symOwnHistory(id){
   const h=(typeof scoreHist!=='undefined'&&scoreHist&&scoreHist[id])||[];
-  const today=new Date().toISOString().slice(0,10);
+  // ⚠ LOKALES Datum wie recordScoreHist (todayStr). Bis 2026-10-16 stand hier
+  // das UTC-Datum: zwischen 00:00 und 02:00 Ortszeit (Berlin) zaehlte die
+  // Note den heutigen Live-Tag als Vergangenheit mit und liess gestern weg.
+  const today=todayStr();
   const tag=SCORE_MODEL_TAG();
   return h.filter(e=>Array.isArray(e)&&e[0]!==today&&typeof e[1]==='number'&&e[6]===tag).map(e=>e[1]);
 }

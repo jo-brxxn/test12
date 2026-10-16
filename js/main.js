@@ -3811,6 +3811,15 @@ function qcSpeichern(){
 function biasCss(b){
   return (b==='bull'||b==='bear'||b==='neu')?`var(--bias-${b})`:(BC[b]||BC.neu);
 }
+// Anzeigenamen fuer Indikatoren, deren interner Name (Schluessel in Feed,
+// Speicherstand und Cloud) inhaltlich falsch ist. Der Schluessel bleibt, nur
+// die Oberflaeche liest richtig.
+// ⚠ 2026-10-16 (Pruefdurchgang "rechne alles nach"): die COT-Zeile hiess
+// "WoW Change in Net Position (%)", gemessen und gescort wird aber die
+// Aenderung des LONG-ANTEILS in Prozentpunkten (cotMetrics: dNetPct =
+// longPct - prevLongPct). Die Netto-Quote (Long - Short) bewegt sich doppelt
+// so stark: EUR 2026-10-06 Net % -11,7 -> -17,0 (-5,3), angezeigt -2,6.
+const IND_ANZEIGE_NAME={'WoW Change in Net Position (%)':'WoW Change in Long Share (pp)'};
 function indName(ind){
   if(!ind)return'';
   // ⚠ Hier steht bewusst der ROHE Zugriff und NICHT indName(ind) - das waere
@@ -3818,7 +3827,7 @@ function indName(ind){
   // Massenersetzung der 19 Anzeigestellen hat auch diesen Rumpf erwischt, die
   // Funktion rief sich selbst auf und der erste Messlauf endete mit
   // "Maximum call stack size exceeded".
-  const roh=ind.displayName||ind.name||'';
+  const roh=ind.displayName||IND_ANZEIGE_NAME[ind.name]||ind.name||'';
   // Nur entfernen, wenn der Zeitraum auch in Kurzform dasteht - sonst hiesse
   // "GDP Growth QoQ" ploetzlich nur noch "GDP Growth" und die Information,
   // welcher Zeitraum gemeint ist, waere weg.
@@ -3990,7 +3999,7 @@ const IND_INFO_DEFAULTS={
   // COT Data
   'Net Bullish Positioning':'From the CFTC Commitments of Traders report: net long positions of speculators. Extreme longs can flag a crowded trade and reversal risk.',
   'Net Bearish Positioning':'Net short positions of speculators (CoT report). Extreme shorts can flag a crowded trade and squeeze risk.',
-  'WoW Change in Net Position (%)':'Week-over-week change in net speculative positioning, in %. Shows the direction and speed of positioning shifts.',
+  'WoW Change in Net Position (%)':'Week-over-week change of the long share of speculative positions, in percentage points. Shows the direction and speed of positioning shifts.',
   'Crypto Fear & Greed':'Crypto Fear & Greed Index (0–100, source alternative.me). Aggregates volatility, momentum, volume, social media, dominance and search trends. Read CONTRARIAN: extreme fear (≤25) tends to mark bottoms (bullish), extreme greed (≥75) tops (bearish). Counts ±0.5 only at those extremes.',
   'Fear & Greed Index':'CNN Fear & Greed Index for US equities (0–100). Aggregates 7 gauges incl. put/call ratio, market volatility (VIX), safe-haven demand and junk-bond demand. Read CONTRARIAN: extreme fear (≤25) is bullish, extreme greed (≥75) bearish. Counts ±0.5 only at those extremes.',
   'Put/Call Ratio':'CBOE options Put/Call ratio (put volume ÷ call volume). Read CONTRARIAN: a high ratio (≥1.0) means heavy hedging/fear → often a bottom (bullish); a low ratio (≤0.7) means complacency/greed → often a top (bearish). Shown in the Sentiment tab when the source is reachable; not scored (data source blocks datacenter IPs).',
@@ -6611,7 +6620,7 @@ function exportData(){
   data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.scoreMode=scoreMode;
   data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
-  a.download='fx-analyst-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  a.download='fx-analyst-'+todayStr()+'.json';a.click();
 }
 function importData(input){
   const f=input.files[0];if(!f)return;
@@ -10168,7 +10177,7 @@ function rohstoffTrendChartHtml(id,opts,cmp){
   const R=indHistRange;let use;
   if(R==='MAX')use=mitEma;
   else if(R==='CUSTOM')use=mitEma.filter(z=>(!indHistCustomFrom||z.d>=indHistCustomFrom)&&(!indHistCustomTo||z.d<=indHistCustomTo));
-  else{const c=new Date();c.setMonth(c.getMonth()-R);const cs=c.toISOString().slice(0,10);use=mitEma.filter(z=>z.d>=cs);}
+  else{const c=new Date();c.setMonth(c.getMonth()-R);const cs=isoLokal(c);use=mitEma.filter(z=>z.d>=cs);}
   if(use.length<2)use=mitEma.slice(-Math.min(mitEma.length,20));
   const n=use.length,W=720,H=230,padT=12,padB=28,padR=10;
   let lo=Infinity,hi=-Infinity;
@@ -13629,9 +13638,7 @@ function povNotesHtml(name){
 // Score-Snapshots beider Seiten), damit beide Ansichten nie auseinanderlaufen.
 function povTrendHtml(name){
   const l=pairLegs(name);if(!l)return povEmpty('Unknown pair.');
-  const baseArr=scoreHist[l.bId]||[],qm={};(scoreHist[l.qId]||[]).forEach(e=>qm[e[0]]=e);
-  const diff=[];
-  baseArr.forEach(be=>{const qe=qm[be[0]];if(!qe)return;diff.push([be[0],Math.round((be[1]-qe[1])*10)/10]);});
+  const diff=pairScoreTagesReihe(l.bId,l.qId).diffArr.map(e=>[e[0],e[1]]);
   const bar=`<div class="ind-hist-toolbar">${timeRangeBarHtml(pairOvRange,'setPairOvRange',null,diff.length?diff[0][0]:null)}${timeRangeCustomHtml(pairOvRange,pairOvFrom,pairOvTo,'setPairOvRange',diff.length?diff[0][0]:null)}</div>`;
   if(diff.length<2)return bar+povEmpty('The pair line grows from the day both sides have a score snapshot on record \u2014 it needs at least two shared days.');
   const dates=filterDatesByRange(diff.map(e=>e[0]),pairOvRange,pairOvFrom,pairOvTo);
@@ -13639,7 +13646,7 @@ function povTrendHtml(name){
   const scoreMap={},biasMap={};
   diff.forEach(e=>{scoreMap[e[0]]=e[1];biasMap[e[0]]=scoreBias(e[1]);});
   return bar+scoreVsPriceCard(dates,scoreMap,14,BC[scoreBias(pairScore(name))],resolvePairPriceSeries(l.bId,l.qId),'Pair score vs price',biasMap)+
-    `<div class="pov-note">Same series as the Trends tab in pair mode (daily score of the base minus the quote side), so both views can never drift apart.</div>`;
+    `<div class="pov-note">Same series as the Trends tab in pair mode (daily score of the base minus the quote side, plus that day&#39;s carry), so both views can never drift apart.</div>`;
 }
 
 // ── Zusammenbau ──────────────────────────────────────────────────────────
@@ -16252,7 +16259,7 @@ function esiSeries(ccy){
   const out=[];
   const heute=new Date();
   for(let i=ESI_SERIE_TAGE-1;i>=0;i--){
-    const t=new Date(heute.getTime()-i*864e5),d=t.toISOString().slice(0,10);
+    const t=new Date(heute.getTime()-i*864e5),d=isoLokal(t);   // lokaler Tag, sonst endet die Reihe nachts auf gestern
     let wsum=0,vsum=0,n=0;
     reihen.forEach(pts=>{
       // letzter Release bis zu diesem Tag
@@ -17477,13 +17484,19 @@ function renderMatrixRoh(){
       <div class="mx-rank-surp"><span style="color:${spCol}">${sp.net>0?'+':''}${sp.net}</span>${sp.n?`<small>/${sp.n}</small>`:''}</div>
     </div>`;
   }).join('');
-  // ── Paar-Heatmap (Zeile − Spalte) ──
-  const maxSpread=Math.max(1,...FX.flatMap(a=>FX.map(b=>Math.abs(scores[a]-scores[b]))));
+  // ── Paar-Heatmap = Paar-Score (Zeile/Spalte) ──
+  // ⚠ Bis 2026-10-16 stand hier Zeile − Spalte OHNE Carry. Jede andere Stelle
+  // (Set-ups, Dashboard, Trends, Score-Fenster) zeigt pairScore() MIT Carry -
+  // gemessen wichen 36 von 56 Zellen um bis zu 1,0 ab, USD/CHF kippte sogar
+  // das Vorzeichen (−0,9 statt +0,1). Dieselbe Fehlerklasse wie die
+  // Trends-Paarlinie am 2026-08-23 (Nutzer: "Carry ... nicht eingepreist").
+  const zelle={};FX.forEach(a=>FX.forEach(b=>{if(a!==b)zelle[a+'/'+b]=pairScore(a+'/'+b);}));
+  const maxSpread=Math.max(1,...Object.values(zelle).map(Math.abs));
   const head=`<tr><th class="mx-hm-corner" title="Zeile long / Spalte short">L\\S</th>${FX.map(q=>`<th>${q}</th>`).join('')}</tr>`;
   const body=FX.map(base=>{
     const cells=FX.map(q=>{
       if(base===q)return`<td class="mx-hm-diag">·</td>`;
-      const v=Math.round((scores[base]-scores[q])*10)/10;
+      const v=zelle[base+'/'+q];
       return`<td style="background:${mxHeatColor(v,maxSpread)}" title="${base}/${q}: ${v>0?'+':''}${v}">${v>0?'+':''}${v}</td>`;
     }).join('');
     return`<tr><th class="mx-hm-rowh">${base}</th>${cells}</tr>`;
@@ -17496,7 +17509,7 @@ function renderMatrixRoh(){
     <div class="mx-surp-legend">${kurzHtml(`Surprise = data releases of the last 30 days: beats − misses / total releases with a forecast. E.g. <b>+1/2</b> = 2 releases, net 1 more beat than miss; <b style="color:var(--red)">−7/7</b> = all 7 came in below forecast. <b>0</b> without "/" = no rated releases in the window.`)}</div>
   </div>
   <div class="mx-card">
-    <div class="mx-card-title"><span>${icn('flame',15)} Pair Strength Heatmap</span><small>Row score − Column score · blue = long row / short column, red = opposite</small>${abInfoBtn('Pair Strength Heatmap',['Every cell is the <b>row score minus the column score</b> — the score spread of that pair.','Blue = the row currency is stronger (long row / short column), red = the column currency is stronger. The darker the cell, the larger the gap.','A relative ranking built from the scores — not a price forecast.'])}</div>
+    <div class="mx-card-title"><span>${icn('flame',15)} Pair Strength Heatmap</span><small>Pair score row/column (incl. carry) · blue = long row / short column, red = opposite</small>${abInfoBtn('Pair Strength Heatmap',['Every cell is the <b>pair score</b> of row/column: row score minus column score <b>plus carry</b> — the same number as in Set-ups and the score window.','Blue = the row currency is stronger (long row / short column), red = the column currency is stronger. The darker the cell, the larger the gap.','A relative ranking built from the scores — not a price forecast.'])}</div>
     <div class="mx-hm-scroll"><table class="mx-hm">${head}${body}</table></div>
   </div>
   ${renderCorrCard()}
@@ -17608,7 +17621,10 @@ const IND_HIST_MAX_FROM='2007-01-01';
 // nur rund 35 Tage. 'D<n>' heisst: die letzten n Tage EINSCHLIESSLICH heute -
 // 'D1' ist also genau der heutige Tag.
 const NEWS_RANGES=[['D1','Today'],['D3','3 days'],['D5','5 days'],['D7','7 days'],['MAX','All'],['CUSTOM','Custom']];
-function rangeCutoffStr(m){const c=new Date();c.setMonth(c.getMonth()-m);try{return c.toISOString().slice(0,10);}catch(e){return'';}}
+// ⚠ Lokales Datum (wie todayStr) - toISOString() liefert UTC und verschob
+// die Grenze zwischen 00:00 und 02:00 Ortszeit um einen Tag (2026-10-16).
+function isoLokal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function rangeCutoffStr(m){const c=new Date();c.setMonth(c.getMonth()-m);try{return isoLokal(c);}catch(e){return'';}}
 // Stufen, die die Daten hergeben: eine Monatsstufe nur, wenn der Chart
 // frueher anfaengt als ihre Grenze. Ohne `ab` (unbekannt) alle Stufen.
 function rangesFuerTiefe(ranges,ab){
@@ -17637,7 +17653,7 @@ function indHistStartNote(pts,range){
   let grenze;
   if(range==='MAX')grenze=IND_HIST_MAX_FROM;
   else if(range==='CUSTOM')return'';
-  else{const c=new Date();c.setMonth(c.getMonth()-range);try{grenze=c.toISOString().slice(0,10);}catch(e){return'';}}
+  else{const c=new Date();c.setMonth(c.getMonth()-range);try{grenze=isoLokal(c);}catch(e){return'';}}
   if(ab<=grenze)return'';   // die Reihe deckt den Zeitraum ab, nichts zu sagen
   return`<span class="ind-hist-start" title="The selected range reaches further back than this series goes. Nothing is filled in — the chart shows every release that exists.">series starts ${escH(ab)}</span>`;
 }
@@ -17665,7 +17681,7 @@ function filterDatesByRange(dates,range,customFrom,customTo){
     return dates.filter(d=>d>=ab);
   }
   const cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-range);
-  const cutoffStr=cutoff.toISOString().slice(0,10);
+  const cutoffStr=isoLokal(cutoff);
   return dates.filter(d=>d>=cutoffStr);
 }
 let trendsFilter='ALL';
@@ -18170,17 +18186,14 @@ function renderTrendsRoh(){
 // its own history line. The diff series is kept under the pair name (e.g.
 // "EUR/USD") ONLY in trendsEphemeral (never in scoreHist!) - it's recomputed
 // on every render and never ends up in localStorage.
-function renderTrendsPair(el){
-  const pairKey=trendsPairSel;
-  const parts=pairKey.split('/');
-  const base=PAIR_CODE_TO_ID[parts[0]]||parts[0],quote=PAIR_CODE_TO_ID[parts[1]]||parts[1];
-  if(base===quote){el.innerHTML='<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">Please choose a pair with two different assets.</div>';return;}
+// Taegliche Paar-Score-Reihe: Basis minus Kurswaehrung PLUS Carry des Tages.
+// EINE Funktion fuer Trends (Paar-Modus) und die Paar-Uebersicht - bis
+// 2026-10-16 rechnete die Paar-Uebersicht ihre eigene Kopie OHNE Carry und
+// wich damit von Trends, Set-ups und Score-Fenster ab, obwohl ihr Hinweis
+// "Same series as the Trends tab" versprach.
+// Zeile: [datum, gesamt, infl, labour, growth, carry|null]
+function pairScoreTagesReihe(base,quote){
   const baseArr=scoreHist[base]||[],quoteMap={};(scoreHist[quote]||[]).forEach(e=>quoteMap[e[0]]=e);
-  // Der Paar-Score ist ueberall in der App Basis minus Kurswaehrung PLUS
-  // Carry (pairScore()). Die Trends-Linie liess den Carry frueher weg und
-  // zeigte deshalb eine andere Zahl als Set-ups, Watchlist und Score-Fenster
-  // (Nutzer-Bugreport 2026-08-23). Der Carry wird je Tag mit dem Leitzins
-  // berechnet, der AN DEM TAG galt - nicht mit dem heutigen.
   const diffArr=[];let ohneCarry=0,mitCarry=0;
   baseArr.forEach(be=>{
     const qe=quoteMap[be[0]];if(!qe)return;
@@ -18188,6 +18201,19 @@ function renderTrendsPair(el){
     if(FX.includes(base)&&FX.includes(quote)){if(ca==null)ohneCarry++;else mitCarry++;}
     diffArr.push([be[0],Math.round((be[1]-qe[1]+(ca||0))*10)/10,Math.round((be[2]-qe[2])*10)/10,Math.round((be[3]-qe[3])*10)/10,Math.round((be[4]-qe[4])*10)/10,ca]);
   });
+  return{diffArr,ohneCarry,mitCarry};
+}
+function renderTrendsPair(el){
+  const pairKey=trendsPairSel;
+  const parts=pairKey.split('/');
+  const base=PAIR_CODE_TO_ID[parts[0]]||parts[0],quote=PAIR_CODE_TO_ID[parts[1]]||parts[1];
+  if(base===quote){el.innerHTML='<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">Please choose a pair with two different assets.</div>';return;}
+  // Der Paar-Score ist ueberall in der App Basis minus Kurswaehrung PLUS
+  // Carry (pairScore()). Die Trends-Linie liess den Carry frueher weg und
+  // zeigte deshalb eine andere Zahl als Set-ups, Watchlist und Score-Fenster
+  // (Nutzer-Bugreport 2026-08-23). Der Carry wird je Tag mit dem Leitzins
+  // berechnet, der AN DEM TAG galt - nicht mit dem heutigen.
+  const{diffArr,ohneCarry,mitCarry}=pairScoreTagesReihe(base,quote);
   if(!diffArr.length){el.innerHTML=`<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">No shared history data for ${escH(pairKey)} yet &ndash; once both assets have a score snapshot on the same day, the pair line will grow daily from then on.</div>`;return;}
   trendsEphemeral={};trendsEphemeral[pairKey]=diffArr;
   // Color the pair's line by its current overall bias (same bull/bear/neutral
@@ -18693,7 +18719,7 @@ function cotChartShowIdx(i){
   tip.innerHTML=`<div class="cot-tip-date">${escH(dt)}</div>
     <div class="cot-tip-row"><span>Net Bullish Positioning</span><b style="color:${BC.bull}">${m.longPct.toFixed(1)}% · ${cotNum(m.L)}</b></div>
     <div class="cot-tip-row"><span>Net Bearish Positioning</span><b style="color:${BC.bear}">${m.shortPct.toFixed(1)}% · ${cotNum(m.S)}</b></div>
-    <div class="cot-tip-row"><span>Δ Net % (wk)</span><b style="color:${cotBiasColor(m.dNetPct)}">${m.dNetPct==null?'–':cotPct(m.dNetPct,true)}</b></div>${meta.preis?`<div class="cot-tip-row"><span>Price (report day)</span><b>${escH(cotPreisTxt(meta.preis[i]))}</b></div>`:''}`;
+    <div class="cot-tip-row"><span>Δ Long % (wk)</span><b style="color:${cotBiasColor(m.dNetPct)}">${m.dNetPct==null?'–':cotPct(m.dNetPct,true)}</b></div>${meta.preis?`<div class="cot-tip-row"><span>Price (report day)</span><b>${escH(cotPreisTxt(meta.preis[i]))}</b></div>`:''}`;
   tip.style.display='block';
   const wrapRect=wrap.getBoundingClientRect(),svgRect=svg.getBoundingClientRect();
   const scale=svgRect.width/parseFloat(svg.getAttribute('width'));
@@ -18826,7 +18852,8 @@ function applyCotDataFeed(){
     const cp=cotPunkte(m);
     setOne(rub,'Net Bullish Positioning',cotPct(m.longPct),cotPct(m.prevLongPct),cp.netz>0?'bull':'neu',cp.netz>0?cp.netz:0);
     setOne(rub,'Net Bearish Positioning',cotPct(m.shortPct),cotPct(m.prevShortPct),cp.netz<0?'bear':'neu',cp.netz<0?cp.netz:0);
-    setOne(rub,'WoW Change in Net Position (%)',cotPct(m.dNetPct,true),null,cp.wow>0?'bull':cp.wow<0?'bear':'neu',cp.wow);
+    // Einheit pp (Prozentpunkte des Long-Anteils), nicht % - 2026-10-16.
+    setOne(rub,'WoW Change in Net Position (%)',cotPct(m.dNetPct,true).replace('%','pp'),null,cp.wow>0?'bull':cp.wow<0?'bear':'neu',cp.wow);
     // Karten-Bias direkt aus dem Score-Vorzeichen ableiten: die COT-Karte
     // hat nur zwei kleine Score-Treiber (WoW-Aenderung +/-1 ab 3pp, sonst
     // +/-0,5, und Netto-Positionierung +/-0,5), die normale +/-2-Schwelle
@@ -19053,7 +19080,26 @@ function chartHoverWrap(svg,pts,wrapStyle,group,onPick){
   const id='chv'+(_chvSeq++);_chvReg[id]=pts||[];if(onPick)_chvPick[id]=onPick;
   return`<div class="chv" data-chv="${id}"${group?` data-chv-group="${escH(group)}"`:''}${wrapStyle?` style="${wrapStyle}"`:''}>${svg}<div class="chv-line" style="display:none"></div><div class="chv-dot" style="display:none"></div><div class="chv-tip" style="display:none"></div></div>`;
 }
+// ⚠ Aufraeumen (2026-10-16, Pruefdurchgang Performance). Jeder Aufruf von
+// chartHoverWrap legte einen Eintrag mit ALLEN Tooltip-Texten an, und keiner
+// wurde je geloescht - auch nicht, wenn der Chart beim naechsten Aufbau
+// ersetzt wurde. Gemessen (Heap-Schnappschuss, Retainer-Kette bis
+// window._chvReg): +3,5 MB je 40 Seitenwechsel, 250.000 neue Zeichenketten
+// nach 80 Wechseln, unbegrenzt. Geloescht wird ein Eintrag, dessen Chart
+// nicht mehr im Dokument steht - aber erst ab der ZWEITEN Runde nach seiner
+// Erzeugung, damit HTML, das gerade gebaut und noch nicht eingesetzt ist,
+// seinen Eintrag behaelt.
+let _chvAufrBis=0,_chvAufrZeit=0;
+function chvAufraeumen(){
+  const imDom=new Set();document.querySelectorAll('.chv[data-chv]').forEach(w=>imDom.add(w.dataset.chv));
+  const grenze=_chvAufrBis;
+  for(const id in _chvReg){if(+id.slice(3)<grenze&&!imDom.has(id)){delete _chvReg[id];delete _chvPick[id];}}
+  _chvAufrBis=_chvSeq;
+}
 function attachChartHovers(root){
+  const jetzt=Date.now();
+  // window.__gpKeinChvAufr: nur fuer die Gegenprobe in check/performance.js (F).
+  if(jetzt-_chvAufrZeit>2000&&!window.__gpKeinChvAufr){_chvAufrZeit=jetzt;try{chvAufraeumen();}catch(e){}}
   (root||document).querySelectorAll('.chv[data-chv]').forEach(w=>{
     if(w._chvWired)return;w._chvWired=1;
     const line=w.querySelector('.chv-line'),dot=w.querySelector('.chv-dot'),tip=w.querySelector('.chv-tip');
@@ -19517,7 +19563,7 @@ function indHistChart(ind,symId,opts){
     use=all.filter(p=>(!CF||p[0]>=CF)&&(!CT||p[0]<=CT));
   }else{
     const cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-R);
-    let cutoffStr;try{cutoffStr=cutoff.toISOString().slice(0,10);}catch(e){cutoffStr='';}
+    let cutoffStr;try{cutoffStr=isoLokal(cutoff);}catch(e){cutoffStr='';}
     use=all.filter(p=>p[0]>=cutoffStr);
   }
   if(use.length<2)use=all.slice(-Math.min(all.length,4)); // Filter zu eng (junger Indikator) -> letzte verfuegbare Punkte statt leer
@@ -20189,7 +20235,7 @@ function priceWindow(pts){
   if(priceRange==='MAX')return pts;
   if(priceRange==='CUSTOM')return pts.filter(p=>(!priceCustomFrom||p[0]>=priceCustomFrom)&&(!priceCustomTo||p[0]<=priceCustomTo));
   const cut=new Date();cut.setMonth(cut.getMonth()-priceRange);
-  let cs='';try{cs=cut.toISOString().slice(0,10);}catch(e){}
+  let cs='';try{cs=isoLokal(cut);}catch(e){}
   const out=pts.filter(p=>p[0]>=cs);
   return out.length>=2?out:pts.slice(-Math.min(pts.length,30));
 }
@@ -21144,7 +21190,7 @@ function newsNoteAnnehmen(u){
 // eine einzige Ueberschrift ueber allem und damit nutzlos.
 function newsDayLabel(iso){
   const d=new Date(iso),heute=new Date(),gestern=new Date(Date.now()-864e5);
-  const g=x=>x.toISOString().slice(0,10);
+  const g=isoLokal;   // lokaler Tag - 'Today' meint den Tag des Nutzers, nicht UTC
   if(g(d)===g(heute))return'Today';
   if(g(d)===g(gestern))return'Yesterday';
   return d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short',year:'2-digit'});
@@ -22905,7 +22951,7 @@ function renderCotRoh(){
       ${chartSvg?`<div class="cot-hist-wrap" id="cotHistWrap"><div class="cot-tip" id="cotHoverTip" style="display:none"></div>${chartSvg}</div>`:`<div class="cot-empty">Not enough report history yet — it builds up automatically as the hourly data job runs.</div>`}
     </div>`+p3Note;
     tblTitle=`<span>Report-by-report history — ${escH(COT_NAME[cotFilter]||cotFilter)}</span><small>newest first · Δ = change vs. the previous report</small>`;
-    head=`<tr><th class="cot-corner">Date</th><th>Long %</th><th>Short %</th><th>Net %</th><th class="cot-c-hl" title="Week-over-week change of net positioning — the key value">Δ Net % (wk)</th><th>Long</th><th>Short</th><th>Δ Long</th><th>Δ Short</th><th>Net Pos</th><th>OI</th><th>Δ OI</th></tr>`;
+    head=`<tr><th class="cot-corner">Date</th><th>Long %</th><th>Short %</th><th>Net %</th><th class="cot-c-hl" title="Week-over-week change of the long share in percentage points — the value the score uses">Δ Long % (wk)</th><th>Long</th><th>Short</th><th>Δ Long</th><th>Δ Short</th><th>Net Pos</th><th>OI</th><th>Δ OI</th></tr>`;
     const rowsDesc=histArr.map(e=>({e,m:cotHistRowMetrics(e,vorher.get(e.date))})).reverse();
     body=rowsDesc.map(({e,m})=>{if(!m)return'';return`<tr>
       <th class="cot-rowh">${escH(fmtDayHdr(e.date))}</th>
@@ -22924,8 +22970,8 @@ function renderCotRoh(){
     cotChartMeta=null;
     const tblRows=rows.slice().sort((a,b)=>b.m.dNetPct-a.m.dNetPct);
     const hasP3=tblRows.some(r=>cotPct3yOf(r.id));
-    tblTitle=`<span>Details &amp; weekly change</span><small>sorted by Δ Net % (wk) · Δ = change vs. previous week${hasP3?' · 3y %ile = where today&#39;s net positioning sits in its own 3-year history':''}</small>${abInfoBtn('Details & weekly change',['The same speculative positioning as a table, sorted by the <b>change in net %</b> versus the previous week — the biggest shifts come first.','Net % = long % − short %. Δ columns compare with the previous weekly report.',hasP3?'<b>3y %ile</b> places today\'s net positioning within its own last ~3 years: 100 = most net-long in that period, 0 = most net-short.':'','Click a row to filter this tab to that symbol.'].filter(Boolean))}`;
-    head=`<tr><th class="cot-corner">Symbol</th><th>Long %</th><th>Short %</th><th>Net %</th>${hasP3?'<th title="Percentile of the current net positioning within the last ~3 years of weekly reports — 100 = most net-long in 3 years, 0 = most net-short. ⚠ at ≥90 / ≤10 (historically extreme, contrarian caution). Display-only, no score effect.">3y %ile</th>':''}<th class="cot-c-hl" title="Week-over-week change of net positioning — the key value">Δ Net % (wk)</th><th>Long</th><th>Short</th><th>Δ Long</th><th>Δ Short</th><th>Net Pos</th><th>OI</th><th>Δ OI</th></tr>`;
+    tblTitle=`<span>Details &amp; weekly change</span><small>sorted by Δ Long % (wk) · Δ = change vs. previous week${hasP3?' · 3y %ile = where today&#39;s net positioning sits in its own 3-year history':''}</small>${abInfoBtn('Details & weekly change',['The same speculative positioning as a table, sorted by the <b>change in net %</b> versus the previous week — the biggest shifts come first.','Net % = long % − short %. Δ columns compare with the previous weekly report.',hasP3?'<b>3y %ile</b> places today\'s net positioning within its own last ~3 years: 100 = most net-long in that period, 0 = most net-short.':'','Click a row to filter this tab to that symbol.'].filter(Boolean))}`;
+    head=`<tr><th class="cot-corner">Symbol</th><th>Long %</th><th>Short %</th><th>Net %</th>${hasP3?'<th title="Percentile of the current net positioning within the last ~3 years of weekly reports — 100 = most net-long in 3 years, 0 = most net-short. ⚠ at ≥90 / ≤10 (historically extreme, contrarian caution). Display-only, no score effect.">3y %ile</th>':''}<th class="cot-c-hl" title="Week-over-week change of the long share in percentage points — the value the score uses">Δ Long % (wk)</th><th>Long</th><th>Short</th><th>Δ Long</th><th>Δ Short</th><th>Net Pos</th><th>OI</th><th>Δ OI</th></tr>`;
     body=tblRows.map(r=>{const m=r.m;return`<tr onclick="pickCotFilter('${r.id}')" title="Show ${escH(r.name)} positioning detail — stays on this COT tab">
       <th class="cot-rowh">${escH(r.name)}</th>
       <td class="cot-c-long">${m.longPct.toFixed(1)}%</td>
