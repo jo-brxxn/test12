@@ -4517,6 +4517,12 @@ function deriveMacroBiasAll(){
       r.bias=rule==='same'?src.bias:invertBias(src.bias);
       if(r.indicators&&src.indicators)r.indicators.forEach(ind=>{
         const srcInd=src.indicators.find(i=>i.name===ind.name);if(!srcInd)return;
+        // Niveau-Zeilen (Modell 21) NICHT spiegeln: die Waehrungszeile traegt den
+        // Abstand RELATIV zu den Peers, Gold/Indizes/Renditen lesen das ABSOLUTE
+        // Niveau ihrer Waehrung - applyNiveauFeed setzt Bias und Punkte samt
+        // Richtung (same/inverse) selbst. Gespiegelt pendelte der Bias zwischen
+        // beiden Rechnungen (check/score.js F: Feed nicht idempotent).
+        if(ind.research&&ind.research.niveau)return;
         ind.bias=rule==='same'?srcInd.bias:invertBias(srcInd.bias);
         // Trend-Anteil (Chip + Score-Bonus) ebenfalls spiegeln, nicht nur das
         // Basis-Bias - sonst fehlt Non-FX-Assets (Gold, Oel, Indizes ...) die
@@ -5827,6 +5833,7 @@ function reapplyLiveFeeds(){
    // applySeasRetailFeed mit, stehen hier aber ausdruecklich (check/structure.js).
    ()=>applyZinsDiffFeed(),
    ()=>applyRohstoffFeed(),
+   ()=>applyNiveauFeed(),
    ()=>applyTrendFeed()].forEach(fn=>{try{fn();}catch(e){}});
 }
 function applySnap(s){const d=sanitizeSnapIds(JSON.parse(s));
@@ -9977,6 +9984,7 @@ function applySeasRetailFeed(){
   // Aufrufstelle je Feed waere die naechste, die irgendwo fehlt.
   try{if(applyZinsDiffFeed())changed=true;}catch(e){}
   try{if(applyRohstoffFeed())changed=true;}catch(e){}
+  try{if(applyNiveauFeed())changed=true;}catch(e){}
   try{if(applyTrendFeed())changed=true;}catch(e){}
   return changed;
 }
@@ -10080,6 +10088,237 @@ function applyZinsDiffFeed(){
     if(ind.stepDriven||ind.trendDriven){ind.stepDriven=false;ind.trendDriven=false;changed=true;}
   });
   return changed;
+}
+
+// ══ NIVEAU-BLOCK: "WIE STEHT DIE ZAHL GEGEN IHR NORMAL" (Modell 21) ═════════
+// Nutzer 2026-10-16: "es ist aktuell viel actual vs forecast aber nicht ist
+// die Inflation ueber Target und wie weit usw gleiches gilt fuer alle anderen
+// Zahlen und Daten. Wie bekommt man das darein?" - Recherche (docs/CHANGELOG.md,
+// VERSION-CHECK-604): Ueberraschungen sind ein KURZER Horizont (Citi baute den
+// CESI fuer kurzfristige FX-Signale, er kehrt per Konstruktion zur Null
+// zurueck). Fuer den mittleren Horizont nutzt Quant-Research Niveaus gegen
+// ein Normal: Excess Inflation (Inflation minus offizielles Ziel - sagt
+// FX-Renditen positiv voraus, Macrosynergy, 10 Industrielaender seit 2000;
+// Clarida/Waldman NBER w13010: bei Inflations-Targeting staerkt hoehere
+// Inflation die Waehrung), Labour Market Tightening (Arbeitslosigkeit gegen
+// den mittelfristigen Median), Excess Growth (BIP gegen den 5-10-Jahres-
+// Median), reale Zinsdifferenz.
+// Sechs Zeilen mit FESTEN Punkten (ind.pkt, wie COT/Trend/Rohstoffe):
+//   Inflation vs Target  (Inflation)       Ø Headline+Core y/y minus Ziel, pp
+//   Real Rate vs Peers   (Inflation)       Leitzins - Headline y/y, minus Ø der anderen 7
+//   Unemployment vs Normal (Labour Market) 10J-Median minus aktuell, robuster z
+//   Wages vs Normal      (Labour Market)   Lohnwachstum y/y gegen 10J-Median, robuster z
+//   Growth vs Trend      (Economic Growth) BIP-Wachstum gegen 10J-Median, robuster z
+//   PMI vs 50            (Economic Growth) Ø Manufacturing/Services minus 50
+// Nur echte Reihen (ind_data.json); fehlt eine, ist zu kurz (< 5 Jahre) oder
+// zu alt (> 2,5 eigene Zyklen), gibt es KEINE Zeile (Regel 4, keine Geister).
+// Die Ziele sind die offiziellen Vorgaben (keine Schaetzung): Spannen ->
+// Mitte. USD misst am PCE, weil die Fed ihr Ziel am PCE festmacht.
+const INFL_ZIEL={USD:2,EUR:2,GBP:2,JPY:2,CHF:1,CAD:2,AUD:2.5,NZD:2};
+const INFL_ZIEL_TXT={USD:'2% (PCE)',EUR:'2%',GBP:'2%',JPY:'2%',CHF:'0–2% → 1%',CAD:'1–3% → 2%',AUD:'2–3% → 2.5%',NZD:'1–3% → 2%'};
+const NIV={
+  infl:{name:'Inflation vs Target',rub:'Inflation',stufen:[[2,1],[1,0.75],[0.5,0.5]],einh:'pp'},
+  real:{name:'Real Rate vs Peers',rub:'Inflation',stufen:[[1.5,0.75],[0.75,0.5]],einh:'pp'},
+  lab:{name:'Unemployment vs Normal',rub:'Labour Market',stufen:[[1.5,1],[1,0.75],[0.5,0.5]],einh:'z'},
+  wage:{name:'Wages vs Normal',rub:'Labour Market',stufen:[[1.5,0.75],[0.75,0.5]],einh:'z'},
+  gdp:{name:'Growth vs Trend',rub:'Economic Growth',stufen:[[1,0.75],[0.5,0.5]],einh:'z'},
+  pmi:{name:'PMI vs 50',rub:'Economic Growth',stufen:[[4,0.75],[1.5,0.5]],einh:'pts'}
+};
+const NIV_FENSTER_J=10,NIV_MIN_J=5,NIV_PMI_MAX_ALTER=45;
+const NIV_NAMEN=Object.values(NIV).map(d=>d.name);
+const nivTag=d=>Date.parse(String(d).slice(0,10)+'T00:00:00Z');
+function nivEintrag(ccy,base){
+  const f=(typeof IND_DATA_FEED!=='undefined'&&IND_DATA_FEED)||{};
+  return f[ccy]&&f[ccy][base]||null;
+}
+// Reihe [Datum, Wert] aus historyFull, je Datum der letzte Eintrag, aelteste zuerst.
+function nivReihe(e){
+  const m=new Map();
+  ((e&&e.historyFull)||[]).forEach(h=>{const d=h&&String(h[0]).slice(0,10),v=h&&parseNumLike(h[1]);if(d&&v!=null&&isFinite(v))m.set(d,v);});
+  return[...m.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+}
+const nivMedian=a=>{const s=a.slice().sort((x,y)=>x-y),n=s.length;return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):null;};
+// Zyklus = Median der Abstaende; frisch = juengster Punkt hoechstens 2,5
+// Zyklen alt (wie die Altersgrenze IND_STALE_CYCLES, aber mit Puffer fuer
+// verschobene Termine).
+function nivFrisch(reihe,heuteMs){
+  if(reihe.length<2)return false;
+  const ab=[];for(let i=1;i<reihe.length;i++)ab.push((nivTag(reihe[i][0])-nivTag(reihe[i-1][0]))/864e5);
+  const zyk=Math.max(7,nivMedian(ab.slice(-24))||30);
+  return(heuteMs-nivTag(reihe[reihe.length-1][0]))/864e5<=Math.min(200,Math.max(45,2.5*zyk));
+}
+// Robuster z-Wert des aktuellen Stands gegen die eigenen letzten 10 Jahre:
+// (aktuell - Median) / (1,4826 x mittlere absolute Abweichung vom Median).
+// Median statt Mittelwert, weil 2020 (Lockdown: US-Arbeitslosigkeit 14,7 %,
+// AUD-BIP -7 %) sonst Mittelwert UND Streuung verzerrt.
+function nivRobust(reihe,heuteMs,aktTage){
+  const ab=heuteMs-NIV_FENSTER_J*365.25*864e5;
+  const fenster=reihe.filter(([d])=>nivTag(d)>=ab);
+  if(fenster.length<12||nivTag(reihe[0][0])>heuteMs-NIV_MIN_J*365.25*864e5)return null;
+  const letzt=nivTag(reihe[reihe.length-1][0]);
+  const akt=reihe.filter(([d])=>nivTag(d)>=letzt-aktTage*864e5).map(x=>x[1]);
+  const werte=fenster.map(x=>x[1]),med=nivMedian(werte);
+  const mad=nivMedian(werte.map(v=>Math.abs(v-med)))*1.4826;
+  if(!(mad>0))return null;
+  const jetzt=akt.reduce((a,v)=>a+v,0)/akt.length;
+  return{jetzt,med,mad,z:(jetzt-med)/mad,n:fenster.length,stand:reihe[reihe.length-1][0]};
+}
+const nivStufe=(def,x)=>{const st=def.stufen.find(([ab])=>Math.abs(x)>=ab);return st?Math.sign(x)*st[1]:0;};
+const nivFmtPp=v=>(v>0?'+':'')+v.toFixed(1)+'pp';
+const nivFmtZ=v=>(v>0?'+':'')+v.toFixed(1)+'σ';
+// Headline- und Core-Inflation y/y (USD: PCE), je {wert, datum} oder null.
+function nivInflation(ccy,heuteMs,nurHeadline){
+  const paare=ccy==='USD'&&!nurHeadline?[['PCE','PCE'],['Core PCE','Core PCE']]:[['CPI (Headline)','CPI'],['Core CPI','Core CPI']];
+  const out=[];
+  paare.forEach(([base,lbl],k)=>{
+    if(nurHeadline&&k>0)return;
+    const e=nivEintrag(ccy,base);if(!e)return;
+    const yy=String(e.period||'').toLowerCase()==='y/y'||/yoy|y\/y/i.test(String(e.event||''))||e.source==='tepage';
+    if(!yy)return;
+    const v=parseNumLike(e.actual),r=nivReihe(e);
+    if(v==null||!e.date)return;
+    const frisch=r.length>=2?nivFrisch(r,heuteMs):(heuteMs-nivTag(e.date))/864e5<=45;
+    if(frisch)out.push({lbl,wert:v,datum:String(e.date).slice(0,10)});
+  });
+  return out;
+}
+function nivWerte(ccy){
+  const heuteMs=nivTag(todayStr()),o={};
+  // 1) Inflation gegen Ziel
+  const inf=nivInflation(ccy,heuteMs,false);
+  if(inf.length&&INFL_ZIEL[ccy]!=null){
+    const wert=inf.reduce((a,x)=>a+x.wert,0)/inf.length,gap=wert-INFL_ZIEL[ccy];
+    o.infl={x:gap,act:nivFmtPp(gap),mass:inf.map(x=>x.lbl+' '+x.wert.toFixed(1)+'%').join(' · ')+' vs target '+INFL_ZIEL_TXT[ccy],stand:inf.map(x=>x.datum).sort().pop()};
+  }
+  // 2) Unemployment / 3) Wages / 4) GDP - robuster z gegen 10 Jahre
+  const u=nivEintrag(ccy,'Unemployment Rate'),ur=nivReihe(u);
+  if(ur.length&&nivFrisch(ur,heuteMs)){const z=nivRobust(ur,heuteMs,92);
+    if(z)o.lab={x:-z.z,act:nivFmtZ(-z.z),mass:`${z.jetzt.toFixed(1)}% vs 10y median ${z.med.toFixed(1)}%`,stand:z.stand};}
+  const w=nivEintrag(ccy,'Avg Hourly Earnings'),wr=nivReihe(w);
+  const wYoY=w&&(String(w.period||'').toLowerCase()==='y/y'||/yoy|3mo\/yr|y\/y/i.test(String(w.event||'')));
+  if(wYoY&&wr.length&&nivFrisch(wr,heuteMs)){const z=nivRobust(wr,heuteMs,92);
+    if(z)o.wage={x:z.z,act:nivFmtZ(z.z),mass:`${z.jetzt.toFixed(1)}% vs 10y median ${z.med.toFixed(1)}%`,stand:z.stand};}
+  const g=nivEintrag(ccy,'GDP Growth QoQ'),gr=nivReihe(g);
+  if(gr.length&&nivFrisch(gr,heuteMs)){const z=nivRobust(gr,heuteMs,100);
+    if(z)o.gdp={x:z.z,act:nivFmtZ(z.z),mass:`${z.jetzt.toFixed(2)}% q/q vs 10y median ${z.med.toFixed(2)}%`,stand:z.stand};}
+  // 5) PMI gegen 50 (Definition der Schwelle Expansion/Kontraktion)
+  const pmi=[['Manufacturing PMI','Mfg'],['Services PMI','Svc']].map(([b,l])=>{const e=nivEintrag(ccy,b),v=e&&parseNumLike(e.actual);
+    return e&&v!=null&&e.date&&(heuteMs-nivTag(e.date))/864e5<=NIV_PMI_MAX_ALTER?{l,v,d:String(e.date).slice(0,10)}:null;}).filter(Boolean);
+  if(pmi.length){const m=pmi.reduce((a,x)=>a+x.v,0)/pmi.length,gap=m-50;
+    o.pmi={x:gap,act:(gap>0?'+':'')+gap.toFixed(1),mass:pmi.map(x=>x.l+' '+x.v.toFixed(1)).join(' · ')+' vs 50',stand:pmi.map(x=>x.d).sort().pop()};}
+  return o;
+}
+// Realzins (Leitzins minus Headline y/y) je Waehrung, fuer den Peer-Vergleich.
+function nivRealzins(ccy){
+  const heuteMs=nivTag(todayStr());
+  const cb=nivEintrag(ccy,'Central Bank Rate'),r=cb&&parseNumLike(cb.actual);
+  const inf=nivInflation(ccy,heuteMs,true)[0];
+  if(r==null||!inf)return null;
+  return{real:r-inf.wert,zins:r,inf:inf.wert,stand:[String(cb.date||'').slice(0,10),inf.datum].sort().pop()};
+}
+const _nivMemo={k:null,v:null};
+function nivAlle(){
+  const k=[typeof IND_DATA_FEED!=='undefined'?IND_DATA_FEED:null,todayStr()];
+  if(_nivMemo.k&&_nivMemo.k[0]===k[0]&&_nivMemo.k[1]===k[1])return _nivMemo.v;
+  const v={};FX.forEach(c=>{try{v[c]=nivWerte(c);}catch(e){v[c]={};}});
+  const rz={};FX.forEach(c=>{try{rz[c]=nivRealzins(c);}catch(e){rz[c]=null;}});
+  FX.forEach(c=>{
+    const own=rz[c],peers=FX.filter(x=>x!==c&&rz[x]).map(x=>rz[x].real);
+    if(!own||peers.length<5)return;
+    const avg=peers.reduce((a,x)=>a+x,0)/peers.length,d=own.real-avg;
+    v[c].real={x:d,act:nivFmtPp(d),mass:`real ${own.real>0?'+':''}${own.real.toFixed(2)}% (rate ${own.zins.toFixed(2)}% − CPI ${own.inf.toFixed(1)}%) vs peers ${avg>0?'+':''}${avg.toFixed(2)}%`,stand:own.stand};
+  });
+  // ⚠ RELATIV fuer Waehrungen (gemessen 2026-10-16: Inflation ueber Ziel bei
+  // 6 von 8, PMI ueber 50 bei 7 von 8 - absolut waeren fast alle Waehrungen
+  // "bullish", ohne dass eine gegen die andere gewinnt). Wie das Macrosynergy-
+  // FX-Scorecard ("relative to the base currency area"): eigener Abstand
+  // minus Durchschnitt der anderen sieben. Nicht-FX-Assets (Gold, Indizes,
+  // Renditen) lesen dagegen das ABSOLUTE Niveau ihrer Waehrung (pktAbs).
+  Object.keys(NIV).forEach(t=>{
+    FX.forEach(c=>{
+      const o=v[c]&&v[c][t];if(!o)return;
+      if(t==='real'){o.rel=o.x;o.peer=null;o.pkt=o.pktAbs=nivStufe(NIV[t],o.x);return;}
+      const peers=FX.filter(x=>x!==c&&v[x]&&v[x][t]).map(x=>v[x][t].x);
+      o.pktAbs=nivStufe(NIV[t],o.x);
+      if(peers.length<4){o.rel=null;o.peer=null;o.pkt=null;return;}
+      o.peer=peers.reduce((a,x)=>a+x,0)/peers.length;o.rel=o.x-o.peer;o.pkt=nivStufe(NIV[t],o.rel);
+    });
+  });
+  _nivMemo.k=k;_nivMemo.v=v;
+  return v;
+}
+function nivRegelText(t,ccy){
+  const st=NIV[t].stufen.slice().reverse().map(([ab,p])=>`${ab}${NIV[t].einh==='z'?'σ':NIV[t].einh==='pp'?'pp':''} → ±${p}`).join(', ');
+  const T={
+    infl:`Average of headline and core inflation (year on year${ccy==='USD'?', PCE — the Fed targets PCE':''}) minus the central bank's target${ccy&&INFL_ZIEL_TXT[ccy]?' ('+INFL_ZIEL_TXT[ccy]+')':''}. Above target counts bullish: an inflation-targeting central bank has to lean against it (higher rates), which supports the currency. ${st}; less → 0.`,
+    real:`Real policy rate = policy rate minus headline inflation (y/y), compared with the average of the other seven currencies. A higher real rate than the peers attracts capital and counts bullish. ${st}; less → 0.`,
+    lab:`Unemployment rate (average of the last 3 months) against its own median of the last ${NIV_FENSTER_J} years, in robust standard deviations (median absolute deviation, so 2020 does not distort it). Lower than normal = tight labour market = bullish. ${st}; less → 0.`,
+    wage:`Wage growth (y/y, last 3 months) against its own ${NIV_FENSTER_J}-year median, in robust standard deviations. Faster than normal keeps inflation pressure and rates up = bullish. ${st}; less → 0.`,
+    gdp:`GDP growth (releases of the last ~3 months) against its own ${NIV_FENSTER_J}-year median, in robust standard deviations. Above trend = bullish. ${st}; less → 0.`,
+    pmi:`Average of the latest manufacturing and services PMI minus 50, the line between expansion and contraction. ${st} index points; less → 0. PMIs older than ${NIV_PMI_MAX_ALTER} days count 0.`
+  };
+  const rel=t==='real'?'':' For the eight currencies the points come from the distance RELATIVE to the average of the other seven (a level every central bank shares moves no exchange rate); gold, indices and yields read the absolute level of their currency.';
+  return T[t]+rel+' Fixed points: no ageing, no weighting factor. Missing, too short (< '+NIV_MIN_J+' years) or stale series → no row.';
+}
+function applyNiveauFeed(){
+  if(typeof IND_DATA_FEED==='undefined'||!IND_DATA_FEED||!Array.isArray(syms))return false;
+  let changed=false;
+  const alle=nivAlle();
+  syms.forEach(sym=>{
+    const fx=!isNonFx(sym.id),ccy=fx?sym.id:macroCcyFor(sym.id);
+    const w=ccy?alle[ccy]:null;
+    Object.keys(NIV).forEach(t=>{
+      const def=NIV[t];
+      const rub=(sym.rubrics||[]).find(r=>r&&r.name===def.rub);
+      if(!rub||!Array.isArray(rub.indicators))return;
+      const regel=fx?'same':def.rub==='Inflation'?zinsdiffRichtung(sym,rub,ccy):(effDeriveRules(sym)||{})[def.rub];
+      const v0=w&&w[t];
+      // Waehrung: Punkte aus dem Abstand zu den Peers; Nicht-FX: absolutes Niveau.
+      const v=v0&&(fx?(v0.pkt!=null?v0:null):v0);
+      let idx=rub.indicators.findIndex(i=>i&&i.name===def.name);
+      if(!v||(regel!=='same'&&regel!=='inverse')){
+        if(idx>=0&&DATA_LIVE_OK.ind!==false){rub.indicators.splice(idx,1);changed=true;}
+        return;
+      }
+      let ind=idx>=0?rub.indicators[idx]:null;
+      if(!ind){ind={id:uid(),name:def.name,bias:'neu',imp:false,date:'',interval:'',points:[]};rub.indicators.push(ind);changed=true;}
+      const roh=fx&&!window.__nivAbsolut?v.pkt:v.pktAbs;   // __nivAbsolut: Gegenprobe check/niveau.js
+      const pkt=regel==='inverse'?-roh:roh,bias=pkt>0?'bull':pkt<0?'bear':'neu';
+      const fe=NIV[t].einh,fz=x=>fe==='z'?nivFmtZ(x):fe==='pp'?nivFmtPp(x):(x>0?'+':'')+x.toFixed(1);
+      const mass=v.mass+' = '+v.act+(fx&&t!=='real'&&v.peer!=null?` · peers ${fz(v.peer)} → relative ${fz(v.rel)}`:'');
+      const r=ind.research||{};
+      if(!(r.niveau===t&&r.actual===v.act&&r.mass===mass&&r.stand===v.stand)){
+        // Ohne research.date: ein Zustand, keine Veroeffentlichung (wie die
+        // Zinsdifferenz) - die Frische prueft nivFrisch selbst.
+        ind.research={actual:v.act,forecast:null,previous:null,mass,stand:v.stand,source:'ind_data.json',niveau:t,relativ:fx&&t!=='real',
+          cotColor:v.x>0?'bond-up':v.x<0?'bond-down':'bond-flat',x:Math.round(v.x*1000)/1000};
+        changed=true;
+      }
+      if(ind.bias!==bias){ind.bias=bias;changed=true;}
+      if(ind.pkt!==pkt){ind.pkt=pkt;changed=true;}
+      if(ind.trendBias&&ind.trendBias!=='neu'){ind.trendBias='neu';changed=true;}
+      if(ind.stepDriven||ind.trendDriven){ind.stepDriven=false;ind.trendDriven=false;changed=true;}
+    });
+  });
+  return changed;
+}
+// Verlauf einer Niveau-Zeile (aufgeklappter Indikator, Insights > Data): die
+// Abweichung zu jedem Release-Datum, mit derselben Rechnung wie heute
+// (Median-Fenster jeweils rueckblickend).
+function nivVerlauf(t,ccy){
+  const zig=(base,fn)=>{const r=nivReihe(nivEintrag(ccy,base));return r.map(([d,v],i)=>fn(d,v,r.slice(0,i+1))).filter(Boolean);};
+  if(t==='infl'){const base=ccy==='USD'?'PCE':'CPI (Headline)',z=INFL_ZIEL[ccy];if(z==null)return null;
+    return{pts:zig(base,(d,v)=>[d,Math.round((v-z)*100)/100,null]),unit:'pp'};}
+  const robust=(base,vz,aktTage)=>({pts:zig(base,(d,v,bis)=>{const z=nivRobust(bis,nivTag(d),aktTage);return z?[d,Math.round(vz*z.z*100)/100,null]:null;}),unit:'σ'});
+  if(t==='lab')return robust('Unemployment Rate',-1,92);
+  if(t==='wage')return robust('Avg Hourly Earnings',1,92);
+  if(t==='gdp')return robust('GDP Growth QoQ',1,100);
+  if(t==='pmi')return{pts:nivReihe(nivEintrag(ccy,'Manufacturing PMI')).map(([d,v])=>[d,Math.round((v-50)*10)/10,null]),unit:''};
+  if(t==='real'){const cb=nivReihe(nivEintrag(ccy,'Central Bank Rate')),inf=nivReihe(nivEintrag(ccy,'CPI (Headline)'));
+    if(!cb.length||!inf.length)return null;let j=0;const out=[];
+    inf.forEach(([d,v])=>{while(j+1<cb.length&&cb[j+1][0]<=d)j++;if(cb[j][0]<=d)out.push([d,Math.round((cb[j][1]-v)*100)/100,null]);});
+    return{pts:out,unit:'%'};}
+  return null;
 }
 // ══ ROHSTOFFE FUER AUD/NZD/CAD (Nutzer 2026-09-24) ════════════════════
 // "Rohstoffe fuer AUD usw find ich gut, bau das ein". Gewicht nach
@@ -11060,8 +11299,9 @@ function renderIndRow(ind,ri,ii,rub,total,pairPos){
     // dem Bias ab - applyCotDataFeed und applySeasRetailFeed. Dieses hier
     // war die einzige Kopie mit der Richtung.
     const biasFarbe=b=>(b==='bull'||b==='sbull')?'bond-up':(b==='bear'||b==='sbear')?'bond-down':'bond-flat';
-    const ac=(r.bond||r.rohstoff)?biasFarbe(ind.bias):(r.cot||r.sent)?r.cotColor:actualColor({name:ind.name,actual:r.actual,forecast:r.forecast,previous:r.previous},getSym().id);
-    const dt=fmtResearchDateFull(r.date);
+    const ac=(r.bond||r.rohstoff||r.niveau)?biasFarbe(ind.bias):(r.cot||r.sent)?r.cotColor:actualColor({name:ind.name,actual:r.actual,forecast:r.forecast,previous:r.previous},getSym().id);
+    // Zustands-Zeilen (Zinsdifferenz, Niveau) tragen bewusst kein research.date - ihr Datenstand steht in r.stand.
+    const dt=fmtResearchDateFull(r.date||((r.niveau||r.zinsdiff)&&r.stand?String(r.stand).slice(0,10):null));
     const A=splitResearchVal(r.actual),F=splitResearchVal(r.forecast),P=splitResearchVal(r.previous);
     const note2=A.note2?`${A.note2.period}: ${A.note2.val}`:null;
     const notes=[note2,A.notes.length&&`Actual: ${A.notes.join(', ')}`,F.notes.length&&`Forecast: ${F.notes.join(', ')}`,P.notes.length&&`Previous: ${P.notes.join(', ')}`].filter(Boolean).join(' · ');
@@ -11555,6 +11795,7 @@ function indZaehlText(sym,rub,ind){
   if(BOND_INDS.includes(b))return`Yield trend: ±${BOND_PKT} — the 5-day average above the 21-day average by more than 3 bp is bullish, below is bearish, in between 0. No extra weighting, no ageing.`+spiegel;
   if(b===ZINSDIFF_IND)return zinsdiffRegelText()+spiegel;
   if(Object.values(ROHSTOFF_NAME).includes(ind.name))return rohstoffRegelText(sym?macroCcyFor(sym.id):'')+spiegel;
+  {const t=Object.keys(NIV).find(k=>NIV[k].name===ind.name);if(t)return nivRegelText(t,sym?(isNonFx(sym.id)?macroCcyFor(sym.id):sym.id):'')+spiegel;}
   if(b==='Net Bullish Positioning'||b==='Net Bearish Positioning'||b===COT_WOW_BASE)return cotRegelText();
   if(b===RETAIL_IND_NAME)return retailRegelText();
   if(b===SEAS_IND_NAME)return seasRegelText();
@@ -11728,6 +11969,9 @@ function rubrikZusammensetzungText(sym,rub){
   let s=`Card score = sum of its indicators. Macro releases: ${MAKRO_REGEL}`;
   if(n==='Inflation')s+=` 2Y and 10Y yield trends: ±${BOND_PKT} each (5-day vs 21-day average, 3 bp dead band). 2Y yield gap: ${zinsdiffRegelText()}`;
   if(n==='Economic Growth'&&ROHSTOFF_KORB[ccy])s+=` Commodities: ${rohstoffRegelText(ccy)}`;
+  // Niveau-Block (Modell 21): welche Zeilen in DIESER Karte stehen.
+  const niv=Object.keys(NIV).filter(t=>NIV[t].rub===n&&(rub.indicators||[]).some(i=>i&&i.name===NIV[t].name));
+  if(niv.length)s+=` Level rows (how far the data sits from its normal, not just against the forecast): ${niv.map(t=>NIV[t].name+' — '+nivRegelText(t,sym?(isNonFx(sym.id)?macroCcyFor(sym.id):sym.id):'')).join(' ')}`;
   return s+spiegel;
 }
 function openInfoM(ri,ii){
@@ -19342,7 +19586,7 @@ const _abgelMemo=new Map();
 function abgeleiteteReihe(ind,id){
   const base=stripPeriodSuffix(ind.name).base,r=ind.research||{};
   const ccy=id?macroCcyFor(id):null;
-  const memo=(k,fn)=>{const q=[k,BOND_DATA_FEED,PRICE_DATA_FEED,TREND_DATA,SENTIMENT_DATA,COMMODITY_DATA,COT_DATA];const m=_abgelMemo.get(k);if(m&&m.q.every((x,i)=>x===q[i]))return m.v;const v=fn();_abgelMemo.set(k,{q,v});return v;};
+  const memo=(k,fn)=>{const q=[k,BOND_DATA_FEED,PRICE_DATA_FEED,TREND_DATA,SENTIMENT_DATA,COMMODITY_DATA,COT_DATA,typeof IND_DATA_FEED!=='undefined'?IND_DATA_FEED:null];const m=_abgelMemo.get(k);if(m&&m.q.every((x,i)=>x===q[i]))return m.v;const v=fn();_abgelMemo.set(k,{q,v});return v;};
   if(base===ZINSDIFF_IND&&ccy&&FX.includes(ccy))return memo('zd:'+ccy,()=>{
     const eigen=zinsdiffReihe(ccy),andere=FX.filter(c=>c!==ccy).map(zinsdiffReihe);
     if(!eigen||andere.some(x=>!x))return null;
@@ -19370,6 +19614,8 @@ function abgeleiteteReihe(ind,id){
     const tage=[...reihen[0].keys()].filter(d=>reihen.every(m=>m.has(d))).sort();
     return{pts:tage.map(d=>[d,Math.round(reihen.reduce((s,m)=>s+m.get(d),0)/reihen.length*10)/10,null]),unit:'%'};
   });
+  const nivT=Object.keys(NIV).find(k=>NIV[k].name===ind.name);
+  if(nivT){const nc=isNonFx(id)?macroCcyFor(id):id;if(nc)return memo('nv:'+nivT+':'+nc,()=>nivVerlauf(nivT,nc));}
   const roh=Object.keys(ROHSTOFF_NAME).find(k=>ROHSTOFF_NAME[k]===ind.name);
   if(roh)return memo('ro:'+roh,()=>{
     // Seit 2026-09-28: Abstand Schluss-EMA20 in ATR (dieselbe Rechnung wie
@@ -19649,17 +19895,25 @@ function indHistChart(ind,symId,opts){
     catch(e){return d;}
   };
   let xlab='';
+  // Kandidaten wie bisher (jeder lblEvery-te Punkt + der letzte), dann von
+  // RECHTS nach links nur behalten, was mit seiner echten Ausdehnung nicht an
+  // den rechten Nachbarn stoesst. Vorher wurde nur der Index-Abstand geprueft -
+  // bei 390 px (Data-Panel, Rand-Anker "end") ueberlappten "Jul 14, 26" und
+  // "Oct 14, 26" um 3 px (check/cards.js, 2026-10-16).
+  const kand=[];
   use.forEach((p,i)=>{
-    // Der letzte Punkt bekommt immer ein Label - aber nur, wenn er weit
-    // genug vom vorherigen steht, sonst ueberlappen beide (rechter Rand).
     const isLast=i===n-1;
     if(i%lblEvery!==0&&!isLast)return;
-    if(isLast&&i%lblEvery!==0&&(i%lblEvery)<lblEvery*0.6)return;
     // Am Rand buendig statt mittig - mittig lief "Oct 24, 25" links und
     // "Sep 17, 26" rechts aus dem Bild (gemessen 2026-09-26, Data-Panels).
-    const lx=xOf(i),halb=dayLbl?34:26;
+    const lx=xOf(i),halb=dayLbl?34:26,txt=fmtLbl(p[0]),breit=txt.length*6.2;
     const an=lx-halb<0?'start':lx+halb>W?'end':'middle',ax=an==='start'?Math.max(1,lx-halb*0.35):an==='end'?Math.min(W-1,lx+halb*0.35):lx;
-    xlab+=`<text x="${ax.toFixed(1)}" y="${H-9}" text-anchor="${an}" style="font-size:var(--fs-2xs);fill:var(--t3)">${escH(fmtLbl(p[0]))}</text>`;
+    const links=an==='start'?ax:an==='end'?ax-breit:ax-breit/2;
+    kand.push({ax,an,txt,links,rechts:links+breit});
+  });
+  let grenze=Infinity;
+  kand.reverse().filter(k=>{if(k.rechts+6>grenze)return false;grenze=k.links;return true;}).reverse().forEach(k=>{
+    xlab+=`<text x="${k.ax.toFixed(1)}" y="${H-9}" text-anchor="${k.an}" style="font-size:var(--fs-2xs);fill:var(--t3)">${escH(k.txt)}</text>`;
   });
   // Legende erst jetzt endgueltig: eine Reihe ohne Forecast (Anleihen, COT,
   // Sentiment) soll keine Forecast-Linie ankuendigen, die es nicht gibt.
@@ -22857,7 +23111,7 @@ function renderCotRoh(){
   const _rd=COT_DATA.report_date||'';
   const _ageD=_rd?Math.max(0,Math.round((Date.now()-new Date(_rd+'T00:00:00Z').getTime())/864e5)):null;
   const _ageTxt=_ageD!=null?` (${_ageD===0?'today':_ageD===1?'1 day ago':_ageD+' days ago'})`:'';
-  const _stale=_ageD!=null&&_ageD>10?` · <span style="color:var(--amber)">⚠ older than usual — a release may have been delayed</span>`:'';
+  const _stale=_ageD!=null&&_ageD>10?` · <span style="color:var(--amber)">⚠ release late</span>`:'';
   // Veroeffentlichungstag: der angezeigte Wert ist der Dienstags-"Stand",
   // erschienen ist der Report aber erst am Freitag derselben Woche (bzw.
   // Montag, wenn ein US-Feiertag ihn verschoben hat).
@@ -22946,7 +23200,7 @@ function renderCotRoh(){
       <div class="cot-bars pd-list pd-gross">${bars}</div>
     </div>`;
   el.innerHTML=ctrl+multiFilter+`
-    <div class="cot-meta">Report as of: <b>${escH(date)}</b>${escH(_ageTxt)}${_pubTxt} · Source: CFTC (Legacy, Non-Commercial) · data reflects positioning as of Tuesday's close${_stale}</div>
+    ${/* Kurz halten (check/fliesstext.js, 2026-10-16: mit dem Verspaetungs-Hinweis 42 Woerter) - Fakten, kein Satz. */''}<div class="cot-meta">Report: <b>${escH(date)}</b>${escH(_ageTxt)}${_pubTxt} · CFTC Legacy, non-commercial · Tuesday close${_stale}</div>
     ${histCard}
     ${barsCard}
     <div class="cot-card">
@@ -25651,7 +25905,7 @@ setInterval(()=>{
 // nie per Regex/Handschrift.
 Object.assign(window,{faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
-  retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
+  retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
   // Umschalter, Vergleichsbank, Hike/Cut-Filter, Holds, Jahresauswahl, Klick
   // auf einen Marker der Treppenkurve). Ohne diese Zeile wirft jeder von

@@ -19920,3 +19920,101 @@ zur Sichtbarkeit (sie liegt meist bei 35–65 % = auf der Fuge der Balken) →
 „Über den Balken, auffällig“: Amber `--cotl` in allen Themes, 2,6 px
 (Karte) / 3 px (Tab), dunkle Unterlage, Untertitel „amber line“.
 
+
+## VERSION-CHECK-604 (2026-10-16) — Score-Modell 21: Niveau-Block („wie steht die Zahl gegen ihr Normal“)
+
+**Auftrag (/goal):** „schau dir das Scoresystem an und lies dich schlau im Internet bei Banken,
+Hedgefonds usw., generell Smart Money … es ist aktuell viel actual vs forecast, aber nicht: ist
+die Inflation über Target und wie weit … gleiches gilt für alle anderen Zahlen“. Der Nutzer
+hat ausdrücklich „Keine Fragen“ gesagt, deshalb wurde ohne Rückfrage entschieden.
+
+**Befund am Modell 20:** Der Score bestand fast nur aus Überraschungen (Beat/Miss gegen
+Forecast, normiert), Positionierung (COT, Retail), Trend und festen Regeln (Renditen,
+Zinsdifferenz, Rohstoffe). Ob eine Volkswirtschaft heiß oder kalt läuft, kam nirgends vor.
+
+**Recherche:**
+- **Surprise-Indizes sind ein kurzer Horizont.** Citis CESI wurde in der FX-Einheit für
+  kurzfristige Signale gebaut und kehrt per Konstruktion zur Null zurück
+  ([M&G](https://www.mandg.com/investments/professional-investor/en-lu/insights/mandg-insights/latest-insights/2018/03/surprise-indices-a-reminder),
+  [Seeking Alpha](https://seekingalpha.com/article/4113629)).
+- **Excess Inflation** (Kerninflation minus offizielles Ziel) sagt FX-Renditen positiv
+  voraus, für 10 Industrieländer seit 2000, auch als relatives Signal zwischen Ländern
+  ([Macrosynergy](https://macrosynergy.com/?p=43872)).
+- **Bestätigung aus der Forschung:** Clarida & Waldman (NBER w13010) zeigen, dass unter
+  Inflations-Targeting eine höhere Inflation die Währung stärkt
+  ([NBER](https://nber.org/papers/w13010)).
+- **Weitere Faktoren** im „Cyclical Strength Score“ (Sharpe 0,4–1):
+  - Labour Market Tightening: Arbeitslosigkeit gegen den 5-Jahres-Schnitt bzw.
+    10-Jahres-Median.
+  - Excess Growth: BIP gegen den 5- bzw. 10-Jahres-Median.
+
+  Das FX-Scorecard rechnet relativ zum Basis-Währungsraum und nutzt reale Zinsdifferenzen
+  ([Macrosynergy Research](https://macrosynergy.com/research/global-fx-management-a-systematic-macro-view/)).
+- **Löhne:** Normales Lohnwachstum entspricht Ziel plus Trendproduktivität (Morgan Stanley,
+  RBA). Das hängt aber an einer Produktivitäts-Annahme, deshalb hier stattdessen das eigene
+  10-Jahres-Normal.
+
+**Umsetzung:** sechs Zeilen mit festen Punkten, Formeln in `docs/score-model.md`.
+1. Inflation vs Target
+2. Real Rate vs Peers
+3. Unemployment vs Normal
+4. Wages vs Normal
+5. Growth vs Trend
+6. PMI vs 50
+
+**Messung und Korrektur im Bau:** Die erste Fassung rechnete absolut. Gemessen lag die
+Inflation bei 6 von 8 Währungen über dem Ziel und der PMI bei 7 von 8 über 50. Der Block war
+damit bei allen Währungen positiv (+0,25 bis +2,0) und lieferte keine relative Information.
+Umgestellt auf relativ zu den anderen sieben (Macrosynergy: „relative to the base currency
+area“).
+
+Block-Summen danach (2026-10-16):
+
+| USD | EUR | GBP | CHF | JPY | CAD | AUD | NZD |
+|---|---|---|---|---|---|---|---|
+| −1,0 | +0,25 | −0,75 | +0,75 | +0,5 | −1,25 | +0,75 | −0,5 |
+
+Nicht-FX lesen weiter das absolute Niveau, zum Beispiel S&P 500 Inflation vs Target −0,75
+(US-PCE 1,2 pp über Ziel, invers).
+
+**Wirkung (`check/scorediff.js`):** alle 23 Scores bewegen sich.
+
+| Asset | vorher | nachher |
+|---|---|---|
+| USD | −0,3 | −1,2 |
+| CHF | +0,6 | +1,4 |
+| CAD | −2,1 | −3,3 |
+| Gold | +0,2 | −0,7 |
+| Öl | +1,6 | +3,0 |
+
+**Robustheit:**
+- Median und Median-Abweichung (× 1,4826) statt Mittelwert/σ, denn 2020 (US-Arbeitslosigkeit
+  14,7 %, AUD-BIP −7 %) hätte beides verzerrt.
+- Mindestens 5 Jahre Reihe und 12 Punkte.
+- Frische bis höchstens 2,5 eigene Zyklen.
+- Für JPY gibt es kein „Growth vs Trend“, die BIP-Reihe beginnt erst 2023.
+
+**Nebenbei:** Die Detailzeile von Zustands-Zeilen (Zinsdifferenz, Niveau) zeigte „AS OF: –“.
+Sie fällt jetzt auf `research.stand` zurück.
+
+**Wächter:** `check/niveau.js`. 44 Zeilen werden unabhängig aus `ind_data.json`
+nachgerechnet. Die Gegenprobe `__nivAbsolut` liefert 22 Befunde.
+
+**Bekannte Datenlücken:**
+- CHF „GDP Growth QoQ“ meldet zuletzt 1,5 % q/q (Quelle TradingView, Forecast 1,6). Das ist
+  für die Schweiz ungewöhnlich hoch, die App übernimmt es aber unverändert (Regel 4).
+- EUR-Löhne haben nur 5 Punkte, deshalb keine Zeile.
+- AUD/CHF Core CPI sind Einzelwerte von Trading Economics.
+
+**Nachträge im Bau (gleicher Stand):**
+- **Spiegeln:** `deriveMacroBiasAll` kopierte den relativen Bias der Währungszeile auf die
+  absolute Nicht-FX-Zeile. Danach pendelte der Bias zwischen beiden Rechnungen
+  (`check/score.js` F: „Feed nicht idempotent“). Niveau-Zeilen werden jetzt nicht mehr
+  gespiegelt; `applyNiveauFeed` setzt Richtung und Punkte selbst.
+- **Zwei Funde, die schon auf `main` rot waren** (geprüft mit einer sauberen Kopie von
+  `origin/main`, beide hängen am Datum):
+  - `check/fliesstext.js`: Die COT-Meta-Zeile hatte mit Verspätungs-Hinweis 42 Wörter.
+    Gekürzt auf „Report … · CFTC Legacy, non-commercial · Tuesday close · ⚠ release late“.
+  - `check/cards.js`: Im Data-Panel bei 390 px überlappten „Jul 14, 26“ und „Oct 14, 26“
+    um 3 px. Die x-Beschriftung in `indHistChart` wählt die Labels jetzt von rechts nach
+    links nach ihrer tatsächlichen Breite aus statt nur nach dem Index-Abstand.

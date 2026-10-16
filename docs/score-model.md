@@ -52,6 +52,43 @@ Einschätzungen, überall neutral), der Edge-Tab. **Nicht im Score:** Momentum
 Geprüft von `check/regeln.js` (Zinsdifferenz und Rohstoffe unabhängig aus den
 Rohdateien nachgerechnet) und `check/seasretail.js` (Retail-Tabelle).
 
+## ⚠️ Niveau-Block (seit Modell 21, 2026-10-16): „wie steht die Zahl gegen ihr Normal“
+
+Nutzer: *„es ist aktuell viel actual vs forecast aber nicht ist die Inflation
+über Target und wie weit usw gleiches gilt für alle anderen Zahlen“*. Bis
+Modell 20 maß der Score fast nur **Überraschungen** (Actual vs Forecast) –
+ein kurzer Horizont (Citi baute den CESI für kurzfristige FX-Signale, er
+kehrt per Konstruktion zur Null zurück). Der Niveau-Block ergänzt den
+mittleren Horizont, wie ihn Quant-Research für FX nutzt (Quellen und
+Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-604). Sechs Zeilen mit **festen
+Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
+
+| Zeile | Karte | Messung | Stufen |
+|---|---|---|---|
+| Inflation vs Target | Inflation | Ø Headline- und Core-Inflation y/y (USD: PCE, Fed-Ziel) minus offizielles Ziel (`INFL_ZIEL`; Spannen → Mitte: CHF 0–2 → 1, CAD 1–3 → 2, AUD 2–3 → 2,5, NZD 1–3 → 2) | 0,5/1/2 pp → ±0,5/0,75/1 |
+| Real Rate vs Peers | Inflation | Leitzins − Headline y/y, minus Ø der anderen sieben | 0,75/1,5 pp → ±0,5/0,75 |
+| Unemployment vs Normal | Labour Market | 10-J-Median minus Ø der letzten 3 Monate, robuster z (Median-Abweichung × 1,4826) – niedriger = straff = bullish | 0,5/1/1,5σ → ±0,5/0,75/1 |
+| Wages vs Normal | Labour Market | Lohnwachstum y/y (3 Monate) gegen 10-J-Median, robuster z | 0,75/1,5σ → ±0,5/0,75 |
+| Growth vs Trend | Economic Growth | BIP-Wachstum (Releases der letzten ~100 Tage) gegen 10-J-Median, robuster z | 0,5/1σ → ±0,5/0,75 |
+| PMI vs 50 | Economic Growth | Ø Manufacturing/Services minus 50 (≤ 45 Tage alt) | 1,5/4 Pkt → ±0,5/0,75 |
+
+- **Währungen RELATIV:** Punkte aus dem eigenen Abstand minus dem Ø der
+  anderen sieben (wie das Macrosynergy-FX-Scorecard, „relative to the base
+  currency area“). Gemessen am 2026-10-16: Inflation über Ziel bei 6 von 8,
+  PMI über 50 bei 7 von 8 – absolut wären fast alle Währungen bullish, ohne
+  dass eine gegen die andere gewinnt. Real Rate ist schon relativ.
+- **Nicht-FX** (Gold, Indizes, Renditen) lesen das **absolute** Niveau ihrer
+  Währung über die Karten-Regel (same/inverse; Inflation-Karte wie die
+  Zinsdifferenz über `zinsdiffRichtung`).
+- **Robust gegen 2020:** Median und Median-Abweichung statt Mittelwert/σ.
+- **Keine Geisterzeilen:** Reihe fehlt, < 5 Jahre (Fenster 10 Jahre) oder
+  älter als 2,5 eigene Zyklen → keine Zeile. Kein `research.date` (Zustand,
+  keine Veröffentlichung); der Datenstand steht in `research.stand`.
+- ACT zeigt den **absoluten** Abstand (z. B. „+1.2pp“ über Ziel), die Farbe
+  folgt den Punkten; Score-Fenster/Journal nennen absolut, Peers und relativ.
+- Geprüft von `check/niveau.js` (unabhängig nachgerechnet, Gegenprobe
+  absolut statt relativ).
+
 ## ⚠️ Score-Journal: jede Änderung wird mit Ursache aufgezeichnet (seit 2026-09-26)
 
 Nutzer-Auftrag: *„alles was den Score ändert aufgezeichnet … auch wenn es nur
@@ -90,6 +127,7 @@ bleiben"*. Umsetzung: `js/journal.js`, Herleitung und Messwerte in
 | Normierung (nur Modus `normalized`) | ×0,4 bis ×1,8 | drei gemessene Faktoren, siehe unten |
 | **Saisonalitaet** | ±0,5 | seit 2026-09-14, siehe unten |
 | **Retail-Positionierung** | ±0,5 / ±1 | seit 2026-09-14, gegen die Menge, siehe unten |
+| **Niveau-Block** | feste Punkte, je Zeile max ±0,75/±1 | seit Modell 21: Inflation vs Ziel, Realzins vs Peers, Arbeitsmarkt/Löhne/Wachstum gegen 10-J-Normal, PMI vs 50 – siehe Abschnitt oben |
 
 ### Saisonalitaet und Retail (seit 2026-09-14)
 

@@ -918,6 +918,9 @@ function scoreInfoIndRow(ind,rub){
     }else if(r.trend){
       erkl=`${r.trend==='d'?'Daily':'4-hour'} candle closed ${escH(r.stand||'?')}: ${escH(r.actual||'?')} · ${escH(r.previous||'')}`;
       regel=W.trendRegelText?W.trendRegelText():'';
+    }else if(r.niveau){
+      erkl=`${escH(r.mass||r.actual||'')}${r.stand?' · as of '+escH(r.stand):''}`;
+      regel=W.nivRegelText?W.nivRegelText(r.niveau,(()=>{const id=(rub&&rub._symId)||selId;return W.isNonFx&&W.macroCcyFor&&W.isNonFx(id)?W.macroCcyFor(id):id;})()):'';
     }else if(r.rohstoff){
       erkl=r.ema20
         ?(r.aufbau?`Building up its own daily record: ${escH(r.mass||'')} · counts 0 until the EMA20 exists`
@@ -1778,7 +1781,11 @@ function symScoreCmp(sym){
 // 19 -> 20 (2026-09-28): Rohstoffe fuer AUD/NZD/CAD ueber den 1D-EMA20 statt
 // ueber die 1-Monats-Veraenderung (Nutzer): ausserhalb ±0,25 x ATR14 ±0,5,
 // ab 10 Tagen auf derselben Seite ±0,75, ab 20 ±1, mal Exportgewicht.
-const SCORE_MODEL_VERSION=20;
+// 20 -> 21 (2026-10-16): Niveau-Block (Nutzer: "nicht ist die Inflation ueber
+// Target und wie weit"): Inflation vs Target, Real Rate vs Peers,
+// Unemployment vs Normal, Wages vs Normal, Growth vs Trend, PMI vs 50 - feste
+// Punkte je Abstand zum Normal (applyNiveauFeed).
+const SCORE_MODEL_VERSION=21;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.
