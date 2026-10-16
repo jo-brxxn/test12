@@ -22902,13 +22902,13 @@ function renderCotRoh(){
   // falls er ungewoehnlich alt ist (>10 Tage = ein Report ausgefallen/verspaetet).
   const _rd=COT_DATA.report_date||'';
   const _ageD=_rd?Math.max(0,Math.round((Date.now()-new Date(_rd+'T00:00:00Z').getTime())/864e5)):null;
-  const _ageTxt=_ageD!=null?` (${_ageD===0?'today':_ageD===1?'1 day ago':_ageD+' days ago'})`:'';
-  const _stale=_ageD!=null&&_ageD>10?` · <span style="color:var(--amber)">⚠ older than usual — a release may have been delayed</span>`:'';
+  const _ageTxt=_ageD!=null?` (${_ageD===0?'today':_ageD+'d'})`:'';
+  const _stale=_ageD!=null&&_ageD>10?` · <b style="color:var(--amber)">⚠ older than usual</b> <i>(release delayed?)</i>`:'';
   // Veroeffentlichungstag: der angezeigte Wert ist der Dienstags-"Stand",
   // erschienen ist der Report aber erst am Freitag derselben Woche (bzw.
   // Montag, wenn ein US-Feiertag ihn verschoben hat).
   const _pub=cotPublicationDate(_rd);
-  const _pubTxt=_pub?` · <b>published ${escH(fmtDayHdr(_pub.ymd))}</b>${_pub.shifted?` <span style="color:var(--amber)">(⚠ holiday-shifted from Friday to ${escH(_pub.weekday)})</span>`:' (Friday)'}`:'';
+  const _pubTxt=_pub?` · published <b>${escH(fmtDayHdr(_pub.ymd))}</b>${_pub.shifted?` <span style="color:var(--amber)">(⚠ holiday: ${escH(_pub.weekday)})</span>`:''}`:'';
   // Verlaufsdiagramm + Verlaufstabelle nur, wenn genau ein Asset gefiltert
   // ist; ansonsten die normale Symbol-Vergleichstabelle (alle Assets).
   let histCard='',tblTitle,head,body;
@@ -22992,7 +22992,7 @@ function renderCotRoh(){
       <div class="cot-bars pd-list pd-gross">${bars}</div>
     </div>`;
   el.innerHTML=ctrl+multiFilter+`
-    <div class="cot-meta">Report as of: <b>${escH(date)}</b>${escH(_ageTxt)}${_pubTxt} · Source: CFTC (Legacy, Non-Commercial) · data reflects positioning as of Tuesday's close${_stale}</div>
+    <div class="cot-meta">Report <b>${escH(date)}</b>${escH(_ageTxt)}${_pubTxt} · <i>CFTC legacy, non-commercial · Tuesday close</i>${_stale}</div>
     ${histCard}
     ${barsCard}
     <div class="cot-card">
