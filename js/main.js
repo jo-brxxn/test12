@@ -19694,19 +19694,35 @@ function indHistChart(ind,symId,opts){
     try{const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en',dayLbl?{day:'numeric',month:'short',year:'2-digit'}:{month:'short',year:'2-digit'});}
     catch(e){return d;}
   };
-  let xlab='';
+  // ⚠ Abstand in PIXELN, nicht in Indizes (2026-10-16, check/cards.js bei
+  // 390 px: "Jul 14, 26" 257-305 und "Oct 14, 26" 302-353 ueberlappten). Die
+  // alte Regel liess das letzte Label stehen, wenn es 60 % eines Schritts vom
+  // vorigen entfernt war - rechtsbuendig rueckt es aber um seine ganze Breite
+  // nach links. Jetzt: Box je Label (Breite aus der Zeichenzahl, mit Reserve),
+  // und ueberlappt das letzte (neueste Datum) das vorige, faellt das vorige.
+  const lbls=[];
   use.forEach((p,i)=>{
-    // Der letzte Punkt bekommt immer ein Label - aber nur, wenn er weit
-    // genug vom vorherigen steht, sonst ueberlappen beide (rechter Rand).
     const isLast=i===n-1;
     if(i%lblEvery!==0&&!isLast)return;
-    if(isLast&&i%lblEvery!==0&&(i%lblEvery)<lblEvery*0.6)return;
     // Am Rand buendig statt mittig - mittig lief "Oct 24, 25" links und
     // "Sep 17, 26" rechts aus dem Bild (gemessen 2026-09-26, Data-Panels).
     const lx=xOf(i),halb=dayLbl?34:26;
     const an=lx-halb<0?'start':lx+halb>W?'end':'middle',ax=an==='start'?Math.max(1,lx-halb*0.35):an==='end'?Math.min(W-1,lx+halb*0.35):lx;
-    xlab+=`<text x="${ax.toFixed(1)}" y="${H-9}" text-anchor="${an}" style="font-size:var(--fs-2xs);fill:var(--t3)">${escH(fmtLbl(p[0]))}</text>`;
+    const txt=fmtLbl(p[0]),bw=txt.length*5.6;   // ~5 px je Zeichen bei --fs-2xs, mit Reserve
+    const l0=an==='start'?ax:an==='end'?ax-bw:ax-bw/2;
+    lbls.push({ax,an,l0,r0:l0+bw,txt});
   });
+  const plaziert=[];
+  lbls.forEach((b,k)=>{
+    const isLast=k===lbls.length-1;
+    while(plaziert.length&&plaziert[plaziert.length-1].r0+4>b.l0){
+      if(!isLast){b=null;break;}
+      plaziert.pop();                 // das neueste Datum hat Vorrang
+    }
+    if(b)plaziert.push(b);
+  });
+  let xlab='';
+  plaziert.forEach(b=>{xlab+=`<text x="${b.ax.toFixed(1)}" y="${H-9}" text-anchor="${b.an}" style="font-size:var(--fs-2xs);fill:var(--t3)">${escH(b.txt)}</text>`;});
   // Legende erst jetzt endgueltig: eine Reihe ohne Forecast (Anleihen, COT,
   // Sentiment) soll keine Forecast-Linie ankuendigen, die es nicht gibt.
   const hasFc=use.some(p=>p[2]!=null);

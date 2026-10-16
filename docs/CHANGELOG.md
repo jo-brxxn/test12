@@ -19972,3 +19972,12 @@ ihre Markierung und wurden still übersprungen (Gegenprobe mit kaputtem
 **Wächter:** neu `check/scorenachrechnung.js` (A–E), `check/performance.js`
 F + G; alle mit Gegenprobe rot.
 
+**Nachtrag Volllauf 604:** `check/cards.js` bei 390 px im Data-Tab: „Jul 14, 26“
+(257–305) und „Oct 14, 26“ (302–353) überlappten. Ursache in `indHistChart`:
+der Abstand des letzten Labels wurde in Indizes geschätzt (60 % eines Schritts),
+das rechtsbündige Label rückt aber um seine ganze Breite nach links. Jetzt
+Pixel-Boxen (Breite aus der Zeichenzahl); überlappt das letzte (neueste Datum)
+das vorige, fällt das vorige. 390 px: Oct 24 · Mar 11 · Oct 14; 1180 px: 7
+Labels, 32 px Luft am Ende. Außerdem `check/fliesstext.js`: COT-Meta-Zeile mit
+42 Wörtern („older than usual — a release may have been delayed“) → kurze Fakten.
+
