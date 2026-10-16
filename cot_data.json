@@ -1,21 +1,15 @@
 {
- "report_date": "2026-10-06",
- "updated": "2026-10-09T20:59:38.982Z",
+ "report_date": "2026-10-13",
+ "updated": "2026-10-16T22:12:47.309Z",
  "symbols": {
   "EUR": {
-   "long": 243020,
-   "short": 342352,
-   "dLong": 4837,
-   "dShort": 40913,
-   "oi": 870291,
-   "dOi": 16332,
+   "long": 222929,
+   "short": 360502,
+   "dLong": -20091,
+   "dShort": 18150,
+   "oi": 874541,
+   "dOi": 4250,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 214639,
-     "short": 188621,
-     "oi": 788828
-    },
     {
      "date": "2026-04-21",
      "long": 217407,
@@ -165,25 +159,25 @@
      "long": 243020,
      "short": 342352,
      "oi": 870291
+    },
+    {
+     "date": "2026-10-13",
+     "long": 222929,
+     "short": 360502,
+     "oi": 874541
     }
    ],
    "contract": "EURO FX - CHICAGO MERCANTILE EXCHANGE",
    "code": "099741"
   },
   "GBP": {
-   "long": 45259,
-   "short": 142870,
-   "dLong": 3863,
-   "dShort": 10399,
-   "oi": 265890,
-   "dOi": 14150,
+   "long": 44185,
+   "short": 151149,
+   "dLong": -1074,
+   "dShort": 8279,
+   "oi": 268532,
+   "dOi": 2642,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 54947,
-     "short": 109671,
-     "oi": 250053
-    },
     {
      "date": "2026-04-21",
      "long": 63086,
@@ -333,25 +327,25 @@
      "long": 45259,
      "short": 142870,
      "oi": 265890
+    },
+    {
+     "date": "2026-10-13",
+     "long": 44185,
+     "short": 151149,
+     "oi": 268532
     }
    ],
    "contract": "BRITISH POUND - CHICAGO MERCANTILE EXCHANGE",
    "code": "096742"
   },
   "JPY": {
-   "long": 190368,
-   "short": 128043,
-   "dLong": 14102,
-   "dShort": 7217,
-   "oi": 368138,
-   "dOi": 7418,
+   "long": 191256,
+   "short": 141049,
+   "dLong": 888,
+   "dShort": 13006,
+   "oi": 373502,
+   "dOi": 5364,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 102114,
-     "short": 185322,
-     "oi": 354344
-    },
     {
      "date": "2026-04-21",
      "long": 101386,
@@ -501,25 +495,25 @@
      "long": 190368,
      "short": 128043,
      "oi": 368138
+    },
+    {
+     "date": "2026-10-13",
+     "long": 191256,
+     "short": 141049,
+     "oi": 373502
     }
    ],
    "contract": "JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE",
    "code": "097741"
   },
   "CHF": {
-   "long": 27818,
-   "short": 51558,
-   "dLong": 2990,
-   "dShort": 2113,
+   "long": 27447,
+   "short": 49525,
+   "dLong": -371,
+   "dShort": -2033,
    "oi": 137185,
-   "dOi": 3313,
+   "dOi": 0,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 9637,
-     "short": 43734,
-     "oi": 93376
-    },
     {
      "date": "2026-04-21",
      "long": 8372,
@@ -669,25 +663,25 @@
      "long": 27818,
      "short": 51558,
      "oi": 137185
+    },
+    {
+     "date": "2026-10-13",
+     "long": 27447,
+     "short": 49525,
+     "oi": 137185
     }
    ],
    "contract": "SWISS FRANC - CHICAGO MERCANTILE EXCHANGE",
    "code": "092741"
   },
   "CAD": {
-   "long": 91109,
-   "short": 181272,
-   "dLong": 6062,
-   "dShort": 17554,
-   "oi": 371048,
-   "dOi": 23774,
+   "long": 89986,
+   "short": 184751,
+   "dLong": -1123,
+   "dShort": 3479,
+   "oi": 378204,
+   "dOi": 7156,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 54249,
-     "short": 132521,
-     "oi": 259258
-    },
     {
      "date": "2026-04-21",
      "long": 60889,
@@ -837,25 +831,25 @@
      "long": 91109,
      "short": 181272,
      "oi": 371048
+    },
+    {
+     "date": "2026-10-13",
+     "long": 89986,
+     "short": 184751,
+     "oi": 378204
     }
    ],
    "contract": "CANADIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",
    "code": "090741"
   },
   "AUD": {
-   "long": 100138,
-   "short": 198726,
-   "dLong": -9552,
-   "dShort": 25797,
-   "oi": 328682,
-   "dOi": 18882,
+   "long": 98389,
+   "short": 215688,
+   "dLong": -1749,
+   "dShort": 16962,
+   "oi": 339464,
+   "dOi": 10782,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 129517,
-     "short": 64442,
-     "oi": 263918
-    },
     {
      "date": "2026-04-21",
      "long": 128811,
@@ -1005,25 +999,25 @@
      "long": 100138,
      "short": 198726,
      "oi": 328682
+    },
+    {
+     "date": "2026-10-13",
+     "long": 98389,
+     "short": 215688,
+     "oi": 339464
     }
    ],
    "contract": "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE",
    "code": "232741"
   },
   "NZD": {
-   "long": 27821,
-   "short": 57167,
-   "dLong": 4483,
-   "dShort": 16514,
-   "oi": 129883,
-   "dOi": 15106,
+   "long": 24619,
+   "short": 71620,
+   "dLong": -3202,
+   "dShort": 14453,
+   "oi": 125151,
+   "dOi": -4732,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 10112,
-     "short": 52388,
-     "oi": 80727
-    },
     {
      "date": "2026-04-21",
      "long": 7917,
@@ -1173,25 +1167,25 @@
      "long": 27821,
      "short": 57167,
      "oi": 129883
+    },
+    {
+     "date": "2026-10-13",
+     "long": 24619,
+     "short": 71620,
+     "oi": 125151
     }
    ],
    "contract": "NZ DOLLAR - CHICAGO MERCANTILE EXCHANGE",
    "code": "112741"
   },
   "USD": {
-   "long": 30526,
-   "short": 18515,
-   "dLong": 784,
-   "dShort": 654,
-   "oi": 51095,
-   "dOi": 2753,
+   "long": 32596,
+   "short": 19677,
+   "dLong": 2070,
+   "dShort": 1162,
+   "oi": 51816,
+   "dOi": 721,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 18970,
-     "short": 13800,
-     "oi": 32911
-    },
     {
      "date": "2026-04-21",
      "long": 17617,
@@ -1341,25 +1335,25 @@
      "long": 30526,
      "short": 18515,
      "oi": 51095
+    },
+    {
+     "date": "2026-10-13",
+     "long": 32596,
+     "short": 19677,
+     "oi": 51816
     }
    ],
    "contract": "USD INDEX - ICE FUTURES U.S.",
    "code": "098662"
   },
   "BTC": {
-   "long": 18313,
-   "short": 15773,
-   "dLong": 1125,
-   "dShort": 1050,
-   "oi": 21432,
-   "dOi": 1836,
+   "long": 17320,
+   "short": 14786,
+   "dLong": -993,
+   "dShort": -987,
+   "oi": 20752,
+   "dOi": -680,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 17499,
-     "short": 15306,
-     "oi": 23761
-    },
     {
      "date": "2026-04-21",
      "long": 17097,
@@ -1509,25 +1503,25 @@
      "long": 18313,
      "short": 15773,
      "oi": 21432
+    },
+    {
+     "date": "2026-10-13",
+     "long": 17320,
+     "short": 14786,
+     "oi": 20752
     }
    ],
    "contract": "BITCOIN - CHICAGO MERCANTILE EXCHANGE",
    "code": "133741"
   },
   "GOLD": {
-   "long": 245403,
-   "short": 35068,
-   "dLong": -4333,
-   "dShort": 3964,
-   "oi": 396109,
-   "dOi": -10347,
+   "long": 245300,
+   "short": 37421,
+   "dLong": -103,
+   "dShort": 2353,
+   "oi": 396345,
+   "dOi": 236,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 210009,
-     "short": 47483,
-     "oi": 362274
-    },
     {
      "date": "2026-04-21",
      "long": 212893,
@@ -1677,25 +1671,25 @@
      "long": 245403,
      "short": 35068,
      "oi": 396109
+    },
+    {
+     "date": "2026-10-13",
+     "long": 245300,
+     "short": 37421,
+     "oi": 396345
     }
    ],
    "contract": "GOLD - COMMODITY EXCHANGE INC.",
    "code": "088691"
   },
   "SILVER": {
-   "long": 33648,
-   "short": 10495,
-   "dLong": 166,
-   "dShort": -904,
-   "oi": 105130,
-   "dOi": -1917,
+   "long": 34394,
+   "short": 11763,
+   "dLong": 746,
+   "dShort": 1268,
+   "oi": 108433,
+   "dOi": 3303,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 32391,
-     "short": 8829,
-     "oi": 116983
-    },
     {
      "date": "2026-04-21",
      "long": 33233,
@@ -1845,25 +1839,25 @@
      "long": 33648,
      "short": 10495,
      "oi": 105130
+    },
+    {
+     "date": "2026-10-13",
+     "long": 34394,
+     "short": 11763,
+     "oi": 108433
     }
    ],
    "contract": "SILVER - COMMODITY EXCHANGE INC.",
    "code": "084691"
   },
   "OIL": {
-   "long": 336706,
-   "short": 237646,
-   "dLong": -24645,
-   "dShort": -14242,
-   "oi": 1889422,
-   "dOi": 10846,
+   "long": 344653,
+   "short": 244310,
+   "dLong": 7947,
+   "dShort": 6664,
+   "oi": 1900179,
+   "dOi": 10757,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 390468,
-     "short": 183927,
-     "oi": 2094492
-    },
     {
      "date": "2026-04-21",
      "long": 380020,
@@ -2013,25 +2007,25 @@
      "long": 336706,
      "short": 237646,
      "oi": 1889422
+    },
+    {
+     "date": "2026-10-13",
+     "long": 344653,
+     "short": 244310,
+     "oi": 1900179
     }
    ],
    "contract": "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE",
    "code": "067651"
   },
   "SP500": {
-   "long": 212009,
-   "short": 366079,
-   "dLong": 2422,
-   "dShort": 13993,
-   "oi": 1932227,
-   "dOi": 36305,
+   "long": 224804,
+   "short": 365799,
+   "dLong": 12795,
+   "dShort": -280,
+   "oi": 1931607,
+   "dOi": -620,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 236683,
-     "short": 352445,
-     "oi": 1959076
-    },
     {
      "date": "2026-04-21",
      "long": 235119,
@@ -2181,25 +2175,25 @@
      "long": 212009,
      "short": 366079,
      "oi": 1932227
+    },
+    {
+     "date": "2026-10-13",
+     "long": 224804,
+     "short": 365799,
+     "oi": 1931607
     }
    ],
    "contract": "E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE",
    "code": "13874A"
   },
   "NAS": {
-   "long": 84033,
-   "short": 29922,
-   "dLong": 5381,
-   "dShort": -3334,
-   "oi": 297655,
-   "dOi": 13704,
+   "long": 79759,
+   "short": 37425,
+   "dLong": -4274,
+   "dShort": 7503,
+   "oi": 294776,
+   "dOi": -2879,
    "history": [
-    {
-     "date": "2026-04-14",
-     "long": 69365,
-     "short": 59721,
-     "oi": 276532
-    },
     {
      "date": "2026-04-21",
      "long": 68265,
@@ -2349,6 +2343,12 @@
      "long": 84033,
      "short": 29922,
      "oi": 297655
+    },
+    {
+     "date": "2026-10-13",
+     "long": 79759,
+     "short": 37425,
+     "oi": 294776
     }
    ],
    "contract": "NASDAQ-100 CONSOLIDATED - CHICAGO MERCANTILE EXCHANGE",
@@ -2356,12 +2356,12 @@
   }
  },
  "pct3y": {
-  "report_date": "2026-10-06",
+  "report_date": "2026-10-13",
   "contracts": "EUR=EURO FX - CHICAGO MERCANTILE EXCHANGE|GBP=BRITISH POUND - CHICAGO MERCANTILE EXCHANGE|JPY=JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE|CHF=SWISS FRANC - CHICAGO MERCANTILE EXCHANGE|CAD=CANADIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE|AUD=AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE|NZD=NZ DOLLAR - CHICAGO MERCANTILE EXCHANGE|USD=USD INDEX - ICE FUTURES U.S.|BTC=BITCOIN - CHICAGO MERCANTILE EXCHANGE|GOLD=GOLD - COMMODITY EXCHANGE INC.|SILVER=SILVER - COMMODITY EXCHANGE INC.|OIL=WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE|SP500=E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE|NAS=NASDAQ-100 CONSOLIDATED - CHICAGO MERCANTILE EXCHANGE",
-  "updated": "2026-10-09T20:59:41.055Z",
+  "updated": "2026-10-16T22:12:48.775Z",
   "data": {
    "EUR": {
-    "pct": 3,
+    "pct": 1,
     "n": 183
    },
    "GBP": {
@@ -2369,7 +2369,7 @@
     "n": 183
    },
    "JPY": {
-    "pct": 75,
+    "pct": 70,
     "n": 183
    },
    "CHF": {
@@ -2377,31 +2377,31 @@
     "n": 183
    },
    "CAD": {
-    "pct": 74,
+    "pct": 73,
     "n": 183
    },
    "AUD": {
-    "pct": 54,
+    "pct": 48,
     "n": 183
    },
    "NZD": {
-    "pct": 47,
+    "pct": 39,
     "n": 183
    },
    "USD": {
-    "pct": 65,
+    "pct": 66,
     "n": 183
    },
    "BTC": {
-    "pct": 89,
-    "n": 183
-   },
-   "GOLD": {
     "pct": 90,
     "n": 183
    },
+   "GOLD": {
+    "pct": 86,
+    "n": 183
+   },
    "SILVER": {
-    "pct": 64,
+    "pct": 50,
     "n": 183
    },
    "OIL": {
@@ -2409,7 +2409,7 @@
     "n": 183
    },
    "SP500": {
-    "pct": 25,
+    "pct": 36,
     "n": 183
    }
   }
