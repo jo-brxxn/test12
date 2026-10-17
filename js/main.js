@@ -10116,7 +10116,7 @@ function applyZinsDiffFeed(){
 // Inflation die Waehrung), Labour Market Tightening (Arbeitslosigkeit gegen
 // den mittelfristigen Median), Excess Growth (BIP gegen den 5-10-Jahres-
 // Median), reale Zinsdifferenz.
-// Seit Modell 25 fuenf Zeilen mit FESTEN Punkten (Backtest unten; Trends ab Modell 23) (ind.pkt, wie COT/Trend/Rohstoffe):
+// Seit Modell 26 sechs Zeilen mit FESTEN Punkten (Backtest unten; Trends ab Modell 23) (ind.pkt, wie COT/Trend/Rohstoffe):
 //   Inflation vs Target  (Inflation)       Ø Headline+Core y/y minus Ziel, pp
 //   Unemployment vs Normal (Labour Market) 10J-Median minus aktuell, robuster z
 //   Wages vs Normal      (Labour Market)   Lohnwachstum y/y gegen 10J-Median, robuster z
@@ -10134,7 +10134,11 @@ const NIV={
   //   Inflation Trend (3M): Headline y/y heute minus vor ~3 Monaten - waechst der Abstand?
   //   Unemployment Trend (3M): Ø 3 Monate heute minus Ø 3 Monate davor (steigend = bearish, Sahm-Logik)
   inflT:{name:'Inflation Trend (3M)',rub:'Inflation',stufen:[[0.7,0.5],[0.3,0.25]],einh:'pp'},
-  labT:{name:'Unemployment Trend (3M)',rub:'Labour Market',stufen:[[0.4,0.5],[0.2,0.25]],einh:'pp'}
+  labT:{name:'Unemployment Trend (3M)',rub:'Labour Market',stufen:[[0.4,0.5],[0.2,0.25]],einh:'pp'},
+  // Modell 26: Richtung des Verbrauchervertrauens (Ø 3 Monate minus Ø 3 Monate
+  // davor, Indexpunkte) - die einzige Wachstumsreihe, die den Block-Test besteht
+  // (tools/niveau_backtest.py: Block-IC Ø 0,052 -> 0,070, keine Haelfte negativ).
+  confT:{name:'Consumer Confidence Trend (3M)',rub:'Economic Growth',stufen:[[5,0.5],[2,0.25]],einh:'pts'}
 };
 // ⚠ BACKTEST (tools/niveau_backtest.py, 2018-2026, 8 Waehrungen, Korb-Rendite
 // 1/3 Monate, point-in-time): "Real Rate vs Peers" (Rang-IC -0,045) und
@@ -10237,6 +10241,13 @@ function nivWerte(ccy){
       // steigend = bearish -> Vorzeichen fuer die Punkte umdrehen, ACT zeigt die echte Richtung
       o.labT={x:-dx,act:nivFmtPp(dx),mass:`unemployment ${ma.toFixed(2)}% (last 3 months) vs ${mb.toFixed(2)}% (3 months before)`,stand:ur[ur.length-1][0]};}
   }
+  // 6) Consumer Confidence Trend (3M): gleiche Fenster wie 5), Indexpunkte, steigend = bullish.
+  const cr=nivReihe(nivEintrag(ccy,'Consumer Confidence'));
+  if(cr.length>=6&&nivFrisch(cr,heuteMs)){
+    const l=nivTag(cr[cr.length-1][0]),a=cr.filter(([d])=>nivTag(d)>l-92*864e5).map(x=>x[1]),b=cr.filter(([d])=>nivTag(d)<=l-92*864e5&&nivTag(d)>l-184*864e5).map(x=>x[1]);
+    if(a.length&&b.length){const ma=a.reduce((s,v)=>s+v,0)/a.length,mb=b.reduce((s,v)=>s+v,0)/b.length,dx=ma-mb;
+      o.confT={x:dx,act:(dx>0?'+':'')+dx.toFixed(1)+' pts',mass:`confidence ${ma.toFixed(1)} (last 3 months) vs ${mb.toFixed(1)} (3 months before)`,stand:cr[cr.length-1][0]};}
+  }
   return o;
 }
 const _nivMemo={k:null,v:null};
@@ -10263,13 +10274,14 @@ function nivAlle(){
   return v;
 }
 function nivRegelText(t,ccy){
-  const st=NIV[t].stufen.slice().reverse().map(([ab,p])=>`${ab}${NIV[t].einh==='z'?'σ':NIV[t].einh==='pp'?'pp':''} → ±${p}`).join(', ');
+  const st=NIV[t].stufen.slice().reverse().map(([ab,p])=>`${ab}${NIV[t].einh==='z'?'σ':NIV[t].einh==='pp'?'pp':NIV[t].einh==='pts'?' pts':''} → ±${p}`).join(', ');
   const T={
     infl:`Average of headline and core inflation (year on year${ccy==='USD'?', PCE — the Fed targets PCE':''}) minus the central bank's target${ccy&&INFL_ZIEL_TXT[ccy]?' ('+INFL_ZIEL_TXT[ccy]+')':''}. Above target counts bullish: an inflation-targeting central bank has to lean against it (higher rates), which supports the currency. ${st}; less → 0.`,
     lab:`Unemployment rate (average of the last 3 months) against its own median of the last ${NIV_FENSTER_J} years, in robust standard deviations (median absolute deviation, so 2020 does not distort it). Lower than normal = tight labour market = bullish. ${st}; less → 0.`,
     wage:`Wage growth (y/y, last 3 months) against its own ${NIV_FENSTER_J}-year median, in robust standard deviations. Faster than normal keeps inflation pressure and rates up = bullish. ${st}; less → 0.`,
     inflT:`Direction of inflation: the latest year-on-year rate${ccy==='USD'?' (PCE)':''} minus the rate about three months earlier. Accelerating inflation keeps the central bank under pressure = bullish; easing = bearish. ${st}; less → 0.`,
-    labT:`Direction of unemployment: average of the last three months minus the three months before. A rising rate is the classic early warning of a turning labour market and counts bearish (falling = bullish). ${st}; less → 0.`
+    labT:`Direction of unemployment: average of the last three months minus the three months before. A rising rate is the classic early warning of a turning labour market and counts bearish (falling = bullish). ${st}; less → 0.`,
+    confT:`Direction of consumer confidence: average of the last three months minus the three months before, in index points. Rising confidence leads spending and growth = bullish; falling = bearish. ${st}; less → 0.`
   };
   const rel=' For the eight currencies the points come from the distance RELATIVE to the average of the other seven (a level every central bank shares moves no exchange rate); gold, indices and yields read the absolute level of their currency.';
   return T[t]+rel+' Fixed points: no ageing, no weighting factor. Missing, too short (< '+NIV_MIN_J+' years) or stale series → no row.';
@@ -10331,6 +10343,9 @@ function nivVerlauf(t,ccy){
   if(t==='wage')return robust('Avg Hourly Earnings',1,92);
   if(t==='inflT'){const r=nivReihe(nivEintrag(ccy,ccy==='USD'?'PCE':'CPI (Headline)'));
     return{pts:r.map(([d,v])=>{const vor=r.filter(([e])=>nivTag(e)<=nivTag(d)-80*864e5).pop();return vor&&nivTag(d)-nivTag(vor[0])<=200*864e5?[d,Math.round((v-vor[1])*100)/100,null]:null;}).filter(Boolean),unit:'pp'};}
+  if(t==='confT'){const r=nivReihe(nivEintrag(ccy,'Consumer Confidence'));
+    return{pts:r.map(([d])=>{const l=nivTag(d),a=r.filter(([e])=>nivTag(e)<=l&&nivTag(e)>l-92*864e5).map(x=>x[1]),b=r.filter(([e])=>nivTag(e)<=l-92*864e5&&nivTag(e)>l-184*864e5).map(x=>x[1]);
+      return a.length&&b.length?[d,Math.round((a.reduce((s,v)=>s+v,0)/a.length-b.reduce((s,v)=>s+v,0)/b.length)*10)/10,null]:null;}).filter(Boolean),unit:''};}
   if(t==='labT'){const r=nivReihe(nivEintrag(ccy,'Unemployment Rate'));
     return{pts:r.map(([d])=>{const l=nivTag(d),a=r.filter(([e])=>nivTag(e)<=l&&nivTag(e)>l-92*864e5).map(x=>x[1]),b=r.filter(([e])=>nivTag(e)<=l-92*864e5&&nivTag(e)>l-184*864e5).map(x=>x[1]);
       return a.length&&b.length?[d,Math.round((a.reduce((s,v)=>s+v,0)/a.length-b.reduce((s,v)=>s+v,0)/b.length)*100)/100,null]:null;}).filter(Boolean),unit:'pp'};}

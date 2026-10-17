@@ -10,7 +10,7 @@
 //      (Median-Abweichung x 1,4826), Arbeitslosigkeit mit umgedrehtem Vorzeichen;
 //   E) Waehrungen RELATIV zum Ø der anderen sieben, Stufen laut NIV;
 //   F) Nicht-FX (S&P 500 ↔ USD, inverse) liest das ABSOLUTE Niveau;
-//   G) Inflation Trend / Unemployment Trend (3M) (Modell 23);
+//   G) Inflation Trend / Unemployment Trend (3M) (Modell 23); H) Consumer Confidence Trend (3M) (Modell 26);
 //   I) seit Modell 24/25 entfernte Zeilen (Real Rate, Growth, PMI, Rate Path) stehen nirgends.
 //   node check/niveau.js [--gegenprobe]   (Waehrungen absolut statt relativ)
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
@@ -24,8 +24,8 @@ const IND = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'ind_data.json
 const ALT = ['Real Rate vs Peers', 'Growth vs Trend', 'PMI vs 50', 'Rate Path vs Peers'];
 const FX = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'NZD'];
 const ZIEL = { USD: 2, EUR: 2, GBP: 2, JPY: 2, CHF: 1, CAD: 2, AUD: 2.5, NZD: 2 };
-const STUFEN = { inflT: [[0.7, 0.5], [0.3, 0.25]], labT: [[0.4, 0.5], [0.2, 0.25]], infl: [[2, 1], [1, 0.75], [0.5, 0.5]], lab: [[1.5, 1], [1, 0.75], [0.5, 0.5]], wage: [[1.5, 0.75], [0.75, 0.5]] };
-const NAME = { inflT: 'Inflation Trend (3M)', labT: 'Unemployment Trend (3M)', infl: 'Inflation vs Target', lab: 'Unemployment vs Normal', wage: 'Wages vs Normal' };
+const STUFEN = { inflT: [[0.7, 0.5], [0.3, 0.25]], labT: [[0.4, 0.5], [0.2, 0.25]], confT: [[5, 0.5], [2, 0.25]], infl: [[2, 1], [1, 0.75], [0.5, 0.5]], lab: [[1.5, 1], [1, 0.75], [0.5, 0.5]], wage: [[1.5, 0.75], [0.75, 0.5]] };
+const NAME = { inflT: 'Inflation Trend (3M)', labT: 'Unemployment Trend (3M)', confT: 'Consumer Confidence Trend (3M)', infl: 'Inflation vs Target', lab: 'Unemployment vs Normal', wage: 'Wages vs Normal' };
 const zahl = s => { const m = String(s == null ? '' : s).match(/-?\d[\d.,]*/); return m ? parseFloat(m[0].replace(/,/g, '')) : null; };
 const tag = d => Date.parse(String(d).slice(0, 10) + 'T00:00:00Z');
 const med = a => { const s = a.slice().sort((x, y) => x - y), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
@@ -65,6 +65,10 @@ function inflation(c, heute, nurHead) {
     if (ir.length >= 4 && frisch(ir, heute)) { const [d1, v1] = ir[ir.length - 1], vor = ir.filter(([d]) => tag(d) <= tag(d1) - 80 * 864e5).pop(); if (vor && tag(d1) - tag(vor[0]) <= 200 * 864e5) abs[c].inflT = v1 - vor[1]; }
     if (u.length >= 6 && frisch(u, heute)) { const l = tag(u[u.length - 1][0]), a = u.filter(([d]) => tag(d) > l - 92 * 864e5).map(x => x[1]), bb = u.filter(([d]) => tag(d) <= l - 92 * 864e5 && tag(d) > l - 184 * 864e5).map(x => x[1]);
       if (a.length && bb.length) abs[c].labT = -(a.reduce((s, v) => s + v, 0) / a.length - bb.reduce((s, v) => s + v, 0) / bb.length); }
+    // H) Consumer Confidence Trend (3M, Modell 26): gleiche Fenster, Indexpunkte, steigend = bullish
+    const cf = reihe(I['Consumer Confidence']);
+    if (cf.length >= 6 && frisch(cf, heute)) { const l = tag(cf[cf.length - 1][0]), a = cf.filter(([d]) => tag(d) > l - 92 * 864e5).map(x => x[1]), bb = cf.filter(([d]) => tag(d) <= l - 92 * 864e5 && tag(d) > l - 184 * 864e5).map(x => x[1]);
+      if (a.length && bb.length) abs[c].confT = a.reduce((s, v) => s + v, 0) / a.length - bb.reduce((s, v) => s + v, 0) / bb.length; }
   });
   const soll = {}; FX.forEach(c => { soll[c] = {}; Object.keys(NAME).forEach(t => { const x = abs[c][t]; if (x == null) return;
     const pe = FX.filter(o => o !== c && abs[o][t] != null).map(o => abs[o][t]); if (pe.length < 4) return;

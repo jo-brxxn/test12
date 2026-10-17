@@ -90,6 +90,14 @@ def signale(c, stich):
         if z is not None: o['wage'] = z
     z = robust(reihe(c,'GDP Growth QoQ'), stich, 100)
     if z is not None: o['gdp'] = z
+    cr = reihe(c, 'Consumer Confidence')
+    if len(cr) > 24:
+        z = robust(cr, stich, 92)
+        if z is not None: o['conf'] = z
+        cs = [x for x in cr if x[0] <= stich]
+        if len(cs) >= 6 and (stich - cs[-1][0]).days <= 120:
+            l = cs[-1][0]; a = [v for d,v in cs if d > l-timedelta(days=92)]; b = [v for d,v in cs if l-timedelta(days=184) < d <= l-timedelta(days=92)]
+            if a and b: o['confT'] = sum(a)/len(a) - sum(b)/len(b)
     if len(EH[c]) > 24:
         z = robust(EH[c], stich, 92)
         if z is not None: o['retail'] = z
@@ -107,7 +115,7 @@ def signale(c, stich):
         if a and b: o['labT'] = -(sum(a)/len(a) - sum(b)/len(b))
     return o
 STUFEN = {'infl':[[2,1],[1,.75],[.5,.5]],'real':[[1.5,.75],[.75,.5]],'lab':[[1.5,1],[1,.75],[.5,.5]],'wage':[[1.5,.75],[.75,.5]],
-          'gdp':[[1,.75],[.5,.5]],'pmi':[[4,.75],[1.5,.5]],'inflT':[[.7,.5],[.3,.25]],'labT':[[.4,.5],[.2,.25]],'retail':[[1.5,.75],[.75,.5]]}
+          'gdp':[[1,.75],[.5,.5]],'pmi':[[4,.75],[1.5,.5]],'inflT':[[.7,.5],[.3,.25]],'labT':[[.4,.5],[.2,.25]],'retail':[[1.5,.75],[.75,.5]],'conf':[[1.5,.75],[.75,.5]],'confT':[[5,.5],[2,.25]]}
 def stufe(t, x):
     x = round(x, 3)
     for ab, p in STUFEN[t]:
@@ -128,8 +136,8 @@ def monatsenden(a, b):
     return out
 ende = max(D(r[0]) for r in PD['EUR']['series'])
 stichtage = [d for d in monatsenden(date(2018,1,1), ende)]
-TYP = ['infl','real','lab','wage','gdp','pmi','inflT','labT','retail','BLOCK']
-res = {h: {t: {'ic':[], 'hit':[], 'ls':[]} for t in TYP} for h in (1,3)}
+TYP = ['infl','real','lab','wage','gdp','pmi','inflT','labT','retail','conf','confT','BLOCK']
+res = {h: {t: {'ic':[], 'hit':[], 'ls':[], 'px':[], 'py':[]} for t in TYP} for h in (1,3)}
 for s in stichtage:
     sig = {c: signale(c, s) for c in FX}
     rz = {c: sig[c].get('_real') for c in FX}
@@ -156,7 +164,7 @@ for s in stichtage:
             cs = [c for c in FX if t in rel[c] and fw[c] is not None]
             if len(cs) < 5: continue
             x = [rel[c][t] for c in cs]; y = [fw[c] for c in cs]
-            res[h][t]['ic'].append(corr(rank(x), rank(y)))
+            res[h][t]['ic'].append(corr(rank(x), rank(y))); res[h][t]['px'] += x; res[h][t]['py'] += y
             for c in cs:
                 pt = rel[c][t] if t == 'BLOCK' else stufe(t, rel[c][t])
                 if pt: res[h][t]['hit'].append(1 if (pt > 0) == (fw[c] > 0) else 0)
@@ -173,7 +181,8 @@ for h in (1, 3):
         tval = ic / sd * math.sqrt(n / (h if h > 1 else 1))   # ueberlappende 3M-Fenster: effektiv n/3
         hit = st.mean(r['hit']) if r['hit'] else float('nan')
         ls = st.mean(r['ls']) * 100 / h
-        print(f"{t:8} {n:6} {ic:7.3f} {tval:6.2f} {hit*100:7.1f}% {len(r['hit']):5} {ls:10.3f}")
+        pool = corr(rank(r['px']), rank(r['py']))
+        print(f"{t:8} {n:6} {ic:7.3f} {tval:6.2f} {hit*100:7.1f}% {len(r['hit']):5} {ls:10.3f}   Pool-IC {pool:+.3f}")
 
 # ── Stabilitaet: zwei Haelften + Block-Varianten ─────────────────────────
 def block_lauf(typen, von, bis, h):
@@ -206,6 +215,9 @@ def block_lauf(typen, von, bis, h):
 VARIANTEN = {'alle 8 (Modell 23)': ['infl','real','lab','wage','gdp','pmi','inflT','labT'],
              'ohne real+gdp':      ['infl','lab','wage','pmi','inflT','labT'],
              'Modell 25':          ['infl','lab','wage','inflT','labT'],
+             'Modell 26 (ohne lab)': ['infl','wage','inflT','labT'],
+             'Modell 25 + conf':   ['infl','lab','wage','inflT','labT','conf'],
+             'Modell 25 + confT':  ['infl','lab','wage','inflT','labT','confT'],
              'Modell 25 + retail': ['infl','lab','wage','inflT','labT','retail'],
              'nur Inflation':      ['infl','inflT']}
 H1, H2 = (date(2018,1,1), date(2022,5,31)), (date(2022,6,1), date(2026,12,31))

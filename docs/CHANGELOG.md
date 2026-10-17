@@ -20310,3 +20310,46 @@ die Folgeentwicklung vorhersagen?
 - **GitHub Pages:** letztes Deployment **2026-08-10**. Der Mirror steht seit zwei Monaten still, *unabhängig* von der Umbenennung.
   - Die Pages-Einstellung ist über den Proxy nicht lesbar und muss in GitHub → Settings → Pages geprüft werden.
   - `docs/workflow.md` nennt den Mirror noch als „garantiert direkt aus main“. Das stimmt so nicht mehr.
+
+## 2026-10-17 — VERSION-CHECK-610 · Score-Modell 26: einheitliche Aufnahme-Regel, Consumer Confidence Trend (3M)
+
+**Anlass:**
+- Die neuen Kandidaten wurden strenger geprüft als die bestehenden Zeilen. Die Pool-IC-Regel (1M und 3M > 0, Treffer > 50 %) wurde nur auf die neuen angewendet.
+
+**Bestehende Zeilen mit derselben Kennzahl** (`tools/niveau_backtest.py`, Pool-IC 1M / 3M, Treffer):
+
+| Zeile | Pool-IC | Treffer |
+|---|---|---|
+| infl | +0,057 / +0,058 | 52,2 / 52,6 % |
+| inflT | +0,060 / +0,058 | 53,0 / 52,6 % |
+| labT | +0,011 / +0,074 | 51,9 / 57,3 % |
+| lab | +0,022 / +0,005 | **49,4 / 49,0 %** |
+
+**Block ohne lab:** Ø-IC der vier Felder 0,052 → **0,040**. Die Zeile verfehlt zwar die Trefferquote, stützt aber den Block.
+
+**Regel umgestellt (offen: *nach* diesem Ergebnis):**
+1. Pool-IC 1M und 3M > 0.
+2. Block-Ø steigt, kein Feld negativ.
+
+- Die Trefferquote zählt nur noch als Info.
+- Alle Kandidaten wurden mit der neuen Regel neu geprüft:
+
+| Variante | 1M 18–22 / 22–26 | 3M 18–22 / 22–26 | Ø | Ergebnis |
+|---|---|---|---|---|
+| Modell 25 | +0,072 / +0,017 | +0,069 / +0,048 | 0,052 | Basis |
+| + Consumer Confidence Niveau | +0,099 / **−0,007** | +0,084 / +0,012 | 0,047 | raus |
+| + Retail Sales y/y | +0,099 / **−0,014** | +0,104 / **−0,023** | 0,042 | raus |
+| **+ Consumer Confidence Trend 3M** | +0,062 / **+0,076** | +0,078 / +0,062 | **0,070** | **neu** |
+
+- **Consumer Confidence Trend 3M** einzeln: Pool-IC +0,089 / +0,092, Treffer 57,1 / 51,2 %.
+- **Wirkung:** Die schwache zweite Hälfte steigt von +0,017 auf +0,076, die Long/Short-Rendite 2022–26 (1M) von +0,12 auf +0,51 %/Mon.
+- **Einordnung:** Momentum der Fundamentaldaten im Sinne von Dahlquist/Hasseltoft (JFE 2020).
+  - Vertrauen gehört nicht zu ihren fünf Variablen, ist aber das Wachstums-Momentum, für das die App Live-Daten hat (`ind_data.json`, 7/8, CAD ohne Reihe).
+- *Grenze:* Die Indexpunkte stammen aus verschieden skalierten Indizes. So wurde getestet, nicht nachträglich normiert (keine zweite Runde Datensuche).
+
+**Code:**
+- `NIV.confT` (Karte Economic Growth, 2/5 Pkt → ±0,25/0,5).
+- `nivWerte`/`nivVerlauf`/`nivRegelText`.
+- `SCORE_MODEL_VERSION` 26, `JR_MODELL_NOTIZ` 26.
+
+**Wächter:** `check/niveau.js` rechnet Consumer Confidence Trend unabhängig nach. 44 Zeilen, die Gegenprobe meldet 23 Befunde.

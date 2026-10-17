@@ -60,8 +60,8 @@ Modell 20 maß der Score fast nur **Überraschungen** (Actual vs Forecast) –
 ein kurzer Horizont (Citi baute den CESI für kurzfristige FX-Signale, er
 kehrt per Konstruktion zur Null zurück). Der Niveau-Block ergänzt den
 mittleren Horizont, wie ihn Quant-Research für FX nutzt (Quellen und
-Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-605–608). Seit Modell 25
-fünf Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
+Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-605–610). Seit Modell 26
+sechs Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
 
 | Zeile | Karte | Messung | Stufen |
 |---|---|---|---|
@@ -69,6 +69,7 @@ fünf Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
 | Unemployment vs Normal | Labour Market | 10-J-Median minus Ø der letzten 3 Monate, robuster z (Median-Abweichung × 1,4826) – niedriger = straff = bullish | 0,5/1/1,5σ → ±0,5/0,75/1 |
 | Wages vs Normal | Labour Market | Lohnwachstum y/y (3 Monate) gegen 10-J-Median, robuster z | 0,75/1,5σ → ±0,5/0,75 |
 | Inflation Trend (3M) *(Modell 23)* | Inflation | Headline y/y (USD: PCE) jetzt minus der Wert ≥ 80 Tage davor – Richtung des Abstands | 0,3/0,7 pp → ±0,25/0,5 |
+| Consumer Confidence Trend (3M) *(Modell 26)* | Economic Growth | Ø der letzten 3 Monate minus Ø der 3 Monate davor, Indexpunkte; steigend = bullish (CAD: keine Reihe) | 2/5 Pkt → ±0,25/0,5 |
 | Unemployment Trend (3M) *(Modell 23)* | Labour Market | Ø der letzten 3 Monate minus Ø der 3 Monate davor; steigend = bearish (Sahm-Logik) | 0,2/0,4 pp → ±0,25/0,5 |
 
 - **Währungen RELATIV:** Punkte aus dem eigenen Abstand minus dem Ø der
@@ -101,16 +102,22 @@ fünf Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
     BusinessNZ frei; S&P-Global-PMIs ohne Actual im Archiv).
   - **Wages vs Normal** bleibt: 7 von 8 Währungen, Pool-IC **+0,043**
     (1M) / **+0,069** (3M), Treffer 53,5/54,6 %.
-- **Economic Growth ohne Niveau-Zeile – belegt (2026-10-17):** neun
-  Kandidaten aus `cal_hist/` getestet, Regel *vor* dem Lauf: Pool-IC 1M
-  und 3M > 0 und Treffer > 50 %.
-  - Durchgefallen: Consumer Confidence Niveau (Treffer 49,8 %) und Trend,
-    Industrieproduktion Niveau, Retail-Momentum (3M IC −0,093/−0,134),
-    Growth-Momentum-Kombi.
-  - Retail Sales y/y Niveau: einzeln knapp bestanden, macht den Block aber
-    **instabil** (2022–26: IC −0,014/−0,023) → raus.
-  - IP-Momentum (12M): knapp bestanden, aber 1 von 9 = Zufallsniveau,
-    5 Währungen, kein Live-Feed → raus.
+- **Aufnahme-Regel (Stand Modell 26, für ALLE Zeilen gleich):**
+  1. Pool-IC (alle Monate × Währungen) über 1M **und** 3M > 0;
+  2. Block mit der Zeile: Ø-IC der vier Felder (1M/3M × 2018–22/2022–26)
+     steigt, **kein Feld negativ**.
+  - *Trefferquote nur Info* – bei gestuften Punkten zu verrauscht (sie hätte
+    Unemployment vs Normal entfernt, obwohl der Block ohne sie schlechter
+    wird: Ø 0,052 → 0,040).
+  - ⚠ Regel *nach* dem ersten Lauf auf zwei Stufen umgestellt – offen
+    dokumentiert in `docs/CHANGELOG.md` (VERSION-CHECK-610).
+- **Economic Growth (Modell 26):** einzige Zeile = **Consumer Confidence
+  Trend (3M)** (Pool-IC +0,089/+0,092; Block Ø 0,052 → **0,070**, 2022–26
+  1M +0,017 → +0,076). Durchgefallen: Vertrauen-Niveau und Retail Sales
+  (je ein negatives Block-Feld), GDP, PMI, Industrieproduktion, Retail-
+  Momentum, Value.
+  - *Grenze:* Indexpunkte über verschieden skalierte Indizes (CB ~100,
+    GfK negativ) – so getestet, nicht nachträglich normiert.
 - **Smart-Money-Methoden → Umsetzung** (Primärquellen: `docs/CHANGELOG.md`
   VERSION-CHECK-605 und Eintrag „Primärquellen + Value“ 2026-10-17):
 
