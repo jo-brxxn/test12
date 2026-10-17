@@ -20181,3 +20181,54 @@ die Folgeentwicklung vorhersagen?
 - `check/niveau.js` zählt jetzt 53 Zeilen.
 - ALT-Zeilen müssen fehlen; JPY/NZD-Pfad muss vorhanden sein.
 - Die Gegenprobe meldet 33 Befunde.
+
+## 2026-10-17 — VERSION-CHECK-608 · Score-Modell 25: Archiv-Backtest für Wages, PMI, Rate Path
+
+**Anlass:**
+- Hook-Feedback: Drei Zeilen (Wages, PMI, Rate Path) waren nach Modell 24 ungetestet.
+- Bei Modell 24 hieß es „nicht backtestbar“. Die Suche nach einer anderen Quelle fehlte.
+
+**Quelle:** `cal_hist/` (TradingView-Erstveröffentlichung ab 2016-09) plus `historyFull`.
+- **Wages (7/8):**
+
+  | Währung | Reihe |
+  |---|---|
+  | USD | AHE YoY |
+  | EUR | Wage Growth |
+  | GBP | Avg Earnings incl. Bonus |
+  | JPY | Cash Earnings |
+  | CAD | Hourly Wages |
+  | AUD | WPI |
+  | NZD | LCI |
+
+  *CHF fehlt.*
+- **2Y-Rendite:** Auktionsrenditen für USD (2-Year Note), EUR (Schatz), CAD (ab 2021) und JPY (ab 2022). NZD nur als 1Y-Bill-Variante.
+  - *GBP/AUD/CHF:* keine 2Y-Auktion im Archiv.
+  - *FRED:* in der Session gesperrt.
+  - *Yahoo:* 2Y nur als Future (backfill-ohlc.yml).
+- **PMI:** frei verfügbar sind nur ISM (USD), procure.ch/SVME (CHF) und BusinessNZ (NZD).
+  - S&P Global/HCOB/Jibun stehen ohne Actual im Archiv (lizenziert).
+
+**Ergebnis** (`tools/niveau_backtest_archiv.py`):
+
+| Zeile | 1M | 3M | Treffer | Entscheidung |
+|---|---|---|---|---|
+| Rate Path vs Peers | IC/Monat **−0,154** (t −1,90) | **−0,308** (t −2,34) | 46–48 % | **raus** |
+| + NZD-Variante | −0,133 | **−0,324** (t −2,84) | 47 % | – |
+| PMI vs 50 | Pool-IC −0,013 | +0,013 | 47–49 % | **raus** |
+| Wages vs Normal | Pool-IC **+0,043** | **+0,069** | 53,5/54,6 % | bleibt |
+
+- **Rate Path:** Das Niveau der eingepreisten Erwartung ist schon im Kurs, wie es die Markteffizienz erwartet.
+  - Kurse bewegt die *Änderung* der Erwartung. Die misst schon „2Y Yield Gap (20d)“.
+  - Je Währung absolut liegt der IC bei +0,01 bis +0,14 (kein Querschnittsvorteil).
+- **Wages:** Top-minus-Bottom ist negativ (−0,17 %/Monat). Damit ist der Beleg schwach, aber Pool-IC und Treffer sind positiv. Die Zeile bleibt bei den bisherigen Stufen.
+- **Prüfung CAD:** Der Ivey-PMI (Ø 55–65) wäre gegen 50 verzerrt. Die App nutzt aber S&P Global (TE), nicht Ivey.
+
+**Code:**
+- `NIV` ohne `pmi`/`path`. `NIV_ALT` ergänzt, damit alte Zeilen gelöscht werden.
+- Toter Code für gdp/real/pmi/path in `nivWerte`/`nivVerlauf`/`nivRegelText` entfernt.
+- `fetchRateProbData` nicht mehr beim Start (war nur für den Pfad).
+
+**Wächter:** `check/niveau.js`
+- 37 Zeilen, alle vier Altzeilen müssen fehlen.
+- Gegenprobe rot.

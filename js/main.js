@@ -10112,13 +10112,10 @@ function applyZinsDiffFeed(){
 // Inflation die Waehrung), Labour Market Tightening (Arbeitslosigkeit gegen
 // den mittelfristigen Median), Excess Growth (BIP gegen den 5-10-Jahres-
 // Median), reale Zinsdifferenz.
-// Sechs Zeilen mit FESTEN Punkten (ind.pkt, wie COT/Trend/Rohstoffe):
+// Seit Modell 25 fuenf Zeilen mit FESTEN Punkten (Backtest unten; Trends ab Modell 23) (ind.pkt, wie COT/Trend/Rohstoffe):
 //   Inflation vs Target  (Inflation)       Ø Headline+Core y/y minus Ziel, pp
-//   Real Rate vs Peers   (Inflation)       Leitzins - Headline y/y, minus Ø der anderen 7
 //   Unemployment vs Normal (Labour Market) 10J-Median minus aktuell, robuster z
 //   Wages vs Normal      (Labour Market)   Lohnwachstum y/y gegen 10J-Median, robuster z
-//   Growth vs Trend      (Economic Growth) BIP-Wachstum gegen 10J-Median, robuster z
-//   PMI vs 50            (Economic Growth) Ø Manufacturing/Services minus 50
 // Nur echte Reihen (ind_data.json); fehlt eine, ist zu kurz (< 5 Jahre) oder
 // zu alt (> 2,5 eigene Zyklen), gibt es KEINE Zeile (Regel 4, keine Geister).
 // Die Ziele sind die offiziellen Vorgaben (keine Schaetzung): Spannen ->
@@ -10129,24 +10126,24 @@ const NIV={
   infl:{name:'Inflation vs Target',rub:'Inflation',stufen:[[2,1],[1,0.75],[0.5,0.5]],einh:'pp'},
   lab:{name:'Unemployment vs Normal',rub:'Labour Market',stufen:[[1.5,1],[1,0.75],[0.5,0.5]],einh:'z'},
   wage:{name:'Wages vs Normal',rub:'Labour Market',stufen:[[1.5,0.75],[0.75,0.5]],einh:'z'},
-  pmi:{name:'PMI vs 50',rub:'Economic Growth',stufen:[[4,0.75],[1.5,0.5]],einh:'pts'},
-  // Modell 23 (2026-10-16, Hook "bis es perfekt ist"): Richtung + Markterwartung.
+  // Modell 23 (2026-10-16, Hook "bis es perfekt ist"): Richtung.
   //   Inflation Trend (3M): Headline y/y heute minus vor ~3 Monaten - waechst der Abstand?
   //   Unemployment Trend (3M): Ø 3 Monate heute minus Ø 3 Monate davor (steigend = bearish, Sahm-Logik)
-  //   Rate Path vs Peers: vom Markt eingepreiste Leitzins-Aenderung bis zur letzten gelisteten
-  //   Sitzung (rate_probabilities.json) - ING: "markets trade on where the rate gap is expected
-  //   to be". NICHT die Aenderung dieser Erwartung - die misst schon "2Y Yield Gap (20d)".
   inflT:{name:'Inflation Trend (3M)',rub:'Inflation',stufen:[[0.7,0.5],[0.3,0.25]],einh:'pp'},
-  labT:{name:'Unemployment Trend (3M)',rub:'Labour Market',stufen:[[0.4,0.5],[0.2,0.25]],einh:'pp'},
-  path:{name:'Rate Path vs Peers',rub:'Inflation',stufen:[[60,0.75],[25,0.5]],einh:'bp'}
+  labT:{name:'Unemployment Trend (3M)',rub:'Labour Market',stufen:[[0.4,0.5],[0.2,0.25]],einh:'pp'}
 };
 // ⚠ BACKTEST (tools/niveau_backtest.py, 2018-2026, 8 Waehrungen, Korb-Rendite
 // 1/3 Monate, point-in-time): "Real Rate vs Peers" (Rang-IC -0,045) und
 // "Growth vs Trend" (-0,016 / -0,032) sagten das GEGENTEIL voraus - beide seit
 // Modell 24 raus. Der Block ohne sie: IC +0,072/+0,017 (1M, beide Haelften),
 // +0,069/+0,048 (3M). Alte Zeilen werden entfernt (keine Geisterzeilen).
-const NIV_ALT=['Real Rate vs Peers','Growth vs Trend'];
-const NIV_FENSTER_J=10,NIV_MIN_J=5,NIV_PMI_MAX_ALTER=45;
+// Modell 25 (tools/niveau_backtest_archiv.py, Reihen aus cal_hist/): "Rate
+// Path vs Peers" (2Y minus Leitzins, USD/EUR/CAD/JPY) sagte das GEGENTEIL
+// voraus - IC je Monat -0,154 (1M) / -0,308 (3M, t -2,34): das Niveau der
+// Erwartung ist schon im Kurs, es bewegt nur deren Aenderung (= "2Y Yield
+// Gap (20d)"). "PMI vs 50" ohne Effekt (IC +-0,03, Treffer < 50 %). Beide raus.
+const NIV_ALT=['Real Rate vs Peers','Growth vs Trend','PMI vs 50','Rate Path vs Peers'];
+const NIV_FENSTER_J=10,NIV_MIN_J=5;
 const NIV_NAMEN=Object.values(NIV).map(d=>d.name).concat(NIV_ALT);
 const nivTag=d=>Date.parse(String(d).slice(0,10)+'T00:00:00Z');
 function nivEintrag(ccy,base){
@@ -10213,7 +10210,7 @@ function nivWerte(ccy){
     const wert=inf.reduce((a,x)=>a+x.wert,0)/inf.length,gap=wert-INFL_ZIEL[ccy];
     o.infl={x:gap,act:nivFmtPp(gap),mass:inf.map(x=>x.lbl+' '+x.wert.toFixed(1)+'%').join(' · ')+' vs target '+INFL_ZIEL_TXT[ccy],stand:inf.map(x=>x.datum).sort().pop()};
   }
-  // 2) Unemployment / 3) Wages / 4) GDP - robuster z gegen 10 Jahre
+  // 2) Unemployment / 3) Wages - robuster z gegen 10 Jahre
   const u=nivEintrag(ccy,'Unemployment Rate'),ur=nivReihe(u);
   if(ur.length&&nivFrisch(ur,heuteMs)){const z=nivRobust(ur,heuteMs,92);
     if(z)o.lab={x:-z.z,act:nivFmtZ(-z.z),mass:`${z.jetzt.toFixed(1)}% vs 10y median ${z.med.toFixed(1)}%`,stand:z.stand};}
@@ -10221,15 +10218,7 @@ function nivWerte(ccy){
   const wYoY=w&&(String(w.period||'').toLowerCase()==='y/y'||/yoy|3mo\/yr|y\/y/i.test(String(w.event||'')));
   if(wYoY&&wr.length&&nivFrisch(wr,heuteMs)){const z=nivRobust(wr,heuteMs,92);
     if(z)o.wage={x:z.z,act:nivFmtZ(z.z),mass:`${z.jetzt.toFixed(1)}% vs 10y median ${z.med.toFixed(1)}%`,stand:z.stand};}
-  const g=nivEintrag(ccy,'GDP Growth QoQ'),gr=nivReihe(g);
-  if(gr.length&&nivFrisch(gr,heuteMs)){const z=nivRobust(gr,heuteMs,100);
-    if(z)o.gdp={x:z.z,act:nivFmtZ(z.z),mass:`${z.jetzt.toFixed(2)}% q/q vs 10y median ${z.med.toFixed(2)}%`,stand:z.stand};}
-  // 5) PMI gegen 50 (Definition der Schwelle Expansion/Kontraktion)
-  const pmi=[['Manufacturing PMI','Mfg'],['Services PMI','Svc']].map(([b,l])=>{const e=nivEintrag(ccy,b),v=e&&parseNumLike(e.actual);
-    return e&&v!=null&&e.date&&(heuteMs-nivTag(e.date))/864e5<=NIV_PMI_MAX_ALTER?{l,v,d:String(e.date).slice(0,10)}:null;}).filter(Boolean);
-  if(pmi.length){const m=pmi.reduce((a,x)=>a+x.v,0)/pmi.length,gap=m-50;
-    o.pmi={x:gap,act:(gap>0?'+':'')+gap.toFixed(1),mass:pmi.map(x=>x.l+' '+x.v.toFixed(1)).join(' · ')+' vs 50',stand:pmi.map(x=>x.d).sort().pop()};}
-  // 6) Inflation Trend (3M): Headline y/y (USD: PCE) jetzt minus der letzte Wert
+  // 4) Inflation Trend (3M): Headline y/y (USD: PCE) jetzt minus der letzte Wert
   //    mindestens 80 Tage davor (monatlich = 3 Releases, quartalsweise = 1).
   const ib=ccy==='USD'?'PCE':'CPI (Headline)',ie=nivEintrag(ccy,ib),ir=nivReihe(ie);
   if(ir.length>=4&&nivFrisch(ir,heuteMs)){
@@ -10237,35 +10226,22 @@ function nivWerte(ccy){
     if(vor&&nivTag(d1)-nivTag(vor[0])<=200*864e5){const dx=v1-vor[1];
       o.inflT={x:dx,act:nivFmtPp(dx),mass:`${ccy==='USD'?'PCE':'CPI'} ${v1.toFixed(1)}% now vs ${vor[1].toFixed(1)}% on ${vor[0]}`,stand:d1};}
   }
-  // 7) Unemployment Trend (3M): Ø der Werte der letzten 92 Tage minus Ø der 92 Tage davor.
+  // 5) Unemployment Trend (3M): Ø der Werte der letzten 92 Tage minus Ø der 92 Tage davor.
   if(ur.length>=6&&nivFrisch(ur,heuteMs)){
     const l=nivTag(ur[ur.length-1][0]),a=ur.filter(([d])=>nivTag(d)>l-92*864e5).map(x=>x[1]),b=ur.filter(([d])=>nivTag(d)<=l-92*864e5&&nivTag(d)>l-184*864e5).map(x=>x[1]);
     if(a.length&&b.length){const ma=a.reduce((s,v)=>s+v,0)/a.length,mb=b.reduce((s,v)=>s+v,0)/b.length,dx=ma-mb;
       // steigend = bearish -> Vorzeichen fuer die Punkte umdrehen, ACT zeigt die echte Richtung
       o.labT={x:-dx,act:nivFmtPp(dx),mass:`unemployment ${ma.toFixed(2)}% (last 3 months) vs ${mb.toFixed(2)}% (3 months before)`,stand:ur[ur.length-1][0]};}
   }
-  // 8) Rate Path: 2Y-Rendite minus Leitzins - der Markt preist den mittleren
-  //    Leitzins der naechsten zwei Jahre in die 2Y-Rendite ein (alle 8 Waehrungen,
-  //    eine Methode; JPY/NZD haben keine OIS-Zinswahrscheinlichkeiten). Wo
-  //    rate_probabilities.json eine Bepreisung hat, steht sie nur zur Info dabei.
-  const bd=typeof BOND_DATA_FEED!=='undefined'&&BOND_DATA_FEED&&BOND_DATA_FEED[ccy],bs=bd&&bd['2Y Bond Yield']&&bd['2Y Bond Yield'].series;
-  const cbE=nivEintrag(ccy,'Central Bank Rate'),cbV=cbE&&parseNumLike(cbE.actual);
-  const b2=Array.isArray(bs)&&bs.length?bs[bs.length-1]:null,y2=b2&&parseFloat(b2[1]);
-  if(b2&&isFinite(y2)&&cbV!=null&&(heuteMs-nivTag(b2[0]))/864e5<=7){
-    const bp=Math.round((y2-cbV)*100);
-    const rp=typeof RATE_PROB_DATA!=='undefined'&&RATE_PROB_DATA&&RATE_PROB_DATA[ccy];
-    const ois=rp&&Array.isArray(rp.meetings)&&rp.meetings.length?` · OIS: ${(()=>{const x=rp.meetings.reduce((a,m)=>a+(+m.deltaBp||0),0);return(x>0?'+':'')+Math.round(x);})()} bp by ${rp.meetings[rp.meetings.length-1].label||''}`:'';
-    o.path={x:bp,act:(bp>0?'+':'')+bp+'bp',mass:`2Y ${y2.toFixed(2)}% − policy rate ${cbV.toFixed(2)}%${ois}`,stand:String(b2[0]).slice(0,10)};
-  }
   return o;
 }
 const _nivMemo={k:null,v:null};
 function nivAlle(){
-  const k=[typeof IND_DATA_FEED!=='undefined'?IND_DATA_FEED:null,todayStr(),typeof RATE_PROB_DATA!=='undefined'?RATE_PROB_DATA:null,typeof BOND_DATA_FEED!=='undefined'?BOND_DATA_FEED:null];
+  const k=[typeof IND_DATA_FEED!=='undefined'?IND_DATA_FEED:null,todayStr()];
   if(_nivMemo.k&&k.every((x,i)=>x===_nivMemo.k[i]))return _nivMemo.v;
   const v={};FX.forEach(c=>{try{v[c]=nivWerte(c);}catch(e){v[c]={};}});
   // ⚠ RELATIV fuer Waehrungen (gemessen 2026-10-16: Inflation ueber Ziel bei
-  // 6 von 8, PMI ueber 50 bei 7 von 8 - absolut waeren fast alle Waehrungen
+  // 6 von 8 - absolut waeren fast alle Waehrungen
   // "bullish", ohne dass eine gegen die andere gewinnt). Wie das Macrosynergy-
   // FX-Scorecard ("relative to the base currency area"): eigener Abstand
   // minus Durchschnitt der anderen sieben. Nicht-FX-Assets (Gold, Indizes,
@@ -10283,19 +10259,15 @@ function nivAlle(){
   return v;
 }
 function nivRegelText(t,ccy){
-  const st=NIV[t].stufen.slice().reverse().map(([ab,p])=>`${ab}${NIV[t].einh==='z'?'σ':NIV[t].einh==='pp'?'pp':NIV[t].einh==='bp'?' bp':''} → ±${p}`).join(', ');
+  const st=NIV[t].stufen.slice().reverse().map(([ab,p])=>`${ab}${NIV[t].einh==='z'?'σ':NIV[t].einh==='pp'?'pp':''} → ±${p}`).join(', ');
   const T={
     infl:`Average of headline and core inflation (year on year${ccy==='USD'?', PCE — the Fed targets PCE':''}) minus the central bank's target${ccy&&INFL_ZIEL_TXT[ccy]?' ('+INFL_ZIEL_TXT[ccy]+')':''}. Above target counts bullish: an inflation-targeting central bank has to lean against it (higher rates), which supports the currency. ${st}; less → 0.`,
-    real:`Real policy rate = policy rate minus headline inflation (y/y), compared with the average of the other seven currencies. A higher real rate than the peers attracts capital and counts bullish. ${st}; less → 0.`,
     lab:`Unemployment rate (average of the last 3 months) against its own median of the last ${NIV_FENSTER_J} years, in robust standard deviations (median absolute deviation, so 2020 does not distort it). Lower than normal = tight labour market = bullish. ${st}; less → 0.`,
     wage:`Wage growth (y/y, last 3 months) against its own ${NIV_FENSTER_J}-year median, in robust standard deviations. Faster than normal keeps inflation pressure and rates up = bullish. ${st}; less → 0.`,
-    gdp:`GDP growth (releases of the last ~3 months) against its own ${NIV_FENSTER_J}-year median, in robust standard deviations. Above trend = bullish. ${st}; less → 0.`,
-    pmi:`Average of the latest manufacturing and services PMI minus 50, the line between expansion and contraction. ${st} index points; less → 0. PMIs older than ${NIV_PMI_MAX_ALTER} days count 0.`,
     inflT:`Direction of inflation: the latest year-on-year rate${ccy==='USD'?' (PCE)':''} minus the rate about three months earlier. Accelerating inflation keeps the central bank under pressure = bullish; easing = bearish. ${st}; less → 0.`,
-    labT:`Direction of unemployment: average of the last three months minus the three months before. A rising rate is the classic early warning of a turning labour market and counts bearish (falling = bullish). ${st}; less → 0.`,
-    path:`Policy path the market has priced: 2-year yield minus the policy rate (the 2-year yield is the market's average expected policy rate over two years, same method for all eight currencies). Currencies trade on where the rate gap is expected to be, not where it is. More tightening priced than the peers = bullish. ${st}; less → 0. The CHANGE of this pricing is already scored by the 2Y yield gap row. Not backtestable yet (2-year yield history starts in 2026).`
+    labT:`Direction of unemployment: average of the last three months minus the three months before. A rising rate is the classic early warning of a turning labour market and counts bearish (falling = bullish). ${st}; less → 0.`
   };
-  const rel=t==='real'?'':' For the eight currencies the points come from the distance RELATIVE to the average of the other seven (a level every central bank shares moves no exchange rate); gold, indices and yields read the absolute level of their currency.';
+  const rel=' For the eight currencies the points come from the distance RELATIVE to the average of the other seven (a level every central bank shares moves no exchange rate); gold, indices and yields read the absolute level of their currency.';
   return T[t]+rel+' Fixed points: no ageing, no weighting factor. Missing, too short (< '+NIV_MIN_J+' years) or stale series → no row.';
 }
 function applyNiveauFeed(){
@@ -10353,21 +10325,11 @@ function nivVerlauf(t,ccy){
   const robust=(base,vz,aktTage)=>({pts:zig(base,(d,v,bis)=>{const z=nivRobust(bis,nivTag(d),aktTage);return z?[d,Math.round(vz*z.z*100)/100,null]:null;}),unit:'σ'});
   if(t==='lab')return robust('Unemployment Rate',-1,92);
   if(t==='wage')return robust('Avg Hourly Earnings',1,92);
-  if(t==='gdp')return robust('GDP Growth QoQ',1,100);
-  if(t==='pmi')return{pts:nivReihe(nivEintrag(ccy,'Manufacturing PMI')).map(([d,v])=>[d,Math.round((v-50)*10)/10,null]),unit:''};
   if(t==='inflT'){const r=nivReihe(nivEintrag(ccy,ccy==='USD'?'PCE':'CPI (Headline)'));
     return{pts:r.map(([d,v])=>{const vor=r.filter(([e])=>nivTag(e)<=nivTag(d)-80*864e5).pop();return vor&&nivTag(d)-nivTag(vor[0])<=200*864e5?[d,Math.round((v-vor[1])*100)/100,null]:null;}).filter(Boolean),unit:'pp'};}
   if(t==='labT'){const r=nivReihe(nivEintrag(ccy,'Unemployment Rate'));
     return{pts:r.map(([d])=>{const l=nivTag(d),a=r.filter(([e])=>nivTag(e)<=l&&nivTag(e)>l-92*864e5).map(x=>x[1]),b=r.filter(([e])=>nivTag(e)<=l-92*864e5&&nivTag(e)>l-184*864e5).map(x=>x[1]);
       return a.length&&b.length?[d,Math.round((a.reduce((s,v)=>s+v,0)/a.length-b.reduce((s,v)=>s+v,0)/b.length)*100)/100,null]:null;}).filter(Boolean),unit:'pp'};}
-  if(t==='path'){const bd=typeof BOND_DATA_FEED!=='undefined'&&BOND_DATA_FEED&&BOND_DATA_FEED[ccy],bs=bd&&bd['2Y Bond Yield']&&bd['2Y Bond Yield'].series,cb=nivReihe(nivEintrag(ccy,'Central Bank Rate'));
-    if(!Array.isArray(bs)||!cb.length)return null;let j=0;const out=[];
-    bs.forEach(b=>{const d=String(b[0]).slice(0,10),y=parseFloat(b[1]);if(!isFinite(y))return;while(j+1<cb.length&&cb[j+1][0]<=d)j++;if(cb[j][0]<=d)out.push([d,Math.round((y-cb[j][1])*100),null]);});
-    return{pts:out,unit:'bp'};}
-  if(t==='real'){const cb=nivReihe(nivEintrag(ccy,'Central Bank Rate')),inf=nivReihe(nivEintrag(ccy,'CPI (Headline)'));
-    if(!cb.length||!inf.length)return null;let j=0;const out=[];
-    inf.forEach(([d,v])=>{while(j+1<cb.length&&cb[j+1][0]<=d)j++;if(cb[j][0]<=d)out.push([d,Math.round((cb[j][1]-v)*100)/100,null]);});
-    return{pts:out,unit:'%'};}
   return null;
 }
 // ══ ROHSTOFFE FUER AUD/NZD/CAD (Nutzer 2026-09-24) ════════════════════
@@ -25389,9 +25351,6 @@ async function bootFetchScoreFeeds(){
     fetchCommodityData().then(()=>false),
     // Trend 4H (seit 2026-09-25) - angewandt mit applySeasRetailFeed.
     fetchTrendData().then(()=>false),
-    // Zinserwartungen (seit Modell 23 Score-Teil "Rate Path vs Peers") -
-    // angewandt mit applySeasRetailFeed -> applyNiveauFeed.
-    fetchRateProbData().then(()=>false),
     // Indikator-Historie fuer den Verlaufschart (nur Anzeige, kein Score).
     fetchTvEconData().then(()=>false),
     // Wie weit die lange Kurshistorie reicht (wenige Bytes; die Daten selbst

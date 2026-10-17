@@ -6,13 +6,12 @@
 // Hier UNABHAENGIG aus ind_data.json nachgerechnet und gegen die Zeilen der
 // acht Waehrungen gehalten:
 //   A) Inflation vs Target: Ø Headline+Core y/y (USD: PCE) minus offizielles Ziel;
-//   B) Real Rate vs Peers: Leitzins - Headline y/y, minus Ø der anderen sieben;
-//   C) Unemployment / Wages / Growth: robuster z gegen den 10-Jahres-Median
+//   C) Unemployment / Wages: robuster z gegen den 10-Jahres-Median
 //      (Median-Abweichung x 1,4826), Arbeitslosigkeit mit umgedrehtem Vorzeichen;
-//   D) PMI vs 50: Ø Manufacturing/Services minus 50 (hoechstens 45 Tage alt);
 //   E) Waehrungen RELATIV zum Ø der anderen sieben, Stufen laut NIV;
 //   F) Nicht-FX (S&P 500 ↔ USD, inverse) liest das ABSOLUTE Niveau;
-//   G) Inflation Trend / Unemployment Trend (3M), H) Rate Path vs Peers (Modell 23).
+//   G) Inflation Trend / Unemployment Trend (3M) (Modell 23);
+//   I) seit Modell 24/25 entfernte Zeilen (Real Rate, Growth, PMI, Rate Path) stehen nirgends.
 //   node check/niveau.js [--gegenprobe]   (Waehrungen absolut statt relativ)
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
@@ -22,12 +21,11 @@ const { wartenBisDatenDa } = require('./warten.js');
 const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 const IND = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'ind_data.json'), 'utf8'));
-const BOND = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'bond_data.json'), 'utf8'));
-const ALT = ['Real Rate vs Peers', 'Growth vs Trend'];
+const ALT = ['Real Rate vs Peers', 'Growth vs Trend', 'PMI vs 50', 'Rate Path vs Peers'];
 const FX = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'NZD'];
 const ZIEL = { USD: 2, EUR: 2, GBP: 2, JPY: 2, CHF: 1, CAD: 2, AUD: 2.5, NZD: 2 };
-const STUFEN = { inflT: [[0.7, 0.5], [0.3, 0.25]], labT: [[0.4, 0.5], [0.2, 0.25]], path: [[60, 0.75], [25, 0.5]], infl: [[2, 1], [1, 0.75], [0.5, 0.5]], lab: [[1.5, 1], [1, 0.75], [0.5, 0.5]], wage: [[1.5, 0.75], [0.75, 0.5]], pmi: [[4, 0.75], [1.5, 0.5]] };
-const NAME = { inflT: 'Inflation Trend (3M)', labT: 'Unemployment Trend (3M)', path: 'Rate Path vs Peers', infl: 'Inflation vs Target', lab: 'Unemployment vs Normal', wage: 'Wages vs Normal', pmi: 'PMI vs 50' };
+const STUFEN = { inflT: [[0.7, 0.5], [0.3, 0.25]], labT: [[0.4, 0.5], [0.2, 0.25]], infl: [[2, 1], [1, 0.75], [0.5, 0.5]], lab: [[1.5, 1], [1, 0.75], [0.5, 0.5]], wage: [[1.5, 0.75], [0.75, 0.5]] };
+const NAME = { inflT: 'Inflation Trend (3M)', labT: 'Unemployment Trend (3M)', infl: 'Inflation vs Target', lab: 'Unemployment vs Normal', wage: 'Wages vs Normal' };
 const zahl = s => { const m = String(s == null ? '' : s).match(/-?\d[\d.,]*/); return m ? parseFloat(m[0].replace(/,/g, '')) : null; };
 const tag = d => Date.parse(String(d).slice(0, 10) + 'T00:00:00Z');
 const med = a => { const s = a.slice().sort((x, y) => x - y), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
@@ -62,21 +60,16 @@ function inflation(c, heute, nurHead) {
     const u = reihe(I['Unemployment Rate']); if (u.length && frisch(u, heute)) { const z = robust(u, heute, 92); if (z != null) abs[c].lab = -z; }
     const we = I['Avg Hourly Earnings'], w = reihe(we);
     if (we && (String(we.period || '').toLowerCase() === 'y/y' || /yoy|3mo\/yr|y\/y/i.test(String(we.event || ''))) && w.length && frisch(w, heute)) { const z = robust(w, heute, 92); if (z != null) abs[c].wage = z; }
-    const pm = ['Manufacturing PMI', 'Services PMI'].map(x => I[x]).filter(e => e && zahl(e.actual) != null && e.date && (heute - tag(e.date)) / 864e5 <= 45).map(e => zahl(e.actual));
-    if (pm.length) abs[c].pmi = pm.reduce((a, v) => a + v, 0) / pm.length - 50;
     // G) Richtung: Inflation y/y jetzt minus >= 80 Tage davor; Arbeitslosigkeit Ø 3M minus Ø 3M davor
     const ir = reihe(I[c === 'USD' ? 'PCE' : 'CPI (Headline)']);
     if (ir.length >= 4 && frisch(ir, heute)) { const [d1, v1] = ir[ir.length - 1], vor = ir.filter(([d]) => tag(d) <= tag(d1) - 80 * 864e5).pop(); if (vor && tag(d1) - tag(vor[0]) <= 200 * 864e5) abs[c].inflT = v1 - vor[1]; }
     if (u.length >= 6 && frisch(u, heute)) { const l = tag(u[u.length - 1][0]), a = u.filter(([d]) => tag(d) > l - 92 * 864e5).map(x => x[1]), bb = u.filter(([d]) => tag(d) <= l - 92 * 864e5 && tag(d) > l - 184 * 864e5).map(x => x[1]);
       if (a.length && bb.length) abs[c].labT = -(a.reduce((s, v) => s + v, 0) / a.length - bb.reduce((s, v) => s + v, 0) / bb.length); }
-    // H) Rate Path: Summe der eingepreisten bp bis zur letzten gelisteten Sitzung
-    const bs = BOND[c] && BOND[c]['2Y Bond Yield'] && BOND[c]['2Y Bond Yield'].series, b2 = bs && bs[bs.length - 1], cbv = I['Central Bank Rate'] && zahl(I['Central Bank Rate'].actual);
-    if (b2 && cbv != null && isFinite(parseFloat(b2[1])) && (heute - tag(b2[0])) / 864e5 <= 7) abs[c].path = Math.round((parseFloat(b2[1]) - cbv) * 100);
   });
   const soll = {}; FX.forEach(c => { soll[c] = {}; Object.keys(NAME).forEach(t => { const x = abs[c][t]; if (x == null) return;
     const pe = FX.filter(o => o !== c && abs[o][t] != null).map(o => abs[o][t]); if (pe.length < 4) return;
     soll[c][t] = stufe(t, x - pe.reduce((a, v) => a + v, 0) / pe.length); }); });
-  // I) Seit Modell 24 nicht mehr gewertet (Backtest): diese Zeilen duerfen nirgends stehen.
+  // I) Seit Modell 24/25 nicht mehr gewertet (Backtest): diese Zeilen duerfen nirgends stehen.
   const alt = await p.evaluate(A => syms.flatMap(s => (s.rubrics || []).flatMap(r => (r.indicators || []).filter(i => A.includes(i.name)).map(i => s.id + ' ' + i.name))), ALT);
   if (alt.length) fail('ALTZEILE', alt.slice(0, 4).join(', '));
   const ist = await p.evaluate(N => { const o = {};
@@ -94,8 +87,7 @@ function inflation(c, heute, nurHead) {
   // F) S&P 500: Inflation-Karte invers zu USD, absolutes US-Niveau
   const spi = ist.SP500.infl;
   if (spi && abs.USD.infl != null && Math.abs(spi.pkt - (-stufe('infl', abs.USD.infl))) > 1e-9) fail('NICHT-FX', `S&P 500 Inflation vs Target ${spi.pkt} statt ${-stufe('infl', abs.USD.infl)} (US absolut, invers)`);
-  if (n < 45) fail('ABDECKUNG', `nur ${n} Niveau-Zeilen bei den acht Waehrungen (erwartet >= 45)`);
-  if (!['JPY', 'NZD'].every(c => ist[c].path)) fail('RATE PATH', 'JPY oder NZD ohne Zeile - 2Y minus Leitzins gibt es fuer alle acht');
+  if (n < 30) fail('ABDECKUNG', `nur ${n} Niveau-Zeilen bei den acht Waehrungen (erwartet >= 30)`);
   if (perr.length) fail('Seitenfehler', perr.slice(0, 3).join(' | '));
   await b.close();
   if (F.length) { console.log(`✗ niveau: ${F.length} Befund(e)\n  ` + F.slice(0, 20).join('\n  ')); process.exit(1); }

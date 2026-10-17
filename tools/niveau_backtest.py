@@ -193,6 +193,7 @@ def block_lauf(typen, von, bis, h):
     return f"IC {ic:+.3f} t {t:+.2f} Treffer {st.mean(hits)*100:.1f}% (n {len(hits)}) L/S {st.mean(ls)*100/h:+.3f}%/Mon"
 VARIANTEN = {'alle 8 (Modell 23)': ['infl','real','lab','wage','gdp','pmi','inflT','labT'],
              'ohne real+gdp':      ['infl','lab','wage','pmi','inflT','labT'],
+             'Modell 25':          ['infl','lab','wage','inflT','labT'],
              'nur Inflation':      ['infl','inflT']}
 H1, H2 = (date(2018,1,1), date(2022,5,31)), (date(2022,6,1), date(2026,12,31))
 print("\n== Block-Varianten, Stabilitaet ==")
