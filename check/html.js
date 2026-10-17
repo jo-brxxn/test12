@@ -78,7 +78,7 @@ const ERLAUBT = new Set(('id class style title href src alt type value name plac
   'tabindex role hidden open loading decoding integrity crossorigin sizes srcset defer async ' +
   'accept capture inputmode pattern required autofocus form list wrap download ping ' +
   'referrerpolicy enterkeyhint translate dir slot part is shape-rendering mask filter offset ' +
-  'stop-color stop-opacity gradientunits gradienttransform patternunits marker-end paint-order ' +
+  'stop-color stop-opacity gradientunits gradienttransform patternunits patterntransform marker-end paint-order ' +
   'version label scope headers start reversed muted controls playsinline poster preload allow ' +
   'sandbox frameborder scrolling size cellpadding cellspacing border align valign bgcolor ' +
   'maxheight minheight fill-opacity stroke-opacity fill-rule clip-rule mask-type ' +
