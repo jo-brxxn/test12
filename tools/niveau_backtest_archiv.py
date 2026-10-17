@@ -180,3 +180,54 @@ for v in zeitreihe('Pfad je Waehrung absolut', pfad_sig, ['USD','EUR','CAD','JPY
 print("\n== PMI vs 50 (nur USD/CHF/NZD frei verfuegbar) ==")
 for v in lauf('PMI Querschnitt (3 Waehr.)', pmi_sig, list(PMI), ST_PMI, 1).values(): print(v)
 for v in zeitreihe('PMI je Waehrung absolut', pmi_sig, list(PMI), ST_PMI).values(): print(v)
+
+# ── Economic Growth: Kandidaten fuer eine Niveau-Zeile (Modell 26-Pruefung) ──
+# Regel VOR dem Lauf festgelegt: aufgenommen wird nur, was in 1M UND 3M einen
+# positiven Pool-IC und eine Trefferquote > 50 % hat.
+VERTR = {c: reihe(ind(c, 'Consumer Confidence')) for c in FX}
+VERTR = {c: r for c, r in VERTR.items() if len(r) > 24}
+EH_TITEL = {'USD': ['Retail Sales YoY'], 'EUR': ['Retail Sales YoY'], 'GBP': ['Retail Sales YoY'], 'CHF': ['Retail Sales YoY'],
+  'JPY': ['Retail Sales YoY'], 'CAD': ['Retail Sales YoY'], 'NZD': ['Retail Sales YoY']}
+EH = {c: reihe(ind(c, 'Retail Sales') if c == 'CHF' else {}, archiv(c, t)) for c, t in EH_TITEL.items()}
+IP_TITEL = {'USD': ['Industrial Production YoY'], 'EUR': ['Industrial Production YoY'], 'GBP': ['Industrial Production YoY'],
+  'JPY': ['Industrial Production YoY Final', 'Industrial Production YoY Prel'], 'CHF': ['Industrial Production YoY']}
+IP = {c: reihe(archiv(c, t)) for c, t in IP_TITEL.items()}
+def trend(r, s, tage=92):
+    r = [x for x in r if x[0] <= s]
+    if len(r) < 6 or (s - r[-1][0]).days > 120: return None
+    l = r[-1][0]; a = [v for d, v in r if d > l - timedelta(days=tage)]; b = [v for d, v in r if l - timedelta(days=2*tage) < d <= l - timedelta(days=tage)]
+    return (sum(a)/len(a) - sum(b)/len(b)) if a and b else None
+ST_Z = [[1.5,.75],[.75,.5]]
+for c, r in VERTR.items(): print(f"  Vertrauen {c}: {len(r)} Werte ab {r[0][0]}")
+for c, r in EH.items(): print(f"  Einzelhandel y/y {c}: {len(r)} Werte ab {r[0][0] if r else '-'}")
+print("\n== Economic Growth: Kandidaten ==")
+KAND = [('Consumer Confidence vs Normal', lambda c, s: robust(VERTR[c], s, 92) if c in VERTR else None, list(VERTR), ST_Z),
+        ('Consumer Confidence Trend 3M', lambda c, s: trend(VERTR[c], s) if c in VERTR else None, list(VERTR), [[5,.5],[2,.25]]),
+        ('Retail Sales y/y vs Normal', lambda c, s: robust(EH[c], s, 92, 3) if c in EH else None, list(EH), ST_Z),
+        ('Industrial Prod. y/y vs Normal', lambda c, s: robust(IP[c], s, 92, 3) if c in IP else None, list(IP), ST_Z)]
+for name, fn, ws, stf in KAND:
+    for v in lauf(name, fn, ws, stf, 3).values(): print(v)
+
+# ── Wachstums-MOMENTUM nach Dahlquist/Hasseltoft (JFE 2020): Richtung statt Niveau ──
+# "Trend" = aktueller Wert minus Mittel der 12 Monate davor (Paper-Definition) bzw.
+# 3M-Aenderung (wie Inflation/Unemployment Trend der App). Gleiche Regel wie oben.
+def dh(r, s):
+    r = [x for x in r if x[0] <= s]
+    if len(r) < 8 or (s - r[-1][0]).days > 120: return None
+    l = r[-1][0]; vor = [v for d, v in r if l - timedelta(days=380) <= d < l - timedelta(days=20)]
+    return r[-1][1] - sum(vor)/len(vor) if len(vor) >= 3 else None
+def komb(*quellen):
+    def f(c, s):
+        w = [fn(c, s) for fn in quellen]; w = [x for x in w if x is not None]
+        return sum(w)/len(w) if w else None
+    return f
+eh_dh = lambda c, s: dh(EH[c], s) if c in EH else None
+ip_dh = lambda c, s: dh(IP[c], s) if c in IP else None
+eh_3m = lambda c, s: trend(EH[c], s) if c in EH else None
+ip_3m = lambda c, s: trend(IP[c], s) if c in IP else None
+ST_MOM = [[3,.5],[1,.25]]
+print("\n== Wachstums-Momentum (Dahlquist/Hasseltoft) ==")
+for name, fn, ws in [('Retail y/y Momentum (12M)', eh_dh, list(EH)), ('Retail y/y Trend 3M', eh_3m, list(EH)),
+                     ('Ind.Prod y/y Momentum (12M)', ip_dh, list(IP)), ('Ind.Prod y/y Trend 3M', ip_3m, list(IP)),
+                     ('Growth Momentum (Retail+IP)', komb(eh_dh, ip_dh), sorted(set(EH) | set(IP)))]:
+    for v in lauf(name, fn, ws, ST_MOM, 3).values(): print(v)

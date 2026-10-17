@@ -92,7 +92,7 @@ jobs:
             const priceDue = [];
             if (priceAlerts.length) {
               try {
-                const pdRes = await fetch('https://raw.githubusercontent.com/jo-brxxn/FX-final/main/price_data.json');
+                const pdRes = await fetch('https://raw.githubusercontent.com/jo-brxxn/test12/main/price_data.json');
                 if (pdRes.ok) {
                   const PD = await pdRes.json();
                   // Letzter Kurs eines Eintrags, invert-Flag angewandt - das ist

@@ -510,9 +510,13 @@ const SK='fxpro_v1';
 // spaeter angehaengte eigene Domain faellt sonst still auf die relative,
 // dann veraltete Anfrage zurueck - mit der Whitelist bleibt sie im
 // sichereren "hole live von GitHub"-Zweig.
+// ⚠ Repo seit 2026-10-17 umbenannt FX-final -> test12 (FX-final existiert
+// nicht mehr). Direkt die neue Adresse statt der GitHub-Weiterleitung: die
+// haelt nur, solange niemand ein neues Repo "FX-final" anlegt - dann holte
+// die App fremde Daten.
 const DATA_BASE=(location.hostname==='jo-brxxn.github.io'||location.hostname==='localhost'||location.hostname==='127.0.0.1')
   ?''
-  :'https://raw.githubusercontent.com/jo-brxxn/FX-final/main/';
+  :'https://raw.githubusercontent.com/jo-brxxn/test12/main/';
 
 // ⚠ FRIST FUER JEDEN LIVE-FEED - gemessen, nicht gegriffen.
 // Bis 2026-09-14 stand hier fest 8000 an jeder einzelnen Abrufstelle. Das

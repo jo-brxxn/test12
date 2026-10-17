@@ -109,7 +109,12 @@ Adressen, nicht nur eine:
   (`fx-final.jonathan-fa5.workers.dev`), hinter Cloudflare Access — dort
   kommt zuerst eine E-Mail-Code-Abfrage, danach die App. Das ist die, die
   der Nutzer tatsaechlich benutzt/verlinkt.
-- **`jo-brxxn.github.io/FX-final/`** (GitHub Pages) ist ein zweiter,
+- ⚠ **Repo seit 2026-10-17 `jo-brxxn/test12`** (vorher `FX-final`, existiert
+  nicht mehr). `DATA_BASE` und `event-alerts.yml` lesen direkt von `test12`.
+  Pages-Mirror vermutlich unter `/test12/` – *nicht geprüft* (github.io in
+  der Session gesperrt). Cloudflare-Worker-Anbindung nach Umbenennung
+  *nicht geprüft*.
+- **`jo-brxxn.github.io/FX-final/`** (GitHub Pages, alter Name) war ein zweiter,
   UNGESCHUETZTER Mirror, der automatisch und garantiert direkt aus `main`
   ausgeliefert wird — ohne Build-Schritt, jeder Push ist sofort live.
 - Wie/ob der Cloudflare Worker selbst bei einem `main`-Push automatisch

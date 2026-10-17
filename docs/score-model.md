@@ -101,6 +101,29 @@ fünf Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
     BusinessNZ frei; S&P-Global-PMIs ohne Actual im Archiv).
   - **Wages vs Normal** bleibt: 7 von 8 Währungen, Pool-IC **+0,043**
     (1M) / **+0,069** (3M), Treffer 53,5/54,6 %.
+- **Economic Growth ohne Niveau-Zeile – belegt (2026-10-17):** neun
+  Kandidaten aus `cal_hist/` getestet, Regel *vor* dem Lauf: Pool-IC 1M
+  und 3M > 0 und Treffer > 50 %.
+  - Durchgefallen: Consumer Confidence Niveau (Treffer 49,8 %) und Trend,
+    Industrieproduktion Niveau, Retail-Momentum (3M IC −0,093/−0,134),
+    Growth-Momentum-Kombi.
+  - Retail Sales y/y Niveau: einzeln knapp bestanden, macht den Block aber
+    **instabil** (2022–26: IC −0,014/−0,023) → raus.
+  - IP-Momentum (12M): knapp bestanden, aber 1 von 9 = Zufallsniveau,
+    5 Währungen, kein Live-Feed → raus.
+- **Smart-Money-Methoden → Umsetzung** (Quellen: `docs/CHANGELOG.md`
+  VERSION-CHECK-605 und -609):
+
+  | Methode (wer) | Im Score | Status |
+  |---|---|---|
+  | Surprise-Index (Citi CESI) | Actual vs Forecast | kurzer Horizont |
+  | Excess Inflation (Macrosynergy, 10 DM seit 2000) | Inflation vs Target | **IC +0,071** |
+  | Economic Momentum (Dahlquist/Hasseltoft, JFE 2020) | Inflation/Unemployment Trend 3M | **IC +0,058 / +0,054 (3M)** |
+  | Labour Tightening (Macrosynergy) | Unemployment vs Normal, Wages | IC +0,017 / +0,043 |
+  | Zinserwartung (Bank-FX-Research) | 2Y Yield Gap (20d) = *Änderung* | Niveau getestet: **negativ** → nur Änderung |
+  | Carry/Real Rate | Carry-Zeilen; Real Rate vs Peers | Real Rate **negativ** → raus |
+  | Positionierung (CFTC) | COT | bestehend |
+  | Value/Momentum (AQR, Asness et al. 2013) | Trend-Treiber (Preis-Momentum) | bestehend; Value (PPP/GSDEER-Typ) *fehlt* – keine freie Quelle |
 - **Beleg schwach:** kein positiver t-Wert ≥ 2 – Block ist Ergänzung zum mittleren
   Horizont, kein eigenständiges Signal. Neue Niveau-Zeile nur mit
   Backtest-Lauf.

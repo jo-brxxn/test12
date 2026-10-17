@@ -27,6 +27,15 @@ def num(x):
     import re
     m = re.search(r'-?\d[\d.,]*', str(x or ''))
     return float(m.group(0).replace(',','')) if m else None
+# Einzelhandel y/y aus dem Kalender-Archiv (cal_hist/, Modell 26) - ind_data fuehrt meist nur m/m.
+_EV = []
+for _y in json.load(open(R+'cal_hist/meta.json'))['jahre']: _EV += json.load(open(R+f'cal_hist/{_y}.json'))['ev']
+def eh_reihe(c):
+    out = {}
+    for r in _EV:
+        if r[1] == c and r[2] == 'Retail Sales YoY' and num(r[4]) is not None: out[r[0][:10]] = num(r[4])
+    return sorted((D(k), v) for k, v in out.items())
+EH = {c: eh_reihe(c) for c in FX}
 def reihe(c, b):
     e = IND.get(c, {}).get(b); out = {}
     for h in (e or {}).get('historyFull') or []:
@@ -81,6 +90,9 @@ def signale(c, stich):
         if z is not None: o['wage'] = z
     z = robust(reihe(c,'GDP Growth QoQ'), stich, 100)
     if z is not None: o['gdp'] = z
+    if len(EH[c]) > 24:
+        z = robust(EH[c], stich, 92)
+        if z is not None: o['retail'] = z
     pm = letzter(reihe(c,'Manufacturing PMI'), stich, 45)
     if pm: o['pmi'] = pm[1] - 50
     cb = letzter(reihe(c,'Central Bank Rate'), stich, 400); hi = letzter(reihe(c,'CPI (Headline)'), stich, 120)
@@ -95,7 +107,7 @@ def signale(c, stich):
         if a and b: o['labT'] = -(sum(a)/len(a) - sum(b)/len(b))
     return o
 STUFEN = {'infl':[[2,1],[1,.75],[.5,.5]],'real':[[1.5,.75],[.75,.5]],'lab':[[1.5,1],[1,.75],[.5,.5]],'wage':[[1.5,.75],[.75,.5]],
-          'gdp':[[1,.75],[.5,.5]],'pmi':[[4,.75],[1.5,.5]],'inflT':[[.7,.5],[.3,.25]],'labT':[[.4,.5],[.2,.25]]}
+          'gdp':[[1,.75],[.5,.5]],'pmi':[[4,.75],[1.5,.5]],'inflT':[[.7,.5],[.3,.25]],'labT':[[.4,.5],[.2,.25]],'retail':[[1.5,.75],[.75,.5]]}
 def stufe(t, x):
     x = round(x, 3)
     for ab, p in STUFEN[t]:
@@ -116,7 +128,7 @@ def monatsenden(a, b):
     return out
 ende = max(D(r[0]) for r in PD['EUR']['series'])
 stichtage = [d for d in monatsenden(date(2018,1,1), ende)]
-TYP = ['infl','real','lab','wage','gdp','pmi','inflT','labT','BLOCK']
+TYP = ['infl','real','lab','wage','gdp','pmi','inflT','labT','retail','BLOCK']
 res = {h: {t: {'ic':[], 'hit':[], 'ls':[]} for t in TYP} for h in (1,3)}
 for s in stichtage:
     sig = {c: signale(c, s) for c in FX}
@@ -194,6 +206,7 @@ def block_lauf(typen, von, bis, h):
 VARIANTEN = {'alle 8 (Modell 23)': ['infl','real','lab','wage','gdp','pmi','inflT','labT'],
              'ohne real+gdp':      ['infl','lab','wage','pmi','inflT','labT'],
              'Modell 25':          ['infl','lab','wage','inflT','labT'],
+             'Modell 25 + retail': ['infl','lab','wage','inflT','labT','retail'],
              'nur Inflation':      ['infl','inflT']}
 H1, H2 = (date(2018,1,1), date(2022,5,31)), (date(2022,6,1), date(2026,12,31))
 print("\n== Block-Varianten, Stabilitaet ==")

@@ -20232,3 +20232,48 @@ die Folgeentwicklung vorhersagen?
 **Wächter:** `check/niveau.js`
 - 37 Zeilen, alle vier Altzeilen müssen fehlen.
 - Gegenprobe rot.
+
+## 2026-10-17 — VERSION-CHECK-609 · Economic-Growth-Kandidaten, Recherche-Beleg, Repo-Adresse
+
+**Anlass:** Das Hook-Feedback nannte drei offene Punkte: die Lücke bei Economic Growth, keinen eigenen Beleg für die Recherche und den Repo-Namen.
+
+**Recherche (Quellen geprüft):**
+- **Dahlquist/Hasseltoft:** *Economic Momentum and Currency Returns*, JFE 136 (2020) 152–167, DOI 10.1016/j.jfineco.2019.09.002 ([HHS](https://www.hhs.se/en/houseoffinance/outreach/news--press/news/2019/macro-fundamentals-predict-currency-returns), [Alpha Architect](https://alphaarchitect.com/fundamental-momentum-the-carry-trade-and-currency-returns/)).
+  - **Trends** in Industrieproduktion, Einzelhandel, Arbeitslosigkeit, CPI und PPI sagen FX-Renditen voraus.
+  - Long/Short Sharpe **0,70**, Alpha über Carry/Momentum/Value hinaus.
+  - Daten 1976–2017, 21 Industrieländer.
+  - *Replikation mit GBP als Basis (BI 2022): Sharpe 0,24, nicht signifikant.*
+- **Macrosynergy:**
+  - [Excess Inflation](https://macrosynergy.com/?p=43872): direktionales *und* relatives FX-Signal, 10 DM seit 2000.
+  - Arbeitsmarkt über 3M/3M-, 6M/6M- und y/y-Änderungen der Arbeitslosigkeit.
+  - [Scorecards](https://macrosynergy.com/academy/macro-quantamental-scorecards).
+- **Asness/Moskowitz/Pedersen:** *Value and Momentum Everywhere*, JF 2013 ([PDF](https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf)). Value und Momentum gibt es auch bei Währungen.
+- **Bank-Fair-Value:** Goldman GSDEER/GSFEER ([Notiz](https://www.hellenicshippingnews.com/g10-fx-valuation-round-up/)), DBS DEER mit Inflations-, Produktivitäts- und Terms-of-Trade-Differenzen ([DBS](https://www.dbs.com.sg/corporate/research-and-insights/insights/macro-analytics/DEER/deer.html)).
+  - *„Exchange rates can trade far from fair value for extended periods“*: Value ist ein langer Horizont.
+  - Keine freie Quelle für point-in-time-Inputs, daher nicht umgesetzt.
+
+**Economic Growth: 9 Kandidaten** (`tools/niveau_backtest_archiv.py`, Regel vor dem Lauf: Pool-IC 1M und 3M > 0, Treffer > 50 %):
+
+| Kandidat | Pool-IC 1M / 3M | Treffer 1M / 3M | Ergebnis |
+|---|---|---|---|
+| Consumer Confidence vs Normal | +0,036 / +0,080 | 49,8 / 54,0 % | durchgefallen |
+| Consumer Confidence Trend 3M | +0,069 / +0,056 | 55,9 / 49,4 % | durchgefallen |
+| Retail Sales y/y vs Normal | +0,025 / +0,038 | 50,5 / 51,4 % | bestanden → Block-Test |
+| Industrial Prod. y/y vs Normal | −0,031 / −0,042 | 47,6 / 51,5 % | durchgefallen |
+| Retail Momentum (12M, D/H) | +0,003 / −0,093 | 51,2 / 45,7 % | durchgefallen |
+| Retail Trend 3M | −0,037 / −0,134 | 47,1 / 42,7 % | durchgefallen |
+| IP Momentum (12M, D/H) | +0,021 / +0,086 | 50,1 / 53,6 % | knapp bestanden |
+| IP Trend 3M | −0,001 / +0,006 | 47,8 / 51,7 % | durchgefallen |
+| Growth Momentum (Retail+IP) | +0,019 / −0,055 | 50,1 / 47,2 % | durchgefallen |
+
+- **Retail im Block** (`tools/niveau_backtest.py`, „Modell 25 + retail“):
+  - 2018–22: IC +0,099 (t 2,23).
+  - 2022–26: **−0,014 / −0,023**, Treffer 46–49 %.
+  - Instabil → **nicht aufgenommen**.
+- **IP-Momentum:** 1 Treffer von 9 Tests entspricht dem Zufallsniveau. Dazu nur 5 Währungen und kein Live-Feed → **nicht aufgenommen**.
+- **Schluss:** Bei 10 Jahren und 8 Währungen trägt kein Wachstumsniveau. Das passt zu D/H: Ihr Effekt braucht 40 Jahre und 21 Länder.
+
+**Repo-Adresse:**
+- `list_repos`: `jo-brxxn/FX-final` existiert nicht mehr, nur noch `jo-brxxn/test12`.
+- `DATA_BASE` (`js/main.js`) und `event-alerts.yml` lesen jetzt direkt von `test12`. Geprüft: manifest, price_data und ind_data liefern 200, mit `access-control-allow-origin: *`.
+- *Nicht geprüft*, weil github.io in der Session gesperrt ist: der Pages-Mirror unter dem neuen Pfad und die Cloudflare-Worker-Anbindung.
