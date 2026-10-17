@@ -108,8 +108,8 @@ const init = () => { try { localStorage.setItem('fxpro_help_seen', '1'); localSt
    const c=carry(pn),ca=SC.pairCarryAdj(pn);if(Math.abs(c-ca)>0.001)F.push(`CARRY ${pn}: mine ${c} app ${ca}`);
    const mine=Math.round((cmpMine[bs]-cmpMine[qs]+c)*10)/10,app=SC.pairScore(pn);if(Math.abs(mine-app)>0.001)F.push(`PAIR ${pn}: mine ${mine} app ${app}`)});
  // Staerke 1-10
- const scoreHist=g('scoreHist');const tag=SC.SCORE_MODEL_VERSION+':normalized';let nStr=0;
- syms.forEach(s=>{const past=(scoreHist[s.id]||[]).filter(e=>Array.isArray(e)&&e[0]!==today&&typeof e[1]==='number'&&e[6]===tag).map(e=>e[1]);
+ const scoreHist=g('scoreHist');const tags=new Set([SC.SCORE_MODEL_VERSION+':normalized']);let nStr=0;
+ syms.forEach(s=>{const past=(scoreHist[s.id]||[]).filter(e=>Array.isArray(e)&&e[0]!==today&&typeof e[1]==='number'&&tags.has(e[6])).map(e=>e[1]);
    let mine=null;if(past.length>=10){const m=past.reduce((a,b)=>a+b,0)/past.length;const sd=Math.sqrt(past.reduce((a,b)=>a+(b-m)**2,0)/past.length);
      if(sd>=1e-6){const z=Math.round((cmpMine[s.id]-m)/sd*100)/100;const B=[-1.5,-1.0,-0.6,-0.2,0.2,0.6,1.0,1.5,2.0];mine=1;B.forEach((x,i)=>{if(z>=x)mine=i+2})}}
    const app=SC.symStrength10(s);nStr++;if(mine!==app)F.push(`STAERKE ${s.id}: mine ${mine} app ${app} (n ${past.length})`)});

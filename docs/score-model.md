@@ -566,8 +566,7 @@ Abschnitt E2 (stellt den Feed-Ausfall an Kopien echter Indikatoren nach).
 rundet den Vergleichsfaktor auf 4 statt 2 Stellen. Vorher Doppelrundung
 (Faktor 2 Stellen, Ergebnis 1 Stelle): unabhängig nachgerechnet lagen
 GBYIELD 5,0 statt 5,1, CAYIELD −2,2 statt −2,3, AUYIELD −5,8 statt −5,9.
-Alle übrigen 20 Assets und alle Paare unverändert. Die Stärke-Note baut sich
-dadurch neu auf (`–/10`, 10 Tage).
+Alle übrigen 20 Assets und alle Paare unverändert.
 
 ## Wo der Paar-Score gezeigt wird: IMMER `pairScore()` (mit Carry)
 

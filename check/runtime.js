@@ -30,10 +30,17 @@ const { chromium } = require(PW);
   await page.evaluate(() => { ['introOv','lockScreen'].forEach(id => { const e = document.getElementById(id); if (e) e.remove(); }); });
   await page.waitForTimeout(800);
   // dismiss any auto-opened modal
-  await page.evaluate(() => { if (typeof closeM === 'function') { document.querySelectorAll('.mov,.mov2').forEach(m => { if (m.id) try { closeM(m.id); } catch(e){} }); } });
+  // Fenster sind .ov (openM/closeM) - '.mov' gibt es nicht mehr.
+  const fensterZu = () => page.evaluate(() => { document.querySelectorAll('.ov').forEach(m => { if (m.id && getComputedStyle(m).display !== 'none') try { closeM(m.id); } catch(e){ m.style.display = 'none'; } }); });
+  await fensterZu();
   await page.waitForTimeout(200);
 
-  const TABS = ['dash','fx','matrix','cot','trends','sent','seas','data','rate','compare','watch','notes','cal','research','setups'];
+  // ⚠ Bis 2026-10-16 stand hier eine feste Liste mit veralteten Namen
+  // ('matrix','compare','research','setups' gibt es nicht; 'over','mx',
+  // 'news','carry','pairs' fehlten) - der Waechter pruefte so nur einen Teil
+  // der App. Jetzt die echte Reihenfolge der App.
+  const TABS = await page.evaluate(() => TAB_ORDER.slice());
+  if (process.argv.includes('--gegenprobe')) await page.evaluate(() => { window.openCardInfo = undefined; });
 
   // ---- 1. every tab renders ----
   for (const t of TABS) {
@@ -44,37 +51,32 @@ const { chromium } = require(PW);
   tabErrs.forEach(e => rec('TAB', e));
 
   // ---- 2. click every button on every tab ----
+  // ⚠ Seit 2026-10-16 Knopf fuer Knopf, wiedergefunden ueber Signatur
+  // (onclick + Text) und Vorkommen, mit Rueckkehr zum Tab nach jedem Klick.
+  // Vorher klickte EINE Schleife alle Knoepfe: navigierte ein Klick weg,
+  // waren alle folgenden vom Dokument getrennt (offsetParent null) und wurden
+  // still uebersprungen - die Gegenprobe mit kaputtem openCardInfo blieb gruen.
+  const BOESE = 'del|remove|reset|clear|logout|import|wipe|purge|disconnect|unlink|forget|restore|reload|location|download|export|backup';
+  const SAMMLE = `((arg)=>{const re=new RegExp(arg.boese,'i');
+    const vis=e=>{const r=e.getBoundingClientRect();if(r.width<2||r.height<2)return false;for(let x=e;x;x=x.parentElement){const cs=getComputedStyle(x);if(cs.display==='none'||cs.visibility==='hidden')return false}return true};
+    const els=[...document.querySelectorAll('button[onclick],[role=button][onclick]')].filter(e=>!e.closest('.ov')&&vis(e));
+    const S=e=>(e.getAttribute('onclick')||'')+'|'+(e.textContent||e.title||'').trim().slice(0,40);
+    if(arg.sig){const e=els.filter(x=>S(x)===arg.sig)[arg.occ];if(!e)return false;try{e.click()}catch(x){console.error('CLICKTHROW '+x.message)}return true}
+    const cnt={};return els.map(e=>{const sg=S(e);cnt[sg]=cnt[sg]||0;return{sig:sg,occ:cnt[sg]++,bad:re.test(e.getAttribute('onclick')||'')}}).filter(k=>!k.bad)})`;
+  let geklickt = 0, nichtGefunden = 0;
   for (const t of TABS) {
-    await page.evaluate(tab => { try { showTab(tab); } catch(e){} }, t);
-    await page.waitForTimeout(250);
-    const clicked = await page.evaluate((tab) => {
-      const out = [];
-      const page_ = document.querySelector('.pc:not([style*="display: none"])') || document;
-      const btns = [...document.querySelectorAll('button[onclick], [role=button][onclick], select')];
-      for (const b of btns) {
-        if (!b.offsetParent) continue;                    // invisible
-        const oc = b.getAttribute('onclick') || '';
-        if (/del|remove|reset|clear|Del|Remove|logout|Import|import/i.test(oc)) continue; // destructive
-        // ⚠ LEHRE, die ueber die geloeschte zweite App hinaus gilt: diese
-        // Schleife klickt JEDEN sichtbaren Button. Bis 2026-09-19 lag hier
-        // "Settings -> Apps -> Switch" (switchToRezept), das index.html
-        // komplett verliess - jede spaetere page.evaluate() lief danach in
-        // der anderen App auf ("ReferenceError: syms is not defined"). Das
-        // war kein App-Fehler, sondern eine Grenze dieser Methode. Kommt je
-        // wieder ein Button dazu, der die Seite WECHSELT, gehoert er hier
-        // ausgenommen.
-        try {
-          if (b.tagName === 'SELECT') continue;
-          b.click();
-        } catch (e) { out.push(tab + ' [' + oc.slice(0,60) + '] ' + e.message); }
-      }
-      return out;
-    }, t);
-    clicked.forEach(e => rec('CLICK', e));
-    await page.waitForTimeout(300);
-    // close whatever opened
-    await page.evaluate(() => { document.querySelectorAll('.mov,.mov2').forEach(m => { m.style.display='none'; }); });
+    const hin = async () => { await fensterZu(); await page.evaluate(tab => { try { showTab(tab); } catch(e){} }, t); await page.waitForTimeout(200); };
+    await hin();
+    const ks = await page.evaluate(`${SAMMLE}(${JSON.stringify({ boese: BOESE })})`);
+    for (const k of ks) {
+      if (await page.evaluate(t => window.curPage !== t, t)) await hin();
+      const ok = await page.evaluate(`${SAMMLE}(${JSON.stringify({ boese: BOESE, sig: k.sig, occ: k.occ })})`);
+      if (ok) geklickt++; else nichtGefunden++;
+      await page.waitForTimeout(60);
+      await fensterZu();
+    }
   }
+  if (geklickt < 300) rec('CLICK', `nur ${geklickt} Knoepfe geklickt - Durchlauf unvollstaendig`);
 
   // ---- 3. score modals across all symbols/rubrics/pairs ----
   const modalErrs = await page.evaluate(() => {
@@ -145,6 +147,12 @@ const { chromium } = require(PW);
   });
   stateErrs.forEach(e => rec('STATE', e));
 
-  console.log(JSON.stringify({ total: errors.length, errors }, null, 2));
   await browser.close();
+  if (process.argv.includes('--gegenprobe')) {
+    const ok = errors.some(e => /openCardInfo/.test(e.msg));
+    console.log(ok ? `runtime --gegenprobe: ok (kaputtes openCardInfo gemeldet, ${errors.length} Befunde)` : 'runtime --gegenprobe: FEHLER - nicht gemeldet');
+    process.exit(ok ? 0 : 1);
+  }
+  console.log(JSON.stringify({ total: errors.length, tabs: TABS.length, geklickt, nichtGefunden, errors }, null, 2));
+  process.exit(errors.length ? 1 : 0);
 })();
