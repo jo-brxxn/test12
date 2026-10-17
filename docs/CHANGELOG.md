@@ -20365,3 +20365,30 @@ die Folgeentwicklung vorhersagen?
 - `SCORE_MODEL_VERSION` 26, `JR_MODELL_NOTIZ` 26.
 
 **Wächter:** `check/niveau.js` rechnet Consumer Confidence Trend unabhängig nach. 44 Zeilen, die Gegenprobe meldet 23 Befunde.
+
+## 2026-10-17 — VERSION-CHECK-611: Overview-Kugel ruht im Leerlauf
+
+**Befund (Prüfdurchgang Performance, gemessen auf 7b0b14f6):**
+
+| Messung | Arbeit je 5 s |
+|---|---|
+| Overview im Leerlauf | **1.120–1.330 ms** (~25 % Hauptthread) |
+| dieselbe Seite ohne Kugel | **22 ms** |
+
+- *Ursache:* Küste (~75.000 Zeichen Pfad) 30× je Sekunde neu gezeichnet. Bildtakt einwandfrei (16,7 ms, 0/180 zu spät) — es kostet nur Rechenzeit/Akku.
+
+**Verworfen (gemessen, Prototyp, gleiche Küstendaten, 30 Neuzeichnungen/s):**
+
+| Variante | dpr 1 | dpr 2 |
+|---|---|---|
+| SVG-Pfad (jetzt) | **430 ms** | **416 ms** |
+| Canvas | 2.140 ms | 4.136 ms |
+
+- Gröbere Küste (1,0 px): nur −13 %, sichtbar weniger fein.
+- Einzelteile weg (Rahmen, Marker, Flugzeug, Animationen): je −5 bis −20 %, im Rauschen.
+
+**Lösung:** `GLOBE_RUHE_MS` = 60 s ohne Eingabe → Drehung läuft aus, `.globe-ruht` pausiert die Endlos-Animationen. Eingabe (pointermove/-down, keydown, wheel, touchstart, scroll) → sofort weiter.
+- Gemessen: **1.206 → 125 ms je 5 s** (Fenster inkl. Auslaufen), Aufwachen sofort, 0 JS-Fehler.
+- Während der Bedienung unverändert (30 Neuzeichnungen/s).
+
+**Wächter:** `check/performance.js` H — ruht ohne Eingabe (0 Neuzeichnungen), wacht nach Mausbewegung auf. Gegenprobe `--gegenprobe-ruhe` → rot. G bewegt vorher die Maus, damit die Kugel nicht schon ruht.

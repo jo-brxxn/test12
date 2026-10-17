@@ -107,6 +107,12 @@ iPad-Prüfung steht beim Nutzer aus (Stand 2026-10-03).
   Einträge, deren Element nicht mehr im Dokument steht. Vorher +3,5 MB je 40
   Seitenwechsel, unbegrenzt. `check/performance.js` F. Neue Register dieser
   Art brauchen dasselbe (oder eine Obergrenze wie `HW_DET`/`JR_DET`).
+- **Kugel ruht im Leerlauf** (2026-10-17): nach `GLOBE_RUHE_MS` (60 s) ohne
+  Eingabe läuft die Drehung in ~2 s aus, Endlos-Animationen der Kugel
+  pausieren (`.globe-ruht`). Jede Maus-/Tipp-/Tasten-/Scroll-Eingabe weckt sie
+  sofort. Gemessen: Overview-Leerlauf **1.206 → 125 ms je 5 s** (inkl.
+  Auslaufen). Billiger ZEICHNEN ging nicht: Canvas gemessen **5–10× teurer**,
+  gröbere Küste nur −13 %. `check/performance.js` H.
 - **Merker statt Neurechnen** auch für `indCycleIsGuess` (Array-Identität
   von `chartHist`): Score-Kette beim Laden 366 → 210 ms.
 

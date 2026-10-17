@@ -144,6 +144,23 @@ let _globeRAF=null,_globeLon=GLOBE_HOME_LON,_globeLast=0,_globeHosts=[],_globeUi
 // 'decel' = nach dem Loslassen klingt der Schwung Richtung Normaltempo ab.
 const GLOBE_AUTO_VEL=0.004; // Grad/ms im Normalbetrieb
 let _globeMode='auto',_globeVel=GLOBE_AUTO_VEL,_globeDrag=null;
+// Ruhe im Leerlauf (2026-10-17, Pruefdurchgang Performance). GEMESSEN: die
+// Overview kostete im Leerlauf 1.120-1.330 ms Arbeit je 5 s (~25 % des
+// Hauptthreads), ohne Kugel 22 ms. Fast alles davon ist das Neuzeichnen der
+// Kueste 30-mal pro Sekunde. Billiger zeichnen ging nicht ohne sichtbaren
+// Verlust (Canvas gemessen 5-10x TEURER, grobere Kueste nur -13 %). Deshalb:
+// nach GLOBE_RUHE_MS ohne jede Eingabe laeuft die Drehung sanft aus und die
+// Kugel ruht (Animationen pausiert); jede Maus-, Tipp-, Tasten- oder
+// Scroll-Eingabe startet sie sofort wieder. Solange jemand die Seite bedient,
+// sieht die Kugel exakt aus wie vorher.
+// window.__gpGlobusRuheMs: nur fuer check/performance.js (H) - verkuerzt die Frist.
+const GLOBE_RUHE_MS=60000;
+let _globeEingabe=performance.now(),_globeRuheF=1,_globeRuhtCls=false;
+if(typeof window!=='undefined'&&!window.__globeEingabeHorcher){
+  window.__globeEingabeHorcher=true;
+  const wach=()=>{_globeEingabe=performance.now();};
+  ['pointermove','pointerdown','keydown','wheel','touchstart','scroll'].forEach(t=>window.addEventListener(t,wach,{passive:true,capture:true}));
+}
 // Fahrzeug-Reise (Nutzer-Wunsch 2026-07-27): waehrend das Auto/Schiff zu
 // einer angeklickten Waehrung unterwegs ist, pausiert globeUpdateVehicle()
 // die normale Land/Wasser-Ruheposition-Aktualisierung.
@@ -254,7 +271,7 @@ function stopGlobe(){
   if(_globeRAF){cancelAnimationFrame(_globeRAF);_globeRAF=null;}
   _globeHosts.forEach(st=>{try{st.io&&st.io.disconnect();}catch(e){}});
   _globeHosts=[];_globeMode='auto';_globeVel=GLOBE_AUTO_VEL;_globeDrag=null;
-  _globeVehicleBusy=false;
+  _globeVehicleBusy=false;_globeRuhtCls=false;_globeRuheF=1;_globeEingabe=performance.now();
 }
 // ES-Module exportieren `let`-Zustand nur LESEND - main.js braucht _globeLon
 // beim Tab-Wechsel zurueck auf Heimat-Laenge (showTab('dash')), kann sie aber
@@ -876,6 +893,12 @@ function startGlobes(){
   const frame=now=>{
     if(!GLOBE_PAGES.includes(curPage)||!_globeHosts.length||!document.body.contains(_globeHosts[0].host)){stopGlobe();return;}
     const dt=Math.min(now-_globeLast,DT_MAX);
+    const ruheMs=window.__gpGlobusRuheMs||GLOBE_RUHE_MS;
+    const ruht=_globeMode==='auto'&&_throttleFrac<=0.002&&!_globeVehicleBusy&&now-_globeEingabe>ruheMs;
+    _globeRuheF=ruht?_globeRuheF*Math.exp(-dt/500):1;   // auslaufen statt abrupt stehen; aufwachen sofort
+    const steht=ruht&&_globeRuheF<0.01;
+    if(steht!==_globeRuhtCls){_globeRuhtCls=steht;_globeHosts.forEach(st=>st.host.classList.toggle('globe-ruht',steht));}
+    if(steht){_globeLast=now;_globeRAF=requestAnimationFrame(frame);return;}
     if(dt>=STEP_MS){
       _globeLast=now;
       let thrustI=0; // treibt globeFuelTick() unten, unabhaengig davon welcher Zweig gerade greift
@@ -924,7 +947,7 @@ function startGlobes(){
         _globeLon=(_globeLon+dt*_globeVel+360*1000)%360;
         if(_globeMode==='boost')_globeHosts.forEach(st=>{st.host.style.setProperty('--boost-i',thrustI.toFixed(3));st.host.style.setProperty('--boost-blur',blurI.toFixed(3));});
       }else if(_globeMode==='auto'){
-        _globeLon=(_globeLon+dt*GLOBE_AUTO_VEL)%360;
+        _globeLon=(_globeLon+dt*GLOBE_AUTO_VEL*_globeRuheF)%360;
       } // 'drag': Position wird direkt per Pointermove gesetzt, hier nichts tun
       globeFuelTick(dt,thrustI);
       // Nur neu zeichnen, wenn sich die Oberflaeche seit dem letzten Bild um

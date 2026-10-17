@@ -3724,6 +3724,8 @@ body{font-feature-settings:'tnum' 1,'zero' 1,'ss01' 1;font-variant-numeric:tabul
    App-Daten (Bias-Score, Risk-Sentiment, scoreLog) - nur die Optik ist neu,
    siehe CLAUDE.md-Grundsatz "nie erfundene Werte". */
 .globe-ping{transform-origin:center;animation:globePing 2.2s ease-out infinite}
+/* Kugel ruht im Leerlauf (js/globe.js GLOBE_RUHE_MS): alle Endlos-Animationen anhalten */
+.globe-ruht *,.globe-ruht *::before,.globe-ruht *::after{animation-play-state:paused!important}
 @keyframes globePing{0%{r:5;stroke-opacity:.8}100%{r:15;stroke-opacity:0}}
 /* UI-Animationen aus (Schalter in den Settings) - seit 2026-10-11 statt
    prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
@@ -6550,11 +6552,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-610 - Score-Modell 26: Consumer Confidence Trend (3M) im Niveau-Block (Block-Test bestanden)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-611 - Overview-Kugel ruht nach 60 s ohne Eingabe (Leerlauf 1.200 -> ~25 ms je 5 s), wacht bei jeder Eingabe sofort auf."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-610</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-611</span>
     </span>
   </div>
   <div class="hdr-r">

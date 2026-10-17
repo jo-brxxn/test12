@@ -49,6 +49,7 @@
 //   --gegenprobe-smil      Wellen-SMIL wieder in den Vorlagen             -> E rot
 //   --gegenprobe-chv       Aufraeumen der Chart-Registry aus               -> F rot
 //   --gegenprobe-globus    Kugel wieder in jedem Bild neu gezeichnet       -> G rot
+//   --gegenprobe-ruhe      Kugel ruht im Leerlauf nie (Frist unendlich)    -> H rot
 // (F, seit 2026-10-16) Speicher: nach 60 Seiten-/Asset-Wechseln haelt die
 //      Hover-Registry der Charts (_chvReg) nur Eintraege fuer Charts, die im
 //      Dokument stehen (+ eine Runde Puffer). Vorher wuchs sie unbegrenzt:
@@ -68,7 +69,8 @@ const GP_DOPPELT = process.argv.includes('--gegenprobe-doppelt');
 const GP_SMIL = process.argv.includes('--gegenprobe-smil');
 const GP_CHV = process.argv.includes('--gegenprobe-chv');
 const GP_GLOBUS = process.argv.includes('--gegenprobe-globus');
-const GP = GP_PUNKTE || GP_FILL || GP_TEXT || GP_DOPPELT || GP_SMIL || GP_CHV || GP_GLOBUS;
+const GP_RUHE = process.argv.includes('--gegenprobe-ruhe');
+const GP = GP_PUNKTE || GP_FILL || GP_TEXT || GP_DOPPELT || GP_SMIL || GP_CHV || GP_GLOBUS || GP_RUHE;
 
 const MAX_GLEICHZEITIG = 400;   // Trends nachher ~110, vorher 3363
 const MAX_FERTIG = 3;           // pageFadeIn/detailFadeIn halten bewusst (transform-Kontext), sonst 0
@@ -237,6 +239,7 @@ function statisch() {
   // ── G) Overview-Kugel: Takt der Neuzeichnung ─────────────────────────────
   console.log('G) Overview-Kugel: Neuzeichnungen je Sekunde im Normaltempo');
   await p.evaluate(gp => { if (gp) window.__gpGlobusJedesBild = true; showTab('over'); }, GP_GLOBUS);
+  await p.mouse.move(5, 5); await p.mouse.move(9, 9);   // Eingabe: die Kugel darf nicht schon ruhen (H)
   await p.waitForTimeout(2500);
   const gl = await p.evaluate(async () => {
     const pfad = document.querySelector('[data-layer="landshape"] path'); if (!pfad) return null;
@@ -247,7 +250,33 @@ function statisch() {
   });
   if (!gl) rot('Overview-Kugel nicht gefunden');
   else { const jeS = gl.n / gl.s; if (jeS > 40) rot(`Kugel ${jeS.toFixed(0)}x je Sekunde neu gezeichnet (${gl.bilder} Bilder) - Bewegung unter 0,5 px wird mitgezeichnet`); else gruen(`Kugel ${jeS.toFixed(0)} Neuzeichnungen je Sekunde bei ${(gl.bilder / gl.s).toFixed(0)} Bildern`); }
-  await p.evaluate(() => { window.__gpGlobusJedesBild = false; showTab('dash'); });
+  await p.evaluate(() => { window.__gpGlobusJedesBild = false; });
+
+  // ── H) Overview-Kugel ruht im Leerlauf und wacht bei Eingabe auf ─────────
+  // GEMESSEN 2026-10-17: Overview im Leerlauf 1.120-1.330 ms Arbeit je 5 s,
+  // ohne Kugel 22 ms. Ohne Eingabe muss die Kugel nach der Frist ruhen
+  // (0 Neuzeichnungen), nach einer Mausbewegung sofort wieder drehen.
+  console.log('H) Overview-Kugel: Ruhe im Leerlauf, Aufwachen bei Eingabe');
+  await p.evaluate(gp => { window.__gpGlobusRuheMs = gp ? 1e12 : 1500; }, GP_RUHE);
+  await p.mouse.move(12, 12);
+  await p.waitForTimeout(1500 + 3500);
+  const zaehle = () => p.evaluate(async () => {
+    const pfad = document.querySelector('[data-layer="landshape"] path'); if (!pfad) return null;
+    let n = 0; const mo = new MutationObserver(ms => { n += ms.filter(m => m.attributeName === 'd').length; });
+    mo.observe(pfad, { attributes: true }); await new Promise(r => setTimeout(r, 1500)); mo.disconnect();
+    return { n, ruht: !!document.querySelector('.globe-host.globe-ruht') };
+  });
+  const ruhe = await zaehle();
+  await p.mouse.move(40, 40); await p.mouse.move(60, 60);
+  const wach = await zaehle();
+  if (!ruhe || !wach) rot('Overview-Kugel nicht gefunden');
+  else {
+    if (ruhe.n > 0 || !ruhe.ruht) rot(`Kugel ohne Eingabe weiter ${ruhe.n}x in 1,5 s neu gezeichnet (ruht: ${ruhe.ruht}) - sie dreht im Leerlauf endlos`);
+    else gruen('Kugel ruht ohne Eingabe (0 Neuzeichnungen, Animationen pausiert)');
+    if (wach.n < 5 || wach.ruht) rot(`Kugel nach Mausbewegung nur ${wach.n}x in 1,5 s neu gezeichnet - sie wacht nicht auf`);
+    else gruen(`Kugel nach Eingabe wieder ${wach.n} Neuzeichnungen in 1,5 s`);
+  }
+  await p.evaluate(() => { window.__gpGlobusRuheMs = 0; showTab('dash'); });
 
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));
   await b.close();
