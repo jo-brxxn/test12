@@ -359,7 +359,11 @@ function globePathD(pts,lon0,R,cx,cy){
   // Auslassen nichts. Horizont-Uebergaenge werden nie ausgelassen.
   const MIN_PX=0.6;
   let d='',lx=1e9,ly=1e9;
-  const add=(x,y)=>{d+=(d?'L':'M')+(Math.round((cx+x)*10)/10)+' '+(Math.round((cy+y)*10)/10);lx=x;ly=y;};   // Math.round statt toFixed: gleiche Zahl, ~3x schneller
+  // ⚠ GANZZAHLEN in Zehntel-Pixeln; der Pfad steht unter scale(.1) (globeSkeleton).
+  // Gleiche Genauigkeit wie vorher (eine Nachkommastelle), aber eine Ganzzahl
+  // wird ~3,5x schneller zu Text als eine Kommazahl und der Pfad ist 14 %
+  // kuerzer (gemessen 2026-10-17: 2,0-2,8 ms -> 0,55 ms je 9.000 Punkte).
+  const add=(x,y)=>{d+=(d?'L':'M')+Math.round((cx+x)*10)+' '+Math.round((cy+y)*10);lx=x;ly=y;};
   for(let i=0;i<n;i++){
     const j=i+1<n?i+1:0;
     const wechsel=_gpV[i]!==_gpV[j];
@@ -405,7 +409,7 @@ function globeSkeleton(size,uid){
   // 66 von 179 Bildern ueber 20 ms - genau die Verschlechterung, die der
   // Nutzer beheben lassen wollte. Die Rechenarbeit war es nicht; teuer sind
   // die 549 DOM-Schreibzugriffe pro Bild. Als ein Element ist es einer.
-  let land='<path/>';
+  let land='<path transform="scale(.1)"/>';   // Koordinaten in Zehntel-Pixeln, siehe globePathD
   // Jeder Marker bekommt jetzt zusaetzlich einen "Ping"-Ring (Reticle/Radar-
   // Ortungspunkt-Optik, "Global Market Surveillance"-Umbau 2026-07-27) - ein
   // zweiter <circle>, der per CSS-Keyframe kontinuierlich nach aussen
@@ -520,7 +524,7 @@ function globeSkeleton(size,uid){
       <radialGradient id="${lmgid}" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff"/><stop offset="70%" stop-color="#fff"/><stop offset="100%" stop-color="#000"/></radialGradient>
       <mask id="${lmid}" maskContentUnits="userSpaceOnUse"><circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#${lmgid})"/></mask>
       <g id="${shpid}" data-layer="landshape">${land}</g>
-      <pattern id="${sqid}" width="${SQ}" height="${SQ}" patternUnits="userSpaceOnUse">
+      <pattern id="${sqid}" width="${SQ}" height="${SQ}" patternUnits="userSpaceOnUse" patternTransform="scale(10)">
         <rect x="${SI}" y="${SI}" width="${SW}" height="${SW}" fill="none" stroke="rgba(126,196,255,.5)" stroke-width="0.4"/>
       </pattern>
       <linearGradient id="${rgid}" x1="${rx1}" y1="${ry1}" x2="${rx2}" y2="${ry2}" gradientUnits="userSpaceOnUse">

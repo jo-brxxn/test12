@@ -113,6 +113,12 @@ iPad-Prüfung steht beim Nutzer aus (Stand 2026-10-03).
   sofort. Gemessen: Overview-Leerlauf **1.206 → 125 ms je 5 s** (inkl.
   Auslaufen). Billiger ZEICHNEN ging nicht: Canvas gemessen **5–10× teurer**,
   gröbere Küste nur −13 %. `check/performance.js` H.
+- **Küstenpfad als Ganzzahlen** (2026-10-17): Koordinaten in Zehntel-Pixeln,
+  Pfad unter `scale(.1)`, Viereck-Muster dazu unter `patternTransform=scale(10)`.
+  Ganzzahl → Text ist ~3,5× schneller als Kommazahl → Text, Pfad 14 % kürzer.
+  Pixelvergleich alt/neu: 5 von 490.000 Pixeln (dpr 1) bzw. 24 von 1.960.000
+  (dpr 2) verschieden, max. 1/255. Drehende Kugel **1.168 → 860 ms je 5 s
+  (−27 %)**. `check/performance.js` G prüft Ganzzahlen + beide Transforms.
 - **Merker statt Neurechnen** auch für `indCycleIsGuess` (Array-Identität
   von `chartHist`): Score-Kette beim Laden 366 → 210 ms.
 

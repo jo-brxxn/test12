@@ -246,10 +246,18 @@ function statisch() {
     let n = 0; const mo = new MutationObserver(ms => { n += ms.filter(m => m.attributeName === 'd').length; });
     mo.observe(pfad, { attributes: true });
     let bilder = 0; const t0 = performance.now(); await new Promise(r => { const f = () => { bilder++; if (performance.now() - t0 < 2000) requestAnimationFrame(f); else r(); }; requestAnimationFrame(f); });
-    mo.disconnect(); return { n, bilder, s: (performance.now() - t0) / 1000 };
+    mo.disconnect();
+    // Ganzzahl-Pfad (2026-10-17): Koordinaten in Zehntel-Pixeln unter scale(.1),
+    // das Viereck-Muster dazu unter scale(10) - sonst schrumpft es auf 1/10.
+    const d = pfad.getAttribute('d') || '', muster = document.querySelector('.globe-host svg pattern');
+    return { n, bilder, s: (performance.now() - t0) / 1000, komma: /\d\.\d/.test(d), tr: pfad.getAttribute('transform'), mtr: muster && muster.getAttribute('patternTransform') };
   });
   if (!gl) rot('Overview-Kugel nicht gefunden');
   else { const jeS = gl.n / gl.s; if (jeS > 40) rot(`Kugel ${jeS.toFixed(0)}x je Sekunde neu gezeichnet (${gl.bilder} Bilder) - Bewegung unter 0,5 px wird mitgezeichnet`); else gruen(`Kugel ${jeS.toFixed(0)} Neuzeichnungen je Sekunde bei ${(gl.bilder / gl.s).toFixed(0)} Bildern`); }
+  if (gl) {
+    if (gl.komma || gl.tr !== 'scale(.1)' || gl.mtr !== 'scale(10)') rot(`Kuestenpfad nicht als Ganzzahl-Pfad (Kommazahlen: ${gl.komma}, Pfad ${gl.tr}, Muster ${gl.mtr}) - 3,5x teurer bzw. Muster falsch skaliert`);
+    else gruen('Kuestenpfad in Ganzzahlen unter scale(.1), Muster passend unter scale(10)');
+  }
   await p.evaluate(() => { window.__gpGlobusJedesBild = false; });
 
   // ── H) Overview-Kugel ruht im Leerlauf und wacht bei Eingabe auf ─────────

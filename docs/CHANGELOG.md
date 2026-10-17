@@ -20392,3 +20392,19 @@ die Folgeentwicklung vorhersagen?
 - Während der Bedienung unverändert (30 Neuzeichnungen/s).
 
 **Wächter:** `check/performance.js` H — ruht ohne Eingabe (0 Neuzeichnungen), wacht nach Mausbewegung auf. Gegenprobe `--gegenprobe-ruhe` → rot. G bewegt vorher die Maus, damit die Kugel nicht schon ruht.
+
+## 2026-10-17 — VERSION-CHECK-612: Kugel-Küste als Ganzzahl-Pfad
+
+**Messung (drehende Kugel, Overview, 1440 px, je 5 s):**
+
+| Stand | Task | Script |
+|---|---|---|
+| vorher | **1.123 / 1.213 ms** | 485–498 ms |
+| Ganzzahl-Pfad | **842 / 877 ms** | 326–341 ms |
+
+- *Mikrobenchmark:* 9.000 Punkte → Text: 2,0–2,8 ms (Kommazahl) vs. 0,55 ms (Ganzzahl).
+- *Umsetzung:* `globePathD` schreibt `Math.round(x*10)`; `<path transform="scale(.1)">`; `<pattern … patternTransform="scale(10)">`, sonst schrumpft das Viereck-Raster mit.
+- *Pixelvergleich* (gleicher Drehwinkel, alt vs. neu): dpr 1 **5/490.000**, dpr 2 **24/1.960.000** Pixel verschieden, max. **1/255** — Rundung, nicht sichtbar.
+- *Verworfen:* Marker-Attribute nur bei Änderung schreiben — gemessen kein Gewinn (Style/Layout unverändert ~105 ms), zurückgenommen.
+
+**Wächter:** `check/performance.js` G — keine Kommazahlen im Pfad, Pfad `scale(.1)`, Muster `scale(10)`. Gegen den alten Code rot (Kommazahlen: true, Transforms fehlen).
