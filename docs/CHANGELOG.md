@@ -20078,6 +20078,18 @@ nachgerechnet. Die Gegenprobe `__nivAbsolut` liefert 22 Befunde.
   deren Fassung, meine Fassung ist verworfen.
 - **Nummern:** Dieselbe Sitzung belegte VERSION-CHECK-604 und Score-Modell 21
   (Vergleichsfaktor ohne Zwischenrundung). Dieser Stand ist deshalb 605 bzw. Modell 22.
+**Nachtrag 2026-10-17 (Prüfung der Prüfung):**
+- `check/runtime.js` repariert: prüfte wegen einer veralteten Tab-Liste nur
+  einen Teil der App (`matrix`, `compare`, `research`, `setups` gibt es nicht;
+  `over`, `mx`, `news`, `carry`, `pairs` fehlten), schloss Fenster über `.mov`
+  (gibt es nicht) und klickte alle Knöpfe in einer Schleife — nach der ersten
+  Navigation wurden alle übrigen still übersprungen. Gegenprobe (kaputtes
+  `openCardInfo`) blieb vorher grün, jetzt rot. Jetzt 691 Knöpfe auf 16 Tabs.
+- Stärke-Note: Plan war, Modell 20 für die Note als gleichwertig zu 21 zu
+  zählen (nur Rundung). Verworfen — parallel kam Modell 22 (Niveau-Block,
+  VERSION-CHECK-605), eine echte Formel-Änderung; die Note baut sich danach
+  nach Projektregel ohnehin neu auf.
+
 
 ## VERSION-CHECK-606 (2026-10-16/17) — Score-Modell 23: Richtung und Markterwartung im Niveau-Block
 
