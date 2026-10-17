@@ -11,7 +11,8 @@
 //      (Median-Abweichung x 1,4826), Arbeitslosigkeit mit umgedrehtem Vorzeichen;
 //   D) PMI vs 50: Ø Manufacturing/Services minus 50 (hoechstens 45 Tage alt);
 //   E) Waehrungen RELATIV zum Ø der anderen sieben, Stufen laut NIV;
-//   F) Nicht-FX (S&P 500 ↔ USD, inverse) liest das ABSOLUTE Niveau.
+//   F) Nicht-FX (S&P 500 ↔ USD, inverse) liest das ABSOLUTE Niveau;
+//   G) Inflation Trend / Unemployment Trend (3M), H) Rate Path vs Peers (Modell 23).
 //   node check/niveau.js [--gegenprobe]   (Waehrungen absolut statt relativ)
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
@@ -21,14 +22,15 @@ const { wartenBisDatenDa } = require('./warten.js');
 const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 const IND = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'ind_data.json'), 'utf8'));
+const RP = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'rate_probabilities.json'), 'utf8'));
 const FX = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'NZD'];
 const ZIEL = { USD: 2, EUR: 2, GBP: 2, JPY: 2, CHF: 1, CAD: 2, AUD: 2.5, NZD: 2 };
-const STUFEN = { infl: [[2, 1], [1, 0.75], [0.5, 0.5]], real: [[1.5, 0.75], [0.75, 0.5]], lab: [[1.5, 1], [1, 0.75], [0.5, 0.5]], wage: [[1.5, 0.75], [0.75, 0.5]], gdp: [[1, 0.75], [0.5, 0.5]], pmi: [[4, 0.75], [1.5, 0.5]] };
-const NAME = { infl: 'Inflation vs Target', real: 'Real Rate vs Peers', lab: 'Unemployment vs Normal', wage: 'Wages vs Normal', gdp: 'Growth vs Trend', pmi: 'PMI vs 50' };
+const STUFEN = { inflT: [[0.7, 0.5], [0.3, 0.25]], labT: [[0.4, 0.5], [0.2, 0.25]], path: [[35, 0.75], [15, 0.5]], infl: [[2, 1], [1, 0.75], [0.5, 0.5]], real: [[1.5, 0.75], [0.75, 0.5]], lab: [[1.5, 1], [1, 0.75], [0.5, 0.5]], wage: [[1.5, 0.75], [0.75, 0.5]], gdp: [[1, 0.75], [0.5, 0.5]], pmi: [[4, 0.75], [1.5, 0.5]] };
+const NAME = { inflT: 'Inflation Trend (3M)', labT: 'Unemployment Trend (3M)', path: 'Rate Path vs Peers', infl: 'Inflation vs Target', real: 'Real Rate vs Peers', lab: 'Unemployment vs Normal', wage: 'Wages vs Normal', gdp: 'Growth vs Trend', pmi: 'PMI vs 50' };
 const zahl = s => { const m = String(s == null ? '' : s).match(/-?\d[\d.,]*/); return m ? parseFloat(m[0].replace(/,/g, '')) : null; };
 const tag = d => Date.parse(String(d).slice(0, 10) + 'T00:00:00Z');
 const med = a => { const s = a.slice().sort((x, y) => x - y), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
-const stufe = (t, x) => { const st = STUFEN[t].find(([ab]) => Math.abs(x) >= ab); return st ? Math.sign(x) * st[1] : 0; };
+const stufe = (t, x0) => { const x = Math.round(x0 * 1000) / 1000; const st = STUFEN[t].find(([ab]) => Math.abs(x) >= ab); return st ? Math.sign(x) * st[1] : 0; };
 const reihe = e => { const m = new Map(); ((e && e.historyFull) || []).forEach(h => { const v = zahl(h[1]); if (v != null) m.set(String(h[0]).slice(0, 10), v); }); return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0])); };
 function frisch(r, heute) { if (r.length < 2) return false; const ab = []; for (let i = 1; i < r.length; i++) ab.push((tag(r[i][0]) - tag(r[i - 1][0])) / 864e5); const z = Math.max(7, med(ab.slice(-24)) || 30); return (heute - tag(r[r.length - 1][0])) / 864e5 <= Math.min(200, Math.max(45, 2.5 * z)); }
 function robust(r, heute, aktTage) {
@@ -62,6 +64,13 @@ function inflation(c, heute, nurHead) {
     const g = reihe(I['GDP Growth QoQ']); if (g.length && frisch(g, heute)) { const z = robust(g, heute, 100); if (z != null) abs[c].gdp = z; }
     const pm = ['Manufacturing PMI', 'Services PMI'].map(x => I[x]).filter(e => e && zahl(e.actual) != null && e.date && (heute - tag(e.date)) / 864e5 <= 45).map(e => zahl(e.actual));
     if (pm.length) abs[c].pmi = pm.reduce((a, v) => a + v, 0) / pm.length - 50;
+    // G) Richtung: Inflation y/y jetzt minus >= 80 Tage davor; Arbeitslosigkeit Ø 3M minus Ø 3M davor
+    const ir = reihe(I[c === 'USD' ? 'PCE' : 'CPI (Headline)']);
+    if (ir.length >= 4 && frisch(ir, heute)) { const [d1, v1] = ir[ir.length - 1], vor = ir.filter(([d]) => tag(d) <= tag(d1) - 80 * 864e5).pop(); if (vor && tag(d1) - tag(vor[0]) <= 200 * 864e5) abs[c].inflT = v1 - vor[1]; }
+    if (u.length >= 6 && frisch(u, heute)) { const l = tag(u[u.length - 1][0]), a = u.filter(([d]) => tag(d) > l - 92 * 864e5).map(x => x[1]), bb = u.filter(([d]) => tag(d) <= l - 92 * 864e5 && tag(d) > l - 184 * 864e5).map(x => x[1]);
+      if (a.length && bb.length) abs[c].labT = -(a.reduce((s, v) => s + v, 0) / a.length - bb.reduce((s, v) => s + v, 0) / bb.length); }
+    // H) Rate Path: Summe der eingepreisten bp bis zur letzten gelisteten Sitzung
+    const rp = RP[c]; if (rp && Array.isArray(rp.meetings) && rp.meetings.length && rp.asOf && (heute - tag(rp.asOf)) / 864e5 <= 5) abs[c].path = rp.meetings.reduce((a, m) => a + (+m.deltaBp || 0), 0);
   });
   const rz = {}; FX.forEach(c => { const cb = IND[c] && IND[c]['Central Bank Rate'], r = cb && zahl(cb.actual), i = inflation(c, heute, true)[0]; if (r != null && i != null) rz[c] = r - i; });
   FX.forEach(c => { const pe = FX.filter(x => x !== c && rz[x] != null).map(x => rz[x]); if (rz[c] != null && pe.length >= 5) abs[c].real = rz[c] - pe.reduce((a, v) => a + v, 0) / pe.length; });
@@ -84,7 +93,7 @@ function inflation(c, heute, nurHead) {
   // F) S&P 500: Inflation-Karte invers zu USD, absolutes US-Niveau
   const spi = ist.SP500.infl;
   if (spi && abs.USD.infl != null && Math.abs(spi.pkt - (-stufe('infl', abs.USD.infl))) > 1e-9) fail('NICHT-FX', `S&P 500 Inflation vs Target ${spi.pkt} statt ${-stufe('infl', abs.USD.infl)} (US absolut, invers)`);
-  if (n < 30) fail('ABDECKUNG', `nur ${n} Niveau-Zeilen bei den acht Waehrungen (erwartet >= 30)`);
+  if (n < 45) fail('ABDECKUNG', `nur ${n} Niveau-Zeilen bei den acht Waehrungen (erwartet >= 45)`);
   if (perr.length) fail('Seitenfehler', perr.slice(0, 3).join(' | '));
   await b.close();
   if (F.length) { console.log(`✗ niveau: ${F.length} Befund(e)\n  ` + F.slice(0, 20).join('\n  ')); process.exit(1); }

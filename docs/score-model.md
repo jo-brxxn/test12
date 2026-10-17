@@ -71,6 +71,9 @@ Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
 | Wages vs Normal | Labour Market | Lohnwachstum y/y (3 Monate) gegen 10-J-Median, robuster z | 0,75/1,5σ → ±0,5/0,75 |
 | Growth vs Trend | Economic Growth | BIP-Wachstum (Releases der letzten ~100 Tage) gegen 10-J-Median, robuster z | 0,5/1σ → ±0,5/0,75 |
 | PMI vs 50 | Economic Growth | Ø Manufacturing/Services minus 50 (≤ 45 Tage alt) | 1,5/4 Pkt → ±0,5/0,75 |
+| Inflation Trend (3M) *(Modell 23)* | Inflation | Headline y/y (USD: PCE) jetzt minus der Wert ≥ 80 Tage davor – Richtung des Abstands | 0,3/0,7 pp → ±0,25/0,5 |
+| Unemployment Trend (3M) *(Modell 23)* | Labour Market | Ø der letzten 3 Monate minus Ø der 3 Monate davor; steigend = bearish (Sahm-Logik) | 0,2/0,4 pp → ±0,25/0,5 |
+| Rate Path vs Peers *(Modell 23)* | Inflation | eingepreiste Leitzins-Änderung bis zur letzten gelisteten Sitzung (`rate_probabilities.json`; nicht JPY/NZD). NICHT deren Änderung – die misst „2Y Yield Gap (20d)“ | 15/35 bp → ±0,5/0,75 |
 
 - **Währungen RELATIV:** Punkte aus dem eigenen Abstand minus dem Ø der
   anderen sieben (wie das Macrosynergy-FX-Scorecard, „relative to the base

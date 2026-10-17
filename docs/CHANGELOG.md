@@ -20078,3 +20078,54 @@ nachgerechnet. Die Gegenprobe `__nivAbsolut` liefert 22 Befunde.
   deren Fassung, meine Fassung ist verworfen.
 - **Nummern:** Dieselbe Sitzung belegte VERSION-CHECK-604 und Score-Modell 21
   (Vergleichsfaktor ohne Zwischenrundung). Dieser Stand ist deshalb 605 bzw. Modell 22.
+
+## VERSION-CHECK-606 (2026-10-16/17) — Score-Modell 23: Richtung und Markterwartung im Niveau-Block
+
+**Anlass:** Der /goal-Stop-Hook hat drei offene Punkte gemeldet:
+1. Die Richtung der Abstände fehlt.
+2. Die Zinserwartungen aus Rate Probabilities sind nicht eingebaut.
+3. Die Recherche hatte keine Bankquellen, und die Repo-Umbenennung ist ungeklärt.
+
+**Bankquellen nachgeholt:**
+- **Goldman Sachs GSDEER:** Langfrist-Fair-Value aus Terms of Trade und Produktivität
+  ([PIIE](https://www.piie.com/sites/default/files/publications/pb/pb07-4/stolper.pdf)).
+- **ING BEER:** Terms of Trade, Leistungsbilanz und Staatsausgaben. Kurzfristige
+  Zinsfaktoren sind ausdrücklich herausgenommen
+  ([ING Think](https://think.ing.com/articles/breaking-down-g10-valuation-the-key-is-in-the-terms-of-trade)).
+- **Erwartete statt aktueller Zinsdifferenz:** ING (Chris Turner) nennt das
+  OIS-/2Y-Swap-Repricing als Treiber; Märkte handeln die *erwartete* Differenz in 6–12
+  Monaten ([VT Markets/ING](https://www.vtmarkets.com/?p=44008),
+  [CME](https://cmegroup.com/education/featured-reports/interest-rates-gaps-for-the-us-dollar.html)).
+- **Folgerung für die App:**
+  - Die Terms of Trade stecken für AUD, NZD und CAD bereits in den Rohstoff-Zeilen.
+  - Das Repricing misst schon „2Y Yield Gap (20d)“.
+  - Es fehlte das **Niveau des eingepreisten Pfads**.
+- **Momentum statt y/y:** 3- und 6-Monats-Raten zeigen den aktuellen Trend früher; y/y
+  hinkt und hängt an Basiseffekten
+  ([CEA](https://bidenwhitehouse.archives.gov/cea/written-materials/2023/05/10/the-signal-and-the-noise-part-ii-cpi-inflation),
+  [ING](https://think.ing.com/downloads/pdf/article/the-real-dynamics-of-core-inflation-in-the-eurozone)).
+  M/m-Reihen sind hier aber nicht für alle Länder saisonbereinigt. Deshalb wird die
+  Richtung über die Veränderung der y/y-Rate in 3 Monaten gemessen.
+
+**Neu:** drei Zeilen, für Währungen relativ zu den Peers. Gemessen am 2026-10-17:
+
+| Zeile | Werte | Punkte |
+|---|---|---|
+| Inflation Trend (3M) | USD PCE 4,1 → 3,4 %; EUR/NZD +1,0 pp | USD −0,5; EUR/NZD +0,5 |
+| Unemployment Trend (3M) | CAD 6,73 → 6,45 % | CAD +0,25 |
+| Rate Path vs Peers | GBP +71 bp eingepreist bis Dezember, Peers etwa 27 bp | GBP +0,75; AUD (+11 bp) und CHF (+7 bp) je −0,5 |
+
+Rate Probabilities werden jetzt auch beim Start geladen, nicht erst im Tab.
+
+**Rundung:** −0,7 kam als −0,69999… an und fiel unter die Schwelle 0,7. `nivStufe` rundet
+jetzt vorher auf 3 Stellen.
+
+**Wächter:** `check/niveau.js` deckt jetzt 66 Zeilen ab, die Gegenprobe liefert 33 Befunde.
+
+**Repo-Umbenennung (`jo-brxxn/FX-final` → `jo-brxxn/test12`):**
+- Geprüft: `raw.githubusercontent.com/jo-brxxn/FX-final/main/manifest.json` und
+  `…/test12/…` liefern beide 200; Pushes kommen über die Weiterleitung an.
+- `DATA_BASE` (`js/main.js`) und `event-alerts.yml` bleiben auf FX-final. GitHub leitet
+  weiter, solange kein neues Repo diesen Namen bekommt. Ein Wechsel auf einen
+  ungeklärten Namen wäre riskanter.
+- **Risiko:** Ein neues Repo namens `FX-final` würde die Daten der App übernehmen.

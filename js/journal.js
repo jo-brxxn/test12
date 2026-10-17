@@ -85,6 +85,7 @@ const JR_MODELL_NOTIZ={
   20:'commodities for AUD/NZD/CAD follow the daily EMA20 (±0.5, ±0.75 after 10 days on one side, ±1 after 20) instead of the 1-month change',
   21:'the comparison factor (average indicator count ÷ own count) is no longer rounded to two decimals before it is applied — up to 0.1 difference on some assets',
   22:'new level block: inflation vs target, real rate vs peers, unemployment and wages vs their 10-year normal, growth vs trend, PMI vs 50 (fixed points by distance)',
+  23:'level block extended: inflation trend and unemployment trend over 3 months, and the policy path the market prices versus the peers',
 };
 
 // ── Zustand ────────────────────────────────────────────────────────────────

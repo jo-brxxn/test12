@@ -1806,7 +1806,10 @@ function symScoreCmp(sym){
 // Target und wie weit"): Inflation vs Target, Real Rate vs Peers,
 // Unemployment vs Normal, Wages vs Normal, Growth vs Trend, PMI vs 50 - feste
 // Punkte je Abstand zum Normal (applyNiveauFeed).
-const SCORE_MODEL_VERSION=22;
+// 22 -> 23 (2026-10-16): Niveau-Block um Richtung und Markterwartung ergaenzt:
+// Inflation Trend (3M), Unemployment Trend (3M), Rate Path vs Peers
+// (eingepreiste Leitzins-Aenderung aus rate_probabilities.json).
+const SCORE_MODEL_VERSION=23;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.
