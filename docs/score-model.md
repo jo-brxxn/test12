@@ -111,8 +111,8 @@ fünf Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
     **instabil** (2022–26: IC −0,014/−0,023) → raus.
   - IP-Momentum (12M): knapp bestanden, aber 1 von 9 = Zufallsniveau,
     5 Währungen, kein Live-Feed → raus.
-- **Smart-Money-Methoden → Umsetzung** (Quellen: `docs/CHANGELOG.md`
-  VERSION-CHECK-605 und -609):
+- **Smart-Money-Methoden → Umsetzung** (Primärquellen: `docs/CHANGELOG.md`
+  VERSION-CHECK-605 und Eintrag „Primärquellen + Value“ 2026-10-17):
 
   | Methode (wer) | Im Score | Status |
   |---|---|---|
@@ -123,7 +123,8 @@ fünf Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
   | Zinserwartung (Bank-FX-Research) | 2Y Yield Gap (20d) = *Änderung* | Niveau getestet: **negativ** → nur Änderung |
   | Carry/Real Rate | Carry-Zeilen; Real Rate vs Peers | Real Rate **negativ** → raus |
   | Positionierung (CFTC) | COT | bestehend |
-  | Value/Momentum (AQR, Asness et al. 2013) | Trend-Treiber (Preis-Momentum) | bestehend; Value (PPP/GSDEER-Typ) *fehlt* – keine freie Quelle |
+  | Value/Momentum (AQR, Asness et al. 2013) | Trend-Treiber (Preis-Momentum) | Momentum bestehend; **Value getestet** (5J reale FX-Änderung, AQR-Definition): IC −0,000/−0,079, Treffer 41 % → *nicht aufgenommen* |
+  | Fair Value (DBS DEER: Inflations-/Produktivitäts-/ToT-Differenzen) | – | langer Horizont, keine point-in-time-Inputs frei |
 - **Beleg schwach:** kein positiver t-Wert ≥ 2 – Block ist Ergänzung zum mittleren
   Horizont, kein eigenständiges Signal. Neue Niveau-Zeile nur mit
   Backtest-Lauf.

@@ -20277,3 +20277,36 @@ die Folgeentwicklung vorhersagen?
 - `list_repos`: `jo-brxxn/FX-final` existiert nicht mehr, nur noch `jo-brxxn/test12`.
 - `DATA_BASE` (`js/main.js`) und `event-alerts.yml` lesen jetzt direkt von `test12`. Geprüft: manifest, price_data und ind_data liefern 200, mit `access-control-allow-origin: *`.
 - *Nicht geprüft*, weil github.io in der Session gesperrt ist: der Pages-Mirror unter dem neuen Pfad und die Cloudflare-Worker-Anbindung.
+
+## 2026-10-17 — Primärquellen, Value-Test, Deploy-Prüfung (nur Doku/Tools, kein App-Code)
+
+**Primärquellen statt Sekundärnotizen:**
+
+| Methode | Primärquelle |
+|---|---|
+| Economic Momentum | Dahlquist/Hasseltoft, *Economic momentum and currency returns*, J. Financial Economics 136 (2020) 152–167, [doi:10.1016/j.jfineco.2019.09.002](https://doi.org/10.1016/j.jfineco.2019.09.002), [SSE-Repositorium](https://research.hhs.se/esploro/outputs/journalArticle/Economic-momentum-and-currency-returns/991001480359106056) |
+| Value/Momentum | Asness/Moskowitz/Pedersen, *Value and Momentum Everywhere*, J. Finance 68(3) 2013, [Autoren-PDF](https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf) |
+| Excess Inflation, Labour, Scorecards | Macrosynergy (Herausgeber selbst): [Excess inflation](https://macrosynergy.com/?p=43872), [Scorecards](https://macrosynergy.com/academy/macro-quantamental-scorecards) |
+| Fair Value | DBS DEER (Bank selbst): [Methodik](https://www.dbs.com.sg/corporate/research-and-insights/insights/macro-analytics/DEER/deer.html) |
+| Inflations-Targeting | Clarida/Waldman, [NBER w13010](https://nber.org/papers/w13010) |
+
+- *Gestrichen als Beleg:* Alpha Architect und Hellenic Shipping (Sekundärnotizen).
+- *Goldman GSDEER:* Die Inputs sind nicht öffentlich. Die Zeile nennt deshalb nur DBS.
+
+**Value-Test** (`tools/niveau_backtest_archiv.py`):
+- Definition nach AQR: −(5-Jahres-Änderung des realen Korb-Kurses). Die Inflation ist aus den Jahresraten zu jedem Jahrestag kumuliert. Kurse ab 2016-10 → 52–83 Monate.
+
+| Variante | Pool-IC 1M / 3M | Treffer 1M / 3M | Top-Bottom 1M |
+|---|---|---|---|
+| 5J real | −0,000 / −0,079 | 48,3 / 41,3 % | −0,50 %/Mon |
+| 5J nominal | −0,032 / −0,122 | 48,1 / 39,6 % | −0,46 %/Mon |
+| 3J real | +0,044 / −0,009 | 48,9 / 43,0 % | +0,20 %/Mon |
+
+- **Nicht aufgenommen.** Billige Währungen wurden 2021–26 billiger (JPY).
+- Value ist ein Mehrjahres-Signal. AQR misst über Jahrzehnte, der Score über 1–3 Monate.
+
+**Deploy nach der Umbenennung** (GitHub-API, Repo `test12`):
+- Commit 1da5b3d2: **„Workers Builds: fx-final“ = success** (09:37 UTC). Die Cloudflare-Anbindung hält.
+- **GitHub Pages:** letztes Deployment **2026-08-10**. Der Mirror steht seit zwei Monaten still, *unabhängig* von der Umbenennung.
+  - Die Pages-Einstellung ist über den Proxy nicht lesbar und muss in GitHub → Settings → Pages geprüft werden.
+  - `docs/workflow.md` nennt den Mirror noch als „garantiert direkt aus main“. Das stimmt so nicht mehr.

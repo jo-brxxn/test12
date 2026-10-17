@@ -231,3 +231,37 @@ for name, fn, ws in [('Retail y/y Momentum (12M)', eh_dh, list(EH)), ('Retail y/
                      ('Ind.Prod y/y Momentum (12M)', ip_dh, list(IP)), ('Ind.Prod y/y Trend 3M', ip_3m, list(IP)),
                      ('Growth Momentum (Retail+IP)', komb(eh_dh, ip_dh), sorted(set(EH) | set(IP)))]:
     for v in lauf(name, fn, ws, ST_MOM, 3).values(): print(v)
+
+# ── VALUE nach Asness/Moskowitz/Pedersen (JF 2013): -(5J-Aenderung des realen Wechselkurses) ──
+# Real = nominale Korb-Aenderung + eigene minus Peer-Inflation im selben Zeitraum
+# (kumuliert aus den Jahresraten zu jedem Jahrestag, point-in-time). Billig nach
+# realer Abwertung = bullish. Gleiche Regel wie oben.
+INF = {c: reihe(ind(c, 'PCE' if c == 'USD' else 'CPI (Headline)')) for c in FX}
+def kum_infl(c, s, jahre):
+    tot = 0.0
+    for k in range(jahre):
+        p = letzter(INF[c], s - timedelta(days=365*k), 120)
+        if not p: return None
+        tot += math.log(1 + p[1]/100)
+    return tot
+def real_aenderung(s, jahre):
+    s0 = s - timedelta(days=round(365.25*jahre))
+    a = {x: wert(x, s0) for x in FX}; b = {x: wert(x, s) for x in FX}
+    if None in a.values() or None in b.values(): return None
+    lr = {x: math.log(b[x]/a[x]) for x in FX}; pi = {x: kum_infl(x, s, jahre) for x in FX}
+    if None in pi.values(): return None
+    return {c: (lr[c] - sum(lr[x] for x in FX if x != c)/7) + (pi[c] - sum(pi[x] for x in FX if x != c)/7) for c in FX}
+_vm = {}
+def value_sig(jahre):
+    def f(c, s):
+        k = (s, jahre)
+        if k not in _vm: _vm[k] = real_aenderung(s, jahre)
+        r = _vm[k]; return -r[c] * 100 if r else None   # % reale Abwertung
+    return f
+print("\n== Value: reale Wechselkurs-Aenderung (AQR) ==")
+for j in (5, 3):
+    for v in lauf(f'Value {j}J (real, vs Peers)', value_sig(j), FX, [[15,.75],[7.5,.5]], 4).values(): print(v)
+    for v in lauf(f'  nur nominal {j}J (Probe)', lambda c, s, j=j: (lambda r: None if r is None else -r)(
+            (lambda a, b: None if None in a.values() or None in b.values() else
+             (math.log(b[c]/a[c]) - sum(math.log(b[x]/a[x]) for x in FX if x != c)/7) * 100)(
+            {x: wert(x, s - timedelta(days=round(365.25*j))) for x in FX}, {x: wert(x, s) for x in FX})), FX, [[15,.75],[7.5,.5]], 4).values(): print(v)

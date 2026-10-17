@@ -111,9 +111,10 @@ Adressen, nicht nur eine:
   der Nutzer tatsaechlich benutzt/verlinkt.
 - ⚠ **Repo seit 2026-10-17 `jo-brxxn/test12`** (vorher `FX-final`, existiert
   nicht mehr). `DATA_BASE` und `event-alerts.yml` lesen direkt von `test12`.
-  Pages-Mirror vermutlich unter `/test12/` – *nicht geprüft* (github.io in
-  der Session gesperrt). Cloudflare-Worker-Anbindung nach Umbenennung
-  *nicht geprüft*.
+  Cloudflare Worker baut nach der Umbenennung weiter (Check „Workers Builds:
+  fx-final“ = success, 2026-10-17). ⚠ **GitHub Pages: letztes Deployment
+  2026-08-10** – Mirror steht still, Einstellung in GitHub → Settings → Pages
+  prüfen; bis dahin ist der Mirror NICHT aktuell.
 - **`jo-brxxn.github.io/FX-final/`** (GitHub Pages, alter Name) war ein zweiter,
   UNGESCHUETZTER Mirror, der automatisch und garantiert direkt aus `main`
   ausgeliefert wird — ohne Build-Schritt, jeder Push ist sofort live.
