@@ -20090,3 +20090,235 @@ nachgerechnet. Die Gegenprobe `__nivAbsolut` liefert 22 Befunde.
   VERSION-CHECK-605), eine echte Formel-Änderung; die Note baut sich danach
   nach Projektregel ohnehin neu auf.
 
+
+## VERSION-CHECK-606 (2026-10-16/17) — Score-Modell 23: Richtung und Markterwartung im Niveau-Block
+
+**Anlass:** Der /goal-Stop-Hook hat drei offene Punkte gemeldet:
+1. Die Richtung der Abstände fehlt.
+2. Die Zinserwartungen aus Rate Probabilities sind nicht eingebaut.
+3. Die Recherche hatte keine Bankquellen, und die Repo-Umbenennung ist ungeklärt.
+
+**Bankquellen nachgeholt:**
+- **Goldman Sachs GSDEER:** Langfrist-Fair-Value aus Terms of Trade und Produktivität
+  ([PIIE](https://www.piie.com/sites/default/files/publications/pb/pb07-4/stolper.pdf)).
+- **ING BEER:** Terms of Trade, Leistungsbilanz und Staatsausgaben. Kurzfristige
+  Zinsfaktoren sind ausdrücklich herausgenommen
+  ([ING Think](https://think.ing.com/articles/breaking-down-g10-valuation-the-key-is-in-the-terms-of-trade)).
+- **Erwartete statt aktueller Zinsdifferenz:** ING (Chris Turner) nennt das
+  OIS-/2Y-Swap-Repricing als Treiber; Märkte handeln die *erwartete* Differenz in 6–12
+  Monaten ([VT Markets/ING](https://www.vtmarkets.com/?p=44008),
+  [CME](https://cmegroup.com/education/featured-reports/interest-rates-gaps-for-the-us-dollar.html)).
+- **Folgerung für die App:**
+  - Die Terms of Trade stecken für AUD, NZD und CAD bereits in den Rohstoff-Zeilen.
+  - Das Repricing misst schon „2Y Yield Gap (20d)“.
+  - Es fehlte das **Niveau des eingepreisten Pfads**.
+- **Momentum statt y/y:** 3- und 6-Monats-Raten zeigen den aktuellen Trend früher; y/y
+  hinkt und hängt an Basiseffekten
+  ([CEA](https://bidenwhitehouse.archives.gov/cea/written-materials/2023/05/10/the-signal-and-the-noise-part-ii-cpi-inflation),
+  [ING](https://think.ing.com/downloads/pdf/article/the-real-dynamics-of-core-inflation-in-the-eurozone)).
+  M/m-Reihen sind hier aber nicht für alle Länder saisonbereinigt. Deshalb wird die
+  Richtung über die Veränderung der y/y-Rate in 3 Monaten gemessen.
+
+**Neu:** drei Zeilen, für Währungen relativ zu den Peers. Gemessen am 2026-10-17:
+
+| Zeile | Werte | Punkte |
+|---|---|---|
+| Inflation Trend (3M) | USD PCE 4,1 → 3,4 %; EUR/NZD +1,0 pp | USD −0,5; EUR/NZD +0,5 |
+| Unemployment Trend (3M) | CAD 6,73 → 6,45 % | CAD +0,25 |
+| Rate Path vs Peers | GBP +71 bp eingepreist bis Dezember, Peers etwa 27 bp | GBP +0,75; AUD (+11 bp) und CHF (+7 bp) je −0,5 |
+
+Rate Probabilities werden jetzt auch beim Start geladen, nicht erst im Tab.
+
+**Rundung:** −0,7 kam als −0,69999… an und fiel unter die Schwelle 0,7. `nivStufe` rundet
+jetzt vorher auf 3 Stellen.
+
+**Wächter:** `check/niveau.js` deckt jetzt 66 Zeilen ab, die Gegenprobe liefert 33 Befunde.
+
+**Repo-Umbenennung (`jo-brxxn/FX-final` → `jo-brxxn/test12`):**
+- Geprüft: `raw.githubusercontent.com/jo-brxxn/FX-final/main/manifest.json` und
+  `…/test12/…` liefern beide 200; Pushes kommen über die Weiterleitung an.
+- `DATA_BASE` (`js/main.js`) und `event-alerts.yml` bleiben auf FX-final. GitHub leitet
+  weiter, solange kein neues Repo diesen Namen bekommt. Ein Wechsel auf einen
+  ungeklärten Namen wäre riskanter.
+- **Risiko:** Ein neues Repo namens `FX-final` würde die Daten der App übernehmen.
+
+## 2026-10-17 — VERSION-CHECK-607 · Score-Modell 24: Niveau-Block per Backtest bereinigt
+
+**Anlass:** Prüfung des Ziels: Gibt es einen Beleg, dass die Niveau-Zeilen
+die Folgeentwicklung vorhersagen?
+
+**Methode:** `tools/niveau_backtest.py`
+- Point-in-time an jedem Monatsende von 2018-01 bis 2026-10 (106 Stichtage).
+- Nur Releases ≤ Stichtag, Erstveröffentlichung.
+- Signal wie `applyNiveauFeed`: robuster z gegen 10 Jahre, relativ zu den Peers.
+- Ziel: Korb-Log-Rendite der Währung gegen Ø der anderen sieben.
+- Kennzahlen: Spearman-IC je Monat, t-Wert, Trefferquote, Long-Top-2/Short-Bottom-2.
+
+**Ergebnis 1M (IC / t / L/S %/Monat):**
+
+| Signal | IC | t | L/S |
+|---|---|---|---|
+| infl | **+0,071** | 1,97 | +0,15 |
+| inflT | **+0,058** | 1,57 | +0,27 |
+| lab | +0,017 | 0,51 | +0,18 |
+| labT | −0,014 | −0,38 | +0,13 |
+| real | **−0,045** | −1,12 | −0,21 |
+| gdp | **−0,016** | −0,38 | −0,10 |
+| wage | +0,008 | *13 Monate* | +0,10 |
+
+- 3M: labT **+0,054** (Treffer 57,3 %), real −0,033, gdp −0,032.
+
+**Block-Varianten (Hälften 2018–22 / 2022–26):**
+
+| Variante | 1M IC | 3M IC | L/S 1M |
+|---|---|---|---|
+| alle 8 (Modell 23) | +0,029 / +0,036 | +0,024 / +0,041 | +0,23 / +0,24 |
+| **ohne real+gdp** | **+0,072 / +0,017** | **+0,069 / +0,048** | **+0,50 / +0,12** |
+| nur Inflation | +0,080 / +0,031 | +0,039 / −0,008 | +0,34 / +0,25 |
+
+**Entscheidung:**
+- **Real Rate vs Peers** und **Growth vs Trend** entfernt: IC in beiden Horizonten negativ.
+  Die Zeilen werden über `NIV_ALT` aus bestehenden Ständen gelöscht.
+- **Rate Path vs Peers** = 2Y-Rendite minus Leitzins für **alle acht** Währungen,
+  vorher OIS ohne JPY/NZD. Stufen 25/60 bp. *Nicht backtestbar*, weil die
+  2Y-Historie erst 2026 beginnt.
+- PMI und Wages bleiben ohne Beleg, weil die Historie zu kurz ist.
+
+**Einordnung:**
+- Kein Signal erreicht t ≥ 2.
+- Der Block ist eine schwache, aber in beiden Hälften positive Ergänzung.
+- Er ist kein eigenständiges Handelssignal.
+
+**Wächter:**
+- `check/niveau.js` zählt jetzt 53 Zeilen.
+- ALT-Zeilen müssen fehlen; JPY/NZD-Pfad muss vorhanden sein.
+- Die Gegenprobe meldet 33 Befunde.
+
+## 2026-10-17 — VERSION-CHECK-608 · Score-Modell 25: Archiv-Backtest für Wages, PMI, Rate Path
+
+**Anlass:**
+- Hook-Feedback: Drei Zeilen (Wages, PMI, Rate Path) waren nach Modell 24 ungetestet.
+- Bei Modell 24 hieß es „nicht backtestbar“. Die Suche nach einer anderen Quelle fehlte.
+
+**Quelle:** `cal_hist/` (TradingView-Erstveröffentlichung ab 2016-09) plus `historyFull`.
+- **Wages (7/8):**
+
+  | Währung | Reihe |
+  |---|---|
+  | USD | AHE YoY |
+  | EUR | Wage Growth |
+  | GBP | Avg Earnings incl. Bonus |
+  | JPY | Cash Earnings |
+  | CAD | Hourly Wages |
+  | AUD | WPI |
+  | NZD | LCI |
+
+  *CHF fehlt.*
+- **2Y-Rendite:** Auktionsrenditen für USD (2-Year Note), EUR (Schatz), CAD (ab 2021) und JPY (ab 2022). NZD nur als 1Y-Bill-Variante.
+  - *GBP/AUD/CHF:* keine 2Y-Auktion im Archiv.
+  - *FRED:* in der Session gesperrt.
+  - *Yahoo:* 2Y nur als Future (backfill-ohlc.yml).
+- **PMI:** frei verfügbar sind nur ISM (USD), procure.ch/SVME (CHF) und BusinessNZ (NZD).
+  - S&P Global/HCOB/Jibun stehen ohne Actual im Archiv (lizenziert).
+
+**Ergebnis** (`tools/niveau_backtest_archiv.py`):
+
+| Zeile | 1M | 3M | Treffer | Entscheidung |
+|---|---|---|---|---|
+| Rate Path vs Peers | IC/Monat **−0,154** (t −1,90) | **−0,308** (t −2,34) | 46–48 % | **raus** |
+| + NZD-Variante | −0,133 | **−0,324** (t −2,84) | 47 % | – |
+| PMI vs 50 | Pool-IC −0,013 | +0,013 | 47–49 % | **raus** |
+| Wages vs Normal | Pool-IC **+0,043** | **+0,069** | 53,5/54,6 % | bleibt |
+
+- **Rate Path:** Das Niveau der eingepreisten Erwartung ist schon im Kurs, wie es die Markteffizienz erwartet.
+  - Kurse bewegt die *Änderung* der Erwartung. Die misst schon „2Y Yield Gap (20d)“.
+  - Je Währung absolut liegt der IC bei +0,01 bis +0,14 (kein Querschnittsvorteil).
+- **Wages:** Top-minus-Bottom ist negativ (−0,17 %/Monat). Damit ist der Beleg schwach, aber Pool-IC und Treffer sind positiv. Die Zeile bleibt bei den bisherigen Stufen.
+- **Prüfung CAD:** Der Ivey-PMI (Ø 55–65) wäre gegen 50 verzerrt. Die App nutzt aber S&P Global (TE), nicht Ivey.
+
+**Code:**
+- `NIV` ohne `pmi`/`path`. `NIV_ALT` ergänzt, damit alte Zeilen gelöscht werden.
+- Toter Code für gdp/real/pmi/path in `nivWerte`/`nivVerlauf`/`nivRegelText` entfernt.
+- `fetchRateProbData` nicht mehr beim Start (war nur für den Pfad).
+
+**Wächter:** `check/niveau.js`
+- 37 Zeilen, alle vier Altzeilen müssen fehlen.
+- Gegenprobe rot.
+
+## 2026-10-17 — VERSION-CHECK-609 · Economic-Growth-Kandidaten, Recherche-Beleg, Repo-Adresse
+
+**Anlass:** Das Hook-Feedback nannte drei offene Punkte: die Lücke bei Economic Growth, keinen eigenen Beleg für die Recherche und den Repo-Namen.
+
+**Recherche (Quellen geprüft):**
+- **Dahlquist/Hasseltoft:** *Economic Momentum and Currency Returns*, JFE 136 (2020) 152–167, DOI 10.1016/j.jfineco.2019.09.002 ([HHS](https://www.hhs.se/en/houseoffinance/outreach/news--press/news/2019/macro-fundamentals-predict-currency-returns), [Alpha Architect](https://alphaarchitect.com/fundamental-momentum-the-carry-trade-and-currency-returns/)).
+  - **Trends** in Industrieproduktion, Einzelhandel, Arbeitslosigkeit, CPI und PPI sagen FX-Renditen voraus.
+  - Long/Short Sharpe **0,70**, Alpha über Carry/Momentum/Value hinaus.
+  - Daten 1976–2017, 21 Industrieländer.
+  - *Replikation mit GBP als Basis (BI 2022): Sharpe 0,24, nicht signifikant.*
+- **Macrosynergy:**
+  - [Excess Inflation](https://macrosynergy.com/?p=43872): direktionales *und* relatives FX-Signal, 10 DM seit 2000.
+  - Arbeitsmarkt über 3M/3M-, 6M/6M- und y/y-Änderungen der Arbeitslosigkeit.
+  - [Scorecards](https://macrosynergy.com/academy/macro-quantamental-scorecards).
+- **Asness/Moskowitz/Pedersen:** *Value and Momentum Everywhere*, JF 2013 ([PDF](https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf)). Value und Momentum gibt es auch bei Währungen.
+- **Bank-Fair-Value:** Goldman GSDEER/GSFEER ([Notiz](https://www.hellenicshippingnews.com/g10-fx-valuation-round-up/)), DBS DEER mit Inflations-, Produktivitäts- und Terms-of-Trade-Differenzen ([DBS](https://www.dbs.com.sg/corporate/research-and-insights/insights/macro-analytics/DEER/deer.html)).
+  - *„Exchange rates can trade far from fair value for extended periods“*: Value ist ein langer Horizont.
+  - Keine freie Quelle für point-in-time-Inputs, daher nicht umgesetzt.
+
+**Economic Growth: 9 Kandidaten** (`tools/niveau_backtest_archiv.py`, Regel vor dem Lauf: Pool-IC 1M und 3M > 0, Treffer > 50 %):
+
+| Kandidat | Pool-IC 1M / 3M | Treffer 1M / 3M | Ergebnis |
+|---|---|---|---|
+| Consumer Confidence vs Normal | +0,036 / +0,080 | 49,8 / 54,0 % | durchgefallen |
+| Consumer Confidence Trend 3M | +0,069 / +0,056 | 55,9 / 49,4 % | durchgefallen |
+| Retail Sales y/y vs Normal | +0,025 / +0,038 | 50,5 / 51,4 % | bestanden → Block-Test |
+| Industrial Prod. y/y vs Normal | −0,031 / −0,042 | 47,6 / 51,5 % | durchgefallen |
+| Retail Momentum (12M, D/H) | +0,003 / −0,093 | 51,2 / 45,7 % | durchgefallen |
+| Retail Trend 3M | −0,037 / −0,134 | 47,1 / 42,7 % | durchgefallen |
+| IP Momentum (12M, D/H) | +0,021 / +0,086 | 50,1 / 53,6 % | knapp bestanden |
+| IP Trend 3M | −0,001 / +0,006 | 47,8 / 51,7 % | durchgefallen |
+| Growth Momentum (Retail+IP) | +0,019 / −0,055 | 50,1 / 47,2 % | durchgefallen |
+
+- **Retail im Block** (`tools/niveau_backtest.py`, „Modell 25 + retail“):
+  - 2018–22: IC +0,099 (t 2,23).
+  - 2022–26: **−0,014 / −0,023**, Treffer 46–49 %.
+  - Instabil → **nicht aufgenommen**.
+- **IP-Momentum:** 1 Treffer von 9 Tests entspricht dem Zufallsniveau. Dazu nur 5 Währungen und kein Live-Feed → **nicht aufgenommen**.
+- **Schluss:** Bei 10 Jahren und 8 Währungen trägt kein Wachstumsniveau. Das passt zu D/H: Ihr Effekt braucht 40 Jahre und 21 Länder.
+
+**Repo-Adresse:**
+- `list_repos`: `jo-brxxn/FX-final` existiert nicht mehr, nur noch `jo-brxxn/test12`.
+- `DATA_BASE` (`js/main.js`) und `event-alerts.yml` lesen jetzt direkt von `test12`. Geprüft: manifest, price_data und ind_data liefern 200, mit `access-control-allow-origin: *`.
+- *Nicht geprüft*, weil github.io in der Session gesperrt ist: der Pages-Mirror unter dem neuen Pfad und die Cloudflare-Worker-Anbindung.
+
+## 2026-10-17 — Primärquellen, Value-Test, Deploy-Prüfung (nur Doku/Tools, kein App-Code)
+
+**Primärquellen statt Sekundärnotizen:**
+
+| Methode | Primärquelle |
+|---|---|
+| Economic Momentum | Dahlquist/Hasseltoft, *Economic momentum and currency returns*, J. Financial Economics 136 (2020) 152–167, [doi:10.1016/j.jfineco.2019.09.002](https://doi.org/10.1016/j.jfineco.2019.09.002), [SSE-Repositorium](https://research.hhs.se/esploro/outputs/journalArticle/Economic-momentum-and-currency-returns/991001480359106056) |
+| Value/Momentum | Asness/Moskowitz/Pedersen, *Value and Momentum Everywhere*, J. Finance 68(3) 2013, [Autoren-PDF](https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf) |
+| Excess Inflation, Labour, Scorecards | Macrosynergy (Herausgeber selbst): [Excess inflation](https://macrosynergy.com/?p=43872), [Scorecards](https://macrosynergy.com/academy/macro-quantamental-scorecards) |
+| Fair Value | DBS DEER (Bank selbst): [Methodik](https://www.dbs.com.sg/corporate/research-and-insights/insights/macro-analytics/DEER/deer.html) |
+| Inflations-Targeting | Clarida/Waldman, [NBER w13010](https://nber.org/papers/w13010) |
+
+- *Gestrichen als Beleg:* Alpha Architect und Hellenic Shipping (Sekundärnotizen).
+- *Goldman GSDEER:* Die Inputs sind nicht öffentlich. Die Zeile nennt deshalb nur DBS.
+
+**Value-Test** (`tools/niveau_backtest_archiv.py`):
+- Definition nach AQR: −(5-Jahres-Änderung des realen Korb-Kurses). Die Inflation ist aus den Jahresraten zu jedem Jahrestag kumuliert. Kurse ab 2016-10 → 52–83 Monate.
+
+| Variante | Pool-IC 1M / 3M | Treffer 1M / 3M | Top-Bottom 1M |
+|---|---|---|---|
+| 5J real | −0,000 / −0,079 | 48,3 / 41,3 % | −0,50 %/Mon |
+| 5J nominal | −0,032 / −0,122 | 48,1 / 39,6 % | −0,46 %/Mon |
+| 3J real | +0,044 / −0,009 | 48,9 / 43,0 % | +0,20 %/Mon |
+
+- **Nicht aufgenommen.** Billige Währungen wurden 2021–26 billiger (JPY).
+- Value ist ein Mehrjahres-Signal. AQR misst über Jahrzehnte, der Score über 1–3 Monate.
+
+**Deploy nach der Umbenennung** (GitHub-API, Repo `test12`):
+- Commit 1da5b3d2: **„Workers Builds: fx-final“ = success** (09:37 UTC). Die Cloudflare-Anbindung hält.
+- **GitHub Pages:** letztes Deployment **2026-08-10**. Der Mirror steht seit zwei Monaten still, *unabhängig* von der Umbenennung.
+  - Die Pages-Einstellung ist über den Proxy nicht lesbar und muss in GitHub → Settings → Pages geprüft werden.
+  - `docs/workflow.md` nennt den Mirror noch als „garantiert direkt aus main“. Das stimmt so nicht mehr.

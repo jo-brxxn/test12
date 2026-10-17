@@ -60,23 +60,22 @@ Modell 20 maß der Score fast nur **Überraschungen** (Actual vs Forecast) –
 ein kurzer Horizont (Citi baute den CESI für kurzfristige FX-Signale, er
 kehrt per Konstruktion zur Null zurück). Der Niveau-Block ergänzt den
 mittleren Horizont, wie ihn Quant-Research für FX nutzt (Quellen und
-Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-605). Sechs Zeilen mit **festen
-Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
+Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-605–608). Seit Modell 25
+fünf Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
 
 | Zeile | Karte | Messung | Stufen |
 |---|---|---|---|
 | Inflation vs Target | Inflation | Ø Headline- und Core-Inflation y/y (USD: PCE, Fed-Ziel) minus offizielles Ziel (`INFL_ZIEL`; Spannen → Mitte: CHF 0–2 → 1, CAD 1–3 → 2, AUD 2–3 → 2,5, NZD 1–3 → 2) | 0,5/1/2 pp → ±0,5/0,75/1 |
-| Real Rate vs Peers | Inflation | Leitzins − Headline y/y, minus Ø der anderen sieben | 0,75/1,5 pp → ±0,5/0,75 |
 | Unemployment vs Normal | Labour Market | 10-J-Median minus Ø der letzten 3 Monate, robuster z (Median-Abweichung × 1,4826) – niedriger = straff = bullish | 0,5/1/1,5σ → ±0,5/0,75/1 |
 | Wages vs Normal | Labour Market | Lohnwachstum y/y (3 Monate) gegen 10-J-Median, robuster z | 0,75/1,5σ → ±0,5/0,75 |
-| Growth vs Trend | Economic Growth | BIP-Wachstum (Releases der letzten ~100 Tage) gegen 10-J-Median, robuster z | 0,5/1σ → ±0,5/0,75 |
-| PMI vs 50 | Economic Growth | Ø Manufacturing/Services minus 50 (≤ 45 Tage alt) | 1,5/4 Pkt → ±0,5/0,75 |
+| Inflation Trend (3M) *(Modell 23)* | Inflation | Headline y/y (USD: PCE) jetzt minus der Wert ≥ 80 Tage davor – Richtung des Abstands | 0,3/0,7 pp → ±0,25/0,5 |
+| Unemployment Trend (3M) *(Modell 23)* | Labour Market | Ø der letzten 3 Monate minus Ø der 3 Monate davor; steigend = bearish (Sahm-Logik) | 0,2/0,4 pp → ±0,25/0,5 |
 
 - **Währungen RELATIV:** Punkte aus dem eigenen Abstand minus dem Ø der
   anderen sieben (wie das Macrosynergy-FX-Scorecard, „relative to the base
-  currency area“). Gemessen am 2026-10-16: Inflation über Ziel bei 6 von 8,
-  PMI über 50 bei 7 von 8 – absolut wären fast alle Währungen bullish, ohne
-  dass eine gegen die andere gewinnt. Real Rate ist schon relativ.
+  currency area“). Gemessen am 2026-10-16: Inflation über Ziel bei 6 von 8 –
+  absolut wären fast alle Währungen bullish, ohne
+  dass eine gegen die andere gewinnt.
 - **Nicht-FX** (Gold, Indizes, Renditen) lesen das **absolute** Niveau ihrer
   Währung über die Karten-Regel (same/inverse; Inflation-Karte wie die
   Zinsdifferenz über `zinsdiffRichtung`).
@@ -86,6 +85,49 @@ Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
   keine Veröffentlichung); der Datenstand steht in `research.stand`.
 - ACT zeigt den **absoluten** Abstand (z. B. „+1.2pp“ über Ziel), die Farbe
   folgt den Punkten; Score-Fenster/Journal nennen absolut, Peers und relativ.
+- **Nur Zeilen mit Beleg (Modell 24):** `tools/niveau_backtest.py`
+  (point-in-time, Monatsende 2018–2026, Korb-Rendite vs Ø der anderen
+  sieben, Rang-IC/Trefferquote/Long-Short). Entfernt, weil IC negativ:
+  **Real Rate vs Peers** (1M −0,045) und **Growth vs Trend** (1M −0,016,
+  3M −0,032). Block ohne beide: IC +0,072/+0,017 (1M, beide Hälften
+  positiv) statt +0,029/+0,036. `NIV_ALT` löscht die alten Zeilen.
+- **Modell 25 – Archiv-Backtest** `tools/niveau_backtest_archiv.py`
+  (Reihen aus `cal_hist/`, TradingView-Erstveröffentlichung ab 2016):
+  - **Rate Path vs Peers** raus: 2Y-Auktionsrendite minus Leitzins
+    (USD/EUR/CAD/JPY) sagt das **Gegenteil** voraus, IC je Monat
+    **−0,154** (1M) / **−0,308** (3M, t −2,34). *Niveau der Erwartung ist
+    eingepreist* – bewegt nur die Änderung = „2Y Yield Gap (20d)“.
+  - **PMI vs 50** raus: IC ±0,03, Treffer < 50 % (nur ISM, procure.ch,
+    BusinessNZ frei; S&P-Global-PMIs ohne Actual im Archiv).
+  - **Wages vs Normal** bleibt: 7 von 8 Währungen, Pool-IC **+0,043**
+    (1M) / **+0,069** (3M), Treffer 53,5/54,6 %.
+- **Economic Growth ohne Niveau-Zeile – belegt (2026-10-17):** neun
+  Kandidaten aus `cal_hist/` getestet, Regel *vor* dem Lauf: Pool-IC 1M
+  und 3M > 0 und Treffer > 50 %.
+  - Durchgefallen: Consumer Confidence Niveau (Treffer 49,8 %) und Trend,
+    Industrieproduktion Niveau, Retail-Momentum (3M IC −0,093/−0,134),
+    Growth-Momentum-Kombi.
+  - Retail Sales y/y Niveau: einzeln knapp bestanden, macht den Block aber
+    **instabil** (2022–26: IC −0,014/−0,023) → raus.
+  - IP-Momentum (12M): knapp bestanden, aber 1 von 9 = Zufallsniveau,
+    5 Währungen, kein Live-Feed → raus.
+- **Smart-Money-Methoden → Umsetzung** (Primärquellen: `docs/CHANGELOG.md`
+  VERSION-CHECK-605 und Eintrag „Primärquellen + Value“ 2026-10-17):
+
+  | Methode (wer) | Im Score | Status |
+  |---|---|---|
+  | Surprise-Index (Citi CESI) | Actual vs Forecast | kurzer Horizont |
+  | Excess Inflation (Macrosynergy, 10 DM seit 2000) | Inflation vs Target | **IC +0,071** |
+  | Economic Momentum (Dahlquist/Hasseltoft, JFE 2020) | Inflation/Unemployment Trend 3M | **IC +0,058 / +0,054 (3M)** |
+  | Labour Tightening (Macrosynergy) | Unemployment vs Normal, Wages | IC +0,017 / +0,043 |
+  | Zinserwartung (Bank-FX-Research) | 2Y Yield Gap (20d) = *Änderung* | Niveau getestet: **negativ** → nur Änderung |
+  | Carry/Real Rate | Carry-Zeilen; Real Rate vs Peers | Real Rate **negativ** → raus |
+  | Positionierung (CFTC) | COT | bestehend |
+  | Value/Momentum (AQR, Asness et al. 2013) | Trend-Treiber (Preis-Momentum) | Momentum bestehend; **Value getestet** (5J reale FX-Änderung, AQR-Definition): IC −0,000/−0,079, Treffer 41 % → *nicht aufgenommen* |
+  | Fair Value (DBS DEER: Inflations-/Produktivitäts-/ToT-Differenzen) | – | langer Horizont, keine point-in-time-Inputs frei |
+- **Beleg schwach:** kein positiver t-Wert ≥ 2 – Block ist Ergänzung zum mittleren
+  Horizont, kein eigenständiges Signal. Neue Niveau-Zeile nur mit
+  Backtest-Lauf.
 - Geprüft von `check/niveau.js` (unabhängig nachgerechnet, Gegenprobe
   absolut statt relativ).
 
@@ -127,7 +169,7 @@ bleiben"*. Umsetzung: `js/journal.js`, Herleitung und Messwerte in
 | Normierung (nur Modus `normalized`) | ×0,4 bis ×1,8 | drei gemessene Faktoren, siehe unten |
 | **Saisonalitaet** | ±0,5 | seit 2026-09-14, siehe unten |
 | **Retail-Positionierung** | ±0,5 / ±1 | seit 2026-09-14, gegen die Menge, siehe unten |
-| **Niveau-Block** | feste Punkte, je Zeile max ±0,75/±1 | seit Modell 22: Inflation vs Ziel, Realzins vs Peers, Arbeitsmarkt/Löhne/Wachstum gegen 10-J-Normal, PMI vs 50 – siehe Abschnitt oben |
+| **Niveau-Block** | feste Punkte, je Zeile max ±0,75/±1 | seit Modell 22 (Stand 25): Inflation vs Ziel + Trend, Arbeitslosigkeit gegen 10-J-Normal + Trend, Löhne gegen 10-J-Normal – siehe Abschnitt oben |
 
 ### Saisonalitaet und Retail (seit 2026-09-14)
 

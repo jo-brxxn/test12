@@ -5,7 +5,7 @@ indicator scoring, COT, sentiment, seasonality, rate probabilities and more. Dat
 are produced hourly by the GitHub Actions workflow `.github/workflows/update-ff-calendar.yml`.
 
 **Live deploy is a Cloudflare Worker** (`fx-final.jonathan-fa5.workers.dev`, behind
-Cloudflare Access) — **not** GitHub Pages. `jo-brxxn.github.io/FX-final/` exists as an
+Cloudflare Access) — **not** GitHub Pages. The repo was renamed to `jo-brxxn/test12` on 2026-10-17; the Pages mirror (formerly `jo-brxxn.github.io/FX-final/`) exists as an
 unprotected secondary mirror, served straight from `main`. `index.html` tells the two
 apart at runtime (`DATA_BASE` in `index.html`, `const SK='fxpro_v1'` section): on
 `github.io`/`localhost` it fetches the data JSONs same-origin (relative path); on every
