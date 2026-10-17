@@ -1809,7 +1809,10 @@ function symScoreCmp(sym){
 // 22 -> 23 (2026-10-16): Niveau-Block um Richtung und Markterwartung ergaenzt:
 // Inflation Trend (3M), Unemployment Trend (3M), Rate Path vs Peers
 // (eingepreiste Leitzins-Aenderung aus rate_probabilities.json).
-const SCORE_MODEL_VERSION=23;
+// 23 -> 24 (2026-10-17): Backtest (tools/niveau_backtest.py): Real Rate vs
+// Peers und Growth vs Trend raus (Rang-IC negativ); Rate Path fuer alle acht
+// als 2Y-Rendite minus Leitzins statt OIS (fehlte JPY/NZD).
+const SCORE_MODEL_VERSION=24;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.

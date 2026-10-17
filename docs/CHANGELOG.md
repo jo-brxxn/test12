@@ -20129,3 +20129,55 @@ jetzt vorher auf 3 Stellen.
   weiter, solange kein neues Repo diesen Namen bekommt. Ein Wechsel auf einen
   ungeklärten Namen wäre riskanter.
 - **Risiko:** Ein neues Repo namens `FX-final` würde die Daten der App übernehmen.
+
+## 2026-10-17 — VERSION-CHECK-607 · Score-Modell 24: Niveau-Block per Backtest bereinigt
+
+**Anlass:** Prüfung des Ziels: Gibt es einen Beleg, dass die Niveau-Zeilen
+die Folgeentwicklung vorhersagen?
+
+**Methode:** `tools/niveau_backtest.py`
+- Point-in-time an jedem Monatsende von 2018-01 bis 2026-10 (106 Stichtage).
+- Nur Releases ≤ Stichtag, Erstveröffentlichung.
+- Signal wie `applyNiveauFeed`: robuster z gegen 10 Jahre, relativ zu den Peers.
+- Ziel: Korb-Log-Rendite der Währung gegen Ø der anderen sieben.
+- Kennzahlen: Spearman-IC je Monat, t-Wert, Trefferquote, Long-Top-2/Short-Bottom-2.
+
+**Ergebnis 1M (IC / t / L/S %/Monat):**
+
+| Signal | IC | t | L/S |
+|---|---|---|---|
+| infl | **+0,071** | 1,97 | +0,15 |
+| inflT | **+0,058** | 1,57 | +0,27 |
+| lab | +0,017 | 0,51 | +0,18 |
+| labT | −0,014 | −0,38 | +0,13 |
+| real | **−0,045** | −1,12 | −0,21 |
+| gdp | **−0,016** | −0,38 | −0,10 |
+| wage | +0,008 | *13 Monate* | +0,10 |
+
+- 3M: labT **+0,054** (Treffer 57,3 %), real −0,033, gdp −0,032.
+
+**Block-Varianten (Hälften 2018–22 / 2022–26):**
+
+| Variante | 1M IC | 3M IC | L/S 1M |
+|---|---|---|---|
+| alle 8 (Modell 23) | +0,029 / +0,036 | +0,024 / +0,041 | +0,23 / +0,24 |
+| **ohne real+gdp** | **+0,072 / +0,017** | **+0,069 / +0,048** | **+0,50 / +0,12** |
+| nur Inflation | +0,080 / +0,031 | +0,039 / −0,008 | +0,34 / +0,25 |
+
+**Entscheidung:**
+- **Real Rate vs Peers** und **Growth vs Trend** entfernt: IC in beiden Horizonten negativ.
+  Die Zeilen werden über `NIV_ALT` aus bestehenden Ständen gelöscht.
+- **Rate Path vs Peers** = 2Y-Rendite minus Leitzins für **alle acht** Währungen,
+  vorher OIS ohne JPY/NZD. Stufen 25/60 bp. *Nicht backtestbar*, weil die
+  2Y-Historie erst 2026 beginnt.
+- PMI und Wages bleiben ohne Beleg, weil die Historie zu kurz ist.
+
+**Einordnung:**
+- Kein Signal erreicht t ≥ 2.
+- Der Block ist eine schwache, aber in beiden Hälften positive Ergänzung.
+- Er ist kein eigenständiges Handelssignal.
+
+**Wächter:**
+- `check/niveau.js` zählt jetzt 53 Zeilen.
+- ALT-Zeilen müssen fehlen; JPY/NZD-Pfad muss vorhanden sein.
+- Die Gegenprobe meldet 33 Befunde.

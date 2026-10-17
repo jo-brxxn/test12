@@ -60,26 +60,24 @@ Modell 20 maß der Score fast nur **Überraschungen** (Actual vs Forecast) –
 ein kurzer Horizont (Citi baute den CESI für kurzfristige FX-Signale, er
 kehrt per Konstruktion zur Null zurück). Der Niveau-Block ergänzt den
 mittleren Horizont, wie ihn Quant-Research für FX nutzt (Quellen und
-Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-605). Sechs Zeilen mit **festen
-Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
+Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-605/606/607). Seit Modell 24
+sieben Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
 
 | Zeile | Karte | Messung | Stufen |
 |---|---|---|---|
 | Inflation vs Target | Inflation | Ø Headline- und Core-Inflation y/y (USD: PCE, Fed-Ziel) minus offizielles Ziel (`INFL_ZIEL`; Spannen → Mitte: CHF 0–2 → 1, CAD 1–3 → 2, AUD 2–3 → 2,5, NZD 1–3 → 2) | 0,5/1/2 pp → ±0,5/0,75/1 |
-| Real Rate vs Peers | Inflation | Leitzins − Headline y/y, minus Ø der anderen sieben | 0,75/1,5 pp → ±0,5/0,75 |
 | Unemployment vs Normal | Labour Market | 10-J-Median minus Ø der letzten 3 Monate, robuster z (Median-Abweichung × 1,4826) – niedriger = straff = bullish | 0,5/1/1,5σ → ±0,5/0,75/1 |
 | Wages vs Normal | Labour Market | Lohnwachstum y/y (3 Monate) gegen 10-J-Median, robuster z | 0,75/1,5σ → ±0,5/0,75 |
-| Growth vs Trend | Economic Growth | BIP-Wachstum (Releases der letzten ~100 Tage) gegen 10-J-Median, robuster z | 0,5/1σ → ±0,5/0,75 |
 | PMI vs 50 | Economic Growth | Ø Manufacturing/Services minus 50 (≤ 45 Tage alt) | 1,5/4 Pkt → ±0,5/0,75 |
 | Inflation Trend (3M) *(Modell 23)* | Inflation | Headline y/y (USD: PCE) jetzt minus der Wert ≥ 80 Tage davor – Richtung des Abstands | 0,3/0,7 pp → ±0,25/0,5 |
 | Unemployment Trend (3M) *(Modell 23)* | Labour Market | Ø der letzten 3 Monate minus Ø der 3 Monate davor; steigend = bearish (Sahm-Logik) | 0,2/0,4 pp → ±0,25/0,5 |
-| Rate Path vs Peers *(Modell 23)* | Inflation | eingepreiste Leitzins-Änderung bis zur letzten gelisteten Sitzung (`rate_probabilities.json`; nicht JPY/NZD). NICHT deren Änderung – die misst „2Y Yield Gap (20d)“ | 15/35 bp → ±0,5/0,75 |
+| Rate Path vs Peers *(Modell 24)* | Inflation | 2Y-Rendite (`BOND_DATA_FEED`) minus Leitzins = eingepreister Zinspfad, gleiche Methode für alle acht (OIS aus `rate_probabilities.json` nur als Info). NICHT deren Änderung – die misst „2Y Yield Gap (20d)“ | 25/60 bp → ±0,5/0,75 |
 
 - **Währungen RELATIV:** Punkte aus dem eigenen Abstand minus dem Ø der
   anderen sieben (wie das Macrosynergy-FX-Scorecard, „relative to the base
   currency area“). Gemessen am 2026-10-16: Inflation über Ziel bei 6 von 8,
   PMI über 50 bei 7 von 8 – absolut wären fast alle Währungen bullish, ohne
-  dass eine gegen die andere gewinnt. Real Rate ist schon relativ.
+  dass eine gegen die andere gewinnt.
 - **Nicht-FX** (Gold, Indizes, Renditen) lesen das **absolute** Niveau ihrer
   Währung über die Karten-Regel (same/inverse; Inflation-Karte wie die
   Zinsdifferenz über `zinsdiffRichtung`).
@@ -89,6 +87,18 @@ Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
   keine Veröffentlichung); der Datenstand steht in `research.stand`.
 - ACT zeigt den **absoluten** Abstand (z. B. „+1.2pp“ über Ziel), die Farbe
   folgt den Punkten; Score-Fenster/Journal nennen absolut, Peers und relativ.
+- **Nur Zeilen mit Beleg (Modell 24):** `tools/niveau_backtest.py`
+  (point-in-time, Monatsende 2018–2026, Korb-Rendite vs Ø der anderen
+  sieben, Rang-IC/Trefferquote/Long-Short). Entfernt, weil IC negativ:
+  **Real Rate vs Peers** (1M −0,045) und **Growth vs Trend** (1M −0,016,
+  3M −0,032). Block ohne beide: IC +0,072/+0,017 (1M, beide Hälften
+  positiv) statt +0,029/+0,036. `NIV_ALT` löscht die alten Zeilen.
+- **Nicht backtestbar:** Rate Path (2Y-Historie erst ab 2026), PMI
+  (Historie zu kurz), Wages (13 Monate). Bleiben aus Theorie (Carry/
+  Zinserwartung, Smart-Money-Standard), Gewicht klein halten.
+- **Beleg schwach:** kein t-Wert ≥ 2 – Block ist Ergänzung zum mittleren
+  Horizont, kein eigenständiges Signal. Neue Niveau-Zeile nur mit
+  Backtest-Lauf.
 - Geprüft von `check/niveau.js` (unabhängig nachgerechnet, Gegenprobe
   absolut statt relativ).
 
@@ -130,7 +140,7 @@ bleiben"*. Umsetzung: `js/journal.js`, Herleitung und Messwerte in
 | Normierung (nur Modus `normalized`) | ×0,4 bis ×1,8 | drei gemessene Faktoren, siehe unten |
 | **Saisonalitaet** | ±0,5 | seit 2026-09-14, siehe unten |
 | **Retail-Positionierung** | ±0,5 / ±1 | seit 2026-09-14, gegen die Menge, siehe unten |
-| **Niveau-Block** | feste Punkte, je Zeile max ±0,75/±1 | seit Modell 22: Inflation vs Ziel, Realzins vs Peers, Arbeitsmarkt/Löhne/Wachstum gegen 10-J-Normal, PMI vs 50 – siehe Abschnitt oben |
+| **Niveau-Block** | feste Punkte, je Zeile max ±0,75/±1 | seit Modell 22 (Stand 24): Inflation vs Ziel + Trend, Zinspfad vs Peers, Arbeitslosigkeit/Löhne gegen 10-J-Normal + Trend, PMI vs 50 – siehe Abschnitt oben |
 
 ### Saisonalitaet und Retail (seit 2026-09-14)
 

@@ -10127,10 +10127,8 @@ const INFL_ZIEL={USD:2,EUR:2,GBP:2,JPY:2,CHF:1,CAD:2,AUD:2.5,NZD:2};
 const INFL_ZIEL_TXT={USD:'2% (PCE)',EUR:'2%',GBP:'2%',JPY:'2%',CHF:'0–2% → 1%',CAD:'1–3% → 2%',AUD:'2–3% → 2.5%',NZD:'1–3% → 2%'};
 const NIV={
   infl:{name:'Inflation vs Target',rub:'Inflation',stufen:[[2,1],[1,0.75],[0.5,0.5]],einh:'pp'},
-  real:{name:'Real Rate vs Peers',rub:'Inflation',stufen:[[1.5,0.75],[0.75,0.5]],einh:'pp'},
   lab:{name:'Unemployment vs Normal',rub:'Labour Market',stufen:[[1.5,1],[1,0.75],[0.5,0.5]],einh:'z'},
   wage:{name:'Wages vs Normal',rub:'Labour Market',stufen:[[1.5,0.75],[0.75,0.5]],einh:'z'},
-  gdp:{name:'Growth vs Trend',rub:'Economic Growth',stufen:[[1,0.75],[0.5,0.5]],einh:'z'},
   pmi:{name:'PMI vs 50',rub:'Economic Growth',stufen:[[4,0.75],[1.5,0.5]],einh:'pts'},
   // Modell 23 (2026-10-16, Hook "bis es perfekt ist"): Richtung + Markterwartung.
   //   Inflation Trend (3M): Headline y/y heute minus vor ~3 Monaten - waechst der Abstand?
@@ -10140,10 +10138,16 @@ const NIV={
   //   to be". NICHT die Aenderung dieser Erwartung - die misst schon "2Y Yield Gap (20d)".
   inflT:{name:'Inflation Trend (3M)',rub:'Inflation',stufen:[[0.7,0.5],[0.3,0.25]],einh:'pp'},
   labT:{name:'Unemployment Trend (3M)',rub:'Labour Market',stufen:[[0.4,0.5],[0.2,0.25]],einh:'pp'},
-  path:{name:'Rate Path vs Peers',rub:'Inflation',stufen:[[35,0.75],[15,0.5]],einh:'bp'}
+  path:{name:'Rate Path vs Peers',rub:'Inflation',stufen:[[60,0.75],[25,0.5]],einh:'bp'}
 };
+// ⚠ BACKTEST (tools/niveau_backtest.py, 2018-2026, 8 Waehrungen, Korb-Rendite
+// 1/3 Monate, point-in-time): "Real Rate vs Peers" (Rang-IC -0,045) und
+// "Growth vs Trend" (-0,016 / -0,032) sagten das GEGENTEIL voraus - beide seit
+// Modell 24 raus. Der Block ohne sie: IC +0,072/+0,017 (1M, beide Haelften),
+// +0,069/+0,048 (3M). Alte Zeilen werden entfernt (keine Geisterzeilen).
+const NIV_ALT=['Real Rate vs Peers','Growth vs Trend'];
 const NIV_FENSTER_J=10,NIV_MIN_J=5,NIV_PMI_MAX_ALTER=45;
-const NIV_NAMEN=Object.values(NIV).map(d=>d.name);
+const NIV_NAMEN=Object.values(NIV).map(d=>d.name).concat(NIV_ALT);
 const nivTag=d=>Date.parse(String(d).slice(0,10)+'T00:00:00Z');
 function nivEintrag(ccy,base){
   const f=(typeof IND_DATA_FEED!=='undefined'&&IND_DATA_FEED)||{};
@@ -10240,34 +10244,26 @@ function nivWerte(ccy){
       // steigend = bearish -> Vorzeichen fuer die Punkte umdrehen, ACT zeigt die echte Richtung
       o.labT={x:-dx,act:nivFmtPp(dx),mass:`unemployment ${ma.toFixed(2)}% (last 3 months) vs ${mb.toFixed(2)}% (3 months before)`,stand:ur[ur.length-1][0]};}
   }
-  // 8) Rate Path: eingepreiste Aenderung bis zur letzten gelisteten Sitzung.
-  const rp=typeof RATE_PROB_DATA!=='undefined'&&RATE_PROB_DATA&&RATE_PROB_DATA[ccy];
-  if(rp&&Array.isArray(rp.meetings)&&rp.meetings.length&&rp.asOf&&(heuteMs-nivTag(rp.asOf))/864e5<=5){
-    const bp=rp.meetings.reduce((a,m)=>a+(+m.deltaBp||0),0),bis=rp.meetings[rp.meetings.length-1];
-    if(isFinite(bp))o.path={x:bp,act:(bp>0?'+':'')+Math.round(bp)+'bp',mass:`market prices ${bp>0?'+':''}${Math.round(bp)} bp by ${bis.label||bis.date} (${rp.meetings.length} meeting${rp.meetings.length>1?'s':''}, ${rp.refSource||'OIS'})`,stand:String(rp.asOf).slice(0,10)};
+  // 8) Rate Path: 2Y-Rendite minus Leitzins - der Markt preist den mittleren
+  //    Leitzins der naechsten zwei Jahre in die 2Y-Rendite ein (alle 8 Waehrungen,
+  //    eine Methode; JPY/NZD haben keine OIS-Zinswahrscheinlichkeiten). Wo
+  //    rate_probabilities.json eine Bepreisung hat, steht sie nur zur Info dabei.
+  const bd=typeof BOND_DATA_FEED!=='undefined'&&BOND_DATA_FEED&&BOND_DATA_FEED[ccy],bs=bd&&bd['2Y Bond Yield']&&bd['2Y Bond Yield'].series;
+  const cbE=nivEintrag(ccy,'Central Bank Rate'),cbV=cbE&&parseNumLike(cbE.actual);
+  const b2=Array.isArray(bs)&&bs.length?bs[bs.length-1]:null,y2=b2&&parseFloat(b2[1]);
+  if(b2&&isFinite(y2)&&cbV!=null&&(heuteMs-nivTag(b2[0]))/864e5<=7){
+    const bp=Math.round((y2-cbV)*100);
+    const rp=typeof RATE_PROB_DATA!=='undefined'&&RATE_PROB_DATA&&RATE_PROB_DATA[ccy];
+    const ois=rp&&Array.isArray(rp.meetings)&&rp.meetings.length?` · OIS: ${(()=>{const x=rp.meetings.reduce((a,m)=>a+(+m.deltaBp||0),0);return(x>0?'+':'')+Math.round(x);})()} bp by ${rp.meetings[rp.meetings.length-1].label||''}`:'';
+    o.path={x:bp,act:(bp>0?'+':'')+bp+'bp',mass:`2Y ${y2.toFixed(2)}% − policy rate ${cbV.toFixed(2)}%${ois}`,stand:String(b2[0]).slice(0,10)};
   }
   return o;
 }
-// Realzins (Leitzins minus Headline y/y) je Waehrung, fuer den Peer-Vergleich.
-function nivRealzins(ccy){
-  const heuteMs=nivTag(todayStr());
-  const cb=nivEintrag(ccy,'Central Bank Rate'),r=cb&&parseNumLike(cb.actual);
-  const inf=nivInflation(ccy,heuteMs,true)[0];
-  if(r==null||!inf)return null;
-  return{real:r-inf.wert,zins:r,inf:inf.wert,stand:[String(cb.date||'').slice(0,10),inf.datum].sort().pop()};
-}
 const _nivMemo={k:null,v:null};
 function nivAlle(){
-  const k=[typeof IND_DATA_FEED!=='undefined'?IND_DATA_FEED:null,todayStr(),typeof RATE_PROB_DATA!=='undefined'?RATE_PROB_DATA:null];
+  const k=[typeof IND_DATA_FEED!=='undefined'?IND_DATA_FEED:null,todayStr(),typeof RATE_PROB_DATA!=='undefined'?RATE_PROB_DATA:null,typeof BOND_DATA_FEED!=='undefined'?BOND_DATA_FEED:null];
   if(_nivMemo.k&&k.every((x,i)=>x===_nivMemo.k[i]))return _nivMemo.v;
   const v={};FX.forEach(c=>{try{v[c]=nivWerte(c);}catch(e){v[c]={};}});
-  const rz={};FX.forEach(c=>{try{rz[c]=nivRealzins(c);}catch(e){rz[c]=null;}});
-  FX.forEach(c=>{
-    const own=rz[c],peers=FX.filter(x=>x!==c&&rz[x]).map(x=>rz[x].real);
-    if(!own||peers.length<5)return;
-    const avg=peers.reduce((a,x)=>a+x,0)/peers.length,d=own.real-avg;
-    v[c].real={x:d,act:nivFmtPp(d),mass:`real ${own.real>0?'+':''}${own.real.toFixed(2)}% (rate ${own.zins.toFixed(2)}% − CPI ${own.inf.toFixed(1)}%) vs peers ${avg>0?'+':''}${avg.toFixed(2)}%`,stand:own.stand};
-  });
   // ⚠ RELATIV fuer Waehrungen (gemessen 2026-10-16: Inflation ueber Ziel bei
   // 6 von 8, PMI ueber 50 bei 7 von 8 - absolut waeren fast alle Waehrungen
   // "bullish", ohne dass eine gegen die andere gewinnt). Wie das Macrosynergy-
@@ -10277,7 +10273,6 @@ function nivAlle(){
   Object.keys(NIV).forEach(t=>{
     FX.forEach(c=>{
       const o=v[c]&&v[c][t];if(!o)return;
-      if(t==='real'){o.rel=o.x;o.peer=null;o.pkt=o.pktAbs=nivStufe(NIV[t],o.x);return;}
       const peers=FX.filter(x=>x!==c&&v[x]&&v[x][t]).map(x=>v[x][t].x);
       o.pktAbs=nivStufe(NIV[t],o.x);
       if(peers.length<4){o.rel=null;o.peer=null;o.pkt=null;return;}
@@ -10298,7 +10293,7 @@ function nivRegelText(t,ccy){
     pmi:`Average of the latest manufacturing and services PMI minus 50, the line between expansion and contraction. ${st} index points; less → 0. PMIs older than ${NIV_PMI_MAX_ALTER} days count 0.`,
     inflT:`Direction of inflation: the latest year-on-year rate${ccy==='USD'?' (PCE)':''} minus the rate about three months earlier. Accelerating inflation keeps the central bank under pressure = bullish; easing = bearish. ${st}; less → 0.`,
     labT:`Direction of unemployment: average of the last three months minus the three months before. A rising rate is the classic early warning of a turning labour market and counts bearish (falling = bullish). ${st}; less → 0.`,
-    path:`Policy path the market has priced: the expected change of the policy rate up to the last listed meeting, from overnight-index and futures pricing (Rate Probabilities). Currencies trade on where the rate gap is expected to be, not where it is. More hikes priced than the peers = bullish. ${st}; less → 0. Only currencies with a published pricing (not JPY, NZD). The CHANGE of this pricing is already scored by the 2Y yield gap row.`
+    path:`Policy path the market has priced: 2-year yield minus the policy rate (the 2-year yield is the market's average expected policy rate over two years, same method for all eight currencies). Currencies trade on where the rate gap is expected to be, not where it is. More tightening priced than the peers = bullish. ${st}; less → 0. The CHANGE of this pricing is already scored by the 2Y yield gap row. Not backtestable yet (2-year yield history starts in 2026).`
   };
   const rel=t==='real'?'':' For the eight currencies the points come from the distance RELATIVE to the average of the other seven (a level every central bank shares moves no exchange rate); gold, indices and yields read the absolute level of their currency.';
   return T[t]+rel+' Fixed points: no ageing, no weighting factor. Missing, too short (< '+NIV_MIN_J+' years) or stale series → no row.';
@@ -10310,6 +10305,9 @@ function applyNiveauFeed(){
   syms.forEach(sym=>{
     const fx=!isNonFx(sym.id),ccy=fx?sym.id:macroCcyFor(sym.id);
     const w=ccy?alle[ccy]:null;
+    // Seit Modell 24 nicht mehr gewertet (Backtest) - vorhandene Zeilen raus.
+    (sym.rubrics||[]).forEach(r=>{if(!Array.isArray(r.indicators))return;const n=r.indicators.length;
+      r.indicators=r.indicators.filter(i=>!(i&&NIV_ALT.includes(i.name)&&i.research&&i.research.niveau));if(r.indicators.length!==n)changed=true;});
     Object.keys(NIV).forEach(t=>{
       const def=NIV[t];
       const rub=(sym.rubrics||[]).find(r=>r&&r.name===def.rub);
@@ -10362,8 +10360,10 @@ function nivVerlauf(t,ccy){
   if(t==='labT'){const r=nivReihe(nivEintrag(ccy,'Unemployment Rate'));
     return{pts:r.map(([d])=>{const l=nivTag(d),a=r.filter(([e])=>nivTag(e)<=l&&nivTag(e)>l-92*864e5).map(x=>x[1]),b=r.filter(([e])=>nivTag(e)<=l-92*864e5&&nivTag(e)>l-184*864e5).map(x=>x[1]);
       return a.length&&b.length?[d,Math.round((a.reduce((s,v)=>s+v,0)/a.length-b.reduce((s,v)=>s+v,0)/b.length)*100)/100,null]:null;}).filter(Boolean),unit:'pp'};}
-  if(t==='path'){const rp=typeof RATE_PROB_DATA!=='undefined'&&RATE_PROB_DATA&&RATE_PROB_DATA[ccy];if(!rp||!Array.isArray(rp.history))return null;
-    return{pts:rp.history.filter(h=>Array.isArray(h)&&Array.isArray(h[2])).map(h=>[String(h[0]).slice(0,10),Math.round(h[2].reduce((a,m)=>a+(+m[1]||0),0)),null]),unit:'bp'};}
+  if(t==='path'){const bd=typeof BOND_DATA_FEED!=='undefined'&&BOND_DATA_FEED&&BOND_DATA_FEED[ccy],bs=bd&&bd['2Y Bond Yield']&&bd['2Y Bond Yield'].series,cb=nivReihe(nivEintrag(ccy,'Central Bank Rate'));
+    if(!Array.isArray(bs)||!cb.length)return null;let j=0;const out=[];
+    bs.forEach(b=>{const d=String(b[0]).slice(0,10),y=parseFloat(b[1]);if(!isFinite(y))return;while(j+1<cb.length&&cb[j+1][0]<=d)j++;if(cb[j][0]<=d)out.push([d,Math.round((y-cb[j][1])*100),null]);});
+    return{pts:out,unit:'bp'};}
   if(t==='real'){const cb=nivReihe(nivEintrag(ccy,'Central Bank Rate')),inf=nivReihe(nivEintrag(ccy,'CPI (Headline)'));
     if(!cb.length||!inf.length)return null;let j=0;const out=[];
     inf.forEach(([d,v])=>{while(j+1<cb.length&&cb[j+1][0]<=d)j++;if(cb[j][0]<=d)out.push([d,Math.round((cb[j][1]-v)*100)/100,null]);});
