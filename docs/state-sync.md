@@ -49,7 +49,7 @@ Fundgeschichte einzelner Felder ggf. in `docs/CHANGELOG.md` nachschlagen.
 
 **Bewusst NICHT synchronisiert (nur Sitzung):** `abCalSicht` (Kalender-Karte
 Month | Past) und `calpRange` (Zeitfilter der Past-Liste) - die Karte startet
-immer im Monat, die Liste immer bei 2W, wie `cotHistRange`. Ebenso
+immer im Monat, die Liste immer bei 2W, wie `cotHistRange`. Ebenso die **gezogenen Zeitspannen** (`abZoom`, `histZoom`, `mkZoom`, CUSTOM per Ziehen, seit 2026-10-20: ein Blick bis zum × oder Neuladen) und
 `trendsFokus` (eigene Linienwahl im Trends-Fokus, seit 592): per Rueckfrage
 festgelegt "die Auswahl gilt bis zum Neuladen, wie andere Ansichtswahlen" -
 nach dem Neuladen wieder die 3 staerksten + 3 schwaechsten. Wird daraus je

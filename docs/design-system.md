@@ -1574,6 +1574,14 @@ Stern stehen IMMER in einer Zeile. Erst knappere Abstände (CSS), dann
 gemeinsam nur so weit wie nötig (bis Faktor 0,76, also Preis-Chip bis ~8,4 px).
 Gilt NUR hier. Geprüft: `check/namen.js` D (6 Breiten, breite Ersatzschrift).
 
+**Zeitspanne per Ziehen (2026-10-20, Nutzer: *„im Chart die Zeitspanne
+auswählen … mit x geht das wieder weg“*).** Jeder Chart mit Zeitfilter nimmt
+teil (`data-br` + Anker, `brushAnbinden` in `js/main.js`). Maus: gedrückt
+ziehen; Touch: lange drücken (380 ms), dann ziehen — normales Wischen bleibt
+Tooltip/Scrollen. Danach ersetzt ein Navy-Chip „Von – Bis ×“ die Stufen; × =
+vorheriger Zeitraum. Neue Charts mit Zeitfilter bekommen das mit
+(`chartHoverWrap(…, br)` + Punkte mit `.t`). Geprüft: `check/zeitspanne.js`.
+
 **E — Drei Höhen für Bedienelemente.** `--h-s` 28 (Chips, Zeitfilter,
 Segment-Knöpfe, kleine Auswahlen in Karten), `--h-m` 34 (Knöpfe, Dropdowns,
 Eingabefelder auf Seiten und im Kopf), `--h-l` 40 (Eingabefelder und

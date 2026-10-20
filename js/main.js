@@ -1279,6 +1279,8 @@ function histMaxTage(id){
 function histTageFuer(id){return histRange==='MAX'?histMaxTage(id):histRange;}
 const HIST_MAX_RANGE=90;
 let histRange=90,_histSymId=null,_histErkl=[];
+// Gezogene Spanne der History (Zeitspanne per Ziehen, 2026-10-20): {von,bis} oder null.
+let histZoom=null;
 // ⚠ Der Zeitstrahl-Drill-down (Wochenbalken -> Tagesbalken -> Detailkarte,
 // Nutzer-Wunsch 2026-08-31) ist am 2026-09-17 ENTFALLEN, samt histExpandWeek/
 // histExpandDay/toggleHistWeek/toggleHistDay/histTimelineChart. Grund: die
@@ -1295,9 +1297,10 @@ function histOrte(){
 }
 function histNeuZeichnen(){
   if(!_histSymId)return;
-  histOrte().forEach(el=>{el.innerHTML=renderSymHistoryPanel(_histSymId);});
+  histOrte().forEach(el=>{el.innerHTML=renderSymHistoryPanel(_histSymId);try{brushAnbinden(el);}catch(e){}});
 }
 function setHistRange(d){
+  histZoom=null;
   histRange=d==='MAX'?'MAX':(+d||90);
   histAktivTag=null;
   histNeuZeichnen();
@@ -2005,7 +2008,10 @@ function histScoreLineChart(items,aktivDatum){
   // auf dem SVG (Bugreport 2026-09-25: Punkte sassen neben der Linie - die
   // %-Lagen bezogen sich auf die gepolsterte Box, 469x110 statt 455x100 px,
   // bis 5,7 px daneben). Waechter check/chartpunkte.js.
-  return`<div class="histl"><div class="cax"><svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="none" style="display:block;height:var(--histl-h,${H}px)">
+  // Zeitspanne per Ziehen: Tage liegen lueckenlos nebeneinander - erster Tag,
+  // Anzahl und die Plot-Raender genuegen als Anker (statt tausender Punkte).
+  const brLin=`${items[0].date}|${items.length}|${(padL/W).toFixed(4)}|${((W-padR)/W).toFixed(4)}`;
+  return`<div class="histl"><div class="cax" data-br="hist" data-br-lin="${brLin}"><svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="none" style="display:block;height:var(--histl-h,${H}px)">
     <defs>
       <clipPath id="${uid}o"><rect x="0" y="0" width="${W}" height="${y0.toFixed(1)}"/></clipPath>
       <clipPath id="${uid}u"><rect x="0" y="${y0.toFixed(1)}" width="${W}" height="${(H-y0).toFixed(1)}"/></clipPath>
@@ -2055,7 +2061,8 @@ function renderSymHistoryPanel(id){
 function renderSymHistoryPanelRoh(id){
   const today=todayStr();
   const sym=syms.find(s=>s.id===id);
-  const days=symHistoryDays(id,histTageFuer(id)).slice().reverse(); // neueste zuerst
+  let days=symHistoryDays(id,histZoom?histMaxTage(id):histTageFuer(id)).slice().reverse(); // neueste zuerst
+  if(histZoom)days=days.filter(d=>d.date>=histZoom.von&&d.date<=histZoom.bis);
   // Manuelle Score-Aenderungen dieses Symbols nach Datum gruppieren (neueste
   // zuerst innerhalb des Tages), damit sie neben den Events erscheinen.
   const logByDate={};
@@ -2379,7 +2386,7 @@ function renderSymHistoryPanelRoh(id){
   // Zeitfilter rechts.
   const bar=`<div class="histp-bar chart-leiste">
     <div class="chart-leiste-l"><button class="histp-agebtn${histAgeShow?' on':''}" onclick="toggleHistAge()" title="The score also moves on days with nothing published: a release more than ${IND_STALE_CYCLES} of its own cycles overdue stops counting (see the score model). With this on, every day that crossed that edge names the indicator and the contribution it lost.">${histAgeShow?'✓ ':''}Ageing${nAlterung?` · ${nAlterung}`:''}</button></div>
-    <div class="chart-leiste-r"><div class="histp-range">${(()=>{const mx=histMaxTage(id),l=HIST_RANGES.filter(([,dd])=>dd==='MAX'||dd<mx),an=l.some(([,dd])=>dd===histRange)?histRange:'MAX';
+    <div class="chart-leiste-r"><div class="histp-range">${histZoom?brushChipHtml('hist',histZoom.von,histZoom.bis):(()=>{const mx=histMaxTage(id),l=HIST_RANGES.filter(([,dd])=>dd==='MAX'||dd<mx),an=l.some(([,dd])=>dd===histRange)?histRange:'MAX';
       return l.map(([lbl,dd])=>`<button class="histp-rbtn${an===dd?' on':''}" onclick="setHistRange('${dd}')">${lbl}</button>`).join('');})()}</div></div>
   </div>`;
   // ── Eine Zeile je Tag, flach, mit EINER Kopfzeile ───────────────────
@@ -9030,6 +9037,7 @@ function abRegler(id,titel){
   const MON={'3M':3,'6M':6,'1Y':12,'3Y':36,'6Y':72,'10Y':120};
   const liste=AB_RANGES.filter(([l,t])=>t==null||!ab||(MON[l]?rangeCutoffStr(MON[l]):dateAddStr(heute,-t))>ab);
   const an=liste.some(([l])=>l===abChartRange)?abChartRange:'MAX';
+  if(abZoom)return brushChipHtml('ab',abZoom.von,abZoom.bis);
   return liste.map(([lbl])=>`<button class="ab-rg${an===lbl?' on':''}" onclick="setAbChartRange('${lbl}')" title="${escH(titel.replace('%',lbl))}">${lbl}</button>`).join('');
 }
 let abChartRange=(()=>{try{const v=localStorage.getItem('fxpro_ab_range');
@@ -9056,7 +9064,11 @@ function setAbChartRange(v){
 // gemeinsame Filter verhindern. Jetzt kommt die Fenstergrenze aus dem
 // Kalender (heute minus Zeitraum) und gilt fuer alle gleich; eine Reihe, die
 // spaeter anfaengt, beginnt eben spaeter IM Fenster statt es zu verschieben.
+// Gezogene Spanne (Zeitspanne per Ziehen, 2026-10-20) gilt wie der Zeitfilter
+// fuer ALLE Charts der Seite - bis zum × oder einem Klick auf eine Stufe.
+let abZoom=null;
 function abFenster(){
+  if(abZoom)return{von:abZoom.von,bis:abZoom.bis,max:false};
   const r=(AB_RANGES.find(x=>x[0]===abChartRange)||AB_RANGES[1])[1];
   const bis=todayStr();
   if(r==null)return{von:null,bis,max:true};
@@ -9335,7 +9347,7 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
     const diff=c.c-c.o;
     // Nutzer 2026-09-13: "ich will wenn ich drueber hover bei den charts
     // auch den wochentag sehen".
-    pts.push({fx:mx/W,fy:yc/H,col,
+    pts.push({fx:mx/W,fy:yc/H,t:c.d,col,
       tip:`<div class="chv-tip-d">${escH(titel)} · ${escH(tagMitWochentag(c.d))}</div>`
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">Close</span><b>${zahl(c.c)}${escH(einheit||'')}</b></div>`
         +(c.ohlc?`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--t3)">Day high / low</span><b>${zahl(c.h)} / ${zahl(c.l)}</b></div>`:'')
@@ -9361,7 +9373,7 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
     // dem Chart (Nutzer-Wunsch), check/archiv.js misst daran aber weiter, ob
     // das Archiv wirklich gezeichnet wurde.
     html:`<div class="ab-plot" data-kerzen="${k.length}">
-      <div class="ab-plot-main">${chartHoverWrap(svg,pts,'height:100%')}<div class="ab-xax">${achsTxt}</div></div>
+      <div class="ab-plot-main">${chartHoverWrap(svg,pts,'height:100%',null,null,'ab')}<div class="ab-xax">${achsTxt}</div></div>
       <div class="ab-yax">${skala}</div>
     </div>`};
 }
@@ -13928,7 +13940,7 @@ function povTrendHtml(name){
   if(dates.length<2)return bar+povEmpty('No data in the selected time range \u2014 pick a wider one above.');
   const scoreMap={},biasMap={};
   diff.forEach(e=>{scoreMap[e[0]]=e[1];biasMap[e[0]]=scoreBias(e[1]);});
-  return bar+scoreVsPriceCard(dates,scoreMap,14,BC[scoreBias(pairScore(name))],resolvePairPriceSeries(l.bId,l.qId),'Pair score vs price',biasMap)+
+  return bar+scoreVsPriceCard(dates,scoreMap,14,BC[scoreBias(pairScore(name))],resolvePairPriceSeries(l.bId,l.qId),'Pair score vs price',biasMap,'setPairOvRange')+
     `<div class="pov-note">Same series as the Trends tab in pair mode (daily score of the base minus the quote side, plus that day&#39;s carry), so both views can never drift apart.</div>`;
 }
 
@@ -17974,7 +17986,12 @@ function indHistStartNote(pts,range){
 // Felder zeigen von Anfang an den Zeitraum, der gerade zu sehen ist - leer
 // heisst "offen", also Datenanfang bzw. heute. Ein Feld aendern reicht.
 function timeRangeCustomHtml(current,from,to,setFnName,ab){
+  // Per Ziehen gesetzt? Dann Chip "Von – Bis ×" vor den Datumsfeldern.
+  const brChip=current==='CUSTOM'&&(setFnName in _brPrev)?brushChipHtml(setFnName,from,to):'';
   if(current!=='CUSTOM')return'';
+  // Gezogene Spanne ist tagesgenau - die Monatsfelder wuerden sie auf Monate
+  // runden. Deshalb steht dann NUR der Chip da; das × fuehrt zurueck.
+  if(brChip)return brChip;
   const heute=todayStr().slice(0,7);
   const vonW=(from||ab||'').slice(0,7),bisW=(to||heute).slice(0,7);
   const q=v=>v?`'${v}'`:'null';
@@ -18232,13 +18249,13 @@ function scoreTrendChart(ids,dates,vi,base,colorOverride,fok){
       if(fok)return`<div style="display:flex;justify-content:space-between;gap:12px${fok.farbe[id]?'':';color:var(--t3)'}"><span><span class="tr-tip-dot" style="background:${c}"></span>${escH(id)}</span>${fok.farbe[id]?'<b>':'<span>'}${v>0?'+':''}${v}${fok.farbe[id]?'</b>':'</span>'}</div>`;
       return`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:${c}">${escH(id)}</span><b>${v>0?'+':''}${v}</b></div>`;
     }).filter(Boolean).join('');
-    return{fx:xOf(i)/w,fy:dotY/h,col:dotCol,tip:`<div class="chv-tip-d">${escH(lbl)}</div>${rows||'<span style="color:var(--t3)">no data</span>'}`};
+    return{fx:xOf(i)/w,fy:dotY/h,t:d,col:dotCol,tip:`<div class="chv-tip-d">${escH(lbl)}</div>${rows||'<span style="color:var(--t3)">no data</span>'}`};
   });
-  if(!fok)return chartHoverWrap(fitSvg,hpts,`max-width:${w}px;margin:0 auto`);
+  if(!fok)return chartHoverWrap(fitSvg,hpts,`max-width:${w}px;margin:0 auto`,null,null,'setTrendsRange');
   const gid='trg'+(_trGeoSeq++),ys={};
   ids.forEach(id=>{ys[id]=dates.map(d=>{const v=valOf[id][d];return v!=null&&isFinite(v)?yOf(v):null;});});
   _trGeo[gid]={w,h,n,x0:xOf(0),pd:PD,ys};
-  return`<div class="tr-tap" onclick="trendsLinieTipp(event,'${gid}')">${chartHoverWrap(fitSvg,hpts,`max-width:${w}px;margin:0 auto`)}</div>`;
+  return`<div class="tr-tap" onclick="trendsLinieTipp(event,'${gid}')">${chartHoverWrap(fitSvg,hpts,`max-width:${w}px;margin:0 auto`,null,null,'setTrendsRange')}</div>`;
 }
 // ⓘ-Texte der Trends-Karten (Nutzer 2026-09-26: fehlende ⓘ ergaenzen).
 function trendsErkl(title,mitPreis,fokus){
@@ -18310,7 +18327,7 @@ function resolvePairPriceSeries(base,quote){
   }
   return pairPriceSeries(base,quote);
 }
-function scoreVsPriceChart(dates,scoreMap,base,colorOverride,priceSeries,biasMap){
+function scoreVsPriceChart(dates,scoreMap,base,colorOverride,priceSeries,biasMap,brKey){
   const n=dates.length;
   let maxAbs=base;Object.values(scoreMap).forEach(v=>{if(v!=null&&Math.abs(v)>maxAbs)maxAbs=Math.abs(v);});
   const scale=Math.ceil(maxAbs);
@@ -18380,16 +18397,16 @@ function scoreVsPriceChart(dates,scoreMap,base,colorOverride,priceSeries,biasMap
     const sv=scoreMap[d];const pv=priceMap[d];
     if(sv==null||!isFinite(sv))return;
     let lbl;try{const dt=new Date(d+'T00:00:00');lbl=dt.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'2-digit'});}catch(e){lbl=d;}
-    hpts.push({fx:xOf(i)/w,fy:yOfScore(sv)/h,col,tip:`<div class="chv-tip-d">${escH(lbl)}</div><div style="display:flex;justify-content:space-between;gap:12px"><span style="color:${col}">Score</span><b>${sv>0?'+':''}${sv}</b></div>${pv!=null&&isFinite(pv)?`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:var(--t0)">Price</span><b>${fmtPriceTick(pv)}</b></div>`:''}`});
+    hpts.push({fx:xOf(i)/w,fy:yOfScore(sv)/h,t:d,col,tip:`<div class="chv-tip-d">${escH(lbl)}</div><div style="display:flex;justify-content:space-between;gap:12px"><span style="color:${col}">Score</span><b>${sv>0?'+':''}${sv}</b></div>${pv!=null&&isFinite(pv)?`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:var(--t0)">Price</span><b>${fmtPriceTick(pv)}</b></div>`:''}`});
   });
-  return chartHoverWrap(fitSvg,hpts,`max-width:${w}px;margin:0 auto`);
+  return chartHoverWrap(fitSvg,hpts,`max-width:${w}px;margin:0 auto`,null,null,brKey||'setTrendsRange');
 }
-function scoreVsPriceCard(dates,scoreMap,base,colorOverride,priceSeries,title,biasMap){
+function scoreVsPriceCard(dates,scoreMap,base,colorOverride,priceSeries,title,biasMap,brKey){
   const hasPrice=priceSeries&&priceSeries.some(e=>e[1]!=null);
   const legend=`<div class="tr-legend"><span class="tr-leg-item"><span class="tr-leg-dot" style="background:${colorOverride||'#888'}"></span>Score</span>${hasPrice?`<span class="tr-leg-item"><span class="tr-leg-dash"></span>Price</span>`:''}</div>`;
   return`<div class="tr-card">
     <div class="tr-card-head"><span class="tr-card-title">${escH(title)}</span>${legend}${abInfoBtn(title,trendsErkl(title,true))}</div>
-    ${scoreVsPriceChart(dates,scoreMap,base,colorOverride,priceSeries,biasMap)}
+    ${scoreVsPriceChart(dates,scoreMap,base,colorOverride,priceSeries,biasMap,brKey)}
     ${hasPrice?'':'<div style="padding:2px 12px 10px;color:var(--t3);font-size:var(--fs-xs)">No price history yet for this asset/pair &ndash; it grows once price_data.json has a matching date.</div>'}
   </div>`;
 }
@@ -19388,9 +19405,10 @@ const _chvReg={};let _chvSeq=0;
 // (docs/design-system.md) bleibt damit gueltig.
 const _chvPick={};
 // svg fuellt den Wrapper; pts: [{fx,fy,col,tip}] mit fx,fy in 0..1 der SVG-Box.
-function chartHoverWrap(svg,pts,wrapStyle,group,onPick){
+function chartHoverWrap(svg,pts,wrapStyle,group,onPick,br){
   const id='chv'+(_chvSeq++);_chvReg[id]=pts||[];if(onPick)_chvPick[id]=onPick;
-  return`<div class="chv" data-chv="${id}"${group?` data-chv-group="${escH(group)}"`:''}${wrapStyle?` style="${wrapStyle}"`:''}>${svg}<div class="chv-line" style="display:none"></div><div class="chv-dot" style="display:none"></div><div class="chv-tip" style="display:none"></div></div>`;
+  // br: Schluessel fuer "Zeitspanne per Ziehen" (brushAnbinden), Punkte brauchen .t/.date
+  return`<div class="chv" data-chv="${id}"${group?` data-chv-group="${escH(group)}"`:''}${br?` data-br="${escH(br)}"`:''}${wrapStyle?` style="${wrapStyle}"`:''}>${svg}<div class="chv-line" style="display:none"></div><div class="chv-dot" style="display:none"></div><div class="chv-tip" style="display:none"></div></div>`;
 }
 // ⚠ Aufraeumen (2026-10-16, Pruefdurchgang Performance). Jeder Aufruf von
 // chartHoverWrap legte einen Eintrag mit ALLEN Tooltip-Texten an, und keiner
@@ -19468,6 +19486,7 @@ function attachChartHovers(root){
     // auch in Insights > Data, wo die Gruppe seit 2026-09-26 ueber die
     // Position lief. Punkte ohne Datum bleiben beim alten Weg.
     const move=cx=>{
+      if(w._brZieht)return;   // waehrend eine Zeitspanne gezogen wird: kein Tooltip
       const r=w.getBoundingClientRect();if(!r.width)return;
       const fx=(cx-r.left)/r.width;
       const best=w._chvShowAt(fx);
@@ -19482,6 +19501,99 @@ function attachChartHovers(root){
     w.addEventListener('touchstart',e=>{const t=e.touches[0];if(t)move(t.clientX);},{passive:true});
     w.addEventListener('touchmove',e=>{const t=e.touches[0];if(t)move(t.clientX);},{passive:true});
     w.addEventListener('touchend',leave);w.addEventListener('touchcancel',leave);
+  });
+  try{brushAnbinden(root);}catch(e){}
+}
+// ══ ZEITSPANNE PER ZIEHEN (Nutzer 2026-10-20) ══════════════════════════════
+// Woertlich: "bei den Zeitfilter will ich noch eine ... haben damit soll man
+// dann im Chart die Zeitspanne auswaehlen koennen die man sehen will und mit x
+// geht das wieder weg". Nutzerwahl per Rueckfrage: im Chart ziehen, an ALLEN
+// Charts mit Zeitfilter (Price, History, Trends, Data, aufgeklappte
+// Indikatoren, Makro-Charts, dazu Price-Tab und Paar-Uebersicht).
+//
+// Bedienung: Maus = gedrueckt ziehen (normales Bewegen bleibt der Tooltip).
+// Touch = kurz lange druecken (BR_LANG_MS), dann ziehen - ein normales Wischen
+// bleibt Tooltip bzw. Scrollen. Neben dem Zeitfilter steht danach ein Chip
+// "Von – Bis ×"; das × stellt den vorherigen Zeitraum her.
+//
+// Ein Chart nimmt teil mit data-br="<schluessel>" am Element, das die volle
+// Plotbreite hat, und Ankerpunkten {fx (0..1), t ('YYYY-MM-DD')}: bei .chv aus
+// der Hover-Registry (Punkte mit .t oder .date), sonst aus el.__brAnker.
+// Je Schluessel ein Eintrag in BRUSH: {apply(von,bis), reset(), aktiv()}.
+//
+// ⚠ Die gewaehlte Spanne ist eine ANSICHT bis zum Neuladen, wie trendsFokus
+// (docs/state-sync.md "Bewusst NICHT synchronisiert"): sie ist ein Blick, kein
+// Zustand, den der Nutzer behalten will - dafuer gibt es die Zeitfilter.
+const BR_LANG_MS=380;
+const BRUSH={};
+const _brPrev={};
+function brushReg(key,o){BRUSH[key]=o;}
+function brushAnker(el){
+  if(el.dataset.chv){return(_chvReg[el.dataset.chv]||[]).map(p=>({fx:p.fx,t:p.t||p.date})).filter(p=>p.t&&isFinite(p.fx)).map(p=>({fx:p.fx,t:String(p.t).slice(0,10)}));}
+  if(el.dataset.brLin){
+    const [d0,n,a,b]=el.dataset.brLin.split('|'),N=+n,A=+a,B=+b,out=[];
+    for(let i=0;i<N;i++)out.push({fx:N<2?A:A+(B-A)*i/(N-1),t:dateAddStr(d0,i)});
+    return out;
+  }
+  return Array.isArray(el.__brAnker)?el.__brAnker:[];
+}
+function brushNaechster(anker,fx){let b=null,bd=1e9;anker.forEach(a=>{const d=Math.abs(a.fx-fx);if(d<bd){bd=d;b=a;}});return b;}
+function brushAnbinden(root){
+  // window.__gpKeinBrush: nur fuer die Gegenprobe in check/zeitspanne.js
+  if(window.__gpKeinBrush)return;
+  (root||document).querySelectorAll('[data-br]').forEach(el=>{
+    if(el._brWired)return;el._brWired=1;
+    let st=null,lp=0,sel=null,gezogen=false,x0=0,y0=0;
+    const breite=()=>el.getBoundingClientRect().width||1;
+    const fxAt=cx=>{const r=el.getBoundingClientRect();return Math.max(0,Math.min(1,(cx-r.left)/(r.width||1)));};
+    const zeige=(a,b)=>{
+      if(!sel){sel=document.createElement('div');sel.className='br-sel';el.appendChild(sel);}
+      const l=Math.min(a,b),w=Math.abs(b-a);sel.style.left=(l*100).toFixed(2)+'%';sel.style.width=(w*100).toFixed(2)+'%';sel.style.display='';
+    };
+    const weg=()=>{st=null;gezogen=false;el._brZieht=false;el.classList.remove('br-an');if(sel)sel.style.display='none';};
+    el.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='mouse'&&e.button!==0)return;
+      const fx=fxAt(e.clientX);x0=e.clientX;y0=e.clientY;
+      if(e.pointerType==='mouse'){st=fx;gezogen=false;return;}
+      clearTimeout(lp);
+      lp=setTimeout(()=>{st=fx;gezogen=false;el.classList.add('br-an');try{el.setPointerCapture(e.pointerId);}catch(x){}zeige(fx,fx);},BR_LANG_MS);
+    });
+    el.addEventListener('pointermove',e=>{
+      if(st==null){if(lp&&Math.hypot(e.clientX-x0,e.clientY-y0)>8){clearTimeout(lp);lp=0;}return;}
+      const fx=fxAt(e.clientX);
+      if(Math.abs(fx-st)*breite()>6){gezogen=true;el._brZieht=true;zeige(st,fx);if(el._chvHide)try{el._chvHide();}catch(x){}}
+    });
+    const ende=e=>{
+      clearTimeout(lp);lp=0;
+      if(st==null)return;
+      const a=st,b=fxAt(e.clientX),war=gezogen;weg();
+      if(!war)return;
+      el._brSchlucken=true;setTimeout(()=>{el._brSchlucken=false;},400);
+      const anker=brushAnker(el).slice().sort((p,q)=>p.fx-q.fx);
+      const A=brushNaechster(anker,Math.min(a,b)),B=brushNaechster(anker,Math.max(a,b));
+      const o=BRUSH[el.dataset.br];
+      if(!A||!B||A.t===B.t||!o)return;
+      try{o.apply(A.t<B.t?A.t:B.t,A.t<B.t?B.t:A.t);}catch(x){console.error(x);alert('Could not apply the selected span: '+(x&&x.message||x));}
+    };
+    el.addEventListener('pointerup',ende);
+    el.addEventListener('pointercancel',()=>{clearTimeout(lp);lp=0;weg();});
+    el.addEventListener('click',e=>{if(el._brSchlucken){el._brSchlucken=false;e.stopPropagation();e.preventDefault();}},true);
+    el.addEventListener('contextmenu',e=>{if(el.classList.contains('br-an'))e.preventDefault();});
+  });
+}
+function brushChipHtml(key,von,bis){
+  if(!von||!bis)return'';
+  return`<span class="br-chip" title="Selected span — drag in the chart to change it"><span>${escH(fmtDayHdr(von))} – ${escH(fmtDayHdr(bis))}</span><button class="br-x" onclick="brushReset('${escJH(key)}')" aria-label="Clear the selected span" title="Back to the previous range">×</button></span>`;
+}
+function brushReset(key){
+  try{const o=BRUSH[key];if(o)o.reset();}catch(e){console.error(e);alert('Could not clear the span: '+(e&&e.message||e));}
+}
+// Charts mit eigenem CUSTOM-Zeitraum: Ziehen setzt CUSTOM von-bis, das ×
+// stellt die Stufe von vorher her. Der Chip steht in timeRangeCustomHtml.
+function brushCustom(setFn,aktuell){
+  brushReg(setFn,{
+    apply(von,bis){if(!(setFn in _brPrev)){const c=aktuell();_brPrev[setFn]=c==='CUSTOM'?'MAX':c;}window[setFn]('CUSTOM');window[setFn+'Custom'](von,bis);},
+    reset(){const p=_brPrev[setFn];delete _brPrev[setFn];window[setFn](p==null?'MAX':String(p));}
   });
 }
 function sentSpark(series,lo,hi,loTh,hiTh){
@@ -20065,7 +20177,8 @@ function indHistChart(ind,symId,opts){
     let lbl;try{lbl=fmtDayHdr(p[0]);}catch(e){lbl=p[0];}
     return{fx:xOf(i)/W,fy:yOf(p[1])/H,t:p[0],col:'var(--blue)',tip:`<div class="chv-tip-d">${escH(lbl)}</div>Actual: <b>${escH(fmtV(p[1]))}</b>${p[2]!=null?' · Forecast: <b>'+escH(fmtV(p[2]))+'</b>':''}`};
   });
-  return`<div class="ind-hist-wrap">${toolbar2}${chartHoverWrap(svg,hpts,null,opts.group)}</div>`;
+  const brKey=opts.noBrush?null:opts.range!=null?(opts.brKey||'setDataRange'):'setIndHistRange';
+  return`<div class="ind-hist-wrap">${toolbar2}${chartHoverWrap(svg,hpts,null,opts.group,null,brKey)}</div>`;
 }
 // ══ PREISCHART EINES ASSETS (Nutzer-Wunsch 2026-09-05) ════════════
 // "bei jedem Asset ueber einen Button den preischart davon oeffnen ... als
@@ -20782,7 +20895,7 @@ function renderPriceChart(){
     ?`<div class="px-link" id="pxLink"></div><div class="px-cards" id="pxCards">${cards}</div>`
     :`<div class="px-empty" style="margin-top:12px">No releases on record for this asset inside the selected range.</div>`;
   el.innerHTML=bar
-    +`<div class="px-chart" id="pxChart">${chartHoverWrap(svg,hpts,null,null,pt=>markPriceCards(pt&&pt.date))}</div>`
+    +`<div class="px-chart" id="pxChart">${chartHoverWrap(svg,hpts,null,null,pt=>markPriceCards(pt&&pt.date),'setPriceRange')}</div>`
     +srcZeile+strip;
   attachChartHovers(el);
   const sc=document.getElementById('pxCards');
@@ -26025,7 +26138,17 @@ setInterval(()=>{
 // Wunsch 2026-08-25) - Details/Methodik: docs/module-split.md. Namen per
 // echtem JS-Parser (acorn) aus dem Top-Level-Scope dieses Moduls ermittelt,
 // nie per Regex/Handschrift.
-Object.assign(window,{faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+// Zeitspanne per Ziehen: Charts mit eigenem CUSTOM-Zeitraum (siehe brushCustom).
+brushCustom('setIndHistRange',()=>indHistRange);
+brushCustom('setDataRange',()=>dataRange);
+brushCustom('setTrendsRange',()=>trendsRange);
+brushCustom('setPriceRange',()=>priceRange);
+brushCustom('setPairOvRange',()=>pairOvRange);
+// History-Karte und -Fenster: eigene Spanne, nur bis zum × oder einer Stufe.
+brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeichnen();},reset(){histZoom=null;histNeuZeichnen();}});
+// Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
+brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();}});
+Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

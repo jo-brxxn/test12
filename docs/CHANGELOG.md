@@ -20453,3 +20453,15 @@ die Folgeentwicklung vorhersagen?
 **Keine Summary** in Inflation/Interest Rates/Labour/Growth (`MAKRO_OHNE_SUMMARY`); `rub.summary` bleibt gespeichert.
 
 **Wächter:** neu `check/makro.js` (+ Gegenprobe rot, 34 Befunde).
+
+## 2026-10-20 — VERSION-CHECK-615: Zeitspanne per Ziehen
+
+**Nutzer:** *„bei den Zeitfilter will ich noch eine … haben damit soll man dann im Chart die Zeitspanne auswählen können die man sehen will und mit x geht das wieder weg“*. Wahl: im Chart ziehen, alle Charts mit Zeitfilter.
+
+- **Kern** `brushAnbinden` (in `attachChartHovers`): Maus ziehen / Touch lange drücken + ziehen, Navy-Rahmen als Auswahl, Tooltip aus während des Ziehens, der Klick danach wird verschluckt (History-Punkte springen nicht).
+- **CUSTOM-Charts** (`brushCustom`): Indikator, Data, Trends, Price-Tab, Paar-Übersicht → `setX('CUSTOM')` + `setXCustom(von,bis)`, Chip in `timeRangeCustomHtml` (statt der Monatsfelder — die würden die Tagesspanne runden).
+- **Asset-Seite** `abZoom` in `abFenster()` → gilt für Price + Kontext-Charts zugleich; **History** `histZoom`; **Makro** `mkZoom` je Karte. Tage als lineare Anker (`data-br-lin`) statt tausender Punkte.
+- *Gemessen:* 8/8 Chart-Arten — Chip erscheint, weniger Punkte, × stellt die Punktzahl exakt her, 0 JS-Fehler; Touch lange drücken ja, kurzes Wischen nein.
+- Ansicht, kein Sync (`docs/state-sync.md`).
+
+**Wächter:** neu `check/zeitspanne.js` (+ Gegenprobe rot, 9 Befunde).

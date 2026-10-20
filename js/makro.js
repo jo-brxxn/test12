@@ -63,6 +63,15 @@ const MK_RANGES=[[12,'1Y'],[36,'3Y'],[60,'5Y'],[120,'10Y'],['MAX','Max']];
 const MK_RANGE_DEF=36;
 const MK_DEF_SPUREN=3;
 const MK_HIST_MAX=400;
+// Gezogene Spanne je Karte (Zeitspanne per Ziehen, 2026-10-20) - eine ANSICHT
+// bis zum Neuladen, wie die anderen gezogenen Spannen (siehe brushAnbinden).
+const mkZoom={};
+const mkZoomKey=ri=>{const s=getSym();return(s?s.id:'')+':'+ri;};
+function mkBrushReg(ri){
+  const key='mk:'+ri;
+  if(window.brushReg)window.brushReg(key,{apply(von,bis){mkZoom[mkZoomKey(ri)]={von,bis};renderDetail();},reset(){delete mkZoom[mkZoomKey(ri)];renderDetail();}});
+  return key;
+}
 // Offizielle Zielbaender (Punktziel = untere = obere Grenze). Die Mitte ist
 // INFL_ZIEL (main.js) - dieselbe Zahl, die der Score benutzt.
 const MK_ZIELBAND={USD:[2,2],EUR:[2,2],GBP:[2,2],JPY:[2,2],CHF:[0,2],CAD:[1,3],AUD:[2,3],NZD:[1,3]};
@@ -207,6 +216,8 @@ function makroSchalterHtml(sym){
 function makroLeisteHtml(rub,ri){
   if(!makroIstCharts(rub))return'';
   const R=rub.mkRange!=null?rub.mkRange:MK_RANGE_DEF;
+  const z=mkZoom[mkZoomKey(ri)];
+  if(z&&window.brushChipHtml)return chartLeisteHtml('',window.brushChipHtml(mkBrushReg(ri),z.von,z.bis));
   const rg=`<div class="ind-hist-range-bar">${MK_RANGES.map(([v,l])=>`<button class="ind-hist-range-btn${String(v)===String(R)?' on':''}" onclick="makroRange(${ri},'${v}')">${l}</button>`).join('')}</div>`;
   return chartLeisteHtml('',rg);
 }
@@ -254,7 +265,7 @@ function makroSicht(v){
   catch(e){console.error(e);alert('Could not switch the view: '+(e&&e.message||e));}
 }
 function makroRange(ri,v){
-  try{const r=mkRub(ri);if(!r)return;r.mkRange=v==='MAX'?'MAX':+v;save();renderDetail();}
+  try{const r=mkRub(ri);if(!r)return;delete mkZoom[mkZoomKey(ri)];r.mkRange=v==='MAX'?'MAX':+v;save();renderDetail();}
   catch(e){console.error(e);alert('Could not change the range: '+(e&&e.message||e));}
 }
 function makroSpur(ri,indId){
@@ -319,8 +330,9 @@ function makroZeichnen(box){
   const spuren=gew.map(ind=>{const s=mkSerie(ind,sym.id);return{ind,pts:s.pts,unit:s.unit,next:mkNaechster(sym,ind)};});
   // Gemeinsame Zeitachse: vom Fensterbeginn bis zum spaetesten naechsten Termin.
   const alle=spuren.flatMap(s=>s.pts);alle.sort((a,b)=>a[0].localeCompare(b[0]));
-  const x0=Math.max(mkVon(R,alle),alle.length?tagMs(alle[0][0]):heute);
-  const x1=Math.max(heute,...spuren.map(s=>s.next?tagMs(s.next.d):0),...alle.map(p=>tagMs(p[0])));
+  const zoom=mkZoom[mkZoomKey(ri)];
+  const x0=zoom?tagMs(zoom.von):Math.max(mkVon(R,alle),alle.length?tagMs(alle[0][0]):heute);
+  const x1=zoom?tagMs(zoom.bis):Math.max(heute,...spuren.map(s=>s.next?tagMs(s.next.d):0),...alle.map(p=>tagMs(p[0])));
   const span=Math.max(864e5,x1-x0);
   const xOf=t=>padL+(t-x0)/span*(W-padL-padR);
   // Einstufungs-Verlauf: je Dimension mit Eintraegen eine schmale Bahn oben.
@@ -348,7 +360,7 @@ function makroZeichnen(box){
   }
   const hover=[];
   spuren.forEach(sp=>{
-    const vis=sp.pts.filter(p=>tagMs(p[0])>=x0);
+    const vis=sp.pts.filter(p=>tagMs(p[0])>=x0&&tagMs(p[0])<=x1);
     const use=vis.length>=1?vis:sp.pts.slice(-2);
     const ref=mkReferenz(sp.ind,ccy,sp.pts);
     // Nur echte Ueberraschungen: Actual = Forecast zeichnete sonst je Release einen
@@ -382,7 +394,7 @@ function makroZeichnen(box){
       if(p[2]!=null)svg+=`<circle cx="${xx.toFixed(1)}" cy="${yOf(p[2]).toFixed(1)}" r="${r+0.6}" fill="none" stroke="var(--t1)" stroke-width="1"/>`;
       svg+=`<circle cx="${xx.toFixed(1)}" cy="${yOf(p[1]).toFixed(1)}" r="${r}" fill="var(--blue)"/>`;});
     // Naechster Termin
-    if(sp.next){
+    if(sp.next&&tagMs(sp.next.d)<=x1){
       const xn=xOf(tagMs(sp.next.d));
       svg+=`<line x1="${xn.toFixed(1)}" x2="${xn.toFixed(1)}" y1="${yTop}" y2="${yBot}" stroke="var(--t1)" stroke-width="1.2" stroke-dasharray="${sp.next.sicher?'4 3':'2 4'}"/>`;
       svg+=`<text x="${(xn-4).toFixed(1)}" y="${yTop+11}" text-anchor="end" style="${fs};font-weight:700;paint-order:stroke;stroke:var(--bg1);stroke-width:3px">${sp.next.sicher?'Next':'~Next'} ${escH(fmtDayHdr(sp.next.d))}</text>`;
@@ -418,6 +430,11 @@ function makroZeichnen(box){
   svg+=`<line class="mk-cur" x1="0" x2="0" y1="${bahnH}" y2="${H-ACHSE+2}" stroke="var(--t0)" stroke-width="1" style="display:none"/>`;
   box.innerHTML=`<svg class="mk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escH(rub.name)} indicators over time" onpointermove="makroHover(event,this)" onpointerdown="makroHover(event,this)" onpointerleave="makroHoverAus(this)">${svg}</svg>`;
   box.__mk={x0,span,padL,padR,W,hover};
+  // Zeitspanne per Ziehen: Tagesanker ueber die Plotbreite.
+  const nTage=Math.max(2,Math.round((x1-x0)/864e5)+1);
+  box.dataset.br=mkBrushReg(ri);
+  box.dataset.brLin=`${new Date(x0).toISOString().slice(0,10)}|${nTage}|${(padL/W).toFixed(4)}|${((W-padR)/W).toFixed(4)}`;
+  try{window.brushAnbinden&&window.brushAnbinden(box.parentElement);}catch(e){}
 }
 function makroHover(ev,svgEl){
   try{

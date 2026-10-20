@@ -68,6 +68,7 @@ const PRUEFUNGEN = [
   { n: 'regeln',    d: 'COT, Rendite-Trends, 2Y-Zinsdifferenz, Carry, Rohstoffe, Score-Fenster, Momentum weg', f: 'check/regeln.js', args: [], browser: true },
   { n: 'niveau', d: 'Niveau-Block: Inflation vs Ziel, Arbeitslosigkeit und Loehne gegen ihr Normal - relativ zu den Peers, unabhaengig nachgerechnet; entfernte Zeilen (auch Trend 3M, Modell 27) stehen nirgends', f: 'check/niveau.js', args: [], browser: true },
   { n: 'makro', d: 'Makro-Reihe: ein Table|Charts-Schalter, grosse Charts in voller Breite, Spuren = echte Reihe, Zielband, Vorschlaege = Nachrechnung, Einstufung bei der Waehrung + Sync', f: 'check/makro.js', args: [], browser: true },
+  { n: 'zeitspanne', d: 'Zeitspanne per Ziehen an allen Charts mit Zeitfilter: Chip mit ×, weniger Punkte, × stellt her, Touch per langem Druck', f: 'check/zeitspanne.js', args: [], browser: true },
   { n: 'kartentitel', d: 'Kartentitel einheitlich, Info-i blau und kleiner, Notizen in Bias-Farbe', f: 'check/kartentitel.js', args: [], browser: true },
   { n: 'kalender',  d: 'Kalender-Karte: vergangene Tage blass mit Punkt, Releases aus der Historie; Next-Termine inkl. gleicher Veroeffentlichung', f: 'check/kalender.js', args: [], browser: true },
   { n: 'namen',     d: 'Asset-/Paarnamen nie gekuerzt (auch mit breiter Schrift wie auf dem iPad), Set-ups-Chip bleibt in seiner Zelle', f: 'check/namen.js', args: [], browser: true },

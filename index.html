@@ -2193,6 +2193,13 @@ body.compact-view .rub-summary{display:block}
 .rinfo{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1.3px solid var(--blue);color:var(--blue);font-size:var(--fs-xs);font-weight:800;font-style:italic;font-family:Georgia,'Times New Roman',serif;cursor:pointer;background:transparent;flex-shrink:0;line-height:1;padding:0;opacity:.65;transition:all .12s}@media (hover:hover){.rinfo:hover{opacity:1;background:rgba(var(--blue-rgb),.08)}}
 /* ── RUBRIC SUMMARY ── */
 .rub-summary{background:var(--bg5);border:1px solid var(--bd2);border-radius:var(--rs);padding:7px 10px;margin-bottom:8px}
+/* ── Zeitspanne per Ziehen (brushAnbinden in js/main.js, 2026-10-20) ── */
+[data-br]{position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.br-an{cursor:ew-resize}
+.br-sel{position:absolute;top:0;bottom:0;background:rgba(var(--ui-act-rgb),.14);border-left:1.5px solid var(--ui-act);border-right:1.5px solid var(--ui-act);pointer-events:none;z-index:3}
+.br-chip{display:inline-flex;align-items:center;gap:4px;height:var(--h-s,28px);padding:0 2px 0 10px;border-radius:var(--rss);background:var(--ui-act);color:var(--ui-act-fg);font:600 var(--fs-xs)/1 var(--ff-text);white-space:nowrap;box-shadow:0 2px 8px rgba(var(--ui-act-rgb),.25)}
+.br-x{border:0;background:transparent;color:inherit;font:700 16px/1 var(--ff-text);min-width:26px;height:26px;border-radius:50%;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+@media (hover:hover){.br-x:hover{background:rgba(255,255,255,.18)}}
 /* ── Makro-Karten: Table | Charts + Analyse-Einstufungen (js/makro.js, 2026-10-20) ── */
 .mk-wrap{display:flex;flex-direction:column;gap:10px;min-width:0}
 .mk-l,.mk-r{display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -6589,11 +6596,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-614 - Score-Modell 27: Trend-Zeilen (3M) aus dem Score; Makro-Reihe Table|Charts mit grossen Charts + Einstufungen; keine Summary in Makro-Karten."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-615 - Zeitspanne per Ziehen an allen Charts mit Zeitfilter (Chip mit x)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-614</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-615</span>
     </span>
   </div>
   <div class="hdr-r">
