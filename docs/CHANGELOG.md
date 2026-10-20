@@ -20431,3 +20431,9 @@ die Folgeentwicklung vorhersagen?
 - *Ergebnis:* breite Schrift 390 px → Faktor 0,88 (Chip 9,7 px, Name 11,4 px); normale Schrift 390 px → unverändert (11/13 px).
 
 **Wächter:** `check/namen.js` D — 0 zweizeilige Zeilen, keine seitliche Seite, bei 1180/820/1366/390/375/360 breit + 1180 normal. Gegenprobe `--gegenprobe-umbruch` (alter Chip) → 5 Befunde rot.
+
+## 2026-10-20 — Zwei Wächter mit falschem Maßstab (beim Prüflauf zu 613)
+
+- `check/zeitfilter.js`: History-Stufen in **Tagen** (`HIST_RANGES`, 3M = 90 Tage), nicht in Kalendermonaten. *Gemessen:* Datenanfang 2026-07-20 → 3 Monate zurück = 2026-07-20 (rot), 90 Tage = 2026-07-22 → Knopf wirkt. App korrekt.
+- `check/zurueck.js`: fremdes Paar mit festem `bias:'neu'` — der Paar-Bias ist **abgeleitet** (`recomputeAllPairBiases`). Rot, seit NZD/CHF nach dem Daten-Update bullish steht (+3,4). Gleicher Befund mit dem Code von 612 + heutigen Daten → nicht 613. Abgeleiteter Pfad `pairs[..].bias` zählt nicht mehr.
+- Beide einzeln grün, Gegenproben rot.

@@ -112,7 +112,12 @@ function flach(o, pre, out) {
   const wl = fremd.pairCats.find(c => c.name === 'Watchlist') || fremd.pairCats[0];
   fremd.pairs.push({ id: 'waechterfremd1', name: 'NZD/CHF', bias: 'neu', catId: wl.id, entry: '', entryTrigger: '', sl: '', tp: '', rr: '', size: '', notes: 'WAECHTER fremd', _open: false });
   const wid = fremd.widgets[fremd.widgets.length - 1]; wid.title = 'WAECHTER fremder Titel';
-  const fremdPfade = (() => { const a = flach(basis), c = flach(fremd); return Object.keys(c).filter(k => a[k] !== c[k]); })();
+  // ⚠ Der Paar-Bias ist ABGELEITET (recomputeAllPairBiases -> autoPairBias aus
+  // den Scores) und gehoert niemandem. Mit festem 'neu' fiel der Waechter am
+  // 2026-10-20 rot, sobald NZD/CHF nach einem Daten-Update bullish stand (+3,4):
+  // die App ueberschreibt den Wert - zu Recht. Zaehlen nur Felder, die ein
+  // Nutzer setzt.
+  const fremdPfade = (() => { const a = flach(basis), c = flach(fremd); return Object.keys(c).filter(k => a[k] !== c[k] && !/^pairs\[[^\]]+\]\.bias$/.test(k)); })();
   const cloud = { data: fremd, updated_at: '2026-09-30T12:00:00.000Z' };
   const ALT = '2026-09-30T08:00:00.000Z';
   let pullFrei = null, pushFrei = null, pullWartet = false, pushWartet = false;
