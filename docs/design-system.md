@@ -1579,7 +1579,10 @@ auswählen … mit x geht das wieder weg“*).** Jeder Chart mit Zeitfilter nimm
 teil (`data-br` + Anker, `brushAnbinden` in `js/main.js`). Maus: gedrückt
 ziehen; Touch: lange drücken (380 ms), dann ziehen — normales Wischen bleibt
 Tooltip/Scrollen. Danach ersetzt ein Navy-Chip „Von – Bis ×“ die Stufen; × =
-vorheriger Zeitraum. Neue Charts mit Zeitfilter bekommen das mit
+vorheriger Zeitraum. **Schere** (Nutzer 2026-10-20: *„Ich will eine Schere als Symbol
+haben um die Zeitspanne auszuwählen“*): Symbolknopf 28 px links vor den
+Stufen (`brushSchereHtml`); angetippt (Navy) reicht ein einfaches Ziehen,
+auch auf Touch; nach der Auswahl, nochmal tippen oder Esc wieder aus. Neue Charts mit Zeitfilter bekommen das mit
 (`chartHoverWrap(…, br)` + Punkte mit `.t`). Geprüft: `check/zeitspanne.js`.
 
 **E — Drei Höhen für Bedienelemente.** `--h-s` 28 (Chips, Zeitfilter,

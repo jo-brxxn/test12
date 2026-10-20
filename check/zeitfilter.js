@@ -39,7 +39,7 @@ const TAGE_HIST = { '15D': 15, '1M': 30, '2M': 60, '3M': 90, '6M': 182, '1Y': 36
   await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(id => { const e = document.getElementById(id); if (e) e.remove(); }); gotoSym('EUR'); });
   await p.waitForTimeout(1200);
   const lies = sel => p.evaluate(([sel, gp]) => {
-    const bs = [...document.querySelectorAll(sel)];
+    const bs = [...document.querySelectorAll(sel)].filter(b => !b.classList.contains('br-sch'));   // Schere = Werkzeug, keine Stufe
     const l = bs.map(b => b.textContent.trim());
     if (gp && l.length) l.splice(1, 0, '2Y');
     return l;

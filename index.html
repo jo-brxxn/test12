@@ -2196,6 +2196,12 @@ body.compact-view .rub-summary{display:block}
 /* ── Zeitspanne per Ziehen (brushAnbinden in js/main.js, 2026-10-20) ── */
 [data-br]{position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .br-an{cursor:ew-resize}
+.br-scharf{cursor:crosshair;touch-action:none}
+.br-sch{display:inline-flex;align-items:center;justify-content:center;padding:0;width:28px;min-width:28px;height:28px;flex:0 0 auto}
+/* Price-Karte: die Schere passt nur mit etwas schmaleren Stufen in EINE Zeile
+   (gemessen 1180 px: Leiste 489 px, mit Schere 505 px Inhalt -> Umbruch;
+   Innenabstand 7 -> 4 px spart 42 px). */
+.ab-ptile .ab-rgs .ab-rg{padding-left:4px;padding-right:4px;min-width:28px}
 .br-sel{position:absolute;top:0;bottom:0;background:rgba(var(--ui-act-rgb),.14);border-left:1.5px solid var(--ui-act);border-right:1.5px solid var(--ui-act);pointer-events:none;z-index:3}
 .br-chip{display:inline-flex;align-items:center;gap:4px;height:var(--h-s,28px);padding:0 2px 0 10px;border-radius:var(--rss);background:var(--ui-act);color:var(--ui-act-fg);font:600 var(--fs-xs)/1 var(--ff-text);white-space:nowrap;box-shadow:0 2px 8px rgba(var(--ui-act-rgb),.25)}
 .br-x{border:0;background:transparent;color:inherit;font:700 16px/1 var(--ff-text);min-width:26px;height:26px;border-radius:50%;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
@@ -6355,8 +6361,11 @@ select.px-panel-sel,select.res-sfield,select.dw-sel,select.bt-sel{height:var(--h
 /* Preis-Kachel: Candles/Line und Zeitfilter stehen mit 6 px Zeilenabstand
    uebereinander (bei 820 px auch zwei Zeitfilter-Zeilen) -> je 3 px */
 .ab-rg::after{inset:-4px -1px}
+/* Schere in der Preis-Kachel: dieselbe Tippflaeche wie die Zeitfilter daneben */
+.ab-rgs .br-sch::after{inset:-4px -1px}
 .ind-hist-range-btn.ctyp-b::after{inset:-5px -1px -4px}
 .histp-rbtn::after{inset:-1px -1px -9px}
+.histp-range .br-sch::after{inset:-1px}
 .histp-agebtn::after{inset:-1px -1px -5.5px}
 .perf-win::after{inset:-4.5px -1px -5px}
 .px-panel-chip::after{inset:-5px -5.5px -5px -3.5px}
@@ -6598,11 +6607,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-616 - Makro-Schalter markieren sich als Nutzer-Aenderung; Table|Charts in eigener Zeile unter Macro."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-617 - Schere neben jedem Zeitfilter: antippen, ziehen, Spanne gewaehlt (auch Touch)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-616</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-617</span>
     </span>
   </div>
   <div class="hdr-r">

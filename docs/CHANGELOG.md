@@ -20471,3 +20471,11 @@ die Folgeentwicklung vorhersagen?
 - `check/zurueck.js` B: **42 Klicks** (Table/Charts, Zeitraum, Spur-Chips der Makro-Charts) speicherten ohne Nutzer-Markierung → ein Sync-Abgleich hätte sie durch den fremden Stand ersetzt. Jetzt `markUserEditTs()` vor `save()`.
 - `check/kartenlook.js`: Schalter in der Reihen-Überschrift machte sie **28 px** hoch (erlaubt 20). Herausragend (−7 px) überdeckte er das ⓘ der Karte darunter (`check/designregeln.js`). Lösung: eigene Zeile `.mk-swrow` unter „Macro“, rechtsbündig.
 - Alle drei einzeln grün, `makro`-Gegenprobe rot.
+
+## 2026-10-20 — VERSION-CHECK-617: Schere für die Zeitspanne
+
+**Nutzer:** *„Ich will eine Schere als Symbol haben um die Zeitspanne auszuwählen“*.
+- Scheren-Knopf (Linien-Symbol, 28 px) links vor jedem Zeitfilter mit Zeitspanne: Asset-Seite, History, Indikator, Trends, Data, Price-Tab, Paar-Übersicht, Makro.
+- Angetippt (Navy, `aria-pressed`) schaltet er den Chart scharf: einfaches Ziehen wählt, auch auf Touch (`touch-action:none` nur im Scharf-Modus); danach / nochmal tippen / Esc → aus. Ziehen mit der Maus und langes Drücken gehen weiter.
+- *Gemessen:* Price-Karte 1180 px — Leiste 489 px, Inhalt mit Schere 505 px → zwei Zeilen (designregeln: höchstens eine). Zeitstufen der Preis-Kachel Innenabstand 7 → 4 px. Tippfläche der Schere wie die Nachbarn (Preis-Kachel −4 px, History −1 px; vorher ragte sie in die Kartenkante bzw. bei 820 px in die zweite Stufenzeile).
+- `check/zeitfilter.js` zählt die Schere nicht als Stufe; `check/zeitspanne.js` E: Schere an jedem Chart, mit Schere reicht einfaches Ziehen, danach aus.

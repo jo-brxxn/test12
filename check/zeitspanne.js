@@ -9,6 +9,8 @@
 //   A) Chip "Von – Bis ×" erscheint, B) der Chart zeigt WENIGER Punkte als
 //   vorher (die Spanne wirkt wirklich), C) × -> Chip weg, Punktzahl wie vorher.
 // D) Touch (390 px): lange druecken + ziehen setzt die Spanne; kurzes Wischen nicht.
+// E) Schere (Nutzer 2026-10-20): Knopf neben jedem Zeitfilter; angetippt reicht
+//    ein einfaches Ziehen, danach geht sie von selbst aus.
 //   node check/zeitspanne.js [--gegenprobe]   (Ziehen abgeschaltet -> A rot)
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
@@ -46,6 +48,9 @@ const chips = p => p.evaluate(() => [...document.querySelectorAll('.br-chip')].f
     await p.evaluate(nav); await p.waitForTimeout(1200);
     const el = await p.$(sel); if (!el) { fail(n, `kein Chart ${sel}`); continue; }
     await el.scrollIntoViewIfNeeded(); const r = await el.boundingBox();
+    const key = await p.evaluate(sel => document.querySelector(sel).dataset.br, sel);
+    const sch = await p.evaluate(k => [...document.querySelectorAll('.br-sch')].filter(b => b.dataset.brk === k && b.offsetParent).length, key);
+    if (!sch) fail(n, `kein Scheren-Knopf neben dem Zeitfilter (${key})`);
     const vor = await zaehle(p, sel), c0 = await chips(p);
     const y = r.y + r.height * 0.5;
     await p.mouse.move(r.x + r.width * 0.3, y); await p.mouse.down();
@@ -86,8 +91,15 @@ const chips = p => p.evaluate(() => [...document.querySelectorAll('.br-chip')].f
   }, lang);
   if (!(await touch(true))) fail('TOUCH', 'lange druecken + ziehen setzt keine Spanne');
   if (await touch(false)) fail('TOUCH', 'kurzes Wischen setzt schon eine Spanne (soll Tooltip/Scrollen bleiben)');
+  // E) Schere: antippen, dann reicht auf Touch ein einfaches Ziehen (ohne langes Druecken)
+  await t.evaluate(() => { const b = [...document.querySelectorAll('.br-sch')].find(x => x.dataset.brk === 'ab' && x.offsetParent); b.click(); });
+  const scharf = await t.evaluate(() => !!document.querySelector('#detail .ab-ptile [data-br="ab"].br-scharf'));
+  if (!scharf) fail('SCHERE', 'Antippen schaltet den Chart nicht scharf');
+  if (!(await touch(false))) fail('SCHERE', 'mit Schere setzt einfaches Ziehen keine Spanne');
+  const aus = await t.evaluate(() => !document.querySelector('.br-sch.on'));
+  if (!aus) fail('SCHERE', 'nach der Auswahl bleibt die Schere an');
   await b.close();
   if (GP) { const r = F.some(x => /kein Chip/.test(x)); console.log(r ? `zeitspanne --gegenprobe: ok (rot wie erwartet, ${F.length} Befunde)` : 'zeitspanne --gegenprobe: FEHLER - nicht gemeldet'); process.exit(r ? 0 : 1); }
   if (F.length) { console.log(`zeitspanne: ${F.length} Befund(e)`); F.forEach(x => console.log('  ' + x)); process.exit(1); }
-  console.log(`zeitspanne: ok (${ok}/${FAELLE.length} Chart-Arten: Ziehen setzt die Spanne, Chip mit ×, weniger Punkte, × stellt her; Touch: lange druecken + ziehen ja, kurzes Wischen nein)`);
+  console.log(`zeitspanne: ok (${ok}/${FAELLE.length} Chart-Arten: Ziehen setzt die Spanne, Chip mit ×, weniger Punkte, × stellt her; Touch: lange druecken + ziehen ja, kurzes Wischen nein; Schere neben jedem Zeitfilter, mit Schere reicht einfaches Ziehen)`);
 })().catch(e => { console.error(e); process.exit(2); });

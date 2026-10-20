@@ -217,9 +217,10 @@ function makroLeisteHtml(rub,ri){
   if(!makroIstCharts(rub))return'';
   const R=rub.mkRange!=null?rub.mkRange:MK_RANGE_DEF;
   const z=mkZoom[mkZoomKey(ri)];
-  if(z&&window.brushChipHtml)return chartLeisteHtml('',window.brushChipHtml(mkBrushReg(ri),z.von,z.bis));
+  const sch=window.brushSchereHtml?window.brushSchereHtml(mkBrushReg(ri)):'';
+  if(z&&window.brushChipHtml)return chartLeisteHtml('',sch+window.brushChipHtml(mkBrushReg(ri),z.von,z.bis));
   const rg=`<div class="ind-hist-range-bar">${MK_RANGES.map(([v,l])=>`<button class="ind-hist-range-btn${String(v)===String(R)?' on':''}" onclick="makroRange(${ri},'${v}')">${l}</button>`).join('')}</div>`;
-  return chartLeisteHtml('',rg);
+  return chartLeisteHtml('',rg.replace('<div class="ind-hist-range-bar">','<div class="ind-hist-range-bar">'+sch));
 }
 function makroChartsHtml(rub,ri){
   const sym=getSym();if(!sym)return'';
