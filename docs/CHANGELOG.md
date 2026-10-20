@@ -20408,3 +20408,26 @@ die Folgeentwicklung vorhersagen?
 - *Verworfen:* Marker-Attribute nur bei Änderung schreiben — gemessen kein Gewinn (Style/Layout unverändert ~105 ms), zurückgenommen.
 
 **Wächter:** `check/performance.js` G — keine Kommazahlen im Pfad, Pfad `scale(.1)`, Muster `scale(10)`. Gegen den alten Code rot (Kommazahlen: true, Transforms fehlen).
+
+## 2026-10-20 — VERSION-CHECK-613: Set-ups-Zeilen immer einzeilig
+
+**Nutzer:** *„bei set ups bei den Assets das soll alles in einer Reihe stehen sonst mach die schriftgröse kleiner"*
+
+**Gemessen vorher** (Preis-Chip zweizeilig, von 43 Zeilen):
+
+| Breite | Test-Schrift | breite Ersatzschrift (≈ iPhone/iPad) |
+|---|---|---|
+| 1180 | 0 | **34** |
+| 820 | 0 | **30** |
+| 390 | 10 | **35** |
+| 375 | 34 | **35** |
+| 360 | 35 | **35** |
+
+- *Ursache:* Chip durfte bewusst umbrechen (2026-10-11, damit nichts in die Δ-Zelle ragt) — Platz fehlte 14–36 px.
+
+**Lösung:**
+- CSS: Chip `nowrap`, Innenabstände Chip/Δ 6 → 4 px, Zeilen-Gap 5 → 4 px.
+- `setupsEinpassen()`: misst nach jedem Aufbau (und bei Größenänderung); ragt eine Zeile über ihre Spalte oder scrollt die Seite seitlich, werden Name/Preis/Δ/Score gemeinsam verkleinert, Halbierungssuche, Faktor 0,96 … 0,76.
+- *Ergebnis:* breite Schrift 390 px → Faktor 0,88 (Chip 9,7 px, Name 11,4 px); normale Schrift 390 px → unverändert (11/13 px).
+
+**Wächter:** `check/namen.js` D — 0 zweizeilige Zeilen, keine seitliche Seite, bei 1180/820/1366/390/375/360 breit + 1180 normal. Gegenprobe `--gegenprobe-umbruch` (alter Chip) → 5 Befunde rot.

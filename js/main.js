@@ -14360,7 +14360,36 @@ function renderPairsRoh(){
     ${col('◆ Neutral',BC.neu,neu)}
     ${col('▼ Bearish',BC.bear,bear)}
   </div>`;
+  try{setupsEinpassen(el);}catch(e){}
 }
+// Set-ups-Zeilen IMMER einzeilig (Nutzer 2026-10-20: "das soll alles in einer
+// Reihe stehen sonst mach die schriftgroese kleiner"). Die Abstaende sind schon
+// knapp (CSS); passt eine Zeile trotzdem nicht in ihre Spalte - gemessen mit
+// breiterer Systemschrift: bis 25 px bei 390 px, 36 px bei 360 px -, werden
+// Name, Preis, Δ und Score gemeinsam verkleinert, nur so weit wie noetig
+// (Halbierungssuche wie kopfTitelEinpassen, hoechstens 5 Layout-Proben).
+const SU_MIN_F=0.76;
+function setupsZuBreit(root){
+  const pg=document.getElementById('pgPairs');
+  if(pg&&pg.scrollWidth>pg.clientWidth+1)return true;
+  return [...root.querySelectorAll('.setups-col-rows')].some(c=>{const cw=c.getBoundingClientRect().right;return [...c.children].some(r=>r.classList&&r.classList.contains('sym-row')&&r.getBoundingClientRect().right>cw+0.5);});
+}
+function setupsEinpassen(root){
+  root=root||document.getElementById('pairCats');if(!root)return;
+  const els=[...root.querySelectorAll('.setups-cols .sym-row>.sym-name,.setups-cols .sym-row>.ticker-chip,.setups-cols .sym-row>.rate-diff,.setups-cols .sym-row>.row-score')];
+  if(!els.length)return;
+  els.forEach(e=>{e.style.fontSize='';});
+  if(!setupsZuBreit(root))return;
+  const basis=els.map(e=>parseFloat(getComputedStyle(e).fontSize)||0);
+  const stufen=[];for(let f=0.96;f>=SU_MIN_F-1e-9;f-=0.04)stufen.push(f);
+  const setz=f=>els.forEach((e,i)=>{e.style.fontSize=(basis[i]*f).toFixed(2)+'px';});
+  setz(stufen[stufen.length-1]);
+  if(setupsZuBreit(root))return;           // auch die kleinste Stufe reicht nicht: kleinste behalten
+  let lo=0,hi=stufen.length-1;
+  while(lo<hi){const mid=(lo+hi)>>1;setz(stufen[mid]);if(setupsZuBreit(root))lo=mid+1;else hi=mid;}
+  setz(stufen[hi]);
+}
+try{window.addEventListener('resize',()=>requestAnimationFrame(()=>{if(curPage==='pairs')setupsEinpassen();}));}catch(e){}
 
 // Beide Altfunktionen leiten jetzt auf toggleWatch um - der Stern IST die
 // Watchlist. Sie bleiben bestehen, weil sie noch von anderen Stellen

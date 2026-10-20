@@ -4602,15 +4602,25 @@ body.dense-mode .cot-card,body.dense-mode .rub-card{margin-bottom:10px}
    Schrift: 1180x820 Namensspalte 68px, 37 von 43 Namen gekuerzt. Jetzt ist
    die Untergrenze der LAENGSTE Name der Spalte (max-content); den Platz gibt
    der Preis-Chip ab. */
-.setups-col-rows{display:grid;grid-template-columns:minmax(max-content,1fr) minmax(min-content,auto) auto auto auto;column-gap:5px}
+.setups-col-rows{display:grid;grid-template-columns:minmax(max-content,1fr) minmax(min-content,auto) auto auto auto;column-gap:4px}
 .setups-cols .sym-row .dw-pname{overflow:visible;text-overflow:clip}
 /* ...und der Chip gibt Platz ab, OHNE etwas zu kuerzen: reicht die Breite
    nicht, bricht die Tagesveraenderung im Chip in eine zweite Zeile um
    (gemessen mit breiter Schrift: Chip bis 14px zu schmal, lief vorher in die
    Δ-Plakette). Die Spalte schrumpft nur bis zur breitesten Zeile im Chip. */
-.setups-cols .ticker-chip{flex-wrap:wrap;justify-content:center;row-gap:0;max-width:100%;min-width:0;white-space:normal}
+/* ⚠ SEIT 2026-10-20 EINZEILIG (Nutzer: "bei set ups bei den Assets das soll
+   alles in einer Reihe stehen sonst mach die schriftgroese kleiner").
+   GEMESSEN vorher: Preis-Chip zweizeilig in 10/43 Zeilen bei 390 px, 34/43
+   bei 375 px, 35/43 bei 360 px. Platz kommt zuerst aus Abstaenden (Zeilen-
+   Gap 5->4, Chip-/Δ-Innenabstand 6->4); erst unter 380 px wird die Schrift
+   kleiner, und nur so weit wie noetig (setupsEinpassen, gemessen statt
+   Breitenregel; Ausnahme von der 11-px-Mindestschrift, vom Nutzer verlangt). */
+.setups-cols .ticker-chip{flex-wrap:nowrap;justify-content:center;max-width:100%;min-width:0;white-space:nowrap;padding:2px 4px;gap:3px}
 .setups-cols .ticker-chip-pct{white-space:nowrap}
-.setups-cols .sym-row{grid-column:1/-1;display:grid;grid-template-columns:minmax(max-content,1fr) minmax(min-content,auto) auto auto auto;gap:5px;align-items:center}
+.setups-cols .rate-diff{padding:2px 4px}
+/* Passt eine Zeile trotzdem nicht (schmales Handy, breitere Systemschrift),
+   verkleinert setupsEinpassen() (js/main.js) die Schrift stufenweise. */
+.setups-cols .sym-row{grid-column:1/-1;display:grid;grid-template-columns:minmax(max-content,1fr) minmax(min-content,auto) auto auto auto;gap:4px;align-items:center}
 @supports (grid-template-columns:subgrid){
   .setups-cols .sym-row{grid-template-columns:subgrid}
 }
@@ -6552,11 +6562,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-612 - Kugel-Kueste als Ganzzahl-Pfad (drehend -27 %, pixelgleich); Kugel ruht nach 60 s ohne Eingabe."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-613 - Set-ups-Zeilen immer einzeilig (Abstaende knapper, Schrift passt sich an)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-612</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-613</span>
     </span>
   </div>
   <div class="hdr-r">

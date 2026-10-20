@@ -27,6 +27,9 @@ const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 const GEGENPROBE = process.argv.includes('--gegenprobe');
+// --gegenprobe-umbruch: alter Chip (bricht um, breite Innenabstaende) -> D rot
+const GP_UMBRUCH = process.argv.includes('--gegenprobe-umbruch');
+const GP_UMBRUCH_CSS = '.setups-cols .ticker-chip{flex-wrap:wrap!important;white-space:normal!important;padding:2px 6px!important;gap:5px!important}.setups-cols .rate-diff{padding:2px 6px!important}.setups-cols .sym-row{gap:5px!important}@media (max-width:379px){.setups-cols .ticker-chip,.setups-cols .rate-diff{font-size:11px!important}.setups-cols .sym-row .sym-name,.setups-cols .sym-row .row-score{font-size:13px!important}}';
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 const BREIT = 'DejaVu Sans';
 const GP_CSS = '.setups-col-rows{grid-template-columns:minmax(72px,1fr) minmax(0,auto) auto auto auto!important}' +
@@ -36,7 +39,7 @@ const GP_CSS = '.setups-col-rows{grid-template-columns:minmax(72px,1fr) minmax(0
 (async () => {
   const b = await chromium.launch();
   let geprueft = 0, breitDa = null;
-  const laeufe = [[1180, 820, true], [820, 1180, true], [1366, 1024, true], [390, 844, true], [1180, 820, false]];
+  const laeufe = [[1180, 820, true], [820, 1180, true], [1366, 1024, true], [390, 844, true], [375, 812, true], [360, 780, true], [1180, 820, false]];
   for (const [w, h, breit] of laeufe) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block', hasTouch: true });
     const p = await ctx.newPage();
@@ -45,6 +48,7 @@ const GP_CSS = '.setups-col-rows{grid-template-columns:minmax(72px,1fr) minmax(0
     await p.goto(URL); await wartenBisDatenDa(p);
     if (breit) await p.addStyleTag({ content: `:root{--ff-text:'FX Sym','${BREIT}',sans-serif!important}` });
     if (GEGENPROBE) await p.addStyleTag({ content: GP_CSS });
+    if (GP_UMBRUCH) await p.addStyleTag({ content: GP_UMBRUCH_CSS });
     if (breit && breitDa == null) breitDa = await p.evaluate(s => document.fonts.check(`700 17px "${s}"`), BREIT);
     const ort = `${w}x${h}${breit ? ' breite Schrift' : ''}`;
     const scan = async wo => p.evaluate(wo => {
@@ -80,6 +84,23 @@ const GP_CSS = '.setups-col-rows{grid-template-columns:minmax(72px,1fr) minmax(0
       return { raus, n };
     });
     if (chip.raus) fail('CHIP UEBER NACHBAR ' + ort, `${chip.raus} von ${chip.n} Preis-Chips in Set-ups ragen in die Δ-Zelle`);
+    // D) Set-ups-Zeile einzeilig (Nutzer 2026-10-20: "das soll alles in einer
+    //    Reihe stehen sonst mach die schriftgroese kleiner"). Gemessen vorher:
+    //    Preis-Chip zweizeilig in 10/43 Zeilen bei 390 px, 34/43 bei 375 px.
+    const zeile = await p.evaluate(() => {
+      let zwei = 0, n = 0; const bsp = [];
+      document.querySelectorAll('#pgPairs .setups-cols .sym-row').forEach(r => {
+        n++; const c = r.querySelector('.ticker-chip'), pc = c && c.querySelector('.ticker-chip-pct');
+        let z = false;
+        if (pc && c.firstChild) { const rg = document.createRange(); rg.selectNodeContents(c.firstChild); z = Math.abs(pc.getBoundingClientRect().top - rg.getBoundingClientRect().top) > 4; }
+        const nm = r.querySelector('.sym-name'); if (nm && nm.getClientRects().length > 1) z = true;
+        if (z) { zwei++; if (bsp.length < 3) bsp.push((nm && nm.textContent.trim()) || '?'); }
+      });
+      const pg = document.getElementById('pgPairs');
+      return { zwei, n, bsp, seitlich: pg.scrollWidth > pg.clientWidth + 1 };
+    });
+    if (zeile.zwei) fail('ZEILE ZWEIZEILIG ' + ort, `${zeile.zwei} von ${zeile.n} Set-ups-Zeilen brechen um (z.B. ${zeile.bsp.join(', ')})`);
+    if (zeile.seitlich) fail('SEITE SCROLLT SEITLICH ' + ort, 'Set-ups-Seite breiter als der Bildschirm');
     // C) Set-ups-Zeilen fest + Score-Kanten je Spalte buendig
     const fest = await p.evaluate(() => {
       let scroll = 0, n = 0; const versatz = [];
@@ -108,10 +129,14 @@ const GP_CSS = '.setups-col-rows{grid-template-columns:minmax(72px,1fr) minmax(0
   await b.close();
   if (breitDa === false) fail('BREITE SCHRIFT FEHLT', `"${BREIT}" ist auf diesem Rechner nicht installiert - der Stellvertreter fuer die iPad-Schrift greift nicht`);
   if (geprueft < 500) fail('ZU WENIG GEMESSEN', `nur ${geprueft} Namensstellen gefunden`);
+  if (GP_UMBRUCH) {
+    const ok = F.some(x => x.startsWith('ZEILE ZWEIZEILIG'));
+    console.log(ok ? `namen --gegenprobe-umbruch: ok (alter Chip wird gemeldet, ${F.filter(x => x.startsWith('ZEILE ZWEIZEILIG')).length} Befunde)` : 'namen --gegenprobe-umbruch: FEHLER - nicht gemeldet'); process.exit(ok ? 0 : 1);
+  }
   if (GEGENPROBE) {
     const ok = F.some(x => x.startsWith('NAME GEKUERZT')) && F.some(x => x.startsWith('ZEILE SCROLLBAR'));
     console.log(ok ? `namen --gegenprobe: ok (alte 72-px-Spalte + scrollbare Set-ups-Zeilen werden gemeldet, ${F.length} Befunde)` : 'namen --gegenprobe: FEHLER - nicht gemeldet'); process.exit(ok ? 0 : 1);
   }
   if (F.length) { console.log(`namen: ${F.length} Befund(e)`); [...new Set(F)].slice(0, 30).forEach(x => console.log('  ' + x)); process.exit(1); }
-  console.log(`namen: ok (${geprueft} Namensstellen auf allen Tabs, Asset-Seite und Dashboard mit allen Kartentypen, 4 Breiten mit breiter Ersatzschrift + 1180 normal: keiner gekuerzt, Set-ups-Chips bleiben in ihrer Zelle, Set-ups-Zeilen fest mit buendigen Score-Kanten)`);
+  console.log(`namen: ok (${geprueft} Namensstellen auf allen Tabs, Asset-Seite und Dashboard mit allen Kartentypen, 6 Breiten mit breiter Ersatzschrift + 1180 normal: keiner gekuerzt, Set-ups-Chips bleiben in ihrer Zelle, Set-ups-Zeilen einzeilig, Set-ups-Zeilen fest mit buendigen Score-Kanten)`);
 })().catch(e => { console.log('namen: ABBRUCH ' + e.message); process.exit(1); });

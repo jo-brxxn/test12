@@ -1567,6 +1567,13 @@ abgeschnitten: Leisten-Beschriftung (Rail-Polster 5 px, sonst „Dashboar/d“),
 Indikator-Tabelle ≤ 430 px (Wertspalten 15 %), Score-Hinweis bricht um statt
 „…“. Englische Ordinalzahlen über `ordEn()` (nie „24.“ oder „21th“).
 
+**Ausnahme Set-ups-Zeile (Nutzer 2026-10-20):** *„das soll alles in einer
+Reihe stehen sonst mach die schriftgröße kleiner“*. Name | Preis | Δ | Score |
+Stern stehen IMMER in einer Zeile. Erst knappere Abstände (CSS), dann
+`setupsEinpassen()` (`js/main.js`): misst, verkleinert die vier Teile
+gemeinsam nur so weit wie nötig (bis Faktor 0,76, also Preis-Chip bis ~8,4 px).
+Gilt NUR hier. Geprüft: `check/namen.js` D (6 Breiten, breite Ersatzschrift).
+
 **E — Drei Höhen für Bedienelemente.** `--h-s` 28 (Chips, Zeitfilter,
 Segment-Knöpfe, kleine Auswahlen in Karten), `--h-m` 34 (Knöpfe, Dropdowns,
 Eingabefelder auf Seiten und im Kopf), `--h-l` 40 (Eingabefelder und
