@@ -20479,3 +20479,16 @@ die Folgeentwicklung vorhersagen?
 - Angetippt (Navy, `aria-pressed`) schaltet er den Chart scharf: einfaches Ziehen wählt, auch auf Touch (`touch-action:none` nur im Scharf-Modus); danach / nochmal tippen / Esc → aus. Ziehen mit der Maus und langes Drücken gehen weiter.
 - *Gemessen:* Price-Karte 1180 px — Leiste 489 px, Inhalt mit Schere 505 px → zwei Zeilen (designregeln: höchstens eine). Zeitstufen der Preis-Kachel Innenabstand 7 → 4 px. Tippfläche der Schere wie die Nachbarn (Preis-Kachel −4 px, History −1 px; vorher ragte sie in die Kartenkante bzw. bei 820 px in die zweite Stufenzeile).
 - `check/zeitfilter.js` zählt die Schere nicht als Stufe; `check/zeitspanne.js` E: Schere an jedem Chart, mit Schere reicht einfaches Ziehen, danach aus.
+
+## 2026-10-20 — VERSION-CHECK-618: Scroll-Sprung bei Makro-Charts
+
+- **Gefunden:** Volllauf zu 616, `check/scrollhalt.js` rot, **22 Befunde**
+  (`makroRange`, `makroSpur`, `makroEinstufen` auf USD/GOLD), z. B.
+  GOLD `makroRange(2,'12')`: scrollTop **2585 → 4298**.
+- **Ursache:** `makroChartsHtml` zeichnete die Charts erst im `requestAnimationFrame`
+  — **nach** `scrollZurueck()` in `renderDetail`. Leere Kästen wuchsen danach
+  nachträglich; Chromium schob scrollTop per Scroll-Anker mit, *iPad (kein Anker)
+  verschiebt den Inhalt*.
+- **Fix (Wurzel):** `renderDetail` ruft `makroZeichnenAlle()` **synchron** vor
+  `scrollZurueck()`. Der rAF bleibt als Nachlauf (zeichnet gleich hoch neu).
+- **Wächter:** bestehend `check/scrollhalt.js` (meldete den Fehler rot).

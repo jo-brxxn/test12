@@ -17,7 +17,7 @@ import {scoreJournal,loadScoreJournal,jrErfassen,jrBootFertig,jrSperren,jrFreige
 import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL_RESEARCH_MATCHERS,isScoreDrivingEvent,periodLabel} from './event-matchers.js';
 // Makro-Charts + Analyse-Einstufungen je Makro-Karte (Nutzer-Auftrag
 // 2026-10-20, siehe Kopf von makro.js). Zirkulaerer Import wie bei journal.js.
-import {makroIstCharts,makroLeisteHtml,makroChartsHtml,makroSchalterHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert} from './makro.js';
+import {makroIstCharts,makroLeisteHtml,makroChartsHtml,makroSchalterHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert,makroZeichnenAlle} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,uid,
@@ -7806,6 +7806,11 @@ function renderDetail(){
     ${renderSpecTab(c)}
   </div>`;
   arAlle(document.querySelectorAll('.rtxt,.rub-summary-txt,.nt-item-tx'));
+  // Makro-Charts SYNCHRON zeichnen, bevor der Scrollstand zurueckkommt: im
+  // rAF danach wuchsen die leeren Chart-Kaesten erst nachtraeglich (bis
+  // ~1700px), Chromium schob scrollTop per Scroll-Anker mit, das iPad
+  // verschob den Inhalt (check/scrollhalt.js, 22 Befunde, 2026-10-20).
+  try{makroZeichnenAlle();}catch(e){console.error('[makro]',e);}
   // scrollZurueck() passt vorher Asset-Kopf und i-Knoepfe ein (siehe
   // scrollHalten, 2026-09-30) - sonst aenderten sie ihre Hoehe erst im
   // naechsten Frame, und auf dem iPad sprang der Inhalt um 53px.
