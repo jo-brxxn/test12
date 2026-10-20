@@ -20465,3 +20465,9 @@ die Folgeentwicklung vorhersagen?
 - Ansicht, kein Sync (`docs/state-sync.md`).
 
 **Wächter:** neu `check/zeitspanne.js` (+ Gegenprobe rot, 9 Befunde).
+
+## 2026-10-20 — VERSION-CHECK-616: drei Befunde aus dem Prüflauf zu 614
+
+- `check/zurueck.js` B: **42 Klicks** (Table/Charts, Zeitraum, Spur-Chips der Makro-Charts) speicherten ohne Nutzer-Markierung → ein Sync-Abgleich hätte sie durch den fremden Stand ersetzt. Jetzt `markUserEditTs()` vor `save()`.
+- `check/kartenlook.js`: Schalter in der Reihen-Überschrift machte sie **28 px** hoch (erlaubt 20). Herausragend (−7 px) überdeckte er das ⓘ der Karte darunter (`check/designregeln.js`). Lösung: eigene Zeile `.mk-swrow` unter „Macro“, rechtsbündig.
+- Alle drei einzeln grün, `makro`-Gegenprobe rot.

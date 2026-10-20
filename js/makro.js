@@ -259,13 +259,16 @@ function makroAnalyseHtml(rub,ri,sym){
 }
 
 // ── Aktionen (window-Bruecke unten) ───────────────────────────────────────
+// ⚠ Jede speichernde Aktion markiert sich als Nutzer-Aenderung (markUserEditTs),
+// sonst ersetzt der naechste Sync-Abgleich sie durch den fremden Stand -
+// gefunden von check/zurueck.js B (2026-10-20, 42 unmarkierte Klicks).
 function mkRub(ri){const s=getSym();return s&&s.rubrics?s.rubrics[ri]:null;}
 function makroSicht(v){
-  try{makroAnsichtSetzen(v);save();renderDetail();}
+  try{makroAnsichtSetzen(v);markUserEditTs();save();renderDetail();}
   catch(e){console.error(e);alert('Could not switch the view: '+(e&&e.message||e));}
 }
 function makroRange(ri,v){
-  try{const r=mkRub(ri);if(!r)return;delete mkZoom[mkZoomKey(ri)];r.mkRange=v==='MAX'?'MAX':+v;save();renderDetail();}
+  try{const r=mkRub(ri);if(!r)return;delete mkZoom[mkZoomKey(ri)];r.mkRange=v==='MAX'?'MAX':+v;markUserEditTs();save();renderDetail();}
   catch(e){console.error(e);alert('Could not change the range: '+(e&&e.message||e));}
 }
 function makroSpur(ri,indId){
@@ -275,7 +278,7 @@ function makroSpur(ri,indId){
     r.mkInds=ist.includes(indId)?ist.filter(x=>x!==indId):ist.concat(indId);
     // Reihenfolge wie in der Karte, nicht in der Klickreihenfolge.
     const ord=(r.indicators||[]).map(i=>i.id);r.mkInds.sort((a,b)=>ord.indexOf(a)-ord.indexOf(b));
-    save();renderDetail();
+    markUserEditTs();save();renderDetail();
   }catch(e){console.error(e);alert('Could not change the chart: '+(e&&e.message||e));}
 }
 function makroEinstufen(ri,k,v){

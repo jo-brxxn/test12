@@ -43,9 +43,9 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
     for (const id of ['USD', 'AUD', 'GOLD']) {
       await p.evaluate(id => gotoSym(id), id); await p.waitForTimeout(700);
       // EIN Schalter in der Reihen-Ueberschrift "Macro" fuer alle Makro-Karten
-      const sw = await p.evaluate(() => !!document.querySelector('#detail .ab-rtitel .mk-sw'));
+      const sw = await p.evaluate(() => !!document.querySelector('#detail .mk-swrow .mk-sw'));
       if (!sw) { fail(`${ort} ${id}`, 'kein Table|Charts-Schalter in der Reihe "Macro"'); continue; }
-      await p.evaluate(() => [...document.querySelectorAll('#detail .ab-rtitel .mk-sw button')].find(x => x.textContent.trim() === 'Charts').click());
+      await p.evaluate(() => [...document.querySelectorAll('#detail .mk-swrow .mk-sw button')].find(x => x.textContent.trim() === 'Charts').click());
       await p.waitForTimeout(600);
       const karten = await p.evaluate(() => [...document.querySelectorAll('#detail .rub-card')].map((c, i) => ({ i, name: (c.querySelector('.rub-inp') || {}).value, sw: !!c.querySelector('.mk-chart'),
         breit: Math.round(c.getBoundingClientRect().width), board: Math.round(document.querySelector('#detail .ab-cards').getBoundingClientRect().width) })));
@@ -91,7 +91,7 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
         }
       }
       // zurueck auf Table
-      await p.evaluate(() => [...document.querySelectorAll('#detail .ab-rtitel .mk-sw button')].find(x => x.textContent.trim() === 'Table').click());
+      await p.evaluate(() => [...document.querySelectorAll('#detail .mk-swrow .mk-sw button')].find(x => x.textContent.trim() === 'Table').click());
       await p.waitForTimeout(450);
       const tabs = await p.evaluate(() => [...document.querySelectorAll('#detail .rub-card')].filter(c => ['Inflation', 'Labour Market', 'Economic Growth'].includes((c.querySelector('.rub-inp') || {}).value) && c.querySelector('.ind-table')).length);
       if (tabs < 3) fail(`${ort} ${id}`, `Table bringt nur ${tabs} von 3 Tabellen zurueck`);

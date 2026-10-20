@@ -11031,7 +11031,8 @@ function renderAssetBoard(c){
            darunter - nur so sitzt sie garantiert buendig zwischen den beiden
            Reihen und nimmt denselben Spaltenabstand mit. */''}
       <div class="ab-col ab-qrow">${abQuickZeileHtml(c)}</div>
-      ${abReihenTitel('Macro',makroSchalterHtml(c))}
+      ${abReihenTitel('Macro')}
+      ${(()=>{const sw=makroSchalterHtml(c);return sw?`<div class="mk-swrow">${sw}</div>`:'';})()}
       ${ASSET_CARDS.map(n=>{const i=idx(n);return`<div class="ab-col${makroGross()&&i>=0&&makroIstCharts(rubs[i])?' mk-col':''}">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('')}
       ${abReihenTitel('Positioning')}
       ${ASSET_GRAPHS.map(a=>`<div class="ab-col">${abGrafikHtml(a,c)}</div>`).join('')}

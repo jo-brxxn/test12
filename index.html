@@ -2205,9 +2205,11 @@ body.compact-view .rub-summary{display:block}
 .mk-l,.mk-r{display:flex;flex-direction:column;gap:10px;min-width:0}
 .ab-cards .ab-col.mk-col{grid-column:1 / -1}
 @media(min-width:901px){.mk-col .mk-wrap{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:16px;align-items:start}}
-.ab-rtitel.ab-rtitel-x{height:auto}
-.ab-rtitel.ab-rtitel-x::after{order:1}
-.ab-rtitel .mk-sw{order:2;flex:0 0 auto}
+/* Schalter Table|Charts in einer EIGENEN Zeile unter der Reihen-Ueberschrift
+   "Macro", rechtsbuendig. Gemessen 2026-10-20: in der Ueberschrift selbst war
+   sie 28 statt hoechstens 20 px hoch (kartenlook); herausragend ueberdeckte
+   der Schalter das (i) der Karte darunter (designregeln). */
+.ab-cards>.mk-swrow{grid-column:1 / -1;display:flex;justify-content:flex-end;margin:-4px 0 -6px}
 .mk-an{border:1px solid var(--bd);border-radius:var(--rs);padding:8px 10px;background:var(--bg1);min-width:0}
 .mk-an-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:4px}
 .mk-an-t{font-size:var(--fs-2xs);letter-spacing:2px;color:var(--t3);font-weight:700;font-family:var(--ff-num);text-transform:uppercase}
@@ -6596,11 +6598,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-615 - Zeitspanne per Ziehen an allen Charts mit Zeitfilter (Chip mit x)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-616 - Makro-Schalter markieren sich als Nutzer-Aenderung; Table|Charts in eigener Zeile unter Macro."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-615</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-616</span>
     </span>
   </div>
   <div class="hdr-r">
