@@ -113,8 +113,12 @@ Adressen, nicht nur eine:
   nicht mehr). `DATA_BASE` und `event-alerts.yml` lesen direkt von `test12`.
   Cloudflare Worker baut nach der Umbenennung weiter (Check „Workers Builds:
   fx-final“ = success, 2026-10-17). ⚠ **GitHub Pages: letztes Deployment
-  2026-08-10** – Mirror steht still, Einstellung in GitHub → Settings → Pages
-  prüfen; bis dahin ist der Mirror NICHT aktuell.
+  2026-08-10** – Mirror steht still und ist NICHT aktuell. Nutzer 2026-10-20
+  auf die Frage abschalten/einschalten: *„Ist egal"* → nicht pflegen, nicht
+  als Beleg für einen Live-Stand nehmen. Live-Beleg = Check „Workers Builds:
+  fx-final" am Commit (GitHub-API, Repo `test12`) + Banner der Live-Seite.
+- **Push-Adresse:** `origin` = `https://github.com/jo-brxxn/test12` (seit
+  2026-10-20, Nutzer-OK), nicht mehr über die Weiterleitung von `FX-final`.
 - **`jo-brxxn.github.io/FX-final/`** (GitHub Pages, alter Name) war ein zweiter,
   UNGESCHUETZTER Mirror, der automatisch und garantiert direkt aus `main`
   ausgeliefert wird — ohne Build-Schritt, jeder Push ist sofort live.
