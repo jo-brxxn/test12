@@ -24,6 +24,11 @@ const GROSS = ['3M', '6M', '1Y', '3Y', '6Y', '10Y', 'Max', 'MAX', 'Custom'];
 const HIST = ['15D', '1M', '2M', ...GROSS];
 const MINI = ['6M', '1Y', '6Y', 'Max', 'Custom'];
 const MON = { '1M': 1, '2M': 2, '3M': 3, '6M': 6, '1Y': 12, '3Y': 36, '6Y': 72, '10Y': 120 };
+// Die History-Karte rechnet ihre Stufen in TAGEN (HIST_RANGES: 3M = 90 Tage),
+// nicht in Kalendermonaten. Mit Monaten meldete der Waechter am 2026-10-20
+// faelschlich rot: Datenanfang 2026-07-20, 3 Monate zurueck = 2026-07-20,
+// 90 Tage zurueck = 2026-07-22 - der Knopf wirkt also.
+const TAGE_HIST = { '15D': 15, '1M': 30, '2M': 60, '3M': 90, '6M': 182, '1Y': 365, '3Y': 1095, '6Y': 2190, '10Y': 3650 };
 
 (async () => {
   const b = await chromium.launch();
@@ -39,12 +44,12 @@ const MON = { '1M': 1, '2M': 2, '3M': 3, '6M': 6, '1Y': 12, '3Y': 36, '6Y': 72, 
     if (gp && l.length) l.splice(1, 0, '2Y');
     return l;
   }, [sel, GEGENPROBE]);
-  const pruefe = (ort, l, erlaubt, ab) => {
+  const pruefe = (ort, l, erlaubt, ab, tage) => {
     if (!l.length) { fail(ort, 'keine Zeitfilter-Leiste gefunden'); return; }
     l.forEach(x => { if (!erlaubt.includes(x)) fail(ort, `Stufe "${x}" gehoert nicht in ${erlaubt.join('/')}`); });
     const pos = l.map(x => erlaubt.indexOf(x)).filter(i => i >= 0);
     if (pos.some((v, i) => i && v < pos[i - 1])) fail(ort, `Reihenfolge ${l.join(' ')}`);
-    if (ab) l.forEach(x => { if (MON[x]) { const c = new Date(); c.setMonth(c.getMonth() - MON[x]); if (c.toISOString().slice(0, 10) <= ab) fail(ort, `${x} reicht hinter den Datenanfang ${ab} (Knopf ohne Wirkung)`); } });
+    if (ab) l.forEach(x => { if (tage ? tage[x] : MON[x]) { const c = new Date(); if (tage) c.setDate(c.getDate() - tage[x]); else c.setMonth(c.getMonth() - MON[x]); if (c.toISOString().slice(0, 10) <= ab) fail(ort, `${x} reicht hinter den Datenanfang ${ab} (Knopf ohne Wirkung)`); } });
   };
   // Price-Karte
   // Datenanfang inkl. Kurs-Archiv (price_hist_meta.json, seit 2026-09-25)
@@ -52,7 +57,7 @@ const MON = { '1M': 1, '2M': 2, '3M': 3, '6M': 6, '1Y': 12, '3Y': 36, '6Y': 72, 
   pruefe('PRICE-KARTE', await lies('#detail .ab-ptile .ab-rgs .ab-rg'), GROSS, abP);
   // History
   const abH = await p.evaluate(() => { const h = scoreHist.EUR || []; return h.length ? h[0][0] : null; });
-  pruefe('HISTORY', await lies('#detail .histp-rbtn'), HIST, abH);
+  pruefe('HISTORY', await lies('#detail .histp-rbtn'), HIST, abH, TAGE_HIST);
   // Die History-KARTE muss auf den Klick reagieren (bis 2026-09-26 zeichnete
   // setHistRange nur das Fenster #histBody neu - in der Karte blieb "Max"
   // markiert und die Liste unveraendert). Gegenprobe: altes Verhalten.
