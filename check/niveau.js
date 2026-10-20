@@ -10,8 +10,8 @@
 //      (Median-Abweichung x 1,4826), Arbeitslosigkeit mit umgedrehtem Vorzeichen;
 //   E) Waehrungen RELATIV zum Ø der anderen sieben, Stufen laut NIV;
 //   F) Nicht-FX (S&P 500 ↔ USD, inverse) liest das ABSOLUTE Niveau;
-//   G) Inflation Trend / Unemployment Trend (3M) (Modell 23); H) Consumer Confidence Trend (3M) (Modell 26);
-//   I) seit Modell 24/25 entfernte Zeilen (Real Rate, Growth, PMI, Rate Path) stehen nirgends.
+//   I) entfernte Zeilen stehen nirgends: Real Rate, Growth, PMI, Rate Path (Modell 24/25),
+//      Inflation/Unemployment/Consumer Confidence Trend (3M) (Modell 27).
 //   node check/niveau.js [--gegenprobe]   (Waehrungen absolut statt relativ)
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
@@ -21,11 +21,12 @@ const { wartenBisDatenDa } = require('./warten.js');
 const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 const IND = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'ind_data.json'), 'utf8'));
-const ALT = ['Real Rate vs Peers', 'Growth vs Trend', 'PMI vs 50', 'Rate Path vs Peers'];
+// Seit Modell 27 auch die drei Trend-Zeilen (Nutzer-Entscheid 2026-10-20).
+const ALT = ['Real Rate vs Peers', 'Growth vs Trend', 'PMI vs 50', 'Rate Path vs Peers', 'Inflation Trend (3M)', 'Unemployment Trend (3M)', 'Consumer Confidence Trend (3M)'];
 const FX = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'NZD'];
 const ZIEL = { USD: 2, EUR: 2, GBP: 2, JPY: 2, CHF: 1, CAD: 2, AUD: 2.5, NZD: 2 };
 const STUFEN = { inflT: [[0.7, 0.5], [0.3, 0.25]], labT: [[0.4, 0.5], [0.2, 0.25]], confT: [[5, 0.5], [2, 0.25]], infl: [[2, 1], [1, 0.75], [0.5, 0.5]], lab: [[1.5, 1], [1, 0.75], [0.5, 0.5]], wage: [[1.5, 0.75], [0.75, 0.5]] };
-const NAME = { inflT: 'Inflation Trend (3M)', labT: 'Unemployment Trend (3M)', confT: 'Consumer Confidence Trend (3M)', infl: 'Inflation vs Target', lab: 'Unemployment vs Normal', wage: 'Wages vs Normal' };
+const NAME = { infl: 'Inflation vs Target', lab: 'Unemployment vs Normal', wage: 'Wages vs Normal' };
 const zahl = s => { const m = String(s == null ? '' : s).match(/-?\d[\d.,]*/); return m ? parseFloat(m[0].replace(/,/g, '')) : null; };
 const tag = d => Date.parse(String(d).slice(0, 10) + 'T00:00:00Z');
 const med = a => { const s = a.slice().sort((x, y) => x - y), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
@@ -91,7 +92,7 @@ function inflation(c, heute, nurHead) {
   // F) S&P 500: Inflation-Karte invers zu USD, absolutes US-Niveau
   const spi = ist.SP500.infl;
   if (spi && abs.USD.infl != null && Math.abs(spi.pkt - (-stufe('infl', abs.USD.infl))) > 1e-9) fail('NICHT-FX', `S&P 500 Inflation vs Target ${spi.pkt} statt ${-stufe('infl', abs.USD.infl)} (US absolut, invers)`);
-  if (n < 30) fail('ABDECKUNG', `nur ${n} Niveau-Zeilen bei den acht Waehrungen (erwartet >= 30)`);
+  if (n < 16) fail('ABDECKUNG', `nur ${n} Niveau-Zeilen bei den acht Waehrungen (erwartet >= 16, seit Modell 27 drei Zeilenarten)`);
   if (perr.length) fail('Seitenfehler', perr.slice(0, 3).join(' | '));
   await b.close();
   if (F.length) { console.log(`✗ niveau: ${F.length} Befund(e)\n  ` + F.slice(0, 20).join('\n  ')); process.exit(1); }

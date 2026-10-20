@@ -60,18 +60,21 @@ Modell 20 maß der Score fast nur **Überraschungen** (Actual vs Forecast) –
 ein kurzer Horizont (Citi baute den CESI für kurzfristige FX-Signale, er
 kehrt per Konstruktion zur Null zurück). Der Niveau-Block ergänzt den
 mittleren Horizont, wie ihn Quant-Research für FX nutzt (Quellen und
-Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-605–610). Seit Modell 26
-sechs Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
+Messwerte: `docs/CHANGELOG.md`, VERSION-CHECK-605–610). Seit Modell 27
+drei Zeilen mit **festen Punkten** (`applyNiveauFeed`, Quelle `ind_data.json`):
 
 | Zeile | Karte | Messung | Stufen |
 |---|---|---|---|
 | Inflation vs Target | Inflation | Ø Headline- und Core-Inflation y/y (USD: PCE, Fed-Ziel) minus offizielles Ziel (`INFL_ZIEL`; Spannen → Mitte: CHF 0–2 → 1, CAD 1–3 → 2, AUD 2–3 → 2,5, NZD 1–3 → 2) | 0,5/1/2 pp → ±0,5/0,75/1 |
 | Unemployment vs Normal | Labour Market | 10-J-Median minus Ø der letzten 3 Monate, robuster z (Median-Abweichung × 1,4826) – niedriger = straff = bullish | 0,5/1/1,5σ → ±0,5/0,75/1 |
 | Wages vs Normal | Labour Market | Lohnwachstum y/y (3 Monate) gegen 10-J-Median, robuster z | 0,75/1,5σ → ±0,5/0,75 |
-| Inflation Trend (3M) *(Modell 23)* | Inflation | Headline y/y (USD: PCE) jetzt minus der Wert ≥ 80 Tage davor – Richtung des Abstands | 0,3/0,7 pp → ±0,25/0,5 |
-| Consumer Confidence Trend (3M) *(Modell 26)* | Economic Growth | Ø der letzten 3 Monate minus Ø der 3 Monate davor, Indexpunkte; steigend = bullish (CAD: keine Reihe) | 2/5 Pkt → ±0,25/0,5 |
-| Unemployment Trend (3M) *(Modell 23)* | Labour Market | Ø der letzten 3 Monate minus Ø der 3 Monate davor; steigend = bearish (Sahm-Logik) | 0,2/0,4 pp → ±0,25/0,5 |
 
+- **Modell 27 (2026-10-20, Nutzer-Entscheid):** die Trend-Zeilen Inflation /
+  Unemployment / Consumer Confidence Trend (3M) sind **raus aus dem Score**
+  (Nutzer: *„das mit Trend … ist doch egal“*, auf Rückfrage *„auch aus dem
+  Score nehmen“*; Hinweis gegeben: im Backtest hob confT den Block-IC
+  0,052 → 0,070). Die Richtung bleibt sichtbar in den Makro-Charts
+  (`docs/makro.md`), zählt aber nicht. Stehen in `NIV_ALT` → werden entfernt.
 - **Währungen RELATIV:** Punkte aus dem eigenen Abstand minus dem Ø der
   anderen sieben (wie das Macrosynergy-FX-Scorecard, „relative to the base
   currency area“). Gemessen am 2026-10-16: Inflation über Ziel bei 6 von 8 –

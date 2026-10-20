@@ -89,6 +89,7 @@ const JR_MODELL_NOTIZ={
   24:'backtest-driven: real rate vs peers and growth vs trend removed (no predictive power), rate path for all eight currencies as 2-year yield minus policy rate',
   25:'archive backtest: rate path vs peers removed (priced path predicted the opposite move), PMI vs 50 removed (no predictive power); wages vs normal kept',
   26:'new row consumer confidence trend (3 months, Economic Growth): the only growth series that improves the level block in both halves of the backtest',
+  27:'trend rows removed from the score (inflation, unemployment and consumer confidence trend over 3 months): the level block keeps inflation vs target, unemployment and wages vs normal',
 };
 
 // ── Zustand ────────────────────────────────────────────────────────────────

@@ -15,6 +15,9 @@ import {scoreJournal,loadScoreJournal,jrErfassen,jrBootFertig,jrSperren,jrFreige
 // Kalender-Event ↔ Score-Indikator-Muster: eigene Datei ohne Browser-Bezug,
 // damit der Kalender-Workflow dieselben Muster laden kann (2026-10-06).
 import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL_RESEARCH_MATCHERS,isScoreDrivingEvent,periodLabel} from './event-matchers.js';
+// Makro-Charts + Analyse-Einstufungen je Makro-Karte (Nutzer-Auftrag
+// 2026-10-20, siehe Kopf von makro.js). Zirkulaerer Import wie bei journal.js.
+import {makroIstCharts,makroLeisteHtml,makroChartsHtml,makroSchalterHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,uid,
@@ -38,7 +41,10 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   // "does not provide an export named 'bondSeriesPts'" ab: weisse Seite.
   bondSeriesPts,bondSpreadPts,ohneWochenende,SENTIMENT_DATA,
   // Was js/journal.js von hier liest (zirkulaerer Import, siehe dort).
-  scoreLog,trendAssets,indName,saveQuotaFail};
+  scoreLog,trendAssets,indName,saveQuotaFail,
+  // Was js/makro.js von hier liest (zirkulaerer Import, siehe dort).
+  indChartSeries,fmtIndVal,achsenTicks,INFL_ZIEL,nivAlle,nivEintrag,nivReihe,indNextTermin,indNextExpected,
+  researchAnalysis,chartLeisteHtml,markUserEditTs};
 // ── EINFARBIGER ICON-SATZ (Nutzer-Wunsch 2026-08-23) ───────────────────────
 // "mach davor die Flagge aber ohne Farben also eine Art icon aber schon die
 // richtige Form und nicht animiert und bei Gold und dem Rest auch gleich".
@@ -5679,7 +5685,7 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog},SNAP_REPLACER);}
+function snap(){return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,mkAnsicht:makroAnsichtWert()},SNAP_REPLACER);}
 function pushU(){_userEditZaehler++;_lastUserEditTs=Date.now();_userEditedSinceSync=true;try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}uStack.push(snap());if(uStack.length>60)uStack.shift();rStack=[];updUB();}
 // Sicherheits-Grenze fuer JEDEN Weg, wie Zustand von aussen in die App kommt
 // (Cloud-Sync, Datei-Import, Undo/Redo/Backup) - applySnap() ist dafuer laut
@@ -5747,6 +5753,10 @@ function sanitizeSnapIds(d){
         if(rName==='__proto__'||rName==='constructor'||rName==='prototype')continue;
         const v=perAsset[rName];if(!v||typeof v!=='object')continue;
         cleanAsset[rName]={bias:['bull','bear','neu',null].includes(v.bias)?v.bias:null,text:typeof v.text==='string'?v.text.slice(0,4000):''};
+        // Makro-Einstufungen (makro.js): nur kurze Kennungen aus [a-z], Verlauf begrenzt.
+        const kw=x=>typeof x==='string'&&/^[a-z]{1,16}$/.test(x);
+        if(v.tags&&typeof v.tags==='object'){const t={};for(const k in v.tags){if(kw(k)&&kw(v.tags[k]))t[k]=v.tags[k];}cleanAsset[rName].tags=t;}
+        if(Array.isArray(v.hist))cleanAsset[rName].hist=v.hist.filter(h=>h&&/^\d{4}-\d{2}-\d{2}$/.test(h.d)&&kw(h.k)&&(h.v===''||kw(h.v))).slice(-400).map(h=>({d:h.d,k:h.k,v:h.v}));
       }
       clean[aId]=cleanAsset;
     }
@@ -5875,7 +5885,7 @@ function applySnap(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){research.notes=mergeResearchNotes(_prevResNotes,research.notes);researchFolders=mergeResearchFolders(_prevResFolders,researchFolders);research.trash=mergeResearchTrash(_prevResTrash,research.trash);}researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){research.notes=mergeResearchNotes(_prevResNotes,research.notes);researchFolders=mergeResearchFolders(_prevResFolders,researchFolders);research.trash=mergeResearchTrash(_prevResTrash,research.trash);}researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};makroAnsichtSetzen(d.mkAnsicht);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6351,6 +6361,7 @@ function loadState(){
       researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];
       research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);
       researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};
+      makroAnsichtSetzen(d.mkAnsicht);
       calEvts=d.calEvts||mkCalEvts();
       widgets=d.widgets||mkWidgets();
       // "No Direction"-Widget wurde entfernt (in "Possible Set-ups" zusammengeführt).
@@ -10130,15 +10141,14 @@ const NIV={
   infl:{name:'Inflation vs Target',rub:'Inflation',stufen:[[2,1],[1,0.75],[0.5,0.5]],einh:'pp'},
   lab:{name:'Unemployment vs Normal',rub:'Labour Market',stufen:[[1.5,1],[1,0.75],[0.5,0.5]],einh:'z'},
   wage:{name:'Wages vs Normal',rub:'Labour Market',stufen:[[1.5,0.75],[0.75,0.5]],einh:'z'},
-  // Modell 23 (2026-10-16, Hook "bis es perfekt ist"): Richtung.
-  //   Inflation Trend (3M): Headline y/y heute minus vor ~3 Monaten - waechst der Abstand?
-  //   Unemployment Trend (3M): Ø 3 Monate heute minus Ø 3 Monate davor (steigend = bearish, Sahm-Logik)
-  inflT:{name:'Inflation Trend (3M)',rub:'Inflation',stufen:[[0.7,0.5],[0.3,0.25]],einh:'pp'},
-  labT:{name:'Unemployment Trend (3M)',rub:'Labour Market',stufen:[[0.4,0.5],[0.2,0.25]],einh:'pp'},
-  // Modell 26: Richtung des Verbrauchervertrauens (Ø 3 Monate minus Ø 3 Monate
-  // davor, Indexpunkte) - die einzige Wachstumsreihe, die den Block-Test besteht
-  // (tools/niveau_backtest.py: Block-IC Ø 0,052 -> 0,070, keine Haelfte negativ).
-  confT:{name:'Consumer Confidence Trend (3M)',rub:'Economic Growth',stufen:[[5,0.5],[2,0.25]],einh:'pts'}
+  // ⚠ Modell 27 (2026-10-20, Nutzer-Entscheid): die drei Trend-Zeilen
+  // (Inflation Trend 3M, Unemployment Trend 3M seit Modell 23, Consumer
+  // Confidence Trend 3M seit Modell 26) sind aus dem Score entfernt - Nutzer:
+  // "das mit Trend und so das ist doch egal", auf Rueckfrage ausdruecklich
+  // "auch aus dem Score nehmen". Hingewiesen war: im Backtest hob gerade
+  // confT den Block-IC (0,052 -> 0,070). Die Richtung bleibt SICHTBAR in den
+  // Makro-Charts (js/makro.js, Einstufung "Trend") - nivWerte rechnet sie
+  // weiter, sie zaehlt nur nicht mehr.
 };
 // ⚠ BACKTEST (tools/niveau_backtest.py, 2018-2026, 8 Waehrungen, Korb-Rendite
 // 1/3 Monate, point-in-time): "Real Rate vs Peers" (Rang-IC -0,045) und
@@ -10150,7 +10160,7 @@ const NIV={
 // voraus - IC je Monat -0,154 (1M) / -0,308 (3M, t -2,34): das Niveau der
 // Erwartung ist schon im Kurs, es bewegt nur deren Aenderung (= "2Y Yield
 // Gap (20d)"). "PMI vs 50" ohne Effekt (IC +-0,03, Treffer < 50 %). Beide raus.
-const NIV_ALT=['Real Rate vs Peers','Growth vs Trend','PMI vs 50','Rate Path vs Peers'];
+const NIV_ALT=['Real Rate vs Peers','Growth vs Trend','PMI vs 50','Rate Path vs Peers','Inflation Trend (3M)','Unemployment Trend (3M)','Consumer Confidence Trend (3M)'];
 const NIV_FENSTER_J=10,NIV_MIN_J=5;
 const NIV_NAMEN=Object.values(NIV).map(d=>d.name).concat(NIV_ALT);
 const nivTag=d=>Date.parse(String(d).slice(0,10)+'T00:00:00Z');
@@ -10955,8 +10965,8 @@ function abPinnedHtml(c){
 // Drei Reihen bekommen eine, die Quicklink-Zeile bewusst nicht: sie ist
 // selbsterklaerend und eine vierte Ueberschrift waere genau das
 // Uebergliedern, das ausgeschlossen wurde.
-function abReihenTitel(txt){
-  return`<div class="ab-rtitel"><span>${escH(txt)}</span></div>`;
+function abReihenTitel(txt,extra){
+  return`<div class="ab-rtitel${extra?' ab-rtitel-x':''}"><span>${escH(txt)}</span>${extra||''}</div>`;
 }
 function renderAssetBoard(c){
   const rubs=c.rubrics||[];
@@ -11009,8 +11019,8 @@ function renderAssetBoard(c){
            darunter - nur so sitzt sie garantiert buendig zwischen den beiden
            Reihen und nimmt denselben Spaltenabstand mit. */''}
       <div class="ab-col ab-qrow">${abQuickZeileHtml(c)}</div>
-      ${abReihenTitel('Macro')}
-      ${ASSET_CARDS.map(n=>{const i=idx(n);return`<div class="ab-col">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('')}
+      ${abReihenTitel('Macro',makroSchalterHtml(c))}
+      ${ASSET_CARDS.map(n=>{const i=idx(n);return`<div class="ab-col${makroGross()&&i>=0&&makroIstCharts(rubs[i])?' mk-col':''}">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('')}
       ${abReihenTitel('Positioning')}
       ${ASSET_GRAPHS.map(a=>`<div class="ab-col">${abGrafikHtml(a,c)}</div>`).join('')}
     </div>
@@ -11190,6 +11200,23 @@ function assetPreisKarteHtml(c){
   </div>`;
 }
 
+// ⚠ Keine Summary in den Makro-Karten (Nutzer 2026-10-20: "Entfern die
+// Kommentare ... das ist doch egal", Auswahl "Summary-Texte der Makro-Karten").
+// Andere Karten (COT) behalten sie. rub.summary bleibt gespeichert - nur die
+// Anzeige faellt weg.
+const MAKRO_OHNE_SUMMARY=['Inflation','Interest Rates','Labour Market','Economic Growth'];
+function rubSummaryHtml(rub,ri,bco){return`<!-- SUMMARY AREA -->
+      <div class="rub-summary">
+        <div class="rub-summary-lbl">
+          <span style="color:${bco}">▸ SUMMARY</span>
+        </div>
+        ${/* Kein Fliesstext (Dauerregel 2026-10-11): gelesen wird die Summary als
+             Punktliste (ein Satz = ein Punkt, Zahlen fett). Ein Klick darauf
+             zeigt das unveraenderte Textfeld zum Bearbeiten; beim Verlassen
+             steht wieder die Liste da (renderDetail baut neu). */''}
+        ${rub.summary?`<div class="rub-summary-view" role="button" tabindex="0" title="Click to edit" onclick="const t=this.nextElementSibling;this.style.display='none';t.style.display='';ar(t);t.focus()">${kurzHtml(escH(rub.summary))}</div>`:''}
+        <textarea class="rub-summary-txt"${rub.summary?' style="display:none"':''} placeholder="Summarize the overall ${escH(rub.name)} picture here..." oninput="ar(this);getRub(${ri}).summary=this.value;saveSoon()" onchange="markUserEditTs();const r=getRub(${ri});r.summary=this.value;r._summarySig=rubSummarySig(getSym(),r);syncMacroRub(${ri});save()" onblur="const v=this.previousElementSibling;if(v&&v.classList.contains('rub-summary-view')&&this.value.trim()){v.innerHTML=kurzHtml(escH(this.value));v.style.display='';this.style.display='none';}">${escH(rub.summary||'')}</textarea>
+      </div>`;}
 function renderRub(rub,ri,total){
   const bco=bCol(rub.bias);
   const collapsed=rub.collapsed?' collapsed':'';
@@ -11201,20 +11228,10 @@ function renderRub(rub,ri,total){
       <button class="rinfo" onclick="openInfoM(${ri})" title="Info">i</button>
     </div>
     <div class="rub-body">
-      <!-- SUMMARY AREA -->
-      <div class="rub-summary">
-        <div class="rub-summary-lbl">
-          <span style="color:${bco}">▸ SUMMARY</span>
-        </div>
-        ${/* Kein Fliesstext (Dauerregel 2026-10-11): gelesen wird die Summary als
-             Punktliste (ein Satz = ein Punkt, Zahlen fett). Ein Klick darauf
-             zeigt das unveraenderte Textfeld zum Bearbeiten; beim Verlassen
-             steht wieder die Liste da (renderDetail baut neu). */''}
-        ${rub.summary?`<div class="rub-summary-view" role="button" tabindex="0" title="Click to edit" onclick="const t=this.nextElementSibling;this.style.display='none';t.style.display='';ar(t);t.focus()">${kurzHtml(escH(rub.summary))}</div>`:''}
-        <textarea class="rub-summary-txt"${rub.summary?' style="display:none"':''} placeholder="Summarize the overall ${escH(rub.name)} picture here..." oninput="ar(this);getRub(${ri}).summary=this.value;saveSoon()" onchange="markUserEditTs();const r=getRub(${ri});r.summary=this.value;r._summarySig=rubSummarySig(getSym(),r);syncMacroRub(${ri});save()" onblur="const v=this.previousElementSibling;if(v&&v.classList.contains('rub-summary-view')&&this.value.trim()){v.innerHTML=kurzHtml(escH(this.value));v.style.display='';this.style.display='none';}">${escH(rub.summary||'')}</textarea>
-      </div>
-      <!-- INDICATORS -->
-      ${renderIndsTable(rub,ri)}
+      ${MAKRO_OHNE_SUMMARY.includes(rub.name)?'':rubSummaryHtml(rub,ri,bco)}
+      <!-- INDICATORS: Tabelle oder gestapelte Charts (makro.js, 2026-10-20) -->
+      ${makroLeisteHtml(rub,ri)}
+      ${makroIstCharts(rub)?makroChartsHtml(rub,ri):renderIndsTable(rub,ri)}
     </div>
     ${abGoToHtml('data')}
   </div>`;}

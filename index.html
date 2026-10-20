@@ -2193,6 +2193,33 @@ body.compact-view .rub-summary{display:block}
 .rinfo{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;border:1.3px solid var(--blue);color:var(--blue);font-size:var(--fs-xs);font-weight:800;font-style:italic;font-family:Georgia,'Times New Roman',serif;cursor:pointer;background:transparent;flex-shrink:0;line-height:1;padding:0;opacity:.65;transition:all .12s}@media (hover:hover){.rinfo:hover{opacity:1;background:rgba(var(--blue-rgb),.08)}}
 /* ── RUBRIC SUMMARY ── */
 .rub-summary{background:var(--bg5);border:1px solid var(--bd2);border-radius:var(--rs);padding:7px 10px;margin-bottom:8px}
+/* ── Makro-Karten: Table | Charts + Analyse-Einstufungen (js/makro.js, 2026-10-20) ── */
+.mk-wrap{display:flex;flex-direction:column;gap:10px;min-width:0}
+.mk-l,.mk-r{display:flex;flex-direction:column;gap:10px;min-width:0}
+.ab-cards .ab-col.mk-col{grid-column:1 / -1}
+@media(min-width:901px){.mk-col .mk-wrap{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:16px;align-items:start}}
+.ab-rtitel.ab-rtitel-x{height:auto}
+.ab-rtitel.ab-rtitel-x::after{order:1}
+.ab-rtitel .mk-sw{order:2;flex:0 0 auto}
+.mk-an{border:1px solid var(--bd);border-radius:var(--rs);padding:8px 10px;background:var(--bg1);min-width:0}
+.mk-an-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:4px}
+.mk-an-t{font-size:var(--fs-2xs);letter-spacing:2px;color:var(--t3);font-weight:700;font-family:var(--ff-num);text-transform:uppercase}
+.mk-an-meta{font-size:var(--fs-2xs);color:var(--t3)}
+.mk-an-row{display:grid;grid-template-columns:minmax(92px,max-content) minmax(0,1fr);gap:4px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--bd)}
+.mk-an-hd+.mk-an-row{border-top:0}
+.mk-an-lbl{font-size:var(--fs-xs);font-weight:700;color:var(--t1)}
+.mk-an-opts{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
+.mk-an-d{grid-column:2;font-size:var(--fs-2xs);color:var(--t2);min-width:0}
+.mk-an-dl{text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--t3)}
+.mk-an-abw{color:var(--due);font-weight:700;font-style:normal}
+.cmp-chip.mk-vs:not(.on){outline:1.5px dashed var(--t1);outline-offset:-1.5px}
+.mk-chips{display:flex;flex-wrap:wrap;gap:4px}
+.mk-chart{min-width:0;width:100%}
+.mk-svg{display:block;touch-action:pan-y}
+.mk-leer{font-size:var(--fs-sm);color:var(--t3);padding:12px 0}
+.mk-read{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:var(--fs-xs);color:var(--t1);min-height:18px}
+.mk-read i{color:var(--t2)}
+@media (max-width:520px){.mk-an-row{grid-template-columns:minmax(0,1fr)}.mk-an-d{grid-column:1}}
 .rub-summary-lbl{font-size:var(--fs-2xs);letter-spacing:2px;color:var(--t3);font-weight:700;font-family:var(--ff-num);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
 .rub-summary-txt{width:100%;background:transparent;border:none;color:var(--t1);font-size:var(--fs-sm);line-height:1.6;outline:none;font-family:var(--ff-text);resize:none;overflow:hidden;min-height:30px}
 .rub-summary-view{color:var(--t1);font:400 var(--fs-sm)/1.5 var(--ff-text);cursor:text}
@@ -6562,11 +6589,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-613 - Set-ups-Zeilen immer einzeilig (Abstaende knapper, Schrift passt sich an)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-614 - Score-Modell 27: Trend-Zeilen (3M) aus dem Score; Makro-Reihe Table|Charts mit grossen Charts + Einstufungen; keine Summary in Makro-Karten."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-613</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-614</span>
     </span>
   </div>
   <div class="hdr-r">

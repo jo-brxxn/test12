@@ -20437,3 +20437,19 @@ die Folgeentwicklung vorhersagen?
 - `check/zeitfilter.js`: History-Stufen in **Tagen** (`HIST_RANGES`, 3M = 90 Tage), nicht in Kalendermonaten. *Gemessen:* Datenanfang 2026-07-20 → 3 Monate zurück = 2026-07-20 (rot), 90 Tage = 2026-07-22 → Knopf wirkt. App korrekt.
 - `check/zurueck.js`: fremdes Paar mit festem `bias:'neu'` — der Paar-Bias ist **abgeleitet** (`recomputeAllPairBiases`). Rot, seit NZD/CHF nach dem Daten-Update bullish steht (+3,4). Gleicher Befund mit dem Code von 612 + heutigen Daten → nicht 613. Abgeleiteter Pfad `pairs[..].bias` zählt nicht mehr.
 - Beide einzeln grün, Gegenproben rot.
+
+## 2026-10-20 — VERSION-CHECK-614: Makro-Charts, Einstufungen, Modell 27, keine Makro-Summary
+
+**Nutzer:** *„… nicht nur im Score actual vs forecast sondern auch ist Inflation über Target und den Trend … einen Schalter … drei großer Chart … Beschreibungen … über Target im Target oder unterm Target“* — danach: *„Entfern die Kommentare also das mit Trend und so das ist doch egal“* (Auswahl: Summary-Texte der Makro-Karten + Trend-Zeilen, Trend-Zeilen „auch aus dem Score nehmen“).
+
+**Makro-Charts (`js/makro.js`, `docs/makro.md`):**
+- EIN Schalter `Table | Charts` in der Reihe „Macro“. *Gemessen:* nebeneinander je Karte **344 px** bei 1180 px → im Charts-Modus volle Zeile (**≥ 90 %** der Brettbreite), breit: Analyse links | Chart rechts.
+- Gestapelte Spuren aus `indChartSeries` (Spurkopf = letzter echter Punkt), Zielband (USD 2 %, AUD 2–3 % …), 10-J-Median, PMI 50, Überraschungs-Balken (nur Actual ≠ Forecast), nächster Termin + Forecast-Raute, Lesezeile beim Hover.
+- Einstufungen: Inflation (Level, Trend, Control, Central bank), Labour (Tightness, Trend, Wages), Growth (Momentum, Confidence). Vorschlag aus `nivAlle` (Schwellen = kleinste Score-Stufe), sonst *no data*. Gespeichert bei der Währung (`researchAnalysis[ccy]`, Gold teilt USD), Verlauf als Band „Your calls“, Sanitizer behält `tags`/`hist`.
+- *Geprüft beim Bauen:* Fed-Funds-Sprung 3,75 → 4 % am 2026-09-16 steht so in `ind_data.json` → Vorschlag „Hiking“ korrekt.
+
+**Modell 27:** Inflation/Unemployment/Consumer Confidence Trend (3M) → `NIV_ALT` (aus dem Score, Zeilen entfernt). `check/niveau.js`: 21 Zeilen nachgerechnet, Trend-Zeilen stehen nirgends. Stärke-Note beginnt neu.
+
+**Keine Summary** in Inflation/Interest Rates/Labour/Growth (`MAKRO_OHNE_SUMMARY`); `rub.summary` bleibt gespeichert.
+
+**Wächter:** neu `check/makro.js` (+ Gegenprobe rot, 34 Befunde).

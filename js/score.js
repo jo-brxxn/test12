@@ -1817,7 +1817,7 @@ function symScoreCmp(sym){
 // PMI vs 50 (kein Effekt) raus. Wages bleibt (Pool-IC +0,043/+0,069).
 // 25 -> 26 (2026-10-17): Consumer Confidence Trend (3M) neu (Economic Growth) -
 // besteht Einzel- UND Block-Test (Block-IC Ø 0,052 -> 0,070, beide Haelften positiv).
-const SCORE_MODEL_VERSION=26;
+const SCORE_MODEL_VERSION=27;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.
