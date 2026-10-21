@@ -36,7 +36,7 @@ const ok = m => { if (!GP) console.log('  ✓ ' + m); };
 // Was eine App ohne die Makro-Felder (<= 613) hochlaedt.
 function altStand(d) {
   const o = JSON.parse(JSON.stringify(d));
-  delete o.mkAnsicht; delete o.appVer;
+  delete o.mkAnsicht; delete o.mkTab; delete o.appVer;
   Object.values(o.researchAnalysis || {}).forEach(c => Object.values(c || {}).forEach(r => { if (r && typeof r === 'object') { delete r.tags; delete r.hist; } }));
   (o.syms || []).forEach(s => (s.rubrics || []).forEach(r => { delete r.mkInds; delete r.mkRange; }));
   return o;
@@ -71,13 +71,19 @@ function altStand(d) {
   const klick = (sel, txt) => p.evaluate(([sel, txt]) => { const x = [...document.querySelectorAll(sel)].find(y => y.textContent.trim() === txt); if (!x) return false; x.click(); return true; }, [sel, txt]);
   const zustand = () => p.evaluate(() => { const inf = getSym().rubrics.find(r => r.name === 'Inflation'); const a = ((researchAnalysis.USD || {}).Inflation || {});
     return { ui: (document.querySelector('#detail .mk-sw .on') || {}).textContent || '', charts: !!document.querySelector('#detail .mk-chart svg'), range: inf.mkRange, inds: JSON.stringify(inf.mkInds || null),
-      tags: JSON.stringify(a.tags || {}), hist: (a.hist || []).length, tagUi: [...document.querySelectorAll('#detail .mk-an-o.on')].map(x => x.textContent).join('|') }; });
+      tab: (document.querySelector('#mkTabKarte .mk-tab.on') || {}).textContent || '', tags: JSON.stringify(a.tags || {}), hist: (a.hist || []).length }; });
   if (!await klick('#detail .mk-sw button', 'Charts')) fail('Aufbau', 'kein Charts-Knopf'); await p.waitForTimeout(300);
   await klick('#detail .ind-hist-range-btn', '10Y'); await p.waitForTimeout(300);
   await p.evaluate(() => { const c = document.querySelector('#detail .mk-chip.on'); if (c) c.click(); }); await p.waitForTimeout(300);
-  await klick('#detail .mk-an-o', 'Below target'); await p.waitForTimeout(2500);
+  // Reiter Labour Market, dann zurueck auf Inflation-Spuren ist nicht noetig: der Reiter selbst wird geprueft
+  await p.evaluate(() => makroTab('Labour Market')); await p.waitForTimeout(300);
+  await p.evaluate(() => makroTab('Inflation')); await p.waitForTimeout(300);
+  await p.evaluate(() => makroTab('Labour Market')); await p.waitForTimeout(300);
+  // Einstufungen haben seit 620 keine Oberflaeche mehr - gespeicherte (aus 614-619) muessen trotzdem bleiben
+  await p.evaluate(() => { researchAnalysis.USD = researchAnalysis.USD || {}; researchAnalysis.USD.Inflation = Object.assign(researchAnalysis.USD.Inflation || { bias: null, text: '' }, { tags: { level: 'below' }, hist: [{ d: '2026-10-20', k: 'level', v: 'below' }] }); markUserEditTs(); save(); });
+  await p.waitForTimeout(2500);
   const soll = await zustand();
-  if (soll.ui !== 'Charts' || soll.range !== 120 || soll.tags === '{}') fail('Aufbau', 'Einstellungen kamen nicht an: ' + JSON.stringify(soll));
+  if (soll.ui !== 'Charts' || soll.range !== 120 || soll.tags === '{}' || soll.tab !== 'Labour Market') fail('Aufbau', 'Einstellungen kamen nicht an: ' + JSON.stringify(soll));
 
   // ── A: das alte Geraet laedt hoch ──
   console.log('A) alte App laedt ohne die neuen Felder hoch');
@@ -85,10 +91,10 @@ function altStand(d) {
   cloud.data = altStand(cloud.data); cloud.updated_at = neu();
   await p.evaluate(() => cloudSyncNow()); await p.waitForTimeout(2500);
   const nachA = await zustand();
-  for (const k of ['ui', 'charts', 'range', 'inds', 'tags', 'hist', 'tagUi']) {
+  for (const k of ['ui', 'charts', 'range', 'inds', 'tab', 'tags', 'hist']) {
     if (JSON.stringify(nachA[k]) !== JSON.stringify(soll[k])) fail('A ALTES GERAET LOESCHT', `${k}: vorher ${JSON.stringify(soll[k])}, nach dem Abgleich ${JSON.stringify(nachA[k])}`);
   }
-  if (JSON.stringify(nachA) === JSON.stringify(soll)) ok('Charts, 10Y, Spuren und Einstufung bleiben');
+  if (JSON.stringify(nachA) === JSON.stringify(soll)) ok('Charts, Reiter, 10Y, Spuren und gespeicherte Einstufung bleiben');
 
   // ── B: bewusste Aenderung eines Geraets, das die Felder kennt ──
   console.log('B) bewusste Aenderung eines aktuellen Geraets kommt an');

@@ -17,7 +17,7 @@ import {scoreJournal,loadScoreJournal,jrErfassen,jrBootFertig,jrSperren,jrFreige
 import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL_RESEARCH_MATCHERS,isScoreDrivingEvent,periodLabel} from './event-matchers.js';
 // Makro-Charts + Analyse-Einstufungen je Makro-Karte (Nutzer-Auftrag
 // 2026-10-20, siehe Kopf von makro.js). Zirkulaerer Import wie bei journal.js.
-import {makroIstCharts,makroLeisteHtml,makroChartsHtml,makroSchalterHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert,makroZeichnenAlle} from './makro.js';
+import {makroKartenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroZeichnenAlle} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,uid,
@@ -44,7 +44,8 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   scoreLog,trendAssets,indName,saveQuotaFail,
   // Was js/makro.js von hier liest (zirkulaerer Import, siehe dort).
   indChartSeries,fmtIndVal,achsenTicks,INFL_ZIEL,nivAlle,nivEintrag,nivReihe,indNextTermin,indNextExpected,
-  researchAnalysis,chartLeisteHtml,markUserEditTs};
+  researchAnalysis,chartLeisteHtml,markUserEditTs,
+  indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,kartenIcon};
 // ── EINFARBIGER ICON-SATZ (Nutzer-Wunsch 2026-08-23) ───────────────────────
 // "mach davor die Flagge aber ohne Farben also eine Art icon aber schon die
 // richtige Form und nicht animiert und bei Gold und dem Rest auch gleich".
@@ -5693,7 +5694,7 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,mkAnsicht:makroAnsichtWert()},SNAP_REPLACER);}
+function snap(){return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,mkAnsicht:makroAnsichtWert(),mkTab:makroTabWert()},SNAP_REPLACER);}
 function pushU(){_userEditZaehler++;_lastUserEditTs=Date.now();_userEditedSinceSync=true;try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}uStack.push(snap());if(uStack.length>60)uStack.shift();rStack=[];updUB();}
 // Sicherheits-Grenze fuer JEDEN Weg, wie Zustand von aussen in die App kommt
 // (Cloud-Sync, Datei-Import, Undo/Redo/Backup) - applySnap() ist dafuer laut
@@ -5893,7 +5894,7 @@ function applySnap(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){research.notes=mergeResearchNotes(_prevResNotes,research.notes);researchFolders=mergeResearchFolders(_prevResFolders,researchFolders);research.trash=mergeResearchTrash(_prevResTrash,research.trash);}researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};makroAnsichtSetzen(d.mkAnsicht);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){research.notes=mergeResearchNotes(_prevResNotes,research.notes);researchFolders=mergeResearchFolders(_prevResFolders,researchFolders);research.trash=mergeResearchTrash(_prevResTrash,research.trash);}researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};makroAnsichtSetzen(d.mkAnsicht);makroTabSetzen(d.mkTab);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6369,7 +6370,7 @@ function loadState(){
       researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];
       research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);
       researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};
-      makroAnsichtSetzen(d.mkAnsicht);
+      makroAnsichtSetzen(d.mkAnsicht);makroTabSetzen(d.mkTab);
       calEvts=d.calEvts||mkCalEvts();
       widgets=d.widgets||mkWidgets();
       // "No Direction"-Widget wurde entfernt (in "Possible Set-ups" zusammengeführt).
@@ -6951,9 +6952,10 @@ let _appVeraltet=false;
 function neueFelderBehalten(fremd,lokal){
   if(!fremd||typeof fremd!=='object'||!lokal||typeof lokal!=='object')return fremd;
   if(window.__gpKeinBehalten)return fremd;   // nur check/altgeraet.js --gegenprobe
-  // Makro-Ansicht Table|Charts (seit 614)
-  if(!('mkAnsicht' in fremd)&&('mkAnsicht' in lokal))fremd.mkAnsicht=lokal.mkAnsicht;
-  // Makro-Einstufungen und ihr Verlauf (seit 614): researchAnalysis[ccy][karte].tags/.hist
+  // Makro-Ansicht Table|Charts (seit 614) und aktiver Reiter (seit 620)
+  ['mkAnsicht','mkTab'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
+  // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
+  // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
   const fa=fremd.researchAnalysis,la=lokal.researchAnalysis;
   if(fa&&typeof fa==='object'&&la&&typeof la==='object'){
     Object.keys(la).forEach(ccy=>{
@@ -11137,8 +11139,10 @@ function renderAssetBoard(c){
            Reihen und nimmt denselben Spaltenabstand mit. */''}
       <div class="ab-col ab-qrow">${abQuickZeileHtml(c)}</div>
       ${abReihenTitel('Macro')}
-      ${(()=>{const sw=makroSchalterHtml(c);return sw?`<div class="mk-swrow">${sw}</div>`:'';})()}
-      ${ASSET_CARDS.map(n=>{const i=idx(n);return`<div class="ab-col${makroGross()&&i>=0&&makroIstCharts(rubs[i])?' mk-col':''}">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('')}
+      ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE
+           breite Karte mit Reitern (Nutzer 2026-10-21, siehe Kopf von makro.js). */''}
+      ${(()=>{const tk=makroTabKarteHtml(c);if(tk)return`<div class="ab-col mk-col">${tk}</div>`;
+        return ASSET_CARDS.map(n=>{const i=idx(n);return`<div class="ab-col">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('');})()}
       ${abReihenTitel('Positioning')}
       ${ASSET_GRAPHS.map(a=>`<div class="ab-col">${abGrafikHtml(a,c)}</div>`).join('')}
     </div>
@@ -11347,9 +11351,9 @@ function renderRub(rub,ri,total){
     </div>
     <div class="rub-body">
       ${MAKRO_OHNE_SUMMARY.includes(rub.name)?'':rubSummaryHtml(rub,ri,bco)}
-      <!-- INDICATORS: Tabelle oder gestapelte Charts (makro.js, 2026-10-20) -->
-      ${makroLeisteHtml(rub,ri)}
-      ${makroIstCharts(rub)?makroChartsHtml(rub,ri):renderIndsTable(rub,ri)}
+      <!-- INDICATORS (Makro-Karten: Schalter Table | Charts darueber, makro.js) -->
+      ${makroKartenSchalterHtml(rub)}
+      ${renderIndsTable(rub,ri)}
     </div>
     ${abGoToHtml('data')}
   </div>`;}
@@ -11422,8 +11426,12 @@ function renderIndsTable(rub,ri){
 // renderInd() uebernommen (ev-Kalenderpfad vs. ind.research-Feedpfad, inkl.
 // der Dual-Source-Exklusivitaet - siehe CLAUDE.md "EUR-Score flippte..." -
 // und der Revisions-Faerbung).
-function renderIndRow(ind,ri,ii,rub,total,pairPos){
-  const bco=bCol(ind.bias);
+// Werte einer Indikator-Zeile (Act/Fc/Prev, Farben, Quellenzeile) - EINE
+// Rechnung fuer die Tabelle UND die Spurkoepfe der Makro-Charts (makro.js,
+// Nutzer 2026-10-21: "Ja aber alles muss abgetrennt und uebersichtlich sein").
+// Zwei Kopien waeren die bekannte Dual-Source-Falle: Tabelle und Chart zeigten
+// irgendwann zwei verschiedene Zahlen fuer denselben Release.
+function indZeilenWerte(ind,rub){
   const ev=(ind.research&&ind.research.feed)?null:findIndEvent(getSym().id,ind.name);
   // Was der Indikator ist und wie er zaehlt: als ⓘ ganz rechts in der
   // Quellenzeile der aufgeklappten Zeile (Nutzer 2026-10-10, per Screenshot markiert: "da
@@ -11491,6 +11499,11 @@ function renderIndRow(ind,ri,ii,rub,total,pairPos){
     const revNote=r.revisedFrom?`<div class="ind-data-src" style="padding-top:0"><span class="ind-data-lbl">Previous revised:</span> originally reported as <b>${escH(r.revisedFrom)}</b>, now restated as <b>${escH(P.val??'–')}</b></div>`:'';
     detailBody=`<div class="ind-data-src">${bondDates} ${srcLink}${secLink}${erkl}</div>${revNote}`;
   }
+  return{actTxt,actCls,fcTxt,prevTxt,prevCls,detailBody,erkl};
+}
+function renderIndRow(ind,ri,ii,rub,total,pairPos){
+  const bco=bCol(ind.bias);
+  let {actTxt,actCls,fcTxt,prevTxt,prevCls,detailBody,erkl}=indZeilenWerte(ind,rub);
   const spark=indSparklineSvg(ind,bco);
   const isOpen=!!indDetailsOpen[ind.id];
   const stale=indIsStale(ind);

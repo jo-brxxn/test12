@@ -1,38 +1,40 @@
-# Makro-Charts + Analyse-Einstufungen (seit 2026-10-20)
+# Makro-Charts (seit 2026-10-20, Umbau 2026-10-21)
 
-Referenziert von `CLAUDE.md`. Code: `js/makro.js`. Wächter: `check/makro.js`.
+Referenziert von `CLAUDE.md`. Code: `js/makro.js`. Wächter: `check/makro.js`, `check/altgeraet.js`.
 
-## Auftrag (Nutzer 2026-10-20)
+## Auftrag
 
-> „Das Ziel ist es damit Makro Sentiment zu tracken und es übersichtlich
-> darzustellen … nicht nur im Score actual vs forecast sondern auch ist
-> Inflation über Target und den Trend … ich will das auch sehen können …
-> einen Schalter … drei großer Chart … in denen ich dann alle Indikatoren
-> rein machen kann … Beschreibungen … über Target / im Target / unterm Target“
+> 2026-10-20: „einen Schalter haben zum wechseln also wenn ich Wechsel soll da drei
+> großer Chart auftauchen in denen ich dann alle Indikatoren rein machen kann“
 
-**Nutzerwahl (Rückfrage):** gestapelte Spuren | App schlägt vor, du entscheidest |
-Ziel-/Normal-Linien + Überraschungs-Balken + Einstufungs-Verlauf + nächster
-Termin | alle Makro-Karten.
+> 2026-10-21: „die Switch Funktion ist noch ziemlich blöd und hat viele Schwächen …
+> mach sie perfekt“
+
+**Nutzerwahl 2026-10-21 (Rückfrage):** Schalter je Karte | Charts = eine Karte mit
+Reitern, Klick auf eine Karte öffnet deren Reiter | *keine Einstufung* („das ist nur
+zum analysieren“) | Zahlen je Spur, **„abgetrennt und übersichtlich — das hat Priorität“**.
 
 ## Regeln
 
-- **EIN Schalter** `Table | Charts` in der Reihen-Überschrift **Macro** der
-  Asset-Seite, nicht je Karte. Im Charts-Modus nimmt jede Makro-Karte die
-  **volle Zeile** (`.mk-col`). *Gemessen:* nebeneinander 344 px bei 1180 px.
-- **Gestapelte Spuren**: gemeinsame Zeitachse, je Indikator eigene Spur und
-  Achse, **echte Werte** aus `indChartSeries` (dieselbe Reihe wie der
-  aufgeklappte Indikator) — nie eine zweite Quelle.
-- **Bezugslinien**: Zielband Inflation (CPI/Core/PCE y/y, `MK_ZIELBAND`, Mitte =
-  `INFL_ZIEL` des Scores), 10-Jahres-Median bei Arbeitslosigkeit/Löhnen, 50 bei
-  PMI, 0 bei „vs Target/vs Normal/Trend/Yield Gap“.
-- **Überraschungs-Balken** = Actual − Forecast, Farbe über `actualColor`
-  (gleiche Richtung wie Tabelle/Kalender). Actual = Forecast → kein Balken.
-- **Nächster Termin**: Kalenderdatum (gestrichelt) oder Erwartung `~Next`
-  (gepunktet) + Forecast-Raute, falls bekannt.
-- **Einstufungen** je Karte (`MK_DIMS`): Vorschlag nur aus echten Daten
-  (`nivAlle`, Schwellen = kleinste Score-Stufe), sonst *no data*. Nutzerwahl
-  Navy, Vorschlag gestrichelt umrandet, Abweichung „≠ data“.
-- **Speicher**: Einstufung bei der **Währung** (`researchAnalysis[ccy][karte].tags`
-  + `.hist`), Gold/Nasdaq teilen USD. Ansicht `mkAnsicht` im `snap`. Spuren
-  `rub.mkInds`, Zeitraum `rub.mkRange`. Alles läuft über `snap` → Sync.
+- **Schalter `Table | Charts` je Makro-Karte**, in der Zeile **direkt unter dem Kopf**
+  (`.mk-kz`). *Gemessen:* im Kopf frei 15 px (1024) bzw. 29 px (390), der Schalter
+  braucht ~110 px, Namen werden nie gekürzt.
+- **Charts = EINE breite Karte mit Reitern** (`#mkTabKarte`) statt der drei Karten.
+  Aktiv ist der Reiter der geklickten Karte. Kopf: Symbol des aktiven Reiters |
+  Reiter (17 px, aktiv = Navy-Unterstrich) | Score der aktiven Karte | `Table | Charts` | ⓘ.
+- **Jede Spur ein eigener Block**, getrennt durch eine Linie. Kopfzeile:
+  Name | **Act | Fc | Prev | Next | Score** — Act/Fc/Prev aus `indZeilenWerte()`
+  (dieselbe Rechnung wie die Tabellenzeile), Next = `indNextReleaseCell`,
+  Score = `indScore`. Handy: drei Felder je Zeile, Trennstrich nie am Zeilenanfang.
+- **Gestapelte Spuren**: gemeinsame Zeitachse (eine Achse ganz unten), echte Werte
+  aus `indChartSeries` — nie eine zweite Quelle. Achsenwerte kompakt (200K), linker
+  Rand nach der längsten Beschriftung (am Handy war „200,000“ abgeschnitten).
+- **Bezugslinien**: Zielband Inflation (`MK_ZIELBAND`, Mitte = `INFL_ZIEL`), 10-Jahres-Median
+  bei Arbeitslosigkeit/Löhnen, 50 bei PMI, 0 bei „vs Target/vs Normal/Trend/Yield Gap“.
+- **Überraschungs-Balken** = Actual − Forecast (Farbe `actualColor`), Actual = Forecast → kein Balken.
+- **Nächster Termin**: Kalenderdatum (gestrichelt) oder `~Next` (gepunktet) + Forecast-Raute.
+- **Keine Einstufungen** mehr. Gespeicherte aus 614–619 (`researchAnalysis[ccy][karte].tags/.hist`)
+  bleiben unangetastet im Speicher (Sanitizer + `neueFelderBehalten`).
+- **Speicher** über `snap` → Undo + Sync: `mkAnsicht`, `mkTab`, `rub.mkInds`, `rub.mkRange`.
+  Alle vier stehen in `neueFelderBehalten()` (eine noch offene alte App lässt sie weg).
 - **Nur Anzeige** — nichts davon ändert den Score.

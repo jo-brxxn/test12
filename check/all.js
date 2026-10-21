@@ -67,7 +67,7 @@ const PRUEFUNGEN = [
   { n: 'scorenachrechnung', d: 'Score unabhaengig nachgerechnet (Indikator bis Paar, Staerke), jede angezeigte Score-Zahl, Datumsgrenze', f: 'check/scorenachrechnung.js', args: [], browser: true },
   { n: 'regeln',    d: 'COT, Rendite-Trends, 2Y-Zinsdifferenz, Carry, Rohstoffe, Score-Fenster, Momentum weg', f: 'check/regeln.js', args: [], browser: true },
   { n: 'niveau', d: 'Niveau-Block: Inflation vs Ziel, Arbeitslosigkeit und Loehne gegen ihr Normal - relativ zu den Peers, unabhaengig nachgerechnet; entfernte Zeilen (auch Trend 3M, Modell 27) stehen nirgends', f: 'check/niveau.js', args: [], browser: true },
-  { n: 'makro', d: 'Makro-Reihe: ein Table|Charts-Schalter, grosse Charts in voller Breite, Spuren = echte Reihe, Zielband, Vorschlaege = Nachrechnung, Einstufung bei der Waehrung + Sync', f: 'check/makro.js', args: [], browser: true },
+  { n: 'makro', d: 'Makro: Schalter je Karte, Charts = eine Reiter-Karte, Spurkopf = Tabellenzeile, Zielband, keine Einstufungen, Sync-Weg', f: 'check/makro.js', args: [], browser: true },
   { n: 'altgeraet', d: 'Noch offene alte App loescht keine neuen Felder, bewusste Aenderungen kommen an, veraltete App laedt nicht hoch, Basis ueberlebt Neuladen', f: 'check/altgeraet.js', args: [], browser: true },
   { n: 'zeitspanne', d: 'Zeitspanne per Ziehen an allen Charts mit Zeitfilter: Chip mit ×, weniger Punkte, × stellt her, Touch per langem Druck', f: 'check/zeitspanne.js', args: [], browser: true },
   { n: 'kartentitel', d: 'Kartentitel einheitlich, Info-i blau und kleiner, Notizen in Bias-Farbe', f: 'check/kartentitel.js', args: [], browser: true },

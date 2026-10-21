@@ -2206,35 +2206,52 @@ body.compact-view .rub-summary{display:block}
 .br-chip{display:inline-flex;align-items:center;gap:4px;height:var(--h-s,28px);padding:0 2px 0 10px;border-radius:var(--rss);background:var(--ui-act);color:var(--ui-act-fg);font:600 var(--fs-xs)/1 var(--ff-text);white-space:nowrap;box-shadow:0 2px 8px rgba(var(--ui-act-rgb),.25)}
 .br-x{border:0;background:transparent;color:inherit;font:700 16px/1 var(--ff-text);min-width:26px;height:26px;border-radius:50%;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 @media (hover:hover){.br-x:hover{background:rgba(255,255,255,.18)}}
-/* ── Makro-Karten: Table | Charts + Analyse-Einstufungen (js/makro.js, 2026-10-20) ── */
-.mk-wrap{display:flex;flex-direction:column;gap:10px;min-width:0}
-.mk-l,.mk-r{display:flex;flex-direction:column;gap:10px;min-width:0}
+/* ── Makro-Karten: Table | Charts (js/makro.js, Umbau 2026-10-21) ──
+   Schalter je Karte in der Zeile unter dem Kopf (im Kopf gemessen kein Platz:
+   frei 15 px bei 1024, 29 px bei 390). Charts = EINE breite Karte mit Reitern.
+   Jede Spur ein eigener, durch eine Linie getrennter Block mit Kopfzeile
+   Act | Fc | Prev | Next | Score (Nutzer: "abgetrennt und uebersichtlich"). */
+.mk-kz{display:flex;justify-content:flex-end;margin:0 0 8px}
 .ab-cards .ab-col.mk-col{grid-column:1 / -1}
-@media(min-width:901px){.mk-col .mk-wrap{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:16px;align-items:start}}
-/* Schalter Table|Charts in einer EIGENEN Zeile unter der Reihen-Ueberschrift
-   "Macro", rechtsbuendig. Gemessen 2026-10-20: in der Ueberschrift selbst war
-   sie 28 statt hoechstens 20 px hoch (kartenlook); herausragend ueberdeckte
-   der Schalter das (i) der Karte darunter (designregeln). */
-.ab-cards>.mk-swrow{grid-column:1 / -1;display:flex;justify-content:flex-end;margin:-4px 0 -6px}
-.mk-an{border:1px solid var(--bd);border-radius:var(--rs);padding:8px 10px;background:var(--bg1);min-width:0}
-.mk-an-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:4px}
-.mk-an-t{font-size:var(--fs-2xs);letter-spacing:2px;color:var(--t3);font-weight:700;font-family:var(--ff-num);text-transform:uppercase}
-.mk-an-meta{font-size:var(--fs-2xs);color:var(--t3)}
-.mk-an-row{display:grid;grid-template-columns:minmax(92px,max-content) minmax(0,1fr);gap:4px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--bd)}
-.mk-an-hd+.mk-an-row{border-top:0}
-.mk-an-lbl{font-size:var(--fs-xs);font-weight:700;color:var(--t1)}
-.mk-an-opts{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
-.mk-an-d{grid-column:2;font-size:var(--fs-2xs);color:var(--t2);min-width:0}
-.mk-an-dl{text-transform:uppercase;letter-spacing:1px;font-weight:700;color:var(--t3)}
-.mk-an-abw{color:var(--due);font-weight:700;font-style:normal}
-.cmp-chip.mk-vs:not(.on){outline:1.5px dashed var(--t1);outline-offset:-1.5px}
+.mk-tk-hdr{flex-wrap:wrap;row-gap:6px}
+.mk-tabs{display:flex;flex-wrap:wrap;gap:2px 18px;flex:1 1 0;min-width:min(180px,100%)}
+.mk-tab{height:34px;padding:0;border:0;border-bottom:2.5px solid transparent;background:none;color:var(--t2);font:600 var(--fs-kt)/1 var(--ff-text);letter-spacing:.2px;cursor:pointer;white-space:nowrap}
+.mk-tab.on{color:var(--t0);font-weight:700;border-bottom-color:var(--ui-act)}
+@media (hover:hover){.mk-tab:not(.on):hover{color:var(--t0)}}
+.mk-tk-ctl{display:flex;align-items:center;gap:8px;margin-left:auto;flex:0 0 auto}
+.mk-tk .rub-body{display:flex;flex-direction:column;gap:8px}
 .mk-chips{display:flex;flex-wrap:wrap;gap:4px}
 .mk-chart{min-width:0;width:100%}
+.mk-spuren{display:flex;flex-direction:column}
+.mk-spur{border-top:1px solid var(--bd);padding-top:8px;margin-top:4px}
+.mk-spur:first-child{border-top:0;margin-top:0;padding-top:0}
+.mk-spur-kopf{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding:0 0 2px}
+.mk-spur-name{font-size:var(--fs-sm);font-weight:700;color:var(--t0)}
+.mk-kvs{display:grid;grid-template-columns:repeat(5,auto);gap:4px 0;margin-left:auto}
+.mk-kv{display:inline-flex;align-items:baseline;gap:5px;padding:0 12px;font-size:var(--fs-sm);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mk-kv:not(:first-child){border-left:1px solid var(--bd)}
+.mk-kv:last-child{padding-right:0}
+.mk-kv i{font-style:normal;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3)}
+.mk-kv b{font-weight:700;color:var(--t0)}
+.mk-kv.act-good b{color:var(--green)}.mk-kv.act-bad b{color:var(--red)}
+.mk-kv-sc{min-width:0}
 .mk-svg{display:block;touch-action:pan-y}
+.mk-achse{display:block;border-top:1px solid var(--bd)}
 .mk-leer{font-size:var(--fs-sm);color:var(--t3);padding:12px 0}
 .mk-read{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:var(--fs-xs);color:var(--t1);min-height:18px}
 .mk-read i{color:var(--t2)}
-@media (max-width:520px){.mk-an-row{grid-template-columns:minmax(0,1fr)}.mk-an-d{grid-column:1}}
+/* Handy: drei Felder je Zeile, Trennstrich nie am Zeilenanfang (gemessen
+   2026-10-21: "| SCORE" begann die zweite Zeile). */
+@media (max-width:520px){
+  .mk-kvs{grid-template-columns:repeat(3,auto);margin-left:0;justify-content:start;row-gap:6px}
+  .mk-kv{padding:0 10px}.mk-kv:nth-child(3n+1){border-left:0;padding-left:0}
+  /* Zeitraumleiste einzeilig (vorher "Max" allein in Zeile 2), aber nie breiter
+     als die Karte: bei 360 px ragte sie mit nowrap 18 px heraus (gemessen).
+     Volle Breite, sonst blieben 1Y/3Y/5Y 23 px schmal (zu klein zum Tippen). */
+  .mk-tk .chart-leiste-r{flex:1 1 auto;margin-left:0}
+  .mk-tk .ind-hist-range-bar{flex-wrap:nowrap;gap:3px;width:100%;max-width:100%}
+  .mk-tk .ind-hist-range-bar>.ind-hist-range-btn{flex:1 1 auto;min-width:0;padding-left:4px;padding-right:4px}
+}
 .rub-summary-lbl{font-size:var(--fs-2xs);letter-spacing:2px;color:var(--t3);font-weight:700;font-family:var(--ff-num);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
 .rub-summary-txt{width:100%;background:transparent;border:none;color:var(--t1);font-size:var(--fs-sm);line-height:1.6;outline:none;font-family:var(--ff-text);resize:none;overflow:hidden;min-height:30px}
 .rub-summary-view{color:var(--t1);font:400 var(--fs-sm)/1.5 var(--ff-text);cursor:text}
@@ -6611,11 +6628,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-619 - Sync: eine noch offene alte App loescht keine neuen Einstellungen mehr (Makro-Schalter sprang zurueck)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-620 - Makro: Schalter je Karte, Charts als eine Karte mit Reitern, Zahlen je Spur, Einstufungen entfernt."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-619</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-620</span>
     </span>
   </div>
   <div class="hdr-r">

@@ -20515,3 +20515,26 @@ die Folgeentwicklung vorhersagen?
 **Fehlerklasse geprüft:** `check/zurueck.js` (alle 4 Stufen grün; neue interne Schlüssel `fxpro_sync_basis`/`fxpro_app_ver` als Sync-Buchhaltung ausgenommen).
 
 ⚠ *Übergang:* Geräte, die jetzt noch mit einer App vor 619 offen sind, einmal neu laden — ab 619 schützt sich jedes Gerät selbst.
+
+## 2026-10-21 — VERSION-CHECK-620: Makro-Schalter neu gebaut
+
+**Nutzer:** *„Ok die Switch Funktion ist noch ziemlich blöd und hat viele Schwächen. … mach sie perfekt“*
+
+**Gemessen vorher (USD, 1180 / 390 px):**
+- Schalter in eigener Zeile rechts über der Reihe, ohne Bezug zur Karte.
+- Charts-Modus: drei Karten volle Breite untereinander, iPad **786 px** je Karte, Handy **1272 px** → Positioning drei Bildschirme tiefer.
+- Analyse-Spalte 342 px neben 550 px Chart, viel Leerraum; Handy: erste Spur erst nach ~**700 px**.
+- Act/Fc/Prev/Next/Score nur in Table.
+
+**Nutzerwahl (Rückfrage):** Schalter je Karte | Charts = eine Karte mit Reitern, geklickte Karte = aktiver Reiter | *keine Einstufung* | Zahlen je Spur, *„abgetrennt und übersichtlich“*.
+
+**Umgesetzt:**
+- Schalter je Makro-Karte in der Zeile unter dem Kopf. *Im Kopf gemessen kein Platz:* frei **15 px** (1024) / **29 px** (390), Schalter ~110 px, Namen nie gekürzt.
+- `#mkTabKarte`: Reiter Inflation | Labour Market | Economic Growth, Score der aktiven Karte, `Table | Charts`, ⓘ. Neues Sync-Feld `mkTab` (+ `neueFelderBehalten`).
+- Jede Spur eigener Block mit Kopf **Act | Fc | Prev | Next | Score** — Act/Fc/Prev aus `indZeilenWerte()`, aus `renderIndRow` herausgezogen (eine Rechnung für Tabelle und Chart).
+- Einstufungen + Vorschläge + Verlaufsbahn entfernt; gespeicherte bleiben im Speicher.
+- Handy: Achsenwerte kompakt (vorher „00,000“ abgeschnitten), Kartensymbol in der Reiterzeile (vorher allein in einer Zeile), Werte im 3er-Raster ohne Strich am Zeilenanfang, Zeitraumleiste einzeilig.
+
+**Gemessen nachher:** Reiter-Karte iPad **829 px** (statt 3 × 786), Handy **1078 px** (statt 3 × 1272); erste Spur am Handy direkt unter den Chips.
+
+**Wächter:** `check/makro.js` neu (Spurkopf = Tabellenzeile Zeichen für Zeichen, Reiter, Table zurück), Gegenprobe rot (30 Befunde). `check/altgeraet.js` prüft jetzt auch `mkTab` und gespeicherte Einstufungen ohne Oberfläche; echte App 613 gegen 620: Charts + 10Y bleiben.

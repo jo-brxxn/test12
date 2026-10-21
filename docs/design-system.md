@@ -1817,3 +1817,10 @@ die Trefferfläche bleibt 18 px (`.cax-p` transparent, Punkt =
 `::after`). Seasonality `.sz-p` 5/6 px, Retail-Endpunkt `.pos-ende` 6 px,
 Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 
+
+## Ansichts-Schalter einer Karte: erst Kopf messen (seit 2026-10-21)
+
+- **Passt der Schalter nicht in den Kartenkopf**, ohne einen Namen zu kürzen → **Zeile direkt unter dem Kopf**, rechtsbündig (`.mk-kz`). *Gemessen Makro-Karten:* frei 15 px (1024) / 29 px (390), Schalter ~110 px.
+- **Zahlen an einem Chart: eigener Kopf je Spur**, Feld = *Etikett* + **Wert**, Felder durch Linien getrennt; am Handy festes Raster, **nie ein Trennstrich am Zeilenanfang**.
+- **Werte im Chartkopf aus derselben Rechnung wie die Tabelle** (`indZeilenWerte`) — nie neu formatieren.
+- Details: `docs/makro.md`.

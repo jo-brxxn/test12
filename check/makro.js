@@ -1,32 +1,35 @@
 #!/usr/bin/env node
-// Makro-Karten: Table | Charts + Analyse-Einstufungen (js/makro.js).
-// Nutzer-Auftrag 2026-10-20: "zu den Rubriken da wo die drei makrokarten sind
-// will ich einen Schalter haben zum wechseln ... drei grosser Chart ... in
-// denen ich dann alle Indikatoren rein machen kann ... und dann will ich
-// auswaehlen koennen Beschreibungen dafuer ... ueber Target im Target oder
-// unterm Target".
+// Makro-Karten: Table | Charts (js/makro.js).
+// Nutzer-Auftrag 2026-10-20 ("einen Schalter haben zum wechseln ... drei
+// grosser Chart ... in denen ich dann alle Indikatoren rein machen kann"),
+// Umbau 2026-10-21 ("die Switch Funktion ist noch ziemlich blöd ... mach sie
+// perfekt"; Rueckfrage: Schalter je Karte, Charts = EINE Karte mit Reitern,
+// keine Einstufungen, Zahlen je Spur "abgetrennt und uebersichtlich").
 //
-// Geprueft (im Browser, echte Daten):
-//   A) jede Makro-Karte mit Indikatoren hat den Schalter; "Charts" zeichnet
-//      ein SVG mit genau so vielen Spuren wie Chips an sind; "Table" bringt
-//      die Tabelle zurueck; ein Chip-Klick aendert die Spurenzahl
-//   B) der Wert im Spurkopf ist der letzte Punkt der echten Reihe
-//      (indChartSeries) - keine zweite Quelle
+// Geprueft (im Browser, echte Daten, 1180 und 390 px):
+//   A) jede Makro-Karte mit Reihen hat ihren Schalter; "Charts" auf Karte X
+//      -> genau EINE breite Reiter-Karte (>= 90 % der Reihe), aktiver Reiter X,
+//      keine Makro-Tabelle mehr; Reiter-Klick wechselt; "Table" bringt alle
+//      drei Tabellen zurueck
+//   B) Spurkopf = Tabellenzeile: Act/Fc/Prev der Spur stimmen Zeichen fuer
+//      Zeichen mit der Tabelle ueberein (eine Rechnung, indZeilenWerte);
+//      je Spur ein eigener Block mit Kopf, Zahl der Spuren = Chips an;
+//      ein Chip-Klick aendert die Spurenzahl
 //   C) Zielband: USD-CPI y/y "Target 2%", AUD "Target 2–3%"
-//   D) jeder Vorschlag stimmt mit einer UNABHAENGIGEN Nachrechnung aus
-//      nivAlle() ueberein (gleiche Schwellen wie die kleinste Score-Stufe)
-//   E) Einstufung per Klick: landet bei der WAEHRUNG (Gold teilt USD), im
-//      Verlauf, ueberlebt snap -> sanitizeSnapIds, zweiter Klick nimmt zurueck
+//   D) Einstufungen sind weg (kein .mk-an, kein makroEinstufen), gespeicherte
+//      bleiben im Speicher (snap -> sanitizeSnapIds behaelt tags/hist)
+//   E) Ansicht und Reiter gehen in den Sync-Weg (snap -> applySnap)
 //   F) Hover schreibt die Werte in die Lesezeile; keine JS-Fehler
 //
 //   node check/makro.js [--gegenprobe]
-//   --gegenprobe: Zeichnen abgeschaltet und ein falscher Vorschlag -> A + D rot
+//   --gegenprobe: Zeichnen abgeschaltet und ein Spurkopf verfaelscht -> A + B rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 const GP = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
+const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
 
 (async () => {
   const b = await chromium.launch();
@@ -38,119 +41,101 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
     await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) {} });
     await p.goto(URL); await wartenBisDatenDa(p);
     await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); });
-    
     const ort = `${w}x${h}`;
     for (const id of ['USD', 'AUD', 'GOLD']) {
-      await p.evaluate(id => gotoSym(id), id); await p.waitForTimeout(700);
-      // EIN Schalter in der Reihen-Ueberschrift "Macro" fuer alle Makro-Karten
-      const sw = await p.evaluate(() => !!document.querySelector('#detail .mk-swrow .mk-sw'));
-      if (!sw) { fail(`${ort} ${id}`, 'kein Table|Charts-Schalter in der Reihe "Macro"'); continue; }
-      await p.evaluate(() => [...document.querySelectorAll('#detail .mk-swrow .mk-sw button')].find(x => x.textContent.trim() === 'Charts').click());
+      await p.evaluate(id => { gotoSym(id); if (makroGross()) makroSicht('table'); }, id); await p.waitForTimeout(700);
+      // Tabellenwerte merken (Act/Fc/Prev je Indikator) - Massstab fuer B
+      const tab = await p.evaluate(MAKRO => {
+        const out = {};
+        [...document.querySelectorAll('#detail .rub-card')].filter(c => MAKRO.includes((c.querySelector('.rub-inp') || {}).value)).forEach(c => {
+          c.querySelectorAll('tr.ind-row').forEach(tr => { out[tr.querySelector('.ir-name-txt').textContent.trim()] = [tr.querySelector('.ir-act').textContent.trim(), tr.querySelector('.ir-fc').textContent.trim(), tr.querySelector('.ir-prev').textContent.trim()]; });
+        });
+        return out;
+      }, MAKRO);
+      const karten = await p.evaluate(MAKRO => [...document.querySelectorAll('#detail .rub-card')].filter(c => MAKRO.includes((c.querySelector('.rub-inp') || {}).value))
+        .map(c => ({ name: c.querySelector('.rub-inp').value, sw: !!c.querySelector('.mk-kz .mk-sw') })), MAKRO);
+      if (karten.length < 3) { fail(`${ort} ${id}`, `nur ${karten.length} Makro-Karten`); continue; }
+      karten.filter(k => !k.sw).forEach(k => fail(`${ort} ${id}`, `Karte ${k.name}: kein Table|Charts-Schalter`));
+      // A) Charts auf der ZWEITEN Karte -> deren Reiter ist aktiv
+      const ziel = karten[1].name;
+      await p.evaluate(ziel => { const c = [...document.querySelectorAll('#detail .rub-card')].find(c => (c.querySelector('.rub-inp') || {}).value === ziel);
+        [...c.querySelectorAll('.mk-kz .mk-sw button')].find(x => x.textContent.trim() === 'Charts').click(); }, ziel);
       await p.waitForTimeout(600);
-      const karten = await p.evaluate(() => [...document.querySelectorAll('#detail .rub-card')].map((c, i) => ({ i, name: (c.querySelector('.rub-inp') || {}).value, sw: !!c.querySelector('.mk-chart'),
-        breit: Math.round(c.getBoundingClientRect().width), board: Math.round(document.querySelector('#detail .ab-cards').getBoundingClientRect().width) })));
-      const makro = karten.filter(k => ['Inflation', 'Labour Market', 'Economic Growth'].includes(k.name));
-      if (makro.length < 3) fail(`${ort} ${id}`, `nur ${makro.length} Makro-Karten gefunden`);
-      makro.filter(k => !k.sw).forEach(k => fail(`${ort} ${id}`, `Karte ${k.name}: Charts gewaehlt, aber kein Chart`));
-      makro.filter(k => k.sw && k.breit < k.board * 0.9).forEach(k => fail(`${ort} ${id}`, `Karte ${k.name} im Charts-Modus nur ${k.breit} von ${k.board} px breit - kein grosser Chart`));
-      for (const k of makro.filter(k => k.sw)) {
-        // A) Charts an
-        if (GP) await p.evaluate(() => { document.querySelectorAll('.mk-chart').forEach(x => { x.innerHTML = ''; }); });
-        const r = await p.evaluate(([i, id]) => {
-          const c = document.querySelectorAll('#detail .rub-card')[i];
-          const svg = c.querySelector('.mk-chart svg'), chipsOn = c.querySelectorAll('.mk-chip.on').length, tab = !!c.querySelector('.ind-table');
-          const sym = syms.find(s => s.id === id), rub = sym.rubrics.find(x => x.name === c.querySelector('.rub-inp').value);
-          // B) Spurkoepfe gegen die echte Reihe
-          const koepfe = svg ? [...svg.querySelectorAll('text')].filter(t => t.querySelector('tspan')).map(t => t.textContent) : [];
-          const gew = (rub.mkInds && rub.mkInds.length ? rub.indicators.filter(x => rub.mkInds.includes(x.id)) : rub.indicators.filter(x => indChartSeries(x, id).pts.length >= 2).slice(0, 3));
-          const falsch = [];
-          gew.forEach(ind => { const pts = indChartSeries(ind, id).pts; const last = pts[pts.length - 1]; const soll = indName(ind) + fmtIndVal(+last[1], indChartSeries(ind, id).unit || '');
-            if (!koepfe.some(k => k.replace(/\s/g, '').startsWith(soll.replace(/\s/g, '')))) falsch.push(`${indName(ind)} soll ${fmtIndVal(+last[1], '')}`); });
-          return { svg: !!svg, spuren: koepfe.length, chipsOn, tab, falsch, txt: svg ? svg.textContent : '' };
-        }, [k.i, id]);
-        if (!r.svg) { fail(`${ort} ${id} ${k.name}`, 'Charts gewaehlt, aber kein Chart gezeichnet'); continue; }
-        if (r.tab) fail(`${ort} ${id} ${k.name}`, 'Charts gewaehlt, Tabelle steht trotzdem da');
-        if (r.spuren !== r.chipsOn) fail(`${ort} ${id} ${k.name}`, `${r.spuren} Spuren, aber ${r.chipsOn} Chips an`);
-        r.falsch.forEach(x => fail(`${ort} ${id} ${k.name} SPURKOPF`, x));
-        // C) Zielband
-        if (k.name === 'Inflation' && /CPI \(Headline\)/.test(r.txt)) {
+      if (GP) await p.evaluate(() => { document.querySelectorAll('.mk-chart').forEach(x => { x.innerHTML = ''; }); });
+      const a = await p.evaluate(MAKRO => {
+        const k = [...document.querySelectorAll('#detail #mkTabKarte')];
+        const board = document.querySelector('#detail .ab-cards').getBoundingClientRect().width;
+        const t = k[0];
+        return { n: k.length, breit: t ? Math.round(t.getBoundingClientRect().width) : 0, board: Math.round(board),
+          aktiv: t ? (t.querySelector('.mk-tab.on') || {}).textContent : null, reiter: t ? [...t.querySelectorAll('.mk-tab')].map(x => x.textContent) : [],
+          tabellen: [...document.querySelectorAll('#detail .rub-card')].filter(c => MAKRO.includes((c.querySelector('.rub-inp') || {}).value) && c.querySelector('.ind-table')).length,
+          spuren: t ? t.querySelectorAll('.mk-spur').length : 0, svg: t ? t.querySelectorAll('.mk-spur svg').length : 0, chipsOn: t ? t.querySelectorAll('.mk-chip.on').length : 0,
+          kein: !!document.querySelector('#detail .mk-an, #detail .mk-an-o'), txt: t ? t.textContent : '' };
+      }, MAKRO);
+      if (a.n !== 1) { fail(`${ort} ${id}`, `Charts: ${a.n} Reiter-Karten statt genau einer`); continue; }
+      if (a.breit < a.board * 0.9) fail(`${ort} ${id}`, `Reiter-Karte nur ${a.breit} von ${a.board} px breit`);
+      if (a.aktiv !== ziel) fail(`${ort} ${id}`, `Charts auf "${ziel}" geklickt, aktiver Reiter "${a.aktiv}"`);
+      if (a.tabellen) fail(`${ort} ${id}`, `Charts gewaehlt, ${a.tabellen} Makro-Tabellen stehen noch da`);
+      if (!a.svg) fail(`${ort} ${id} ${ziel}`, 'Charts gewaehlt, aber kein Chart gezeichnet');
+      if (a.spuren !== a.chipsOn) fail(`${ort} ${id} ${ziel}`, `${a.spuren} Spuren, aber ${a.chipsOn} Chips an`);
+      if (a.kein) fail(`${ort} ${id}`, 'Einstufungen stehen noch da');
+      // Alle Reiter durchgehen: B, C, Chip, Hover
+      for (const r of a.reiter) {
+        await p.evaluate(r => makroTab(r), r); await p.waitForTimeout(450);
+        if (GP) await p.evaluate(() => { const v = document.querySelector('#mkTabKarte .mk-spur-kopf .mk-kv b'); if (v) v.textContent = '999'; });
+        const s = await p.evaluate(() => { const t = document.getElementById('mkTabKarte');
+          return { aktiv: (t.querySelector('.mk-tab.on') || {}).textContent, koepfe: [...t.querySelectorAll('.mk-spur')].map(sp => ({ name: sp.querySelector('.mk-spur-name').textContent.trim(),
+            werte: [...sp.querySelectorAll('.mk-kv')].slice(0, 3).map(x => x.querySelector('b').textContent.trim()), svg: !!sp.querySelector('svg') })), txt: t.textContent }; });
+        if (s.aktiv !== r) fail(`${ort} ${id}`, `Reiter "${r}" geklickt, aktiv "${s.aktiv}"`);
+        s.koepfe.forEach(k => {
+          if (!k.svg) fail(`${ort} ${id} ${r}`, `Spur ${k.name} ohne Chart`);
+          const soll = tab[k.name];
+          if (!soll) fail(`${ort} ${id} ${r} SPURKOPF`, `${k.name} steht nicht in der Tabelle`);
+          else if (JSON.stringify(soll) !== JSON.stringify(k.werte)) fail(`${ort} ${id} ${r} SPURKOPF`, `${k.name}: Kopf ${k.werte.join(' / ')}, Tabelle ${soll.join(' / ')}`);
+        });
+        if (r === 'Inflation' && s.koepfe.some(k => /CPI \(Headline\)/.test(k.name))) {
           const soll = id === 'AUD' ? 'Target 2–3%' : 'Target 2%';
-          if (!r.txt.includes(soll)) fail(`${ort} ${id} Inflation`, `Zielband "${soll}" fehlt`);
+          if (!s.txt.includes(soll)) fail(`${ort} ${id} Inflation`, `Zielband "${soll}" fehlt`);
         }
-        // Chip-Klick aendert die Spurenzahl
-        const vorher = r.spuren;
-        await p.evaluate(i => { const c = document.querySelectorAll('#detail .rub-card')[i]; const x = c.querySelector('.mk-chip:not(.on)') || c.querySelector('.mk-chip.on'); x.click(); }, k.i);
+        const vor = s.koepfe.length;
+        await p.evaluate(() => { const t = document.getElementById('mkTabKarte'); const x = t.querySelector('.mk-chip:not(.on)') || t.querySelector('.mk-chip.on'); x.click(); });
         await p.waitForTimeout(450);
-        const nach = await p.evaluate(i => { const c = document.querySelectorAll('#detail .rub-card')[i]; const s = c.querySelector('.mk-chart svg'); return s ? [...s.querySelectorAll('text')].filter(t => t.querySelector('tspan')).length : 0; }, k.i);
-        if (nach === vorher && !GP) fail(`${ort} ${id} ${k.name}`, `Chip-Klick ohne Wirkung (${vorher} -> ${nach} Spuren)`);
-        // F) Hover
+        const nach = await p.evaluate(() => document.querySelectorAll('#mkTabKarte .mk-spur').length);
+        if (nach === vor && !GP) fail(`${ort} ${id} ${r}`, `Chip-Klick ohne Wirkung (${vor} -> ${nach} Spuren)`);
         if (w >= 900) {
-          const lese = await p.evaluate(i => { const c = document.querySelectorAll('#detail .rub-card')[i]; const s = c.querySelector('.mk-chart svg'); if (!s) return null; const rc = s.getBoundingClientRect();
-            s.dispatchEvent(new PointerEvent('pointermove', { clientX: rc.left + rc.width * 0.7, clientY: rc.top + 40, bubbles: true })); return c.querySelector('.mk-read').textContent.trim().length; }, k.i);
-          if (lese === 0) fail(`${ort} ${id} ${k.name}`, 'Hover schreibt nichts in die Lesezeile');
+          const lese = await p.evaluate(() => { const t = document.getElementById('mkTabKarte'); const sp = t.querySelector('.mk-spuren'); const s = sp && sp.querySelector('svg'); if (!s) return null; const rc = s.getBoundingClientRect();
+            sp.dispatchEvent(new PointerEvent('pointermove', { clientX: rc.left + rc.width * 0.7, clientY: rc.top + 30, bubbles: true })); return t.querySelector('.mk-read').textContent.trim().length; });
+          if (lese === 0) fail(`${ort} ${id} ${r}`, 'Hover schreibt nichts in die Lesezeile');
         }
       }
-      // zurueck auf Table
-      await p.evaluate(() => [...document.querySelectorAll('#detail .mk-swrow .mk-sw button')].find(x => x.textContent.trim() === 'Table').click());
+      // E) Sync-Weg: Ansicht + Reiter ueberleben snap -> applySnap
+      const e = await p.evaluate(() => { const s = snap(); const o = JSON.parse(s); return { ans: o.mkAnsicht, tab: o.mkTab }; });
+      if (e.ans !== 'charts' || !a.reiter.includes(e.tab)) fail(`${ort} ${id} SYNC`, `snap traegt mkAnsicht=${e.ans}, mkTab=${e.tab}`);
+      // zurueck auf Table (Schalter im Kopf der Reiter-Karte)
+      await p.evaluate(() => [...document.querySelectorAll('#mkTabKarte .mk-sw button')].find(x => x.textContent.trim() === 'Table').click());
       await p.waitForTimeout(450);
-      const tabs = await p.evaluate(() => [...document.querySelectorAll('#detail .rub-card')].filter(c => ['Inflation', 'Labour Market', 'Economic Growth'].includes((c.querySelector('.rub-inp') || {}).value) && c.querySelector('.ind-table')).length);
-      if (tabs < 3) fail(`${ort} ${id}`, `Table bringt nur ${tabs} von 3 Tabellen zurueck`);
+      const zur = await p.evaluate(MAKRO => ({ tk: !!document.getElementById('mkTabKarte'), tabs: [...document.querySelectorAll('#detail .rub-card')].filter(c => MAKRO.includes((c.querySelector('.rub-inp') || {}).value) && c.querySelector('.ind-table')).length }), MAKRO);
+      if (zur.tk || zur.tabs < 3) fail(`${ort} ${id}`, `Table bringt nur ${zur.tabs} von 3 Tabellen zurueck`);
     }
-    // D) Vorschlaege unabhaengig nachgerechnet
-    const d = await p.evaluate(gp => {
-      const out = [];
-      const S = { level: 0.5, trend: 0.3, tight: 0.5, labT: 0.2, wages: 0.75, conf: 2 };
-      ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'NZD'].forEach(c => {
-        const n = nivAlle()[c] || {};
-        const soll = {};
-        if (n.infl) soll['Inflation.level'] = n.infl.x > S.level ? 'above' : n.infl.x < -S.level ? 'below' : 'at';
-        if (n.inflT) soll['Inflation.trend'] = n.inflT.x >= S.trend ? 'rising' : n.inflT.x <= -S.trend ? 'falling' : 'stable';
-        if (n.lab) soll['Labour Market.tight'] = n.lab.x >= S.tight ? 'tight' : n.lab.x <= -S.tight ? 'loose' : 'balanced';
-        if (n.labT) soll['Labour Market.trend'] = n.labT.x >= S.labT ? 'improving' : n.labT.x <= -S.labT ? 'weakening' : 'stable';
-        if (n.wage) soll['Labour Market.wages'] = n.wage.x >= S.wages ? 'hot' : n.wage.x <= -S.wages ? 'cool' : 'normal';
-        if (n.confT) soll['Economic Growth.conf'] = n.confT.x >= S.conf ? 'rising' : n.confT.x <= -S.conf ? 'falling' : 'stable';
-        Object.entries(soll).forEach(([k, v]) => {
-          const [rub, dim] = k.split('.');
-          let ist = (mkVorschlaege(c, rub)[dim] || {}).v;
-          if (gp && dim === 'level') ist = ist === 'above' ? 'below' : 'above';
-          if (ist !== v) out.push(`${c} ${k}: Vorschlag ${ist}, Daten sagen ${v}`);
-        });
-      });
-      return out;
-    }, GP);
-    d.forEach(x => fail(`${ort} VORSCHLAG`, x));
-    // E) Einstufung speichern, teilen, Sync-Weg, zuruecknehmen
-    await p.evaluate(() => gotoSym('GOLD')); await p.waitForTimeout(600);
-    const e = await p.evaluate(() => {
-      const sym = getSym(); const ki = sym.rubrics.findIndex(r => r.name === 'Inflation'); const rub = sym.rubrics[ki];
-      makroSicht('charts');
-      makroEinstufen(ki, 'level', 'below');
-      const a = researchAnalysis.USD && researchAnalysis.USD.Inflation;
-      const r = { tag: a && a.tags && a.tags.level, hist: a && a.hist && a.hist.slice(-1)[0], gold: !!(researchAnalysis.GOLD && researchAnalysis.GOLD.Inflation && researchAnalysis.GOLD.Inflation.tags) };
+    // D) Einstufungen: keine Oberflaeche mehr, gespeicherte bleiben erhalten
+    const d = await p.evaluate(() => {
+      researchAnalysis.USD = researchAnalysis.USD || {};
+      researchAnalysis.USD.Inflation = Object.assign(researchAnalysis.USD.Inflation || { bias: null, text: '' }, { tags: { level: 'below' }, hist: [{ d: '2026-10-20', k: 'level', v: 'below' }] });
       const s2 = sanitizeSnapIds(JSON.parse(snap()));
-      r.sync = s2.researchAnalysis && s2.researchAnalysis.USD && s2.researchAnalysis.USD.Inflation && s2.researchAnalysis.USD.Inflation.tags && s2.researchAnalysis.USD.Inflation.tags.level;
-      r.syncHist = s2.researchAnalysis.USD.Inflation.hist && s2.researchAnalysis.USD.Inflation.hist.length;
-      r.chipOn = !!document.querySelector('#detail .mk-an-o.on');
-      makroEinstufen(ki, 'level', 'below');
-      r.zurueck = (researchAnalysis.USD.Inflation.tags || {}).level || null;
-      makroSicht('table');
-      return r;
+      const a = s2.researchAnalysis.USD.Inflation;
+      return { tags: a.tags && a.tags.level, hist: (a.hist || []).length, fn: typeof window.makroEinstufen };
     });
-    if (e.tag !== 'below') fail(`${ort} EINSTUFUNG`, `Klick nicht gespeichert (${e.tag})`);
-    if (e.gold) fail(`${ort} EINSTUFUNG`, 'bei GOLD statt bei der Waehrung USD gespeichert');
-    if (!e.hist || e.hist.v !== 'below') fail(`${ort} EINSTUFUNG`, 'kein Verlaufseintrag');
-    if (e.sync !== 'below' || !e.syncHist) fail(`${ort} EINSTUFUNG`, 'geht im Sync-Weg (snap -> sanitizeSnapIds) verloren');
-    if (!e.chipOn) fail(`${ort} EINSTUFUNG`, 'gewaehlte Einstufung nicht markiert');
-    if (e.zurueck) fail(`${ort} EINSTUFUNG`, 'zweiter Klick nimmt die Einstufung nicht zurueck');
+    if (d.tags !== 'below' || d.hist !== 1) fail(`${ort} EINSTUFUNG`, 'gespeicherte Einstufung geht im Sync-Weg verloren');
+    if (d.fn !== 'undefined') fail(`${ort} EINSTUFUNG`, 'makroEinstufen ist noch aufrufbar');
     perr.forEach(x => fail(`${ort} JS-FEHLER`, x));
     await ctx.close();
   }
   await b.close();
   if (GP) {
-    const ok = F.some(x => /kein Chart gezeichnet/.test(x)) && F.some(x => /VORSCHLAG/.test(x));
+    const ok = F.some(x => /kein Chart gezeichnet|ohne Chart/.test(x)) && F.some(x => /SPURKOPF/.test(x));
     console.log(ok ? `makro --gegenprobe: ok (rot wie erwartet, ${F.length} Befunde)` : 'makro --gegenprobe: FEHLER - nicht gemeldet\n' + F.slice(0, 5).join('\n'));
     process.exit(ok ? 0 : 1);
   }
   if (F.length) { console.log(`makro: ${F.length} Befund(e)`); F.slice(0, 40).forEach(x => console.log('  ' + x)); process.exit(1); }
-  console.log('makro: ok (Table|Charts auf allen Makro-Karten von USD/AUD/GOLD bei 1180 und 390 px, Spuren = Chips, Spurkopf = echte Reihe, Zielband, Vorschlaege = Nachrechnung, Einstufung bei der Waehrung + Verlauf + Sync-Weg)');
+  console.log('makro: ok (Schalter je Makro-Karte, Charts = eine Reiter-Karte mit aktivem Reiter der geklickten Karte, Spurkopf = Tabellenzeile, Zielband, Chips, Hover, Table zurueck, Einstufungen weg und gespeicherte erhalten, Sync-Weg - USD/AUD/GOLD bei 1180 und 390 px)');
 })().catch(e => { console.error(e); process.exit(2); });
