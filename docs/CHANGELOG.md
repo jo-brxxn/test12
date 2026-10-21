@@ -20492,3 +20492,26 @@ die Folgeentwicklung vorhersagen?
 - **Fix (Wurzel):** `renderDetail` ruft `makroZeichnenAlle()` **synchron** vor
   `scrollZurueck()`. Der rAF bleibt als Nachlauf (zeichnet gleich hoch neu).
 - **Wächter:** bestehend `check/scrollhalt.js` (meldete den Fehler rot).
+
+## 2026-10-21 — VERSION-CHECK-619: Makro-Schalter springt zurück → alte App löschte neue Felder
+
+**Nutzer:** *„es gab auch bugs das wenn man was anklickt das es dann nach ein paar Sekunden wieder umspringt“*
+
+**Reproduziert (Playwright, nachgestellte Cloud):**
+- Ein Gerät allein, 90 s beobachtet (auch Klick während des Ladens): **nichts** springt.
+- Zwei Geräte: A (618) Charts + 10Y + *Below target*; B = **noch offene App 613** lädt automatisch hoch → `mkAnsicht=undefined`, `tags=undefined` → A nach dem Abgleich: **Charts → Table, Einstufung weg**.
+- Zweiter Weg (beim Wächterbau gefunden): scheitert die Vorab-Prüfung `CHK` (Abbruch durch Neuladen/Netz), lud die App **blind hoch** → fremde Änderung überschrieben (2 von 3 Läufen rot).
+
+**Ursache:** Eine alte App kennt neue Felder nicht und lässt sie beim Hochladen weg. Gilt für *jedes* künftige Feld.
+
+**Fix (Wurzel):**
+- `neueFelderBehalten()`: fehlt ein gelistetes Feld im fremden Stand **ganz**, bleibt der eigene Wert (Cloud-Pull + fremder Tab).
+- `APP_VER`/`appVer`: veraltete App lädt nicht mehr hoch, lädt neu (*Reload*-Hinweis bei offener Eingabe).
+- `fxpro_sync_basis`: Drei-Wege-Basis überlebt ein Neuladen.
+- CHK gescheitert → kein Upload.
+
+**Gemessen nachher:** A behält Charts/10Y/Spuren/Einstufung nach zwei Uploads der echten App 613; `check/altgeraet.js` 3/3 grün, Gegenprobe A + E rot.
+
+**Fehlerklasse geprüft:** `check/zurueck.js` (alle 4 Stufen grün; neue interne Schlüssel `fxpro_sync_basis`/`fxpro_app_ver` als Sync-Buchhaltung ausgenommen).
+
+⚠ *Übergang:* Geräte, die jetzt noch mit einer App vor 619 offen sind, einmal neu laden — ab 619 schützt sich jedes Gerät selbst.

@@ -6477,7 +6477,9 @@ function adoptExternalState(){
     for(let guard=0;guard<4;guard++){
       seenMarker=localStorage.getItem('fxpro_updated');
       s=localStorage.getItem(SK);if(!s)return;
-      _flipCauseTag='sync';applySnap(s);_flipCauseTag=null;
+      // Ein Tab mit aelterer App laesst neue Felder weg (siehe neueFelderBehalten).
+      let s2=s;try{s2=JSON.stringify(neueFelderBehalten(JSON.parse(s),JSON.parse(snap())));}catch(e){}
+      _flipCauseTag='sync';applySnap(s2);_flipCauseTag=null;
       if(localStorage.getItem(SK)===s&&localStorage.getItem('fxpro_updated')===seenMarker)break;
     }
     try{const ts=JSON.parse(localStorage.getItem(TABSTACKS_KEY));if(Array.isArray(ts)){tabStacks=ts;renderTabBar();}}catch(e){}
@@ -6492,6 +6494,8 @@ function adoptExternalState(){
   }catch(e){}
 }
 function save(){
+  // Ein anderer Tab laeuft mit neuerer App (siehe appVeraltet).
+  try{if(APP_VER&&+(localStorage.getItem('fxpro_app_ver')||0)>APP_VER)appVeraltet();}catch(e){}
   // Multi-Tab-Schutz: hat ein ANDERER Tab localStorage inzwischen
   // aktualisiert, ohne dass dieser Tab es mitbekommen hat (verpasstes
   // storage-Event, z.B. weil iOS den Tab eingefroren hatte), darf ein reiner
@@ -6916,6 +6920,86 @@ document.addEventListener('keydown',e=>{
 // Push durch ist) wird nicht abgeglichen - dann gilt wie bisher die Cloud.
 // Waechter: check/zurueck.js.
 let _syncBasis=null;
+// ── VERALTETE APP-STAENDE DUERFEN NICHTS LOESCHEN (2026-10-21) ──────────
+// Nutzer: "es gab auch bugs das wenn man was anklickt das es dann nach ein
+// paar Sekunden wieder umspringt". GEMESSEN (zwei Browser, eine nachgestellte
+// Cloud): Geraet A (618) stellt Makro-Charts, 10Y und "Below target" ein und
+// laedt hoch. Geraet B laeuft noch mit der vorher geoeffneten App 613 und
+// laedt beim naechsten automatischen Speichern hoch: mkAnsicht=undefined,
+// tags=undefined - 613 kennt beide Felder nicht und laesst sie weg. Beim
+// naechsten Abgleich von A: Charts -> Table, Einstufung weg. Dieselbe Klasse
+// trifft JEDES kuenftige neue Feld, solange irgendwo eine alte App offen ist
+// (der Code kommt zwar Netz-zuerst, aber erst beim Neuladen).
+// Zwei Schichten:
+//  1) NEUE FELDER BEHALTEN (neueFelderBehalten): fehlt ein unten gelistetes
+//     Feld im fremden Stand GANZ (Schluessel nicht da), kannte der Schreiber
+//     es nicht - dann gilt der eigene Wert. Am fehlenden Schluessel statt an
+//     einer Versionsnummer, weil die heute offenen Apps 614-618 noch keine
+//     Nummer mitschicken, die Felder aber kennen: eine bewusste Aenderung
+//     dort muss weiter ankommen.
+//     ⚠ Ein gelistetes Feld darf deshalb NIE durch Loeschen des Schluessels
+//     zurueckgesetzt werden - null bzw. {} schreiben. Neues synchronisiertes
+//     Feld -> hier eintragen (docs/state-sync.md).
+//  2) VERALTETE APP SCHREIBT NICHT (appVeraltet): jeder Upload traegt APP_VER
+//     (die Nummer der VERSION-CHECK-Zeile, sie steigt bei jeder Aenderung,
+//     auch bei einem Ruecknehmen). Sieht ein Geraet in der Cloud - oder ein
+//     Tab in localStorage - eine hoehere Nummer, laedt es nicht mehr hoch und
+//     laedt neu; mit offenen Eingaben erst auf "Reload".
+// Waechter: check/altgeraet.js.
+const APP_VER=(()=>{try{const m=/VERSION-CHECK-(\d+)/.exec((document.getElementById('hlbName')||{}).textContent||'');return m?+m[1]:0;}catch(e){return 0;}})();
+let _appVeraltet=false;
+function neueFelderBehalten(fremd,lokal){
+  if(!fremd||typeof fremd!=='object'||!lokal||typeof lokal!=='object')return fremd;
+  if(window.__gpKeinBehalten)return fremd;   // nur check/altgeraet.js --gegenprobe
+  // Makro-Ansicht Table|Charts (seit 614)
+  if(!('mkAnsicht' in fremd)&&('mkAnsicht' in lokal))fremd.mkAnsicht=lokal.mkAnsicht;
+  // Makro-Einstufungen und ihr Verlauf (seit 614): researchAnalysis[ccy][karte].tags/.hist
+  const fa=fremd.researchAnalysis,la=lokal.researchAnalysis;
+  if(fa&&typeof fa==='object'&&la&&typeof la==='object'){
+    Object.keys(la).forEach(ccy=>{
+      const lc=la[ccy],fc=fa[ccy];if(!lc||typeof lc!=='object'||!fc||typeof fc!=='object')return;
+      Object.keys(lc).forEach(rub=>{
+        const l=lc[rub],f=fc[rub];if(!l||typeof l!=='object'||!f||typeof f!=='object')return;
+        ['tags','hist'].forEach(k=>{if(l[k]!==undefined&&!(k in f))f[k]=l[k];});
+      });
+    });
+  }
+  // Gezeigte Spuren und Zeitraum je Makro-Karte (seit 614): rub.mkInds/.mkRange
+  if(Array.isArray(fremd.syms)&&Array.isArray(lokal.syms)){
+    const L=new Map(lokal.syms.map(x=>[x&&x.id,x]));
+    fremd.syms.forEach(fs=>{
+      const ls=fs&&L.get(fs.id);if(!ls||!Array.isArray(fs.rubrics)||!Array.isArray(ls.rubrics))return;
+      const LR=new Map(ls.rubrics.map(r=>[r&&r.id,r]));
+      fs.rubrics.forEach(fr=>{const lr=fr&&LR.get(fr.id);if(!lr)return;['mkInds','mkRange'].forEach(k=>{if(lr[k]!==undefined&&!(k in fr))fr[k]=lr[k];});});
+    });
+  }
+  return fremd;
+}
+function appVeraltet(){
+  if(_appVeraltet)return;_appVeraltet=true;
+  const offen=_userEditedSinceSync||localStorage.getItem('fxpro_user_pending')==='1';
+  // Hoechstens einmal je 10 Minuten automatisch neu laden: liefert der Server
+  // (Cache/CDN) noch kurz die alte Fassung, waere es sonst eine Schleife.
+  let zuletzt=0;try{zuletzt=+(sessionStorage.getItem('fxpro_ver_reload')||0);}catch(e){}
+  if(!offen&&Date.now()-zuletzt>10*60*1000){
+    try{sessionStorage.setItem('fxpro_ver_reload',String(Date.now()));}catch(e){}
+    try{location.reload();return;}catch(e){}
+  }
+  try{
+    if(document.getElementById('appAlt'))return;
+    const el=document.createElement('div');el.id='appAlt';el.className='app-alt';el.setAttribute('role','alert');
+    el.innerHTML='<span><b>Newer app version</b> on another device · <i>sync paused on this one</i></span><button class="app-alt-btn" onclick="location.reload()">Reload</button>';
+    document.body.appendChild(el);
+  }catch(e){}
+}
+// Gemeinsame Basis auch ueber ein Neuladen hinweg: vorher ging sie beim
+// Neuladen mit offenen Aenderungen verloren, und der erste Push lud dann ohne
+// Abgleich hoch (ueberschrieb, was das andere Geraet inzwischen geaendert hatte).
+function basisSetzen(s,seen){
+  _syncBasis=s;
+  try{if(s&&seen)localStorage.setItem('fxpro_sync_basis',JSON.stringify({seen,s}));else localStorage.removeItem('fxpro_sync_basis');}
+  catch(e){try{localStorage.removeItem('fxpro_sync_basis');}catch(x){}}
+}
 function syncMerge3(basis,lokal,cloud){
   const gleich=(a,b)=>a===b||JSON.stringify(a)===JSON.stringify(b);
   if(gleich(lokal,basis))return cloud;
@@ -6969,6 +7053,7 @@ function cloudPush(manual){return syncSeriell(()=>cloudPushRoh(manual));}
 function cloudPull(manual,forceOverwrite){return syncSeriell(()=>cloudPullRoh(manual,forceOverwrite));}
 async function cloudPushRoh(manual){
   const cfg=getCloudCfg();if(!cfg)return false;
+  if(_appVeraltet){if(manual)setCloudStatus('✗ A newer app version runs on another device – reload first.');return false;}
   try{
     // Optimistische Versionspruefung (nur Auto-Pushes): hat ein ANDERES
     // Geraet/anderer Tab seit dem letzten Abgleich in die Cloud gepusht und
@@ -6988,12 +7073,19 @@ async function cloudPushRoh(manual){
     // das nicht - dann wie bisher direkt hochladen, sonst waeren die eigenen
     // Aenderungen weg.
     if(!manual&&(!userPending||_syncBasis)){
+      // ⚠ Scheitert die Pruefung (Netz, Zeitueberschreitung, Abbruch durchs
+      // Neuladen), wird NICHT blind hochgeladen (2026-10-21, check/altgeraet.js
+      // D): gemessen lud die App dann ihren Stand ohne Abgleich hoch und
+      // ueberschrieb, was ein anderes Geraet inzwischen geaendert hatte. Die
+      // Aenderung bleibt markiert und geht beim naechsten Speichern hoch.
+      let geprueft=false;
       try{
         const chk=await fetch(cfg.url+'/rest/v1/fx_sync?id=eq.'+encodeURIComponent(cfg.syncId)+'&select=updated_at',{
           headers:cloudHeaders(cfg),signal:AbortSignal.timeout(10000)
         });
         if(chk.ok){
           const rows=await chk.json();
+          geprueft=true;
           const seen=localStorage.getItem('fxpro_cloud_seen');
           if(rows.length&&seen&&rows[0].updated_at!==seen){
             await cloudPullRoh(false);
@@ -7001,6 +7093,7 @@ async function cloudPushRoh(manual){
           }
         }
       }catch(e){}
+      if(!geprueft)return false;
     }
     // pinEnabled liegt bewusst außerhalb von snap()/Undo,
     // muss aber ebenfalls geräteübergreifend synchron sein.
@@ -7011,6 +7104,7 @@ async function cloudPushRoh(manual){
     const z0=_userEditZaehler;
     const gesendet=snap();
     const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
+    if(APP_VER)data.appVer=APP_VER;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
     // "Fetch score snapshot from cloud sync" Schritt -> score_hist.json,
@@ -7068,7 +7162,7 @@ async function cloudPushRoh(manual){
     localStorage.setItem('fxpro_cloud_seen',sentUpdated);
     // Das ist ab jetzt der gemeinsame Stand von Geraet und Cloud (Basis fuer
     // den Drei-Wege-Abgleich in cloudPull).
-    _syncBasis=gesendet;
+    basisSetzen(gesendet,sentUpdated);
     if(_userEditZaehler===z0)markUserSynced();
     if(manual)setCloudStatus('✓ Uploaded: '+fmtStamp(Date.now()));
     return true;
@@ -7118,6 +7212,9 @@ async function cloudPullRoh(manual,forceOverwrite){
     // kamen nie auf dem iPad an (Sync funktionierte nur iPad -> PC).
     if(manual||!seen||cloudUpdated!==seen){
       const cd=rows[0].data;
+      // Neuere App hat geschrieben: diese hier ist veraltet und uebernimmt
+      // nichts (ihr applySnap kennt die neuen Felder nicht), siehe appVeraltet.
+      if(APP_VER&&cd&&(+cd.appVer||0)>APP_VER){appVeraltet();return;}
       // Lokal wartende NUTZER-Praeferenz-Aenderung (Hide-Button,
       // markPrefEdit vor dem noch nicht gelaufenen Auto-Push)? Dann behalten
       // die lokalen Werte fuer Kompakt-Stufe beim Auto-Pull
@@ -7129,6 +7226,8 @@ async function cloudPullRoh(manual,forceOverwrite){
       const prefPending=!forceOverwrite&&(_userEditedSinceSync||localStorage.getItem('fxpro_user_pending')==='1');
       saveLocalBackup('Before cloud download ('+(manual?'manual':'auto')+')');
       const lokalVorher=snap();
+      // Felder, die der Schreiber nicht kannte, behalten (siehe neueFelderBehalten).
+      try{neueFelderBehalten(cd,JSON.parse(lokalVorher));}catch(e){}
       pushU();const z0=_userEditZaehler;
       _flipCauseTag='sync';applySnap(JSON.stringify(cd));_flipCauseTag=null;
       // ⚠ DREI-WEGE-ABGLEICH (Nutzer 2026-09-30: "manchmal wenn ich ein paar
@@ -7151,7 +7250,7 @@ async function cloudPullRoh(manual,forceOverwrite){
           _flipCauseTag='sync';applySnap(JSON.stringify(zusammen));_flipCauseTag=null;
         }catch(e){console.warn('Drei-Wege-Abgleich fehlgeschlagen, Cloud-Stand bleibt:',e);}
       }
-      _syncBasis=cloudSnap;
+      basisSetzen(cloudSnap,cloudUpdated);
       // prefPending muss VOR diesen beiden Zeilen ausgewertet sein (ist es,
       // siehe oben) - tabStacks fehlte der Schutz bisher
       // (Nutzer-Bugreport 2026-07-27), obwohl seine Save-Funktion
@@ -25460,7 +25559,13 @@ loadState();
 // Gemeinsamer Stand fuer den Drei-Wege-Abgleich (syncMerge3): nur wenn der
 // letzte Schritt ein Abgleich war. Stehen noch nicht hochgeladene Aenderungen
 // an, laeuft beim Start erst der Push - der setzt die Basis dann selbst.
-try{if(getCloudCfg()&&localStorage.getItem('fxpro_updated')===localStorage.getItem('fxpro_cloud_seen'))_syncBasis=snap();}catch(e){}
+// Stehen Aenderungen an, gilt die gespeicherte Basis - aber nur, wenn sie zu
+// genau der Cloud-Version gehoert, die dieses Geraet zuletzt kannte.
+try{if(getCloudCfg()){const seen=localStorage.getItem('fxpro_cloud_seen');
+  if(localStorage.getItem('fxpro_updated')===seen)basisSetzen(snap(),seen);
+  else{const b=JSON.parse(localStorage.getItem('fxpro_sync_basis')||'null');if(b&&b.s&&seen&&b.seen===seen)_syncBasis=b.s;}}}catch(e){}
+// Hoechste App-Nummer, die auf diesem Geraet lief - ein aelterer Tab erkennt daran, dass er veraltet ist.
+try{if(APP_VER>+(localStorage.getItem('fxpro_app_ver')||0))localStorage.setItem('fxpro_app_ver',String(APP_VER));}catch(e){}
 applyCompactView();
 applyAssetAnim();updAssetAnimToggleBtn();
 applyUiAnim();updUiAnimToggleBtn();applyDataAnim();updDataAnimToggleBtn();updAllAnimToggleBtn();updTelegramToggleBtn();applyDenseMode();updDenseToggleBtn();applyFxTheme();renderFxThemeGrid();applyAppBg();renderAppBgGrid();

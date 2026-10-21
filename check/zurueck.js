@@ -228,7 +228,9 @@ function flach(o, pre, out) {
       // 2026-10-05 im 80-ms-Fenster nach einem Seasonality-Klick und wurde als
       // "unmarkierte Nutzer-Aenderung" gemeldet (lokal nie). Mitgefunden,
       // gleiche Klasse: carryRateCache, fxpro_rez_purge*, fxpro_seedclean.
-      const VOL = /^(fxpro_updated|fxpro_cloud_seen|fxpro_user_pending|fxpro_backup|fxpro_scorehist|fxpro_scorejournal|fxpro_ff_last|fxpro_saved|fxpro_undo|fxpro_cot_hist_cache|carryRateCache|fxpro_rez_purge|fxpro_seedclean)/;
+      // Seit 2026-10-21 auch fxpro_sync_basis (gemeinsamer Stand fuer den Abgleich)
+      // und fxpro_app_ver (hoechste App-Nummer) - beides schreibt der Sync selbst.
+      const VOL = /^(fxpro_updated|fxpro_cloud_seen|fxpro_sync_basis|fxpro_app_ver|fxpro_user_pending|fxpro_backup|fxpro_scorehist|fxpro_scorejournal|fxpro_ff_last|fxpro_saved|fxpro_undo|fxpro_cot_hist_cache|carryRateCache|fxpro_rez_purge|fxpro_seedclean)/;
       const lsMap = () => { const m = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!VOL.test(k) && k !== SK) m[k] = localStorage.getItem(k); } return m; };
       const wurzel = () => s === 'cur' ? document.getElementById('detail') : document.getElementById(PAGE_IDS[s]);
       const liste = [...wurzel().querySelectorAll('[onclick],select[onchange],input[type=checkbox][onchange]')].filter(e => e.offsetParent)

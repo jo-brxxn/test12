@@ -172,6 +172,17 @@ durch einen Pull des fremden Stands. Eine Liste dafür muss niemand pflegen:
 jeden speichernden Klick ohne Markierung, und es spielt den Abgleich während
 der Eingabe mit allem durch, was dort gespeichert wird.
 
+## Alte App-Stände dürfen nichts löschen (seit 2026-10-21, VERSION-CHECK-619)
+
+*Anlass:* Makro-Schalter sprang nach Sekunden von Charts auf Table zurück. Gemessen: ein noch offenes Gerät mit App 613 lud ohne `mkAnsicht`/Einstufungen hoch.
+
+- **Neues synchronisiertes Feld → in `neueFelderBehalten()` (`js/main.js`) eintragen.** Fehlt der Schlüssel im fremden Stand *ganz*, kannte der Schreiber ihn nicht → eigener Wert bleibt.
+- **Zurücksetzen nie per `delete`** eines dort gelisteten Schlüssels — `null` bzw. `{}` schreiben, sonst wirkt das Zurücksetzen auf anderen Geräten nicht.
+- **`APP_VER`** (= VERSION-CHECK-Nummer) reist mit jedem Upload (`appVer`). Höhere Nummer in der Cloud bzw. in `fxpro_app_ver` → diese App lädt nicht hoch, lädt neu (mit offener Eingabe: Hinweis *Reload*).
+- **Basis überlebt Neuladen:** `fxpro_sync_basis` = {seen, Stand}; gilt nur, wenn `seen` = `fxpro_cloud_seen`.
+- **Gescheiterte Vorab-Prüfung (CHK) → kein Upload.** Vorher lud die App dann blind hoch.
+- Wächter: `check/altgeraet.js` (Gegenprobe `--gegenprobe`).
+
 ## `markPrefEdit()` in der Save-Funktion nicht vergessen
 
 **Zusätzlich in der Save-Funktion `markPrefEdit()` aufrufen** (2. Ursache des

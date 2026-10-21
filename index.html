@@ -5476,6 +5476,10 @@ a.rpl-card:hover{background:var(--bg3)}
 .save-quota-bar{position:fixed;top:0;left:0;right:0;z-index:99999;padding:11px 16px;background:var(--red);color:#fff;font:500 var(--fs-base)/1.55 var(--ff-num);box-shadow:0 2px 14px rgba(0,0,0,.28)}
 .save-quota-bar b{font-weight:800}
 .sq-btn{margin-left:8px;background:#fff;color:var(--red);border:none;border-radius:6px;padding:4px 10px;font:700 var(--fs-sm)/1 var(--ff-num);cursor:pointer}
+/* Veraltete App: Sync pausiert, Neuladen (js/main.js appVeraltet, 2026-10-21) */
+.app-alt{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:99998;max-width:min(560px,calc(100vw - 32px));display:flex;align-items:center;gap:12px;padding:8px 8px 8px 14px;border-radius:10px;background:var(--bg2);border:1px solid var(--bd);color:var(--t0);font:500 var(--fs-sm)/1.4 var(--ff-text);box-shadow:var(--shadow-pop)}
+.app-alt i{color:var(--t2)}
+.app-alt-btn{flex:0 0 auto;height:34px;padding:0 14px;border-radius:var(--rss);border:0;background:var(--ui-act);color:var(--ui-act-fg);font:700 var(--fs-sm)/1 var(--ff-text);cursor:pointer}
 .save-freed-note{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:99998;max-width:min(560px,92vw);padding:10px 15px;border-radius:10px;background:var(--bg2);border:1px solid var(--blue);color:var(--t0);font:500 var(--fs-sm)/1.5 var(--ff-num);box-shadow:var(--shadow-pop)}
 .st-sum{font:500 var(--fs-sm)/1.65 var(--ff-num);color:var(--t1);margin-bottom:12px}
 .st-sum b{color:var(--t0)}
@@ -6607,11 +6611,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-618 - Makro-Charts: Scrollstand bleibt beim Umschalten (Charts synchron gezeichnet)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-619 - Sync: eine noch offene alte App loescht keine neuen Einstellungen mehr (Makro-Schalter sprang zurueck)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-618</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-619</span>
     </span>
   </div>
   <div class="hdr-r">
