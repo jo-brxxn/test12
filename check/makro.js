@@ -15,7 +15,8 @@
 //      Zeichen mit der Tabelle ueberein (eine Rechnung, indZeilenWerte);
 //      je Spur ein eigener Block mit Kopf, Zahl der Spuren = Chips an;
 //      ein Chip-Klick aendert die Spurenzahl
-//   C) Zielband: USD-CPI y/y "Target 2%", AUD "Target 2–3%"
+//   C) Zielband: USD-CPI y/y "Target 2%", AUD "Target 2–3%"; Ziel = waagerechte
+//      blaue gestrichelte Linie (Nutzer 2026-10-21)
 //   D) Einstufungen sind weg (kein .mk-an, kein makroEinstufen), gespeicherte
 //      bleiben im Speicher (snap -> sanitizeSnapIds behaelt tags/hist)
 //   E) Ansicht und Reiter gehen in den Sync-Weg (snap -> applySnap)
@@ -96,6 +97,15 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
         if (r === 'Inflation' && s.koepfe.some(k => /CPI \(Headline\)/.test(k.name))) {
           const soll = id === 'AUD' ? 'Target 2–3%' : 'Target 2%';
           if (!s.txt.includes(soll)) fail(`${ort} ${id} Inflation`, `Zielband "${soll}" fehlt`);
+          // Ziel = waagerechte BLAUE gestrichelte Linie (Nutzer 2026-10-21)
+          const z = await p.evaluate(() => { const l = document.querySelector('#mkTabKarte .mk-ziel'); if (!l) return null;
+            const blau = getComputedStyle(document.documentElement).getPropertyValue('--blue').trim();
+            const probe = document.createElement('span'); probe.style.color = blau; document.body.appendChild(probe); const soll = getComputedStyle(probe).color; probe.remove();
+            const cs = getComputedStyle(l); return { farbe: cs.stroke, soll, strich: l.getAttribute('stroke-dasharray'), waag: l.getAttribute('y1') === l.getAttribute('y2') }; });
+          if (GP && z) z.farbe = 'rgb(0, 0, 0)';
+          if (!z) fail(`${ort} ${id} ZIELLINIE`, 'keine Ziellinie');
+          else { if (z.farbe !== z.soll) fail(`${ort} ${id} ZIELLINIE`, `Farbe ${z.farbe}, soll Blau ${z.soll}`);
+            if (!z.strich) fail(`${ort} ${id} ZIELLINIE`, 'nicht gestrichelt'); if (!z.waag) fail(`${ort} ${id} ZIELLINIE`, 'nicht waagerecht'); }
         }
         const vor = s.koepfe.length;
         await p.evaluate(() => { const t = document.getElementById('mkTabKarte'); const x = t.querySelector('.mk-chip:not(.on)') || t.querySelector('.mk-chip.on'); x.click(); });
@@ -132,7 +142,7 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
   }
   await b.close();
   if (GP) {
-    const ok = F.some(x => /kein Chart gezeichnet|ohne Chart/.test(x)) && F.some(x => /SPURKOPF/.test(x));
+    const ok = F.some(x => /kein Chart gezeichnet|ohne Chart/.test(x)) && F.some(x => /SPURKOPF/.test(x)) && F.some(x => /ZIELLINIE/.test(x));
     console.log(ok ? `makro --gegenprobe: ok (rot wie erwartet, ${F.length} Befunde)` : 'makro --gegenprobe: FEHLER - nicht gemeldet\n' + F.slice(0, 5).join('\n'));
     process.exit(ok ? 0 : 1);
   }

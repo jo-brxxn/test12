@@ -96,7 +96,7 @@ function mkReferenz(ind,ccy,pts){
   const yy=/y\/y/i.test(indName(ind));
   if(MK_INFL_BASES.includes(base)&&yy&&MK_ZIELBAND[ccy]){
     const [lo,hi]=MK_ZIELBAND[ccy];
-    return{lo,hi,mid:INFL_ZIEL[ccy],lbl:lo===hi?`Target ${lo}%`:`Target ${lo}–${hi}%`};
+    return{ziel:true,lo,hi,mid:INFL_ZIEL[ccy],lbl:lo===hi?`Target ${lo}%`:`Target ${lo}–${hi}%`};
   }
   if(/vs Target|vs Normal|Trend \(3M\)|Yield Gap/.test(ind.name))return{lo:0,hi:0,mid:0,lbl:'0'};
   if(MK_PMI_RE.test(ind.name)||MK_PMI_RE.test(base))return{lo:50,hi:50,mid:50,lbl:'50 = no change'};
@@ -300,11 +300,15 @@ function makroZeichnen(box){
     // Gitter + Achse
     sp.ticks.forEach(t=>{const yy=yOf(t);if(yy<yTop-1||yy>yBot+1)return;
       svg+=`<line x1="${padL}" x2="${W-padR}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--bd)" stroke-width="1"/><text x="${padL-6}" y="${(yy+3.5).toFixed(1)}" text-anchor="end" style="${fs}">${escH(mkAchsWert(t))}</text>`;});
-    // Ziel-/Normal-Linie
+    // Ziel-/Normal-Linie. Das Inflationsziel ist eine waagerechte BLAUE
+    // gestrichelte Linie (Nutzer 2026-10-21: "Mach das Target als waagerechte
+    // blaue gestrichelte Linie"), bei Zielbaendern auf der Mitte (INFL_ZIEL),
+    // das Band ganz blass blau dahinter. Median/50/0 bleiben grau - keine Ziele.
     if(ref){
-      if(ref.hi>ref.lo)svg+=`<rect x="${padL}" y="${yOf(ref.hi).toFixed(1)}" width="${W-padL-padR}" height="${(yOf(ref.lo)-yOf(ref.hi)).toFixed(1)}" fill="var(--t3)" fill-opacity=".12"/>`;
-      svg+=`<line x1="${padL}" x2="${W-padR}" y1="${yOf(ref.mid).toFixed(1)}" y2="${yOf(ref.mid).toFixed(1)}" stroke="var(--t2)" stroke-width="1.2" stroke-dasharray="5 4"/>`;
-      svg+=`<text x="${W-padR-4}" y="${(yOf(ref.hi)-4).toFixed(1)}" text-anchor="end" style="${fs};font-weight:700;paint-order:stroke;stroke:var(--bg1);stroke-width:3px">${escH(ref.lbl)}</text>`;
+      const zf=ref.ziel?'var(--blue)':'var(--t2)';
+      if(ref.hi>ref.lo)svg+=`<rect x="${padL}" y="${yOf(ref.hi).toFixed(1)}" width="${W-padL-padR}" height="${(yOf(ref.lo)-yOf(ref.hi)).toFixed(1)}" fill="${ref.ziel?'var(--blue)':'var(--t3)'}" fill-opacity="${ref.ziel?'.07':'.12'}"/>`;
+      svg+=`<line class="${ref.ziel?'mk-ziel':'mk-norm'}" x1="${padL}" x2="${W-padR}" y1="${yOf(ref.mid).toFixed(1)}" y2="${yOf(ref.mid).toFixed(1)}" stroke="${zf}" stroke-width="${ref.ziel?1.6:1.2}" stroke-dasharray="6 4"/>`;
+      svg+=`<text x="${W-padR-4}" y="${(yOf(ref.hi)-4).toFixed(1)}" text-anchor="end" style="${fs};font-weight:700;${ref.ziel?'fill:var(--blue);':''}paint-order:stroke;stroke:var(--bg1);stroke-width:3px">${escH(ref.lbl)}</text>`;
     }
     // Heute
     svg+=`<line x1="${xh.toFixed(1)}" x2="${xh.toFixed(1)}" y1="${yTop}" y2="${H-2}" stroke="var(--t2)" stroke-width="1"/>`;

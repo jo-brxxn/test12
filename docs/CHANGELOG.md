@@ -20538,3 +20538,11 @@ die Folgeentwicklung vorhersagen?
 **Gemessen nachher:** Reiter-Karte iPad **829 px** (statt 3 × 786), Handy **1078 px** (statt 3 × 1272); erste Spur am Handy direkt unter den Chips.
 
 **Wächter:** `check/makro.js` neu (Spurkopf = Tabellenzeile Zeichen für Zeichen, Reiter, Table zurück), Gegenprobe rot (30 Befunde). `check/altgeraet.js` prüft jetzt auch `mkTab` und gespeicherte Einstufungen ohne Oberfläche; echte App 613 gegen 620: Charts + 10Y bleiben.
+
+## 2026-10-21 — VERSION-CHECK-621: Inflationsziel als blaue gestrichelte Linie
+
+- **Nutzer:** *„Mach das Target als waagerechte blaue gestrichelte Linie“*
+- **Vorher:** Ziel grau gestrichelt (`--t2`), Zielband grau.
+- **Jetzt:** Ziel **blau** (`--blue`), gestrichelt 6/4, 1,6 px; Beschriftung blau; Band (AUD/CAD/NZD/CHF) blass blau (7 %). Median/50/0 bleiben grau — *keine Ziele*.
+- ⚠ Datenlinie ist ebenfalls blau — unterscheidbar durch Strichelung + Beschriftung „Target …“.
+- **Wächter:** `check/makro.js` C prüft `.mk-ziel` = Blau, gestrichelt, waagerecht; Gegenprobe rot.

@@ -29,8 +29,10 @@ zum analysieren“) | Zahlen je Spur, **„abgetrennt und übersichtlich — das
 - **Gestapelte Spuren**: gemeinsame Zeitachse (eine Achse ganz unten), echte Werte
   aus `indChartSeries` — nie eine zweite Quelle. Achsenwerte kompakt (200K), linker
   Rand nach der längsten Beschriftung (am Handy war „200,000“ abgeschnitten).
-- **Bezugslinien**: Zielband Inflation (`MK_ZIELBAND`, Mitte = `INFL_ZIEL`), 10-Jahres-Median
-  bei Arbeitslosigkeit/Löhnen, 50 bei PMI, 0 bei „vs Target/vs Normal/Trend/Yield Gap“.
+- **Inflationsziel = waagerechte blaue gestrichelte Linie** (Nutzer 2026-10-21), Beschriftung blau;
+  bei Zielbändern (`MK_ZIELBAND`) auf der Mitte = `INFL_ZIEL`, das Band ganz blass blau dahinter.
+- **Andere Bezugslinien grau gestrichelt** (keine Ziele): 10-Jahres-Median bei Arbeitslosigkeit/Löhnen,
+  50 bei PMI, 0 bei „vs Target/vs Normal/Trend/Yield Gap“.
 - **Überraschungs-Balken** = Actual − Forecast (Farbe `actualColor`), Actual = Forecast → kein Balken.
 - **Nächster Termin**: Kalenderdatum (gestrichelt) oder `~Next` (gepunktet) + Forecast-Raute.
 - **Keine Einstufungen** mehr. Gespeicherte aus 614–619 (`researchAnalysis[ccy][karte].tags/.hist`)
