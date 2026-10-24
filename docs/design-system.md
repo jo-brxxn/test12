@@ -1782,6 +1782,14 @@ zieht das Polster vor dem Bauen ab (Data: `.ind-hist-wrap` 2 × 4 px). Die
 64-px-Leiste (≤ 760 px) hat 2 + 2 px Polster, sonst bricht „Dashboard“ um.
 Geprüft: `designregeln` C und D zusätzlich bei 390 px.
 
+## Journal (seit 2026-10-24, `js/trades.js`)
+
+Per Rückfrage festgelegt (TradeZella-Stil), Details `docs/CHANGELOG.md` 622–624.
+- **Kalender:** Mo–Fr breit, Sa/So schmal (`.46fr`), Spalte **Week** rechts. Zelle = Tagessumme groß + je Trade eine Zeile *Asset · Long/Short · P/L*. Handy/Wochenende: nur kompakte Summe (*+1.3k*), Tipp → Tages-Fenster.
+- **Farbe:** Win/Loss und Tagessummen in Bias-Farbe, Long/Short-Plakette in Bias-Farbe, aktiv = Navy. Streak-Flamme `--flame` (eigener Token).
+- **Charts:** Equity-Kurve und Kurs-Chart in gemessener Breite gebaut, Y-Achse links (Equity) bzw. rechts (Kurs), Kerzen nach den Kerzen-Regeln.
+- **Positions-Werkzeug:** Entry (Navy), SL (bearish), TP (bullish), Exit gestrichelt; Zonen 10 %. Ziehen nur an den Etiketten links (`touch-action:none`, Trefferfläche ±8 px).
+
 ## Asset- und Paarnamen nie gekürzt (Dauerregel seit 2026-10-07)
 
 Nutzer: *„Bei set ups sind teilweise Asset Namen abgekürzt das darf nicht

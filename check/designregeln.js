@@ -63,7 +63,7 @@ const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 
 const SEITEN = ['dash', 'A:USD', 'A:GOLD', 'A:EURUSD', 'over', 'regime', 'news', 'mx', 'trends', 'cot', 'sent:retail', 'sent:putcall',
-  'sent:netflow', 'sent:feargreed', 'sent:aaii', 'seas', 'data', 'rate', 'carry', 'pairs', 'watch', 'cal', 'notes'];
+  'sent:netflow', 'sent:feargreed', 'sent:aaii', 'seas', 'data', 'rate', 'carry', 'pairs', 'watch', 'journal', 'cal', 'notes'];
 // Gegenprobe: je Stufe ein Fehler, so wie er frueher im Code stand
 const GP_CSS = [
   '.cot-card-title{font-family:monospace!important}',                 // B

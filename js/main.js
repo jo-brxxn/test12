@@ -24,6 +24,8 @@ import {makroKartenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsich
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
+  // Was js/trades.js (Journal) fuer seine Charts von hier braucht.
+  chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
   applyRevisionToValHist,applyTrendModel,checkPriceAlerts,fmtDayHdr,indBiasInputSig,indBiasPinned,
   invalidateRateStepCache,isNonFx,macroCcyFor,parseNumLike,pushU,recordScoreHist,renderDash,rerender,researchBias,
@@ -757,6 +759,7 @@ const ICONS={
   // die Sidebar (kein Emoji) - dieselbe Pfeilspitze wird per CSS-Klasse
   // gespiegelt, statt ein zweites chevronLeft-Icon zu pflegen.
   chevronRight:'<polyline points="9 18 15 12 9 6"/>',
+  chevronLeft:'<polyline points="15 18 9 12 15 6"/>',
   // Fuer die Assets-Quick-Links (Nutzer-Wunsch 2026-08-23) - identischer Pfad
   // wie TAB_ICONS.news, nur hier auch ueber icn() aufrufbar (die
   // Tab-Leiste nutzt einen eigenen, nicht mit ICONS geteilten Renderpfad).
@@ -7562,7 +7565,7 @@ document.addEventListener('click',ev=>{
 // Steht die Nachfrage offen, fuehrt Escape zurueck ins Fenster (der
 // harmlose Weg, wie der Klick neben die Nachfrage).
 const ESC_MODALS=['mAddSym','mAssetCfg','mHist','mAddPair','mRename','mDelSym','mInfo','mCloud','mRateWatch','mIndLink','mBackup','mTrash',
-  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeView'];
+  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeView','mTradeDay'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const nf=document.getElementById('mUnsaved');
