@@ -122,3 +122,15 @@ iPad-Prüfung steht beim Nutzer aus (Stand 2026-10-03).
 - **Merker statt Neurechnen** auch für `indCycleIsGuess` (Array-Identität
   von `chartHist`): Score-Kette beim Laden 366 → 210 ms.
 
+
+## Teil-Aufbau statt ganzer Seite (seit 2026-10-24, VERSION-CHECK-623)
+
+*Anlass:* Nutzer *„Mach es maximal schnell“* (Makro-Analyse). Gemessen CPU 4x: jeder Makro-Klick 0,9–1,9 s bis zum Bild.
+
+- **Eine Bedienung, die nur einen Bereich ändert, baut nur diesen Bereich neu.** Makro: `makroReiheNeu()` (`[data-mkreihe]`) statt `renderDetail()` — der volle Aufbau kostete 595–717 ms, das Zeichnen 84–137 ms.
+- **Nie zweimal zeichnen:** der Nachlauf im nächsten Bild zeichnet nur, was fehlt (`makroZeichnenFehlende`).
+- **Zwischenspeicher je Datenstand:** leeren bei jedem vollen Aufbau (jede Datenänderung), behalten bei Teil-Aufbauten.
+- **Nachbearbeitung je Karte, nie die ganze Seite:** Logo-Freiraum (`lgKartenPlanen`) misst nur Karten mit eigener Mutation oder ResizeObserver-Meldung. Vorher 742 ms je 12 Bedienungen.
+- **Reine Ansichts-Zustände speichern gebündelt** (`saveSoon`): jedes `save()` rechnet Score-Historie + Journal neu (~170 ms bei CPU 4x).
+- **Hover höchstens einmal je Bild**, nächster Punkt per binärer Suche.
+- Wächter: `check/makro.js` H (0 volle Aufbauten, genau 1x zeichnen je Bedienung, Gegenprobe = alter Weg).

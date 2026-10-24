@@ -20555,3 +20555,25 @@ die Folgeentwicklung vorhersagen?
 - „Beat 0/12“ beim Leitzins las sich wie 12 Verfehlungen → getrennt *beat · miss · in line*.
 - Wächter `check/makro.js` G: Vergleichslinie + Legende, Kurs-Spur, Statistik je Spur, 3M-Veränderung unabhängig nachgerechnet, Zinsmarker vorhanden.
 - ⚠ *Nicht gelaufen (Zeitlimit 40 min):* Volllauf `check/all.js`, `altgeraet.js` mit `mkOpt`.
+
+## 2026-10-24 — VERSION-CHECK-623: Makro-Analyse schnell
+
+**Nutzer:** *„Mach es maximal schnell“*
+
+**Gemessen vorher** (CPU 4x ~iPad, USD/GOLD, Compare EUR+GBP, Kurs an), Klick → fertiges Bild:
+- Reiter **0,97–1,51 s** · Chip **0,90–1,95 s** · Compare **1,18–1,59 s** · Zeitraum **1,11–1,80 s** · Kurs **0,91–1,55 s** · Hover **13–15 ms** je Bewegung.
+
+**Ursachen (Anteile + CPU-Profil über 12 Bedienungen, 9,1 s):**
+- Jeder Klick → `renderDetail()` = ganze Asset-Seite **595–717 ms**; Charts selbst nur **84–137 ms**.
+- Chart im nächsten Bild **ein zweites Mal** gezeichnet.
+- `save()` → `recordScoreHist` + Journal **2,1 s**.
+- `lgAlleKarten` (Logo-Freiraum) vermaß bei jeder DOM-Änderung **alle Karten**, jedes Element: **742 ms**.
+- Kalender-Abgleich/`Date.parse` je Zeichnen neu.
+
+**Fix (Wurzel):** `makroReiheNeu()` tauscht nur die Makro-Reihe · `makroZeichnenFehlende` statt doppelt · Zwischenspeicher (Reihe, Spurkopf, Kurs, Vergleich, nächster Termin, Datum) je Datenstand · `lgKartenPlanen` nur betroffene Karten, Reiter-Karte nie · `saveSoon` für Makro-Ansicht · Hover einmal je Bild + binäre Suche.
+
+**Gemessen nachher** (gleiches Skript): meist **150–260 ms**, schnellste **88 ms**, erster kalter Reiter ~470 ms · Hover **0,1–0,3 ms** · Profil 12 Bedienungen **4,9 s statt 9,1 s**.
+
+**Wächter:** `check/makro.js` H zählt volle Aufbauten (0) und Zeichnungen (1 je Chart) für 11 Bedienungen; Gegenprobe (alter Weg) rot.
+
+**Nicht angefasst (Befund):** der volle Aufbau der Asset-Seite selbst (560–870 ms bei CPU 4x) und `recordScoreHist` bei jedem `save()` — betrifft die ganze App.

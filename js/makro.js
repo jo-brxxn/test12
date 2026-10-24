@@ -39,10 +39,10 @@
 // mkAnsicht/mkTab/mkInds/mkRange stehen in neueFelderBehalten() (main.js):
 // eine noch offene aeltere App laesst sie beim Hochladen weg, das darf sie
 // nicht loeschen.
-import {escH,escJH,getSym,save,renderDetail,stripPeriodSuffix,indName,isNonFx,macroCcyFor,
+import {escH,escJH,getSym,saveSoon,renderDetail,stripPeriodSuffix,indName,isNonFx,macroCcyFor,
   indChartSeries,fmtIndVal,achsenTicks,INFL_ZIEL,indNextTermin,indNextExpected,
   chartLeisteHtml,markUserEditTs,indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,icn,kartenIcon,
-  syms,nivEintrag,nivReihe,preisReiheAnzeige} from './main.js';
+  syms,nivEintrag,nivReihe,preisReiheAnzeige,makroReiheNeu} from './main.js';
 import {indScore,fmtScNum,rubScore,glowClass} from './score.js';
 import {todayStr,fmtDayHdr,parseNumLike,actualColor,LOWER_IS_BETTER_RE} from './calendar.js';
 import {BC} from './constants.js';
@@ -77,9 +77,13 @@ const MK_DEF_SPUREN=3;
 // bis zum Neuladen, wie die anderen gezogenen Spannen (siehe brushAnbinden).
 const mkZoom={};
 const mkZoomKey=ri=>{const s=getSym();return(s?s.id:'')+':'+ri;};
+// Jede Makro-Bedienung tauscht nur die Makro-Reihe (makroReiheNeu, main.js) -
+// gemessen kostete der Umweg ueber renderDetail 595-717 ms je Klick (CPU 4x).
+function mkNeu(){if(window.__gpMakroVoll){renderDetail();return;}   // nur check/makro.js --gegenprobe
+  try{makroReiheNeu();}catch(e){console.error('[makro]',e);renderDetail();}}
 function mkBrushReg(ri){
   const key='mk:'+ri;
-  if(window.brushReg)window.brushReg(key,{apply(von,bis){mkZoom[mkZoomKey(ri)]={von,bis};renderDetail();},reset(){delete mkZoom[mkZoomKey(ri)];renderDetail();}});
+  if(window.brushReg)window.brushReg(key,{apply(von,bis){mkZoom[mkZoomKey(ri)]={von,bis};mkNeu();},reset(){delete mkZoom[mkZoomKey(ri)];mkNeu();}});
   return key;
 }
 // Offizielle Zielbaender (Punktziel = untere = obere Grenze). Die Mitte ist
@@ -87,13 +91,30 @@ function mkBrushReg(ri){
 const MK_ZIELBAND={USD:[2,2],EUR:[2,2],GBP:[2,2],JPY:[2,2],CHF:[0,2],CAD:[1,3],AUD:[2,3],NZD:[1,3]};
 const MK_INFL_BASES=['CPI (Headline)','Core CPI','PCE','Core PCE','CPI'];
 const MK_PMI_RE=/\bPMI\b|\bISM\b/i;
-const tagMs=d=>Date.parse(String(d).slice(0,10)+'T00:00:00Z');
+// Jedes Datum nur einmal parsen: dieselben Tage kommen in allen Reihen und bei
+// jedem Zeichnen wieder (Profil 2026-10-24: tagMs/Date.parse 111 ms auf 12 Bedienungen).
+const _mkTage=new Map();
+const tagMs=d=>{const k=String(d).slice(0,10);let v=_mkTage.get(k);if(v===undefined){v=Date.parse(k+'T00:00:00Z');if(_mkTage.size>50000)_mkTage.clear();_mkTage.set(k,v);}return v;};
 
 function mkCcy(sym){return sym?(isNonFx(sym.id)?macroCcyFor(sym.id):sym.id):null;}
 function mkEligible(rub){return !!rub&&MK_RUBS.includes(rub.name);}
 // Spuren mit mindestens zwei echten Punkten - dieselbe Reihe wie der
 // aufgeklappte Indikator-Chart (indChartSeries), nie eine zweite Quelle.
+// Zwischenspeicher fuer Reihen, Spurkoepfe, Kurs und Vergleich: je Aufbau der
+// Makro-Reihe wurde dieselbe Reihe bis zu 4x gebaut, und jeder Reiterwechsel
+// rechnete Kalender-Abgleich und Score der Spurkoepfe neu (Profil 2026-10-24).
+// makroRenderStart(true) - bei JEDEM vollen Seitenaufbau, also nach jeder
+// Datenaenderung (main.js abMakroReiheHtml) - leert alles; ein Teil-Aufbau
+// (Reiter, Chip, Vergleich, Zeitraum) behaelt es. So kommt ein neuer Datenstand
+// immer an, und eine reine Ansichtsaenderung rechnet nichts doppelt.
+const _mkSerien=new Map(),_mkKoepfe=new Map(),_mkPreise=new Map(),_mkGegen=new Map(),_mkNext=new Map();
+function makroRenderStart(voll){if(voll){_mkSerien.clear();_mkKoepfe.clear();_mkPreise.clear();_mkGegen.clear();_mkNext.clear();}}
 function mkSerie(ind,symId){
+  const k=symId+'|'+(ind&&(ind.id||ind.name));
+  if(_mkSerien.has(k))return _mkSerien.get(k);
+  const r=mkSerieRoh(ind,symId);_mkSerien.set(k,r);return r;
+}
+function mkSerieRoh(ind,symId){
   let cs;try{cs=indChartSeries(ind,symId);}catch(e){return null;}
   const pts=(cs&&cs.pts||[]).map(p=>[String(p[0]).slice(0,10),+p[1],p[2]==null?null:+p[2]]).filter(p=>p[0]&&isFinite(p[1]));
   return pts.length>=2?{pts,unit:cs.unit}:null;
@@ -104,7 +125,7 @@ function mkGewaehlt(rub,symId){
   if(Array.isArray(rub.mkInds)){const s=da.filter(i=>rub.mkInds.includes(i.id));if(s.length||rub.mkInds.length===0)return s;}
   return da.slice(0,MK_DEF_SPUREN);
 }
-function mkHatCharts(rub,sym){return mkEligible(rub)&&!!sym&&mkVerfuegbar(rub,sym.id).length>0;}
+function mkHatCharts(rub,sym){return mkEligible(rub)&&!!sym&&(rub.indicators||[]).some(i=>mkSerie(i,sym.id));}
 
 // ── Referenzlinien je Indikator ───────────────────────────────────────────
 function mkReferenz(ind,ccy,pts){
@@ -164,7 +185,7 @@ function makroTabKarteHtml(sym){
   </div>`;
   // Zeichnen erst, wenn die Karte im Dokument steht (echte Pixelbreite);
   // renderDetail zeichnet zusaetzlich synchron (Scrollstand, 2026-10-20).
-  try{requestAnimationFrame(()=>makroZeichnenAlle());}catch(e){}
+  try{requestAnimationFrame(()=>makroZeichnenFehlende());}catch(e){}
   return`<div class="rub-card mk-tk ${glowClass(rub.bias)}" id="mkTabKarte">
     <div class="rub-hdr mk-tk-hdr">
       ${/* Symbol des aktiven Reiters selbst setzen - sonst haengt
@@ -204,11 +225,11 @@ function makroLeisteHtml(rub,ri){
 // gefunden von check/zurueck.js B (2026-10-20, 42 unmarkierte Klicks).
 function mkRub(ri){const s=getSym();return s&&s.rubrics?s.rubrics[ri]:null;}
 function makroSicht(v,rubName){
-  try{makroAnsichtSetzen(v);if(rubName)makroTabSetzen(rubName);markUserEditTs();save();renderDetail();}
+  try{makroAnsichtSetzen(v);if(rubName)makroTabSetzen(rubName);markUserEditTs();saveSoon();mkNeu();}
   catch(e){console.error(e);alert('Could not switch the view: '+(e&&e.message||e));}
 }
 function makroTab(rubName){
-  try{makroTabSetzen(rubName);markUserEditTs();save();renderDetail();}
+  try{makroTabSetzen(rubName);markUserEditTs();saveSoon();mkNeu();}
   catch(e){console.error(e);alert('Could not switch the tab: '+(e&&e.message||e));}
 }
 function makroVergleich(c){
@@ -216,15 +237,15 @@ function makroVergleich(c){
     if(!MK_CCYS.includes(c))return;
     const l=mkOpt.cmp.slice();const i=l.indexOf(c);
     if(i>=0)l.splice(i,1);else{l.push(c);if(l.length>MK_CMP_MAX)l.shift();}
-    makroOptSetzen({cmp:l,preis:mkOpt.preis});markUserEditTs();save();renderDetail();
+    makroOptSetzen({cmp:l,preis:mkOpt.preis});markUserEditTs();saveSoon();mkNeu();
   }catch(e){console.error(e);alert('Could not change the comparison: '+(e&&e.message||e));}
 }
 function makroPreis(){
-  try{makroOptSetzen({cmp:mkOpt.cmp,preis:!mkOpt.preis});markUserEditTs();save();renderDetail();}
+  try{makroOptSetzen({cmp:mkOpt.cmp,preis:!mkOpt.preis});markUserEditTs();saveSoon();mkNeu();}
   catch(e){console.error(e);alert('Could not change the price track: '+(e&&e.message||e));}
 }
 function makroRange(ri,v){
-  try{const r=mkRub(ri);if(!r)return;delete mkZoom[mkZoomKey(ri)];r.mkRange=v==='MAX'?'MAX':+v;markUserEditTs();save();renderDetail();}
+  try{const r=mkRub(ri);if(!r)return;delete mkZoom[mkZoomKey(ri)];r.mkRange=v==='MAX'?'MAX':+v;markUserEditTs();saveSoon();mkNeu();}
   catch(e){console.error(e);alert('Could not change the range: '+(e&&e.message||e));}
 }
 function makroSpur(ri,indId){
@@ -234,7 +255,7 @@ function makroSpur(ri,indId){
     r.mkInds=ist.includes(indId)?ist.filter(x=>x!==indId):ist.concat(indId);
     // Reihenfolge wie in der Karte, nicht in der Klickreihenfolge.
     const ord=(r.indicators||[]).map(i=>i.id);r.mkInds.sort((a,b)=>ord.indexOf(a)-ord.indexOf(b));
-    markUserEditTs();save();renderDetail();
+    markUserEditTs();saveSoon();mkNeu();
   }catch(e){console.error(e);alert('Could not change the chart: '+(e&&e.message||e));}
 }
 
@@ -244,6 +265,12 @@ function mkVon(R,pts){
   const d=new Date(todayStr()+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()-(+R||MK_RANGE_DEF));return d.getTime();
 }
 function mkNaechster(sym,ind){
+  // Kalender-Abgleich je Indikator nur einmal je Datenstand (Profil: indNextTermin 228 ms auf 12 Bedienungen)
+  const k=sym.id+'|'+ind.id;
+  if(!_mkNext.has(k))_mkNext.set(k,mkNaechsterRoh(sym,ind));
+  return _mkNext.get(k);
+}
+function mkNaechsterRoh(sym,ind){
   try{const nt=indNextTermin(sym.id,ind);if(nt&&nt.ev&&nt.ev.date){const f=parseNumLike(nt.ev.forecast);return{d:String(nt.ev.date).slice(0,10),fc:f,sicher:true};}}catch(e){}
   try{const x=indNextExpected(ind);if(x)return{d:x,fc:null,sicher:false};}catch(e){}
   return null;
@@ -265,6 +292,11 @@ const mkFarbe=t=>t==='bull'?BC.bull:t==='bear'?BC.bear:'var(--t3)';
 // Kopfzeile einer Spur: Name, dann je Wert ein eigenes, beschriftetes Feld -
 // dieselben Werte und Farben wie die Tabellenzeile (indZeilenWerte).
 function mkSpurKopf(ind,rub,sym){
+  const k=sym.id+'|'+ind.id;
+  if(!_mkKoepfe.has(k))_mkKoepfe.set(k,mkSpurKopfRoh(ind,rub,sym));
+  return _mkKoepfe.get(k);
+}
+function mkSpurKopfRoh(ind,rub,sym){
   let w;try{w=indZeilenWerte(ind,rub);}catch(e){w={actTxt:'–',actCls:'',fcTxt:'–',prevTxt:'–',prevCls:''};}
   let next='–';try{next=indNextReleaseCell(sym.id,ind)||'–';}catch(e){}
   let sc=null;try{sc=indScore(ind,rub);}catch(e){}
@@ -281,6 +313,11 @@ function mkCmpFarbe(c,eigen){const l=MK_CCYS.filter(x=>x!==eigen);return MK_CMP_
 // Gleicher Indikator einer anderen Waehrung: gleiche Karte, gleicher Name (sonst
 // gleiche Basis). Kein Gegenstueck -> kein Strich, nie ein Ersatzwert.
 function mkGegenstueck(ind,rubName,ccy){
+  const k=ccy+'|'+rubName+'|'+ind.id;
+  if(!_mkGegen.has(k))_mkGegen.set(k,mkGegenstueckRoh(ind,rubName,ccy));
+  const g=_mkGegen.get(k);return g?{ind:g.ind,pts:g.pts,unit:g.unit}:null;
+}
+function mkGegenstueckRoh(ind,rubName,ccy){
   const s=(syms||[]).find(x=>x.id===ccy);if(!s)return null;
   const r=(s.rubrics||[]).find(x=>x.name===rubName);if(!r)return null;
   const nm=indName(ind),base=stripPeriodSuffix(ind.name).base,l=r.indicators||[];
@@ -350,8 +387,20 @@ function mkZinsLinien(zins,x0,x1,xOf,yTop,H){
 }
 function FX_KORB(sym){return!!sym&&MK_CCYS.includes(sym.id);}
 function mkPreisPunkte(symId){
+  if(!_mkPreise.has(symId))_mkPreise.set(symId,mkPreisPunkteRoh(symId));
+  return _mkPreise.get(symId);
+}
+function mkPreisPunkteRoh(symId){
   let r=null;try{r=preisReiheAnzeige(symId);}catch(e){r=null;}
   return Array.isArray(r)?r.map(e=>[String(e[0]).slice(0,10),+e[1],null]).filter(p=>p[0]&&isFinite(p[1])&&p[1]>0):[];
+}
+// Nach dem Aufbau zeichnet der Aufrufer synchron (Scrollstand); der Nachlauf im
+// naechsten Bild zeichnet nur noch, was dabei fehlte (verdeckt, Breite neu) -
+// vorher wurde jeder Chart zweimal gezeichnet (gemessen 84-137 ms je Mal).
+function makroZeichnenFehlende(){
+  const tk=document.getElementById('mkTabKarte');if(!tk)return;
+  tk.querySelectorAll('.mk-chart[data-ri]').forEach(box=>{const m=box.__mk;if(m&&m.W===Math.max(260,Math.floor(box.clientWidth))&&!window.__gpMakroVoll)return;
+    try{makroZeichnen(box);}catch(e){console.error('[makro]',e);}});
 }
 function makroZeichnenAlle(){
   document.querySelectorAll('.mk-chart[data-ri]').forEach(box=>{try{makroZeichnen(box);}catch(e){console.error('[makro]',e);box.innerHTML='<div class="mk-leer">Chart could not be drawn: '+escH(e&&e.message||String(e))+'</div>';}});
@@ -503,32 +552,49 @@ function makroZeichnen(box){
       ax+=`<text class="mk-zins-t" x="${xx.toFixed(1)}" y="${ACHSE+10}" text-anchor="middle" style="font-size:var(--fs-2xs);font-weight:700;fill:${z.dx>0?BC.bull:BC.bear}">${bp>0?'+':'−'}${Math.abs(bp)}</text>`;});
     ax+=`<text x="${padL-6}" y="${ACHSE+10}" text-anchor="end" style="${fs}">bp</text>`;}
   box.innerHTML=`<div class="mk-spuren" onpointermove="makroHover(event,this)" onpointerdown="makroHover(event,this)" onpointerleave="makroHoverAus(this)">${bloecke.join('')}<svg class="mk-achse" width="${W}" height="${AH}" viewBox="0 0 ${W} ${AH}" aria-hidden="true">${ax}</svg></div>`;
-  box.__mk={x0,span,padL,padR,W,hover};
+  hover.forEach(h=>{h.ts=h.pts.map(p=>tagMs(p[0]));});
+  box.__mk={x0,span,padL,padR,W,hover,cur:[...box.querySelectorAll('.mk-cur')],letzt:''};
   // Zeitspanne per Ziehen: Tagesanker ueber die Plotbreite.
   const nTage=Math.max(2,Math.round((x1-x0)/864e5)+1);
   box.dataset.br=mkBrushReg(ri);
   box.dataset.brLin=`${new Date(x0).toISOString().slice(0,10)}|${nTage}|${(padL/W).toFixed(4)}|${((W-padR)/W).toFixed(4)}`;
   try{window.brushAnbinden&&window.brushAnbinden(box.parentElement);}catch(e){}
 }
+// Hover hoechstens einmal je Bild (gemessen 13-15 ms je Bewegung bei CPU 4x,
+// das Bildbudget ist 16 ms): die erste Bewegung sofort, weitere im selben Bild
+// werden zusammengefasst. Naechster Punkt per binaerer Suche statt Durchlauf.
+let _mkHovPlan=0,_mkHovNaechst=null;
 function makroHover(ev,el){
+  if(_mkHovPlan){_mkHovNaechst={x:ev.clientX,el};return;}
+  mkHoverJetzt(ev.clientX,el);
+  _mkHovPlan=requestAnimationFrame(()=>{_mkHovPlan=0;const n=_mkHovNaechst;_mkHovNaechst=null;if(n)mkHoverJetzt(n.x,n.el);});
+}
+function mkNaechsterIdx(ts,t){
+  let lo=0,hi=ts.length-1;if(hi<0)return-1;
+  while(lo<hi){const m=(lo+hi)>>1;if(ts[m]<t)lo=m+1;else hi=m;}
+  return lo>0&&Math.abs(ts[lo-1]-t)<=Math.abs(ts[lo]-t)?lo-1:lo;
+}
+function mkHoverJetzt(clientX,el){
   try{
     const box=el.closest('.mk-chart');const m=box&&box.__mk;if(!m)return;
     const svg0=el.querySelector('svg.mk-svg');if(!svg0)return;
-    const rc=svg0.getBoundingClientRect();const px=(ev.clientX-rc.left)*(m.W/rc.width);
+    const rc=svg0.getBoundingClientRect();const px=(clientX-rc.left)*(m.W/rc.width);
     if(px<m.padL||px>m.W-m.padR)return;
     const t=m.x0+(px-m.padL)/(m.W-m.padL-m.padR)*m.span;
-    el.querySelectorAll('.mk-cur').forEach(c=>{c.setAttribute('x1',px.toFixed(1));c.setAttribute('x2',px.toFixed(1));c.style.display='';});
-    const zeilen=m.hover.map(h=>{let best=null,bd=Infinity;h.pts.forEach(p=>{const dd=Math.abs(tagMs(p[0])-t);if(dd<bd){bd=dd;best=p;}});
+    const pxs=px.toFixed(1);m.cur.forEach(c=>{c.setAttribute('x1',pxs);c.setAttribute('x2',pxs);c.style.display='';});
+    const idx=m.hover.map(h=>mkNaechsterIdx(h.ts,t));
+    const schl=idx.join(',');if(schl===m.letzt)return;m.letzt=schl;
+    const zeilen=m.hover.map((h,hi)=>{const best=idx[hi]>=0?h.pts[idx[hi]]:null;
       if(!best)return'';
       return`<span class="mk-read-z">${h.farbe?`<span class="mk-cc-dot" style="background:${h.farbe}"></span>`:''}<b>${escH(h.name)}</b> ${escH(h.unit===''&&Math.abs(best[1])>=1e4?mkZahl(best[1]):fmtIndVal(best[1],h.unit))}${best[2]!=null?` <i>fc ${escH(fmtIndVal(best[2],h.unit))}</i>`:''} <i>${escH(fmtDayHdr(best[0]))}</i></span>`;}).join('');
     const karte=box.closest('.rub-card');const rd=karte&&karte.querySelector('.mk-read');if(rd)rd.innerHTML=zeilen;
   }catch(e){}
 }
-function makroHoverAus(el){try{el.querySelectorAll('.mk-cur').forEach(c=>{c.style.display='none';});}catch(e){}}
+function makroHoverAus(el){try{const box=el.closest('.mk-chart');const m=box&&box.__mk;(m?m.cur:[...el.querySelectorAll('.mk-cur')]).forEach(c=>{c.style.display='none';});if(m)m.letzt='';}catch(e){}}
 let _mkRz=0;
 try{window.addEventListener('resize',()=>{clearTimeout(_mkRz);_mkRz=setTimeout(()=>makroZeichnenAlle(),150);});}catch(e){}
 
-export {MK_RUBS,MK_ZIELBAND,makroKartenSchalterHtml,makroTabKarteHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,mkReferenz,mkCcy};
+export {MK_RUBS,MK_ZIELBAND,makroKartenSchalterHtml,makroTabKarteHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart,mkReferenz,mkCcy};
 if(typeof window!=='undefined')Object.assign(window,{makroSicht,makroTab,makroGross,makroRange,makroSpur,makroVergleich,makroPreis,makroHover,makroHoverAus,makroZeichnenAlle,mkReferenz,MK_ZIELBAND,makroTabWert,makroOptWert,
   // nur fuer check/makro.js (Statistik und Zinsentscheide unabhaengig nachrechnen)
   mkStatistik,mkZinsentscheide,

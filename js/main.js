@@ -17,7 +17,7 @@ import {scoreJournal,loadScoreJournal,jrErfassen,jrBootFertig,jrSperren,jrFreige
 import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL_RESEARCH_MATCHERS,isScoreDrivingEvent,periodLabel} from './event-matchers.js';
 // Makro-Charts + Analyse-Einstufungen je Makro-Karte (Nutzer-Auftrag
 // 2026-10-20, siehe Kopf von makro.js). Zirkulaerer Import wie bei journal.js.
-import {makroKartenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle} from './makro.js';
+import {makroKartenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,uid,
@@ -45,7 +45,7 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   // Was js/makro.js von hier liest (zirkulaerer Import, siehe dort).
   indChartSeries,fmtIndVal,achsenTicks,INFL_ZIEL,nivAlle,nivEintrag,nivReihe,indNextTermin,indNextExpected,
   researchAnalysis,chartLeisteHtml,markUserEditTs,
-  indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,kartenIcon,preisReiheAnzeige};
+  indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,kartenIcon,preisReiheAnzeige,makroReiheNeu,saveSoon};
 // ── EINFARBIGER ICON-SATZ (Nutzer-Wunsch 2026-08-23) ───────────────────────
 // "mach davor die Flagge aber ohne Farben also eine Art icon aber schon die
 // richtige Form und nicht animiert und bei Gold und dem Rest auch gleich".
@@ -11087,9 +11087,40 @@ function abPinnedHtml(c){
 function abReihenTitel(txt,extra){
   return`<div class="ab-rtitel${extra?' ab-rtitel-x':''}"><span>${escH(txt)}</span>${extra||''}</div>`;
 }
+// Makro-Reihe der Asset-Seite: drei Tabellen-Karten oder EINE Reiter-Karte.
+// Eigene Funktion, damit makroReiheNeu() sie allein austauschen kann.
+function abMakroReiheHtml(c,teil){
+  // Voller Seitenaufbau (jede Datenaenderung) leert die Zwischenspeicher der
+  // Makro-Charts; ein Teil-Aufbau (makroReiheNeu) behaelt sie.
+  makroRenderStart(!teil);
+  const rubs=c.rubrics||[];
+  const tk=makroTabKarteHtml(c);
+  if(tk)return`<div class="ab-col mk-col" data-mkreihe="1">${tk}</div>`;
+  return ASSET_CARDS.map(n=>{const i=rubs.findIndex(r=>r&&r.name===n);return`<div class="ab-col" data-mkreihe="1">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('');
+}
+// ⚠ SCHNELLER WEG fuer jede Makro-Bedienung (Nutzer 2026-10-24: "Mach es
+// maximal schnell"). GEMESSEN, CPU 4x gedrosselt (~iPad): jeder Klick auf
+// Reiter/Chip/Compare/Zeitraum baute ueber renderDetail die GANZE Asset-Seite
+// neu - 595-717 ms, das Zeichnen der Charts selbst nur 84-137 ms; bis zum
+// fertigen Bild 0,9-1,9 s. Jetzt wird nur die Makro-Reihe getauscht. Der
+// Scrollstand bleibt (WebKit, siehe scrollHalten), Symbole und i-Knoepfe
+// ordnen die MutationObserver wie bei jedem anderen Austausch ein.
+function makroReiheNeu(){
+  const c=getSym(),det=document.getElementById('detail');
+  const alt=det?[...det.querySelectorAll('[data-mkreihe]')]:[];
+  if(!c||!alt.length||curPage!=='cur'){renderDetail();return;}
+  const se=document.scrollingElement,st0=det.scrollTop,st1=se?se.scrollTop:0;
+  const t=document.createElement('template');t.innerHTML=abMakroReiheHtml(c,true);
+  const neu=[...t.content.children];
+  if(!neu.length){renderDetail();return;}
+  alt[0].replaceWith(...neu);alt.slice(1).forEach(x=>x.remove());
+  try{makroZeichnenAlle();}catch(e){console.error('[makro]',e);}
+  neu.forEach(n=>{try{attachChartHovers(n);}catch(e){}});
+  if(det.scrollTop!==st0)det.scrollTop=st0;
+  if(se&&se.scrollTop!==st1)se.scrollTop=st1;
+}
 function renderAssetBoard(c){
   const rubs=c.rubrics||[];
-  const idx=n=>rubs.findIndex(r=>r&&r.name===n);
   // ⚠ GEMESSEN 2026-09-13: als zwei getrennte Rasterreihen war die Karten-
   // Reihe so hoch wie die HOECHSTE Karte (526px), waehrend die beiden
   // anderen 407 und 381 hoch waren - unter ihnen standen 145px tote Flaeche,
@@ -11141,8 +11172,7 @@ function renderAssetBoard(c){
       ${abReihenTitel('Macro')}
       ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE
            breite Karte mit Reitern (Nutzer 2026-10-21, siehe Kopf von makro.js). */''}
-      ${(()=>{const tk=makroTabKarteHtml(c);if(tk)return`<div class="ab-col mk-col">${tk}</div>`;
-        return ASSET_CARDS.map(n=>{const i=idx(n);return`<div class="ab-col">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('');})()}
+      ${abMakroReiheHtml(c)}
       ${abReihenTitel('Positioning')}
       ${ASSET_GRAPHS.map(a=>`<div class="ab-col">${abGrafikHtml(a,c)}</div>`).join('')}
     </div>
@@ -26027,6 +26057,9 @@ const LG_KARTEN='.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.ab-ktile,.abc-cal,.rub-
 const LG_MIN_FREI=84;
 const LG_MEDIEN=/^(svg|canvas|img|textarea|input|button|select|video)$/i;
 function lgFreiraum(card){
+  // Makro-Reiter-Karte: so hoch wie ihr Inhalt, nie freie Flaeche - ~1000
+  // Elemente einzeln zu vermessen kostete je Bedienung ~20 ms (CPU 4x).
+  if(card.classList.contains('mk-tk'))return null;
   const cr=card.getBoundingClientRect();
   if(!cr.height||!card.offsetParent)return null;
   const cs=getComputedStyle(card);
@@ -26171,8 +26204,24 @@ function lgAlleKarten(){
   karten.forEach((c,i)=>lgKarte(c,mess[i]));
 }
 function lgPlanen(){if(!_lgPlan)_lgPlan=requestAnimationFrame(()=>requestAnimationFrame(lgAlleKarten));}
+// ⚠ NUR DIE BETROFFENEN KARTEN (2026-10-24, Nutzer: "Mach es maximal schnell").
+// GEMESSEN (CPU 4x, 12 Makro-Bedienungen): lgAlleKarten kostete 742 ms - jede
+// DOM-Aenderung irgendwo vermass ALLE Karten der Seite und in jeder Karte jedes
+// Element (getBoundingClientRect). Die freie Flaeche einer Karte haengt aber
+// nur an ihrem eigenen Inhalt und ihrer eigenen Groesse: Inhalt -> Mutation IN
+// der Karte, Groesse -> ResizeObserver der Karte (meldet auch neu beobachtete
+// Karten einmal). Beides wird jetzt je Karte nachgemessen; der volle Durchlauf
+// bleibt fuer Fenstergroesse und Ladeende (lgPlanen).
+let _lgKPlan=0;const _lgKSet=new Set();
+function lgKartenPlanen(ks){
+  ks.forEach(k=>{if(k&&k.nodeType===1)_lgKSet.add(k);});
+  if(!_lgKSet.size||_lgKPlan)return;
+  _lgKPlan=requestAnimationFrame(()=>requestAnimationFrame(()=>{_lgKPlan=0;
+    const l=[..._lgKSet].filter(k=>k.isConnected);_lgKSet.clear();
+    const mess=l.map(k=>lgFreiraum(k));l.forEach((k,i)=>lgKarte(k,mess[i]));}));
+}
 try{
-  const lgRo=new ResizeObserver(lgPlanen);
+  const lgRo=new ResizeObserver(es=>lgKartenPlanen(es.map(e=>e.target)));
   const lgBeobachten=()=>document.querySelectorAll(LG_KARTEN).forEach(c=>{if(!c.__lgRo){c.__lgRo=1;lgRo.observe(c);}});
   new MutationObserver(ms=>{
     // eigene Logo-Einfuegungen loesen keinen neuen Durchlauf aus
@@ -26188,7 +26237,14 @@ try{
       });
       return;
     }
-    lgBeobachten();lgPlanen();
+    const ks=new Set();
+    ms.forEach(m=>{
+      const k=m.target.closest&&m.target.closest(LG_KARTEN);if(k)ks.add(k);
+      m.addedNodes.forEach(n=>{if(n.nodeType!==1||n.classList.contains('lg-frei'))return;if(n.matches(LG_KARTEN))ks.add(n);n.querySelectorAll(LG_KARTEN).forEach(c=>ks.add(c));});
+    });
+    // nur die neuen Karten beobachten - vorher durchsuchte lgBeobachten bei jeder
+    // Aenderung das ganze Dokument (Profil 2026-10-24: 65 ms auf 12 Bedienungen)
+    ks.forEach(c=>{if(!c.__lgRo&&c.matches(LG_KARTEN)){c.__lgRo=1;lgRo.observe(c);}});lgKartenPlanen(ks);
   }).observe(document.getElementById('pageArea')||document.body,{childList:true,subtree:true});
   window.addEventListener('resize',lgPlanen);
   lgBeobachten();lgPlanen();

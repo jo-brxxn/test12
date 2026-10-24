@@ -21,6 +21,8 @@
 //      bleiben im Speicher (snap -> sanitizeSnapIds behaelt tags/hist)
 //   E) Ansicht und Reiter gehen in den Sync-Weg (snap -> applySnap)
 //   F) Hover schreibt die Werte in die Lesezeile; keine JS-Fehler
+//   H) Tempo: jede Makro-Bedienung baut nur die Makro-Reihe (0 volle Aufbauten)
+//      und zeichnet jeden Chart genau einmal (Gegenprobe: alter Weg -> rot)
 //
 //   node check/makro.js [--gegenprobe]
 //   --gegenprobe: Zeichnen abgeschaltet und ein Spurkopf verfaelscht -> A + B rot
@@ -139,6 +141,39 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
       if (g.stat !== g.spuren) fail(`${ort} ${id} STATISTIK`, `${g.stat} Statistikzeilen fuer ${g.spuren} Spuren`);
       g.falsch.forEach(x => fail(`${ort} ${id} STATISTIK`, x));
       if (g.zinsSoll && !g.zinsLinien && !GP) fail(`${ort} ${id} ZINS`, `${g.zinsSoll} Zinsentscheide in der Reihe, aber keine Markerlinie`);
+      // H) Tempo (Nutzer 2026-10-24: "Mach es maximal schnell"): jede Makro-
+      //    Bedienung baut NUR die Makro-Reihe (0 volle Aufbauten der Asset-Seite)
+      //    und zeichnet jeden Chart genau EINMAL. Gemessen vorher: voller Aufbau
+      //    595-717 ms je Klick + zweites Zeichnen im naechsten Bild (CPU 4x).
+      if (w >= 900 && id === 'USD') {
+        const t = await p.evaluate(async gp => {
+          if (gp) window.__gpMakroVoll = true;
+          const zwei = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+          const det = document.getElementById('detail'); const out = [];
+          const schritte = [['Reiter', () => makroTab('Labour Market')], ['Reiter zurueck', () => makroTab('Inflation')],
+            ['Chip', () => document.querySelector('#mkTabKarte .mk-chip:not(.on)').click()], ['Chip zurueck', () => document.querySelector('#mkTabKarte .mk-chip.on').click()],
+            ['Compare', () => makroVergleich('CHF')], ['Compare zurueck', () => makroVergleich('CHF')], ['Price', () => makroPreis()], ['Price zurueck', () => makroPreis()],
+            ['Zeitraum', () => [...document.querySelectorAll('#mkTabKarte .ind-hist-range-btn')].find(x => x.textContent.trim() === '5Y').click()],
+            ['Table', () => [...document.querySelectorAll('#mkTabKarte .mk-sw button')].find(x => x.textContent.trim() === 'Table').click()],
+            ['Charts', () => [...document.querySelectorAll('#detail .mk-kz .mk-sw button')].find(x => x.textContent.trim() === 'Charts').click()]];
+          for (const [name, fn] of schritte) {
+            let voll = 0, gezeichnet = 0;
+            const mo = new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(x => { if (x.nodeType !== 1) return;
+              if (x.classList.contains('dp')) voll++; if (x.classList.contains('mk-spuren')) gezeichnet++; })));
+            mo.observe(det, { childList: true, subtree: true });
+            fn(); await zwei(); await zwei();
+            mo.disconnect();
+            const boxen = document.querySelectorAll('#mkTabKarte .mk-chart').length;
+            out.push({ name, voll, gezeichnet, boxen });
+          }
+          window.__gpMakroVoll = false;
+          return out;
+        }, GP);
+        t.forEach(x => {
+          if (x.voll) fail(`${ort} ${id} TEMPO`, `${x.name}: Asset-Seite ${x.voll}x komplett neu aufgebaut (soll 0 - nur die Makro-Reihe)`);
+          if (x.gezeichnet > x.boxen) fail(`${ort} ${id} TEMPO`, `${x.name}: ${x.gezeichnet}x gezeichnet fuer ${x.boxen} Chart(s) (soll genau 1x)`);
+        });
+      }
       // E) Sync-Weg: Ansicht + Reiter ueberleben snap -> applySnap
       const e = await p.evaluate(() => { const s = snap(); const o = JSON.parse(s); return { ans: o.mkAnsicht, tab: o.mkTab }; });
       if (e.ans !== 'charts' || !a.reiter.includes(e.tab)) fail(`${ort} ${id} SYNC`, `snap traegt mkAnsicht=${e.ans}, mkTab=${e.tab}`);
@@ -163,7 +198,7 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
   }
   await b.close();
   if (GP) {
-    const ok = F.some(x => /kein Chart gezeichnet|ohne Chart/.test(x)) && F.some(x => /SPURKOPF/.test(x)) && F.some(x => /ZIELLINIE/.test(x));
+    const ok = F.some(x => /kein Chart gezeichnet|ohne Chart/.test(x)) && F.some(x => /SPURKOPF/.test(x)) && F.some(x => /ZIELLINIE/.test(x)) && F.some(x => /TEMPO/.test(x));
     console.log(ok ? `makro --gegenprobe: ok (rot wie erwartet, ${F.length} Befunde)` : 'makro --gegenprobe: FEHLER - nicht gemeldet\n' + F.slice(0, 5).join('\n'));
     process.exit(ok ? 0 : 1);
   }
