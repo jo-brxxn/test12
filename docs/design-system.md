@@ -360,6 +360,17 @@ gerade dran gearbeitet wird):
 
 ## Design-Vorlagen (Nutzer-Wunsch 2026-09-04)
 
+> ⚠ **Seit 2026-10-24 nur noch ZWEI** (Nutzer: *„Es soll einen Schalter für
+> dark und light mode geben light mode soll terminal pro sein und der darkmode
+> soll Midnight Term sein. Der Rest weg.“*): **Terminal Pro** (hell, `:root`,
+> kein Attribut) und **Midnight Term** (`data-fx-theme="midnight"`). Bedienung
+> = ein Schalter **Dark mode** in den Settings (`toggleFxTheme`). Die acht
+> anderen sind samt CSS entfernt; gespeicherte Altwerte werden migriert
+> (Carbon/Graphite/Nord/Solar → Midnight, die hellen → Terminal Pro) — in der
+> Frueh-Weiche UND in `normFxTheme()`. **Hintergrund-Auswahl ebenfalls weg**
+> (*„background soll immer bei current sein“*), Marmor-Bilder gelöscht.
+> Der Rest dieses Abschnitts ist Historie.
+
 Zehn Vorlagen, umschaltbar in den Einstellungen unter **Appearance**: fünf
 helle (**Terminal Pro** = das bisherige Design, Linear Light, Stripe Slate,
 Swiss Editorial, Notion Warm) und fünf dunkle (Carbon Dark, Midnight

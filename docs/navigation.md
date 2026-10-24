@@ -1135,6 +1135,16 @@ Nach zwei Korrekturrunden (Nutzer, 2026-08-23) sieht eine Zeile so aus:
 steht weiter im Tooltip (`data-tip`), und `check/display.js` prüft ihn genau
 dort statt im sichtbaren Text.
 
+⚠ **Ausnahme seit 2026-10-24 — das AUSGEWÄHLTE Asset** (Nutzer: *„mach das
+dann die Flagge weht und sie in richtiger Farbe ist und das die Schrift dann
+die bullish oder bearish oder neutral bias Farbe hat … Score auch in der
+Farbe“*): nur die `.on`-Zeile zeigt das farbige, animierte Symbol
+(`assetIconHtml`) statt der Glyphe und trägt Name + Score in Bias-Farbe
+(`data-bv` am `.an`, eigene Leisten-Tokens `--sb-bull/-bear/-neu`, gemessen
+≥ 4,57:1 auf der markierten Zeile in hell und Midnight). Alle anderen Zeilen
+bleiben wie unten beschrieben. `check/display.js` lässt `data-bv` in der
+Leiste nur an der `.on`-Zeile zu.
+
 ⚠ **Die Liste färbt NICHT nach Bias.** Alle Zeilen tragen `--t2`, die
 ausgewählte `--t0` mit Cyan-Balken links — also exakt das Verhalten eines
 aktiven Tabs. Cyan ist in der App ausschließlich Interaktion und kollidiert
