@@ -6659,14 +6659,14 @@ function saveSoon(){
 function exportData(){
   const data=JSON.parse(snap());
   data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=trades;data.scoreMode=scoreMode;
-  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
+  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
   a.download='fx-analyst-'+todayStr()+'.json';a.click();
 }
 function importData(input){
   const f=input.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=FX_THEME_IDS.includes(_imp.fxTheme)?_imp.fxTheme:'';try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();renderFxThemeGrid();}if(_imp.appBg!==undefined){appBg=APP_BG_IDS.includes(_imp.appBg)?_imp.appBg:'';try{appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');}catch(e){}applyAppBg();renderAppBgGrid();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
+  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=normFxTheme(_imp.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
   r.readAsText(f);input.value='';
 }
 
@@ -7111,7 +7111,7 @@ async function cloudPushRoh(manual){
     // zuruecksetzen - siehe cloudPull-Kommentar).
     const z0=_userEditZaehler;
     const gesendet=snap();
-    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=trades;data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
+    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=trades;data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
     if(APP_VER)data.appVer=APP_VER;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
@@ -7292,8 +7292,7 @@ async function cloudPullRoh(manual,forceOverwrite){
       // ⚠ !==undefined, nicht truthy: das aktuelle Design ist der LEERE
       // String. Mit einem truthy-Check kaeme "zurueck auf Terminal Pro" nie
       // auf dem anderen Geraet an - derselbe Fall wie bei designHue/null.
-      if(!prefPending&&cd.fxTheme!==undefined){fxTheme=FX_THEME_IDS.includes(cd.fxTheme)?cd.fxTheme:'';try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();renderFxThemeGrid();}
-      if(!prefPending&&cd.appBg!==undefined){appBg=APP_BG_IDS.includes(cd.appBg)?cd.appBg:'';try{appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');}catch(e){}applyAppBg();renderAppBgGrid();}
+      if(!prefPending&&cd.fxTheme!==undefined){fxTheme=normFxTheme(cd.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}
       if(!prefPending&&cd.uiAnimEnabled!==undefined){uiAnimEnabled=cd.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}
       if(!prefPending&&cd.dataAnimEnabled!==undefined){dataAnimEnabled=cd.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}
       if(!prefPending&&cd.telegramEnabled!==undefined){telegramEnabled=cd.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}
@@ -7803,10 +7802,17 @@ function renderSidebar(){
       // (.np-score, var(--t3)), damit die Zeile weiterhin keine Bias-Farbe
       // traegt.
       const scTxt=`${sc>0?'+':''}${sc}`;
+      // ⚠ AUSNAHME fuer das AUSGEWAEHLTE Asset (Nutzer-Wunsch 2026-10-24:
+      // "dann wird das ja so markiert mach das dann die Flagge weht und sie
+      // in richtiger Farbe ist und das die Schrift dann die bullish oder
+      // bearish oder neutral bias Farbe hat ... Score auch in der Farbe"):
+      // farbiges, animiertes Symbol statt Glyphe, Name + Score in Bias-Farbe.
+      // Alle anderen Zeilen bleiben neutral wie oben beschrieben.
+      const bv=on?(c.bias||scoreBias(symScore(c))):'';
       return`<div class="np-asset-wrap">
         <button data-sym="${id}" class="np ab np-asset${on?' on':''}" onclick="sbClick('${escJs(id)}')" onpointerdown="sbPressStart('${escJs(id)}')" onpointerup="sbPressEnd()" onpointerleave="sbPressEnd()" onpointercancel="sbPressEnd()" data-tip="${escH(c.name)} ${escH(scTxt)}" aria-label="${escH(c.name)} ${escH(scTxt)}">
-          ${assetGlyphHtml(id,17)}
-          <span class="an np-lbl">${escH(c.name)}</span>
+          ${on?(assetIconHtml(id,17)||assetGlyphHtml(id,17)):assetGlyphHtml(id,17)}
+          <span class="an np-lbl"${bv?` data-bv="${bv}"`:''}>${escH(c.name)}</span>
           <span class="np-score">${escH(scTxt)}</span>
         </button>
         ${bearb?`<span class="np-asset-edit">
@@ -25299,27 +25305,25 @@ function applyDataAnim(){document.body.classList.toggle('no-data-anim',!dataAnim
 // wirkt nur auf Indikator-Zeilen; das hier ist der klassische Terminal-Griff
 // "komfortabel / dicht" ueber alle Karten. Liegt wie pinEnabled ausserhalb
 // von snap()/Undo und ist deshalb an allen vier Ecken angebunden.
-// ══ DESIGN-VORLAGEN (Nutzer-Wunsch 2026-09-04) ══════════════════════════
-// ⚠ Das AKTUELLE Design ist der Standard und steht in :root - es hat bewusst
-// KEINEN Eintrag hier und KEIN [data-fx-theme]-Regelwerk. Ein Geraet mit
-// unbekanntem Wert landet dadurch im vertrauten Design, statt ohne eine
-// einzige Farbvariable dazustehen.
-// ⚠ Wird eine Vorlage ENTFERNT, muss die Frueh-Weiche im <head> von
-// index.html den alten Wert migrieren - dort steht dieselbe Liste.
+// ══ DESIGN: HELL / DUNKEL (Nutzer-Wunsch 2026-10-24) ═════════════════════
+// Nutzer: "Es soll einen Schalter fuer dark und light mode geben light mode
+// soll terminal pro sein und der darkmode soll Midnight Term sein. Der Rest
+// weg." Vom 2026-09-04 bis dahin zehn Vorlagen in einem Kachel-Raster.
+// ⚠ Hell = Terminal Pro = :root, bewusst OHNE [data-fx-theme]-Regelwerk: ein
+// Geraet mit unbekanntem Wert landet im vertrauten Design.
+// ⚠ Die acht entfernten Vorlagen werden MIGRIERT, nicht verworfen: die
+// dunklen -> Midnight, die hellen -> Terminal Pro. Sonst spraenge ein
+// dunkles Geraet beim naechsten Sync auf hell. Dieselbe Liste steht in der
+// Frueh-Weiche im <head> von index.html.
+// FX_THEMES bleibt als Liste stehen - check/theme.js prueft jede Vorlage.
 const FX_THEMES=[
-  {id:'',         name:'Terminal Pro',   desc:'The current design',           sw:['#212C49','#E9EAF6','#FFFFFF','#2E8FB0']},
-  {id:'linear',   name:'Linear Light',   desc:'Cool near-white, indigo',      sw:['#1C1D21','#F4F5F8','#FFFFFF','#5E6AD2']},
-  {id:'stripe',   name:'Stripe Slate',   desc:'Pale blue-grey, violet',       sw:['#0A2540','#F0F4F9','#FFFFFF','#635BFF']},
-  {id:'swiss',    name:'Swiss Editorial',desc:'White, hairlines, no colour',  sw:['#111111','#FFFFFF','#FFFFFF','#1F1F1F']},
-  {id:'notion',   name:'Notion Warm',    desc:'Warm off-white, very quiet',   sw:['#37352F','#F7F7F5','#FFFFFF','#2383E2']},
-  {id:'carbon',   name:'Carbon Dark',    desc:'Black chrome, high contrast',  sw:['#000000','#161616','#262626','#33B1FF']},
-  {id:'midnight', name:'Midnight Term.', desc:'Deep navy trading desk',       sw:['#060B16','#0A101C','#16223A','#4FB6DC']},
-  {id:'graphite', name:'Graphite Dark',  desc:'Neutral grey, no colour cast', sw:['#0F1113','#17181B','#232529','#7FB3C8']},
-  {id:'nord',     name:'Nordic Dark',    desc:'Cool blue-grey, soft',         sw:['#242933','#2E3440','#3B4252','#88C0D0']},
-  {id:'solar',    name:'Solarized Dark', desc:'Warm teal, easy on the eyes',  sw:['#001F27','#002B36','#073642','#3EA5B5']},
+  {id:'',         name:'Terminal Pro'},
+  {id:'midnight', name:'Midnight Term'},
 ];
-const FX_THEME_IDS=FX_THEMES.map(t=>t.id).filter(Boolean);
-let fxTheme=(()=>{try{const t=localStorage.getItem('fxpro_theme');return (t&&FX_THEME_IDS.includes(t))?t:'';}catch(e){return '';}})();
+const FX_THEME_DARK='midnight';
+const FX_THEME_ALT_DUNKEL=['carbon','graphite','nord','solar'];
+function normFxTheme(t){return (t===FX_THEME_DARK||FX_THEME_ALT_DUNKEL.includes(t))?FX_THEME_DARK:'';}
+let fxTheme=(()=>{try{return normFxTheme(localStorage.getItem('fxpro_theme'));}catch(e){return '';}})();
 function applyFxTheme(){
   if(fxTheme)document.documentElement.setAttribute('data-fx-theme',fxTheme);
   else document.documentElement.removeAttribute('data-fx-theme');
@@ -25331,74 +25335,27 @@ function applyFxTheme(){
     if(m)m.setAttribute('content',getComputedStyle(document.documentElement).getPropertyValue('--chrome-bg').trim()||'#212C49');
   }catch(e){}
 }
-function renderFxThemeGrid(){
-  const g=document.getElementById('fxThemeGrid');if(!g)return;
-  g.innerHTML=FX_THEMES.map((t,i)=>
-    `<button class="fxth${(t.id||'')===fxTheme?' on':''}" onclick="setFxTheme(${i})" type="button">`
-    +`<span class="fxth-sw">`+t.sw.map(c=>`<i style="background:${c}"></i>`).join('')+`</span>`
-    +`<span class="fxth-n">${t.name}</span><span class="fxth-d">${t.desc}</span></button>`).join('');
-}
-function setFxTheme(i){
-  const t=FX_THEMES[i];if(!t)return;
-  fxTheme=t.id||'';
-  try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}
-  // Damit die Wahl auf dem anderen Geraet ankommt - sonst waere sie reiner
-  // localStorage, genau der in docs/state-sync.md beschriebene Fehler.
-  try{localStorage.setItem('fxpro_updated',new Date().toISOString());}catch(e){}
-  applyFxTheme();renderFxThemeGrid();
-  try{cloudAutoSync();}catch(e){}
-}
-// ══ HINTERGRUND (Nutzer-Wunsch 2026-09-11) ══════════════════════════════
-// Fuenf Moeglichkeiten; die Marmor-Bilder sind prozedural erzeugt (siehe
-// docs/CHANGELOG.md 2026-09-11) und liegen als WebP in img/ - zusammen 172 KB
-// statt 7,5 MB als PNG, weil der Hintergrund bei JEDEM Seitenaufruf mitlaedt.
-// ⚠ 'Current' hat wie bei den Design-Vorlagen die leere Id und KEIN eigenes
-// Regelwerk: ein Geraet mit unbekanntem Wert landet dadurch im vertrauten
-// Zustand statt auf einem leeren Hintergrund.
-// ⚠ Diese Liste steht doppelt - hier und in der Frueh-Weiche im <head> von
-// index.html, die den Wert setzen MUSS, bevor die erste Regel greift (sonst
-// blitzt beim Laden der helle Standard auf und springt dann auf den dunklen
-// Marmor um). check/structure.js haelt beide Listen gegeneinander.
-const APP_BGS=[
-  {id:'',             name:'Current', pv:''},
-  {id:'white',        name:'White',   pv:'#FFFFFF'},
-  {id:'marble-light', name:'Marble',  pv:'url(img/marble-light-tile.webp)'},
-  {id:'marble-vivid', name:'Vivid',   pv:'url(img/marble-vivid-tile.webp)'},
-  {id:'marble-dark',  name:'Dark',    pv:'url(img/marble-dark-tile.webp)'},
-];
-const APP_BG_IDS=APP_BGS.map(b=>b.id).filter(Boolean);
-let appBg=(()=>{try{const b=localStorage.getItem('fxpro_bg');return (b&&APP_BG_IDS.includes(b))?b:'';}catch(e){return '';}})();
-function applyAppBg(){
-  if(appBg)document.documentElement.setAttribute('data-app-bg',appBg);
-  else document.documentElement.removeAttribute('data-app-bg');
-}
-function renderAppBgGrid(){
-  const g=document.getElementById('appBgGrid');if(!g)return;
-  g.innerHTML=APP_BGS.map((b,i)=>{
-    // Die Kachel fuer 'Current' zeigt den Verlauf des heutigen Hintergrunds,
-    // damit die Auswahl nicht mit einem leeren Feld beginnt.
-    const pv=b.pv?`background-image:${b.pv.startsWith('url')?b.pv:'none'};background-color:${b.pv.startsWith('url')?'transparent':b.pv}`
-                 :'background:linear-gradient(180deg,var(--bg1),var(--bg0))';
-    return `<button class="appbg${(b.id||'')===appBg?' on':''}" onclick="setAppBg(${i})" type="button" title="${b.name}">`
-      +`<span class="appbg-pv" style="${pv}"></span><span class="appbg-n">${b.name}</span></button>`;
-  }).join('');
-}
-function setAppBg(i){
-  const b=APP_BGS[i];if(!b)return;
-  appBg=b.id||'';
+function updFxThemeToggleBtn(){const b=document.getElementById('fxThemeToggleBtn');if(b)b.checked=fxTheme===FX_THEME_DARK;}
+function toggleFxTheme(){
+  fxTheme=fxTheme?'':FX_THEME_DARK;
   // ⚠ Kein Schreibpfad ohne try/catch mit sichtbarer Meldung (CLAUDE.md
   // Regel 6): localStorage wirft im privaten Modus und bei vollem Speicher.
-  // Der Hintergrund wuerde dann beim naechsten Start still zurueckspringen -
-  // fuer den Nutzer sieht das aus, als haette der Knopf nicht funktioniert.
   try{
-    appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');
+    fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');
+    // Damit die Wahl auf dem anderen Geraet ankommt (docs/state-sync.md).
     localStorage.setItem('fxpro_updated',new Date().toISOString());
+    _lsUpdatedSeen=localStorage.getItem('fxpro_updated');
   }catch(e){
-    alert('The background could not be saved: '+(e&&e.message||e)+'\nIt stays active until you reload.');
+    alert('The theme could not be saved: '+(e&&e.message||e)+'\nIt stays active until you reload.');
   }
-  applyAppBg();renderAppBgGrid();
+  markPrefEdit();
+  applyFxTheme();updFxThemeToggleBtn();
   try{cloudAutoSync();}catch(e){}
 }
+// ══ HINTERGRUND: entfernt 2026-10-24 ════════════════════════════════════
+// Nutzer: "background soll immer bei current sein also die Einstellungen
+// dazu loeschen". Die Auswahl (White + drei Marmor-Bilder, seit 2026-09-11)
+// ist samt Bildern weg; die Frueh-Weiche im <head> loescht fxpro_bg.
 // ── DICHTE: Auto / Compact / Comfortable (Nutzer-Wahl 2026-10-11) ────────
 // Nutzer: "am pc ist ja alles deutlich groesser als am iPad aber dadurch
 // entstehen auch viele Luecken wie kann ich das am pc kompakter bekommen da
@@ -25627,7 +25584,7 @@ try{if(getCloudCfg()){const seen=localStorage.getItem('fxpro_cloud_seen');
 try{if(APP_VER>+(localStorage.getItem('fxpro_app_ver')||0))localStorage.setItem('fxpro_app_ver',String(APP_VER));}catch(e){}
 applyCompactView();
 applyAssetAnim();updAssetAnimToggleBtn();
-applyUiAnim();updUiAnimToggleBtn();applyDataAnim();updDataAnimToggleBtn();updAllAnimToggleBtn();updTelegramToggleBtn();applyDenseMode();updDenseToggleBtn();applyFxTheme();renderFxThemeGrid();applyAppBg();renderAppBgGrid();
+applyUiAnim();updUiAnimToggleBtn();applyDataAnim();updDataAnimToggleBtn();updAllAnimToggleBtn();updTelegramToggleBtn();applyDenseMode();updDenseToggleBtn();applyFxTheme();updFxThemeToggleBtn();
 loadTabStacks();renderTabBar();
 loadScoreHist();loadScoreJournal();recordScoreHist();
 const _seedCleaned=cleanLegacySeedEvts();
@@ -26401,13 +26358,9 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   rgRisk,rgPutCall,rgHafen,rgDollarBreite,rgDrawdown,rgRendite,rgCpiTrend,
   rgArbeitslos,rgClaims,rgUeberraschung,rgProduktivitaet,
 
-  // ⚠ setFxTheme wird aus einem onclick im Einstellungs-Raster gerufen -
-  // ohne diese Zeile wirft der Klick still ein ReferenceError und die
-  // Vorlagen-Auswahl waere fuer den Nutzer einfach kaputt (CLAUDE.md Regel 6).
-  setFxTheme,renderFxThemeGrid,applyFxTheme,FX_THEMES,
-  // ⚠ setAppBg haengt an einem onclick im Hintergrund-Raster - fehlt die
-  // Zeile hier, wirft der Klick still einen ReferenceError (CLAUDE.md Regel 6).
-  setAppBg,renderAppBgGrid,applyAppBg,APP_BGS,APP_BG_IDS,
+  // ⚠ toggleFxTheme haengt am onchange des Dark-mode-Schalters - ohne diese
+  // Zeile wirft der Klick still ein ReferenceError (CLAUDE.md Regel 6).
+  toggleFxTheme,updFxThemeToggleBtn,applyFxTheme,normFxTheme,FX_THEMES,
   // ⚠ Alle fuenf haengen an onclick/oninput im Modal-HTML - fehlt eine,
   // wirft der Klick still ein ReferenceError (CLAUDE.md Regel 6).
   openQuickNote,quickNoteForAsset,qcAnalyse,qcSpeichern,qcTogAsset,qcSetBias,qcTogTag,

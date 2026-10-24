@@ -20580,9 +20580,18 @@ die Folgeentwicklung vorhersagen?
 - **Datum:** jetzt über `fmtDayHdr`/`fmtDayShort`, Monat `October '26` (vorher *„Fri, 2 Oct 2026“*, verstieß gegen die Datumsregel).
 - **Wächter:** `check/eingaben.js` kennt `mTrade` (Öffner `tjNeu()` / `tjNeu('2026-10-01')`).
 
-## 2026-10-24 — VERSION-CHECK-625: Makro-Analyse schnell
+## 2026-10-24 — VERSION-CHECK-625: Asset-Stapel-Markierung, Settings breit, nur noch Hell/Dunkel
 
-*Nummer 625: 623/624 waren parallel auf `main` für das Journal vergeben (Zusammenführung).*
+- **Nutzer:** *„wenn ich auf dem Assets Stapel bin und ein Asset ausgewählt habe … mach das dann die Flagge weht und sie in richtiger Farbe ist und das die Schrift dann die bullish oder bearish oder neutral bias Farbe hat … Score auch in der Farbe. Und die settings sind aktuell so extrem länglich mach das breiter … Schalter für dark und light mode … light mode soll terminal pro sein und der darkmode soll Midnight Term sein. Der Rest weg. Und background soll immer bei current sein also die Einstellungen dazu löschen.“*
+- **Asset-Stapel:** nur die `.on`-Zeile → `assetIconHtml(id,17)` (farbig, Film = wehende Flagge; Öl/Metall/Index ihr eigenes Motiv) statt `assetGlyphHtml`; Name + Score in Bias-Farbe über `data-bv` = `sym.bias`. Leisten-eigene Tokens `--sb-bull #85B4F1 / --sb-bear #F09CA1 / --sb-neu #A2B2D2` — **gemessen** gegen die markierte Zeile: hell (#3E444E) **4,57 / 4,66 / 4,59**, Midnight (#1B2740) **6,94 / 7,07 / 6,97**. Die BC-Farben kämen dort auf ~2:1. Playwright: USD (bear) → Name + Score `rgb(240,156,161)`, `.ai-film-on` aktiv.
+- **Settings:** 420 → **880 px**, zwei Spalten (*links* Appearance + Animation, *rechts* Data/Security/Layout/Notifications), **darunter** Cloud Sync mit 2×2-Feldern. Unter 700 px eine Spalte. Gemessen 390 px: Density-Text auf ~60 px gequetscht → Zeile mit `.seg3` bricht um.
+- **Design:** Raster mit zehn Vorlagen → ein Schalter **Dark mode** (*On: Midnight Term · Off: Terminal Pro*). Acht Vorlagen samt CSS entfernt. **Migration:** Carbon/Graphite/Nord/Solar → Midnight, Linear/Stripe/Swiss/Notion → Terminal Pro (Frueh-Weiche + `normFxTheme()` für Cloud/Import). Playwright: `fxpro_theme='carbon'` → nach Laden `midnight`.
+- **Hintergrund:** Auswahl, CSS, `APP_BGS`, Sync-Feld `appBg` und die sechs Marmor-Bilder gelöscht; Frueh-Weiche löscht `fxpro_bg`. `sw.js` ohne Marmor, `CACHE_VERSION` v17.
+- **Wächter angepasst (nicht gelaufen, Nutzer: *„ohne Wächter lauf am Ende ich sag dir wann“*):** `check/hintergrund.js` gelöscht (Gegenstand weg), `rahmen.js` HELL = nur Terminal Pro, `kerzen.js` dunkel = nur Midnight, `display.js` erlaubt `data-bv` nur an der `.on`-Zeile und prüft es gegen `sym.bias`.
+
+## 2026-10-24 — VERSION-CHECK-626: Makro-Analyse schnell
+
+*Nummer 626: 623/624 (Journal) und 625 (Asset-Stapel) waren parallel auf `main` vergeben (Zusammenführung).*
 
 **Nutzer:** *„Mach es maximal schnell“*
 

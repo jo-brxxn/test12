@@ -28,7 +28,7 @@
 // nicht Kosmetik: ohne ihn behielte jedes Geraet rezept.html und
 // js/rezept/* in seinem alten Cache und koennte die geloeschte App offline
 // weiter starten.
-const CACHE_VERSION = 'fxpro-v16';
+const CACHE_VERSION = 'fxpro-v17';
 const APP_SHELL = [
   './',
   './index.html',
@@ -38,17 +38,6 @@ const APP_SHELL = [
   './icon-maskable-512.png',
   './apple-touch-icon.png',
   './favicon-32.png',
-  // ⚠ Die Hintergrundbilder gehoeren in die App-Huelle: ohne sie faellt der
-  // gewaehlte Marmor offline auf die leere Flaechenfarbe zurueck, und der
-  // Nutzer sieht beim naechsten Start etwas anderes als beim letzten.
-  // Zusammen 172 KB - vertretbar fuer eine Huelle, die ohnehin die
-  // Datendateien mitnimmt.
-  './img/marble-light.webp',
-  './img/marble-vivid.webp',
-  './img/marble-dark.webp',
-  './img/marble-light-tile.webp',
-  './img/marble-vivid-tile.webp',
-  './img/marble-dark-tile.webp',
   './img/starfield.webp',
   './ff_calendar.json',
   './ind_data.json',

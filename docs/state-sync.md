@@ -37,11 +37,7 @@ Auto" = null ankommt), `setupCcyFilter`/`setupFxOnly`
 `'d,h'`, seit 2026-09-25), `pxChartTyp` (Candles | Line fuer ALLE
 Preis-Charts, `'candle'`/`'line'`, seit 2026-09-26), `cotVsPrice` (Kurslinie im
 COT-Verlauf an/aus, seit 2026-09-27), `telegramEnabled`,
-`newsSeenTs`, `kontextSlots` (seit 2026-10-11: je Asset die drei Kontext-Charts, `{EUR:[null,'p:GOLD',null]}`, `fxpro_kontext_slots`), `denseMode` (seit 2026-10-11 dreiwertig: `'auto'`/`true`/`false`, gespeichert `auto`/`1`/`0`, `normDense()` nimmt alte Booleans an), `appBg` (Hintergrund-Wahl: leer = Current,
-sonst `white`/`marble-light`/`marble-vivid`/`marble-dark`; ⚠ die erlaubten
-Werte stehen doppelt — in `APP_BGS` in `js/main.js` und in der Frueh-Weiche
-im `<head>` von `index.html`, die den Wert setzen muss, BEVOR die erste
-CSS-Regel greift), `assetAnimEnabled` (und die drei weiteren
+`newsSeenTs`, `kontextSlots` (seit 2026-10-11: je Asset die drei Kontext-Charts, `{EUR:[null,'p:GOLD',null]}`, `fxpro_kontext_slots`), `denseMode` (seit 2026-10-11 dreiwertig: `'auto'`/`true`/`false`, gespeichert `auto`/`1`/`0`, `normDense()` nimmt alte Booleans an), `fxTheme` (seit 2026-10-24 nur `''` = Terminal Pro oder `'midnight'`; Altwerte über `normFxTheme()` migriert — dieselbe Liste in der Frueh-Weiche im `<head>`), ~~`appBg`~~ (Hintergrund-Wahl, entfernt 2026-10-24 — wird weder gesendet noch gelesen), `assetAnimEnabled` (und die drei weiteren
 Animations-Schalter aus demselben Vier-Schalter-Satz), `dashboards`/
 `activeDashId` (siehe `docs/navigation.md`, Mehrfach-Dashboards — laufen
 über `snap()`/`applySnap()`, kein manuelles Wiring nötig). Details/

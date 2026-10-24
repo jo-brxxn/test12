@@ -123,7 +123,7 @@ iPad-Prüfung steht beim Nutzer aus (Stand 2026-10-03).
   von `chartHist`): Score-Kette beim Laden 366 → 210 ms.
 
 
-## Teil-Aufbau statt ganzer Seite (seit 2026-10-24, VERSION-CHECK-625)
+## Teil-Aufbau statt ganzer Seite (seit 2026-10-24, VERSION-CHECK-626)
 
 *Anlass:* Nutzer *„Mach es maximal schnell“* (Makro-Analyse). Gemessen CPU 4x: jeder Makro-Klick 0,9–1,9 s bis zum Bild.
 
