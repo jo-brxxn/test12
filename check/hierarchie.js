@@ -25,7 +25,7 @@ const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
-const SEITEN = ['regime', 'news', 'dash', 'mx', 'trends', 'cot', 'sent', 'seas', 'data', 'rate', 'carry', 'pairs', 'watch', 'cal', 'notes', 'A:EUR', 'A:GOLD'];
+const SEITEN = ['regime', 'news', 'dash', 'mx', 'trends', 'cot', 'sent', 'seas', 'data', 'rate', 'carry', 'pairs', 'watch', 'journal', 'cal', 'notes', 'A:EUR', 'A:GOLD'];
 // Seiten mit eigenem Kopf statt Seitentitel: nur noch die Asset-Seiten
 // (.atitle). Dashboard und Data waren bis 2026-10-04 ausgenommen; seit dem
 // Design-Audit (Nutzerwahl "Seitentitel ueberall gleich") tragen sie

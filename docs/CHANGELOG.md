@@ -20556,7 +20556,33 @@ die Folgeentwicklung vorhersagen?
 - Wächter `check/makro.js` G: Vergleichslinie + Legende, Kurs-Spur, Statistik je Spur, 3M-Veränderung unabhängig nachgerechnet, Zinsmarker vorhanden.
 - ⚠ *Nicht gelaufen (Zeitlimit 40 min):* Volllauf `check/all.js`, `altgeraet.js` mit `mkOpt`.
 
-## 2026-10-24 — VERSION-CHECK-623: Makro-Analyse schnell
+## 2026-10-24 — VERSION-CHECK-623: neue Seite „Journal“ (eigene Trades im Kalender)
+
+- **Nutzer:** *„ein neues Fenster … das Journal heißt. Man soll da in einer schönen großen Kalender Übersicht trades eintragen können … welches Asset welche Richtung und wie viel Profit. Wenn man draufklickt kommen alle anderen wichtigen Daten. Je nach win oder loss auch dann in bias Farbe.“* Zeitvorgabe 40 min, Push **ohne Wächterlauf** (Nutzer-Anweisung) — Wächterlauf folgt im nächsten Schritt.
+- **Ort:** eigener Leisten-Eintrag `journal` direkt nach Watchlist (in keinem Stapel), Seite `#pgJournal`, Kürzel `g j`. Code: `js/trades.js` (neu).
+- **Aufbau:** Kopfkarte (Monat ‹ › Today · Net P/L · Trades · Win rate · Wins | Losses · Best · Worst) → Kalender Mo–So, je Trade ein Chip *Asset · Long/Short · P/L*, Win = `--bias-bull`, Loss = `--bias-bear`, Tageszelle in der Farbe der Tagessumme getönt → Tabelle des Monats (Date | Asset | Direction | P/L | R).
+- **Klick:** Tag = neuer Trade mit Datum vorbelegt; Chip/Zeile = Detail-Fenster `#mTradeView` (Ergebnis, P/L, R, Entry/Exit/SL/TP, Size, Setup, Notes) mit Delete | Edit | Done.
+- **Editor `#mTrade`:** Pflicht Date · Asset · P/L, Fehlermeldung im Fenster; in `MODAL_GUARD_TABELLE` + `ESC_MODALS`.
+- **Nie geschätzt:** P/L trägt der Nutzer ein; R nur, wenn Entry + Stop + Exit vorhanden.
+- **Sync:** neues Feld `tradeJournal` (`fxpro_trades`) an allen vier Stellen (cloudPush, cloudPull, exportData, importData). *Merge statt Overwrite* (`mergeTrades`: Vereinigung nach `id`, jüngeres `up` gewinnt), Löschen = Grabstein `del:true`, sonst holt der Merge den Trade vom anderen Gerät zurück. Angezeigter Monat bewusst nur Sitzung.
+- **Handy (390 px):** Zelle 36 px → nur kompakte Tagessumme (*+1.3k / −310*), volle Zahlen + ganze Namen in der Tabelle. Gemessen: keine Zelle läuft über, Seite 390 px breit, kleinste Schrift 11 px.
+- **Offen für den Wächterlauf:** `check/eingaben.js` braucht einen Öffner für `mTrade`; `check/altgeraet.js`/Sync-Wächter kennen `tradeJournal` noch nicht; Cross-Tab-Abgleich (storage-Event) für `fxpro_trades` fehlt noch.
+
+## 2026-10-24 — VERSION-CHECK-624: Journal hochwertiger (TradeZella-Stil) + Kurs-Chart mit Positions-Werkzeug
+
+- **Nutzer:** *„Ich will ein deutlich hochwertigeres Design“*. Per zwei Rückfragen festgelegt: TradeZella-Stil · Zelle = Tages-P/L groß + Trade-Zeilen · Equity-Kurve · Win rate · Win-Streak-*„Flamme mit 1“* · Wochensumme rechts · Wochenende schmal · Detail = Kopf + Kacheln + Preisleiste · Helfer: *Hit TP / Hit SL* (*„takeprofit und exit sind oft gleich“*), Live-R:R und *„ein Preis Chart zu dem Asset … so ein Werkzeug wie auf trading view … stoploss und takeprofit rausziehen“*.
+- **Seite:** Monatsleiste · 5 Kacheln (Net P/L · Win rate als Halbkreis · Profit factor + Balken · Avg win : loss + Balken · Win streak mit Flamme, Zähler ab 1, *Best* über alle Trades, Break-even bricht nicht ab) · Equity-Kurve (Tages-Summen kumuliert, Fläche blau über / rot unter 0, Max drawdown) · Kalender Mo–Fr + Sa/So schmal + **Week** · Tabelle.
+- **Flamme:** Icon `flame` aus `ICONS` (keine Emojis, Regel A), eigener Token `--flame` (`--amber` ist in dieser App grau). Flackern nur `transform`, aus bei `no-ui-anim` / reduced motion.
+- **Editor:** links Tageskerzen des Assets (`tagesKerzen`: Kerzen-Regeln), rechts Felder. Erster Tipp in den Chart setzt Entry, SL = 1 ATR14, TP = 2 ATR14 (*aus echtem Hoch/Tief, sichtbar in den Feldern*); Entry/SL/TP ziehen → Felder, Felder tippen → Linien. Long/Short = Segment (aktiv Navy), Umschalten spiegelt SL/TP. Warnung, wenn SL/TP auf der falschen Seite liegen.
+- **Asset → Kurs:** `tjReihe()` — FX-Paare (USD/xxx als Kehrwert mit getauschtem Hoch/Tief, Kreuze aus `pairPriceSeries`), Aliasse (XAUUSD/GOLD, NAS100, US500, GER40, USOIL, BTCUSD …). Ohne Reihe: Meldung statt Chart (Regel 4).
+- **Detail:** Kopf (Asset + Long/Short, Datum, Ergebnis + P/L groß), Kacheln (R, Planned R:R, Size, Setup), Preisleiste Risiko links / Chance rechts, Kurs-Chart ±Trade-Tag mit allen Ebenen.
+- **Gemessen + behoben (390 px):** Tabelle ließ dem Asset ~12 px (Name stand buchstabenweise untereinander) → ≤ 460 px Long/Short unter dem Namen statt eigener Spalte. Heute-Markierung in der Sa/So-Spalte 23 > 19 px → schmalere Marke, Kopf *Mo Tu …*. Danach 0 überlaufende Zellen bei 1440/1024/390, kleinste Schrift 11 px, Equity-SVG = gemessene Breite (1286/870/272).
+- **Datum:** jetzt über `fmtDayHdr`/`fmtDayShort`, Monat `October '26` (vorher *„Fri, 2 Oct 2026“*, verstieß gegen die Datumsregel).
+- **Wächter:** `check/eingaben.js` kennt `mTrade` (Öffner `tjNeu()` / `tjNeu('2026-10-01')`).
+
+## 2026-10-24 — VERSION-CHECK-625: Makro-Analyse schnell
+
+*Nummer 625: 623/624 waren parallel auf `main` für das Journal vergeben (Zusammenführung).*
 
 **Nutzer:** *„Mach es maximal schnell“*
 

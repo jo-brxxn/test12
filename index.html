@@ -5422,6 +5422,257 @@ body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
 .wt-empty{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:22px 18px;text-align:center}
 .wt-empty-t{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:4px}
 .wt-empty-s{font-size:var(--fs-sm);color:var(--t3);line-height:1.6;margin-bottom:12px}
+/* ══ TRADING JOURNAL (Nutzer-Wunsch 2026-10-24, js/trades.js) ══════════
+   TradeZella-Stil (Rueckfrage 2026-10-24): Kennzahl-Kacheln, Equity-Kurve,
+   Kalender mit grosser Tagessumme + Trade-Zeilen, Wochensumme rechts,
+   Wochenende schmal. Win/Loss in Bias-Farbe, Aktiv = Navy (--ui-act).
+   Handy (<760 px): kompakte Zellen, ganze Namen in Tabelle/Tages-Fenster. */
+:root{--flame:#E8590C;--flame-rgb:232,89,12}
+.tj-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:14px 16px 16px;margin-bottom:14px;min-width:0}
+.tj-kh{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 14px;margin-bottom:12px}
+.tj-kt{font-size:var(--fs-kt);font-weight:700;color:var(--t0)}
+.tj-kh-r{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--fs-sm);color:var(--t2);font-variant-numeric:tabular-nums}
+.tj-kh-r i{color:var(--t3)}
+.tj-leiste{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.tj-nav{display:flex;align-items:center;gap:6px}
+.tj-navb{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.tj-heute{height:34px}
+.tj-monat{font-size:var(--fs-kt);font-weight:700;color:var(--t0);min-width:150px;text-align:center;font-variant-numeric:tabular-nums}
+/* Kennzahl-Kacheln */
+.tj-kacheln{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.tj-kachel{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:12px 16px 14px;display:flex;flex-direction:column;gap:6px;min-width:0;min-height:124px}
+.tj-kl{font-size:var(--fs-xs);font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px}
+.tj-ki{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:0}
+.tj-kv{font-size:var(--fs-xl);font-weight:800;color:var(--t0);font-family:var(--ff-num);font-variant-numeric:tabular-nums;line-height:1.1}
+.tj-kv-xl{font-size:var(--fs-hero)}
+.tj-ksub{font-size:var(--fs-sm);color:var(--t2);font-variant-numeric:tabular-nums}
+.tj-ksub i{color:var(--t3)}
+.tj-kachel.quote .tj-ki{align-items:center}
+.tj-gauge{display:block;overflow:visible}
+.tj-gauge-t{font-family:var(--ff-num);font-size:var(--fs-lg);font-weight:800;fill:var(--t0)}
+.tj-split{display:flex;height:6px;border-radius:3px;overflow:hidden;background:rgba(var(--t3-rgb),.15);gap:2px}
+.tj-split .w{background:var(--bias-bull)}
+.tj-split .l{background:var(--bias-bear)}
+.tj-flamme{display:flex;align-items:center;gap:10px}
+.tj-flamme svg{color:var(--t3);opacity:.55}
+.tj-flamme.an svg{color:var(--flame);fill:rgba(var(--flame-rgb),.22);opacity:1;transform-origin:50% 85%;animation:tjFlacker 1.8s ease-in-out infinite}
+.tj-flamme.an .tj-kv{color:var(--flame)}
+@keyframes tjFlacker{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.08) rotate(-3deg)}}
+body.no-ui-anim .tj-flamme.an svg{animation:none}
+@media (prefers-reduced-motion:reduce){.tj-flamme.an svg{animation:none}}
+/* Equity-Kurve */
+.tj-eq-box{min-height:176px}
+.tj-svg{display:block}
+.tj-svg text{font-family:var(--ff-num);font-size:var(--fs-xs);fill:var(--t3);font-variant-numeric:tabular-nums}
+.tj-gitter{stroke:var(--t3);stroke-width:.6;stroke-dasharray:2 3;opacity:.4}
+.tj-null{stroke:var(--t2);stroke-width:1;opacity:.55}
+.tj-fl-o{fill:var(--bias-bull);opacity:.13}
+.tj-fl-u{fill:var(--bias-bear);opacity:.13}
+.tj-li-o,.tj-li-u{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.tj-li-o{stroke:var(--bias-bull)}
+.tj-li-u{stroke:var(--bias-bear)}
+.tj-pk-o,.tj-pk-u{fill:var(--card);stroke-width:1.5}
+.tj-pk-o{stroke:var(--bias-bull)}
+.tj-pk-u{stroke:var(--bias-bear)}
+.tj-eq-leer{height:150px;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:var(--fs-base)}
+/* Kalender: Mo-Fr breit, Sa/So schmal, Woche rechts */
+.tj-kal-kopf,.tj-kal-reihe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) repeat(2,minmax(0,.46fr)) minmax(0,.86fr);gap:6px}
+.tj-kal-reihe{margin-top:6px}
+.tj-kal-kopf>div{font-size:var(--fs-xs);font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;padding:0 8px 2px}
+.tj-kal-kopf>.we{text-align:center;padding:0 2px 2px}
+.tj-kal-kopf .kurz{display:none}
+.tj-tag{min-height:128px;background:rgba(var(--t3-rgb),.035);border:1px solid var(--bd);border-radius:10px;padding:8px 8px 7px;display:flex;flex-direction:column;gap:5px;cursor:pointer;min-width:0;transition:border-color .15s,box-shadow .15s}
+.tj-tag.plus{background:color-mix(in srgb,var(--bias-bull) 7%,var(--card));border-color:color-mix(in srgb,var(--bias-bull) 30%,var(--bd))}
+.tj-tag.minus{background:color-mix(in srgb,var(--bias-bear) 7%,var(--card));border-color:color-mix(in srgb,var(--bias-bear) 30%,var(--bd))}
+.tj-tag.heute{box-shadow:inset 0 0 0 1px var(--ui-act);border-color:var(--ui-act)}
+.tj-tag.tj-leer{background:transparent;border-color:transparent;cursor:default}
+.tj-tag:focus-visible{outline:2px solid var(--ui-act);outline-offset:1px}
+@media (hover:hover){.tj-tag:not(.tj-leer):hover{border-color:rgba(var(--blue-rgb),.5)}}
+.tj-tk{display:flex;justify-content:space-between;align-items:center;gap:4px;min-width:0}
+.tj-tn{font-size:var(--fs-sm);font-weight:700;color:var(--t2);font-family:var(--ff-num);min-width:22px;height:22px;display:inline-flex;align-items:center}
+.tj-tag.heute .tj-tn{background:var(--ui-act);color:var(--ui-act-fg);border-radius:999px;justify-content:center;padding:0 6px}
+.tj-tc{font-size:var(--fs-xs);color:var(--t3);font-weight:600;white-space:nowrap}
+.tj-ts{font-size:var(--fs-lg);font-weight:800;font-family:var(--ff-num);font-variant-numeric:tabular-nums;line-height:1.15}
+.tj-tsk{display:none;font-family:var(--ff-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tj-tag.we{padding:8px 4px 7px;align-items:center}
+.tj-tag.we .tj-ts{display:none}
+.tj-tag.we .tj-tsk{display:block;font-size:var(--fs-sm);font-weight:800}
+.tj-zeilen{display:flex;flex-direction:column;gap:4px;min-width:0}
+.tj-zl{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"a p" "d p";align-items:center;column-gap:6px;row-gap:2px;width:100%;min-height:34px;text-align:left;padding:4px 7px;border:1px solid var(--bd);border-left:3px solid var(--bias-neu);border-radius:6px;background:var(--card);cursor:pointer;font:inherit;color:var(--t0);min-width:0}
+.tj-zl.win{border-left-color:var(--bias-bull)}
+.tj-zl.loss{border-left-color:var(--bias-bear)}
+@media (hover:hover){.tj-zl:hover{border-color:rgba(var(--blue-rgb),.45)}}
+.tj-za{grid-area:a;font-size:var(--fs-sm);font-weight:700;overflow-wrap:anywhere;line-height:1.25}
+.tj-zl .tj-side{grid-area:d;justify-self:start}
+.tj-zp{grid-area:p;font-size:var(--fs-sm);font-family:var(--ff-num);font-variant-numeric:tabular-nums}
+.tj-zl.win .tj-zp{color:var(--bias-bull)}
+.tj-zl.loss .tj-zp{color:var(--bias-bear)}
+.tj-zl.be .tj-zp{color:var(--bias-neu)}
+.tj-side{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;font-size:var(--fs-xs);font-weight:700;letter-spacing:.2px;white-space:nowrap}
+.tj-side.long{color:var(--bias-bull);background:color-mix(in srgb,var(--bias-bull) 12%,transparent)}
+.tj-side.short{color:var(--bias-bear);background:color-mix(in srgb,var(--bias-bear) 12%,transparent)}
+.tj-woche{border-radius:10px;background:rgba(var(--t3-rgb),.07);border:1px solid var(--bd);padding:8px 10px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.tj-woche.plus{background:color-mix(in srgb,var(--bias-bull) 9%,var(--card))}
+.tj-woche.minus{background:color-mix(in srgb,var(--bias-bear) 9%,var(--card))}
+.tj-wl{font-size:var(--fs-xs);font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.tj-wp{font-size:var(--fs-md);font-weight:800;font-family:var(--ff-num);font-variant-numeric:tabular-nums}
+.tj-wpk{display:none;font-size:var(--fs-xs);font-weight:800;font-family:var(--ff-num);white-space:nowrap}
+.tj-wn,.tj-wq{font-size:var(--fs-sm);color:var(--t2)}
+/* Tabelle */
+.tj-tab-wrap{container-type:inline-size}
+.tj-tab{width:100%;border-collapse:collapse;table-layout:fixed;font-size:var(--fs-base)}
+.tj-tab th{text-align:left;font-size:var(--fs-xs);color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.6px;padding:0 10px 8px;border-bottom:1px solid var(--bd)}
+.tj-tab td{height:42px;padding:0 10px;border-bottom:1px solid var(--bd);color:var(--t1);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tj-tab td i{color:var(--t3)}
+.tj-tab .r{text-align:right;white-space:nowrap}
+.tj-tab .c-d{width:132px}.tj-tab .c-s{width:86px}.tj-tab .c-set{width:28%}.tj-tab .c-r{width:80px}.tj-tab .c-p{width:118px}
+.tj-tab tbody tr{cursor:pointer}
+.tj-tab tbody tr.win td:first-child{box-shadow:inset 3px 0 0 var(--bias-bull)}
+.tj-tab tbody tr.loss td:first-child{box-shadow:inset 3px 0 0 var(--bias-bear)}
+@media (hover:hover){.tj-tab tbody tr:hover{background:rgba(var(--blue-rgb),.05)}}
+@container (max-width:640px){.tj-tab .c-set{display:none}}
+.tj-tab .c-a-s{display:none}
+/* Schmal: Long/Short unter den Namen statt eigener Spalte - sonst bleiben
+   dem Asset ~12 px und der Name steht buchstabenweise untereinander
+   (gemessen 2026-10-24 bei 390 px). */
+@container (max-width:460px){.tj-tab .c-r,.tj-tab .c-s{display:none}.tj-tab .c-d{width:84px}.tj-tab .c-p{width:88px}
+  .tj-tab td,.tj-tab th{padding-left:6px;padding-right:6px}.tj-tab td{height:auto;padding-top:7px;padding-bottom:7px}
+  .tj-tab .c-a-s{display:block;margin-top:3px}}
+.tj-leertext{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--t3);font-size:var(--fs-base);padding:6px 0}
+/* Kurs-Chart mit Positions-Werkzeug (Editor + Detail) */
+.tj-chart,.tjv-chart{position:relative;min-height:250px;border:1px solid var(--bd);border-radius:10px;background:rgba(var(--t3-rgb),.03);overflow:hidden}
+.tj-ch{position:relative}
+.tj-ch .chv{position:relative}
+.tj-ch.edit{cursor:crosshair}
+.tj-ch-hd{position:absolute;inset:0;pointer-events:none}
+.tj-hd{position:absolute;left:12px;transform:translateY(-50%);display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:6px;font-family:var(--ff-num);font-size:var(--fs-xs);font-weight:600;color:#FFFFFF;white-space:nowrap;box-shadow:0 1px 3px rgba(20,27,46,.2);pointer-events:none;font-variant-numeric:tabular-nums}
+.tj-hd b{font-weight:800}
+.tj-hd.k-tp{background:var(--bias-bull)}
+.tj-hd.k-sl{background:var(--bias-bear)}
+.tj-hd.k-entry{background:var(--ui-act);color:var(--ui-act-fg)}
+.tj-hd.k-exit{background:var(--card);color:var(--t0);border:1px solid var(--t2);box-shadow:none}
+.tj-hd.zieh{pointer-events:auto;cursor:ns-resize;touch-action:none}
+.tj-hd.zieh::after{content:'';position:absolute;inset:-8px -6px}
+.tj-hd.aktiv{box-shadow:0 0 0 3px rgba(var(--ui-act-rgb),.28)}
+.tj-hd-griff{width:6px;height:10px;background:repeating-linear-gradient(to bottom,currentColor 0 1px,transparent 1px 3px);opacity:.75}
+.tj-l-entry,.tj-l-sl,.tj-l-tp{stroke-width:1.5}
+.tj-l-entry{stroke:var(--ui-act)}
+.tj-l-sl{stroke:var(--bias-bear)}
+.tj-l-tp{stroke:var(--bias-bull)}
+.tj-l-exit{stroke:var(--t1);stroke-width:1.3;stroke-dasharray:5 4}
+.tj-z-tp{fill:var(--bias-bull);opacity:.1}
+.tj-z-sl{fill:var(--bias-bear);opacity:.1}
+.tj-tagmarke{stroke:var(--ui-act);stroke-width:1;stroke-dasharray:3 3;opacity:.55}
+.tj-ch-leer{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:16px;font-size:var(--fs-base);color:var(--t1)}
+.tj-ch-leer i{font-size:var(--fs-sm);color:var(--t3)}
+/* Editor */
+.modal.tj-ed{max-width:min(1080px,96vw)}
+.tj-ed-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);gap:18px;align-items:start}
+.tj-ed-ch-kopf{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.tj-ed-ch-kopf b{font-size:var(--fs-md);color:var(--t0)}
+.tj-ed-ch-kopf i{font-size:var(--fs-sm);color:var(--t3)}
+.tj-rr{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:var(--fs-sm);color:var(--t2);font-variant-numeric:tabular-nums;min-height:22px}
+.tj-rr b{color:var(--t0)}
+.tj-rr i{color:var(--t3)}
+.tj-sep{color:var(--t3)}
+.tj-warn{color:var(--bias-bear);background:color-mix(in srgb,var(--bias-bear) 9%,transparent);padding:2px 8px;border-radius:999px;font-weight:600;font-size:var(--fs-xs)}
+.tj-f2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:10px}
+.tj-f{margin-bottom:10px;min-width:0}
+.tj-lbl{font-size:var(--fs-xs);font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.tj-ed .finp:not(textarea){height:40px}
+.tj-ed textarea.finp{min-height:72px;resize:vertical}
+.tj-seg{display:grid;grid-template-columns:1fr 1fr;height:40px;border:1px solid var(--bd2);border-radius:var(--rs);overflow:hidden}
+.tj-seg-b{border:0;background:var(--bg3);color:var(--t2);font-family:var(--ff-num);font-size:var(--fs-base);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.tj-seg-b+.tj-seg-b{border-left:1px solid var(--bd2)}
+.tj-seg-b::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--bias-bull)}
+.tj-seg-b[data-dir="short"]::before{background:var(--bias-bear)}
+.tj-seg-b.on{background:var(--ui-act);color:var(--ui-act-fg)}
+.tj-exit{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px}
+.tj-exit .btn{height:40px}
+.tj-hit-tp{color:var(--bias-bull)}
+.tj-hit-sl{color:var(--bias-bear)}
+.tj-err{color:var(--bias-bear);font-size:var(--fs-sm);font-weight:600;margin-bottom:8px}
+/* Detail-Fenster */
+.modal.tjv{max-width:min(780px,96vw)}
+.tjv-kopf{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:14px 16px;border-radius:10px;border:1px solid var(--bd);border-left:4px solid var(--bias-neu);background:rgba(var(--t3-rgb),.05);margin-bottom:12px}
+.tjv-kopf.win{border-left-color:var(--bias-bull);background:color-mix(in srgb,var(--bias-bull) 7%,var(--bg2))}
+.tjv-kopf.loss{border-left-color:var(--bias-bear);background:color-mix(in srgb,var(--bias-bear) 7%,var(--bg2))}
+.tjv-asset{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:var(--fs-xl);font-weight:800;color:var(--t0)}
+.tjv-datum{margin-top:4px;font-size:var(--fs-sm);color:var(--t2)}
+.tjv-kr{text-align:right}
+.tjv-erg{font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2)}
+.tjv-kopf.win .tjv-erg{color:var(--bias-bull)}
+.tjv-kopf.loss .tjv-erg{color:var(--bias-bear)}
+.tjv-pnl{display:block;font-size:var(--fs-hero);font-weight:800;font-family:var(--ff-num);font-variant-numeric:tabular-nums;line-height:1.15}
+.tjv-kacheln{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.tjv-k{border:1px solid var(--bd);border-radius:var(--rs);padding:8px 10px;background:var(--card);min-width:0}
+.tjv-kv{margin-top:3px;font-size:var(--fs-lg);font-family:var(--ff-num);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tjp{padding:26px 14px 30px;margin-bottom:4px}
+.tjp-bahn{position:relative;height:8px;border-radius:4px;background:rgba(var(--t3-rgb),.14)}
+.tjp-zone{position:absolute;top:0;bottom:0}
+.tjp-zone.risk{background:color-mix(in srgb,var(--bias-bear) 45%,transparent)}
+.tjp-zone.reward{background:color-mix(in srgb,var(--bias-bull) 45%,transparent)}
+.tjp-mk{position:absolute;top:50%;transform:translate(-50%,-50%)}
+.tjp-pkt{display:block;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg2);box-shadow:0 0 0 1px rgba(20,27,46,.2)}
+.tjp-mk.k-sl .tjp-pkt{background:var(--bias-bear)}
+.tjp-mk.k-tp .tjp-pkt{background:var(--bias-bull)}
+.tjp-mk.k-entry .tjp-pkt{background:var(--ui-act)}
+.tjp-mk.k-exit .tjp-pkt{background:var(--bg2);border-color:var(--t1);box-shadow:none}
+.tjp-lbl{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);white-space:nowrap;font-family:var(--ff-num);font-size:var(--fs-xs);font-weight:600;color:var(--t2);font-variant-numeric:tabular-nums}
+.tjp-lbl b{color:var(--t0)}
+.tjp-mk.unten .tjp-lbl{bottom:auto;top:18px}
+.tjp-mk.li .tjp-lbl{left:-4px;transform:none}
+.tjp-mk.re .tjp-lbl{left:auto;right:-4px;transform:none}
+.tjv-ch-kopf{margin:6px 0 6px;font-size:var(--fs-base);color:var(--t0)}
+.tjv-ch-kopf i{font-size:var(--fs-sm);color:var(--t3)}
+.tjv-notiz{margin-top:12px;padding:10px 12px;border-radius:var(--rs);background:rgba(var(--t3-rgb),.06)}
+.tjv-notiz i{display:block;margin-top:4px;white-space:pre-wrap;color:var(--t1);font-size:var(--fs-base)}
+/* Tages-Fenster */
+.tjd-sum{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-size:var(--fs-base);color:var(--t2)}
+.tjd-sum>b{font-size:var(--fs-lg);font-family:var(--ff-num)}
+.tjd-liste{display:flex;flex-direction:column;gap:6px}
+.tjd-z{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:44px;padding:6px 12px;border:1px solid var(--bd);border-left:3px solid var(--bias-neu);border-radius:var(--rs);background:var(--card);cursor:pointer;font:inherit;color:var(--t0);text-align:left;font-variant-numeric:tabular-nums}
+.tjd-z.win{border-left-color:var(--bias-bull)}
+.tjd-z.loss{border-left-color:var(--bias-bear)}
+.tjd-a{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.tjd-a i{font-size:var(--fs-sm);color:var(--t3)}
+/* 3 + 2 statt 3 + 2 + Loch: sechs Spuren, oben je 2, unten je 3. */
+@media (max-width:1180px){
+  .tj-kacheln{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .tj-kachel{grid-column:span 2}
+  .tj-kachel:nth-child(n+4){grid-column:span 3}
+}
+@media (max-width:860px){
+  .tj-ed-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+  .tj-kacheln{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .tj-kachel,.tj-kachel:nth-child(n+4){grid-column:span 1}
+  .tj-kachel{padding:10px 12px 12px;min-height:0}
+  .tj-kachel.net{grid-column:span 2}
+  .tj-kv{font-size:var(--fs-lg)}
+  .tj-kv-xl{font-size:var(--fs-xl)}
+  .tj-kal-kopf,.tj-kal-reihe{grid-template-columns:repeat(5,minmax(0,1fr)) repeat(2,minmax(0,.62fr)) minmax(0,1.1fr);gap:3px}
+  .tj-kal-reihe{margin-top:3px}
+  .tj-kal-kopf>div{padding:0 1px 2px;letter-spacing:0;text-align:center}
+  .tj-kal-kopf .lang{display:none}
+  .tj-kal-kopf .kurz{display:inline}
+  .tj-tag.we{padding:4px 1px}
+  .tj-tag.heute .tj-tn{min-width:0;height:18px;padding:0 3px}
+  .tj-tag,.tj-tag.we{min-height:62px;padding:4px 2px;gap:2px;border-radius:7px;align-items:center}
+  .tj-tk{justify-content:center}
+  .tj-tn{min-width:20px;height:20px}
+  .tj-tc,.tj-ts,.tj-zeilen{display:none}
+  .tj-tsk,.tj-tag.we .tj-tsk{display:block;font-size:var(--fs-xs);font-weight:800;letter-spacing:-.2px}
+  .tj-woche{padding:4px 3px;border-radius:7px;align-items:center;text-align:center;gap:1px}
+  .tj-wl{letter-spacing:0;text-transform:none}
+  .tj-wp,.tj-wq{display:none}
+  .tj-wpk{display:block}
+  .tj-wn{font-size:var(--fs-xs)}
+  .tjv-asset{font-size:var(--fs-lg)}
+  .tjv-pnl{font-size:var(--fs-xl)}
+  .tj-card{padding:12px 12px 14px}
+}
 .wl-row.wl-click{cursor:pointer}
 @media(hover:hover){.wl-row.wl-click:hover .wl-name{text-decoration:underline;color:var(--t0)}}
 /* ⚠ War frueher @media(max-width:560px), also an der FENSTERbreite. Seit die
@@ -6640,11 +6891,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-623 - Makro-Analyse schnell: nur die Makro-Reihe neu, kein doppeltes Zeichnen, Logo-Pruefung je Karte."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-625 - Makro-Analyse schnell: nur die Makro-Reihe neu, kein doppeltes Zeichnen, Logo-Pruefung je Karte (zusammengefuehrt mit Journal 623/624)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-623</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-625</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -6782,6 +7033,72 @@ window.fxLogoSvg=function(art){
     <button class="btn g" onclick="openAddPair('Watchlist')">&#65291; Add pair</button>
   </div>
   <div id="watchBody"></div>
+</div>
+<!-- PAGE: JOURNAL (Nutzer-Wunsch 2026-10-24: eigene Trades im Kalender,
+     Aufbau in renderJournal(), js/trades.js) -->
+<div class="pc" id="pgJournal" style="display:none">
+  <div style="margin-bottom:11px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px">
+    <div><div class="pg-titel">Journal</div><div class="pg-sub">Your trades by day &middot; asset, direction, P/L &middot; tap a trade for all details</div></div>
+    <button class="btn g" onclick="tjNeu()">&#65291; Add trade</button>
+  </div>
+  <div id="journalBody"></div>
+</div>
+<!-- MODAL: Trade ansehen (Journal) - Kopf, Kacheln, Preisleiste, Kurs-Chart -->
+<div class="ov" id="mTradeView" style="display:none">
+  <div class="modal tjv">
+    <h3 id="tjvTitle">Trade details</h3>
+    <div id="tjvBody"></div>
+    <div class="m-btns"><button class="btn" style="color:var(--bias-bear);border-color:rgba(var(--red-rgb),.35)" onclick="tjLoeschen()">Delete</button><button class="btn" onclick="tjBearbeiten()">Edit</button><button class="btn g" onclick="closeM('mTradeView')">Done</button></div>
+  </div>
+</div>
+<!-- MODAL: Trades eines Tages (Journal, kompakte Zellen: Handy/Wochenende) -->
+<div class="ov" id="mTradeDay" style="display:none">
+  <div class="modal" style="max-width:440px">
+    <h3 id="tjdTitle">Trades</h3>
+    <div id="tjdBody"></div>
+    <div class="m-btns"><button class="btn" onclick="tjTagNeu()">&#65291; Add trade</button><button class="btn g" onclick="closeM('mTradeDay')">Done</button></div>
+  </div>
+</div>
+<!-- MODAL: Trade eintragen/bearbeiten (Journal) - in MODAL_GUARD_TABELLE (mTrade).
+     Links Kurs-Chart mit Positions-Werkzeug (Entry/SL/TP ziehen), rechts die
+     Felder. Nutzer 2026-10-24: "ein Preis Chart zu dem Asset ... so ein
+     Werkzeug wie auf trading view ... stoploss und takeprofit rausziehen". -->
+<div class="ov" id="mTrade" style="display:none">
+  <div class="modal tj-ed">
+    <h3 id="tjFormTitle">New trade</h3>
+    <div id="tjErr" class="tj-err" hidden></div>
+    <div class="tj-ed-grid">
+      <div class="tj-ed-chart">
+        <div class="tj-ed-ch-kopf"><b id="tjChTitel">Price chart</b><i>daily · tap to place · drag Entry, SL and TP</i></div>
+        <div id="tjChart" class="tj-chart"></div>
+        <div id="tjRR" class="tj-rr"></div>
+      </div>
+      <div class="tj-ed-form">
+        <div class="tj-f2">
+          <div><div class="tj-lbl">Date</div><input class="finp" id="tjDate" type="date" onchange="tjEdEingabe(true)"></div>
+          <div><div class="tj-lbl">Time</div><input class="finp" id="tjTime" type="time"></div>
+        </div>
+        <div class="tj-f"><div class="tj-lbl">Asset</div><input class="finp" id="tjAsset" list="tjAssetList" placeholder="e.g. EUR/USD, GOLD, NAS100" autocomplete="off" oninput="tjEdEingabe(true)"><datalist id="tjAssetList"></datalist></div>
+        <div class="tj-f"><div class="tj-lbl">Direction</div>
+          <div class="tj-seg" role="group" aria-label="Direction"><button type="button" class="tj-seg-b" data-dir="long" aria-pressed="true" onclick="tjRichtung('long')">Long</button><button type="button" class="tj-seg-b" data-dir="short" aria-pressed="false" onclick="tjRichtung('short')">Short</button></div>
+          <input type="hidden" id="tjDir" value="long"></div>
+        <div class="tj-f2">
+          <div><div class="tj-lbl">Entry</div><input class="finp" id="tjEntry" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08500" oninput="tjEdEingabe()"></div>
+          <div><div class="tj-lbl">Size</div><input class="finp" id="tjSize" placeholder="e.g. 1.0 lot"></div>
+        </div>
+        <div class="tj-f2">
+          <div><div class="tj-lbl">Stop loss</div><input class="finp" id="tjSl" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08200" oninput="tjEdEingabe()"></div>
+          <div><div class="tj-lbl">Take profit</div><input class="finp" id="tjTp" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.09500" oninput="tjEdEingabe()"></div>
+        </div>
+        <div class="tj-f"><div class="tj-lbl">Exit</div>
+          <div class="tj-exit"><input class="finp" id="tjExit" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.09100" oninput="tjEdEingabe()"><button type="button" class="btn tj-hit-tp" onclick="tjExitAuf('tp')" title="Exit = take profit">Hit TP</button><button type="button" class="btn tj-hit-sl" onclick="tjExitAuf('sl')" title="Exit = stop loss">Hit SL</button></div></div>
+        <div class="tj-f"><div class="tj-lbl">P/L (profit / loss)</div><input class="finp" id="tjPnl" type="number" step="any" inputmode="decimal" placeholder="e.g. 250 or -120"></div>
+        <div class="tj-f"><div class="tj-lbl">Setup</div><input class="finp" id="tjSetup" placeholder="e.g. Breakout, COT reversal, NFP fade"></div>
+        <div class="tj-f"><div class="tj-lbl">Notes</div><textarea class="finp" id="tjNotes" rows="3" placeholder="What went well, what to change"></textarea></div>
+      </div>
+    </div>
+    <div class="m-btns"><button class="btn" onclick="closeMGuarded('mTrade')">Cancel</button><button class="btn g" onclick="tjFormSpeichern()">Save trade</button></div>
+  </div>
 </div>
 
 <!-- MODAL: Preis-Alerts (Level ueber-/unterschritten -> Telegram) -->

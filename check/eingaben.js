@@ -82,6 +82,8 @@ const OEFFNER = {
   mRateWatch: [`openRateWatchEdit('USD')`],
   mIndLink: [`openIndLinkEdit('USD|CPI','https://example.org/cpi')`],
   mCloud: [`openCloudM()`],
+  // Journal: "+ Add trade" und Tipp auf einen Kalendertag (Datum vorbelegt).
+  mTrade: [`tjNeu()`, `tjNeu('2026-10-01')`],
 };
 
 (async () => {
