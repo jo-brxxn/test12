@@ -70,7 +70,7 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
         return { n: k.length, breit: t ? Math.round(t.getBoundingClientRect().width) : 0, board: Math.round(board),
           aktiv: t ? (t.querySelector('.mk-tab.on') || {}).textContent : null, reiter: t ? [...t.querySelectorAll('.mk-tab')].map(x => x.textContent) : [],
           tabellen: [...document.querySelectorAll('#detail .rub-card')].filter(c => MAKRO.includes((c.querySelector('.rub-inp') || {}).value) && c.querySelector('.ind-table')).length,
-          spuren: t ? t.querySelectorAll('.mk-spur').length : 0, svg: t ? t.querySelectorAll('.mk-spur svg').length : 0, chipsOn: t ? t.querySelectorAll('.mk-chip.on').length : 0,
+          spuren: t ? t.querySelectorAll('.mk-spur:not(.mk-spur-preis)').length : 0, svg: t ? t.querySelectorAll('.mk-spur:not(.mk-spur-preis) svg').length : 0, chipsOn: t ? t.querySelectorAll('.mk-chip.on').length : 0,
           kein: !!document.querySelector('#detail .mk-an, #detail .mk-an-o'), txt: t ? t.textContent : '' };
       }, MAKRO);
       if (a.n !== 1) { fail(`${ort} ${id}`, `Charts: ${a.n} Reiter-Karten statt genau einer`); continue; }
@@ -85,7 +85,7 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
         await p.evaluate(r => makroTab(r), r); await p.waitForTimeout(450);
         if (GP) await p.evaluate(() => { const v = document.querySelector('#mkTabKarte .mk-spur-kopf .mk-kv b'); if (v) v.textContent = '999'; });
         const s = await p.evaluate(() => { const t = document.getElementById('mkTabKarte');
-          return { aktiv: (t.querySelector('.mk-tab.on') || {}).textContent, koepfe: [...t.querySelectorAll('.mk-spur')].map(sp => ({ name: sp.querySelector('.mk-spur-name').textContent.trim(),
+          return { aktiv: (t.querySelector('.mk-tab.on') || {}).textContent, koepfe: [...t.querySelectorAll('.mk-spur:not(.mk-spur-preis)')].map(sp => ({ name: sp.querySelector('.mk-spur-name').textContent.trim(),
             werte: [...sp.querySelectorAll('.mk-kv')].slice(0, 3).map(x => x.querySelector('b').textContent.trim()), svg: !!sp.querySelector('svg') })), txt: t.textContent }; });
         if (s.aktiv !== r) fail(`${ort} ${id}`, `Reiter "${r}" geklickt, aktiv "${s.aktiv}"`);
         s.koepfe.forEach(k => {
@@ -110,7 +110,7 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
         const vor = s.koepfe.length;
         await p.evaluate(() => { const t = document.getElementById('mkTabKarte'); const x = t.querySelector('.mk-chip:not(.on)') || t.querySelector('.mk-chip.on'); x.click(); });
         await p.waitForTimeout(450);
-        const nach = await p.evaluate(() => document.querySelectorAll('#mkTabKarte .mk-spur').length);
+        const nach = await p.evaluate(() => document.querySelectorAll('#mkTabKarte .mk-spur:not(.mk-spur-preis)').length);
         if (nach === vor && !GP) fail(`${ort} ${id} ${r}`, `Chip-Klick ohne Wirkung (${vor} -> ${nach} Spuren)`);
         if (w >= 900) {
           const lese = await p.evaluate(() => { const t = document.getElementById('mkTabKarte'); const sp = t.querySelector('.mk-spuren'); const s = sp && sp.querySelector('svg'); if (!s) return null; const rc = s.getBoundingClientRect();
@@ -118,6 +118,27 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
           if (lese === 0) fail(`${ort} ${id} ${r}`, 'Hover schreibt nichts in die Lesezeile');
         }
       }
+      // G) Analyse-Werkzeuge (2026-10-24): Vergleich, Statistik, Zinsentscheide, Kurs
+      const g = await p.evaluate(async () => {
+        const vor = makroOptWert(); makroTab('Inflation'); makroVergleich('EUR'); await new Promise(r => setTimeout(r, 450));
+        const k = document.getElementById('mkTabKarte'); const eigen = getSym().id === 'GOLD' ? 'USD' : getSym().id;
+        const r = { eigen, cmpL: k.querySelectorAll('.mk-cmp-l[data-ccy="EUR"]').length, legende: [...k.querySelectorAll('.mk-spur-cmp')].some(x => /EUR/.test(x.textContent)),
+          preis: !!k.querySelector('.mk-spur-preis .mk-preis-l'), stat: k.querySelectorAll('.mk-spur-stat').length, spuren: k.querySelectorAll('.mk-spur:not(.mk-spur-preis)').length, falsch: [] };
+        // Statistik unabhaengig nachrechnen: 3M-Veraenderung der ersten Spur
+        const rub = getSym().rubrics.find(x => x.name === 'Inflation'); const ind = rub.indicators.find(i => indName(i) === k.querySelector('.mk-spur-name').textContent.trim());
+        const pts = indChartSeries(ind, getSym().id).pts.map(q => [String(q[0]).slice(0, 10), +q[1]]).filter(q => isFinite(q[1]));
+        const l = pts[pts.length - 1]; const z = new Date(l[0] + 'T00:00:00Z'); z.setUTCMonth(z.getUTCMonth() - 3); let b = null; pts.forEach(q => { if (Date.parse(q[0] + 'T00:00:00Z') <= z.getTime()) b = q; });
+        const st = mkStatistik({ ind, pts: indChartSeries(ind, getSym().id).pts.map(q => [String(q[0]).slice(0, 10), +q[1], q[2] == null ? null : +q[2]]), unit: '' }, getSym().id);
+        if (b && z.getTime() - Date.parse(b[0] + 'T00:00:00Z') <= 62 * 864e5 && Math.abs(st.ch[3] - (l[1] - b[1])) > 1e-9) r.falsch.push(`3M ${st.ch[3]} statt ${l[1] - b[1]}`);
+        // Zinsentscheide = Aenderungen der Leitzinsreihe im Fenster, je Spur eine Linie
+        const R = rub.mkRange == null ? 36 : rub.mkRange; const ab = new Date(); if (R !== 'MAX') ab.setUTCMonth(ab.getUTCMonth() - R);
+        r.zinsSoll = mkZinsentscheide(eigen).filter(e => R === 'MAX' || Date.parse(e.d + 'T00:00:00Z') >= ab.getTime() + 31 * 864e5).length; r.zinsLinien = k.querySelectorAll('.mk-spur:first-child .mk-zins').length;
+        if (!vor.cmp.includes('EUR')) makroVergleich('EUR'); return r; });
+      if (g.cmpL < 1 || !g.legende) fail(`${ort} ${id} VERGLEICH`, `EUR gewaehlt, ${g.cmpL} EUR-Linien, Legende ${g.legende}`);
+      if (!g.preis) fail(`${ort} ${id} KURS`, 'keine Kurs-Spur');
+      if (g.stat !== g.spuren) fail(`${ort} ${id} STATISTIK`, `${g.stat} Statistikzeilen fuer ${g.spuren} Spuren`);
+      g.falsch.forEach(x => fail(`${ort} ${id} STATISTIK`, x));
+      if (g.zinsSoll && !g.zinsLinien && !GP) fail(`${ort} ${id} ZINS`, `${g.zinsSoll} Zinsentscheide in der Reihe, aber keine Markerlinie`);
       // E) Sync-Weg: Ansicht + Reiter ueberleben snap -> applySnap
       const e = await p.evaluate(() => { const s = snap(); const o = JSON.parse(s); return { ans: o.mkAnsicht, tab: o.mkTab }; });
       if (e.ans !== 'charts' || !a.reiter.includes(e.tab)) fail(`${ort} ${id} SYNC`, `snap traegt mkAnsicht=${e.ans}, mkTab=${e.tab}`);

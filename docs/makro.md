@@ -39,4 +39,10 @@ zum analysieren“) | Zahlen je Spur, **„abgetrennt und übersichtlich — das
   bleiben unangetastet im Speicher (Sanitizer + `neueFelderBehalten`).
 - **Speicher** über `snap` → Undo + Sync: `mkAnsicht`, `mkTab`, `rub.mkInds`, `rub.mkRange`.
   Alle vier stehen in `neueFelderBehalten()` (eine noch offene alte App lässt sie weg).
+- **Analyse-Werkzeuge (seit 622, Nutzer 2026-10-24: „richtiges Analyse Tool“)**, Zeile *Compare | Show* unter den Chips:
+  - **Compare**: bis zu 3 Währungen; gleicher Indikator (gleiche Karte, gleicher Name) als farbige Linie (`--tf1..6`), Kopfzeile je Währung *Wert | Gap* (eigener − fremder, letzte Werte). Kein Gegenstück → Hinweis, nie ein Ersatzwert.
+  - **Statistik je Spur**: 3M/6M/1Y-Veränderung (Vergleichspunkt höchstens 62 Tage vor dem Stichtag), 10y-Perzentil, z-Wert, 10y-Spanne, *beat · miss · in line* der letzten 12 Releases mit Forecast, Serie ab 2.
+  - **Zinsentscheide**: jede Leitzinsänderung ≥ 5 bp (`nivReihe(nivEintrag(ccy,'Central Bank Rate'))`) als gestrichelte Linie durch alle Spuren, Erhöhung Bull-Farbe, Senkung Bear-Farbe, bp unter der Zeitachse.
+  - **Price**: Kurs (`preisReiheAnzeige`, Währung = Korb) als eigene Spur, *Last | Shown | 1Y*.
+  - Speicher: `mkOpt` {cmp, preis} über `snap` + `neueFelderBehalten`.
 - **Nur Anzeige** — nichts davon ändert den Score.

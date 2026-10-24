@@ -20546,3 +20546,12 @@ die Folgeentwicklung vorhersagen?
 - **Jetzt:** Ziel **blau** (`--blue`), gestrichelt 6/4, 1,6 px; Beschriftung blau; Band (AUD/CAD/NZD/CHF) blass blau (7 %). Median/50/0 bleiben grau — *keine Ziele*.
 - ⚠ Datenlinie ist ebenfalls blau — unterscheidbar durch Strichelung + Beschriftung „Target …“.
 - **Wächter:** `check/makro.js` C prüft `.mk-ziel` = Blau, gestrichelt, waagerecht; Gegenprobe rot.
+
+## 2026-10-24 — VERSION-CHECK-622: Makro-Charts als Analyse-Werkzeug
+
+- **Nutzer:** *„Veränder die Funktion zu einem richtigen Analyse Tool mach es perfekt du hast 40min Zeit“* — Rückfrage: alle vier Werkzeuge.
+- **Compare** (max. 3 Währungen, Linie + *Wert | Gap* je Spur) · **Statistik je Spur** (3M/6M/1Y, 10y pct, z, 10y range, beat/miss/in line, Serie) · **Zinsentscheide** als Marker · **Kurs-Spur**.
+- Gemessen USD: EUR+GBP → 6 Vergleichslinien, 7 Zinsentscheide im 3Y-Fenster (−50 … +25 bp), Kurs-Spur da, keine JS-Fehler (1180 + 390 px).
+- „Beat 0/12“ beim Leitzins las sich wie 12 Verfehlungen → getrennt *beat · miss · in line*.
+- Wächter `check/makro.js` G: Vergleichslinie + Legende, Kurs-Spur, Statistik je Spur, 3M-Veränderung unabhängig nachgerechnet, Zinsmarker vorhanden.
+- ⚠ *Nicht gelaufen (Zeitlimit 40 min):* Volllauf `check/all.js`, `altgeraet.js` mit `mkOpt`.

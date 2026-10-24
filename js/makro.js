@@ -41,7 +41,8 @@
 // nicht loeschen.
 import {escH,escJH,getSym,save,renderDetail,stripPeriodSuffix,indName,isNonFx,macroCcyFor,
   indChartSeries,fmtIndVal,achsenTicks,INFL_ZIEL,indNextTermin,indNextExpected,
-  chartLeisteHtml,markUserEditTs,indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,icn,kartenIcon} from './main.js';
+  chartLeisteHtml,markUserEditTs,indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,icn,kartenIcon,
+  syms,nivEintrag,nivReihe,preisReiheAnzeige} from './main.js';
 import {indScore,fmtScNum,rubScore,glowClass} from './score.js';
 import {todayStr,fmtDayHdr,parseNumLike,actualColor,LOWER_IS_BETTER_RE} from './calendar.js';
 import {BC} from './constants.js';
@@ -54,6 +55,21 @@ function makroAnsichtSetzen(v){mkAnsicht=v==='charts'?'charts':null;}
 function makroAnsichtWert(){return mkAnsicht;}
 function makroTabSetzen(v){mkTab=typeof v==='string'&&MK_RUBS.includes(v)?v:null;}
 function makroTabWert(){return mkTab;}
+// Analyse-Werkzeuge (Nutzer 2026-10-24: "Veraender die Funktion zu einem
+// richtigen Analyse Tool"; Rueckfrage: Laender-Vergleich, Statistik je Spur,
+// Zinsentscheide als Marker, Kurs als eigene Spur - alle vier).
+//   mkOpt.cmp    Waehrungen, deren gleicher Indikator mit in die Spur kommt (max. 3)
+//   mkOpt.preis  Kurs des Assets als eigene Spur unter den Indikatoren
+// Synct ueber snap (mkOpt) und steht in neueFelderBehalten().
+const MK_CCYS=['USD','EUR','GBP','JPY','CHF','CAD','AUD','NZD'];
+const MK_CMP_MAX=3;
+const MK_CMP_FARBEN=['var(--tf1)','var(--tf2)','var(--tf3)','var(--tf4)','var(--tf5)','var(--tf6)'];
+let mkOpt={cmp:[],preis:true};
+function makroOptSetzen(v){
+  const o=v&&typeof v==='object'?v:{};
+  mkOpt={cmp:Array.isArray(o.cmp)?o.cmp.filter((c,i,a)=>MK_CCYS.includes(c)&&a.indexOf(c)===i).slice(0,MK_CMP_MAX):[],preis:o.preis!==false};
+}
+function makroOptWert(){return{cmp:mkOpt.cmp.slice(),preis:mkOpt.preis};}
 const MK_RANGES=[[12,'1Y'],[36,'3Y'],[60,'5Y'],[120,'10Y'],['MAX','Max']];
 const MK_RANGE_DEF=36;
 const MK_DEF_SPUREN=3;
@@ -138,6 +154,14 @@ function makroTabKarteHtml(sym){
   const da=mkVerfuegbar(rub,sym.id),gew=mkGewaehlt(rub,sym.id);
   const chips=`<div class="mk-chips" role="group" aria-label="Indicators shown">${da.map(i=>{const on=gew.includes(i);
     return`<button class="cmp-chip mk-chip${on?' on':''}" onclick="makroSpur(${ri},'${escJH(i.id)}')" aria-pressed="${on}" title="${on?'Hide':'Show'} ${escH(indName(i))}">${escH(indName(i))}</button>`;}).join('')}</div>`;
+  // Analyse-Werkzeuge: Vergleichswaehrungen + Kurs-Spur
+  const eigen=mkCcy(sym);
+  const cmpChips=MK_CCYS.filter(c=>c!==eigen).map(c=>{const on=mkOpt.cmp.includes(c);
+    return`<button class="cmp-chip mk-cc${on?' on':''}" onclick="makroVergleich('${c}')" aria-pressed="${on}" title="${on?'Remove':'Add'} ${c}: the same indicator of the ${c} economy in every track${on?'':` (up to ${MK_CMP_MAX})`}"><span class="mk-cc-dot" style="background:${mkCmpFarbe(c,eigen)}"></span>${c}</button>`;}).join('');
+  const werkzeuge=`<div class="mk-tools">
+    <span class="mk-tools-l">Compare</span><span class="mk-tools-g" role="group" aria-label="Compare with">${cmpChips}</span>
+    <span class="mk-tools-l">Show</span><span class="mk-tools-g"><button class="cmp-chip mk-px${mkOpt.preis?' on':''}" onclick="makroPreis()" aria-pressed="${mkOpt.preis}" title="Price of ${escH(sym.name||sym.id)} as its own track on the same time axis">Price</button></span>
+  </div>`;
   // Zeichnen erst, wenn die Karte im Dokument steht (echte Pixelbreite);
   // renderDetail zeichnet zusaetzlich synchron (Scrollstand, 2026-10-20).
   try{requestAnimationFrame(()=>makroZeichnenAlle());}catch(e){}
@@ -157,6 +181,7 @@ function makroTabKarteHtml(sym){
     <div class="rub-body">
       ${makroLeisteHtml(rub,ri)}
       ${chips}
+      ${werkzeuge}
       <div class="mk-read" aria-live="polite"></div>
       <div class="mk-chart" data-ri="${ri}">${gew.length?'':'<div class="mk-leer">Pick at least one indicator above.</div>'}</div>
     </div>
@@ -185,6 +210,18 @@ function makroSicht(v,rubName){
 function makroTab(rubName){
   try{makroTabSetzen(rubName);markUserEditTs();save();renderDetail();}
   catch(e){console.error(e);alert('Could not switch the tab: '+(e&&e.message||e));}
+}
+function makroVergleich(c){
+  try{
+    if(!MK_CCYS.includes(c))return;
+    const l=mkOpt.cmp.slice();const i=l.indexOf(c);
+    if(i>=0)l.splice(i,1);else{l.push(c);if(l.length>MK_CMP_MAX)l.shift();}
+    makroOptSetzen({cmp:l,preis:mkOpt.preis});markUserEditTs();save();renderDetail();
+  }catch(e){console.error(e);alert('Could not change the comparison: '+(e&&e.message||e));}
+}
+function makroPreis(){
+  try{makroOptSetzen({cmp:mkOpt.cmp,preis:!mkOpt.preis});markUserEditTs();save();renderDetail();}
+  catch(e){console.error(e);alert('Could not change the price track: '+(e&&e.message||e));}
 }
 function makroRange(ri,v){
   try{const r=mkRub(ri);if(!r)return;delete mkZoom[mkZoomKey(ri)];r.mkRange=v==='MAX'?'MAX':+v;markUserEditTs();save();renderDetail();}
@@ -239,6 +276,83 @@ function mkSpurKopf(ind,rub,sym){
     <span class="mk-kvs">${feld('Act',escH(w.actTxt),w.actCls,'Actual — the released value')}${feld('Fc',escH(w.fcTxt),'','Forecast — what the market expected')}${feld('Prev',escH(w.prevTxt),w.prevCls,'Previous — the value before this release')}${feld('Next',next,'mk-kv-next','Next release — days until it; ~N = expected from the release rhythm')}${`<span class="mk-kv mk-kv-sc" title="Points this indicator adds to the card score"><i>Score</i><b style="color:${scFarbe}">${escH(scTxt)}</b></span>`}</span>
   </div>`;
 }
+// ── Analyse: Vergleich, Statistik, Zinsentscheide (2026-10-24) ─────────────
+function mkCmpFarbe(c,eigen){const l=MK_CCYS.filter(x=>x!==eigen);return MK_CMP_FARBEN[Math.max(0,l.indexOf(c))%MK_CMP_FARBEN.length];}
+// Gleicher Indikator einer anderen Waehrung: gleiche Karte, gleicher Name (sonst
+// gleiche Basis). Kein Gegenstueck -> kein Strich, nie ein Ersatzwert.
+function mkGegenstueck(ind,rubName,ccy){
+  const s=(syms||[]).find(x=>x.id===ccy);if(!s)return null;
+  const r=(s.rubrics||[]).find(x=>x.name===rubName);if(!r)return null;
+  const nm=indName(ind),base=stripPeriodSuffix(ind.name).base,l=r.indicators||[];
+  const i2=l.find(x=>indName(x)===nm)||l.find(x=>stripPeriodSuffix(x.name).base===base);
+  if(!i2)return null;
+  const se=mkSerie(i2,ccy);return se?{ind:i2,pts:se.pts,unit:se.unit}:null;
+}
+function mkZahl(v){return Math.abs(v)>=1e4?mkAchsWert(v):fmtIndVal(v,'');}
+function mkDelta(d,unit){if(d==null||!isFinite(d))return'–';return(d>0?'+':d<0?'−':'±')+mkZahl(Math.abs(d))+(unit==='%'?'pp':(unit||''));}
+// Letzter Punkt, der mindestens `monate` vor dem juengsten liegt (hoechstens
+// 62 Tage davor - sonst gibt es keinen Vergleichswert, nichts wird geschaetzt).
+function mkPunktVor(pts,monate){
+  const l=pts[pts.length-1];const z=new Date(l[0]+'T00:00:00Z');z.setUTCMonth(z.getUTCMonth()-monate);const zt=z.getTime();
+  let best=null;for(const p of pts){if(tagMs(p[0])<=zt)best=p;else break;}
+  return best&&zt-tagMs(best[0])<=62*864e5?best:null;
+}
+function mkStatistik(sp,symId){
+  const pts=sp.pts,l=pts[pts.length-1];
+  const ch={};[3,6,12].forEach(m=>{const p=mkPunktVor(pts,m);ch[m]=p?l[1]-p[1]:null;});
+  const ab=tagMs(todayStr())-10*365.25*864e5;const w=pts.filter(p=>tagMs(p[0])>=ab);
+  let pct=null,z=null,hi=null,lo=null;
+  if(w.length>=12){
+    const v=w.map(p=>p[1]);pct=Math.round(v.filter(x=>x<=l[1]).length/v.length*100);
+    const m=v.reduce((a,b)=>a+b,0)/v.length,sd=Math.sqrt(v.reduce((a,b)=>a+(b-m)*(b-m),0)/v.length);
+    z=sd>0?(l[1]-m)/sd:null;hi=w.reduce((a,b)=>b[1]>a[1]?b:a);lo=w.reduce((a,b)=>b[1]<a[1]?b:a);
+  }
+  // Treffer gegen den Forecast: "beat" = fuer die Waehrung besser als erwartet
+  // (dieselbe Richtung wie die Ueberraschungs-Balken, mkTon/actualColor).
+  const tons=pts.filter(p=>p[2]!=null).slice(-12).map(p=>mkTon(sp.ind,p[1],p[2],symId));
+  let serie=0,serieTon=null;
+  for(let i=tons.length-1;i>=0;i--){if(tons[i]==='neu')break;if(serieTon==null)serieTon=tons[i];if(tons[i]!==serieTon)break;serie++;}
+  return{ch,pct,z,hi,lo,beat:tons.filter(t=>t==='bull').length,miss:tons.filter(t=>t==='bear').length,n:tons.length,serie,serieTon,u:sp.unit||''};
+}
+function mkStatHtml(st){
+  const f=(l,v,t,stil)=>`<span class="mk-st"${t?` title="${escH(t)}"`:''}><i>${l}</i><b${stil?` style="${stil}"`:''}>${v}</b></span>`;
+  let h=f('3M',escH(mkDelta(st.ch[3],st.u)),'Change vs the reading about 3 months earlier')+f('6M',escH(mkDelta(st.ch[6],st.u)),'Change vs the reading about 6 months earlier')+f('1Y',escH(mkDelta(st.ch[12],st.u)),'Change vs the reading about 12 months earlier');
+  if(st.pct!=null){
+    h+=f('10y pct',st.pct,"Share of the last 10 years' readings at or below the latest one");
+    if(st.z!=null)h+=f('z',(st.z>=0?'+':'−')+Math.abs(st.z).toFixed(1),'Distance from the 10-year average in standard deviations');
+    h+=f('10y range',escH(mkZahl(st.lo[1])+' – '+mkZahl(st.hi[1])),`Low ${st.lo[0]} · high ${st.hi[0]}`);
+  }
+  if(st.n){
+    // Getrennt beat | miss | in line: "Beat 0/12" las sich beim Leitzins wie zwoelf
+    // Verfehlungen, obwohl elf Entscheide genau auf dem Forecast lagen (2026-10-24).
+    h+=f(`Last ${st.n} vs fc`,`${st.beat} beat · ${st.miss} miss · ${st.n-st.beat-st.miss} in line`,'Releases better / worse than forecast for the currency, or exactly on it');
+    if(st.serie>=2)h+=f('Streak',`${st.serie}× ${st.serieTon==='bull'?'beat':'miss'}`,'Consecutive releases on the same side of the forecast',`color:${st.serieTon==='bull'?BC.bull:BC.bear}`);
+  }
+  return`<div class="mk-spur-stat">${h}</div>`;
+}
+function mkCmpHtml(sp){
+  if(!sp.cmp.length&&!sp.cmpFehlt.length)return'';
+  const l=sp.pts[sp.pts.length-1];
+  return`<div class="mk-spur-cmp">${sp.cmp.map(c=>{const cl=c.pts[c.pts.length-1];
+    return`<span class="mk-st" title="${escH(c.ccy)} ${escH(indName(c.ind))}: ${escH(fmtIndVal(cl[1],c.unit||''))} on ${escH(cl[0])} · gap = ${escH(sp.ccy)} minus ${escH(c.ccy)}, latest readings"><span class="mk-cc-dot" style="background:${c.farbe}"></span><i>${escH(c.ccy)}</i><b>${escH(fmtIndVal(cl[1],c.unit||''))}</b><i>Gap</i><b>${escH(mkDelta(l[1]-cl[1],sp.unit))}</b></span>`;}).join('')}${sp.cmpFehlt.length?`<span class="mk-st mk-st-nd"><i>No ${escH(sp.cmpFehlt.join(', '))} series for this indicator</i></span>`:''}</div>`;
+}
+// Zinsentscheide der eigenen Notenbank: jede Aenderung des Leitzinses (>= 5 bp)
+// aus derselben Reihe, die der Score fuer "Central Bank Rate" liest.
+function mkZinsentscheide(ccy){
+  let r=[];try{r=nivReihe(nivEintrag(ccy,'Central Bank Rate'))||[];}catch(e){r=[];}
+  const out=[];for(let i=1;i<r.length;i++){const dx=r[i][1]-r[i-1][1];if(Math.abs(dx)>=0.05)out.push({d:String(r[i][0]).slice(0,10),dx});}
+  return out;
+}
+function mkZinsLinien(zins,x0,x1,xOf,yTop,H){
+  let s='';zins.forEach(z=>{const t=tagMs(z.d);if(t<x0||t>x1)return;const xx=xOf(t).toFixed(1);
+    s+=`<line class="mk-zins" x1="${xx}" x2="${xx}" y1="${yTop}" y2="${H-2}" stroke="${z.dx>0?BC.bull:BC.bear}" stroke-width="1.2" stroke-dasharray="3 3" stroke-opacity=".7"><title>Rate ${z.dx>0?'hike':'cut'} ${Math.round(z.dx*100)>0?'+':'−'}${Math.abs(Math.round(z.dx*100))} bp on ${z.d}</title></line>`;});
+  return s;
+}
+function FX_KORB(sym){return!!sym&&MK_CCYS.includes(sym.id);}
+function mkPreisPunkte(symId){
+  let r=null;try{r=preisReiheAnzeige(symId);}catch(e){r=null;}
+  return Array.isArray(r)?r.map(e=>[String(e[0]).slice(0,10),+e[1],null]).filter(p=>p[0]&&isFinite(p[1])&&p[1]>0):[];
+}
 function makroZeichnenAlle(){
   document.querySelectorAll('.mk-chart[data-ri]').forEach(box=>{try{makroZeichnen(box);}catch(e){console.error('[makro]',e);box.innerHTML='<div class="mk-leer">Chart could not be drawn: '+escH(e&&e.message||String(e))+'</div>';}});
 }
@@ -252,7 +366,12 @@ function makroZeichnen(box){
   const padR=schmal?8:12;
   const SH=20,OBEN=8,ACHSE=24;
   const heute=tagMs(todayStr());
-  const spuren=gew.map(ind=>{const s=mkSerie(ind,sym.id);return{ind,pts:s.pts,unit:s.unit,next:mkNaechster(sym,ind)};});
+  const spuren=gew.map(ind=>{const s=mkSerie(ind,sym.id);
+    const cmp=[],cmpFehlt=[];
+    mkOpt.cmp.filter(c=>c!==ccy).forEach(c=>{const g=mkGegenstueck(ind,rub.name,c);if(g)cmp.push(Object.assign(g,{ccy:c,farbe:mkCmpFarbe(c,ccy)}));else cmpFehlt.push(c);});
+    return{ind,pts:s.pts,unit:s.unit,next:mkNaechster(sym,ind),cmp,cmpFehlt,ccy};});
+  const zins=mkZinsentscheide(ccy);
+  const preisPts=mkOpt.preis?mkPreisPunkte(sym.id):[];
   // Gemeinsame Zeitachse: vom Fensterbeginn bis zum spaetesten naechsten Termin.
   const alle=spuren.flatMap(s=>s.pts);alle.sort((a,b)=>a[0].localeCompare(b[0]));
   const zoom=mkZoom[mkZoomKey(ri)];
@@ -267,13 +386,21 @@ function makroZeichnen(box){
     sp.use=vis.length>=1?vis:sp.pts.slice(-2);
     sp.ref=mkReferenz(sp.ind,ccy,sp.pts);
     const werte=[];sp.use.forEach(p=>{werte.push(p[1]);if(p[2]!=null)werte.push(p[2]);});
+    sp.cmp.forEach(c=>{c.use=c.pts.filter(p=>tagMs(p[0])>=x0&&tagMs(p[0])<=x1);c.use.forEach(p=>werte.push(p[1]));});
     if(sp.ref)werte.push(sp.ref.lo,sp.ref.hi);
     if(sp.next&&sp.next.fc!=null)werte.push(sp.next.fc);
     let lo=Math.min(...werte),hi=Math.max(...werte);
     const pad=(hi-lo)*0.1||Math.abs(hi||1)*0.05||1;sp.lo=lo-pad;sp.hi=hi+pad;
     sp.ticks=achsenTicks(sp.lo,sp.hi,schmal?3:4).filter(t=>t>=sp.lo&&t<=sp.hi);
   });
-  const laengste=Math.max(5,...spuren.flatMap(sp=>sp.ticks.map(t=>mkAchsWert(t).length)));
+  // Kurs-Spur: dieselbe Zeitachse, eigene Werteachse
+  let preis=null;
+  if(preisPts.length){
+    const use=preisPts.filter(p=>tagMs(p[0])>=x0&&tagMs(p[0])<=x1);
+    if(use.length>=2){const v=use.map(p=>p[1]);let lo=Math.min(...v),hi=Math.max(...v);const pad=(hi-lo)*0.08||hi*0.02||1;
+      preis={use,lo:lo-pad,hi:hi+pad};preis.ticks=achsenTicks(preis.lo,preis.hi,schmal?3:4).filter(t=>t>=preis.lo&&t<=preis.hi);}
+  }
+  const laengste=Math.max(5,...spuren.flatMap(sp=>sp.ticks.map(t=>mkAchsWert(t).length)),...(preis?preis.ticks.map(t=>mkAchsWert(t).length):[0]));
   const padL=Math.round(Math.max(schmal?34:42,laengste*6.4+10));
   const span=Math.max(864e5,x1-x0);
   const xOf=t=>padL+(t-x0)/span*(W-padL-padR);
@@ -312,6 +439,11 @@ function makroZeichnen(box){
     }
     // Heute
     svg+=`<line x1="${xh.toFixed(1)}" x2="${xh.toFixed(1)}" y1="${yTop}" y2="${H-2}" stroke="var(--t2)" stroke-width="1"/>`;
+    svg+=mkZinsLinien(zins,x0,x1,xOf,yTop,H);
+    // Vergleichswaehrungen: gleicher Indikator, eigene Farbe (Trends-Palette)
+    sp.cmp.forEach(c=>{if(c.use.length<1)return;let dc='';c.use.forEach((p,i)=>{dc+=(i?'L':'M')+xOf(tagMs(p[0])).toFixed(1)+' '+yOf(p[1]).toFixed(1);});
+      svg+=`<path class="mk-cmp-l" data-ccy="${c.ccy}" d="${dc}" fill="none" stroke="${c.farbe}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+      if(c.use.length<=80)c.use.forEach(p=>{svg+=`<circle cx="${xOf(tagMs(p[0])).toFixed(1)}" cy="${yOf(p[1]).toFixed(1)}" r="1.6" fill="${c.farbe}"/>`;});});
     // Actual-Linie + Punkte, Forecast als hohle Punkte
     let d='';use.forEach((p,i)=>{d+=(i?'L':'M')+xOf(tagMs(p[0])).toFixed(1)+' '+yOf(p[1]).toFixed(1);});
     svg+=`<path d="${d}" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
@@ -336,14 +468,41 @@ function makroZeichnen(box){
     }
     svg+=`<line class="mk-cur" x1="0" x2="0" y1="${yTop}" y2="${H-2}" stroke="var(--t0)" stroke-width="1" style="display:none"/>`;
     hover.push({name:indName(sp.ind),unit:sp.unit||'',pts:use});
-    return`<div class="mk-spur">${mkSpurKopf(sp.ind,rub,sym)}<svg class="mk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escH(indName(sp.ind))} over time">${svg}</svg></div>`;
+    sp.cmp.forEach(c=>hover.push({name:c.ccy,unit:c.unit||'',pts:c.use,farbe:c.farbe}));
+    return`<div class="mk-spur">${mkSpurKopf(sp.ind,rub,sym)}${mkCmpHtml(sp)}${mkStatHtml(mkStatistik(sp,sym.id))}<svg class="mk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escH(indName(sp.ind))} over time">${svg}</svg></div>`;
   });
+  if(preis){
+    const PHp=schmal?72:92,yTop=OBEN,yBot=yTop+PHp,H=yBot+6;
+    const yOf=v=>yTop+(1-(v-preis.lo)/(preis.hi-preis.lo))*PHp;
+    let svg='';
+    ticks.forEach(tt=>{const xx=xOf(tt);svg+=`<line x1="${xx.toFixed(1)}" x2="${xx.toFixed(1)}" y1="${yTop}" y2="${H-2}" stroke="var(--bd)" stroke-width="1" stroke-dasharray="1 3"/>`;});
+    preis.ticks.forEach(t=>{const yy=yOf(t);svg+=`<line x1="${padL}" x2="${W-padR}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--bd)" stroke-width="1"/><text x="${padL-6}" y="${(yy+3.5).toFixed(1)}" text-anchor="end" style="${fs}">${escH(mkAchsWert(t))}</text>`;});
+    svg+=`<line x1="${xh.toFixed(1)}" x2="${xh.toFixed(1)}" y1="${yTop}" y2="${H-2}" stroke="var(--t2)" stroke-width="1"/>`;
+    svg+=mkZinsLinien(zins,x0,x1,xOf,yTop,H);
+    let d='';preis.use.forEach((p,i)=>{d+=(i?'L':'M')+xOf(tagMs(p[0])).toFixed(1)+' '+yOf(p[1]).toFixed(1);});
+    svg+=`<path class="mk-preis-l" d="${d}" fill="none" stroke="var(--t0)" stroke-width="1.4" stroke-linejoin="round"/>`;
+    svg+=`<line class="mk-cur" x1="0" x2="0" y1="${yTop}" y2="${H-2}" stroke="var(--t0)" stroke-width="1" style="display:none"/>`;
+    const a=preis.use[0],z=preis.use[preis.use.length-1];
+    const p1=mkPunktVor(preisPts,12);
+    const pc=(v,b)=>{const x=(v/b-1)*100;return(x>0?'+':x<0?'−':'±')+Math.abs(x).toFixed(1)+'%';};
+    const fx=FX_KORB(sym);
+    const kopf=`<div class="mk-spur-kopf"><span class="mk-spur-name">${fx?`${escH(sym.id)} basket`:'Price'} · ${escH(sym.name||sym.id)}</span><span class="mk-kvs mk-kvs-p"><span class="mk-kv" title="Latest close ${escH(z[0])}"><i>Last</i><b>${escH(mkZahl(z[1]))}</b></span><span class="mk-kv" title="From ${escH(a[0])} to ${escH(z[0])}"><i>Shown</i><b>${escH(pc(z[1],a[1]))}</b></span><span class="mk-kv" title="Change over the last 12 months"><i>1Y</i><b>${p1?escH(pc(z[1],p1[1])):'–'}</b></span></span></div>`;
+    hover.push({name:fx?`${sym.id} basket`:'Price',unit:'',pts:preis.use});
+    bloecke.push(`<div class="mk-spur mk-spur-preis">${kopf}<svg class="mk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price over time">${svg}</svg></div>`);
+  }
   // Gemeinsame Zeitachse unten
   let ax='';
   ticks.forEach(tt=>{const xx=xOf(tt);const dd=new Date(tt),lbl=dd.toLocaleString('en-US',{month:'short',timeZone:'UTC'})+' '+String(dd.getUTCFullYear()).slice(2);
     ax+=`<text x="${xx.toFixed(1)}" y="15" text-anchor="middle" style="${fs}">${lbl}</text>`;});
   ax+=`<text x="${xh.toFixed(1)}" y="15" text-anchor="middle" style="${fs};font-weight:700;paint-order:stroke;stroke:var(--bg1);stroke-width:3px">Today</text>`;
-  box.innerHTML=`<div class="mk-spuren" onpointermove="makroHover(event,this)" onpointerdown="makroHover(event,this)" onpointerleave="makroHoverAus(this)">${bloecke.join('')}<svg class="mk-achse" width="${W}" height="${ACHSE}" viewBox="0 0 ${W} ${ACHSE}" aria-hidden="true">${ax}</svg></div>`;
+  // Zinsentscheide: Beschriftung in einer eigenen Zeile unter den Monaten
+  const zSicht=zins.filter(z=>{const t=tagMs(z.d);return t>=x0&&t<=x1;});
+  let AH=ACHSE;
+  if(zSicht.length){AH=ACHSE+16;let lx=-1e9;
+    zSicht.forEach(z=>{const xx=xOf(tagMs(z.d));if(xx-lx<30)return;lx=xx;const bp=Math.round(z.dx*100);
+      ax+=`<text class="mk-zins-t" x="${xx.toFixed(1)}" y="${ACHSE+10}" text-anchor="middle" style="font-size:var(--fs-2xs);font-weight:700;fill:${z.dx>0?BC.bull:BC.bear}">${bp>0?'+':'−'}${Math.abs(bp)}</text>`;});
+    ax+=`<text x="${padL-6}" y="${ACHSE+10}" text-anchor="end" style="${fs}">bp</text>`;}
+  box.innerHTML=`<div class="mk-spuren" onpointermove="makroHover(event,this)" onpointerdown="makroHover(event,this)" onpointerleave="makroHoverAus(this)">${bloecke.join('')}<svg class="mk-achse" width="${W}" height="${AH}" viewBox="0 0 ${W} ${AH}" aria-hidden="true">${ax}</svg></div>`;
   box.__mk={x0,span,padL,padR,W,hover};
   // Zeitspanne per Ziehen: Tagesanker ueber die Plotbreite.
   const nTage=Math.max(2,Math.round((x1-x0)/864e5)+1);
@@ -361,7 +520,7 @@ function makroHover(ev,el){
     el.querySelectorAll('.mk-cur').forEach(c=>{c.setAttribute('x1',px.toFixed(1));c.setAttribute('x2',px.toFixed(1));c.style.display='';});
     const zeilen=m.hover.map(h=>{let best=null,bd=Infinity;h.pts.forEach(p=>{const dd=Math.abs(tagMs(p[0])-t);if(dd<bd){bd=dd;best=p;}});
       if(!best)return'';
-      return`<span class="mk-read-z"><b>${escH(h.name)}</b> ${escH(fmtIndVal(best[1],h.unit))}${best[2]!=null?` <i>fc ${escH(fmtIndVal(best[2],h.unit))}</i>`:''} <i>${escH(fmtDayHdr(best[0]))}</i></span>`;}).join('');
+      return`<span class="mk-read-z">${h.farbe?`<span class="mk-cc-dot" style="background:${h.farbe}"></span>`:''}<b>${escH(h.name)}</b> ${escH(h.unit===''&&Math.abs(best[1])>=1e4?mkZahl(best[1]):fmtIndVal(best[1],h.unit))}${best[2]!=null?` <i>fc ${escH(fmtIndVal(best[2],h.unit))}</i>`:''} <i>${escH(fmtDayHdr(best[0]))}</i></span>`;}).join('');
     const karte=box.closest('.rub-card');const rd=karte&&karte.querySelector('.mk-read');if(rd)rd.innerHTML=zeilen;
   }catch(e){}
 }
@@ -369,7 +528,9 @@ function makroHoverAus(el){try{el.querySelectorAll('.mk-cur').forEach(c=>{c.styl
 let _mkRz=0;
 try{window.addEventListener('resize',()=>{clearTimeout(_mkRz);_mkRz=setTimeout(()=>makroZeichnenAlle(),150);});}catch(e){}
 
-export {MK_RUBS,MK_ZIELBAND,makroKartenSchalterHtml,makroTabKarteHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroZeichnenAlle,mkReferenz,mkCcy};
-if(typeof window!=='undefined')Object.assign(window,{makroSicht,makroTab,makroGross,makroRange,makroSpur,makroHover,makroHoverAus,makroZeichnenAlle,mkReferenz,MK_ZIELBAND,makroTabWert,
+export {MK_RUBS,MK_ZIELBAND,makroKartenSchalterHtml,makroTabKarteHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,mkReferenz,mkCcy};
+if(typeof window!=='undefined')Object.assign(window,{makroSicht,makroTab,makroGross,makroRange,makroSpur,makroVergleich,makroPreis,makroHover,makroHoverAus,makroZeichnenAlle,mkReferenz,MK_ZIELBAND,makroTabWert,makroOptWert,
+  // nur fuer check/makro.js (Statistik und Zinsentscheide unabhaengig nachrechnen)
+  mkStatistik,mkZinsentscheide,
   // nur fuer check/makro.js (Spurkopf gegen die echte Reihe)
   fmtIndVal});
