@@ -20555,3 +20555,15 @@ die Folgeentwicklung vorhersagen?
 - „Beat 0/12“ beim Leitzins las sich wie 12 Verfehlungen → getrennt *beat · miss · in line*.
 - Wächter `check/makro.js` G: Vergleichslinie + Legende, Kurs-Spur, Statistik je Spur, 3M-Veränderung unabhängig nachgerechnet, Zinsmarker vorhanden.
 - ⚠ *Nicht gelaufen (Zeitlimit 40 min):* Volllauf `check/all.js`, `altgeraet.js` mit `mkOpt`.
+
+## 2026-10-24 — VERSION-CHECK-623: neue Seite „Journal“ (eigene Trades im Kalender)
+
+- **Nutzer:** *„ein neues Fenster … das Journal heißt. Man soll da in einer schönen großen Kalender Übersicht trades eintragen können … welches Asset welche Richtung und wie viel Profit. Wenn man draufklickt kommen alle anderen wichtigen Daten. Je nach win oder loss auch dann in bias Farbe.“* Zeitvorgabe 40 min, Push **ohne Wächterlauf** (Nutzer-Anweisung) — Wächterlauf folgt im nächsten Schritt.
+- **Ort:** eigener Leisten-Eintrag `journal` direkt nach Watchlist (in keinem Stapel), Seite `#pgJournal`, Kürzel `g j`. Code: `js/trades.js` (neu).
+- **Aufbau:** Kopfkarte (Monat ‹ › Today · Net P/L · Trades · Win rate · Wins | Losses · Best · Worst) → Kalender Mo–So, je Trade ein Chip *Asset · Long/Short · P/L*, Win = `--bias-bull`, Loss = `--bias-bear`, Tageszelle in der Farbe der Tagessumme getönt → Tabelle des Monats (Date | Asset | Direction | P/L | R).
+- **Klick:** Tag = neuer Trade mit Datum vorbelegt; Chip/Zeile = Detail-Fenster `#mTradeView` (Ergebnis, P/L, R, Entry/Exit/SL/TP, Size, Setup, Notes) mit Delete | Edit | Done.
+- **Editor `#mTrade`:** Pflicht Date · Asset · P/L, Fehlermeldung im Fenster; in `MODAL_GUARD_TABELLE` + `ESC_MODALS`.
+- **Nie geschätzt:** P/L trägt der Nutzer ein; R nur, wenn Entry + Stop + Exit vorhanden.
+- **Sync:** neues Feld `tradeJournal` (`fxpro_trades`) an allen vier Stellen (cloudPush, cloudPull, exportData, importData). *Merge statt Overwrite* (`mergeTrades`: Vereinigung nach `id`, jüngeres `up` gewinnt), Löschen = Grabstein `del:true`, sonst holt der Merge den Trade vom anderen Gerät zurück. Angezeigter Monat bewusst nur Sitzung.
+- **Handy (390 px):** Zelle 36 px → nur kompakte Tagessumme (*+1.3k / −310*), volle Zahlen + ganze Namen in der Tabelle. Gemessen: keine Zelle läuft über, Seite 390 px breit, kleinste Schrift 11 px.
+- **Offen für den Wächterlauf:** `check/eingaben.js` braucht einen Öffner für `mTrade`; `check/altgeraet.js`/Sync-Wächter kennen `tradeJournal` noch nicht; Cross-Tab-Abgleich (storage-Event) für `fxpro_trades` fehlt noch.

@@ -17,10 +17,13 @@ import {scoreJournal,loadScoreJournal,jrErfassen,jrBootFertig,jrSperren,jrFreige
 import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL_RESEARCH_MATCHERS,isScoreDrivingEvent,periodLabel} from './event-matchers.js';
 // Makro-Charts + Analyse-Einstufungen je Makro-Karte (Nutzer-Auftrag
 // 2026-10-20, siehe Kopf von makro.js). Zirkulaerer Import wie bei journal.js.
+// Trading Journal: eigene Trades im Monatskalender (Nutzer-Wunsch 2026-10-24,
+// siehe Kopf von trades.js). Zirkulaerer Import wie bei makro.js.
+import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD} from './trades.js';
 import {makroKartenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
-export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,uid,
+export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
   applyRevisionToValHist,applyTrendModel,checkPriceAlerts,fmtDayHdr,indBiasInputSig,indBiasPinned,
   invalidateRateStepCache,isNonFx,macroCcyFor,parseNumLike,pushU,recordScoreHist,renderDash,rerender,researchBias,
@@ -6652,7 +6655,7 @@ function saveSoon(){
 // passieren) plus die Nicht-Snap-Felder, exakt wie cloudPush() es macht.
 function exportData(){
   const data=JSON.parse(snap());
-  data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.scoreMode=scoreMode;
+  data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=trades;data.scoreMode=scoreMode;
   data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
   a.download='fx-analyst-'+todayStr()+'.json';a.click();
@@ -6660,7 +6663,7 @@ function exportData(){
 function importData(input){
   const f=input.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=FX_THEME_IDS.includes(_imp.fxTheme)?_imp.fxTheme:'';try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();renderFxThemeGrid();}if(_imp.appBg!==undefined){appBg=APP_BG_IDS.includes(_imp.appBg)?_imp.appBg:'';try{appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');}catch(e){}applyAppBg();renderAppBgGrid();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
+  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=FX_THEME_IDS.includes(_imp.fxTheme)?_imp.fxTheme:'';try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();renderFxThemeGrid();}if(_imp.appBg!==undefined){appBg=APP_BG_IDS.includes(_imp.appBg)?_imp.appBg:'';try{appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');}catch(e){}applyAppBg();renderAppBgGrid();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
   r.readAsText(f);input.value='';
 }
 
@@ -6873,7 +6876,7 @@ document.addEventListener('keydown',e=>{
 const KEY_TABS={d:['dash','Dashboard'],a:['cur','Assets'],n:['news','News'],
   c:['cal','Calendar'],s:['pairs','Set-ups'],w:['watch','Watchlist'],
   t:['trends','Trends'],m:['mx','Matrix'],r:['notes','Archive'],
-  y:['carry','Carry'],o:['cot','COT']};
+  y:['carry','Carry'],o:['cot','COT'],j:['journal','Journal']};
 let _keyChord='',_keyChordT=0;
 function keyNavAktiv(e){
   if(e.metaKey||e.ctrlKey||e.altKey)return false;
@@ -7105,7 +7108,7 @@ async function cloudPushRoh(manual){
     // zuruecksetzen - siehe cloudPull-Kommentar).
     const z0=_userEditZaehler;
     const gesendet=snap();
-    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
+    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=trades;data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
     if(APP_VER)data.appVer=APP_VER;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
@@ -7304,6 +7307,8 @@ async function cloudPullRoh(manual,forceOverwrite){
       // die naechste Aenderung gegen seinen eigenen, aelteren Stand und zaehlt
       // Bewegungen doppelt, die das andere Geraet schon aufgezeichnet hat.
       if(cd.scoreJournal){try{jrUebernehmen(cd.scoreJournal);}catch(e){}}
+      // Trading Journal: ebenfalls Merge nach id statt Overwrite (js/trades.js).
+      if(Array.isArray(cd.tradeJournal)){try{tjUebernehmen(cd.tradeJournal);}catch(e){}}
       // Set-ups-/Kalender-/Compare-Filter (Audit-Agent-Fund 2026-07-20,
       // gleiches Muster wie compactLevel/designHue oben): bei anstehender
       // lokaler Praeferenz-Aenderung (prefPending) die lokalen Werte in
@@ -7526,6 +7531,8 @@ const MODAL_GUARD_TABELLE={
   // Nur die vier Zugangsfelder - die Schalter darueber speichern sofort.
   // saveCloudCfg() laesst das Fenster offen und setzt bei Erfolg den
   // Vergleichsstand neu; "Yes, save" schliesst deshalb erst danach.
+  // Trading Journal: alle Felder des Trade-Editors (js/trades.js).
+  mTrade:TJ_GUARD,
   mCloud:{felder:['cloudUsername','cloudUrl','cloudKey','cloudSyncId'],
     save:()=>{saveCloudCfg();if(!modalIsDirty('mCloud'))closeM('mCloud');},was:'Your sync settings'},
 };
@@ -7555,7 +7562,7 @@ document.addEventListener('click',ev=>{
 // Steht die Nachfrage offen, fuehrt Escape zurueck ins Fenster (der
 // harmlose Weg, wie der Klick neben die Nachfrage).
 const ESC_MODALS=['mAddSym','mAssetCfg','mHist','mAddPair','mRename','mDelSym','mInfo','mCloud','mRateWatch','mIndLink','mBackup','mTrash',
-  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom'];
+  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeView'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const nf=document.getElementById('mUnsaved');
@@ -24475,7 +24482,7 @@ function tabStacksOhneEntfernte(ts){
   (ts||[]).forEach(st=>{if(st&&Array.isArray(st.members)&&st.members.some(m=>ENTFERNTE_TABS.has(m))){st.members=st.members.filter(m=>!ENTFERNTE_TABS.has(m));weg=true;}});
   return weg;
 }
-const PAGE_IDS={over:'pgOver',regime:'pgRegime',news:'pgNews',dash:'pgDash',cur:'pgCur',mx:'pgMx',trends:'pgTrends',cot:'pgCot',sent:'pgSent',seas:'pgSeas',data:'pgData',rate:'pgRate',carry:'pgCarry',pairs:'pgPairs',watch:'pgWatch',cal:'pgCal',notes:'pgNotes'};
+const PAGE_IDS={over:'pgOver',regime:'pgRegime',news:'pgNews',dash:'pgDash',cur:'pgCur',mx:'pgMx',trends:'pgTrends',cot:'pgCot',sent:'pgSent',seas:'pgSeas',data:'pgData',rate:'pgRate',carry:'pgCarry',pairs:'pgPairs',watch:'pgWatch',journal:'pgJournal',cal:'pgCal',notes:'pgNotes'};
 // ── Tab-Leiste mit Stapeln (Gruppen) ───────────────────────────────
 // Reihenfolge + Definition aller Kategorien. FX und Non-FX sind seit
 // 2026-08-03 EIN gemeinsamer Tab (Nutzer-Wunsch "die beiden Kategorien
@@ -24484,7 +24491,7 @@ const PAGE_IDS={over:'pgOver',regime:'pgRegime',news:'pgNews',dash:'pgDash',cur:
 // Indices/Stocks), kein Modus-Filter mehr (siehe renderSidebar/moveSbCat).
 // 'over' steht bewusst VOR 'dash' (Nutzer-Wunsch 2026-09-11: "eine neue
 // Kategorie ueber Dashboard").
-const TAB_ORDER=['over','dash','fx','mx','trends','cot','sent','seas','data','rate','news','carry','pairs','watch','cal','notes'];
+const TAB_ORDER=['over','dash','fx','mx','trends','cot','sent','seas','data','rate','news','carry','pairs','watch','journal','cal','notes'];
 const TABS={
   over:{label:'Overview',tab:'over'},
   dash:{label:'Dashboard',tab:'dash'},
@@ -24514,6 +24521,9 @@ const TABS={
   // tabStacks eingereiht - renderTabBar rendert eine ID, die in keinem
   // Stapel steht, automatisch als eigenen Top-Level-Button.
   watch:{label:'Watchlist',tab:'watch'},
+  // Trading Journal (Nutzer-Wunsch 2026-10-24): eigene Trades im Kalender.
+  // Steht in keinem Stapel - eigener Eintrag direkt nach der Watchlist.
+  journal:{label:'Journal',tab:'journal'},
   cal:{label:'Calendar',tab:'cal'},
   // Label 2026-08-02 von 'Notes' auf 'Research' umbenannt, 2026-09-19 auf
   // 'Archive' (beides Nutzer-Wunsch);
@@ -24623,6 +24633,7 @@ const TAB_ICONS={
   carry:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
   pairs:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
   watch:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  journal:'<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>',
   cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   notes:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
 };
@@ -24904,6 +24915,7 @@ function showTab(tab,btn,fxMode){
   else if(tab==='carry')renderCarry();
   else if(tab==='pairs')renderPairs();
   else if(tab==='watch')renderWatchlistTab();
+  else if(tab==='journal')renderJournal();
   else if(tab==='cal')renderCalendar();
   else if(tab==='notes')rerenderNotesHost();
 }
@@ -24921,6 +24933,7 @@ function rerender(){
   else if(curPage==='carry')renderCarry();
   else if(curPage==='pairs')renderPairs();
   else if(curPage==='watch')renderWatchlistTab();
+  else if(curPage==='journal')renderJournal();
   else if(curPage==='cal')renderCalendar();
   else if(curPage==='notes')rerenderNotesHost();
 }

@@ -102,6 +102,17 @@ Merge-Regeln (`mergeScoreJournal`):
 Geprüft von `check/journal.js` (Stufe F: drei Läufe zweier Geräte, jüngere
 Basis, Kette = +1,0 ohne Doppelzählung; Stufe H: alle vier Anbindungen).
 
+## Sonderfall `tradeJournal` (Trading Journal, seit 2026-10-24): Merge + Grabstein
+
+Vierter Fall der Art. `trades` (`js/trades.js`, Schlüssel `fxpro_trades`) liegt
+außerhalb von `snap()` (Undo nimmt keinen Trade zurück), angebunden an allen
+vier Stellen: `cloudPush`/`exportData` (`data.tradeJournal`), `cloudPull`/
+`importData` (`tjUebernehmen()`). Save-Funktion `tjSpeichern()` bumpt
+`fxpro_updated` + `markPrefEdit()` + `cloudAutoSync()`.
+- **Merge** (`mergeTrades`): Vereinigung nach `id`, bei Kollision gewinnt das jüngere `up`.
+- **Löschen = Grabstein** (`{id,del:true,up}`), nie Entfernen — sonst bringt der nächste Merge den Trade vom anderen Gerät zurück.
+- Angezeigter Monat (`tjMonat`) bewusst nur Sitzung.
+
 ## Sonderfall `research`/`researchFolders` (Notizen/Ordner/Papierkorb): Merge statt Overwrite + `navigator.locks`
 
 **Zweiter Sonderfall genau der Art, vor der der `scoreHist`-Abschnitt oben

@@ -5422,6 +5422,76 @@ body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
 .wt-empty{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:22px 18px;text-align:center}
 .wt-empty-t{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:4px}
 .wt-empty-s{font-size:var(--fs-sm);color:var(--t3);line-height:1.6;margin-bottom:12px}
+/* ══ TRADING JOURNAL (Nutzer-Wunsch 2026-10-24, js/trades.js) ══════════
+   Monatskalender mit eigenen Trades: Chip je Trade = Asset, Richtung, P/L;
+   Win/Loss in Bias-Farbe (Blau/Rot), Tageszelle leicht in der Farbe der
+   Tagessumme getoent. Auf dem Handy (<760 px) nur Tagessumme in der Zelle -
+   die ganzen Namen stehen in der Tabelle darunter (Namen nie gekuerzt). */
+.tj-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:12px 14px;margin-bottom:12px;min-width:0}
+.tj-kt{font-size:var(--fs-kt);font-weight:700;color:var(--t0);margin-bottom:10px}
+.tj-kopf{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.tj-nav{display:flex;align-items:center;gap:6px}
+.tj-navb{min-width:34px;height:34px;font-size:var(--fs-lg);display:inline-flex;align-items:center;justify-content:center}
+.tj-monat{font-size:var(--fs-kt);font-weight:700;color:var(--t0);min-width:150px;text-align:center}
+.tj-kpis{display:flex;flex-wrap:wrap;gap:6px 20px}
+.tj-kpi-l{font-size:var(--fs-xs);color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.tj-kpi-v{font-size:var(--fs-lg);font-family:var(--ff-num);color:var(--t0)}
+.tj-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.tj-wt>div{font-size:var(--fs-xs);font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;padding:0 6px 4px}
+.tj-tag{min-height:118px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:5px 6px;display:flex;flex-direction:column;gap:4px;cursor:pointer;min-width:0;transition:border-color .15s}
+@media (hover:hover){.tj-tag:not(.tj-leer):hover{border-color:rgba(var(--blue-rgb),.45)}}
+.tj-tag.we{background:var(--bg1)}
+.tj-tag.plus{background:color-mix(in srgb,var(--bias-bull) 6%,var(--bg2))}
+.tj-tag.minus{background:color-mix(in srgb,var(--bias-bear) 6%,var(--bg2))}
+.tj-tag.heute{border-color:var(--ui-act);box-shadow:inset 0 0 0 1px var(--ui-act)}
+.tj-tag.tj-leer{background:transparent;border-color:transparent;cursor:default}
+.tj-tk{display:flex;justify-content:space-between;align-items:baseline;gap:4px;min-width:0}
+.tj-tn{font-size:var(--fs-sm);font-weight:700;color:var(--t2);font-family:var(--ff-num)}
+.tj-tag.heute .tj-tn{color:var(--ui-act)}
+.tj-ts{font-size:var(--fs-sm);font-family:var(--ff-num);overflow-wrap:anywhere;text-align:right}
+.tj-tsk{display:none}
+.tj-chips{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tj-chip{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"a p" "d p";align-items:center;column-gap:6px;text-align:left;width:100%;min-height:34px;border:1px solid transparent;border-left:3px solid var(--bias-neu);border-radius:4px;padding:3px 6px;background:rgba(var(--t3-rgb),.08);cursor:pointer;font:inherit;color:var(--t0);min-width:0}
+.tj-chip.win{border-left-color:var(--bias-bull);background:color-mix(in srgb,var(--bias-bull) 10%,var(--card))}
+.tj-chip.loss{border-left-color:var(--bias-bear);background:color-mix(in srgb,var(--bias-bear) 10%,var(--card))}
+@media (hover:hover){.tj-chip:hover{border-color:rgba(var(--blue-rgb),.35)}}
+.tj-ca{grid-area:a;font-size:var(--fs-sm);font-weight:700;overflow-wrap:anywhere;line-height:1.25}
+.tj-cd{grid-area:d;font-size:var(--fs-xs);color:var(--t3)}
+.tj-cp{grid-area:p;font-size:var(--fs-sm);font-family:var(--ff-num)}
+.tj-chip.win .tj-cp{color:var(--bias-bull)}
+.tj-chip.loss .tj-cp{color:var(--bias-bear)}
+.tj-chip.be .tj-cp{color:var(--bias-neu)}
+.tj-hint{margin-top:8px;font-size:var(--fs-xs);color:var(--t3)}
+.tj-tab{width:100%;border-collapse:collapse;font-size:var(--fs-base)}
+.tj-tab th{text-align:left;font-size:var(--fs-xs);color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:6px 8px;border-bottom:1px solid var(--bd)}
+.tj-tab td{padding:8px;border-bottom:1px solid var(--bd);font-family:var(--ff-num);color:var(--t1)}
+.tj-tab .r{text-align:right;white-space:nowrap}
+.tj-tab tbody tr{cursor:pointer}
+.tj-tab tbody tr.win td:first-child{box-shadow:inset 3px 0 0 var(--bias-bull)}
+.tj-tab tbody tr.loss td:first-child{box-shadow:inset 3px 0 0 var(--bias-bear)}
+@media (hover:hover){.tj-tab tbody tr:hover{background:rgba(var(--blue-rgb),.05)}}
+.tj-leertext{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--t3);font-size:var(--fs-base)}
+.tj-vk{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:var(--rs);margin-bottom:10px;border-left:4px solid var(--bias-neu);background:rgba(var(--t3-rgb),.08)}
+.tj-vk.win{border-left-color:var(--bias-bull);background:color-mix(in srgb,var(--bias-bull) 9%,var(--bg2))}
+.tj-vk.loss{border-left-color:var(--bias-bear);background:color-mix(in srgb,var(--bias-bear) 9%,var(--bg2))}
+.tj-ve{font-size:var(--fs-sm);font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2)}
+.tj-vk.win .tj-ve{color:var(--bias-bull)}
+.tj-vk.loss .tj-ve{color:var(--bias-bear)}
+.tj-vp{font-size:var(--fs-xl);font-family:var(--ff-num)}
+.tj-notiz{white-space:pre-wrap}
+.tj-lbl{font-size:var(--fs-2xs);color:var(--t3);font-family:var(--ff-num);margin-bottom:3px;letter-spacing:1px}
+.tj-err{color:var(--bias-bear);font-size:var(--fs-sm);font-weight:600;margin-bottom:8px}
+@media (max-width:760px){
+  .tj-tag{min-height:58px;padding:3px 2px 3px 3px}
+  .tj-tk{flex-direction:column;align-items:flex-start;gap:1px}
+  .tj-ts{display:none}
+  .tj-tsk{display:block;font-size:var(--fs-xs);font-family:var(--ff-num);letter-spacing:-.2px;white-space:nowrap}
+  .tj-chips{display:none}
+  .tj-wt>div{padding:0 2px 4px;letter-spacing:0}
+  .tj-grid{gap:3px}
+  .tj-kpis{gap:6px 14px}
+  .tj-tab td,.tj-tab th{padding:7px 5px}
+}
 .wl-row.wl-click{cursor:pointer}
 @media(hover:hover){.wl-row.wl-click:hover .wl-name{text-decoration:underline;color:var(--t0)}}
 /* ⚠ War frueher @media(max-width:560px), also an der FENSTERbreite. Seit die
@@ -6640,11 +6710,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-622 - Makro-Charts als Analyse-Werkzeug: Laendervergleich, Statistik je Spur, Zinsentscheide, Kurs-Spur."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-623 - Neue Seite Journal: eigene Trades im Monatskalender, Detail-Fenster, Win/Loss in Bias-Farbe."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-622</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-623</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -6782,6 +6852,53 @@ window.fxLogoSvg=function(art){
     <button class="btn g" onclick="openAddPair('Watchlist')">&#65291; Add pair</button>
   </div>
   <div id="watchBody"></div>
+</div>
+<!-- PAGE: JOURNAL (Nutzer-Wunsch 2026-10-24: eigene Trades im Kalender,
+     Aufbau in renderJournal(), js/trades.js) -->
+<div class="pc" id="pgJournal" style="display:none">
+  <div style="margin-bottom:11px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px">
+    <div><div class="pg-titel">Journal</div><div class="pg-sub">Your trades by day &middot; asset, direction, P/L &middot; tap a trade for all details</div></div>
+    <button class="btn g" onclick="tjNeu()">&#65291; Add trade</button>
+  </div>
+  <div id="journalBody"></div>
+</div>
+<!-- MODAL: Trade ansehen (Journal) -->
+<div class="ov" id="mTradeView" style="display:none">
+  <div class="modal" style="max-width:480px">
+    <h3 id="tjvTitle">Trade</h3>
+    <div id="tjvBody"></div>
+    <div class="m-btns"><button class="btn" style="color:var(--bias-bear);border-color:rgba(220,36,48,.35)" onclick="tjLoeschen()">Delete</button><button class="btn" onclick="tjBearbeiten()">Edit</button><button class="btn g" onclick="closeM('mTradeView')">Done</button></div>
+  </div>
+</div>
+<!-- MODAL: Trade eintragen/bearbeiten (Journal) - in MODAL_GUARD_TABELLE (mTrade) -->
+<div class="ov" id="mTrade" style="display:none">
+  <div class="modal" style="max-width:520px">
+    <h3 id="tjFormTitle">New trade</h3>
+    <div id="tjErr" class="tj-err" hidden></div>
+    <div class="fg2">
+      <div><div class="tj-lbl">DATE</div><input class="finp" id="tjDate" type="date"></div>
+      <div><div class="tj-lbl">TIME</div><input class="finp" id="tjTime" type="time"></div>
+    </div>
+    <div class="fg2">
+      <div><div class="tj-lbl">ASSET</div><input class="finp" id="tjAsset" list="tjAssetList" placeholder="e.g. EUR/USD, GOLD, NAS100" autocomplete="off"><datalist id="tjAssetList"></datalist></div>
+      <div><div class="tj-lbl">DIRECTION</div><select class="fsel" id="tjDir"><option value="long">Long</option><option value="short">Short</option></select></div>
+    </div>
+    <div class="fg2">
+      <div><div class="tj-lbl">P/L (PROFIT / LOSS)</div><input class="finp" id="tjPnl" type="number" step="any" inputmode="decimal" placeholder="e.g. 250 or -120"></div>
+      <div><div class="tj-lbl">SIZE</div><input class="finp" id="tjSize" placeholder="e.g. 1.0 lot"></div>
+    </div>
+    <div class="fg2">
+      <div><div class="tj-lbl">ENTRY</div><input class="finp" id="tjEntry" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.0850"></div>
+      <div><div class="tj-lbl">EXIT</div><input class="finp" id="tjExit" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.0910"></div>
+    </div>
+    <div class="fg2">
+      <div><div class="tj-lbl">STOP LOSS</div><input class="finp" id="tjSl" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.0820"></div>
+      <div><div class="tj-lbl">TAKE PROFIT</div><input class="finp" id="tjTp" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.0950"></div>
+    </div>
+    <div style="margin-bottom:7px"><div class="tj-lbl">SETUP</div><input class="finp" id="tjSetup" placeholder="e.g. Breakout, COT reversal, NFP fade"></div>
+    <div style="margin-bottom:7px"><div class="tj-lbl">NOTES</div><textarea class="finp" id="tjNotes" rows="3" placeholder="What went well, what to change"></textarea></div>
+    <div class="m-btns"><button class="btn" onclick="closeMGuarded('mTrade')">Cancel</button><button class="btn g" onclick="tjFormSpeichern()">Save trade</button></div>
+  </div>
 </div>
 
 <!-- MODAL: Preis-Alerts (Level ueber-/unterschritten -> Telegram) -->
