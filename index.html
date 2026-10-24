@@ -5173,7 +5173,7 @@ body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
 :root{--flame:#E8590C;--flame-rgb:232,89,12}
 .tj-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:14px 16px 16px;margin-bottom:14px;min-width:0}
 .tj-kh{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 14px;margin-bottom:12px}
-.tj-kt{font-size:var(--fs-kt);font-weight:700;color:var(--t0)}
+.tj-kt{font-size:var(--fs-kt);font-weight:700;color:var(--t0);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .tj-kh-r{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--fs-sm);color:var(--t2);font-variant-numeric:tabular-nums}
 .tj-kh-r i{color:var(--t3)}
 .tj-leiste{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
@@ -5322,16 +5322,16 @@ body.no-ui-anim .tj-flamme.an svg{animation:none}
 .tj-f2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:10px}
 .tj-f{margin-bottom:10px;min-width:0}
 .tj-lbl{font-size:var(--fs-xs);font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
-.tj-ed .finp:not(textarea){height:40px}
-.tj-ed textarea.finp{min-height:72px;resize:vertical}
+.tj-ed .m-inp,.tjc .m-inp{margin-bottom:0}
+.tj-ed textarea.m-inp{min-height:72px;resize:vertical}
 .tj-seg{display:grid;grid-template-columns:1fr 1fr;height:40px;border:1px solid var(--bd2);border-radius:var(--rs);overflow:hidden}
 .tj-seg-b{border:0;background:var(--bg3);color:var(--t2);font-family:var(--ff-num);font-size:var(--fs-base);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px}
 .tj-seg-b+.tj-seg-b{border-left:1px solid var(--bd2)}
 .tj-seg-b::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--bias-bull)}
 .tj-seg-b[data-dir="short"]::before{background:var(--bias-bear)}
+.tj-st-b::before{display:none}
 .tj-seg-b.on{background:var(--ui-act);color:var(--ui-act-fg)}
-.tj-exit{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px}
-.tj-exit .btn{height:40px}
+.tj-exit{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center}
 .tj-hit-tp{color:var(--bias-bull)}
 .tj-hit-sl{color:var(--bias-bear)}
 .tj-err{color:var(--bias-bear);font-size:var(--fs-sm);font-weight:600;margin-bottom:8px}
@@ -5370,6 +5370,43 @@ body.no-ui-anim .tj-flamme.an svg{animation:none}
 .tjv-ch-kopf i{font-size:var(--fs-sm);color:var(--t3)}
 .tjv-notiz{margin-top:12px;padding:10px 12px;border-radius:var(--rs);background:rgba(var(--t3-rgb),.06)}
 .tjv-notiz i{display:block;margin-top:4px;white-space:pre-wrap;color:var(--t1);font-size:var(--fs-base)}
+/* Cloud-Stand der Trades (rechts in der Monatsleiste) */
+.tj-cloud{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:var(--fs-sm);color:var(--t2)}
+.tj-cloud .ic{flex:none}
+.tj-cloud.ok .ic{color:var(--success)}
+.tj-cloud.warte{color:var(--t3)}
+.tj-cloud.fehler{color:var(--bias-bear);font-weight:600}
+.tj-cloud.lokal{color:var(--t2)}
+/* Offene Trades (oben auf der Seite) */
+.tj-anz{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;margin-left:6px;border-radius:999px;background:var(--ui-act);color:var(--ui-act-fg);font-size:var(--fs-xs);font-weight:700;vertical-align:2px}
+.tj-offen.leer .tj-kh{margin-bottom:6px}
+.tjo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr));gap:10px}
+.tjo{border:1px solid var(--bd);border-left:4px solid var(--bias-neu);border-radius:10px;background:var(--card);padding:10px 12px;display:flex;flex-direction:column;gap:4px;cursor:pointer;min-width:0;font-variant-numeric:tabular-nums;transition:border-color .15s}
+.tjo.plus{border-left-color:var(--bias-bull);background:color-mix(in srgb,var(--bias-bull) 5%,var(--card))}
+.tjo.minus{border-left-color:var(--bias-bear);background:color-mix(in srgb,var(--bias-bear) 5%,var(--card))}
+@media (hover:hover){.tjo:hover{border-top-color:rgba(var(--blue-rgb),.45);border-right-color:rgba(var(--blue-rgb),.45);border-bottom-color:rgba(var(--blue-rgb),.45)}}
+.tjo:focus-visible{outline:2px solid var(--ui-act);outline-offset:1px}
+.tjo-kopf{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tjo-a{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;font-size:var(--fs-md);color:var(--t0)}
+.tjo-r{font-size:var(--fs-lg);font-weight:800;font-family:var(--ff-num);white-space:nowrap}
+.tjo-z{font-size:var(--fs-sm);color:var(--t2)}
+.tjo-z b{color:var(--t0)}
+.tjo-z i{color:var(--t3)}
+.tjo-fuss{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px;font-size:var(--fs-xs);color:var(--t3)}
+.tjo-btn{height:28px}
+.tjp.klein{padding:22px 10px 24px;margin:0}
+.tjp-mk.k-now .tjp-pkt{background:var(--t0)}
+/* Editor: Schluss-Block, Abschluss-Fenster */
+.tj-zu{border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px 2px;margin-bottom:10px;background:rgba(var(--t3-rgb),.04)}
+.tj-zu[hidden]{display:none}
+.tj-zu-kopf{font-size:var(--fs-xs);font-weight:700;color:var(--t1);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.tj-pnl{font-size:var(--fs-md);font-weight:700}
+.tj-pnl::placeholder{font-weight:400}
+.tjc-info{font-size:var(--fs-sm);color:var(--t2);margin-bottom:12px;padding:8px 10px;border-radius:var(--rs);background:rgba(var(--t3-rgb),.06);font-variant-numeric:tabular-nums}
+.tjc-info b{color:var(--t0)}
+.tjc-exit{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:6px;align-items:center}
+.tjc textarea.m-inp{min-height:56px;resize:vertical}
+.tjc .tj-rr{margin:0 0 4px}
 /* Tages-Fenster */
 .tjd-sum{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-size:var(--fs-base);color:var(--t2)}
 .tjd-sum>b{font-size:var(--fs-lg);font-family:var(--ff-num)}
@@ -6634,11 +6671,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-626 - Makro-Analyse schnell: nur die Makro-Reihe neu, kein doppeltes Zeichnen, Logo-Pruefung je Karte (zusammengefuehrt mit Journal 623/624 und Asset-Stapel 625)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-627 - Journal: offene Trades oben mit Live-Stand (R + Kursabstand), Abschluss-Fenster, Status Open/Closed, Kalender am Schlusstag."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-626</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-627</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -6794,6 +6831,24 @@ window.fxLogoSvg=function(art){
     <div class="m-btns"><button class="btn" style="color:var(--bias-bear);border-color:rgba(var(--red-rgb),.35)" onclick="tjLoeschen()">Delete</button><button class="btn" onclick="tjBearbeiten()">Edit</button><button class="btn g" onclick="closeM('mTradeView')">Done</button></div>
   </div>
 </div>
+<!-- MODAL: Offenen Trade abschliessen (Journal) - in MODAL_GUARD_TABELLE (mTradeClose) -->
+<div class="ov" id="mTradeClose" style="display:none">
+  <div class="modal tjc" style="max-width:480px">
+    <h3 id="tjcTitle">Close trade</h3>
+    <div id="tjcErr" class="tj-err" hidden></div>
+    <div id="tjcInfo" class="tjc-info"></div>
+    <div class="tj-f"><div class="tj-lbl">Exit</div>
+      <div class="tjc-exit"><input class="m-inp" id="tjcExit" type="number" step="any" inputmode="decimal" placeholder="Exit price" oninput="tjZuErgebnis()"><button type="button" class="btn tj-hit-tp" id="tjcHitTp" onclick="tjZuExit('tp')" title="Exit = take profit">Hit TP</button><button type="button" class="btn tj-hit-sl" id="tjcHitSl" onclick="tjZuExit('sl')" title="Exit = stop loss">Hit SL</button><button type="button" class="btn" id="tjcNow" onclick="tjZuExit('now')" title="Exit = latest price from the feed">Now</button></div></div>
+    <div class="tj-f"><div class="tj-lbl">P/L (profit / loss)</div><input class="m-inp tj-pnl" id="tjcPnl" type="number" step="any" inputmode="decimal" placeholder="e.g. 250 or -120" oninput="tjZuErgebnis()"></div>
+    <div class="tj-f2">
+      <div><div class="tj-lbl">Close date</div><input class="m-inp" id="tjcDate" type="date"></div>
+      <div><div class="tj-lbl">Close time</div><input class="m-inp" id="tjcTime" type="time"></div>
+    </div>
+    <div class="tj-f"><div class="tj-lbl">Notes</div><textarea class="m-inp" id="tjcNotes" rows="2" placeholder="What went well, what to change"></textarea></div>
+    <div id="tjcRR" class="tj-rr"></div>
+    <div class="m-btns"><button class="btn" onclick="closeMGuarded('mTradeClose')">Cancel</button><button class="btn" onclick="tjZuBearbeiten()">Edit trade</button><button class="btn g" onclick="tjZuSpeichern()">Close trade</button></div>
+  </div>
+</div>
 <!-- MODAL: Trades eines Tages (Journal, kompakte Zellen: Handy/Wochenende) -->
 <div class="ov" id="mTradeDay" style="display:none">
   <div class="modal" style="max-width:440px">
@@ -6817,27 +6872,37 @@ window.fxLogoSvg=function(art){
         <div id="tjRR" class="tj-rr"></div>
       </div>
       <div class="tj-ed-form">
+        <div class="tj-f"><div class="tj-lbl">Status</div>
+          <div class="tj-seg" role="group" aria-label="Status"><button type="button" class="tj-seg-b tj-st-b" data-st="open" aria-pressed="true" onclick="tjStatus('open')">Open</button><button type="button" class="tj-seg-b tj-st-b" data-st="closed" aria-pressed="false" onclick="tjStatus('closed')">Closed</button></div>
+          <input type="hidden" id="tjSt" value="open"></div>
         <div class="tj-f2">
-          <div><div class="tj-lbl">Date</div><input class="finp" id="tjDate" type="date" onchange="tjEdEingabe(true)"></div>
-          <div><div class="tj-lbl">Time</div><input class="finp" id="tjTime" type="time"></div>
+          <div><div class="tj-lbl">Open date</div><input class="m-inp" id="tjDate" type="date" onchange="tjEdEingabe(true)"></div>
+          <div><div class="tj-lbl">Open time</div><input class="m-inp" id="tjTime" type="time"></div>
         </div>
-        <div class="tj-f"><div class="tj-lbl">Asset</div><input class="finp" id="tjAsset" list="tjAssetList" placeholder="e.g. EUR/USD, GOLD, NAS100" autocomplete="off" oninput="tjEdEingabe(true)"><datalist id="tjAssetList"></datalist></div>
+        <div class="tj-f"><div class="tj-lbl">Asset</div><input class="m-inp" id="tjAsset" list="tjAssetList" placeholder="e.g. EUR/USD, GOLD, NAS100" autocomplete="off" oninput="tjEdEingabe(true)"><datalist id="tjAssetList"></datalist></div>
         <div class="tj-f"><div class="tj-lbl">Direction</div>
           <div class="tj-seg" role="group" aria-label="Direction"><button type="button" class="tj-seg-b" data-dir="long" aria-pressed="true" onclick="tjRichtung('long')">Long</button><button type="button" class="tj-seg-b" data-dir="short" aria-pressed="false" onclick="tjRichtung('short')">Short</button></div>
           <input type="hidden" id="tjDir" value="long"></div>
         <div class="tj-f2">
-          <div><div class="tj-lbl">Entry</div><input class="finp" id="tjEntry" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08500" oninput="tjEdEingabe()"></div>
-          <div><div class="tj-lbl">Size</div><input class="finp" id="tjSize" placeholder="e.g. 1.0 lot"></div>
+          <div><div class="tj-lbl">Entry</div><input class="m-inp" id="tjEntry" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08500" oninput="tjEdEingabe()"></div>
+          <div><div class="tj-lbl">Size</div><input class="m-inp" id="tjSize" placeholder="e.g. 1.0 lot"></div>
         </div>
         <div class="tj-f2">
-          <div><div class="tj-lbl">Stop loss</div><input class="finp" id="tjSl" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08200" oninput="tjEdEingabe()"></div>
-          <div><div class="tj-lbl">Take profit</div><input class="finp" id="tjTp" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.09500" oninput="tjEdEingabe()"></div>
+          <div><div class="tj-lbl">Stop loss</div><input class="m-inp" id="tjSl" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08200" oninput="tjEdEingabe()"></div>
+          <div><div class="tj-lbl">Take profit</div><input class="m-inp" id="tjTp" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.09500" oninput="tjEdEingabe()"></div>
         </div>
-        <div class="tj-f"><div class="tj-lbl">Exit</div>
-          <div class="tj-exit"><input class="finp" id="tjExit" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.09100" oninput="tjEdEingabe()"><button type="button" class="btn tj-hit-tp" onclick="tjExitAuf('tp')" title="Exit = take profit">Hit TP</button><button type="button" class="btn tj-hit-sl" onclick="tjExitAuf('sl')" title="Exit = stop loss">Hit SL</button></div></div>
-        <div class="tj-f"><div class="tj-lbl">P/L (profit / loss)</div><input class="finp" id="tjPnl" type="number" step="any" inputmode="decimal" placeholder="e.g. 250 or -120"></div>
-        <div class="tj-f"><div class="tj-lbl">Setup</div><input class="finp" id="tjSetup" placeholder="e.g. Breakout, COT reversal, NFP fade"></div>
-        <div class="tj-f"><div class="tj-lbl">Notes</div><textarea class="finp" id="tjNotes" rows="3" placeholder="What went well, what to change"></textarea></div>
+        <div id="tjZuBlock" class="tj-zu" hidden>
+          <div class="tj-zu-kopf">Closed</div>
+          <div class="tj-f2">
+            <div><div class="tj-lbl">Close date</div><input class="m-inp" id="tjCDate" type="date"></div>
+            <div><div class="tj-lbl">Close time</div><input class="m-inp" id="tjCTime" type="time"></div>
+          </div>
+          <div class="tj-f"><div class="tj-lbl">Exit</div>
+            <div class="tj-exit"><input class="m-inp" id="tjExit" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.09100" oninput="tjEdEingabe()"><button type="button" class="btn tj-hit-tp" onclick="tjExitAuf('tp')" title="Exit = take profit">Hit TP</button><button type="button" class="btn tj-hit-sl" onclick="tjExitAuf('sl')" title="Exit = stop loss">Hit SL</button></div></div>
+          <div class="tj-f"><div class="tj-lbl">P/L (profit / loss)</div><input class="m-inp tj-pnl" id="tjPnl" type="number" step="any" inputmode="decimal" placeholder="e.g. 250 or -120"></div>
+        </div>
+        <div class="tj-f"><div class="tj-lbl">Setup</div><input class="m-inp" id="tjSetup" placeholder="e.g. Breakout, COT reversal, NFP fade"></div>
+        <div class="tj-f"><div class="tj-lbl">Notes</div><textarea class="m-inp" id="tjNotes" rows="3" placeholder="What went well, what to change"></textarea></div>
       </div>
     </div>
     <div class="m-btns"><button class="btn" onclick="closeMGuarded('mTrade')">Cancel</button><button class="btn g" onclick="tjFormSpeichern()">Save trade</button></div>
