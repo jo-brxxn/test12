@@ -874,3 +874,16 @@ Verhältnis ablegt, kann später nicht mehr unterscheiden, ob hinter einem
 Wert 12 oder 12.000 Kontrakte standen — und ein sonst liquides Asset kann an
 einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
 19.09. ein drittes Feld: `[Datum, Ratio, Volumen]`.
+
+## country_data.json — Country profile (seit 2026-10-25, nur Anzeige)
+
+| Teil | Quelle | Takt |
+|---|---|---|
+| `wb.countries` (BIP-Verwendung, Exporte/Importe, Leistungsbilanz, Schulden, Wachstum, Arbeitslosigkeit, Exportmix) | Weltbank WDI-API, 17 Kennzahlen, 13 Länder (8 Währungsräume + DE/FR/IT/ES/NL), je jüngster Jahreswert `[Jahr, Wert]` | einmal am Tag (`wb.fetched`) |
+| `y10` IT/FR/ES/DE | TradingView-Scanner `TVC:xx10Y` | jeder Werktag angehängt, 800 Tage |
+| `snb.series` | SNB-Datenportal, Cube `snbgwdchfsgw` (Mio. CHF) | wöchentlich |
+| `china.pmi`, `boe.votes` | Kalenderarchiv `cal_hist/` (kein neuer Abruf) | mit dem Kalender |
+
+- **Fällt eine Quelle aus, bleibt ihr alter Stand**; die anderen laufen weiter (`continue-on-error`).
+- **Kein Score-Teil.** China-PMI und BoE-Stimmen wurden gemessen und haben keinen Vorhersagewert (CHANGELOG 632).
+- Rohstoff-Feed: **GAS** (TTF, `ICEEUR:TFM1!`, Historie `TTF=F`) und **LNG** (JKM, `NYMEX:JKM1!`, eigene Aufzeichnung) — nur Anzeige im Country profile.

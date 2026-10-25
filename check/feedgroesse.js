@@ -41,7 +41,9 @@ const FEEDS = ['ind_data.json', 'bond_data.json', 'price_data.json', 'cot_data.j
   'sentiment_data.json', 'news_data.json', 'news_ai.json', 'risk_index.json',
   'ff_calendar.json', 'score_hist.json', 'seasonality_data.json', 'rate_probabilities.json',
   // seit 2026-09-25: 4H-Trend, TradingView-Historien, lange Kurshistorie (bei Bedarf geladen)
-  'trend_data.json', 'tvecon_data.json', 'price_hist.json'];
+  'trend_data.json', 'tvecon_data.json', 'price_hist.json',
+  // seit 2026-10-25: Country profile (js/profil.js, nur auf Waehrungs-Seiten geladen)
+  'country_data.json'];
 
 const F = [];
 const fail = (t, x) => F.push(`${t}: ${x}`);

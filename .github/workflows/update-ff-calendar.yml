@@ -2773,9 +2773,9 @@ jobs:
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
           curl -sL -A "$UA" -H "Origin: https://www.tradingview.com" -H "Content-Type: application/json" \
-            --data '{"symbols":{"tickers":["SGX:FEF1!","ICEEUR:NCF1!","NZX:WMP1!","TVC:GOLD","NYMEX:CL1!"],"query":{"types":[]}},"columns":["close","Perf.1M"]}' \
+            --data '{"symbols":{"tickers":["SGX:FEF1!","ICEEUR:NCF1!","NZX:WMP1!","TVC:GOLD","NYMEX:CL1!","ICEEUR:TFM1!","NYMEX:JKM1!"],"query":{"types":[]}},"columns":["close","Perf.1M"]}' \
             "https://scanner.tradingview.com/global/scan" -o comm_tv.json || true
-          for SYM in "TIO=F" "MTF=F" "GC=F" "CL=F"; do
+          for SYM in "TIO=F" "MTF=F" "GC=F" "CL=F" "TTF=F"; do
             # printf statt echo: echo haengt einen Zeilenumbruch an, den tr zu
             # "_" macht - der Dateiname passte dann nicht zu dem, den Node
             # sucht (erster Lauf 2026-09-24: sigma1m ueberall leer).
@@ -2792,7 +2792,12 @@ jobs:
               COAL:{tv:"ICEEUR:NCF1!",y:"MTF=F",name:"Coal",note:"Newcastle coal futures; typical move measured on API2 Rotterdam coal (no free Newcastle history)"},
               DAIRY:{tv:"NZX:WMP1!",y:null,name:"Dairy (whole milk powder)",note:"NZX whole milk powder futures; fixed GDT thresholds 2%/5%"},
               GOLD:{tv:"TVC:GOLD",y:"GC=F",name:"Gold",note:"spot gold"},
-              OIL:{tv:"NYMEX:CL1!",y:"CL=F",name:"Crude oil",note:"WTI crude futures"}
+              OIL:{tv:"NYMEX:CL1!",y:"CL=F",name:"Crude oil",note:"WTI crude futures"},
+              // Seit 2026-10-25 (Country Profile, nur Anzeige): Gas fuer Euro-
+              // raum/Japan, Fluessiggas fuer Australien/Japan. JKM ohne freie
+              // Historie - eigene Aufzeichnung wie Kohle/Milch.
+              GAS:{tv:"ICEEUR:TFM1!",y:"TTF=F",name:"EU natural gas (TTF)",note:"ICE Endex Dutch TTF front month"},
+              LNG:{tv:"NYMEX:JKM1!",y:null,name:"Asian LNG (JKM)",note:"Platts JKM LNG front month; no free history, own daily record"}
             };
             const tv=lies("comm_tv.json"),rows=(tv&&Array.isArray(tv.data))?tv.data:[];
             // Typische Monatsbewegung in %: Standardabweichung der 21-Tage-
@@ -2846,7 +2851,7 @@ jobs:
             });
             if(ok>0){
               fs.writeFileSync("commodity_data.json",JSON.stringify({updated:new Date().toISOString(),items:out}));
-              console.log("commodity_data.json: "+ok+"/5 prices, "+Object.keys(out).map(k=>k+" perf1m="+out[k].perf1m+" sigma="+out[k].sigma1m).join(" | "));
+              console.log("commodity_data.json: "+ok+"/"+Object.keys(DEF).length+" prices, "+Object.keys(out).map(k=>k+" perf1m="+out[k].perf1m+" sigma="+out[k].sigma1m).join(" | "));
             }else console.log("commodity_data: no prices from TradingView, keeping existing file");
           ' || true
           rm -f comm_tv.json comm_y_*.json
@@ -5732,6 +5737,95 @@ jobs:
           node cal_hist_build.js
           rm -f cal_hist_build.js
 
+      # ── COUNTRY PROFILE (country_data.json, Nutzer 2026-10-25) ──────────
+      # Nur Anzeige in der Karte "Country profile" der acht Waehrungen, KEIN
+      # Score-Teil. Vier Quellen, jede fuer sich (eine fehlende kippt die
+      # anderen nicht, der alte Stand bleibt):
+      #  - Weltbank WDI (BIP-Aufteilung, Exporte/Importe, Leistungsbilanz,
+      #    Schulden, Arbeitslosigkeit, Exportmix) - Jahreswerte, nur einmal
+      #    am Tag geholt (wb.fetched).
+      #  - 10Y-Renditen Italien/Frankreich/Spanien/Deutschland (TradingView-
+      #    Scanner, wie bond_data) - taeglich angehaengt, Spreads zur Bund.
+      #  - SNB-Sichtguthaben (data.snb.ch, Cube snbgwdchfsgw, woechentlich):
+      #    steigen sie stark, kauft die SNB Devisen gegen Franken.
+      #  - China NBS PMI und BoE-Abstimmungen aus dem Kalenderarchiv cal_hist/
+      #    (dieselbe Quelle wie der Kalender, kein neuer Abruf).
+      - name: Fetch country profile data (World Bank + euro spreads + SNB + archive) -> country_data.json
+        continue-on-error: true
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          TODAY=$(date -u +%Y-%m-%d)
+          WB_DONE=$(node -e 'try{const d=JSON.parse(require("fs").readFileSync("country_data.json","utf8"));process.stdout.write(d.wb&&d.wb.fetched===process.argv[1]?"1":"0");}catch(e){process.stdout.write("0");}' "$TODAY")
+          if [ "$WB_DONE" != "1" ]; then
+            for IND in NE.CON.PRVT.ZS NE.GDI.TOTL.ZS NE.CON.GOVT.ZS NE.EXP.GNFS.ZS NE.IMP.GNFS.ZS NV.SRV.TOTL.ZS NV.IND.MANF.ZS NV.AGR.TOTL.ZS BN.CAB.XOKA.GD.ZS GC.DOD.TOTL.GD.ZS NY.GDP.MKTP.CD NY.GDP.MKTP.KD.ZG SL.UEM.TOTL.ZS TX.VAL.FUEL.ZS.UN TM.VAL.FUEL.ZS.UN TX.VAL.FOOD.ZS.UN TX.VAL.MMTL.ZS.UN; do
+              curl -sL --connect-timeout 15 --max-time 40 -A "$UA" -o "cpwb_$IND.json" -w "[debug] World Bank $IND: http=%{http_code} size=%{size_download}\n" "https://api.worldbank.org/v2/country/USA;EMU;GBR;JPN;CHE;CAN;AUS;NZL;DEU;FRA;ITA;ESP;NLD/indicator/$IND?format=json&date=2012:2026&per_page=1000" || true
+            done
+          fi
+          curl -sL -A "$UA" -H "Origin: https://www.tradingview.com" -H "Content-Type: application/json" \
+            --data '{"symbols":{"tickers":["TVC:IT10Y","TVC:FR10Y","TVC:ES10Y","TVC:DE10Y"],"query":{"types":[]}},"columns":["close"]}' \
+            "https://scanner.tradingview.com/global/scan" -o cp_tv.json || true
+          FROM_D=$(date -u -d '800 days ago' +%Y-%m-%d)
+          curl -sL --connect-timeout 15 --max-time 30 -A "$UA" -w "[debug] SNB sight deposits: http=%{http_code} size=%{size_download}\n" "https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en?fromDate=${FROM_D}&toDate=${TODAY}" -o cp_snb.csv || true
+          cat > cp_build.js <<'CPJS'
+          const fs=require("fs");
+          const today=process.argv[2],wbDone=process.argv[3]==="1";
+          const lies=f=>{try{return JSON.parse(fs.readFileSync(f,"utf8"));}catch(e){return null;}};
+          const out=lies("country_data.json")||{};
+          const log=[];
+          // 1) Weltbank: je Land und Kennzahl der juengste Jahreswert [Jahr, Wert]
+          const IND=["NE.CON.PRVT.ZS","NE.GDI.TOTL.ZS","NE.CON.GOVT.ZS","NE.EXP.GNFS.ZS","NE.IMP.GNFS.ZS","NV.SRV.TOTL.ZS","NV.IND.MANF.ZS","NV.AGR.TOTL.ZS","BN.CAB.XOKA.GD.ZS","GC.DOD.TOTL.GD.ZS","NY.GDP.MKTP.CD","NY.GDP.MKTP.KD.ZG","SL.UEM.TOTL.ZS","TX.VAL.FUEL.ZS.UN","TM.VAL.FUEL.ZS.UN","TX.VAL.FOOD.ZS.UN","TX.VAL.MMTL.ZS.UN"];
+          const LAND={USA:"USD",EMU:"EUR",GBR:"GBP",JPN:"JPY",CHE:"CHF",CAN:"CAD",AUS:"AUD",NZL:"NZD",DEU:"DE",FRA:"FR",ITA:"IT",ESP:"ES",NLD:"NL"};
+          if(!wbDone){
+            const wb={fetched:today,source:"World Bank WDI (api.worldbank.org)",countries:{}};let n=0;
+            IND.forEach(code=>{
+              const d=lies("cpwb_"+code+".json");const rows=Array.isArray(d)&&Array.isArray(d[1])?d[1]:[];
+              rows.forEach(r=>{const k=r&&LAND[r.countryiso3code];if(!k||r.value==null||!isFinite(+r.value))return;const y=+r.date;
+                const c=wb.countries[k]=wb.countries[k]||{};const cur=c[code];
+                if(!cur||y>cur[0]){c[code]=[y,code==="NY.GDP.MKTP.CD"?Math.round(+r.value/1e9):Math.round(+r.value*100)/100];}});
+            });
+            Object.values(wb.countries).forEach(c=>{n+=Object.keys(c).length;});
+            if(n>0){out.wb=wb;log.push("World Bank "+n+" values for "+Object.keys(wb.countries).length+" countries");}
+            else log.push("World Bank: no values, previous kept");
+          }else log.push("World Bank already fetched today");
+          // 2) 10Y-Renditen fuer die Euro-Spreads (nur Handelstage)
+          const tv=lies("cp_tv.json"),rows=tv&&Array.isArray(tv.data)?tv.data:[];
+          const wt=new Date(today+"T00:00:00Z").getUTCDay();
+          const y10=out.y10||{};let ny=0;
+          if(wt>0&&wt<6)rows.forEach(r=>{const k={"TVC:IT10Y":"IT","TVC:FR10Y":"FR","TVC:ES10Y":"ES","TVC:DE10Y":"DE"}[r.s];const v=r.d&&Number(r.d[0]);
+            if(!k||!isFinite(v))return;let s=(y10[k]||[]).filter(e=>e&&e[0]!==today);s.push([today,Math.round(v*1000)/1000]);s.sort((a,b)=>a[0]<b[0]?-1:1);y10[k]=s.slice(-800);ny++;});
+          out.y10=y10;log.push("10Y yields "+ny+"/4");
+          // 3) SNB-Sichtguthaben (CSV: "Date";"D0";"Value", Mio. CHF)
+          let snbN=0;
+          try{
+            const txt=fs.readFileSync("cp_snb.csv","utf8");const snb={};
+            txt.split(/\r?\n/).forEach(z=>{const f=z.split(";").map(x=>x.replace(/"/g,"").trim());
+              if(f.length<3||!/^\d{4}-\d{2}-\d{2}$/.test(f[0])||!isFinite(+f[2])||f[2]==="")return;(snb[f[1]]=snb[f[1]]||[]).push([f[0],+f[2]]);});
+            Object.keys(snb).forEach(k=>{snb[k].sort((a,b)=>a[0]<b[0]?-1:1);snbN+=snb[k].length;});
+            if(snbN>0)out.snb={source:"SNB data portal, cube snbgwdchfsgw (CHF million)",series:snb};
+          }catch(e){}
+          log.push("SNB sight deposits "+snbN+" points");
+          // 4) China NBS PMI + BoE-Abstimmungen aus cal_hist/ (Zeile: [utc, ccy, titel, wichtigkeit, actual, forecast, previous])
+          const ev=[];
+          try{fs.readdirSync("cal_hist").filter(f=>/^\d{4}\.json$/.test(f)).sort().slice(-4).forEach(f=>{const d=lies("cal_hist/"+f);if(d&&Array.isArray(d.ev))ev.push(...d.ev);});}catch(e){}
+          const zahl=x=>{const m=/^\s*([-+]?\d*\.?\d+)/.exec(String(x==null?"":x));return m?+m[1]:null;};
+          const cn={mfg:[],svc:[]};
+          ev.forEach(e=>{if(!Array.isArray(e)||e[1]!=="CNY"||e[4]==="")return;const t=String(e[2]);
+            const k=/^NBS Manufacturing PMI$/.test(t)?"mfg":/^NBS Non[ -]Manufacturing PMI$/.test(t)?"svc":null;if(!k)return;
+            cn[k].push([String(e[0]).slice(0,10),zahl(e[4]),zahl(e[5])]);});
+          Object.keys(cn).forEach(k=>{const m=new Map();cn[k].forEach(x=>m.set(x[0],x));cn[k]=[...m.values()].sort((a,b)=>a[0]<b[0]?-1:1).slice(-24);});
+          out.china={source:"NBS via TradingView calendar (cal_hist)",pmi:cn};
+          const boe={};
+          ev.forEach(e=>{if(!Array.isArray(e)||e[1]!=="GBP"||e[4]==="")return;const m=/^BoE MPC Vote (Hike|Unchanged|Cut)$/.exec(String(e[2]));if(!m)return;
+            const d=String(e[0]).slice(0,10);(boe[d]=boe[d]||{})[m[1]]=zahl(e[4]);});
+          out.boe={source:"Bank of England via TradingView calendar (cal_hist)",votes:Object.keys(boe).sort().slice(-12).map(d=>[d,boe[d].Hike||0,boe[d].Unchanged||0,boe[d].Cut||0])};
+          log.push("China PMI "+cn.mfg.length+"/"+cn.svc.length+", BoE meetings "+out.boe.votes.length);
+          out.updated=new Date().toISOString();
+          fs.writeFileSync("country_data.json",JSON.stringify(out));
+          console.log("country_data.json: "+log.join(" | "));
+          CPJS
+          node cp_build.js "$TODAY" "$WB_DONE" || true
+          rm -f cp_build.js cpwb_*.json cp_tv.json cp_snb.csv
+
       - name: Cleanup temp files
         run: rm -f thisweek.json nextweek.json fxstreet.json te.json te_pages.json tepage_*.html invcal.json tv.json tv_wide.json tv_recent.json tv_hist_*.json alt_actuals.json ffhtml_*.html cot_raw.json cot_pct_url.txt cot_pct_raw.json stooq_*.csv stooq_meta.txt news_marketaux.json
 
@@ -5756,6 +5850,7 @@ jobs:
           [ -f rate_probabilities.json ] && git add rate_probabilities.json
           [ -f risk_index.json ] && git add risk_index.json
           [ -f news_data.json ] && git add news_data.json
+          [ -f country_data.json ] && git add country_data.json
           if ! git diff --staged --quiet; then
             git commit -m "Update FF calendar + indicator data"
             # Retry mit Rebase bei Push-Kollision (Nutzer-Wunsch 2026-07-13:

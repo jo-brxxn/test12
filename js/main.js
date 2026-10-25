@@ -20,6 +20,8 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 // Trading Journal: eigene Trades im Monatskalender (Nutzer-Wunsch 2026-10-24,
 // siehe Kopf von trades.js). Zirkulaerer Import wie bei makro.js.
 import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
+// Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
+import {countryProfileHtml} from './profil.js';
 import {makroKartenSchalterHtml,makroReihenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
@@ -50,7 +52,9 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   // Was js/makro.js von hier liest (zirkulaerer Import, siehe dort).
   indChartSeries,fmtIndVal,achsenTicks,INFL_ZIEL,nivAlle,nivEintrag,nivReihe,indNextTermin,indNextExpected,
   researchAnalysis,chartLeisteHtml,markUserEditTs,
-  indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,kartenIcon,preisReiheAnzeige,makroReiheNeu,saveSoon};
+  indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,kartenIcon,preisReiheAnzeige,makroReiheNeu,saveSoon,
+  // Was js/profil.js (Country Profile, zirkulaerer Import) von hier liest.
+  COMMODITY_DATA,rohstoffReihe,rohstoffTrend,korbReihe,zinsdiffFuer,ROHSTOFF_KORB};
 // ── EINFARBIGER ICON-SATZ (Nutzer-Wunsch 2026-08-23) ───────────────────────
 // "mach davor die Flagge aber ohne Farben also eine Art icon aber schon die
 // richtige Form und nicht animiert und bei Gold und dem Rest auch gleich".
@@ -11291,6 +11295,10 @@ function renderAssetBoard(c){
            darunter - nur so sitzt sie garantiert buendig zwischen den beiden
            Reihen und nimmt denselben Spaltenabstand mit. */''}
       <div class="ab-col ab-qrow">${abQuickZeileHtml(c)}</div>
+      ${/* Country Profile (Nutzer 2026-10-25: "eine neue karte die sich von
+           ganz links nach ganz rechts erstreckt ueber macro ... erstmal nur
+           bei fx") - volle Breite zwischen Schnellzugriffen und MACRO. */''}
+      ${countryProfileHtml(c)}
       ${abReihenTitel('Macro',makroReihenSchalterHtml(c))}
       ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE
            breite Karte mit Reitern (Nutzer 2026-10-21, siehe Kopf von makro.js). */''}

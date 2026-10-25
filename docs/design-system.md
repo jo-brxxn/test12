@@ -1853,3 +1853,16 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - **Zahlen an einem Chart: eigener Kopf je Spur**, Feld = *Etikett* + **Wert**, Felder durch Linien getrennt; am Handy festes Raster, **nie ein Trennstrich am Zeilenanfang**.
 - **Werte im Chartkopf aus derselben Rechnung wie die Tabelle** (`indZeilenWerte`) — nie neu formatieren.
 - Details: `docs/makro.md`.
+
+## Country profile (seit 2026-10-25, `js/profil.js`)
+
+- **Nur Währungen**, eine Karte in voller Breite **direkt über der MACRO-Zeile**. Nicht-FX bekommt sie erst auf ausdrücklichen Wunsch.
+- **Drei Spalten, feste Reihenfolge:** *Central bank* | *Economy* (BIP + Arbeitsmarkt) | *What moves it*. Dazwischen `.cp-sep` (Verlaufslinie), Spaltenkopf `.cp-kopf` = Navy-Großbuchstaben mit Unterstrich. ≤ 980 px untereinander.
+- **Euro:** Leiste *Member states* unter den Spalten (5 → 3 → 2 → 1 Spalte); Stärken `.cp-plus` blau, Schwächen `.cp-minus` rot.
+- **Unter jedem Thema die passenden Indikatoren** der Seite mit Wert + Score-Punkten aus `indZeilenWerte`/`indScore` — nie neu formatieren.
+- **Score-Kennzeichen** an Rohstoffen: *in score ×W* (= `ROHSTOFF_KORB`) oder *shown only*. Die Karte selbst zählt nie.
+- **Feste Fakten tragen Jahr/Quelle** (*„2026: 5.01%“*, *„(DFAT 2025)“*); laufende Werte nur aus Feeds, sonst `.cp-leer` *„No price feed yet …“*.
+- Tempo-Chip: *Fast mover* navy, *Slow mover/Very slow* amber, *Medium* grau.
+- Kopf: Titel · ⓘ ganz rechts (`.ii-nach`), Land · Bank davor rechtsbündig; am Handy Land · Bank in eigener Zeile. Fuß: *Go to Rate Probabilities →*.
+- Feste Daten im Text mit zweistelligem Jahr: *Mar ’26*, *Jan 15, 15* (typografischer Apostroph).
+- Geprüft von `check/profil.js`.

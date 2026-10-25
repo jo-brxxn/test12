@@ -6108,6 +6108,105 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 .ab-qzeile .aql.on svg{color:#fff}
 @media(hover:hover){.ab-qzeile .aql:hover{background:var(--chrome-line);color:var(--on-accent);border-color:var(--accent)}
   .ab-qzeile .aql:hover svg{color:var(--on-accent)}}
+/* ── COUNTRY PROFILE (js/profil.js, Nutzer 2026-10-25) ──────────────────
+   Volle Breite zwischen Schnellzugriffen und MACRO, nur bei den acht
+   Waehrungen. Drei Spalten (Zentralbank | Wirtschaft | wovon es abhaengt),
+   getrennt durch einen feinen Strich mit Verlauf. Schrift nur aus der Skala:
+   Titel 17 px (--fs-kt) > Spaltenkopf 11 px Versal > Text 12/13 px; Werte fett,
+   Nebensachen kursiv, Richtung in Bias-Farbe (Nutzer: "viel mit einruecken
+   oder kursiv oder fett ... und immer bias farben wo es passt"). */
+.cp-row{grid-column:1 / -1}
+.cp-card{padding:16px 18px 14px}
+.cp-hd{margin-bottom:6px}
+.ab-tile-t.cp-t{font:700 var(--fs-kt)/1.2 var(--ff-text);color:var(--t0)}
+.cp-hd-sub{font:600 var(--fs-base)/1.2 var(--ff-text);color:var(--t2);margin-left:auto;min-width:0;text-align:right}
+.cp-grid{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1.12fr) 1px minmax(0,1fr);column-gap:22px;align-items:start}
+.cp-sep{align-self:stretch;width:1px;background:linear-gradient(to bottom,transparent,var(--bd2) 10%,var(--bd2) 90%,transparent)}
+.cp-col{min-width:0;display:flex;flex-direction:column;gap:5px}
+.cp-kopf{display:flex;align-items:center;gap:7px;padding-bottom:7px;margin-bottom:3px;border-bottom:2px solid var(--ui-act);
+  font:800 var(--fs-sm)/1 var(--ff-text);color:var(--ui-act);text-transform:uppercase;letter-spacing:.1em}
+.cp-kopf svg{flex:none;color:var(--ui-act)}
+.cp-kopf-x{margin-left:auto;font:600 var(--fs-sm)/1 var(--ff-text);color:var(--t2);text-transform:none;letter-spacing:0}
+.cp-bank{font:700 var(--fs-lg)/1.25 var(--ff-text);color:var(--t0)}
+.cp-kurz{display:inline-block;margin-left:4px;padding:1px 6px;border:1px solid var(--bd);border-radius:5px;background:var(--bg3);
+  font:700 var(--fs-2xs)/1.3 var(--ff-text);color:var(--t2);vertical-align:2px}
+.cp-ziel{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 8px}
+.cp-zielz{font:800 var(--fs-lg)/1 var(--ff-num,var(--ff-text));color:var(--ui-act)}
+.cp-tempo{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;font:400 var(--fs-base)/1.35 var(--ff-text);color:var(--t2)}
+.cp-chip{flex:none;display:inline-block;padding:3px 8px;border-radius:999px;font:800 var(--fs-2xs)/1.1 var(--ff-text);text-transform:uppercase;letter-spacing:.06em;
+  background:var(--bg3);color:var(--t1);border:1px solid var(--bd)}
+.cp-tempo-fast .cp-chip,.cp-rolle-haven .cp-chip{background:color-mix(in srgb,var(--ui-act) 12%,transparent);color:var(--ui-act);border-color:color-mix(in srgb,var(--ui-act) 35%,transparent)}
+.cp-tempo-slow .cp-chip,.cp-tempo-vslow .cp-chip,.cp-rolle-risk .cp-chip{background:color-mix(in srgb,var(--due) 12%,transparent);color:var(--due);border-color:color-mix(in srgb,var(--due) 35%,transparent)}
+.cp-folge{font:600 var(--fs-base)/1.35 var(--ff-text);color:var(--t1);padding-left:10px;border-left:3px solid var(--bd2)}
+.cp-sub{display:flex;align-items:baseline;gap:6px;margin-top:9px;font:700 var(--fs-2xs)/1.2 var(--ff-text);color:var(--t3);text-transform:uppercase;letter-spacing:.08em}
+.cp-sub-x{font:italic 400 var(--fs-2xs)/1.2 var(--ff-text);text-transform:none;letter-spacing:0;color:var(--t3)}
+.cp-kv{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;padding-left:10px;font:400 var(--fs-base)/1.4 var(--ff-text);color:var(--t1)}
+.cp-l{flex:0 0 118px;font:600 var(--fs-sm)/1.4 var(--ff-text);color:var(--t2)}
+.cp-v b{font-weight:800;color:var(--t0)}
+.cp-x{font:400 var(--fs-sm)/1.4 var(--ff-text);color:var(--t2)}
+.cp-list{list-style:none;margin:0;padding:0 0 0 10px;display:flex;flex-direction:column;gap:3px}
+.cp-list li{display:flex;gap:7px;font:400 var(--fs-base)/1.4 var(--ff-text);color:var(--t1)}
+.cp-pf{flex:0 0 12px;text-align:center;color:var(--t3);font-weight:700}
+.cp-tags{display:flex;flex-wrap:wrap;gap:5px;padding-left:10px}
+.cp-tag{padding:3px 8px;border-radius:999px;background:var(--bg3);border:1px solid var(--bd);font:600 var(--fs-2xs)/1.2 var(--ff-text);color:var(--t1)}
+.cp-sp{display:block;width:100%;height:34px;margin:2px 0}
+.cp-sp polyline{stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
+.cp-sp-ref{stroke:var(--t3);stroke-width:1;stroke-dasharray:3 3;opacity:.7}
+.cp-sp-ref.cp-sp-ziel{stroke:var(--blue);opacity:.9}
+.cp-spz{padding-left:10px}
+.cp-spz-a{display:flex;justify-content:space-between;gap:8px;font:400 var(--fs-2xs)/1.2 var(--ff-text);color:var(--t3)}
+.cp-zl{color:var(--blue);font-weight:700}
+.cp-bar{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden;margin:3px 0 4px}
+.cp-seg{min-width:3px}
+.cp-seg-ko{background:var(--tf1)}.cp-seg-inv{background:var(--tf3)}.cp-seg-st{background:var(--tf2)}.cp-seg-nx{background:var(--tf4)}
+.cp-teil{padding:4px 0 5px;border-bottom:1px dashed var(--bd)}
+.cp-teil-k{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;font:400 var(--fs-base)/1.35 var(--ff-text);color:var(--t1)}
+.cp-teil-k b{font:800 var(--fs-md)/1.2 var(--ff-text);color:var(--t0)}
+.cp-teil-n{font-weight:700;color:var(--t1);min-width:92px}
+.cp-dot{flex:none;width:9px;height:9px;border-radius:50%}
+.cp-teil-i{padding:2px 0 0 17px;display:flex;flex-direction:column;gap:1px}
+.cp-ind{display:flex;align-items:baseline;gap:8px;font:400 var(--fs-base)/1.4 var(--ff-text);color:var(--t1)}
+.cp-col>.cp-ind{padding-left:10px}
+.cp-ind-n{flex:1 1 auto;min-width:0;color:var(--t2)}
+.cp-ind b{font-weight:800}
+.cp-pkt{flex:0 0 38px;text-align:right;font:700 var(--fs-2xs)/1.2 var(--ff-text)}
+.cp-pkt0{color:var(--t3);font-weight:600}
+.cp-mini{padding-left:10px;font:400 var(--fs-sm)/1.4 var(--ff-text);color:var(--t2)}
+.cp-mini b{color:var(--t0)}
+.cp-quelle{text-align:right;font:italic 400 var(--fs-2xs)/1.2 var(--ff-text);color:var(--t3)}
+.cp-leer{margin-left:10px;padding:6px 9px;border:1px dashed var(--bd2);border-radius:7px;background:var(--bg3);font:italic 400 var(--fs-sm)/1.35 var(--ff-text);color:var(--t2)}
+.cp-sep-h{width:auto;height:1px;margin:14px 0 10px;background:linear-gradient(to right,transparent,var(--bd2) 6%,var(--bd2) 94%,transparent)}
+.cp-kopf-l{margin-bottom:8px}
+.cp-laender{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.cp-land{padding:8px 10px;border:1px solid var(--bd);border-radius:var(--rss,8px);background:var(--bg3);display:flex;flex-direction:column;gap:4px}
+.cp-land-k{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font:400 var(--fs-base)/1.3 var(--ff-text);color:var(--t0)}
+.cp-land-a{font:600 var(--fs-sm)/1.3 var(--ff-text);color:var(--t2)}
+.cp-land-z{display:flex;flex-wrap:wrap;gap:2px 12px;font:400 var(--fs-sm)/1.4 var(--ff-text);color:var(--t2)}
+.cp-land-z b{color:var(--t0)}
+.cp-land-pm{display:flex;flex-direction:column;padding-left:8px;font:400 var(--fs-sm)/1.4 var(--ff-text)}
+.cp-plus{color:var(--blue)}.cp-minus{color:var(--red)}
+.cp-rolle{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;padding-left:10px;font:400 var(--fs-sm)/1.35 var(--ff-text);color:var(--t2)}
+.cp-roh{padding:5px 0 3px 10px;border-top:1px dashed var(--bd)}
+.cp-roh-k{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 9px;font:400 var(--fs-base)/1.35 var(--ff-text);color:var(--t1)}
+.cp-roh-k>b{color:var(--t0)}
+.cp-roh-p{font-weight:700;color:var(--t0)}
+.cp-roh-m{font:700 var(--fs-sm)/1.35 var(--ff-text)}
+.cp-roh-s{margin-left:auto}
+.cp-insc,.cp-only{display:inline-block;padding:2px 7px;border-radius:999px;font:700 var(--fs-2xs)/1.2 var(--ff-text)}
+.cp-insc{background:color-mix(in srgb,var(--ui-act) 12%,transparent);color:var(--ui-act)}
+.cp-only{background:var(--bg3);color:var(--t3)}
+.cp-roh-z{font:400 var(--fs-sm)/1.4 var(--ff-text);color:var(--t2)}
+.cp-abh{display:flex;flex-direction:column;gap:4px;padding-left:10px}
+.cp-abh-z{display:grid;grid-template-columns:86px minmax(0,1fr);gap:8px;font:400 var(--fs-base)/1.4 var(--ff-text);color:var(--t1)}
+.cp-abh-k{font:700 var(--fs-2xs)/1.6 var(--ff-text);color:var(--t2);text-transform:uppercase;letter-spacing:.05em}
+.cp-vote{display:flex;gap:14px;padding-left:10px;font:400 var(--fs-base)/1.4 var(--ff-text);color:var(--t1)}
+@media(max-width:1180px){.cp-laender{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:980px){
+  .cp-grid{grid-template-columns:minmax(0,1fr)}
+  .cp-laender{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cp-sep{width:auto;height:1px;margin:12px 0;background:linear-gradient(to right,transparent,var(--bd2) 10%,var(--bd2) 90%,transparent)}
+}
+@media(max-width:640px){.cp-hd{flex-wrap:wrap}.cp-hd-sub{order:3;flex-basis:100%;margin-left:0;text-align:left;padding-top:2px}.ab-tile-hd.cp-hd>.ii-nach{margin-left:auto!important}.cp-laender{grid-template-columns:minmax(0,1fr)}.cp-kopf-l{flex-wrap:wrap}.cp-kopf-l .cp-kopf-x{flex-basis:100%;margin-left:0;line-height:1.3}.cp-card{padding:13px 12px}.cp-l{flex-basis:100px}.cp-abh-z{grid-template-columns:72px minmax(0,1fr)}}
 /* ── Wisch-Uebergang beim Seitenwechsel (2026-09-23, siehe wischStart in
    js/main.js). pointer-events:none: der Inhalt darunter ist sofort bedienbar,
    die Animation laeuft trotzdem bis zum Ende. z-index ueber den Stapel-
@@ -6726,11 +6825,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-632 - Score-Modell 28 nach Messung (nur Waehrungen): Niveau-Block raus, COT gegen die Spekulanten, 10Y nur Anzeige + neue Zeile Yield Curve (10Y-2Y), Deckel fuer doppelte Bloecke, PPI/Claims halb, PCE/ZEW/EUR-GDP/EUR+GBP-Retail nur Anzeige, CAD-Oel 0,5. Ein Charts-Schalter rechts in der MACRO-Zeile, Schnellzugriffe wieder Navy."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-633 - Neue Karte Country profile (nur Waehrungen, ueber Macro): Zentralbank | Wirtschaft + Arbeitsmarkt | Was die Waehrung bewegt, beim Euro die fuenf grossen Mitgliedslaender. Neue Datei country_data.json (World Bank, Euro-Spreads, SNB-Giroguthaben, China-PMI, BoE-Abstimmungen), Gas TTF und LNG JKM im Rohstoff-Feed."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-632</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-633</span>
     </span>
   </div>
   <div class="hdr-r">
