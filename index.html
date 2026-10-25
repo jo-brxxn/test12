@@ -4063,7 +4063,14 @@ body.no-ui-anim .hud-live-dot{animation:none}
 .heat-bias{font-size:var(--fs-2xs);font-weight:700;font-family:var(--ff-num)}
 .dw-mini_calendar .cal-scroll{max-height:52vh;overflow-y:auto}
 /* ── CALENDAR TABLE (FF-Style) ── */
-.cal-table{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);overflow-x:auto;margin-bottom:6px}
+/* ⚠ will-change:transform = eigene Ebene (2026-10-24, gemessen). Die Tabelle
+   ist ein Scroll-Container (overflow-x fuer schmale Bildschirme) mit ~5.200
+   Elementen und 17.700 px Hoehe. Ohne eigene Ebene ordnete Chrome sie in
+   JEDEM Bild der Seiten-Einblendung (pageFadeIn, translateY) neu:
+   7x ~170 ms Layerize, Calendar-Wechsel 1.294 ms (Handy dpr 3: 929 ms).
+   Mit eigener Ebene 160-180 ms, Optik und Scrollen unveraendert.
+   Waechter: check/performance.js I. Regel: docs/performance.md 10. */
+.cal-table{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);overflow-x:auto;margin-bottom:6px;will-change:transform}
 .cal-day-hdr{font-size:var(--fs-sm);font-weight:800;color:var(--t1);padding:6px 9px;background:var(--bg4);border-bottom:1px solid var(--bd);font-family:var(--ff-num);letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase}
 .cal-day-hdr.today{color:var(--red)}
 .cal-day-hdr .cal-day-cd{color:var(--t3);font-weight:700}

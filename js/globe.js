@@ -895,7 +895,10 @@ function startGlobes(){
   const STEP_MS=0;
   const DT_MAX=100;   // groessere Spruenge werden gekappt, sonst schiesst die Kugel nach einem Tab-Wechsel herum
   const frame=now=>{
-    if(!GLOBE_PAGES.includes(curPage)||!_globeHosts.length||!document.body.contains(_globeHosts[0].host)){stopGlobe();return;}
+    // Ausserhalb der Overview endet die Schleife hier (Nutzer 2026-10-24: "wenn
+    // man nicht auf der Weltkugel ist soll diese sich auch nicht drehen").
+    // window.__gpGlobusUeberall: nur fuer die Gegenprobe in check/performance.js (J).
+    if(!(GLOBE_PAGES.includes(curPage)||window.__gpGlobusUeberall)||!_globeHosts.length||!document.body.contains(_globeHosts[0].host)){stopGlobe();return;}
     const dt=Math.min(now-_globeLast,DT_MAX);
     const ruheMs=window.__gpGlobusRuheMs||GLOBE_RUHE_MS;
     const ruht=_globeMode==='auto'&&_throttleFrac<=0.002&&!_globeVehicleBusy&&now-_globeEingabe>ruheMs;

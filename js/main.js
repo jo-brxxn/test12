@@ -28,7 +28,7 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
   applyRevisionToValHist,applyTrendModel,checkPriceAlerts,fmtDayHdr,indBiasInputSig,indBiasPinned,
-  invalidateRateStepCache,isNonFx,macroCcyFor,parseNumLike,pushU,recordScoreHist,renderDash,rerender,researchBias,
+  invalidateRateStepCache,isNonFx,macroCcyFor,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,
   resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,todayStr,trackIndValues,widgets,feedEntryFor,kanonIndName,
   IND_AUTO_RUBS,IND_EVENT_MATCHERS,calEvts,cloudAutoSync,evtMatchesSym,getSym,markLsUpdatedSeen,
   markPrefEdit,parsePolicyRate,periodLabel,rateInfo,recomputeAuto,scoreHist,selId,setSuppressBiasFlipAlerts,
@@ -3195,17 +3195,25 @@ function indBiasFromEvent(ev){
 // js/event-matchers.js (der Kalender-Workflow laedt sie von dort).
 function applyResearchToCal(){
   let changed=false;
+  // Jedes Datum EINMAL lesen statt je Paar (2026-10-24, Pruefdurchgang
+  // Performance): 345 Eintraege x 570 Kalender-Zeilen = 197.000 Paare mit je
+  // zwei Date.parse - gemessen 171 ms bei 4x gedrosselter CPU. ev.date
+  // aendert sich in dieser Schleife nicht (geschrieben werden nur
+  // actual/forecast/previous), Reihenfolge und Ergebnis bleiben gleich.
+  const evMs=new Map();
+  calEvts.forEach(ev=>evMs.set(ev,Date.parse(ev.date+'T00:00:00Z')));
   Object.entries(IND_RESEARCH_DATA).forEach(([ccy,data])=>{
     data.entries.forEach(e=>{
       if(e.actual==null||!e.releaseDate)return;
       const matcher=CAL_RESEARCH_MATCHERS[e.indicator];
       if(!matcher)return;
+      const relMs=Date.parse(String(e.releaseDate).slice(0,10)+'T00:00:00Z');
       calEvts.forEach(ev=>{
         if(ev.actual)return;
         // +-1 Tag (2026-09-27): releaseDate ist das Datum am Veroeffentlichungsort
         // bzw. UTC, ev.date das Ortsdatum - AUD-Releases um 23:00 UTC liegen
         // hier schon auf dem Folgetag und bekamen nie ihr Actual.
-        if(Math.abs(Date.parse(ev.date+'T00:00:00Z')-Date.parse(String(e.releaseDate).slice(0,10)+'T00:00:00Z'))>864e5)return;
+        if(Math.abs(evMs.get(ev)-relMs)>864e5)return;
         if(!evtMatchesSym(ev,ccy))return;
         if(!matcher(ev.name,ccy))return;
         ev.actual=splitResearchVal(e.actual).val;
@@ -9220,11 +9228,20 @@ const KERZEN_WOCHENENDE_OK=['crypto'];
 function kerzenWochenendeErlaubt(assetId){
   return KERZEN_WOCHENENDE_OK.includes(assetCls(assetId));
 }
+// Merker (2026-10-24, Pruefdurchgang Performance): beim Start 64.800 Aufrufe
+// (jede Kursreihe je Rendite-Berechnung) fuer wenige tausend Tage.
+const _wochenendeMerker=new Map();
 function istWochenende(ymd){
-  const t=Date.parse(String(ymd)+'T00:00:00Z');
-  if(!isFinite(t))return false;
-  const w=new Date(t).getUTCDay();
-  return w===0||w===6;
+  const k=String(ymd);
+  let w=_wochenendeMerker.get(k);
+  if(w===undefined){
+    const t=Date.parse(k+'T00:00:00Z');
+    const tag=isFinite(t)?new Date(t).getUTCDay():-1;
+    w=tag===0||tag===6;
+    if(_wochenendeMerker.size>20000)_wochenendeMerker.clear();
+    _wochenendeMerker.set(k,w);
+  }
+  return w;
 }
 function ohneWochenende(reihe,assetId){
   if(!Array.isArray(reihe))return[];
@@ -15015,14 +15032,25 @@ async function fetchFF(silent,btnEl){
     // ohne das Event selbst neu anzulegen (Notizen/Edits bleiben erhalten).
     // Als Abgleich-Pool dient das bereits mit den Live-Daten
     // zusammengeführte evts-Set.
+    // Index statt evts.find je Kalender-Zeile (2026-10-24, Pruefdurchgang
+    // Performance): vorher las jede der ~570 Zeilen ALLE Feed-Events samt
+    // new Date() erneut - gemessen 213 ms bei 4x gedrosselter CPU. Der Index
+    // behaelt je Schluessel das ERSTE passende Event in Feed-Reihenfolge,
+    // also genau das, was find() geliefert hat. Verschachtelte Maps
+    // vergleichen wie === (kein zusammengeklebter Text-Schluessel).
+    const ffIdx=new Map();
+    evts.forEach(ev=>{
+      if(!ev.date)return;
+      if(ev.impact!=='High'&&ev.impact!=='Medium')return;
+      const d=new Date(ev.date);if(isNaN(d))return;
+      const dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      let a=ffIdx.get(ev.title);if(!a){a=new Map();ffIdx.set(ev.title,a);}
+      let b=a.get(dateStr);if(!b){b=new Map();a.set(dateStr,b);}
+      const c=ev.country||'';if(!b.has(c))b.set(c,ev);
+    });
     calEvts.forEach(e=>{
-      const match=evts.find(ev=>{
-        if(!ev.date)return false;
-        if(ev.impact!=='High'&&ev.impact!=='Medium')return false;
-        const d=new Date(ev.date);if(isNaN(d))return false;
-        const dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-        return ev.title===e.name&&dateStr===e.date&&(ev.country||'')===(e.currencies||'');
-      });
+      const a=ffIdx.get(e.name),b=a&&a.get(e.date);
+      const match=b&&b.get(e.currencies||'');
       if(!match)return;
       if(!e.actual&&match.actual!=null&&match.actual!==''){e.actual=match.actual;actualsAdded++;}
       // "Previous" wurde nachträglich revidiert (z.B. NFP-Vormonatswert
@@ -15039,7 +15067,8 @@ async function fetchFF(silent,btnEl){
     updFFLastUpd();
     applyResearchToCal();
     processCalEvts();
-    save();renderSidebar();rerender();
+    save();renderSidebar();
+    if(silent)rerenderBald();else rerender();
     if(!silent){
       alert('✓ '+added+' new high/medium-impact event(s) loaded for the last '+FF_PAST_DAYS+' and next '+FF_WINDOW_DAYS+' days.\n✓ '+actualsAdded+' "Actual" value(s) added or filled in.'+(revisionsUpdated?'\n✓ '+revisionsUpdated+' "Previous" value(s) revised.':''));
     }
@@ -15047,7 +15076,7 @@ async function fetchFF(silent,btnEl){
     localStorage.setItem('fxpro_ff_last',new Date().toISOString());
     localStorage.setItem('fxpro_ff_lastok','0');
     updFFLastUpd();
-    rerender();
+    if(silent)rerenderBald();else rerender();
     if(!silent)alert('Could not reach Forex Factory.\n\nForex Factory does not offer a public API or API key - this uses an unofficial data feed which can be blocked (e.g. by Cloudflare) for everyone, including all proxy fallbacks tried.\n\nFix: Go to forexfactory.com/calendar and add events manually using the form below. Only takes 1 minute per week.');
   }
   if(btn){btn.innerHTML=icn('refresh')+' Refresh';btn.disabled=false;}
@@ -18858,8 +18887,12 @@ async function cotManualRefresh(){
 }
 
 // ── Countdown bis zum naechsten COT-Report (Freitag 15:30 New Yorker Zeit) ──
+// Formatierer EINMAL bauen (2026-10-24): ein Intl.DateTimeFormat mit Zeitzone
+// kostet beim Anlegen ~0,4 ms (4x gedrosselt ~1,8 ms), das Formatieren selbst
+// fast nichts. Optionen sind fest, das Ergebnis also identisch.
+let _cotNyDtf=null;
 function cotNyParts(date){
-  const dtf=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour12:false,weekday:'short',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const dtf=_cotNyDtf||(_cotNyDtf=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour12:false,weekday:'short',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}));
   const m={};dtf.formatToParts(date).forEach(p=>{m[p.type]=p.value;});return m;
 }
 function cotNyToUtc(y,mo,d,h,mi){
@@ -24835,10 +24868,13 @@ function showTab(tab,btn,fxMode){
   wischStart();
   if(tab==='cur'&&fxMode)curFxMode=fxMode;
   triggerEnterAnim();
+  const pgEl=document.getElementById(PAGE_IDS[tab]);
+  // War die Zielseite schon sichtbar (dieselbe Seite erneut gewaehlt)? Nur dann
+  // muss die Einblendung unten von Hand neu gestartet werden.
+  const zielWarSichtbar=!!pgEl&&!!pgEl.style.display&&pgEl.style.display!=='none';
   Object.values(PAGE_IDS).forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   updateAuroraColors();
   if(tab!=='cot')cotStopCountdown();
-  const pgEl=document.getElementById(PAGE_IDS[tab]);
   // Zurueck-Button (Nutzer-Wunsch 2026-09-05: "oben rechts unter der Leiste
   // ... muss sich ins Menue einfuegen und darf nichts verdecken"): statt als
   // fest positionierte Pille unten links ueber dem Inhalt zu schweben, wandert
@@ -24852,10 +24888,19 @@ function showTab(tab,btn,fxMode){
   if(_bb&&pgEl&&tab!=='cur'&&_bb.parentElement!==pgEl)pgEl.insertBefore(_bb,pgEl.firstChild);
   if(pgEl){
     pgEl.style.display=tab==='cur'?'flex':'block';
-    // Animation neu auslösen (Reflow erzwingen), falls dieselbe Seite kurz
-    // zuvor schon einmal eingeblendet wurde.
-    pgEl.classList.remove('page-fade-in');
-    void pgEl.offsetWidth;
+    // Einblendung neu starten - OHNE Layout zu erzwingen (2026-10-24,
+    // Pruefdurchgang Performance). Vorher stand hier void pgEl.offsetWidth:
+    // das legte die Zielseite mit ihrem ALTEN Inhalt komplett aus, bevor die
+    // Render-Funktion ihn ersetzte - GEMESSEN je Wechsel Calendar 133 ms,
+    // Asset 90 ms, Trends 48 ms, Dashboard 39 ms, reine Verschwendung.
+    // Kommt die Seite aus display:none, startet die CSS-Animation von selbst
+    // neu (CSS Animations: display none -> sichtbar startet animation-name).
+    // Nur wenn dieselbe Seite schon sichtbar war, braucht es den Neustart -
+    // dafuer reicht ein Stil-Abgleich (getComputedStyle), kein Layout.
+    if(zielWarSichtbar){
+      pgEl.classList.remove('page-fade-in');
+      void getComputedStyle(pgEl).animationName;
+    }
     pgEl.classList.add('page-fade-in');
   }
   curPage=tab;
@@ -24939,6 +24984,30 @@ function rerender(){
   else if(curPage==='journal')renderJournal();
   else if(curPage==='cal')renderCalendar();
   else if(curPage==='notes')rerenderNotesHost();
+}
+// ── Hintergrund-Ankuenfte zeichnen GEBUENDELT (2026-10-24, Pruefdurchgang
+// Performance) ──
+// GEMESSEN beim Start: das Dashboard wurde 6x komplett neu aufgebaut, davon
+// 4x innerhalb von ~150 ms - Preis-, News-, Risk- und Score-Feeds zeichneten
+// jeder beim eigenen Eintreffen alles neu (Rechnen + HTML + Layout + Malen).
+// rerenderBald() fasst alles, was innerhalb von RERENDER_BUENDEL_MS eintrifft,
+// zu EINEM Aufbau zusammen. Wechselt die Seite in der Zwischenzeit, entfaellt
+// er: showTab hat die neue Seite dann bereits mit den neuen Daten gezeichnet
+// (docs/performance.md 5). Nur fuer Daten, die im Hintergrund ankommen - eine
+// Nutzeraktion zeichnet weiter sofort mit rerender().
+// nurSeite: nur einplanen, wenn gerade diese Seite offen ist (News/Risk
+// betreffen nur das Dashboard).
+const RERENDER_BUENDEL_MS=150;
+let _rerenderBaldT=null,_rerenderBaldSeite=null;
+function rerenderBald(nurSeite){
+  if(nurSeite&&curPage!==nurSeite)return;
+  _rerenderBaldSeite=curPage;
+  if(_rerenderBaldT)return;
+  _rerenderBaldT=setTimeout(()=>{
+    _rerenderBaldT=null;
+    if(curPage!==_rerenderBaldSeite)return;
+    try{rerender();}catch(e){console.error('[rerenderBald]',e);}
+  },RERENDER_BUENDEL_MS);
 }
 // ══ CARRY TRADE SCANNER ═══════════════════════════════════════════
 // Liest die Leitzins-Werte (Central Bank Rate) je Waehrung aus den
@@ -25722,7 +25791,7 @@ async function bootFetchScoreFeeds(){
   // aufgezeichneten Wert mehr.
   try{recordScoreHist();}catch(e){}
   _lastFeedTs=Date.now();   // speist die "Last update"-Anzeige der Metazeile
-  rerender();
+  rerenderBald();   // gebuendelt mit Preis-/News-/Risk-Feed, die im selben Moment eintreffen
 }
 // Server-seitige Score-Historie (score_hist.json, vom stuendlichen GitHub-
 // Workflow "update-ff-calendar.yml" -> Schritt "Fetch score snapshot from

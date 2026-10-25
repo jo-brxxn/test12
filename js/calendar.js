@@ -143,9 +143,24 @@ function fmtStamp(ts){try{const d=new Date(ts);if(!isFinite(d.getTime()))return 
 // aus (Nutzer-Bugreport 2026-07-21: Score-Modal zeigte "Claimant Count
 // Change" korrekt bullish, History-Karte fuer denselben Tag/Release bearish).
 const LOWER_IS_BETTER_RE=/unemployment|jobless|claim|deficit/i;
+// Merker (2026-10-24, Pruefdurchgang Performance): beim Start 381.000 Aufrufe
+// fuer wenige tausend verschiedene Texte (Score-Kette, Chart-Historien) -
+// gemessen 295 ms bei 4x gedrosselter CPU. Reine Funktion des Textes, also
+// einmal rechnen, danach nachschlagen. Obergrenze, damit er nie unbegrenzt
+// waechst (docs/performance.md 9).
+const _parseNumMerker=new Map();
 function parseNumLike(s){
   if(s==null||s==='')return null;
-  const str=String(s).trim();
+  const k=typeof s==='string'?s:String(s);
+  const hit=_parseNumMerker.get(k);
+  if(hit!==undefined)return hit;
+  const v=parseNumLikeRoh(k);
+  if(_parseNumMerker.size>20000)_parseNumMerker.clear();
+  _parseNumMerker.set(k,v);
+  return v;
+}
+function parseNumLikeRoh(s){
+  const str=s.trim();
   const m=str.match(/-?\d[\d.,]*/);
   if(!m)return null;
   let v=parseFloat(m[0].replace(/,/g,''));

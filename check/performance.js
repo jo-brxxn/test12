@@ -50,10 +50,23 @@
 //   --gegenprobe-chv       Aufraeumen der Chart-Registry aus               -> F rot
 //   --gegenprobe-globus    Kugel wieder in jedem Bild neu gezeichnet       -> G rot
 //   --gegenprobe-ruhe      Kugel ruht im Leerlauf nie (Frist unendlich)    -> H rot
+//   --gegenprobe-ebene     Calendar-Tabelle ohne eigene Ebene              -> I rot
+//   --gegenprobe-kugelweg  Kugel-Schleife laeuft auf jeder Seite weiter    -> J rot
 // (F, seit 2026-10-16) Speicher: nach 60 Seiten-/Asset-Wechseln haelt die
 //      Hover-Registry der Charts (_chvReg) nur Eintraege fuer Charts, die im
 //      Dokument stehen (+ eine Runde Puffer). Vorher wuchs sie unbegrenzt:
 //      +3,5 MB Heap je 40 Wechsel, 250.000 Zeichenketten nach 80 Wechseln.
+// (I, seit 2026-10-24) Ein Scroll-Container, der mit seinem Inhalt waechst
+//      (scrollt nicht selbst senkrecht, z. B. overflow-x fuer schmale
+//      Bildschirme) und >= GROSS_SCROLLER Elemente haelt, hat eine eigene
+//      Ebene (will-change: transform). GEMESSEN: die Calendar-Tabelle (5.215
+//      Elemente, 17.700 px) wurde in JEDEM Bild der Seiten-Einblendung neu
+//      geordnet - 7x ~170 ms Layerize, Wechsel 1.294 ms, Handy dpr 3 929 ms;
+//      mit eigener Ebene 160-180 ms.
+// (J, seit 2026-10-24) Ausserhalb der Overview laeuft die Kugel-Schleife
+//      nicht: 0 Bild-Aufrufe der Kugel und 0 laufende Animationen in #pgOver
+//      auf Dashboard/Calendar/Asset. Nutzer 2026-10-24: "wenn man nicht auf
+//      der Weltkugel ist soll diese sich auch nicht drehen".
 // (G, seit 2026-10-16) Overview-Kugel im Normaltempo hoechstens 40
 //      Neuzeichnungen je Sekunde (Bewegung < 0,5 px je Bild wird nicht
 //      gezeichnet) - vorher 60, gemessen ~1.760 ms Rechenzeit je 5 s im
@@ -70,11 +83,14 @@ const GP_SMIL = process.argv.includes('--gegenprobe-smil');
 const GP_CHV = process.argv.includes('--gegenprobe-chv');
 const GP_GLOBUS = process.argv.includes('--gegenprobe-globus');
 const GP_RUHE = process.argv.includes('--gegenprobe-ruhe');
-const GP = GP_PUNKTE || GP_FILL || GP_TEXT || GP_DOPPELT || GP_SMIL || GP_CHV || GP_GLOBUS || GP_RUHE;
+const GP_EBENE = process.argv.includes('--gegenprobe-ebene');
+const GP_KUGELWEG = process.argv.includes('--gegenprobe-kugelweg');
+const GP = GP_PUNKTE || GP_FILL || GP_TEXT || GP_DOPPELT || GP_SMIL || GP_CHV || GP_GLOBUS || GP_RUHE || GP_EBENE || GP_KUGELWEG;
 
 const MAX_GLEICHZEITIG = 400;   // Trends nachher ~110, vorher 3363
 const MAX_FERTIG = 3;           // pageFadeIn/detailFadeIn halten bewusst (transform-Kontext), sonst 0
 const MAX_MESSUNGEN = 20;       // nachher 0 auf allen Seiten, COT vorher ~500
+const GROSS_SCROLLER = 1000;    // Calendar-Tabelle 5.215; naechstgroesste mitwachsende: Matrix 274, COT 213
 
 // Endlos-Animationen, die etwas anderes als transform/opacity bewegen und das
 // duerfen - jeweils mit Grund. Neue Eintraege nur mit Messung.
@@ -127,10 +143,16 @@ function statisch() {
   await p.addInitScript(gp => {
     try { localStorage.setItem('fxpro_help_seen', '1'); } catch (e) {}
     if (gp.text) window.__gpNurText = true;
+    if (gp.kugelweg) window.__gpGlobusUeberall = true;
+    // J: Bild-Aufrufe je Rueckruf-Name zaehlen (die Kugel-Schleife heisst "frame")
+    window.__rafN = {};
+    const raf0 = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = f => { const k = (f && f.name) || '?'; window.__rafN[k] = (window.__rafN[k] || 0) + 1; return raf0(f); };
     if (gp.css) document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = gp.css; document.head.appendChild(s); });
   }, {
     text: GP_TEXT,
-    css: (GP_PUNKTE ? '.tr-dots-in circle{animation:trFadeIn 1s ease both}' : '') + (GP_FILL ? '.list-in{animation-fill-mode:both!important}' : ''),
+    kugelweg: GP_KUGELWEG,
+    css: (GP_PUNKTE ? '.tr-dots-in circle{animation:trFadeIn 1s ease both}' : '') + (GP_FILL ? '.list-in{animation-fill-mode:both!important}' : '') + (GP_EBENE ? '.cal-table{will-change:auto!important}' : ''),
   });
   // Ankunft des Kalender-Archivs im Fenster von D nachweisen
   const archiv = [];
@@ -285,6 +307,54 @@ function statisch() {
     else gruen(`Kugel nach Eingabe wieder ${wach.n} Neuzeichnungen in 1,5 s`);
   }
   await p.evaluate(() => { window.__gpGlobusRuheMs = 0; showTab('dash'); });
+
+  // ── I) Grosse, mitwachsende Scroll-Container haben eine eigene Ebene ─────
+  console.log('I) Grosse mitwachsende Scroll-Container: eigene Ebene');
+  for (const [code, name] of [["showTab('cal')", 'Calendar'], ["showTab('dash')", 'Dashboard'], ["gotoSym('USD')", 'Asset USD'], ["showTab('mx')", 'Matrix'],
+    ["showTab('cot')", 'COT'], ["showTab('trends')", 'Trends'], ["showTab('carry')", 'Carry'], ["showTab('pairs')", 'Set-ups'], ["showTab('news')", 'News'],
+    ["showTab('sent')", 'Sentiment'], ["showTab('seas')", 'Seasonality'], ["showTab('data')", 'Data'], ["showTab('journal')", 'Journal'], ["showTab('regime')", 'Regime']]) {
+    const r = await p.evaluate(async ([code, gross]) => {
+      try { (0, eval)(code); } catch (e) { return { err: String(e) }; }
+      await new Promise(r => setTimeout(r, 400));
+      const seite = document.getElementById(PAGE_IDS[curPage]);
+      const ohne = [], mit = [];
+      for (const e of seite.querySelectorAll('*')) {
+        if (e instanceof SVGElement) continue;
+        const s = getComputedStyle(e);
+        if (!/auto|scroll/.test(s.overflowX + ' ' + s.overflowY)) continue;
+        const n = e.getElementsByTagName('*').length;
+        if (n < gross || e.scrollHeight > e.clientHeight + 1) continue;   // klein, oder echter (senkrechter) Scrollbereich
+        const k = e.tagName.toLowerCase() + '.' + String(e.className).split(' ')[0] + ' (' + n + ' Elemente)';
+        (/transform/.test(s.willChange) ? mit : ohne).push(k);
+      }
+      return { ohne, mit };
+    }, [code, GROSS_SCROLLER]);
+    if (r.err) { rot(`${name}: ${r.err}`); continue; }
+    if (r.ohne.length) rot(`${name}: ${r.ohne.join(', ')} - mitwachsender Scroll-Container ohne eigene Ebene, wird in jedem Bild der Seiten-Einblendung neu geordnet (will-change: transform)`);
+    else if (r.mit.length) gruen(`${name.padEnd(11)} ${r.mit.join(', ')} mit eigener Ebene`);
+  }
+  gruen('uebrige Seiten ohne grosse mitwachsende Scroll-Container');
+
+  // ── J) Ausserhalb der Overview steht die Kugel ───────────────────────────
+  console.log('J) Kugel ausserhalb der Overview');
+  await p.evaluate(() => showTab('over')); await p.mouse.move(70, 70); await p.waitForTimeout(1500);
+  const kugelLief = await p.evaluate(() => (window.__rafN || {}).frame || 0);
+  if (!kugelLief) rot('Kugel-Schleife lief auf der Overview gar nicht - Messung von J ungueltig');
+  for (const [code, name] of [["showTab('dash')", 'Dashboard'], ["showTab('cal')", 'Calendar'], ["gotoSym('USD')", 'Asset USD']]) {
+    await p.evaluate(() => showTab('over')); await p.mouse.move(80, 80); await p.waitForTimeout(800);
+    const r = await p.evaluate(async code => {
+      (0, eval)(code);
+      await new Promise(r => setTimeout(r, 300));   // ein Bild Auslauf: die Schleife beendet sich im naechsten Aufruf
+      window.__rafN.frame = 0;
+      await new Promise(r => setTimeout(r, 1500));
+      const over = document.getElementById('pgOver');
+      const anim = document.getAnimations().filter(a => a.playState === 'running' && a.effect && a.effect.target && over.contains(a.effect.target)).length;
+      return { frames: window.__rafN.frame || 0, anim };
+    }, code);
+    if (r.frames || r.anim) rot(`${name}: Kugel laeuft weiter - ${r.frames} Bild-Aufrufe in 1,5 s, ${r.anim} laufende Animationen in der Overview`);
+    else gruen(`${name.padEnd(10)} Kugel steht: 0 Bild-Aufrufe, 0 Animationen`);
+  }
+  await p.evaluate(() => showTab('dash'));
 
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));
   await b.close();

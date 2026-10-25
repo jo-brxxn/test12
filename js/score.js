@@ -325,7 +325,7 @@ function indCycleIsGuessRoh(ind){
   if(ds.length>=4){
     const gaps=[];
     for(let i=1;i<ds.length;i++){
-      const g=(new Date(ds[i])-new Date(ds[i-1]))/86400000;
+      const g=(tagMs(ds[i])-tagMs(ds[i-1]))/86400000;
       if(isFinite(g)&&g>0&&g<400)gaps.push(g);
     }
     if(gaps.length>=3)return false;                 // aus der eigenen Reihe gemessen
@@ -338,7 +338,7 @@ function indCycleDaysCalc(ind,h){
   if(ds.length>=4){
     const gaps=[];
     for(let i=1;i<ds.length;i++){
-      const g=(new Date(ds[i])-new Date(ds[i-1]))/86400000;
+      const g=(tagMs(ds[i])-tagMs(ds[i-1]))/86400000;
       if(isFinite(g)&&g>0&&g<400)gaps.push(g);
     }
     if(gaps.length>=3){
@@ -621,6 +621,20 @@ function indNormBreakdown(ind,symId,rub){
 // (dieselbe Ueberlegung wie beim zyklus-relativen Decay im normalisierten
 // Modus).
 const IND_STALE_CYCLES=2;
+// Merker fuer Datums-Texte -> ms (2026-10-24, Pruefdurchgang Performance):
+// indOverdueCycles laeuft beim Start ~90.000-mal und las dabei jedes Mal
+// heute UND das Release-Datum neu ein. Gleicher Text = gleiche Zahl wie
+// new Date(text) (inkl. NaN fuer Unlesbares).
+const _tagMsMerker=new Map();
+function tagMs(t){
+  let v=_tagMsMerker.get(t);
+  if(v===undefined){
+    v=new Date(t).getTime();
+    if(_tagMsMerker.size>20000)_tagMsMerker.clear();
+    _tagMsMerker.set(t,v);
+  }
+  return v;
+}
 // null = nicht bewertbar (kein Datum, kein echter Release-Indikator).
 // Zahl = wie viele eigene Zyklen der Wert ueberfaellig ist.
 function indOverdueCycles(ind){
@@ -635,7 +649,7 @@ function indOverdueCycles(ind){
   if(indCycleIsGuess(ind))return null;
   const cyc=indCycleDays(ind);
   if(!isFinite(cyc)||cyc<=0)return null;
-  const age=(new Date(todayStr())-new Date(String(r.date).slice(0,10)))/86400000;
+  const age=(tagMs(todayStr())-tagMs(String(r.date).slice(0,10)))/86400000;
   if(!isFinite(age)||age<0)return null;
   return age/cyc;
 }

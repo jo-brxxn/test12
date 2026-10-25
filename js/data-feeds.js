@@ -10,7 +10,7 @@
 // das allgemeine Muster) - dieses Modul exportiert deshalb weiter unten
 // die Namen, die main.js zurueck braucht.
 import {BC,FX} from './constants.js';
-import {DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,feedEntryFor,kanonIndName,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,applyRevisionToValHist,applyTrendModel,checkPriceAlerts,curPage,escH,fmtDayHdr,indBiasInputSig,indBiasPinned,invalidateRateStepCache,isNonFx,macroCcyFor,openM,parseNumLike,pushU,recordScoreHist,renderDash,rerender,researchBias,resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,syms,todayStr,trackIndValues,widgets} from './main.js';
+import {DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,feedEntryFor,kanonIndName,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,applyRevisionToValHist,applyTrendModel,checkPriceAlerts,curPage,escH,fmtDayHdr,indBiasInputSig,indBiasPinned,invalidateRateStepCache,isNonFx,macroCcyFor,openM,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,syms,todayStr,trackIndValues,widgets} from './main.js';
 
 // ── INDIKATOR-WERTE AUS ECHTER API-QUELLE (ind_data.json) ──
 // ind_data.json wird stündlich per GitHub Action aus TradingViews
@@ -330,13 +330,26 @@ let PRICE_DATA_FEED=null;
 // Ticker/Movers-Karte immer "zuletzt geprueft um HH:MM" zeigen koennen, auch
 // wenn der stuendliche Workflow zwischen zwei Abrufen keine neuen Werte hatte.
 let priceDataLastFetch=null;
+// Rueckgabe: true = NEUER Inhalt (2026-10-24, Pruefdurchgang Performance).
+// GEMESSEN: Trends und Regime holen den Feed bei JEDEM Besuch neu und bauten
+// sich danach ein zweites Mal komplett auf (renderTrends/renderRegime je 2x),
+// auch wenn die Datei Byte fuer Byte gleich war - sie aendert sich nur mit
+// dem stuendlichen Workflow. Gleicher Text -> gleiches Objekt bleibt stehen
+// (Merker, die am Datenstand haengen, bleiben gueltig), kein neues Parsen.
+let _priceDataText=null;
 async function fetchPriceData(){
   DATA_LIVE_OK.price=false;
+  let neu=false;
   try{
     const res=await fetch(DATA_BASE+'price_data.json?t='+Date.now(),{signal:AbortSignal.timeout(FEED_TIMEOUT_MS),cache:'no-store'});
-    if(res.ok){const d=await res.json();if(d&&typeof d==='object'&&!Array.isArray(d)){PRICE_DATA_FEED=d;DATA_LIVE_OK.price=true;}}
+    if(res.ok){
+      const txt=await res.text();
+      if(PRICE_DATA_FEED&&txt===_priceDataText)DATA_LIVE_OK.price=true;
+      else{const d=JSON.parse(txt);if(d&&typeof d==='object'&&!Array.isArray(d)){PRICE_DATA_FEED=d;_priceDataText=txt;DATA_LIVE_OK.price=true;neu=true;}}
+    }
   }catch(e){}
   priceDataLastFetch=Date.now();
+  return neu;
 }
 // ⚠ Nach dem Preis-Feed EINMAL aufzeichnen. Seit SCORE_MODEL_VERSION 13 wirkt
 // die Marktrelevanz wirklich, der Preis-Feed veraendert im Modus normalized
@@ -344,10 +357,14 @@ async function fetchPriceData(){
 // so lange, bis er da ist. Ohne diesen Aufruf bekaeme der Tag ueberhaupt
 // keinen Eintrag mehr, weil fetchPriceData ausserhalb von
 // bootFetchScoreFeeds laeuft und kein save() nach sich zieht.
-function autoFetchPriceData(){fetchPriceData().then(()=>{
+function autoFetchPriceData(){fetchPriceData().then(neu=>{
   // Seit 2026-09-25 haengt der 1D-Trend (Score) an diesen Kerzen.
   try{if(typeof nachPreisFeed==='function')nachPreisFeed();}catch(e){}
-  checkPriceAlerts();try{recordScoreHist();}catch(e){}rerender();});}
+  checkPriceAlerts();try{recordScoreHist();}catch(e){}
+  // Unveraenderter Inhalt: neu zeichnen nur auf dem Dashboard - nur dort steht
+  // der Abrufzeitpunkt ("Updated HH:MM", Movers/Live Data). Sonst war es ein
+  // zweiter, identischer Aufbau der gerade geoeffneten Seite.
+  if(neu||curPage==='dash')rerenderBald();});}
 // ── FINANZ-SCHLAGZEILEN (news_data.json) ──────────────────────────
 // Nutzer-Wunsch 2026-08-06: eigene Dashboard-Karte ganz rechts mit den
 // neusten Finanz-Schlagzeilen (Fed-Reden, Geopolitik/Oel, Index-Ausblick,
@@ -417,7 +434,7 @@ function mergeNewsAi(){
   });
   return n;
 }
-function autoFetchNewsData(){fetchNewsData().then(()=>fetchNewsAi()).then(()=>{if(curPage==='dash')renderDash();});}
+function autoFetchNewsData(){fetchNewsData().then(()=>fetchNewsAi()).then(()=>rerenderBald('dash'));}
 // Risk-On/Risk-Off-Index aus echten Marktpreisen (VIX, Gold, AUD/USD,
 // USD/JPY - Workflow-Schritt "Build Risk-On/Risk-Off index from market data",
 // dort steht die volle Methodik samt Begruendung). Nutzer-Wunsch
@@ -439,7 +456,7 @@ function fetchRiskIndexData(){
       else DATA_LIVE_OK.risk=false;
     }).catch(()=>{DATA_LIVE_OK.risk=false;});
 }
-function autoFetchRiskIndex(){fetchRiskIndexData().then(()=>{if(curPage==='dash')renderDash();});}
+function autoFetchRiskIndex(){fetchRiskIndexData().then(()=>rerenderBald('dash'));}
 // Kurze relative Zeitangabe ("12m"/"3h"/"2d") fuer Schlagzeilen-Zeitstempel -
 // feiner als der bestehende daysUntil() (Tages-Granularitaet), da News-
 // Zeitstempel minuten-/stundenaktuell sind.
