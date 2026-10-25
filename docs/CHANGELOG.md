@@ -20729,3 +20729,5 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter:** `check/performance.js` I (große mitwachsende Scroll-Container = eigene Ebene, Gegenprobe `--gegenprobe-ebene` rot) und J (Kugel steht außerhalb der Overview). Regeln: `docs/performance.md` 10–13.
 
+**Vorbestehend rot auf `main` 71a3f3d** (gegen eine unveränderte Kopie gegengeprüft, gleiche Funde, NICHT Teil dieser Änderung): `layout`/`cards` — Handy 390 px: Kopfzeile 6 px zu breit (`#profileBtn` endet bei 396, `.hdr-r` = Undo/Redo/Knopf/Profil); `zellen` — EMA20-Werte „x.x ATR" ragen bei 1180 px 3 px aus der Zelle (10 Zeilen); `designregeln` K — Price-Karte 1180 px: 2 Bedienzeilen über dem Chart.
+
