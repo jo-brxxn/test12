@@ -82,6 +82,14 @@ const GP_CSS = [
 ].join('\n');
 
 const oeffne = (p, z) => p.evaluate(z => { const [a, v] = z.split(':'); if (a === 'A') gotoSym(v); else { showTab(a); if (v) setSentSub(v); } }, z);
+// Einblendungen auf 0 s (2026-10-25): jede Seite blendete 1 s ein (pageFadeIn,
+// listRowIn, trDraw - alle ueber --enter-dur), deshalb wartete dieser Waechter
+// 1,2-1,3 s je Seite: 206 feste Wartezeiten = 213 von 271 s Laufzeit. Gemessen
+// wird das ENDBILD - das ist ohne Einblendung dasselbe, nur sofort da. Der DOM
+// steht dann nach <= 0,3 s (Asset-Seite <= 1,0 s: Logos, Makro-Charts im
+// naechsten Bild).
+const OHNE_EINBLENDUNG = ':root{--enter-dur:0s!important}';
+const ruhe = (p, z) => p.waitForTimeout(String(z).startsWith('A:') ? 1000 : 350);
 
 (async () => {
   const b = await chromium.launch();
@@ -92,6 +100,7 @@ const oeffne = (p, z) => p.evaluate(z => { const [a, v] = z.split(':'); if (a ==
     p.on('pageerror', e => perr.push(String(e)));
     await p.goto(URL); await wartenBisDatenDa(p);
     await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); });
+    await p.addStyleTag({ content: OHNE_EINBLENDUNG });
     if (GEGENPROBE) await p.addStyleTag({ content: GP_CSS });
     return p;
   };
@@ -100,7 +109,7 @@ const oeffne = (p, z) => p.evaluate(z => { const [a, v] = z.split(':'); if (a ==
   let p = await neueSeite(1180);
   const n = { emoji: 0, mono: 0, svg: 0, html: 0, hoehe: 0, flaechen: 0, elem: 0, kalNews: 0, touch: 0, k: 0, svg390: 0, l: 0, ltipp: 0, inline: 0 };
   for (const z of SEITEN) {
-    await oeffne(p, z); await p.waitForTimeout(1300);
+    await oeffne(p, z); await ruhe(p, z);
     if (GEGENPROBE && z === 'trends') await p.evaluate(() => { const t = document.querySelector('#pgTrends .pg-titel'); if (t) t.textContent += ' 📈'; });
     const r = await p.evaluate(() => {
       const out = { emoji: [], mono: [], svg: [], html: [], hoehe: [], symFont: [], n: { emoji: 0, mono: 0, svg: 0, html: 0, hoehe: 0 } };
@@ -263,7 +272,7 @@ const oeffne = (p, z) => p.evaluate(z => { const [a, v] = z.split(':'); if (a ==
     const nav = await p.evaluate(() => [...document.querySelectorAll('#navSidebar>.np .np-lbl')].filter(e => e.offsetParent).map(e => { const lh = parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.2; return [e.textContent.trim(), e.getBoundingClientRect().height, lh]; }));
     nav.forEach(([t, hh, lh]) => { if (hh > lh * 1.5) fail(`D LEISTE ${vw}`, `"${t}" bricht um (${hh.toFixed(0)} px hoch)`); });
     for (const z of SEITEN) {
-      await oeffne(p, z); await p.waitForTimeout(1200);
+      await oeffne(p, z); await ruhe(p, z);
       // Datenunabhaengig: eine Kalenderzeile mit Schlagzeilen-Knopf + Glocke + ×.
       // Den Knopf gibt es nur an Tagen mit passenden Schlagzeilen - in der
       // Aktionsspalte lag die Glocken-Flaeche ueber ihm und die Spalte lief
@@ -359,6 +368,7 @@ const oeffne = (p, z) => p.evaluate(z => { const [a, v] = z.split(':'); if (a ==
     t.on('pageerror', e => perr.push(String(e)));
     await t.goto(URL); await wartenBisDatenDa(t);
     await t.evaluate(() => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); });
+    await t.addStyleTag({ content: OHNE_EINBLENDUNG });
     if (GEGENPROBE) await t.addStyleTag({ content: GP_CSS });
     if (await t.evaluate(() => matchMedia('(hover:hover)').matches)) fail('J TOUCH', 'Touch-Emulation greift nicht ((hover:hover) ist wahr) - Messung ungueltig');
     for (const z of ['cal', 'pairs', 'A:USD']) {
@@ -464,7 +474,7 @@ const oeffne = (p, z) => p.evaluate(z => { const [a, v] = z.split(':'); if (a ==
       const nav = await p.evaluate(() => [...document.querySelectorAll('#navSidebar>.np .np-lbl')].filter(e => e.offsetParent).map(e => { const lh = parseFloat(getComputedStyle(e).lineHeight) || parseFloat(getComputedStyle(e).fontSize) * 1.2; return [e.textContent.trim(), e.getBoundingClientRect().height, lh]; }));
       nav.forEach(([t, hh, lh]) => { if (hh > lh * 1.5) fail('D LEISTE 390', `"${t}" bricht um (${hh.toFixed(0)} px hoch)`); });
       for (const z of SEITEN) {
-        await oeffne(p, z); await p.waitForTimeout(900);
+        await oeffne(p, z); await ruhe(p, z);
         const r = await p.evaluate(() => { const out = []; let k = 0; document.querySelectorAll('svg text').forEach(e => { const q = e.getBoundingClientRect(); if (!q.width || !e.textContent.trim() || e.closest('.fxlogo')) return; const m = e.getScreenCTM(); if (!m) return; k++;
           const eff = parseFloat(getComputedStyle(e).fontSize) * Math.hypot(m.a, m.b); if (eff < 10.8) out.push(`${eff.toFixed(1)}px "${e.textContent.trim().slice(0, 12)}"`); }); return { out: [...new Set(out)], k }; });
         n.svg390 += r.k; r.out.forEach(x => fail('C DIAGRAMMSCHRIFT 390', `${z}: ${x}`));

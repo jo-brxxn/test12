@@ -26,6 +26,14 @@ etwas, das nie kommt. Gemessen 2026-10-24 mit einem Zeitprofil je Aufruf:
 lief 1,2 s in die Frist (238 von 266 s); jetzt 33 s, dieselben 39 geprueft.
 `versionssicht` lud die App viermal fuer vier Breiten - jetzt einmal und
 Breite umstellen (87 s CI -> ~20 s).
+`designregeln` wartete je Seite 1,2-1,3 s - genau die Dauer der Einblendung
+(`pageFadeIn`, `listRowIn`, `trDraw`, alle ueber `--enter-dur: 1s`; gemessen
+1,04-1,98 s bis keine endliche Animation mehr lief). 206 Wartezeiten = 213 von
+271 s. Jetzt setzt der Waechter `:root{--enter-dur:0s}` (Endbild gleich, nur
+sofort da) und wartet 0,35 s (Asset-Seite 1,0 s). **Muster fuer jeden Waechter,
+der nach einem Seitenwechsel misst:** Einblendung abschalten statt auf sie zu
+warten - der App-Schalter `no-ui-anim` reicht dafuer NICHT (die Einblendungen
+haengen an `--enter-dur`, gemessen: mit `no-ui-anim` weiter 1,05-1,8 s).
 
 ## Warum es diesen Ordner gibt
 
