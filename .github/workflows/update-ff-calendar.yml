@@ -5775,7 +5775,15 @@ jobs:
             --data '{"symbols":{"tickers":["TVC:IT10Y","TVC:FR10Y","TVC:ES10Y","TVC:DE10Y","TVC:NL10Y"],"query":{"types":[]}},"columns":["close"]}' \
             "https://scanner.tradingview.com/global/scan" -o cp_tv.json || true
           curl -sL --connect-timeout 15 --max-time 40 -A "$UA" -w "[debug] ECB IRS 10Y monthly: http=%{http_code} size=%{size_download}\n" "https://data-api.ecb.europa.eu/service/data/IRS/M.DE+FR+IT+ES+NL.L.L40.CI.0000.EUR.N.Z?format=csvdata&startPeriod=2016-01" -o cp_irs.csv || true
-          curl -sL --connect-timeout 15 --max-time 40 -A "$UA" -w "[debug] IMF WEO debt: http=%{http_code} size=%{size_download}\n" "https://www.imf.org/external/datamapper/api/v1/GGXWDG_NGDP/USA/EURO/GBR/JPN/CHE/CAN/AUS/NZL/DEU/FRA/ITA/ESP/NLD" -o cp_imf.json || true
+          # IWF: der erste Lauf bekam mit Browser-Kennung 403 (528 Bytes) -> erst
+          # ohne Kennung (curl-Standard, Accept JSON), nur bei Misserfolg mit.
+          IMF_URL="https://www.imf.org/external/datamapper/api/v1/GGXWDG_NGDP/USA/EURO/GBR/JPN/CHE/CAN/AUS/NZL/DEU/FRA/ITA/ESP/NLD"
+          curl -sL --connect-timeout 15 --max-time 40 -H "Accept: application/json" -w "[debug] IMF WEO debt: http=%{http_code} size=%{size_download}\n" "$IMF_URL" -o cp_imf.json || true
+          if [ "$(wc -c < cp_imf.json 2>/dev/null || echo 0)" -lt 2000 ]; then
+            curl -sL --connect-timeout 15 --max-time 40 -A "$UA" -H "Accept: application/json" -H "Referer: https://www.imf.org/external/datamapper/" -w "[debug] IMF WEO debt (2nd try): http=%{http_code} size=%{size_download}\n" "$IMF_URL" -o cp_imf.json || true
+          fi
+          # Eurostat (amtliche EU-Quelle, Gesamtstaat % BIP) fuer Euroraum + DE/FR/IT/ES/NL
+          curl -sL --connect-timeout 15 --max-time 40 -A "$UA" -w "[debug] Eurostat debt: http=%{http_code} size=%{size_download}\n" "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_edpt1?format=JSON&lang=EN&unit=PC_GDP&sector=S13&na_item=GD&geo=EA20&geo=DE&geo=FR&geo=IT&geo=ES&geo=NL&sinceTimePeriod=2020" -o cp_esta.json || true
           FROM_D=$(date -u -d '800 days ago' +%Y-%m-%d)
           curl -sL --connect-timeout 15 --max-time 30 -A "$UA" -w "[debug] SNB sight deposits: http=%{http_code} size=%{size_download}\n" "https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en?fromDate=${FROM_D}&toDate=${TODAY}" -o cp_snb.csv || true
           cat > cp_build.js <<'CPJS'
@@ -5830,6 +5838,20 @@ jobs:
             if(Object.keys(debt).length){out.imf={source:"IMF World Economic Outlook (general government gross debt, % of GDP)",debt};}
             log.push("IMF debt "+Object.keys(debt).length+"/13");
           }catch(e){log.push("IMF debt: none, previous kept");}
+          // 2d) Eurostat (JSON-stat): je Land das juengste Jahr mit Wert.
+          try{
+            const d=lies("cp_esta.json");
+            if(d&&d.value&&d.dimension&&Array.isArray(d.id)){
+              const ids=d.id,size=d.size,str=[];let st=1;for(let i=ids.length-1;i>=0;i--){str[i]=st;st*=size[i];}
+              const gi=ids.indexOf("geo"),ti=ids.indexOf("time"),G=d.dimension.geo.category.index,T=d.dimension.time.category.index;
+              const L3={EA20:"EUR",DE:"DE",FR:"FR",IT:"IT",ES:"ES",NL:"NL"},es={};
+              Object.keys(G).forEach(g=>{const k=L3[g];if(!k)return;let best=null;
+                Object.keys(T).forEach(t=>{const v=d.value[G[g]*str[gi]+T[t]*str[ti]];if(v!=null&&isFinite(+v)&&(!best||+t>best[0]))best=[+t,Math.round(+v*10)/10];});
+                if(best)es[k]=best;});
+              if(Object.keys(es).length)out.eurostat={source:"Eurostat gov_10dd_edpt1 (general government gross debt, % of GDP)",debt:es};
+              log.push("Eurostat debt "+Object.keys(es).length+"/6");
+            }else log.push("Eurostat debt: none, previous kept");
+          }catch(e){log.push("Eurostat debt: none, previous kept");}
           // 3) SNB-Sichtguthaben (CSV: "Date";"D0";"Value", Mio. CHF)
           let snbN=0;
           try{
@@ -5861,7 +5883,7 @@ jobs:
           console.log("country_data.json: "+log.join(" | "));
           CPJS
           node cp_build.js "$TODAY" "$WB_DONE" || true
-          rm -f cp_build.js cpwb_*.json cp_tv.json cp_snb.csv cp_irs.csv cp_imf.json
+          rm -f cp_build.js cpwb_*.json cp_tv.json cp_snb.csv cp_irs.csv cp_imf.json cp_esta.json
 
       - name: Cleanup temp files
         run: rm -f thisweek.json nextweek.json fxstreet.json te.json te_pages.json tepage_*.html invcal.json tv.json tv_wide.json tv_recent.json tv_hist_*.json alt_actuals.json ffhtml_*.html cot_raw.json cot_pct_url.txt cot_pct_raw.json stooq_*.csv stooq_meta.txt news_marketaux.json

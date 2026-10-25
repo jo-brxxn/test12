@@ -189,13 +189,16 @@ function cpSparZeile(pts,o,von){
   const d0=pts[0]&&pts[0][0],d1=pts[pts.length-1]&&pts[pts.length-1][0];
   return`<div class="cp-spz">${s}<div class="cp-spz-a"><span>${d0?h(fmtDayShort(String(d0).slice(0,10))):''}</span>${o&&o.refLbl?`<span class="${o.refZiel?'cp-zl':''}">${o.refLbl}</span>`:''}<span>${d1?h(fmtDayShort(String(d1).slice(0,10))):''}</span></div></div>`;
 }
-// Staatsschulden: IWF WEO (Gesamtstaat, alle 13 Laender), sonst Weltbank.
+// Staatsschulden: IWF WEO (Gesamtstaat, alle 13 Laender), sonst Eurostat, sonst Weltbank.
 // [Jahr, % des BIP, Quelle] - die Weltbank-Reihe fehlte fuer Euroraum, DE,
 // FR, IT, NL (erster Lauf 2026-10-25).
 function cpSchuld(d,k){
   const i=d&&d.imf&&d.imf.debt&&d.imf.debt[k];if(i)return[i[0],i[1],'IMF'];
+  // IWF blockte den Runner (403, Lauf 1369) - Eurostat fuer Euroraum + 5 Laender
+  const e=d&&d.eurostat&&d.eurostat.debt&&d.eurostat.debt[k];if(e)return[e[0],e[1],'Eurostat'];
   const w=d&&d.wb&&d.wb.countries&&d.wb.countries[k]&&d.wb.countries[k]['GC.DOD.TOTL.GD.ZS'];return w?[w[0],w[1],'World Bank']:null;
 }
+function cpSchuldQuellen(d,keys){const q=[...new Set(keys.map(k=>(cpSchuld(d,k)||[])[2]).filter(Boolean))];return q.length?q.join(' / '):'–';}
 const seit=(pts,tage)=>{if(!pts||!pts.length)return[];const ab=Date.parse(todayStr())-tage*864e5;return pts.filter(e=>Date.parse(String(e[0]).slice(0,10))>=ab);};
 function cpInd(sym,base){
   for(const rub of (sym.rubrics||[]))for(const i of (rub.indicators||[]))if(i&&stripPeriodSuffix(i.name).base===base)return{ind:i,rub};
@@ -342,7 +345,7 @@ function cpLaender(c,d){
     </div>`;
   }).join('');
   return`<div class="cp-sep cp-sep-h" aria-hidden="true"></div><div class="cp-kopf cp-kopf-l"><span>Member states</span><span class="cp-kopf-x">what the euro is made of · share of output · growth · debt · 10Y vs Bund</span></div>`
-    +`<div class="cp-laender">${zeilen}</div>${wb?`<div class="cp-quelle">World Bank WDI · debt: IMF WEO · 10Y yields: TradingView</div>`:''}`;
+    +`<div class="cp-laender">${zeilen}</div>${wb?`<div class="cp-quelle">World Bank WDI · debt: ${h(cpSchuldQuellen(d,Object.keys(c.laender)))} · 10Y yields: TradingView</div>`:''}`;
 }
 function cpSpalteWirtschaft(sym,c,d){
   const wb=d&&d.wb&&d.wb.countries&&d.wb.countries[sym.id];
