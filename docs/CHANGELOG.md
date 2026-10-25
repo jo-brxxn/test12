@@ -20641,3 +20641,11 @@ die Folgeentwicklung vorhersagen?
 - **Geprüft:** Server-Workflows schreiben `fx_sync` nie (nur lesen; Schreiben nur in `fx_alert_log`) — dort kein Verlustweg.
 - **Danach gemessen:** A Cloud `A-TA, A-TB, A-TX` · B danach alle vier Trades beider Geräte · C localStorage + Cloud `C-1, C-2` · D Meldung sichtbar, Upload 4,1 s nach Freigabe, Anzeige *in the cloud* · E Grabstein bleibt.
 - **Wächter:** `check/trades.js` (neu, in `check/all.js`), Gegenprobe A–D rot.
+
+## 2026-10-25 — VERSION-CHECK-628: Positions-Werkzeug mit eigener Zeitspanne
+
+- **Nutzer:** *„Ich will von dem Werkzeug im Chart auch die Breite verstellen können also es soll nicht die gesamte Breite sein ich will es richtig an die Stelle machen.“* Push direkt, danach alle Wächter.
+- **Vorher:** Zonen und Linien über die ganze Plotbreite.
+- **Jetzt:** Kasten wie bei TradingView: erster Tipp setzt ihn an die angetippte Kerze (12 Kerzen breit), **linke/rechte Kante ziehen** = Anfang/Ende (rastet auf Kerzen, min. 1), **Mitte ziehen** = verschieben. Rechts 14 leere Zukunfts-Slots im Editor (sonst klebte ein heute eröffneter Trade als eine Kerze am Rand). Gespeichert als Datum `w0`/`w1` am Trade (Sync wie alle Trade-Felder), Detail-Fenster zeigt den Kasten an denselben Tagen. Versteckte Felder `tjW0`/`tjW1` im Fensterschutz.
+- **Gemessen + behoben:** erste Fassung — Etiketten (~140 px) lagen über dem 72-px-Kasten; Ziehen an der rechten Kante und in der Mitte landete beim Entry-/SL-Etikett (*„rechte Kante −60: keine Änderung“*). Etiketten jetzt außerhalb (rechts, sonst links, unter 520 px ohne R-Zusatz), Kanten über der Fläche. Danach 1440 + 390 px: Mitte +40 → verschoben, rechte Kante −30 → kürzer, linke Kante −30 → länger, *kein Etikett über dem Kasten*, TP weiter ziehbar.
+- **Fehler aus 627 mitgefunden:** Status-Schalter Open/Closed zeigte nie die aktive Wahl — die Long/Short-Logik setzte `.on` an ALLEN `.tj-seg-b` im Fenster zurück. Jetzt nur `[data-dir]`. Gemessen: Add trade → *Open+Long*, Kalendertag → *Closed+Long*, Short → *Closed+Short*, Open → *Open+Short*.

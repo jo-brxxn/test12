@@ -1799,7 +1799,8 @@ Per Rückfrage festgelegt (TradeZella-Stil), Details `docs/CHANGELOG.md` 622–6
 - **Kalender:** Mo–Fr breit, Sa/So schmal (`.46fr`), Spalte **Week** rechts. Zelle = Tagessumme groß + je Trade eine Zeile *Asset · Long/Short · P/L*. Handy/Wochenende: nur kompakte Summe (*+1.3k*), Tipp → Tages-Fenster.
 - **Farbe:** Win/Loss und Tagessummen in Bias-Farbe, Long/Short-Plakette in Bias-Farbe, aktiv = Navy. Streak-Flamme `--flame` (eigener Token).
 - **Charts:** Equity-Kurve und Kurs-Chart in gemessener Breite gebaut, Y-Achse links (Equity) bzw. rechts (Kurs), Kerzen nach den Kerzen-Regeln.
-- **Positions-Werkzeug:** Entry (Navy), SL (bearish), TP (bullish), Exit gestrichelt; Zonen 10 %. Ziehen nur an den Etiketten links (`touch-action:none`, Trefferfläche ±8 px).
+- **Positions-Werkzeug:** Entry (Navy), SL (bearish), TP (bullish), Exit gestrichelt; Zonen 10 %. Senkrecht ziehen an den Etiketten (`touch-action:none`, Trefferfläche ±8 px).
+- **Zeitspanne (seit 628):** Kasten von `w0` bis `w1` (Datum, mit dem Trade gespeichert), Standard 12 Kerzen ab dem Trade-Tag; Kanten ziehen = Breite (rastet auf Kerzen), Mitte ziehen = verschieben. Rechts 14 (Editor) bzw. 6 (Detail) leere Zukunfts-Slots. **Etiketten stehen AUSSERHALB des Kastens** (rechts, sonst links; unter 520 px ohne R-Zusatz) — darüber verdeckten sie Kanten und Mitte.
 
 ## Asset- und Paarnamen nie gekürzt (Dauerregel seit 2026-10-07)
 

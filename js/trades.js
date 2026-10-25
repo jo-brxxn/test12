@@ -477,11 +477,14 @@ function tjChartBauen(boxId,opt){
   let iDat=-1;k.forEach((c,i)=>{if(c.d<=datum)iDat=i;});
   if(iDat<0)iDat=0;
   const iEnde=Math.min(k.length-1,iDat+(opt.edit?5:10)),iStart=Math.max(0,iEnde-n+1);
-  const kk=k.slice(iStart,iEnde+1),slot=pw/kk.length;
+  // Rechts Platz fuer kuenftige Tage (wie TradingView): sonst klebte das
+  // Werkzeug eines heute eroeffneten Trades als eine Kerze am rechten Rand.
+  const kk=k.slice(iStart,iEnde+1),zukunft=opt.edit?14:6,nSlots=kk.length+zukunft,slot=pw/nSlots;
   // ATR14 aus echten Hoch/Tief bis zum Trade-Tag - nur fuer die erste Lage des Werkzeugs.
   const atrK=k.slice(Math.max(0,iDat-13),iDat+1).filter(c=>c.ohlc);
   const atr=atrK.length>=5?atrK.reduce((s,c)=>s+(c.h-c.l),0)/atrK.length:null;
-  const st={edit:!!opt.edit,lv:opt.lv||{},dir:opt.dir,pl,pr,pt,pb,pw,ph,W,H,kk,atr,datum,asset:opt.asset};
+  const krypto=kk.some(c=>{const w=new Date(c.d+'T00:00:00Z').getUTCDay();return w===0||w===6;});
+  const st={edit:!!opt.edit,lv:opt.lv||{},dir:opt.dir,pl,pr,pt,pb,pw,ph,W,H,kk,atr,datum,asset:opt.asset,n:nSlots,slot,krypto};
   TJ_CH[boxId]=st;
   tjSkala(boxId);
   let svg=`<svg class="tj-svg tj-ch-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily chart ${escH(opt.asset)}">`;
@@ -498,7 +501,7 @@ function tjChartBauen(boxId,opt){
   attachChartHovers(box);
   if(st.edit){
     const flaeche=box.querySelector('.tj-ch');
-    flaeche.addEventListener('click',ev=>{if(ev.target.closest('.tj-hd'))return;tjPlatzieren(boxId,ev);});
+    flaeche.addEventListener('click',ev=>{if(ev.target.closest('.tj-hd,.tj-wd,.tj-wbox'))return;tjPlatzieren(boxId,ev);});
   }
   tjToolZeichnen(boxId);
 }
@@ -520,7 +523,7 @@ function tjAchseSvg(boxId){
   return s;
 }
 function tjKerzenSvg(boxId){
-  const st=TJ_CH[boxId],slot=st.pw/st.kk.length,bw=Math.max(1,Math.min(9,slot*0.62));
+  const st=TJ_CH[boxId],slot=st.slot,bw=Math.max(1,Math.min(9,slot*0.62));
   return st.kk.map((c,i)=>{
     const x=st.pl+(i+.5)*slot,auf=c.c>=c.o,col=auf?'var(--cndl-up)':'var(--cndl-dn)';
     const y1=st.y(Math.max(c.o,c.c)),y2=st.y(Math.min(c.o,c.c));
@@ -535,11 +538,42 @@ function tjNeuSkalieren(boxId){
   if(a)a.innerHTML=tjAchseSvg(boxId);if(k)k.innerHTML=tjKerzenSvg(boxId);
   tjToolZeichnen(boxId);
 }
+// ── Zeitspanne des Werkzeugs (Nutzer 2026-10-25: "von dem Werkzeug im Chart
+// auch die Breite verstellen ... nicht die gesamte Breite ... richtig an die
+// Stelle machen"). Anfang/Ende als DATUM (w0/w1, mit dem Trade gespeichert und
+// synchronisiert), nicht als Pixel: Fensterbreite und Zeitraum aendern sich.
+// Ohne Angabe: ab dem Trade-Tag, TJ_BREITE Kerzen breit.
+const TJ_BREITE=12;
+function tjTagPlus(d,n,krypto){
+  let t=Date.parse(d+'T00:00:00Z'),k=0;
+  while(k<n){t+=86400000;const w=new Date(t).getUTCDay();if(krypto||(w!==0&&w!==6))k++;}
+  return new Date(t).toISOString().slice(0,10);
+}
+function tjIdxDatum(st,i){const L=st.kk.length;return i<L?st.kk[Math.max(0,i)].d:tjTagPlus(st.kk[L-1].d,i-(L-1),st.krypto);}
+function tjDatumIdx(st,d){
+  if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return null;
+  const L=st.kk.length;if(d<=st.kk[0].d)return 0;
+  if(d<=st.kk[L-1].d){let x=0;st.kk.forEach((c,i)=>{if(c.d<=d)x=i;});return x;}
+  let i=L-1;while(i<st.n-1&&tjIdxDatum(st,i)<d)i++;return i;
+}
+function tjSpanne(boxId){
+  const st=TJ_CH[boxId];
+  const w0=st.edit?(document.getElementById('tjW0')||{}).value:st.lv.w0,w1=st.edit?(document.getElementById('tjW1')||{}).value:st.lv.w1;
+  let i0=tjDatumIdx(st,w0),i1=tjDatumIdx(st,w1);
+  if(i0==null){i0=tjDatumIdx(st,st.datum);if(i0==null)i0=st.kk.length-1;}
+  if(i1==null||i1<i0)i1=i0+TJ_BREITE-1;
+  i0=Math.max(0,Math.min(st.n-1,i0));i1=Math.max(i0,Math.min(st.n-1,i1));
+  return{i0,i1,x1:st.pl+i0*st.slot,x2:st.pl+(i1+1)*st.slot};
+}
+function tjSpanneSetzen(boxId,i0,i1){
+  const st=TJ_CH[boxId],a=document.getElementById('tjW0'),b=document.getElementById('tjW1');
+  if(a)a.value=tjIdxDatum(st,i0);if(b)b.value=tjIdxDatum(st,i1);
+}
 function tjToolZeichnen(boxId){
   const st=TJ_CH[boxId];if(!st)return;
   const g=document.getElementById(boxId+'-tool'),hd=document.getElementById(boxId+'-hd');if(!g||!hd)return;
   const lv=tjEbenen(boxId),dir=st.edit?(document.getElementById('tjDir')||{}).value:st.dir;
-  const x1=st.pl,w=st.pw,yv=v=>Math.max(st.pt,Math.min(st.pt+st.ph,st.y(v)));
+  const sp=tjSpanne(boxId),x1=sp.x1,w=sp.x2-sp.x1,yv=v=>Math.max(st.pt,Math.min(st.pt+st.ph,st.y(v)));
   const ok=v=>v!=null&&isFinite(v);
   let s='';
   const zone=(a,b,cls)=>{const ya=yv(a),yb=yv(b);return`<rect x="${x1}" y="${Math.min(ya,yb).toFixed(1)}" width="${w}" height="${Math.abs(ya-yb).toFixed(1)}" class="${cls}"/>`;};
@@ -569,9 +603,64 @@ function tjToolZeichnen(boxId){
       hd.appendChild(e);
     }
     e.style.top=Math.min(y,st.pt+st.ph+10).toFixed(1)+'px';
-    e.innerHTML=`${zieh?'<span class="tj-hd-griff"></span>':''}${label[k]} <b>${tjPreis(lv[k])}</b>${zusatz(k)}`;
+    // Schmaler Chart (Handy): ohne R-Zusatz - der steht in der Zeile darunter.
+    e.innerHTML=`${zieh?'<span class="tj-hd-griff"></span>':''}${label[k]} <b>${tjPreis(lv[k])}</b>${st.W<520?'':zusatz(k)}`;
+    // Etikett AUSSERHALB des Kastens (rechts, sonst links): ueber dem Kasten
+    // verdeckte es Kanten und Mitte - gemessen 2026-10-25, Ziehen an der
+    // rechten Kante und in der Mitte landete beim Etikett.
+    // Rechts darf es bis in die Achsenspalte reichen.
+    const bw=e.offsetWidth||130,rechts=x1+w+12;
+    e.style.left=(rechts+bw<=st.W-2?rechts:x1-12-bw>=2?x1-12-bw:x1+12).toFixed(1)+'px';
   });
+  // Kasten verschieben (Mitte) und Breite ziehen (Kanten) - nur im Editor,
+  // nur wenn ein Entry da ist. Die Etiketten liegen darueber (Hoehe ziehen).
+  const griffe=[['wbox','m'],['wd tj-wd-l','l'],['wd tj-wd-r','r']];
+  if(st.edit&&ok(lv.entry)){
+    const ys=['entry','sl','tp'].filter(k=>ok(lv[k])).map(k=>yv(lv[k]));
+    let oben=Math.min(...ys),unten=Math.max(...ys);if(unten-oben<24){oben-=12;unten+=12;}
+    // Reihenfolge im Stapel: Flaeche unten, Kanten darueber, Etiketten oben.
+    const neu=[];
+    griffe.forEach(([kl,art])=>{
+      let e=hd.querySelector(`.tj-${kl.replace(' ','.')}`);
+      if(!e){
+        e=document.createElement('div');e.className=`tj-${kl}`;e.dataset.art=art;
+        e.setAttribute('role','slider');e.tabIndex=-1;
+        e.setAttribute('aria-label',art==='m'?'Move the position in time':art==='l'?'Drag the start of the position':'Drag the end of the position');
+        e.title=art==='m'?'Drag to move in time':'Drag to change the width';
+        e.addEventListener('pointerdown',ev=>tjBreiteStart(ev,boxId,art));
+        neu.push(e);
+      }
+      const x=art==='m'?x1:art==='l'?x1:x1+w;
+      e.style.top=oben.toFixed(1)+'px';e.style.height=Math.max(24,unten-oben).toFixed(1)+'px';
+      if(art==='m'){e.style.left=x1.toFixed(1)+'px';e.style.width=Math.max(1,w).toFixed(1)+'px';}
+      else e.style.left=x.toFixed(1)+'px';
+    });
+    neu.reverse().forEach(e=>hd.insertBefore(e,hd.firstChild));
+  }else hd.querySelectorAll('.tj-wbox,.tj-wd').forEach(e=>e.remove());
   if(st.edit)tjRRZeigen();
+}
+// Waagerecht ziehen: Kante = Anfang/Ende auf eine Kerze einrasten, Mitte =
+// ganzen Kasten verschieben (Breite bleibt). Mindestens eine Kerze breit.
+function tjBreiteStart(ev,boxId,art){
+  const st=TJ_CH[boxId];if(!st)return;
+  ev.preventDefault();ev.stopPropagation();
+  const el=ev.currentTarget;try{el.setPointerCapture(ev.pointerId);}catch(e){}
+  const svg=document.querySelector(`#${boxId} svg.tj-ch-svg`);if(!svg)return;
+  const links=svg.getBoundingClientRect().left,sp0=tjSpanne(boxId),x0=ev.clientX;
+  const idx=cx=>Math.floor((cx-links-st.pl)/st.slot);
+  el.classList.add('aktiv');
+  const zieh=e=>{
+    let i0=sp0.i0,i1=sp0.i1;
+    if(art==='m'){const breit=i1-i0,d=Math.round((e.clientX-x0)/st.slot);i0=Math.max(0,Math.min(st.n-1-breit,sp0.i0+d));i1=i0+breit;}
+    else if(art==='l')i0=Math.max(0,Math.min(i1,idx(e.clientX)));
+    else i1=Math.max(i0,Math.min(st.n-1,idx(e.clientX)));
+    tjSpanneSetzen(boxId,i0,i1);tjToolZeichnen(boxId);
+  };
+  const los=()=>{
+    el.classList.remove('aktiv');
+    el.removeEventListener('pointermove',zieh);el.removeEventListener('pointerup',los);el.removeEventListener('pointercancel',los);
+  };
+  el.addEventListener('pointermove',zieh);el.addEventListener('pointerup',los);el.addEventListener('pointercancel',los);
 }
 function tjZiehStart(ev,boxId,k){
   const st=TJ_CH[boxId];if(!st)return;
@@ -601,8 +690,12 @@ function tjPlatzieren(boxId,ev){
   const lv=tjEbenen(boxId);
   if(lv.entry!=null&&lv.sl!=null&&lv.tp!=null)return;
   const svg=document.querySelector(`#${boxId} svg.tj-ch-svg`);if(!svg)return;
-  const yy=Math.max(st.pt,Math.min(st.pt+st.ph,ev.clientY-svg.getBoundingClientRect().top));
+  const box=svg.getBoundingClientRect();
+  const yy=Math.max(st.pt,Math.min(st.pt+st.ph,ev.clientY-box.top));
   const e=lv.entry!=null?lv.entry:st.v(yy);
+  // Der Kasten beginnt an der angetippten Kerze (Zeit), TJ_BREITE Kerzen breit.
+  const w0=document.getElementById('tjW0');
+  if(w0&&!w0.value){const i0=Math.max(0,Math.min(st.n-1,Math.floor((ev.clientX-box.left-st.pl)/st.slot)));tjSpanneSetzen(boxId,i0,Math.min(st.n-1,i0+TJ_BREITE-1));}
   const d=st.atr||(st.hi-st.lo)*0.08,kurz=(document.getElementById('tjDir')||{}).value==='short';
   const setz=(k,v)=>{const f=document.getElementById(TJ_FELD[k]);if(f&&!String(f.value).trim())f.value=v.toFixed(st.dez);};
   setz('entry',e);setz('sl',kurz?e+d:e-d);setz('tp',kurz?e-2*d:e+2*d);
@@ -636,7 +729,7 @@ function tjEdEingabe(neuBauen){clearTimeout(_tjEdT);_tjEdT=setTimeout(()=>{if(TJ
 function tjRichtung(dir){
   const h=document.getElementById('tjDir');if(!h)return;
   const alt=h.value;h.value=dir==='short'?'short':'long';
-  document.querySelectorAll('#mTrade .tj-seg-b').forEach(b=>{const on=b.dataset.dir===h.value;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
+  document.querySelectorAll('#mTrade .tj-seg-b[data-dir]').forEach(b=>{const on=b.dataset.dir===h.value;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
   // Werkzeug spiegeln, wenn SL/TP noch fuer die andere Seite liegen.
   if(alt&&alt!==h.value){
     const g=k=>tjNum((document.getElementById(TJ_FELD[k])||{}).value);
@@ -707,7 +800,7 @@ function tjZeigen(id){
 }
 function tjDetailChart(t){
   tjChartBauen('tjvChart',{asset:t.a,datum:t.d,dir:t.dir,edit:false,
-    lv:{entry:tjNum(t.entry),sl:tjNum(t.sl),tp:tjNum(t.tp),exit:tjNum(t.exit)}});
+    lv:{entry:tjNum(t.entry),sl:tjNum(t.sl),tp:tjNum(t.tp),exit:tjNum(t.exit),w0:t.w0,w1:t.w1}});
 }
 function tjBearbeiten(){const id=_tjView;closeM('mTradeView');if(id)tjNeu(null,id);}
 function tjLoeschen(){
@@ -724,8 +817,8 @@ function tjLoeschen(){
 // ── Editor ───────────────────────────────────────────────────────────
 // ⚠ tjAsset muss das erste Textfeld bleiben (check/eingaben.js tippt dort);
 // die versteckten Felder tjSt/tjDir stehen deshalb dahinter.
-const TJ_FELDER=['tjDate','tjTime','tjAsset','tjSt','tjDir','tjPnl','tjEntry','tjExit','tjSl','tjTp','tjSize','tjSetup','tjNotes','tjCDate','tjCTime'];
-const TJ_SCHLUESSEL=['d','t','a','st','dir','pnl','entry','exit','sl','tp','size','setup','notes','cd','ct'];
+const TJ_FELDER=['tjDate','tjTime','tjAsset','tjSt','tjDir','tjW0','tjW1','tjPnl','tjEntry','tjExit','tjSl','tjTp','tjSize','tjSetup','tjNotes','tjCDate','tjCTime'];
+const TJ_SCHLUESSEL=['d','t','a','st','dir','w0','w1','pnl','entry','exit','sl','tp','size','setup','notes','cd','ct'];
 function tjUhr(){const d=new Date();return`${tjPad(d.getHours())}:${tjPad(d.getMinutes())}`;}
 // Schalter Open | Closed: bei Open sind Schluss, Exit und P/L ausgeblendet.
 function tjStatus(st){
@@ -765,7 +858,7 @@ function tjNeu(datum,id){
   });
   tjStatus(document.getElementById('tjSt').value);
   const h=document.getElementById('tjDir');
-  document.querySelectorAll('#mTrade .tj-seg-b').forEach(b=>{const on=b.dataset.dir===(h&&h.value||'long');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
+  document.querySelectorAll('#mTrade .tj-seg-b[data-dir]').forEach(b=>{const on=b.dataset.dir===(h&&h.value||'long');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
   const err=document.getElementById('tjErr');if(err){err.textContent='';err.hidden=true;}
   delete TJ_CH.tjChart;const c=document.getElementById('tjChart');if(c)c.innerHTML='';
   openM('mTrade');

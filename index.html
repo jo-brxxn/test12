@@ -5296,6 +5296,14 @@ body.no-ui-anim .tj-flamme.an svg{animation:none}
 .tj-hd.zieh{pointer-events:auto;cursor:ns-resize;touch-action:none}
 .tj-hd.zieh::after{content:'';position:absolute;inset:-8px -6px}
 .tj-hd.aktiv{box-shadow:0 0 0 3px rgba(var(--ui-act-rgb),.28)}
+/* Zeitspanne des Werkzeugs: Kanten ziehen = Breite, Mitte ziehen = verschieben */
+.tj-wbox{position:absolute;pointer-events:auto;cursor:grab;touch-action:none;border-radius:2px}
+.tj-wbox.aktiv{cursor:grabbing;outline:1px dashed rgba(var(--ui-act-rgb),.55)}
+.tj-wd{position:absolute;width:0;pointer-events:auto;cursor:ew-resize;touch-action:none}
+.tj-wd::before{content:'';position:absolute;left:-2px;top:0;bottom:0;width:4px;border-radius:2px;background:var(--ui-act);opacity:.75}
+.tj-wd::after{content:'';position:absolute;left:-9px;right:-9px;top:-4px;bottom:-4px}
+.tj-wd.aktiv::before{opacity:1;width:6px;left:-3px}
+@media (hover:hover){.tj-wd:hover::before{opacity:1}}
 .tj-hd-griff{width:6px;height:10px;background:repeating-linear-gradient(to bottom,currentColor 0 1px,transparent 1px 3px);opacity:.75}
 .tj-l-entry,.tj-l-sl,.tj-l-tp{stroke-width:1.5}
 .tj-l-entry{stroke:var(--ui-act)}
@@ -6670,11 +6678,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-627 - Journal: offene Trades oben mit Live-Stand (R + Kursabstand), Abschluss-Fenster, Status Open/Closed, Kalender am Schlusstag."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-628 - Journal: Positions-Werkzeug mit eigener Zeitspanne (Kanten ziehen = Breite, Mitte = verschieben), Status-Schalter markiert wieder."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-627</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-628</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -6866,7 +6874,7 @@ window.fxLogoSvg=function(art){
     <div id="tjErr" class="tj-err" hidden></div>
     <div class="tj-ed-grid">
       <div class="tj-ed-chart">
-        <div class="tj-ed-ch-kopf"><b id="tjChTitel">Price chart</b><i>daily · tap to place · drag Entry, SL and TP</i></div>
+        <div class="tj-ed-ch-kopf"><b id="tjChTitel">Price chart</b><i>daily · tap to place · drag Entry, SL, TP and the edges</i></div>
         <div id="tjChart" class="tj-chart"></div>
         <div id="tjRR" class="tj-rr"></div>
       </div>
@@ -6881,7 +6889,7 @@ window.fxLogoSvg=function(art){
         <div class="tj-f"><div class="tj-lbl">Asset</div><input class="m-inp" id="tjAsset" list="tjAssetList" placeholder="e.g. EUR/USD, GOLD, NAS100" autocomplete="off" oninput="tjEdEingabe(true)"><datalist id="tjAssetList"></datalist></div>
         <div class="tj-f"><div class="tj-lbl">Direction</div>
           <div class="tj-seg" role="group" aria-label="Direction"><button type="button" class="tj-seg-b" data-dir="long" aria-pressed="true" onclick="tjRichtung('long')">Long</button><button type="button" class="tj-seg-b" data-dir="short" aria-pressed="false" onclick="tjRichtung('short')">Short</button></div>
-          <input type="hidden" id="tjDir" value="long"></div>
+          <input type="hidden" id="tjDir" value="long"><input type="hidden" id="tjW0"><input type="hidden" id="tjW1"></div>
         <div class="tj-f2">
           <div><div class="tj-lbl">Entry</div><input class="m-inp" id="tjEntry" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08500" oninput="tjEdEingabe()"></div>
           <div><div class="tj-lbl">Size</div><input class="m-inp" id="tjSize" placeholder="e.g. 1.0 lot"></div>
