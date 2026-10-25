@@ -20690,3 +20690,19 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter:** `check/makro.js` I — Balken = Werte (immer alle), Farbe gegen die Reihe nachgerechnet, nichts außerhalb des Charts, waagerecht keine Überlappung, Forecast-Linie, keine Surprise-Zeile/Zinsstriche, Spur ≤ 125 px (Handy 165). Gegenprobe (je Spur ein Wert weg) rot. `designregeln` C nimmt `.mk-wert` aus (Nutzerwahl).
 
+## 2026-10-25 — Wächter: CI in sechs Paketen, langsame Prüfungen entschärft (ohne App-Änderung)
+
+**Gemessen (Lauf 608, ein Job):** 68,6 min; jeder Commit lief **doppelt** (Session-Branch + `main`, z. B. 599/600, 601/602, 603/604, 609/610). Zeitprofil je Playwright-Aufruf (Vorlade-Skript, lokal):
+- `erklaerung` 266 s: **235 Klickversuche, 39 sichtbar** — jeder unsichtbare ⓘ lief 1,2 s in die Frist (238 s).
+- `versionssicht`: App **4×** geladen für 4 Breiten (CI 87 s).
+- Rest: feste Wartezeiten (`runtime` 1143× = 98 s, `namen` 147× = 66 s, `designregeln` ~140 s je Seite 0,9–1,3 s) und Mehrfach-Laden je Breite (`dashboard` 8×, `nav` 7×, `cards`/`layout` 5×).
+
+**Geändert:**
+- `checks.yml`: nur `main` + PR, Job `statisch` + **6 Browser-Pakete parallel** (`all.js --teil i/6`, nach CI-Sekunden verteilt, ~11 min je Paket), neuer Push bricht alten Lauf ab, `actions/*@v5` (Node-20-Warnung).
+- `erklaerung`: nur sichtbare ⓘ → **33 s**, dieselben 39 geprüft. `versionssicht`: einmal laden, Breite umstellen → **6 s** lokal.
+
+**Bewusst NICHT geändert (Befund):**
+- Überschneidungen: `kartentitel` A (17 px) ⊂ `hierarchie`; `kartentitel` B (ⓘ blau/kleiner) ~ `infoi`; `display` ~ `scorenachrechnung` (angezeigte Scores); `layout`/`cards`/`dashboard` (Überlauf aus drei Richtungen). Zusammenlegen spart in parallelen Paketen ~5–10 s Wartezeit, kostet aber jede Gegenprobe neu — nicht lohnend.
+- Negativ-Prüfungen für entfernte Funktionen (Intro, Bearbeitungsmodus, Einstufungen, Momentum, Classic-Modus) bleiben: bei parallelen Sessions kann eine Konflikt-Auflösung Altes zurückholen.
+- Feste Wartezeiten in `designregeln`/`runtime`/`namen`: kürzen spart CPU, aber nicht die Paket-Wartezeit; Risiko falscher Rotfunde unter CI-Last.
+
