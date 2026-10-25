@@ -259,7 +259,49 @@ const morgenTreffer=[...ohneJsKommentar(jsAlle).matchAll(/(['"`])\s*(?:~|in )?[T
 const hatBaustein=/function countdownHtml\s*\(/.test(jsAlle)&&/cd-heute/.test(jsAlle);
 const hatCss=/\.cd-heute\s*\{/.test(h);
 
+// ── Module: jeder benannte Import steht im Zielmodul als Export (2026-10-24) ──
+// Fehlt ein Export, bricht der Browser das GANZE Modul ab ("does not provide
+// an export named X") - weisse Seite. node --check und check/syntax.js sehen
+// das nicht (jede Datei ist fuer sich gueltig); bisher fing es erst runtime.js
+// im Browser, Minuten spaeter. Anlass: beim Makro-Tempo-Umbau (626) fehlte
+// `saveSoon` in der Export-Liste von js/main.js - nur zufaellig vor dem Push
+// bemerkt. Gegenprobe: --gegenprobe importiert einen Namen, den es nicht gibt.
+const importFehlt=[];
+{
+  const ohneZK=t=>t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/[^\n]*/g,'');
+  const mods={};
+  try{fs.readdirSync(jsDir).filter(f=>f.endsWith('.js')).forEach(f=>{mods[f]=fs.readFileSync(path.join(jsDir,f),'utf8');});}catch(e){}
+  if(process.argv.includes('--gegenprobe')&&mods['makro.js'])mods['makro.js']="import {gibtEsNicht} from './main.js';\n"+mods['makro.js'];
+  const exporte={};
+  Object.entries(mods).forEach(([f,t])=>{
+    const e=new Set();
+    for(const m of t.matchAll(/(?:^|\n)\s*export\s*\{([^}]*)\}/g))ohneZK(m[1]).split(',').forEach(x=>{x=x.trim();if(!x)return;const q=x.split(/\s+as\s+/);e.add((q[1]||q[0]).trim());});
+    for(const m of t.matchAll(/(?:^|\n)\s*export\s+(?:async\s+)?(?:function\*?|const|let|var|class)\s+([A-Za-z_$][\w$]*)/g))e.add(m[1]);
+    if(/(?:^|\n)\s*export\s+default\b/.test(t))e.add('default');
+    if(/(?:^|\n)\s*export\s*\*\s*from/.test(t))e.add('*');
+    exporte[f]=e;
+  });
+  Object.entries(mods).forEach(([f,t])=>{
+    for(const m of t.matchAll(/(?:^|\n)\s*import\s+([^;'"]*?)\s+from\s*['"]\.\/([\w.-]+)['"]/g)){
+      const ziel=m[2],kopf=m[1];
+      if(!exporte[ziel]){importFehlt.push(f+' -> ./'+ziel+' (Datei fehlt)');continue;}
+      if(exporte[ziel].has('*'))continue;
+      const namen=[];
+      const kl=/\{([^}]*)\}/.exec(kopf);
+      if(kl)ohneZK(kl[1]).split(',').forEach(x=>{x=x.trim();if(x)namen.push(x.split(/\s+as\s+/)[0].trim());});
+      const vor=kopf.replace(/\{[^}]*\}/,'').replace(/,/g,' ').trim();
+      if(vor&&!/^\*\s+as\s/.test(vor))namen.push('default');
+      namen.forEach(n=>{if(!exporte[ziel].has(n))importFehlt.push(f+' importiert '+n+' aus ./'+ziel);});
+    }
+  });
+}
+if(process.argv.includes('--gegenprobe')){
+  const ok=importFehlt.some(x=>/gibtEsNicht/.test(x));
+  console.log(ok?'structure --gegenprobe: ok (fehlender Export wird gemeldet: '+importFehlt.join(', ')+')':'structure --gegenprobe: FEHLER - fehlender Export bleibt unbemerkt');
+  process.exit(ok?0:1);
+}
 const befunde=[];
+if(importFehlt.length) befunde.push('Import ohne passenden Export (der Browser bricht das ganze Modul ab - weisse Seite): '+importFehlt.join(', '));
 if(morgenTreffer.length) befunde.push('sichtbarer Text sagt "Tomorrow" statt "1d" (Nutzer-Regel 2026-09-14, countdownHtml() benutzen): '+morgenTreffer.join(' | '));
 if(!hatBaustein) befunde.push('countdownHtml() fehlt oder setzt die Heute-Markierung nicht (span.cd-heute) - ohne sie faellt das auffaellige Ausrufezeichen weg');
 if(!hatCss) befunde.push('.cd-heute ist in index.html nicht formatiert - das Ausrufezeichen waere da, aber nicht auffaellig');
@@ -282,4 +324,4 @@ if(befunde.length){console.log('STRUKTURFEHLER:\n  '+befunde.join('\n  '));proce
   const auf=(body.match(/<div[\s>]/g)||[]).length, zu=(body.match(/<\/div>/g)||[]).length;
   if(auf!==zu){console.log('STRUKTUR-FEHLER: '+auf+' <div> gegen '+zu+' </div> im statischen Body - ein Container schliesst zu frueh oder gar nicht.');process.exit(1);}
 }
-console.log('Struktur ok: keine doppelten ids, kein wiederholter Block, '+def.size+' Funktionen, alle Handler aufloesbar, '+tokenDef.size+' CSS-Tokens alle definiert');
+console.log('Struktur ok: keine doppelten ids, kein wiederholter Block, '+def.size+' Funktionen, alle Handler aufloesbar, '+tokenDef.size+' CSS-Tokens alle definiert, jeder Modul-Import exportiert');

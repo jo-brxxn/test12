@@ -20579,3 +20579,114 @@ die Folgeentwicklung vorhersagen?
 - **Gemessen + behoben (390 px):** Tabelle ließ dem Asset ~12 px (Name stand buchstabenweise untereinander) → ≤ 460 px Long/Short unter dem Namen statt eigener Spalte. Heute-Markierung in der Sa/So-Spalte 23 > 19 px → schmalere Marke, Kopf *Mo Tu …*. Danach 0 überlaufende Zellen bei 1440/1024/390, kleinste Schrift 11 px, Equity-SVG = gemessene Breite (1286/870/272).
 - **Datum:** jetzt über `fmtDayHdr`/`fmtDayShort`, Monat `October '26` (vorher *„Fri, 2 Oct 2026“*, verstieß gegen die Datumsregel).
 - **Wächter:** `check/eingaben.js` kennt `mTrade` (Öffner `tjNeu()` / `tjNeu('2026-10-01')`).
+
+## 2026-10-24 — VERSION-CHECK-625: Asset-Stapel-Markierung, Settings breit, nur noch Hell/Dunkel
+
+- **Nutzer:** *„wenn ich auf dem Assets Stapel bin und ein Asset ausgewählt habe … mach das dann die Flagge weht und sie in richtiger Farbe ist und das die Schrift dann die bullish oder bearish oder neutral bias Farbe hat … Score auch in der Farbe. Und die settings sind aktuell so extrem länglich mach das breiter … Schalter für dark und light mode … light mode soll terminal pro sein und der darkmode soll Midnight Term sein. Der Rest weg. Und background soll immer bei current sein also die Einstellungen dazu löschen.“*
+- **Asset-Stapel:** nur die `.on`-Zeile → `assetIconHtml(id,17)` (farbig, Film = wehende Flagge; Öl/Metall/Index ihr eigenes Motiv) statt `assetGlyphHtml`; Name + Score in Bias-Farbe über `data-bv` = `sym.bias`. Leisten-eigene Tokens `--sb-bull #85B4F1 / --sb-bear #F09CA1 / --sb-neu #A2B2D2` — **gemessen** gegen die markierte Zeile: hell (#3E444E) **4,57 / 4,66 / 4,59**, Midnight (#1B2740) **6,94 / 7,07 / 6,97**. Die BC-Farben kämen dort auf ~2:1. Playwright: USD (bear) → Name + Score `rgb(240,156,161)`, `.ai-film-on` aktiv.
+- **Settings:** 420 → **880 px**, zwei Spalten (*links* Appearance + Animation, *rechts* Data/Security/Layout/Notifications), **darunter** Cloud Sync mit 2×2-Feldern. Unter 700 px eine Spalte. Gemessen 390 px: Density-Text auf ~60 px gequetscht → Zeile mit `.seg3` bricht um.
+- **Design:** Raster mit zehn Vorlagen → ein Schalter **Dark mode** (*On: Midnight Term · Off: Terminal Pro*). Acht Vorlagen samt CSS entfernt. **Migration:** Carbon/Graphite/Nord/Solar → Midnight, Linear/Stripe/Swiss/Notion → Terminal Pro (Frueh-Weiche + `normFxTheme()` für Cloud/Import). Playwright: `fxpro_theme='carbon'` → nach Laden `midnight`.
+- **Hintergrund:** Auswahl, CSS, `APP_BGS`, Sync-Feld `appBg` und die sechs Marmor-Bilder gelöscht; Frueh-Weiche löscht `fxpro_bg`. `sw.js` ohne Marmor, `CACHE_VERSION` v17.
+- **Wächter angepasst (nicht gelaufen, Nutzer: *„ohne Wächter lauf am Ende ich sag dir wann“*):** `check/hintergrund.js` gelöscht (Gegenstand weg), `rahmen.js` HELL = nur Terminal Pro, `kerzen.js` dunkel = nur Midnight, `display.js` erlaubt `data-bv` nur an der `.on`-Zeile und prüft es gegen `sym.bias`.
+
+## 2026-10-24 — VERSION-CHECK-626: Makro-Analyse schnell
+
+*Nummer 626: 623/624 (Journal) und 625 (Asset-Stapel) waren parallel auf `main` vergeben (Zusammenführung).*
+
+**Nutzer:** *„Mach es maximal schnell“*
+
+**Gemessen vorher** (CPU 4x ~iPad, USD/GOLD, Compare EUR+GBP, Kurs an), Klick → fertiges Bild:
+- Reiter **0,97–1,51 s** · Chip **0,90–1,95 s** · Compare **1,18–1,59 s** · Zeitraum **1,11–1,80 s** · Kurs **0,91–1,55 s** · Hover **13–15 ms** je Bewegung.
+
+**Ursachen (Anteile + CPU-Profil über 12 Bedienungen, 9,1 s):**
+- Jeder Klick → `renderDetail()` = ganze Asset-Seite **595–717 ms**; Charts selbst nur **84–137 ms**.
+- Chart im nächsten Bild **ein zweites Mal** gezeichnet.
+- `save()` → `recordScoreHist` + Journal **2,1 s**.
+- `lgAlleKarten` (Logo-Freiraum) vermaß bei jeder DOM-Änderung **alle Karten**, jedes Element: **742 ms**.
+- Kalender-Abgleich/`Date.parse` je Zeichnen neu.
+
+**Fix (Wurzel):** `makroReiheNeu()` tauscht nur die Makro-Reihe · `makroZeichnenFehlende` statt doppelt · Zwischenspeicher (Reihe, Spurkopf, Kurs, Vergleich, nächster Termin, Datum) je Datenstand · `lgKartenPlanen` nur betroffene Karten, Reiter-Karte nie · `saveSoon` für Makro-Ansicht · Hover einmal je Bild + binäre Suche.
+
+**Gemessen nachher** (gleiches Skript): meist **150–260 ms**, schnellste **88 ms**, erster kalter Reiter ~470 ms · Hover **0,1–0,3 ms** · Profil 12 Bedienungen **4,9 s statt 9,1 s**.
+
+**Wächter:** `check/makro.js` H zählt volle Aufbauten (0) und Zeichnungen (1 je Chart) für 11 Bedienungen; Gegenprobe (alter Weg) rot.
+
+**Nicht angefasst (Befund):** der volle Aufbau der Asset-Seite selbst (560–870 ms bei CPU 4x) und `recordScoreHist` bei jedem `save()` — betrifft die ganze App.
+
+## 2026-10-24 — VERSION-CHECK-627: Journal — offene Trades, Abschluss-Fenster, Kalender am Schlusstag
+
+*Nummer 627: als 625 gebaut, parallel waren 625 (Asset-Stapel) und 626 (Makro) auf `main` vergeben.*
+
+- **Nutzer:** *„… das man ein Open Trade sieht also das man erst nur eingibt was man hat und am Ende erst wie es geendet ist … die App [kann] durch den Preis den sie hat auch anzeigen wie es aktuell ist … ganz oben ein Bereich für open trades … die kann man dann abschließen wenn man drauf drückt“*. Per Rückfrage: Live-Stand = **R + Kursabstand** (kein Geldbetrag — ohne Wert je Punkt geschätzt, Regel 4) · Schalter **Open | Closed** · Kalender am **Schlusstag** · **kleines Abschluss-Fenster**.
+- *„ich glaube es gibt noch kein Profit Eingabe“* — gab es (`P/L (profit / loss)` im Editor, Pflicht). Jetzt im Block **Closed** und groß im Abschluss-Fenster.
+- **Felder:** `st` (`open`/`closed`; alt ohne `st` = geschlossen), `d/t` = Eröffnung, `cd/ct` = Schluss (alt ohne `cd` → `d`). Läuft über dasselbe Sync-Feld `tradeJournal` (Merge nach `id`).
+- **Open trades (oben):** Karte je Trade — Asset + Long/Short, unrealisiertes **R** (braucht SL) bzw. Kursabstand, *Entry · Now*, Leiste SL – Entry – Now – TP, *Opened … · price …*. Kurs = letzter Wert der Tagesreihe (Feed stündlich, `:17`). Ohne Entry: *„Add an entry price to track it live“*; ohne Reihe: *„No price data“*.
+- **Abschluss-Fenster `#mTradeClose`:** Exit mit *Hit TP · Hit SL · Now*, P/L Pflicht, Schlussdatum/-zeit (heute/jetzt), Notiz, *Edit trade*. Warnt, wenn P/L-Vorzeichen und Exit sich widersprechen. In `MODAL_GUARD_TABELLE` + `ESC_MODALS`, Öffner in `check/eingaben.js`.
+- **Neu:** „+ Add trade“ = offen; Tipp auf einen Kalendertag = an diesem Tag geschlossen. Kennzahlen, Equity, Streak, Kalender, Tabelle zählen nur geschlossene Trades.
+- **Gemessen + behoben:** Leisten-Beschriftung SL/Entry überlappte in der 270-px-Karte (Abstand in % sagt nichts über Pixel) → immer abwechselnd oben/unten, 0 Überlappungen. Open-Karten standen auf 390 px rechts über (Mindestbreite 290 > 270 px Platz) → `minmax(min(290px,100%),1fr)`.
+
+### 2026-10-24 (627, Nachtrag) — Trades sicher in Supabase: vier Verlustwege gemessen und geschlossen
+
+- **Nutzer:** *„stell sicher das die Sachen gespeichert werden und nicht verloren gehen also alle in supabase sicher landen“*.
+- **Reproduziert** mit nachgestellter Cloud (`check/trades.js --gegenprobe`, mehrere Browser-Kontexte, eine `fx_sync`-Zeile):
+  - **A** Abgleich ≥ 15 s nach dem Start, ein anderes Gerät hat ohne TB hochgeladen → Cloud `A-TA,A-TX`, lokal `A-TA,A-TB,A-TX`: **TB blieb nur lokal**. Ursache: `cloudPullRoh` lädt nur bei `prefPending` wieder hoch.
+  - **B** Cloud-Stand ohne `tradeJournal` (alte App) → *Cloud hat kein tradeJournal*, dieselbe Ursache.
+  - **C** zwei Tabs, Tab 1 legt C-1 an, Tab 2 danach C-2 → localStorage **und** Cloud nur `C-2`. Ursache: `tjSpeichern` schrieb den Speicherstand des Tabs über die Platte.
+  - **D** Upload 35 s gescheitert → *Uploads nach Freigabe: keiner*, keine Meldung. Ursache: kein Nachholen.
+- **Fund nebenbei:** `cloudAutoSync` setzt `_cloudPushTimer` nach dem Feuern nicht zurück; `flushAndSave` (15-s-Takt) lädt deshalb genau EINMAL nach. Das verdeckte A/B in den ersten 15 s und D bei kürzeren Ausfällen — deshalb im Wächter 20 s bzw. 35 s. Nicht geändert (gehört nicht zum Journal), nur dokumentiert.
+- **Fix (js/trades.js + cloudPull/cloudPush in js/main.js):**
+  - `tjUebernehmen()` meldet, ob der Cloud eigene Trades fehlen; `cloudPullRoh` lädt dann hoch wie bei `prefPending` (A/B). Wird jetzt auch ohne Feld in der Cloud aufgerufen.
+  - `tjVonPlatte()`: vor jedem Schreiben, vor jedem Upload/Export mit localStorage vereinigen; `storage`-Ereignis für `fxpro_trades` (C).
+  - Cloud-Stand sichtbar in der Monatsleiste: *„N trades in the cloud · Zeit“* / *„Uploading …“* / **„Not in the cloud yet · retrying every 15 s“** + *Retry now* / *„Only on this device“* + *Set up sync*. Fingerabdruck des zuletzt erfolgreich hochgeladenen Stands (`fxpro_trades_cloud`), Fehlerzeit (`fxpro_trades_cloud_err`), Wiederholung alle 15 s und beim Wieder-online (D).
+- **Geprüft:** Server-Workflows schreiben `fx_sync` nie (nur lesen; Schreiben nur in `fx_alert_log`) — dort kein Verlustweg.
+- **Danach gemessen:** A Cloud `A-TA, A-TB, A-TX` · B danach alle vier Trades beider Geräte · C localStorage + Cloud `C-1, C-2` · D Meldung sichtbar, Upload 4,1 s nach Freigabe, Anzeige *in the cloud* · E Grabstein bleibt.
+- **Wächter:** `check/trades.js` (neu, in `check/all.js`), Gegenprobe A–D rot.
+
+## 2026-10-25 — VERSION-CHECK-628: Positions-Werkzeug mit eigener Zeitspanne
+
+- **Nutzer:** *„Ich will von dem Werkzeug im Chart auch die Breite verstellen können also es soll nicht die gesamte Breite sein ich will es richtig an die Stelle machen.“* Push direkt, danach alle Wächter.
+- **Vorher:** Zonen und Linien über die ganze Plotbreite.
+- **Jetzt:** Kasten wie bei TradingView: erster Tipp setzt ihn an die angetippte Kerze (12 Kerzen breit), **linke/rechte Kante ziehen** = Anfang/Ende (rastet auf Kerzen, min. 1), **Mitte ziehen** = verschieben. Rechts 14 leere Zukunfts-Slots im Editor (sonst klebte ein heute eröffneter Trade als eine Kerze am Rand). Gespeichert als Datum `w0`/`w1` am Trade (Sync wie alle Trade-Felder), Detail-Fenster zeigt den Kasten an denselben Tagen. Versteckte Felder `tjW0`/`tjW1` im Fensterschutz.
+- **Gemessen + behoben:** erste Fassung — Etiketten (~140 px) lagen über dem 72-px-Kasten; Ziehen an der rechten Kante und in der Mitte landete beim Entry-/SL-Etikett (*„rechte Kante −60: keine Änderung“*). Etiketten jetzt außerhalb (rechts, sonst links, unter 520 px ohne R-Zusatz), Kanten über der Fläche. Danach 1440 + 390 px: Mitte +40 → verschoben, rechte Kante −30 → kürzer, linke Kante −30 → länger, *kein Etikett über dem Kasten*, TP weiter ziehbar.
+- **Fehler aus 627 mitgefunden:** Status-Schalter Open/Closed zeigte nie die aktive Wahl — die Long/Short-Logik setzte `.on` an ALLEN `.tj-seg-b` im Fenster zurück. Jetzt nur `[data-dir]`. Gemessen: Add trade → *Open+Long*, Kalendertag → *Closed+Long*, Short → *Closed+Short*, Open → *Open+Short*.
+
+## 2026-10-24 — VERSION-CHECK-629: Rote CI-Funde behoben, Wächter ergänzt
+
+*Nummer 629: 627/628 waren parallel auf `main` für das Journal vergeben (Zusammenführung).*
+
+**Nutzer:** *„pushen und kein Prüflauf … das ganze Wächter Prüfverfahren an … entfern was veraltet ist … fasse Sachen zusammen … wenn es noch andere Sachen braucht ergänz sie“*
+
+**Gemessen:** CI-Läufe 603–608 auf `main` alle rot, immer dieselben vier: `display`, `hierarchie`, `pcbewegung`, `designregeln`. Lauf 608: **68,6 min**, Grenze 90.
+
+**Behoben:**
+- `display` 2e: *News-Einordnung kommt nicht an* — Routine seit 2026-09-24 gelöscht, `news_ai.json` steht auf dem 18.09., Meldungen herausgerollt → 0 Treffer richtig. Prüft „kommt an“ nur noch bei frischer Datei (≤ 72 h). Gegenprobe: frische Datei ohne Treffer → rot.
+- `hierarchie`: Journal-Karten *Equity curve*, *Calendar*, *Trades* ohne ⓘ (Dauerregel 2026-09-26) — parallel in 627/628 ergänzt (`tjTitel`); hier dazu: ⓘ **rechts oben auf Titelhöhe** (Dauerregel 2026-09-25), absolut, bricht am Handy nicht mit um.
+- `pcbewegung`: `@media (prefers-reduced-motion)` an der Journal-Flamme → entfernt, `body.no-ui-anim` stand schon da.
+- `designregeln` E: Trade-Editor-Felder 40 px → bewusst **L-Stufe** (Doku nannte 40 schon für Fenster-Felder), Wächter kennt sie.
+
+**Ergänzt:**
+- `structure.js`: jeder Modul-Import ist im Zielmodul exportiert (fehlt einer → weiße Seite; fing bisher erst `runtime` im Browser). Echte Probe: `saveSoon` aus der Export-Liste → rot.
+- `rules.js` Regel 6b: neues Feld in `snap()` → muss in `neueFelderBehalten()` (Fehlerklasse von 619). Geprüft gegen die Basis vor 620: `mkTab`/`mkOpt` korrekt als behalten erkannt.
+- `all.js`: `--teil i/n` (gleich lange Pakete nach CI-Sekunden), `--nur a,b`, `--liste`; Laufzeit je Prüfung in der Liste.
+
+## 2026-10-25 — VERSION-CHECK-630: Makro-Analyse mit Balken, kompakt
+
+**Nutzer:** *„Ich will in dem Analyse Tool Balken und ich will dann keine surprise Zeile sondern die Werte in der Farbe ob es ein Beat Miss oder neutral ist direkt über den Balken und halt die forecast Linie. Und entfern die Striche für Hikes und Cuts und mach das ganze kompakter das man mehr Charts sehen kann untereinander“*
+
+**Rückfrage:** Balken *„So wie normal auch in den Mini Diagrammen und bei data“* · Werte bei Enge *„Immer alle, kleiner“* (Option nannte den Verstoß gegen die 11-px-Regel) · *~115 px je Spur*.
+
+**Gemessen vorher (1440 px, USD Inflation, 3Y):** Spur **194–203 px** (Kopf 17, Statistik 15, Chart 158 inkl. 26 px Surprise-Zeile), Reiter-Karte **1035 px**, 28 Hike/Cut-Striche; Handy **245–254 px**.
+
+**Umgesetzt:**
+- Release-Reihen als **Säulen ab 0** (`--blue` .8, 56 % Spaltenplatz) wie `indHistChart`; Level-Reihen (Einheit, > 24 Punkte) bleiben Linie — dieselbe Weiche.
+- **Jeder Balken mit Wert**, Farbe `mkTon` (= `actualColor`, Tabelle) über `--bias-bull/-bear/-neu` (theme-fähig), über Balken und Forecast-Punkt; Schrift auf den Spaltenplatz, unter 7 px senkrecht.
+- **Forecast-Linie + Punkte** `--t1`; Surprise-Zeile und Zinsentscheide (`mkZinsentscheide`, Striche, bp-Zeile) **entfernt**.
+- Ziel-/Bezugs-Beschriftung und *Next*-Datum aus dem Chart in den **Spurkopf** (stießen mit den Werten zusammen).
+- Handy: Statistik einzeilig zum Wischen.
+
+**Gemessen nachher:** 1440 px Spur **107–115 px**, Karte **698 px**; 3Y 11 px waagerecht ohne Überlappung, 10Y 8–10 px senkrecht, Max 5,5–8,5 px; Handy 1Y **142–147 px** (10–11 px), 3Y 5 px senkrecht. 0 JS-Fehler.
+
+**⚠ Grenze der Nutzerwahl:** Handy ab 3Y ≈ 3–8 px je Balken → Werte 5 px, bei 10Y/Max überlappen sie (76–158 je Spur). Lesbar dort nur per Hover oder mit 1Y.
+
+**Wächter:** `check/makro.js` I — Balken = Werte (immer alle), Farbe gegen die Reihe nachgerechnet, nichts außerhalb des Charts, waagerecht keine Überlappung, Forecast-Linie, keine Surprise-Zeile/Zinsstriche, Spur ≤ 125 px (Handy 165). Gegenprobe (je Spur ein Wert weg) rot. `designregeln` C nimmt `.mk-wert` aus (Nutzerwahl).
+

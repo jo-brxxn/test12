@@ -27,7 +27,9 @@ const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 
 const GEGENPROBE = process.argv.includes('--gegenprobe');
-const HELL = ['', 'linear', 'stripe', 'swiss', 'notion'];
+// Seit 2026-10-24 gibt es nur noch EINE helle Vorlage (Terminal Pro); die
+// vier anderen hellen sind entfernt.
+const HELL = [''];
 const SEITEN = ['sym:USD', 'sym:GOLD', 'dash', 'cot', 'sent', 'seas', 'data', 'rate', 'news', 'trends'];
 const ZONEN = ['.rub-hdr', '.ab-tile-hd', '.abc-cal>.abc-hd', '.dw-hdr', '.cot-card-title',
   '.ab-rg', '.histp-rbtn', '.ind-hist-range-btn', '.perf-win', '.hl-tab',
@@ -55,7 +57,7 @@ const ZONEN = ['.rub-hdr', '.ab-tile-hd', '.abc-cal>.abc-hd', '.dw-hdr', '.cot-c
   let geprueft = 0, zonenGesehen = 0, tokenFehlt = [];
   for (const th of HELL) {
     // Die Vorlage wird direkt am <html> gesetzt - genau das tut auch die
-    // Frueh-Weiche; der Speicherweg (setFxTheme) ist hier nicht Gegenstand.
+    // Frueh-Weiche; der Speicherweg (toggleFxTheme) ist hier nicht Gegenstand.
     await p.evaluate(t => { t ? document.documentElement.setAttribute('data-fx-theme', t)
       : document.documentElement.removeAttribute('data-fx-theme'); }, th);
     const tk = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--ui-act').trim());

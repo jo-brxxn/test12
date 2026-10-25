@@ -37,11 +37,7 @@ Auto" = null ankommt), `setupCcyFilter`/`setupFxOnly`
 `'d,h'`, seit 2026-09-25), `pxChartTyp` (Candles | Line fuer ALLE
 Preis-Charts, `'candle'`/`'line'`, seit 2026-09-26), `cotVsPrice` (Kurslinie im
 COT-Verlauf an/aus, seit 2026-09-27), `telegramEnabled`,
-`newsSeenTs`, `kontextSlots` (seit 2026-10-11: je Asset die drei Kontext-Charts, `{EUR:[null,'p:GOLD',null]}`, `fxpro_kontext_slots`), `denseMode` (seit 2026-10-11 dreiwertig: `'auto'`/`true`/`false`, gespeichert `auto`/`1`/`0`, `normDense()` nimmt alte Booleans an), `appBg` (Hintergrund-Wahl: leer = Current,
-sonst `white`/`marble-light`/`marble-vivid`/`marble-dark`; ⚠ die erlaubten
-Werte stehen doppelt — in `APP_BGS` in `js/main.js` und in der Frueh-Weiche
-im `<head>` von `index.html`, die den Wert setzen muss, BEVOR die erste
-CSS-Regel greift), `assetAnimEnabled` (und die drei weiteren
+`newsSeenTs`, `kontextSlots` (seit 2026-10-11: je Asset die drei Kontext-Charts, `{EUR:[null,'p:GOLD',null]}`, `fxpro_kontext_slots`), `denseMode` (seit 2026-10-11 dreiwertig: `'auto'`/`true`/`false`, gespeichert `auto`/`1`/`0`, `normDense()` nimmt alte Booleans an), `fxTheme` (seit 2026-10-24 nur `''` = Terminal Pro oder `'midnight'`; Altwerte über `normFxTheme()` migriert — dieselbe Liste in der Frueh-Weiche im `<head>`), ~~`appBg`~~ (Hintergrund-Wahl, entfernt 2026-10-24 — wird weder gesendet noch gelesen), `assetAnimEnabled` (und die drei weiteren
 Animations-Schalter aus demselben Vier-Schalter-Satz), `dashboards`/
 `activeDashId` (siehe `docs/navigation.md`, Mehrfach-Dashboards — laufen
 über `snap()`/`applySnap()`, kein manuelles Wiring nötig). Details/
@@ -112,6 +108,9 @@ vier Stellen: `cloudPush`/`exportData` (`data.tradeJournal`), `cloudPull`/
 - **Merge** (`mergeTrades`): Vereinigung nach `id`, bei Kollision gewinnt das jüngere `up`.
 - **Löschen = Grabstein** (`{id,del:true,up}`), nie Entfernen — sonst bringt der nächste Merge den Trade vom anderen Gerät zurück.
 - Angezeigter Monat (`tjMonat`) bewusst nur Sitzung.
+- Seit 628 zusätzlich `w0`/`w1` (Zeitspanne des Positions-Werkzeugs, Datum). Seit 627 je Trade `st` (`open`/`closed`), `cd`/`ct` (Schluss) — dieselbe Zeile, derselbe Merge; alte Einträge ohne `st` gelten als geschlossen.
+- **Sicherung (seit 627, `check/trades.js`):** `cloudPull` ruft `tjUebernehmen()` IMMER (auch ohne Feld) und lädt hoch, wenn der Cloud eigene Trades fehlen (`tjFehlt`, wie `prefPending`). Vor jedem Schreiben/Upload/Export Vereinigung mit localStorage (`tjVonPlatte`), `storage`-Ereignis. Sichtbarer Cloud-Stand + Wiederholung alle 15 s (`fxpro_trades_cloud`/`fxpro_trades_cloud_err`, beide nur lokal).
+- ⚠ Muster für jedes künftige Log-Feld dieser Art: ein Pull, der vereinigt, MUSS hochladen, wenn das Ergebnis mehr enthält als die Cloud — sonst bleibt der Rest nur lokal.
 
 ## Sonderfall `research`/`researchFolders` (Notizen/Ordner/Papierkorb): Merge statt Overwrite + `navigator.locks`
 

@@ -35,15 +35,16 @@ const MODE=process.argv[2]||'normalized';
     const quelle=imNav?(btn.getAttribute('data-tip')||''):btn.innerText;
     const v=num(quelle);
     if(v==null||Math.abs(v-soll[id])>0.051)F.push({ort:imNav?'Nav-Tooltip':'Sidebar',id,angezeigt:v,soll:soll[id],txt:String(quelle).replace(/\n/g,'|')});
-    // Die Zeile in der Navigationsleiste faerbt bewusst NICHT nach Bias
-    // (Nutzer-Wunsch 2026-08-23) - eine data-bv-Markierung darf dort also
-    // gar nicht mehr stehen, sonst kaeme die Faerbung durch die Hintertuer
-    // zurueck. Ausserhalb der Leiste gilt die alte Pruefung weiter.
+    // Die Zeilen der Navigationsleiste faerben NICHT nach Bias (Nutzer-Wunsch
+    // 2026-08-23) - mit EINER Ausnahme seit 2026-10-24: das AUSGEWAEHLTE
+    // Asset traegt Name + Score in Bias-Farbe. data-bv darf in der Leiste
+    // also nur an der .on-Zeile stehen, und dort muss es zum Asset passen.
     const an=btn.querySelector('.an');
     const bv=an&&an.getAttribute('data-bv');
     const sym=syms.find(s=>s.id===id);
     if(imNav){
-      if(bv)F.push({ort:'Nav-Bias',id,dom:bv,hinweis:'Die Nav-Liste soll neutral bleiben'});
+      if(bv&&!btn.classList.contains('on'))F.push({ort:'Nav-Bias',id,dom:bv,hinweis:'Nur das ausgewaehlte Asset traegt Bias-Farbe'});
+      else if(bv&&sym&&bv!==sym.bias)F.push({ort:'Nav-Bias',id,dom:bv,soll:sym.bias});
     }else if(bv&&sym&&bv!==sym.bias)F.push({ort:'Sidebar-Bias',id,dom:bv,soll:sym.bias});
   });
   ok.sidebar=n;
@@ -162,9 +163,19 @@ const MODE=process.argv[2]||'normalized';
     const na=newsAiSicht();
     ok.newsAi={geladen:na.aiGeladen,eintraege:na.aiEintraege,mitEinordnung:na.mitEinordnung,
                durchKiZugeordnet:na.durchKiZugeordnet,laengsteEinordnung:na.maxSumLen};
+    // ⚠ "Kommt an" nur, solange die Routine liefert: sie ist seit 2026-09-24
+    // auf Nutzer-Wunsch geloescht ("Loesch die News Routine"), news_ai.json
+    // steht seither auf dem 18.09. - die Meldungen von damals sind aus
+    // news_data.json herausgerollt, 0 Treffer ist dann richtig und kein
+    // Fehler (war 2026-10-24 der einzige rote Punkt dieses Waechters in der
+    // CI). Laeuft wieder eine Routine (2x taeglich), ist die Datei frisch und
+    // die Pruefung von selbst wieder scharf. Sauberkeit (Ids, Laenge, Markup)
+    // gilt immer, solange es Einordnungen gibt.
+    const aiAlterH=na.aiStand?(Date.now()-Date.parse(na.aiStand))/3600e3:Infinity;
+    ok.newsAi.alterStunden=Number.isFinite(aiAlterH)?Math.round(aiAlterH):null;
     if(na.aiGeladen){
-      if(!na.mitEinordnung)F.push({ort:'KI-Einordnung kommt nicht an',
-        hinweis:'news_ai.json ist geladen, aber keine Meldung traegt eine Einordnung - der Abgleich ueber die Adresse greift nicht.'});
+      if(!na.mitEinordnung&&aiAlterH<=72)F.push({ort:'KI-Einordnung kommt nicht an',
+        hinweis:'news_ai.json ist frisch ('+Math.round(aiAlterH)+' h), aber keine Meldung traegt eine Einordnung - der Abgleich ueber die Adresse greift nicht.'});
       // Erfundene Asset-Id: die Meldung landete unter einer Waehrung, die es
       // in der App gar nicht gibt - oder schlimmer, unter der falschen.
       const gueltig=new Set(syms.map(s=>s.id));

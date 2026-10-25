@@ -360,6 +360,17 @@ gerade dran gearbeitet wird):
 
 ## Design-Vorlagen (Nutzer-Wunsch 2026-09-04)
 
+> ⚠ **Seit 2026-10-24 nur noch ZWEI** (Nutzer: *„Es soll einen Schalter für
+> dark und light mode geben light mode soll terminal pro sein und der darkmode
+> soll Midnight Term sein. Der Rest weg.“*): **Terminal Pro** (hell, `:root`,
+> kein Attribut) und **Midnight Term** (`data-fx-theme="midnight"`). Bedienung
+> = ein Schalter **Dark mode** in den Settings (`toggleFxTheme`). Die acht
+> anderen sind samt CSS entfernt; gespeicherte Altwerte werden migriert
+> (Carbon/Graphite/Nord/Solar → Midnight, die hellen → Terminal Pro) — in der
+> Frueh-Weiche UND in `normFxTheme()`. **Hintergrund-Auswahl ebenfalls weg**
+> (*„background soll immer bei current sein“*), Marmor-Bilder gelöscht.
+> Der Rest dieses Abschnitts ist Historie.
+
 Zehn Vorlagen, umschaltbar in den Einstellungen unter **Appearance**: fünf
 helle (**Terminal Pro** = das bisherige Design, Linear Light, Stripe Slate,
 Swiss Editorial, Notion Warm) und fünf dunkle (Carbon Dark, Midnight
@@ -1562,7 +1573,8 @@ verzerrter Schrift) — oder werden in echter Breite gebaut.
 
 **D — Mindestschrift 11 px.** `--fs-2xs` ist 11 px (vorher 10), auch in der
 verkleinerten Skala der Asset-Karten. Ausgenommen nur das „i“ im ⓘ-Kreis
-(Symbol) und das FX-Logo (Bild). Wo 11 px nicht passt, wird umverteilt, nie
+(Symbol), das FX-Logo (Bild) und die Werte über den Makro-Balken (`.mk-wert`,
+Nutzerwahl 2026-10-25 *„Immer alle, kleiner“*, `docs/makro.md`). Wo 11 px nicht passt, wird umverteilt, nie
 abgeschnitten: Leisten-Beschriftung (Rail-Polster 5 px, sonst „Dashboar/d“),
 Indikator-Tabelle ≤ 430 px (Wertspalten 15 %), Score-Hinweis bricht um statt
 „…“. Englische Ordinalzahlen über `ordEn()` (nie „24.“ oder „21th“).
@@ -1594,6 +1606,9 @@ Ausnahme mit Absicht: „Compare" in der Legendenzeile der Indikator-Charts
 bleibt klein (≤ 24 px, Nutzer 2026-09-27, `check/chartsync.js`).
 Neue Bedienelemente bekommen eine dieser Stufen — die Klassenlisten stehen im
 Block „D6“ am Ende des Haupt-`<style>`.
+Trade-Editor (Journal, seit 624): Felder, *Hit TP/SL* und Long/Short einheitlich
+**L 40** (`.tj-ed .finp`, `.tj-exit .btn`, `.tj-seg`) — eine Höhe für die ganze
+Formularspalte neben dem Chart; `check/designregeln.js` E kennt sie (2026-10-24).
 
 **F — Trefferflächen.** Kleine Ziele (Kalender-Glocke/×, ⓘ, Chips,
 Zeitfilter, Stern/Score/Zinsdifferenz in Set-ups, Quellen-Links) tragen ein
@@ -1788,7 +1803,8 @@ Per Rückfrage festgelegt (TradeZella-Stil), Details `docs/CHANGELOG.md` 622–6
 - **Kalender:** Mo–Fr breit, Sa/So schmal (`.46fr`), Spalte **Week** rechts. Zelle = Tagessumme groß + je Trade eine Zeile *Asset · Long/Short · P/L*. Handy/Wochenende: nur kompakte Summe (*+1.3k*), Tipp → Tages-Fenster.
 - **Farbe:** Win/Loss und Tagessummen in Bias-Farbe, Long/Short-Plakette in Bias-Farbe, aktiv = Navy. Streak-Flamme `--flame` (eigener Token).
 - **Charts:** Equity-Kurve und Kurs-Chart in gemessener Breite gebaut, Y-Achse links (Equity) bzw. rechts (Kurs), Kerzen nach den Kerzen-Regeln.
-- **Positions-Werkzeug:** Entry (Navy), SL (bearish), TP (bullish), Exit gestrichelt; Zonen 10 %. Ziehen nur an den Etiketten links (`touch-action:none`, Trefferfläche ±8 px).
+- **Positions-Werkzeug:** Entry (Navy), SL (bearish), TP (bullish), Exit gestrichelt; Zonen 10 %. Senkrecht ziehen an den Etiketten (`touch-action:none`, Trefferfläche ±8 px).
+- **Zeitspanne (seit 628):** Kasten von `w0` bis `w1` (Datum, mit dem Trade gespeichert), Standard 12 Kerzen ab dem Trade-Tag; Kanten ziehen = Breite (rastet auf Kerzen), Mitte ziehen = verschieben. Rechts 14 (Editor) bzw. 6 (Detail) leere Zukunfts-Slots. **Etiketten stehen AUSSERHALB des Kastens** (rechts, sonst links; unter 520 px ohne R-Zusatz) — darüber verdeckten sie Kanten und Mitte.
 
 ## Asset- und Paarnamen nie gekürzt (Dauerregel seit 2026-10-07)
 

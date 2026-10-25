@@ -50,7 +50,7 @@ betrifft.
 | Arbeits-Workflow (OK einholen, Version-Bump, Push-Regeln, Syntax-Checks) | `docs/workflow.md` |
 | Modul-Aufteilung von `index.html` in `js/*.js` (Vorgehen, window-Bruecke, AST-Verifikation) | `docs/module-split.md` |
 | **Regime Radar** (Szenarien, Bausteine, die drei Schutzregeln) | `docs/regime.md` |
-| **Makro-Charts** (Table\|Charts-Schalter je Makro-Karte, Charts = eine Karte mit Reitern, jede Spur eigener Block mit Act\|Fc\|Prev\|Next\|Score aus derselben Rechnung wie die Tabelle, Zielband/Normal/Überraschung/nächster Termin, keine Einstufungen) | `docs/makro.md` |
+| **Makro-Charts** (Table\|Charts-Schalter je Makro-Karte, Charts = eine Karte mit Reitern, jede Spur eigener Block mit Act\|Fc\|Prev\|Next\|Score aus derselben Rechnung wie die Tabelle, **Balken wie Mini-Charts mit ALLEN Werten in Beat/Miss/Neutral-Farbe + Forecast-Linie**, Zielband/Normal/nächster Termin, ~115 px je Spur, keine Surprise-Zeile/Zinsstriche/Einstufungen) | `docs/makro.md` |
 | **Performance** (Endlos-Animationen nur transform/opacity, Gruppen- statt Einzel-Animation, Ticker nur Text, eine Seite = ein Aufbau, erst messen dann schreiben) | `docs/performance.md` |
 | Prüfskripte (`check/*.js`), was sie prüfen und warum | `check/README.md` |
 | Volle Änderungshistorie (jeder Bugfix/jede Iteration mit Datum) | `docs/CHANGELOG.md` |
@@ -80,8 +80,11 @@ passenden Datei (oder `docs/CHANGELOG.md`) nachschlagen, nicht raten.
 4. **Nie schätzen/raten/hart eintragen.** Fehlt ein echter Wert aus einer
    Live-Quelle, erzeugt das eine Dashboard-Meldung statt eines geschätzten
    Werts. Policy-Details: `docs/data-sources.md`.
-5. **`node check/all.js` vor jedem Push** (bzw. `--static` für den schnellen
-   Teil ohne Browser). Details: `check/README.md`.
+5. **Vor jedem Push `node check/all.js --static`** (Sekunden), dazu gezielt die
+   Wächter der Änderung (`--nur makro,altgeraet`). **Keinen lokalen Volllauf**
+   (~40 min) — Nutzer 2026-10-24: *„pushen und kein Prüflauf“*; den vollen Lauf
+   macht die CI bei jedem Push auf `main` in 6 parallelen Paketen (~11 min).
+   Lokal voll nur auf Ansage des Nutzers. Details: `check/README.md`.
 6. **Jedes Bedienelement muss auch wirklich etwas tun.** Ein Button, dessen
    Handler auf keine (exportierte) Funktion zeigt, wirft beim Klick still ein
    `ReferenceError` und sieht für den Nutzer einfach kaputt aus — bei

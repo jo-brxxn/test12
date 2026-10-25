@@ -15,6 +15,15 @@
 // Positions-Werkzeug wie auf TradingView ("dann kann ich da stoploss und
 // takeprofit rausziehen"), Hit TP / Hit SL fuer den Exit, Live-R:R.
 //
+// Offene Trades (Nutzer 2026-10-24: "erst nur eingibt was man hat und am
+// Ende erst wie es geendet ist ... ganz oben ein Bereich fuer open trades"),
+// per Rueckfrage: Schalter Open | Closed im Editor, offene Trades oben mit
+// Live-Stand aus dem Kursfeed als R + Kursabstand (KEIN Geldbetrag - ohne
+// Wert je Punkt waere der geschaetzt, Regel 4), Abschluss per kleinem
+// Fenster, im Kalender steht ein Trade an seinem SCHLUSSTAG (cd).
+// Felder: st ('open' | 'closed', alt ohne st = geschlossen), d/t = Eroeffnung,
+// cd/ct = Schluss (alt ohne cd: d).
+//
 // ⚠ NICHT verwechseln mit dem Score-Journal (js/journal.js, Schluessel
 // fxpro_scorejournal) - das protokolliert Score-Aenderungen, dieses Modul
 // eigene Trades. Eigener Schluessel, eigenes Sync-Feld (tradeJournal).
@@ -32,10 +41,10 @@
 // Einzige Vorgabe des Werkzeugs: beim ersten Tipp liegen SL/TP 1 bzw. 2
 // ATR14 (aus echten Hoch/Tief) neben dem Entry - sichtbar in den Feldern,
 // zum Verschieben gedacht, kein Wert, der still im Hintergrund entsteht.
-import {escH,escJH,openM,closeM,uid,cloudAutoSync,markLsUpdatedSeen,markPrefEdit,curPage,syms,pairs,
-  icn,achsenTicks,chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml} from './main.js';
+import {escH,escJH,openM,closeM,uid,cloudAutoSync,markLsUpdatedSeen,markPrefEdit,curPage,syms,pairs,getCloudCfg,
+  icn,achsenTicks,chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn} from './main.js';
 import {PRICE_DATA_FEED,priceSeriesFor,pairPriceSeries,autoFetchPriceData} from './data-feeds.js';
-import {fmtDayHdr,fmtDayShort} from './calendar.js';
+import {fmtDayHdr,fmtDayShort,fmtStamp} from './calendar.js';
 import {FX,BC} from './constants.js';
 
 const TRADES_KEY='fxpro_trades';
@@ -46,9 +55,15 @@ let tjMonat=null;
 let _tjEdit=null;     // id des Trades im Editor, null = neuer Trade
 let _tjView=null;     // id des Trades im Detail-Fenster
 let _tjTag=null;      // Datum im Tages-Fenster
+let _tjZu=null;       // id des offenen Trades im Abschluss-Fenster
 
 function tjGueltig(t){return t&&typeof t==='object'&&typeof t.id==='string'&&t.id;}
 function tjAktiv(){return trades.filter(t=>!t.del);}
+function tjOffen(t){return!!t&&t.st==='open';}
+function tjZu(){return tjAktiv().filter(t=>!tjOffen(t));}
+function tjOffeneListe(){return tjAktiv().filter(tjOffen);}
+// Kalendertag eines geschlossenen Trades = Schlusstag (Rueckfrage 2026-10-24).
+function tjTagVon(t){return t.cd||t.d;}
 
 // ── Merge (zwei Geraete, disjunkte Eintraege) ─────────────────────────
 function mergeTrades(base,override){
@@ -60,20 +75,84 @@ function mergeTrades(base,override){
   });
   return[...m.values()];
 }
-// Cloud-Pull und Import: nie ueberschreiben, immer vereinigen.
+// ── SICHERUNG (Nutzer 2026-10-24: "stell sicher das die Sachen gespeichert
+// werden und nicht verloren gehen also alle in supabase sicher landen") ──
+// Vier Wege, auf denen ein Trade verloren ging (gemessen mit nachgestellter
+// Cloud, check/trades.js):
+//  A) Abgleich holt fremde Trades, die EIGENEN fehlen der Cloud aber - der
+//     Pull lud nur bei anstehender Bearbeitung wieder hoch -> tjUebernehmen
+//     meldet "fehlt in der Cloud", cloudPull laedt dann hoch.
+//  B) Cloud-Stand ganz ohne tradeJournal (alte App) -> derselbe Weg.
+//  C) Zwei Tabs: der aeltere schrieb seinen Speicherstand ueber den des
+//     anderen -> vor JEDEM Schreiben und Hochladen mit der Platte vereinigen
+//     (tjVonPlatte), plus storage-Ereignis.
+//  D) Upload scheitert -> still liegen geblieben. Jetzt sichtbarer Stand in
+//     der Monatsleiste + Wiederholung alle 15 s, bis die Cloud ihn hat.
+const TJ_CLOUD_KEY='fxpro_trades_cloud',TJ_CLOUD_ERR='fxpro_trades_cloud_err';
+// Nur fuer check/trades.js --gegenprobe: schaltet die vier Sicherungen ab.
+function _tjGp(){return typeof window!=='undefined'&&!!window.__gpTj;}
+function tjVonPlatte(){
+  if(_tjGp())return;
+  try{const v=JSON.parse(localStorage.getItem(TRADES_KEY)||'[]');if(Array.isArray(v)&&v.length)trades=mergeTrades(v,trades);}catch(e){}
+}
+// Fingerabdruck eines Stands (id + Bearbeitungszeit) - "liegt genau das in der Cloud?"
+function tjSig(list){
+  const l=(list||[]).filter(tjGueltig),s=l.map(t=>t.id+'@'+(t.up||'')).sort().join('|');
+  let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;
+  return l.length+':'+(h>>>0).toString(36);
+}
+function tjCloudMerken(list){
+  try{localStorage.setItem(TJ_CLOUD_KEY,JSON.stringify({sig:tjSig(list),ts:Date.now()}));localStorage.removeItem(TJ_CLOUD_ERR);}catch(e){}
+  tjCloudAnzeige();
+}
+// Aus cloudPushRoh: erfolgreich hochgeladen bzw. gescheitert.
+function tjGesendet(list){tjCloudMerken(list);}
+function tjSendeFehler(){try{localStorage.setItem(TJ_CLOUD_ERR,String(Date.now()));}catch(e){}tjCloudAnzeige();}
+function tjCloudStand(){
+  let cfg=null;try{cfg=getCloudCfg();}catch(e){}
+  if(!cfg)return{k:'lokal'};
+  let c=null;try{c=JSON.parse(localStorage.getItem(TJ_CLOUD_KEY)||'null');}catch(e){}
+  if(c&&c.sig===tjSig(trades))return{k:'ok',ts:c.ts};
+  return{k:+(localStorage.getItem(TJ_CLOUD_ERR)||0)?'fehler':'warte'};
+}
+function tjCloudHtml(){
+  const s=tjCloudStand(),n=tjAktiv().length;
+  if(s.k==='lokal')return`<div class="tj-cloud lokal" id="tjCloud">${icn('cloud',15)}<span><b>Only on this device</b> · <i>no cloud sync set up</i></span><button class="btn" onclick="openCloudM()">Set up sync</button></div>`;
+  if(s.k==='ok')return`<div class="tj-cloud ok" id="tjCloud" title="Every trade on this device is in the cloud">${icn('cloud',15)}<span><b>${n} trade${n===1?'':'s'} in the cloud</b> · <i>${escH(fmtStamp(s.ts))}</i></span></div>`;
+  if(s.k==='fehler')return`<div class="tj-cloud fehler" id="tjCloud" role="alert">${icn('cloud',15)}<span>Not in the cloud yet · <i>retrying every 15 s</i></span><button class="btn" onclick="tjJetztHochladen()">Retry now</button></div>`;
+  return`<div class="tj-cloud warte" id="tjCloud">${icn('cloud',15)}<span><i>Uploading to the cloud …</i></span></div>`;
+}
+function tjCloudAnzeige(){const el=document.getElementById('tjCloud');if(el)el.outerHTML=tjCloudHtml();}
+function tjJetztHochladen(){try{cloudAutoSync();}catch(e){}}
+// Fuer cloudPush/exportData: immer der vereinigte Stand (Platte + Speicher).
+function tjFuerCloud(){tjVonPlatte();return trades;}
+// Cloud-Pull und Import: nie ueberschreiben, immer vereinigen. Rueckgabe:
+// true = dieses Geraet hat Trades, die der Cloud fehlen (oder neuer sind) -
+// dann muss der Pull hochladen (Verlustweg A/B).
 function tjUebernehmen(remote){
-  if(!Array.isArray(remote))return;
+  const r=Array.isArray(remote)?remote.filter(tjGueltig):[];
+  tjVonPlatte();
   const vorher=JSON.stringify(trades);
-  trades=mergeTrades(trades,remote);
-  if(JSON.stringify(trades)===vorher)return;
-  try{localStorage.setItem(TRADES_KEY,JSON.stringify(trades));}catch(e){}
-  if(curPage==='journal')renderJournal();
+  trades=mergeTrades(trades,r);
+  if(JSON.stringify(trades)!==vorher){
+    try{localStorage.setItem(TRADES_KEY,JSON.stringify(trades));}catch(e){}
+    if(curPage==='journal')renderJournal();
+  }
+  if(_tjGp())return false;
+  const R=new Map(r.map(t=>[t.id,String(t.up||'')]));
+  const fehlt=trades.some(t=>!R.has(t.id)||String(t.up||'')>R.get(t.id));
+  if(!fehlt)tjCloudMerken(r);
+  return fehlt;
 }
 function tjSpeichern(){
   try{
+    // Vorher mit der Platte vereinigen: ein zweiter Tab kann inzwischen
+    // einen Trade geschrieben haben, den dieser Speicher nicht kennt (C).
+    tjVonPlatte();
     localStorage.setItem(TRADES_KEY,JSON.stringify(trades));
     localStorage.setItem('fxpro_updated',new Date().toISOString());
     markLsUpdatedSeen();markPrefEdit();cloudAutoSync();
+    tjCloudAnzeige();
     return true;
   }catch(e){alert('The trade could not be saved: '+(e&&e.message||e));return false;}
 }
@@ -126,7 +205,8 @@ function tjRText(r){return r==null?'–':`${r>0?'+':r<0?'−':''}${Math.abs(r).t
 
 // ── Kennzahlen ───────────────────────────────────────────────────────
 function tjChrono(list){
-  return list.slice().sort((a,b)=>(String(a.d)+(a.t||'')).localeCompare(String(b.d)+(b.t||''))||String(a.up||'').localeCompare(String(b.up||'')));
+  const k=t=>String(tjTagVon(t))+(t.cd?(t.ct||''):(t.t||''));
+  return list.slice().sort((a,b)=>k(a).localeCompare(k(b))||String(a.up||'').localeCompare(String(b.up||'')));
 }
 function tjStats(list){
   const w=list.filter(t=>t.pnl>0),l=list.filter(t=>t.pnl<0);
@@ -139,7 +219,7 @@ function tjStats(list){
 // nicht ab (kein Verlust), zaehlt aber auch nicht mit.
 function tjStreak(){
   let cur=0,best=0;
-  tjChrono(tjAktiv()).forEach(t=>{if(t.pnl>0){cur++;if(cur>best)best=cur;}else if(t.pnl<0)cur=0;});
+  tjChrono(tjZu()).forEach(t=>{if(t.pnl>0){cur++;if(cur>best)best=cur;}else if(t.pnl<0)cur=0;});
   return{cur,best};
 }
 
@@ -176,6 +256,15 @@ let _tjLaedt=false;
 function tjPreiseLaden(){if(_tjLaedt)return;_tjLaedt=true;try{autoFetchPriceData();}catch(e){}}
 
 // ── Seite ─────────────────────────────────────────────────────────────
+// ⓘ an jeder Karte mit Titel (Dauerregel 2026-09-26) - kurze Punkte, kein Fliesstext.
+const TJ_ERKL={
+  offen:['Trades you are in right now. Tap one to close it.','Now = latest price of the daily series. The feed updates every hour.',
+    'R = move since entry ÷ distance from entry to stop. Needs a stop loss.','No money value: that needs the value per point of your contract.'],
+  equity:['Closed trades of this month, added up day by day.','Blue above zero, red below.','Max drawdown = biggest drop from an earlier high in this month.'],
+  kalender:['Each closed trade sits on the day it was closed.','Day total in bias colour, one row per trade.','Week = total, number of trades and win rate of that row.','Tap a day to add a trade closed on that day.'],
+  tabelle:['All closed trades of this month, newest first.','R = result in units of the first risk. Needs entry, stop and exit.'],
+};
+function tjTitel(text,erkl){return`<div class="tj-kt">${text}${abInfoBtn(String(text).replace(/<[^>]+>/g,''),erkl)}</div>`;}
 function tjMonatSetzen(delta){
   const[y,m]=(tjMonat||tjHeute().slice(0,7)).split('-').map(Number);
   const d=new Date(y,m-1+delta,1);
@@ -224,7 +313,7 @@ function tjKachelnHtml(st,sk,y,m){
 function tjEquityHtml(list,y,m,W){
   const H=W<520?176:214,pl=56,pr=16,pt=12,pb=26,pw=W-pl-pr,ph=H-pt-pb;
   const tage=new Date(y,m,0).getDate();
-  const proTag={};list.forEach(t=>{proTag[t.d]=(proTag[t.d]||0)+(t.pnl||0);});
+  const proTag={};list.forEach(t=>{const d=tjTagVon(t);proTag[d]=(proTag[d]||0)+(t.pnl||0);});
   let kum=0;const pk=[{tag:0,v:0,d:null}];
   Object.keys(proTag).sort().forEach(ds=>{kum+=proTag[ds];pk.push({tag:+ds.slice(8),v:kum,d:ds,dv:proTag[ds]});});
   let lo=Math.min(0,...pk.map(p=>p.v)),hi=Math.max(0,...pk.map(p=>p.v));
@@ -257,14 +346,14 @@ function tjEquityZeichnen(){
   const box=document.getElementById('tjEqBox');if(!box)return;
   const W=Math.max(200,box.clientWidth||0);
   const[y,m]=tjMonat.split('-').map(Number);
-  const list=tjAktiv().filter(t=>String(t.d||'').slice(0,7)===tjMonat);
+  const list=tjZu().filter(t=>String(tjTagVon(t)||'').slice(0,7)===tjMonat);
   if(!list.length){box.innerHTML='<div class="tj-eq-leer"><i>No trades in this month yet</i></div>';return;}
   box.innerHTML=tjEquityHtml(list,y,m,W);
   attachChartHovers(box);
 }
 function tjDrawdown(list){
   let kum=0,peak=0,dd=0;
-  const proTag={};list.forEach(t=>{proTag[t.d]=(proTag[t.d]||0)+(t.pnl||0);});
+  const proTag={};list.forEach(t=>{const d=tjTagVon(t);proTag[d]=(proTag[d]||0)+(t.pnl||0);});
   Object.keys(proTag).sort().forEach(ds=>{kum+=proTag[ds];if(kum>peak)peak=kum;if(kum-peak<dd)dd=kum-peak;});
   return dd;
 }
@@ -301,8 +390,8 @@ function renderJournal(){
   const el=document.getElementById('journalBody');if(!el)return;
   if(!tjMonat)tjMonat=tjHeute().slice(0,7);
   const[y,m]=tjMonat.split('-').map(Number);
-  const imMonat=tjChrono(tjAktiv().filter(t=>String(t.d||'').slice(0,7)===tjMonat));
-  const proTag={};imMonat.forEach(t=>{(proTag[t.d]=proTag[t.d]||[]).push(t);});
+  const imMonat=tjChrono(tjZu().filter(t=>String(tjTagVon(t)||'').slice(0,7)===tjMonat));
+  const proTag={};imMonat.forEach(t=>{const d=tjTagVon(t);(proTag[d]=proTag[d]||[]).push(t);});
   const st=tjStats(imMonat),sk=tjStreak(),dd=tjDrawdown(imMonat);
 
   const leiste=`<div class="tj-leiste">
@@ -312,25 +401,26 @@ function renderJournal(){
       <button class="btn tj-navb" onclick="tjMonatSetzen(1)" title="Next month" aria-label="Next month">${icn('chevronRight',16)}</button>
       <button class="btn tj-heute" onclick="tjMonatHeute()" title="Back to the current month">Today</button>
     </div>
+    ${tjCloudHtml()}
   </div>`;
   const eq=`<div class="tj-card tj-eq">
-    <div class="tj-kh"><div class="tj-kt">Equity curve</div><div class="tj-kh-r">
+    <div class="tj-kh">${tjTitel('Equity curve',TJ_ERKL.equity)}<div class="tj-kh-r">
       <span>Net <b style="color:${tjFarbe(st.net)}">${st.n?tjGeld(st.net):'–'}</b></span>
       <span>Max drawdown <b style="color:${dd<0?'var(--bias-bear)':'var(--t2)'}">${st.n?tjGeld(dd):'–'}</b></span></div></div>
     <div id="tjEqBox" class="tj-eq-box"></div>
   </div>`;
   const kal=`<div class="tj-card">
-    <div class="tj-kh"><div class="tj-kt">Calendar</div><div class="tj-kh-r"><i>Tap a day to add a trade · tap a trade for all details</i></div></div>
+    <div class="tj-kh">${tjTitel('Calendar',TJ_ERKL.kalender)}<div class="tj-kh-r"><i>Tap a day to add a trade · tap a trade for all details</i></div></div>
     ${tjKalenderHtml(y,m,proTag)}
   </div>`;
   const neueste=imMonat.slice().reverse();
   const liste=`<div class="tj-card">
-    <div class="tj-kh"><div class="tj-kt">Trades · ${tjMonTitel(y,m)}</div></div>
+    <div class="tj-kh">${tjTitel(`Trades · ${tjMonTitel(y,m)}`,TJ_ERKL.tabelle)}</div>
     ${neueste.length?`<div class="tj-tab-wrap"><table class="tj-tab"><thead><tr><th class="c-d">Date</th><th>Asset</th><th class="c-s">Side</th><th class="c-set">Setup</th><th class="r c-r">R</th><th class="r c-p">P/L</th></tr></thead><tbody>
-      ${neueste.map(t=>`<tr class="${tjKlasse(t)}" onclick="tjZeigen('${escJH(t.id)}')" title="Show all details"><td class="c-d">${escH(fmtDayShort(t.d))}${t.t?` <i>${escH(t.t)}</i>`:''}</td><td class="c-a"><b>${escH(t.a)}</b><span class="c-a-s">${tjSeiteHtml(t.dir)}</span></td><td class="c-s">${tjSeiteHtml(t.dir)}</td><td class="c-set">${t.setup?escH(t.setup):'<i>–</i>'}</td><td class="r c-r">${(()=>{const r=tjR(t);return r==null?'–':`<span style="color:${tjFarbe(r)}">${tjRText(r)}</span>`;})()}</td><td class="r c-p"><b style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></td></tr>`).join('')}
+      ${neueste.map(t=>`<tr class="${tjKlasse(t)}" onclick="tjZeigen('${escJH(t.id)}')" title="Show all details"><td class="c-d">${escH(fmtDayShort(tjTagVon(t)))}${(t.cd?t.ct:t.t)?` <i>${escH(t.cd?t.ct:t.t)}</i>`:''}</td><td class="c-a"><b>${escH(t.a)}</b><span class="c-a-s">${tjSeiteHtml(t.dir)}</span></td><td class="c-s">${tjSeiteHtml(t.dir)}</td><td class="c-set">${t.setup?escH(t.setup):'<i>–</i>'}</td><td class="r c-r">${(()=>{const r=tjR(t);return r==null?'–':`<span style="color:${tjFarbe(r)}">${tjRText(r)}</span>`;})()}</td><td class="r c-p"><b style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></td></tr>`).join('')}
     </tbody></table></div>`:`<div class="tj-leertext"><i>No trades in this month yet</i><button class="btn g" onclick="tjNeu()">＋ Add trade</button></div>`}
   </div>`;
-  el.innerHTML=leiste+tjKachelnHtml(st,sk,y,m)+eq+kal+liste;
+  el.innerHTML=tjOffenHtml()+leiste+tjKachelnHtml(st,sk,y,m)+eq+kal+liste;
   tjEquityZeichnen();
   tjOffeneChartsAuffrischen();
 }
@@ -339,17 +429,17 @@ function renderJournal(){
 // eigenen Zeilen. Kompakte Zellen (Handy, Wochenende) zeigen keine Zeilen,
 // dort oeffnet ein Tag mit Trades das Tages-Fenster.
 function tjTagKlick(ds){
-  const l=tjAktiv().filter(t=>t.d===ds);
+  const l=tjZu().filter(t=>tjTagVon(t)===ds);
   const wt=(new Date(ds+'T00:00:00').getDay()+6)%7;
   const kompakt=wt>4||(window.matchMedia&&window.matchMedia('(max-width:760px)').matches);
   if(l.length&&kompakt)tjTagFenster(ds);else tjNeu(ds);
 }
 function tjTagFenster(ds){
   _tjTag=ds;
-  const l=tjChrono(tjAktiv().filter(t=>t.d===ds)),st=tjStats(l);
+  const l=tjChrono(tjZu().filter(t=>tjTagVon(t)===ds)),st=tjStats(l);
   document.getElementById('tjdTitle').textContent=fmtDayHdr(ds);
   document.getElementById('tjdBody').innerHTML=`<div class="tjd-sum"><span><b>${st.n}</b> trade${st.n===1?'':'s'}</span><b style="color:${tjFarbe(st.net)}">${tjGeld(st.net)}</b></div>
-    <div class="tjd-liste">${l.map(t=>`<button class="tjd-z ${tjKlasse(t)}" onclick="tjTagZuTrade('${escJH(t.id)}')"><span class="tjd-a"><b>${escH(t.a)}</b>${tjSeiteHtml(t.dir)}${t.t?`<i>${escH(t.t)}</i>`:''}</span><b style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></button>`).join('')}</div>`;
+    <div class="tjd-liste">${l.map(t=>`<button class="tjd-z ${tjKlasse(t)}" onclick="tjTagZuTrade('${escJH(t.id)}')"><span class="tjd-a"><b>${escH(t.a)}</b>${tjSeiteHtml(t.dir)}${(t.cd?t.ct:t.t)?`<i>${escH(t.cd?t.ct:t.t)}</i>`:''}</span><b style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></button>`).join('')}</div>`;
   openM('mTradeDay');
 }
 function tjTagZuTrade(id){closeM('mTradeDay');tjZeigen(id);}
@@ -387,11 +477,14 @@ function tjChartBauen(boxId,opt){
   let iDat=-1;k.forEach((c,i)=>{if(c.d<=datum)iDat=i;});
   if(iDat<0)iDat=0;
   const iEnde=Math.min(k.length-1,iDat+(opt.edit?5:10)),iStart=Math.max(0,iEnde-n+1);
-  const kk=k.slice(iStart,iEnde+1),slot=pw/kk.length;
+  // Rechts Platz fuer kuenftige Tage (wie TradingView): sonst klebte das
+  // Werkzeug eines heute eroeffneten Trades als eine Kerze am rechten Rand.
+  const kk=k.slice(iStart,iEnde+1),zukunft=opt.edit?14:6,nSlots=kk.length+zukunft,slot=pw/nSlots;
   // ATR14 aus echten Hoch/Tief bis zum Trade-Tag - nur fuer die erste Lage des Werkzeugs.
   const atrK=k.slice(Math.max(0,iDat-13),iDat+1).filter(c=>c.ohlc);
   const atr=atrK.length>=5?atrK.reduce((s,c)=>s+(c.h-c.l),0)/atrK.length:null;
-  const st={edit:!!opt.edit,lv:opt.lv||{},dir:opt.dir,pl,pr,pt,pb,pw,ph,W,H,kk,atr,datum,asset:opt.asset};
+  const krypto=kk.some(c=>{const w=new Date(c.d+'T00:00:00Z').getUTCDay();return w===0||w===6;});
+  const st={edit:!!opt.edit,lv:opt.lv||{},dir:opt.dir,pl,pr,pt,pb,pw,ph,W,H,kk,atr,datum,asset:opt.asset,n:nSlots,slot,krypto};
   TJ_CH[boxId]=st;
   tjSkala(boxId);
   let svg=`<svg class="tj-svg tj-ch-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily chart ${escH(opt.asset)}">`;
@@ -408,7 +501,7 @@ function tjChartBauen(boxId,opt){
   attachChartHovers(box);
   if(st.edit){
     const flaeche=box.querySelector('.tj-ch');
-    flaeche.addEventListener('click',ev=>{if(ev.target.closest('.tj-hd'))return;tjPlatzieren(boxId,ev);});
+    flaeche.addEventListener('click',ev=>{if(ev.target.closest('.tj-hd,.tj-wd,.tj-wbox'))return;tjPlatzieren(boxId,ev);});
   }
   tjToolZeichnen(boxId);
 }
@@ -430,7 +523,7 @@ function tjAchseSvg(boxId){
   return s;
 }
 function tjKerzenSvg(boxId){
-  const st=TJ_CH[boxId],slot=st.pw/st.kk.length,bw=Math.max(1,Math.min(9,slot*0.62));
+  const st=TJ_CH[boxId],slot=st.slot,bw=Math.max(1,Math.min(9,slot*0.62));
   return st.kk.map((c,i)=>{
     const x=st.pl+(i+.5)*slot,auf=c.c>=c.o,col=auf?'var(--cndl-up)':'var(--cndl-dn)';
     const y1=st.y(Math.max(c.o,c.c)),y2=st.y(Math.min(c.o,c.c));
@@ -445,11 +538,42 @@ function tjNeuSkalieren(boxId){
   if(a)a.innerHTML=tjAchseSvg(boxId);if(k)k.innerHTML=tjKerzenSvg(boxId);
   tjToolZeichnen(boxId);
 }
+// ── Zeitspanne des Werkzeugs (Nutzer 2026-10-25: "von dem Werkzeug im Chart
+// auch die Breite verstellen ... nicht die gesamte Breite ... richtig an die
+// Stelle machen"). Anfang/Ende als DATUM (w0/w1, mit dem Trade gespeichert und
+// synchronisiert), nicht als Pixel: Fensterbreite und Zeitraum aendern sich.
+// Ohne Angabe: ab dem Trade-Tag, TJ_BREITE Kerzen breit.
+const TJ_BREITE=12;
+function tjTagPlus(d,n,krypto){
+  let t=Date.parse(d+'T00:00:00Z'),k=0;
+  while(k<n){t+=86400000;const w=new Date(t).getUTCDay();if(krypto||(w!==0&&w!==6))k++;}
+  return new Date(t).toISOString().slice(0,10);
+}
+function tjIdxDatum(st,i){const L=st.kk.length;return i<L?st.kk[Math.max(0,i)].d:tjTagPlus(st.kk[L-1].d,i-(L-1),st.krypto);}
+function tjDatumIdx(st,d){
+  if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return null;
+  const L=st.kk.length;if(d<=st.kk[0].d)return 0;
+  if(d<=st.kk[L-1].d){let x=0;st.kk.forEach((c,i)=>{if(c.d<=d)x=i;});return x;}
+  let i=L-1;while(i<st.n-1&&tjIdxDatum(st,i)<d)i++;return i;
+}
+function tjSpanne(boxId){
+  const st=TJ_CH[boxId];
+  const w0=st.edit?(document.getElementById('tjW0')||{}).value:st.lv.w0,w1=st.edit?(document.getElementById('tjW1')||{}).value:st.lv.w1;
+  let i0=tjDatumIdx(st,w0),i1=tjDatumIdx(st,w1);
+  if(i0==null){i0=tjDatumIdx(st,st.datum);if(i0==null)i0=st.kk.length-1;}
+  if(i1==null||i1<i0)i1=i0+TJ_BREITE-1;
+  i0=Math.max(0,Math.min(st.n-1,i0));i1=Math.max(i0,Math.min(st.n-1,i1));
+  return{i0,i1,x1:st.pl+i0*st.slot,x2:st.pl+(i1+1)*st.slot};
+}
+function tjSpanneSetzen(boxId,i0,i1){
+  const st=TJ_CH[boxId],a=document.getElementById('tjW0'),b=document.getElementById('tjW1');
+  if(a)a.value=tjIdxDatum(st,i0);if(b)b.value=tjIdxDatum(st,i1);
+}
 function tjToolZeichnen(boxId){
   const st=TJ_CH[boxId];if(!st)return;
   const g=document.getElementById(boxId+'-tool'),hd=document.getElementById(boxId+'-hd');if(!g||!hd)return;
   const lv=tjEbenen(boxId),dir=st.edit?(document.getElementById('tjDir')||{}).value:st.dir;
-  const x1=st.pl,w=st.pw,yv=v=>Math.max(st.pt,Math.min(st.pt+st.ph,st.y(v)));
+  const sp=tjSpanne(boxId),x1=sp.x1,w=sp.x2-sp.x1,yv=v=>Math.max(st.pt,Math.min(st.pt+st.ph,st.y(v)));
   const ok=v=>v!=null&&isFinite(v);
   let s='';
   const zone=(a,b,cls)=>{const ya=yv(a),yb=yv(b);return`<rect x="${x1}" y="${Math.min(ya,yb).toFixed(1)}" width="${w}" height="${Math.abs(ya-yb).toFixed(1)}" class="${cls}"/>`;};
@@ -479,9 +603,64 @@ function tjToolZeichnen(boxId){
       hd.appendChild(e);
     }
     e.style.top=Math.min(y,st.pt+st.ph+10).toFixed(1)+'px';
-    e.innerHTML=`${zieh?'<span class="tj-hd-griff"></span>':''}${label[k]} <b>${tjPreis(lv[k])}</b>${zusatz(k)}`;
+    // Schmaler Chart (Handy): ohne R-Zusatz - der steht in der Zeile darunter.
+    e.innerHTML=`${zieh?'<span class="tj-hd-griff"></span>':''}${label[k]} <b>${tjPreis(lv[k])}</b>${st.W<520?'':zusatz(k)}`;
+    // Etikett AUSSERHALB des Kastens (rechts, sonst links): ueber dem Kasten
+    // verdeckte es Kanten und Mitte - gemessen 2026-10-25, Ziehen an der
+    // rechten Kante und in der Mitte landete beim Etikett.
+    // Rechts darf es bis in die Achsenspalte reichen.
+    const bw=e.offsetWidth||130,rechts=x1+w+12;
+    e.style.left=(rechts+bw<=st.W-2?rechts:x1-12-bw>=2?x1-12-bw:x1+12).toFixed(1)+'px';
   });
+  // Kasten verschieben (Mitte) und Breite ziehen (Kanten) - nur im Editor,
+  // nur wenn ein Entry da ist. Die Etiketten liegen darueber (Hoehe ziehen).
+  const griffe=[['wbox','m'],['wd tj-wd-l','l'],['wd tj-wd-r','r']];
+  if(st.edit&&ok(lv.entry)){
+    const ys=['entry','sl','tp'].filter(k=>ok(lv[k])).map(k=>yv(lv[k]));
+    let oben=Math.min(...ys),unten=Math.max(...ys);if(unten-oben<24){oben-=12;unten+=12;}
+    // Reihenfolge im Stapel: Flaeche unten, Kanten darueber, Etiketten oben.
+    const neu=[];
+    griffe.forEach(([kl,art])=>{
+      let e=hd.querySelector(`.tj-${kl.replace(' ','.')}`);
+      if(!e){
+        e=document.createElement('div');e.className=`tj-${kl}`;e.dataset.art=art;
+        e.setAttribute('role','slider');e.tabIndex=-1;
+        e.setAttribute('aria-label',art==='m'?'Move the position in time':art==='l'?'Drag the start of the position':'Drag the end of the position');
+        e.title=art==='m'?'Drag to move in time':'Drag to change the width';
+        e.addEventListener('pointerdown',ev=>tjBreiteStart(ev,boxId,art));
+        neu.push(e);
+      }
+      const x=art==='m'?x1:art==='l'?x1:x1+w;
+      e.style.top=oben.toFixed(1)+'px';e.style.height=Math.max(24,unten-oben).toFixed(1)+'px';
+      if(art==='m'){e.style.left=x1.toFixed(1)+'px';e.style.width=Math.max(1,w).toFixed(1)+'px';}
+      else e.style.left=x.toFixed(1)+'px';
+    });
+    neu.reverse().forEach(e=>hd.insertBefore(e,hd.firstChild));
+  }else hd.querySelectorAll('.tj-wbox,.tj-wd').forEach(e=>e.remove());
   if(st.edit)tjRRZeigen();
+}
+// Waagerecht ziehen: Kante = Anfang/Ende auf eine Kerze einrasten, Mitte =
+// ganzen Kasten verschieben (Breite bleibt). Mindestens eine Kerze breit.
+function tjBreiteStart(ev,boxId,art){
+  const st=TJ_CH[boxId];if(!st)return;
+  ev.preventDefault();ev.stopPropagation();
+  const el=ev.currentTarget;try{el.setPointerCapture(ev.pointerId);}catch(e){}
+  const svg=document.querySelector(`#${boxId} svg.tj-ch-svg`);if(!svg)return;
+  const links=svg.getBoundingClientRect().left,sp0=tjSpanne(boxId),x0=ev.clientX;
+  const idx=cx=>Math.floor((cx-links-st.pl)/st.slot);
+  el.classList.add('aktiv');
+  const zieh=e=>{
+    let i0=sp0.i0,i1=sp0.i1;
+    if(art==='m'){const breit=i1-i0,d=Math.round((e.clientX-x0)/st.slot);i0=Math.max(0,Math.min(st.n-1-breit,sp0.i0+d));i1=i0+breit;}
+    else if(art==='l')i0=Math.max(0,Math.min(i1,idx(e.clientX)));
+    else i1=Math.max(i0,Math.min(st.n-1,idx(e.clientX)));
+    tjSpanneSetzen(boxId,i0,i1);tjToolZeichnen(boxId);
+  };
+  const los=()=>{
+    el.classList.remove('aktiv');
+    el.removeEventListener('pointermove',zieh);el.removeEventListener('pointerup',los);el.removeEventListener('pointercancel',los);
+  };
+  el.addEventListener('pointermove',zieh);el.addEventListener('pointerup',los);el.addEventListener('pointercancel',los);
 }
 function tjZiehStart(ev,boxId,k){
   const st=TJ_CH[boxId];if(!st)return;
@@ -511,8 +690,12 @@ function tjPlatzieren(boxId,ev){
   const lv=tjEbenen(boxId);
   if(lv.entry!=null&&lv.sl!=null&&lv.tp!=null)return;
   const svg=document.querySelector(`#${boxId} svg.tj-ch-svg`);if(!svg)return;
-  const yy=Math.max(st.pt,Math.min(st.pt+st.ph,ev.clientY-svg.getBoundingClientRect().top));
+  const box=svg.getBoundingClientRect();
+  const yy=Math.max(st.pt,Math.min(st.pt+st.ph,ev.clientY-box.top));
   const e=lv.entry!=null?lv.entry:st.v(yy);
+  // Der Kasten beginnt an der angetippten Kerze (Zeit), TJ_BREITE Kerzen breit.
+  const w0=document.getElementById('tjW0');
+  if(w0&&!w0.value){const i0=Math.max(0,Math.min(st.n-1,Math.floor((ev.clientX-box.left-st.pl)/st.slot)));tjSpanneSetzen(boxId,i0,Math.min(st.n-1,i0+TJ_BREITE-1));}
   const d=st.atr||(st.hi-st.lo)*0.08,kurz=(document.getElementById('tjDir')||{}).value==='short';
   const setz=(k,v)=>{const f=document.getElementById(TJ_FELD[k]);if(f&&!String(f.value).trim())f.value=v.toFixed(st.dez);};
   setz('entry',e);setz('sl',kurz?e+d:e-d);setz('tp',kurz?e-2*d:e+2*d);
@@ -546,7 +729,7 @@ function tjEdEingabe(neuBauen){clearTimeout(_tjEdT);_tjEdT=setTimeout(()=>{if(TJ
 function tjRichtung(dir){
   const h=document.getElementById('tjDir');if(!h)return;
   const alt=h.value;h.value=dir==='short'?'short':'long';
-  document.querySelectorAll('#mTrade .tj-seg-b').forEach(b=>{const on=b.dataset.dir===h.value;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
+  document.querySelectorAll('#mTrade .tj-seg-b[data-dir]').forEach(b=>{const on=b.dataset.dir===h.value;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
   // Werkzeug spiegeln, wenn SL/TP noch fuer die andere Seite liegen.
   if(alt&&alt!==h.value){
     const g=k=>tjNum((document.getElementById(TJ_FELD[k])||{}).value);
@@ -570,26 +753,29 @@ function tjExitAuf(k){
 function tjOffeneChartsAuffrischen(){
   const offen=id=>{const e=document.getElementById(id);return e&&e.style.display!=='none'&&e.style.display!=='';};
   if(offen('mTrade'))tjEdChart();
+  if(offen('mTradeClose')&&_tjZu){const t=trades.find(x=>x.id===_tjZu);if(t)tjZuInfo(t);}
   if(offen('mTradeView')&&_tjView){const t=trades.find(x=>x.id===_tjView);if(t)tjDetailChart(t);}
 }
 
 // ── Detail-Fenster ───────────────────────────────────────────────────
-function tjPreisleisteHtml(t){
-  const e=tjNum(t.entry),sl=tjNum(t.sl),tp=tjNum(t.tp),x=tjNum(t.exit);
+function tjPreisleisteHtml(t,jetzt){
+  const e=tjNum(t.entry),sl=tjNum(t.sl),tp=tjNum(t.tp),x=jetzt!=null?jetzt:tjNum(t.exit);
   if(e==null||(sl==null&&tp==null))return'';
   const werte=[e,sl,tp,x].filter(v=>v!=null);
   const lo=Math.min(...werte),hi=Math.max(...werte),sp=hi-lo||1;
   // Risiko links, Chance rechts - bei Short faellt der Kurs nach rechts.
   const pos=v=>(t.dir==='short'?(hi-v)/sp:(v-lo)/sp)*100;
   const zone=(a,b,cls)=>a==null||b==null?'':`<span class="tjp-zone ${cls}" style="left:${Math.min(pos(a),pos(b)).toFixed(2)}%;width:${Math.abs(pos(a)-pos(b)).toFixed(2)}%"></span>`;
-  const marken=[['sl','SL',sl],['entry','Entry',e],['exit','Exit',x],['tp','TP',tp]].filter(m=>m[2]!=null).sort((a,b)=>pos(a[2])-pos(b[2]));
-  let letzt=-99,unten=false;
-  const mk=marken.map(([k,l,v])=>{const p=pos(v);unten=p-letzt<16?!unten:false;letzt=p;
+  const marken=[['sl','SL',sl],['entry','Entry',e],[jetzt!=null?'now':'exit',jetzt!=null?'Now':'Exit',x],['tp','TP',tp]].filter(m=>m[2]!=null).sort((a,b)=>pos(a[2])-pos(b[2]));
+  // Beschriftungen immer abwechselnd oben/unten: der Abstand in % sagt nichts
+  // ueber Pixel (in einer 270-px-Karte ueberlappten SL und Entry bei 26 %).
+  const mk=marken.map(([k,l,v],i)=>{const p=pos(v),unten=i%2===1;
     return`<span class="tjp-mk k-${k}${unten?' unten':''}${p<10?' li':p>90?' re':''}" style="left:${p.toFixed(2)}%"><span class="tjp-pkt"></span><span class="tjp-lbl">${l} <b>${tjPreis(v)}</b></span></span>`;}).join('');
-  return`<div class="tjp"><div class="tjp-bahn">${zone(sl,e,'risk')}${zone(e,tp,'reward')}${mk}</div></div>`;
+  return`<div class="tjp${jetzt!=null?' klein':''}"><div class="tjp-bahn">${zone(sl,e,'risk')}${zone(e,tp,'reward')}${mk}</div></div>`;
 }
 function tjZeigen(id){
   const t=trades.find(x=>x.id===id&&!x.del);if(!t)return;
+  if(tjOffen(t))return tjAbschliessen(id);
   _tjView=id;
   const r=tjR(t),rr=tjRRPlan(t);
   const kacheln=[
@@ -601,7 +787,7 @@ function tjZeigen(id){
   document.getElementById('tjvTitle').textContent='Trade details';
   document.getElementById('tjvBody').innerHTML=`
     <div class="tjv-kopf ${tjKlasse(t)}">
-      <div class="tjv-kl"><div class="tjv-asset">${escH(t.a)} ${tjSeiteHtml(t.dir)}</div><div class="tjv-datum">${escH(fmtDayHdr(t.d))}${t.t?` · <i>${escH(t.t)}</i>`:''}</div></div>
+      <div class="tjv-kl"><div class="tjv-asset">${escH(t.a)} ${tjSeiteHtml(t.dir)}</div><div class="tjv-datum">${t.cd&&t.cd!==t.d?`Opened <b>${escH(fmtDayShort(t.d))}</b>${t.t?` <i>${escH(t.t)}</i>`:''} · Closed <b>${escH(fmtDayShort(t.cd))}</b>${t.ct?` <i>${escH(t.ct)}</i>`:''}`:`${escH(fmtDayHdr(tjTagVon(t)))}${(t.ct||t.t)?` · <i>${escH(t.ct||t.t)}</i>`:''}`}</div></div>
       <div class="tjv-kr"><div class="tjv-erg">${tjErgebnis(t)}</div><b class="tjv-pnl" style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></div>
     </div>
     ${kacheln.length?`<div class="tjv-kacheln">${kacheln.map(([l,v])=>`<div class="tjv-k"><div class="tj-kl">${l}</div><div class="tjv-kv">${v}</div></div>`).join('')}</div>`:''}
@@ -614,7 +800,7 @@ function tjZeigen(id){
 }
 function tjDetailChart(t){
   tjChartBauen('tjvChart',{asset:t.a,datum:t.d,dir:t.dir,edit:false,
-    lv:{entry:tjNum(t.entry),sl:tjNum(t.sl),tp:tjNum(t.tp),exit:tjNum(t.exit)}});
+    lv:{entry:tjNum(t.entry),sl:tjNum(t.sl),tp:tjNum(t.tp),exit:tjNum(t.exit),w0:t.w0,w1:t.w1}});
 }
 function tjBearbeiten(){const id=_tjView;closeM('mTradeView');if(id)tjNeu(null,id);}
 function tjLoeschen(){
@@ -629,8 +815,20 @@ function tjLoeschen(){
 }
 
 // ── Editor ───────────────────────────────────────────────────────────
-const TJ_FELDER=['tjDate','tjTime','tjAsset','tjDir','tjPnl','tjEntry','tjExit','tjSl','tjTp','tjSize','tjSetup','tjNotes'];
-const TJ_SCHLUESSEL=['d','t','a','dir','pnl','entry','exit','sl','tp','size','setup','notes'];
+// ⚠ tjAsset muss das erste Textfeld bleiben (check/eingaben.js tippt dort);
+// die versteckten Felder tjSt/tjDir stehen deshalb dahinter.
+const TJ_FELDER=['tjDate','tjTime','tjAsset','tjSt','tjDir','tjW0','tjW1','tjPnl','tjEntry','tjExit','tjSl','tjTp','tjSize','tjSetup','tjNotes','tjCDate','tjCTime'];
+const TJ_SCHLUESSEL=['d','t','a','st','dir','w0','w1','pnl','entry','exit','sl','tp','size','setup','notes','cd','ct'];
+function tjUhr(){const d=new Date();return`${tjPad(d.getHours())}:${tjPad(d.getMinutes())}`;}
+// Schalter Open | Closed: bei Open sind Schluss, Exit und P/L ausgeblendet.
+function tjStatus(st){
+  const h=document.getElementById('tjSt');if(!h)return;
+  h.value=st==='closed'?'closed':'open';
+  document.querySelectorAll('#mTrade .tj-st-b').forEach(b=>{const on=b.dataset.st===h.value;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
+  const zu=document.getElementById('tjZuBlock');if(zu)zu.hidden=h.value!=='closed';
+  const cd=document.getElementById('tjCDate');
+  if(h.value==='closed'&&cd&&!cd.value)cd.value=tjHeute();
+}
 function tjAssetVorschlaege(){
   const s=new Set();
   tjAktiv().forEach(t=>t.a&&s.add(t.a));
@@ -650,10 +848,17 @@ function tjNeu(datum,id){
     let v=t?t[k]:'';
     if(!t&&k==='d')v=datum||tjHeute();
     if(!t&&k==='dir')v='long';
+    // Neu ueber "+ Add trade" = offen; Tipp auf einen Kalendertag = an
+    // diesem Tag geschlossen (der Kalender zeigt Schlusstage).
+    if(!t&&k==='st')v=datum?'closed':'open';
+    if(!t&&k==='cd')v=datum||'';
+    if(t&&k==='st')v=tjOffen(t)?'open':'closed';
+    if(t&&k==='cd'&&!tjOffen(t))v=t.cd||t.d;
     e.value=v==null?'':String(v);
   });
+  tjStatus(document.getElementById('tjSt').value);
   const h=document.getElementById('tjDir');
-  document.querySelectorAll('#mTrade .tj-seg-b').forEach(b=>{const on=b.dataset.dir===(h&&h.value||'long');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
+  document.querySelectorAll('#mTrade .tj-seg-b[data-dir]').forEach(b=>{const on=b.dataset.dir===(h&&h.value||'long');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
   const err=document.getElementById('tjErr');if(err){err.textContent='';err.hidden=true;}
   delete TJ_CH.tjChart;const c=document.getElementById('tjChart');if(c)c.innerHTML='';
   openM('mTrade');
@@ -661,13 +866,16 @@ function tjNeu(datum,id){
 }
 function tjFormSpeichern(){
   const v={};TJ_FELDER.forEach((f,i)=>{const e=document.getElementById(f);v[TJ_SCHLUESSEL[i]]=e?String(e.value||'').trim():'';});
-  const fehl=[];
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(v.d))fehl.push('Date');
+  const fehl=[],zu=v.st==='closed';
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(v.d))fehl.push('Open date');
   if(!v.a)fehl.push('Asset');
-  const pnl=tjNum(v.pnl);if(pnl==null)fehl.push('P/L');
+  const pnl=tjNum(v.pnl);
+  if(zu){if(!/^\d{4}-\d{2}-\d{2}$/.test(v.cd))fehl.push('Close date');if(pnl==null)fehl.push('P/L');}
   const err=document.getElementById('tjErr');
   if(fehl.length){if(err){err.textContent='Missing: '+fehl.join(' · ');err.hidden=false;}return false;}
-  const neu={...v,dir:v.dir==='short'?'short':'long',pnl,up:new Date().toISOString()};
+  if(zu&&v.cd<v.d){if(err){err.textContent='Close date is before the open date';err.hidden=false;}return false;}
+  const neu={...v,st:zu?'closed':'open',dir:v.dir==='short'?'short':'long',pnl:zu?pnl:null,up:new Date().toISOString()};
+  if(!zu){neu.exit='';neu.cd='';neu.ct='';}
   const alt=_tjEdit?trades.find(x=>x.id===_tjEdit):null;
   const sicherung=alt?{...alt}:null;
   if(alt)Object.assign(alt,neu);else trades.push({id:uid(),...neu});
@@ -676,13 +884,118 @@ function tjFormSpeichern(){
     if(err){err.textContent='Not saved - storage is full or blocked';err.hidden=false;}
     return false;
   }
-  tjMonat=v.d.slice(0,7);
+  if(zu)tjMonat=v.cd.slice(0,7);
   closeM('mTrade');renderJournal();
   return true;
 }
 // Fuer MODAL_GUARD_TABELLE (js/main.js) - Nachfrage bei ungespeicherten Eingaben.
 const TJ_GUARD={felder:TJ_FELDER,save:()=>tjFormSpeichern(),was:'This trade'};
 
+// ── Offene Trades: Live-Stand + Abschluss ─────────────────────────────
+// Aktueller Kurs = letzter Wert der Tagesreihe (Feed stuendlich). Stand nur
+// als Kursabstand und R - ein Geldbetrag braeuchte den Wert je Punkt.
+function tjJetzt(asset){
+  const r=tjReihe(asset);if(!r)return null;
+  for(let i=r.s.length-1;i>=0;i--){const v=Number(r.s[i][1]);if(isFinite(v)&&v>0)return{v,d:r.s[i][0]};}
+  return null;
+}
+function tjLive(t){
+  const j=tjJetzt(t.a),e=tjNum(t.entry),sl=tjNum(t.sl);
+  if(!j||e==null)return{j,e};
+  const zug=t.dir==='short'?e-j.v:j.v-e,ri=sl==null?null:(t.dir==='short'?sl-e:e-sl);
+  return{j,e,zug,r:ri>0?zug/ri:null};
+}
+function tjOffenHtml(){
+  const l=tjChrono(tjOffeneListe());
+  if(l.length&&!PRICE_DATA_FEED)tjPreiseLaden();
+  const kopf=`<div class="tj-kh">${tjTitel(`Open trades${l.length?` <span class="tj-anz">${l.length}</span>`:''}`,TJ_ERKL.offen)}<div class="tj-kh-r"><i>${l.length?'Tap a trade to close it':'Log a position you are in now - close it later'}</i></div></div>`;
+  if(!l.length)return`<div class="tj-card tj-offen leer">${kopf}<div class="tj-leertext"><i>No open trades</i><button class="btn g" onclick="tjNeu()">＋ Add open trade</button></div></div>`;
+  const karte=t=>{
+    const L=tjLive(t),dz=L.e!=null?tjDez(L.e):5;
+    const kl=L.zug==null?'':L.zug>0?' plus':L.zug<0?' minus':'';
+    const stand=L.r!=null?`<b class="tjo-r" style="color:${tjFarbe(L.r)}">${tjRText(L.r)}</b>`:L.zug!=null?`<b class="tjo-r" style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b>`:'<b class="tjo-r" style="color:var(--t3)">–</b>';
+    const zeile1=L.e==null?'<i>Add an entry price to track it live</i>':`Entry <b>${tjPreis(L.e)}</b> · Now <b>${L.j?tjPreis(L.j.v):'–'}</b>`;
+    const zeile2=L.zug!=null?`<b style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b> since entry${L.r==null?' · <i>add a stop for R</i>':''}`:(L.e!=null?(PRICE_DATA_FEED?`<i>No price data for ${escH(t.a)}</i>`:'<i>Loading prices</i>'):'');
+    return`<div class="tjo${kl}" role="button" tabindex="0" onclick="tjAbschliessen('${escJH(t.id)}')" title="Close this trade">
+      <div class="tjo-kopf"><div class="tjo-a"><b>${escH(t.a)}</b>${tjSeiteHtml(t.dir)}</div>${stand}</div>
+      <div class="tjo-z">${zeile1}</div>
+      ${zeile2?`<div class="tjo-z">${zeile2}</div>`:''}
+      ${L.j&&L.e!=null?tjPreisleisteHtml(t,L.j.v):''}
+      <div class="tjo-fuss"><i>Opened ${escH(fmtDayShort(t.d))}${L.j?` · price ${escH(fmtDayShort(L.j.d))}`:''}</i><button class="btn g tjo-btn" onclick="event.stopPropagation();tjAbschliessen('${escJH(t.id)}')">Close</button></div>
+    </div>`;
+  };
+  return`<div class="tj-card tj-offen">${kopf}<div class="tjo-grid">${l.map(karte).join('')}</div></div>`;
+}
+// Nur die Info-Zeile - beim Nachladen der Kurse bleiben die Eingaben stehen.
+function tjZuInfo(t){
+  const L=tjLive(t),el=document.getElementById('tjcInfo');
+  if(el)el.innerHTML=L.e==null?'<i>No entry price</i>':
+    `Entry <b>${tjPreis(L.e)}</b>${L.j?` · Now <b>${tjPreis(L.j.v)}</b>`:''}${L.r!=null?` · <b style="color:${tjFarbe(L.r)}">${tjRText(L.r)}</b>`:''}${tjNum(t.sl)!=null?` · SL <b>${tjPreis(tjNum(t.sl))}</b>`:''}${tjNum(t.tp)!=null?` · TP <b>${tjPreis(tjNum(t.tp))}</b>`:''}`;
+  const b=document.getElementById('tjcNow');if(b)b.disabled=!L.j;
+  return L;
+}
+function tjAbschliessen(id){
+  const t=trades.find(x=>x.id===id&&!x.del&&tjOffen(x));if(!t)return;
+  _tjZu=id;
+  document.getElementById('tjcTitle').textContent=`Close ${t.a} · ${tjSeite(t.dir)}`;
+  const L=tjZuInfo(t);
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v==null?'':String(v);};
+  set('tjcExit','');set('tjcPnl','');set('tjcDate',tjHeute());set('tjcTime',tjUhr());set('tjcNotes',t.notes||'');
+  const knopf=(id,an)=>{const b=document.getElementById(id);if(b)b.disabled=!an;};
+  knopf('tjcHitTp',tjNum(t.tp)!=null);knopf('tjcHitSl',tjNum(t.sl)!=null);knopf('tjcNow',!!L.j);
+  const err=document.getElementById('tjcErr');if(err){err.textContent='';err.hidden=true;}
+  tjZuErgebnis();
+  openM('mTradeClose');
+}
+function tjZuExit(k){
+  const t=trades.find(x=>x.id===_tjZu);if(!t)return;
+  const x=document.getElementById('tjcExit');if(!x)return;
+  if(k==='now'){const j=tjJetzt(t.a);if(j)x.value=j.v.toFixed(tjDez(j.v));}
+  else if(tjNum(t[k])!=null)x.value=t[k];
+  tjZuErgebnis();
+}
+// Ergebnis-Zeile im Abschluss-Fenster: R aus dem Exit + Widerspruch zum P/L.
+function tjZuErgebnis(){
+  const el=document.getElementById('tjcRR');const t=trades.find(x=>x.id===_tjZu);if(!el||!t)return;
+  const x=tjNum((document.getElementById('tjcExit')||{}).value),p=tjNum((document.getElementById('tjcPnl')||{}).value);
+  const r=tjR({entry:t.entry,sl:t.sl,exit:x,dir:t.dir}),e=tjNum(t.entry);
+  const teile=[];
+  if(r!=null)teile.push(`Result <b style="color:${tjFarbe(r)}">${tjRText(r)}</b>`);
+  if(p!=null)teile.push(`P/L <b style="color:${tjFarbe(p)}">${tjGeld(p)}</b>`);
+  let warn='';
+  if(x!=null&&e!=null&&p!=null&&p!==0){const zug=t.dir==='short'?e-x:x-e;
+    if(zug!==0&&Math.sign(zug)!==Math.sign(p))warn=`<span class="tj-warn">P/L is ${p<0?'negative':'positive'} but the exit is ${zug>0?'in profit':'at a loss'}</span>`;}
+  el.innerHTML=(teile.length?teile.join('<span class="tj-sep">·</span>'):'<i>Set the exit and enter the P/L</i>')+warn;
+}
+function tjZuSpeichern(){
+  const t=trades.find(x=>x.id===_tjZu);if(!t)return false;
+  const g=id=>String((document.getElementById(id)||{}).value||'').trim();
+  const pnl=tjNum(g('tjcPnl')),cd=g('tjcDate'),err=document.getElementById('tjcErr');
+  const fehl=[];if(!/^\d{4}-\d{2}-\d{2}$/.test(cd))fehl.push('Close date');if(pnl==null)fehl.push('P/L');
+  if(!fehl.length&&cd<t.d)fehl.push('Close date before open date');
+  if(fehl.length){if(err){err.textContent='Missing: '+fehl.join(' · ');err.hidden=false;}return false;}
+  const alt={...t};
+  Object.assign(t,{st:'closed',exit:g('tjcExit'),pnl,cd,ct:g('tjcTime'),notes:g('tjcNotes'),up:new Date().toISOString()});
+  if(!tjSpeichern()){Object.keys(t).forEach(k=>delete t[k]);Object.assign(t,alt);if(err){err.textContent='Not saved - storage is full or blocked';err.hidden=false;}return false;}
+  tjMonat=cd.slice(0,7);
+  closeM('mTradeClose');renderJournal();
+  return true;
+}
+function tjZuBearbeiten(){const id=_tjZu;closeM('mTradeClose');if(id)tjNeu(null,id);}
+const TJ_GUARD_ZU={felder:['tjcExit','tjcPnl','tjcNotes','tjcDate','tjcTime'],save:()=>tjZuSpeichern(),was:'Closing this trade'};
+
+// Wiederholung (D): solange ein Stand nicht in der Cloud liegt, alle 15 s
+// erneut hochladen - auch ohne neue Eingabe, und sofort beim Wieder-online.
+if(typeof window!=='undefined'){
+  const nochmal=()=>{if(_tjGp())return;const s=tjCloudStand();if((s.k==='warte'||s.k==='fehler')&&navigator.onLine!==false)tjJetztHochladen();};
+  setInterval(nochmal,15000);
+  window.addEventListener('online',nochmal);
+  // Anderer Tab hat geschrieben (C): vereinigen, Stand neu zeigen.
+  window.addEventListener('storage',e=>{
+    if(e.key===TRADES_KEY){tjVonPlatte();if(curPage==='journal')renderJournal();}
+    else if(e.key===TJ_CLOUD_KEY||e.key===TJ_CLOUD_ERR)tjCloudAnzeige();
+  });
+}
 // Groessenaenderung: Equity-Kurve und offene Charts in echter Breite neu bauen.
 if(typeof window!=='undefined'){
   let _tjRs=0;
@@ -691,9 +1004,12 @@ if(typeof window!=='undefined'){
     tjOffeneChartsAuffrischen();},160);});
 }
 
-export {trades,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,tjR,tjReihe};
+export {trades,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
+  tjFuerCloud,tjGesendet,tjSendeFehler};
 if(typeof window!=='undefined'){
   Object.assign(window,{renderJournal,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
-    mergeTrades,tjUebernehmen,tjR,tjReihe,tjTagKlick,tjTagFenster,tjTagZuTrade,tjTagNeu,tjRichtung,tjExitAuf,tjEdEingabe,tjStreak,tjStats});
+    mergeTrades,tjUebernehmen,tjR,tjReihe,tjTagKlick,tjTagFenster,tjTagZuTrade,tjTagNeu,tjRichtung,tjExitAuf,tjEdEingabe,tjStreak,tjStats,
+    tjStatus,tjAbschliessen,tjZuExit,tjZuErgebnis,tjZuSpeichern,tjZuBearbeiten,tjJetzt,tjLive,
+    tjFuerCloud,tjCloudStand,tjJetztHochladen,tjSig});
   Object.defineProperty(window,'trades',{get:()=>trades,configurable:true});
 }

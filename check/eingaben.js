@@ -84,6 +84,8 @@ const OEFFNER = {
   mCloud: [`openCloudM()`],
   // Journal: "+ Add trade" und Tipp auf einen Kalendertag (Datum vorbelegt).
   mTrade: [`tjNeu()`, `tjNeu('2026-10-01')`],
+  // Offenen Trade abschliessen - legt fuer den Test einen offenen an, falls keiner da ist.
+  mTradeClose: [`(trades.some(t=>t.st==='open'&&!t.del)||trades.push({id:'waechter-open',d:'2026-10-01',a:'EUR/USD',dir:'long',st:'open',entry:'1.1',sl:'1.09',tp:'1.12',up:'2026-10-01'}),tjAbschliessen(trades.find(t=>t.st==='open'&&!t.del).id))`],
 };
 
 (async () => {

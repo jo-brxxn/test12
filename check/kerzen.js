@@ -209,7 +209,7 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
     const zahl = (wert) => { const d = document.createElement('div'); d.style.color = wert; document.body.appendChild(d);
       const m = getComputedStyle(d).color.match(/\d+/g); d.remove(); return m ? m.slice(0, 3).map(Number) : null; };
     const out = [];
-    ['carbon', 'midnight', 'graphite', 'nord', 'solar'].forEach(t => {
+    ['midnight'].forEach(t => {   // seit 2026-10-24 die einzige dunkle Vorlage
       document.documentElement.setAttribute('data-fx-theme', t);
       const cs = getComputedStyle(document.documentElement);
       const up = zahl(cs.getPropertyValue('--cndl-up')), dn = zahl(cs.getPropertyValue('--cndl-dn')),

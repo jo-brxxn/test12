@@ -83,7 +83,16 @@ for (const datei of ['js/main.js', 'js/score.js', 'js/calendar.js', 'js/data-fee
     // Regel lautet "zentriertes Fenster mit uebersichtlichem Text", nicht
     // "dieses eine Fenster" - ein Waechter, der das verwechselt, meldet die
     // beiden anderen faelschlich als kaputt (beim ersten Lauf genau passiert).
-    const knoepfe = await p.$$('.info-b,.rinfo');
+    // Nur SICHTBARE ⓘ anklicken: $$ lieferte auch die der gerade versteckten
+    // Seiten, und jeder Klick darauf lief bis zur Frist von 1,2 s ins Leere
+    // (gemessen 2026-10-24: 235 Klickversuche, 39 davon sichtbar - 238 von 266 s
+    // Laufzeit). Geprueft wird damit genau dieselbe Menge wie vorher.
+    await p.evaluate(() => {
+      document.querySelectorAll('[data-erkl-pruef]').forEach(e => e.removeAttribute('data-erkl-pruef'));
+      document.querySelectorAll('.info-b,.rinfo').forEach(e => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e);
+        if (r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && e.offsetParent) e.setAttribute('data-erkl-pruef', '1'); });
+    });
+    const knoepfe = await p.$$('[data-erkl-pruef]');
     for (let i = 0; i < knoepfe.length; i++) {
       // Vorzustand: ALLE Fenster zu, sonst misst der naechste Klick ein altes.
       await p.evaluate(() => document.querySelectorAll('.ov').forEach(o => { o.style.display = 'none'; }));

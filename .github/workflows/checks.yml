@@ -1,12 +1,25 @@
 name: Waechter
 
-# Laeuft bei jedem Push und jedem Pull Request auf index.html, die Module
-# (js/), die Workflows oder die Waechter selbst. Die stuendlichen
+# Laeuft bei jedem Push auf main und jedem Pull Request auf index.html, die
+# Module (js/), die Workflows oder die Waechter selbst. Die stuendlichen
 # Daten-Commits (nur *.json) loesen ihn NICHT aus - sie aendern keinen Code.
 # ⚠ js/** fehlte bis 2026-10-05: seit der Modul-Aufteilung (2026-08-25) liefen
 # reine Modul-Aenderungen ungeprueft durch.
+#
+# Seit 2026-10-24 (Waechter-Ueberholung, Nutzer: "fasse Sachen zusammen
+# sodass es effizient ist"):
+#  - nur noch main + Pull Requests: jeder Commit lief vorher ZWEIMAL (Session-
+#    Branch und main, derselbe Stand, je ~69 min - Laeufe 599/600, 601/602,
+#    603/604, 609/610). Gepusht wird ohnehin immer auch auf main (CLAUDE.md
+#    Regel 7).
+#  - sechs parallele Pakete statt eines Laufs: check/all.js --teil i/6 teilt
+#    nach den gemessenen CI-Sekunden (laengste Pruefung zuerst ins kuerzeste
+#    Paket). Lauf 608: 68,6 min am Stueck; je Paket jetzt ~10 min.
+#  - ein neuer Push bricht den laufenden Lauf ab: es zaehlt nur der neueste
+#    Stand von main.
 on:
   push:
+    branches: [main]
     paths:
       - 'index.html'
       - 'js/**'
@@ -20,23 +33,20 @@ on:
       - '.github/workflows/**'
   workflow_dispatch:
 
+concurrency:
+  group: waechter-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  waechter:
+  statisch:
     runs-on: ubuntu-latest
-    # 90 statt 25 Minuten (Nutzer-Wahl 2026-10-05 "Limit anheben"): seit dem
-    # 2026-09-20 (letzter gruener Lauf Nr. 395) wurde jeder Lauf am alten
-    # Limit abgebrochen - 97 von 100 "cancelled". Der erste Versuch mit 45 min
-    # (Lauf 520) war zu knapp: der Runner ist 2-3x langsamer als lokal
-    # (layout 140 s statt 45, dashboard 195 statt 42, nav 162 statt 47) und
-    # stand nach 44,5 min erst bei filterreset - hochgerechnet ~65 min.
-    # Waechst die Suite weiter: Limit mit anheben (oder in Teile aufteilen).
-    timeout-minutes: 90
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0        # die Regel-Pruefung braucht den Vorher-Stand
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -45,6 +55,25 @@ jobs:
 
       - name: Statische Waechter
         run: node check/all.js --static --base "${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD^' }}"
+
+  browser:
+    name: browser ${{ matrix.teil }}/6
+    runs-on: ubuntu-latest
+    # Ein Paket ~10 min; der Runner ist 2-3x langsamer als lokal und schwankt -
+    # 30 min Grenze laesst Luft, ohne dass ein haengender Lauf eine Stunde frisst.
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false        # alle Pakete zu Ende laufen lassen: jeder rote Fund zaehlt
+      matrix:
+        teil: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0        # scorediff/summarydiff/rules brauchen den Vorher-Stand
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
 
       - name: Chromium fuer die Browser-Waechter
         run: |
@@ -60,7 +89,7 @@ jobs:
           done
           echo "Server kam nicht hoch"; exit 1
 
-      - name: Alle Waechter
+      - name: Waechter-Paket
         env:
           PW_PATH: playwright
-        run: node check/all.js --base "${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD^' }}"
+        run: node check/all.js --teil ${{ matrix.teil }}/6 --base "${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD^' }}"

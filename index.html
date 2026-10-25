@@ -9,19 +9,19 @@
    vertraute Design. Wird eine Vorlage entfernt, muss dieser Wert migriert
    werden - sonst steht das Geraet vor einem Regelwerk, das es nicht gibt. */
 (function(){try{
-  var OK={linear:1,stripe:1,swiss:1,notion:1,carbon:1,midnight:1,graphite:1,nord:1,solar:1};
+  /* Seit 2026-10-24 nur noch hell (Terminal Pro = kein Attribut) und dunkel
+     (midnight). Die vier entfernten DUNKLEN Vorlagen werden auf midnight
+     migriert, alles andere auf hell - dieselbe Liste wie
+     FX_THEME_ALT_DUNKEL in js/main.js. */
+  var DUNKEL={midnight:1,carbon:1,graphite:1,nord:1,solar:1};
   var t=localStorage.getItem('fxpro_theme');
-  if(t&&OK[t])document.documentElement.setAttribute('data-fx-theme',t);
-  else if(t)localStorage.removeItem('fxpro_theme');
-  /* Derselbe Grund wie oben, nur fuer den Hintergrund: wird er erst vom
-     Hauptskript gesetzt, startet die Seite hell und schaltet dann auf den
-     dunklen Marmor um - ein sichtbarer Blitz. Die Liste steht bewusst
-     doppelt (hier und in APP_BGS in js/main.js); check/structure.js haelt
-     beide gegeneinander, damit sie nicht auseinanderlaufen. */
-  var BG={white:1,'marble-light':1,'marble-vivid':1,'marble-dark':1};
-  var b=localStorage.getItem('fxpro_bg');
-  if(b&&BG[b])document.documentElement.setAttribute('data-app-bg',b);
-  else if(b)localStorage.removeItem('fxpro_bg');
+  if(t&&DUNKEL[t]){
+    document.documentElement.setAttribute('data-fx-theme','midnight');
+    if(t!=='midnight')localStorage.setItem('fxpro_theme','midnight');
+  }else if(t)localStorage.removeItem('fxpro_theme');
+  /* Hintergrund-Auswahl entfernt 2026-10-24 ("background soll immer bei
+     current sein") - der gemerkte Wert wird geloescht. */
+  localStorage.removeItem('fxpro_bg');
 }catch(e){}})();
 </script>
 <meta charset="UTF-8">
@@ -93,43 +93,6 @@ html{height:100%;overflow:hidden;overscroll-behavior:none}
    Waechter: check/tabellenfest.js. */
 *{overscroll-behavior:none}
 .pc,.detail{overscroll-behavior-y:auto}
-/* ══ HINTERGRUND-BILDER (Nutzer-Wunsch 2026-09-11) ══════════════════════
-   Fuenf Auswahlmoeglichkeiten in den Einstellungen: Current (dieses body-
-   Regelwerk hier, unveraendert), White und drei Marmor-Bilder.
-   ⚠ "Current" hat bewusst KEIN [data-app-bg]-Regelwerk - genau wie bei den
-   Design-Vorlagen landet ein Geraet mit unbekanntem Wert dadurch im
-   vertrauten Zustand statt auf einem leeren Hintergrund.
-   ⚠ SCHLEIER: der Marmor liegt nicht roh unter der App. Darueber liegt eine
-   halbdurchsichtige Schicht in --bg0, also in der Flaechenfarbe der jeweils
-   gewaehlten Design-Vorlage. Ohne sie haengt die Lesbarkeit von Text, der
-   direkt auf dem Hintergrund steht, davon ab, welche Ader zufaellig darunter
-   liegt - und bei dunklem Marmor unter hellem Design waere sie weg. Der
-   Schleier haelt den Kontrast unabhaengig vom Bild und funktioniert
-   automatisch in JEDER der zehn Design-Vorlagen mit, weil er deren eigene
-   Farbe benutzt. */
-html[data-app-bg="white"] body{background-image:none;background-color:#FFF}
-html[data-app-bg^="marble-"] body{
-  background-image:linear-gradient(0deg,var(--app-bg-schleier),var(--app-bg-schleier)),var(--app-bg-img);
-  background-size:cover;background-position:center center;background-repeat:no-repeat;background-attachment:scroll}
-html[data-app-bg="marble-light"]{--app-bg-img:url(img/marble-light.webp);--app-bg-schleier:color-mix(in srgb,var(--bg0) 30%,transparent)}
-html[data-app-bg="marble-vivid"]{--app-bg-img:url(img/marble-vivid.webp);--app-bg-schleier:color-mix(in srgb,var(--bg0) 26%,transparent)}
-/* Der dunkle Marmor braucht den kraeftigsten Schleier: er ist der einzige,
-   der die Helligkeit gegen die Design-Vorlage dreht. */
-html[data-app-bg="marble-dark"]{--app-bg-img:url(img/marble-dark.webp);--app-bg-schleier:color-mix(in srgb,var(--bg0) 42%,transparent)}
-/* Karten leicht durchscheinend (Nutzer-Entscheidung 2026-09-11), damit der
-   Marmor zwischen ihnen sichtbar bleibt statt nur am Rand.
-   ⚠ Die volle Deckfarbe steht als ERSTE Deklaration da: ein Browser ohne
-   color-mix ignoriert die zweite Zeile und bekommt die heutige, garantiert
-   lesbare Karte - kein Fallback-Loch.
-   ⚠ backdrop-filter ist hier kein Zierrat, sondern der Grund, warum Zahlen
-   auf wechselndem Untergrund ruhig stehen: er glaettet weg, was durch die
-   12% Transparenz durchkommt. */
-html[data-app-bg^="marble-"] .dw{background:var(--card)}
-@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
-  html[data-app-bg^="marble-"] .dw{
-    background:color-mix(in srgb,var(--card) 84%,transparent);
-    -webkit-backdrop-filter:blur(9px) saturate(108%);backdrop-filter:blur(9px) saturate(108%)}
-}
 body{font-family:var(--ff-text);background-image:linear-gradient(180deg,rgba(27,39,70,.035),transparent 260px);background-size:cover;background-position:center center;background-repeat:no-repeat;background-color:var(--bg0);background-blend-mode:normal;color:var(--t0);height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none;position:fixed;inset:0;display:flex;flex-direction:column;font-weight:400;line-height:1.4;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums}
 /* Frueherer Nutzer-Wunsch war "ueberall Arial" - umgesetzt als globales
    !important. Das hat allerdings ALLE 200 Monospace-Deklarationen der App
@@ -544,28 +507,6 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
    MERKSATZ: bei einem gescopten Farb-Override IMMER pruefen, ob das Ziel
    weiter unten nochmal dieselbe Eigenschaft setzt. */
 .hdr{background:var(--chrome-bg)}
-/* Vorlagen-Auswahl in den Einstellungen. Jede Kachel zeigt die vier Farben,
-   die man beim Umschalten wirklich sieht: Kopfzeile, Seite, Karte, Akzent -
-   ein Name allein sagt nicht, wie es aussieht. */
-.set-row-col{flex-direction:column;align-items:stretch;gap:10px}
-.fxth-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.fxth{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--bd);border-radius:var(--rs);background:var(--bg2);cursor:pointer;text-align:left;font-family:inherit;transition:border-color .14s ease}
-.fxth.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-@media(hover:hover){.fxth:hover{border-color:var(--bd2)}}
-.fxth-sw{display:flex;height:22px;border-radius:var(--rss);overflow:hidden;border:1px solid var(--bd)}
-.fxth-sw i{flex:1;display:block}
-.fxth-n{font-size:var(--fs-sm);font-weight:700;color:var(--t0)}
-.fxth-d{font-size:var(--fs-2xs);color:var(--t2)}
-/* Hintergrund-Auswahl: gleiche Bauform wie das Design-Raster, nur zeigt die
-   Kachel statt vier Farbstreifen das echte Bild in klein. Die Vorschau MUSS
-   das Bild selbst sein - eine nachgebaute Farbflaeche wuerde beim Umschalten
-   etwas anderes zeigen, als man angeklickt hat. */
-.appbg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
-.appbg{display:flex;flex-direction:column;gap:6px;padding:6px;border:1px solid var(--bd);border-radius:var(--rs);background:var(--bg2);cursor:pointer;text-align:left;font-family:inherit;transition:border-color .14s ease}
-.appbg.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-@media(hover:hover){.appbg:hover{border-color:var(--bd2)}}
-.appbg-pv{height:44px;border-radius:var(--rss);border:1px solid var(--bd);background-size:cover;background-position:center}
-.appbg-n{font-size:var(--fs-2xs);font-weight:700;color:var(--t0)}
 /* Schnellerfassung: die erkannten Angaben stehen als ruhige Zeilen unter dem
    Textfeld. Bewusst KEINE Automatik-Optik (kein Funkeln, kein "AI"-Abzeichen)
    - was hier steht, ist eine Regel-Ableitung und soll wie ein ausgefuelltes
@@ -1236,124 +1177,6 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
    ⚠ Die -rgb-Varianten werden NICHT von Hand gepflegt, sondern zusammen mit
    der Farbe erzeugt - eine falsch abgetippte rgb-Zeile faerbt still falsch
    und faellt keinem Kontrast-Waechter auf. */
-/* Linear Light */
-:root[data-fx-theme="linear"]{
-  --chrome-bg:#1C1D21;--chrome-bd:#101114;--chrome-line:#33353C;--chrome-quick:#2A2C33;
-  --bg0:#FFFFFF;--bg1:#FAFAFB;--bg2:#F5F6F9;--bg3:#EEF0F4;--bg4:#E5E7EE;--bg5:#E4E7EE;--bg6:#D3D8E2;
-  --bd:rgba(28,29,33,.12);--bd2:rgba(28,29,33,.22);
-  --t0:#16171A;--t1:#2C2F36;--t2:#3B3F47;--t3:#4A4F59;--t3-rgb:74,79,89;
-  --green:#2C51C7;--red:#B02B26;--amber:#535966;--due:#B45309;--cotl:#E09B00;--due-rgb:180,83,9;--star:#535966;--blue:#2C51C7;--purple:#6B4CC4;--success:#0F6B3C;--live:#C4302B;
-  --green-rgb:44,81,199;--red-rgb:176,43,38;--amber-rgb:83,89,102;--star-rgb:83,89,102;--blue-rgb:44,81,199;--purple-rgb:107,76,196;--success-rgb:15,107,60;
-  --accent:#4B55B8;--accent-rgb:75,85,184;
-  --a-infl:#93670F;--a-rate:#5F45AB;--a-lab:#136B60;--a-grow:#9C5117;--a-cot:#1A6E89;
-  --on-accent:#FFFFFF;
-  --green-lt:#2C51C7;--red-dk:#B02B26;
-  --card:#E5E7EE;
-  --rail-bg:var(--chrome-bg);--rail-edge:var(--chrome-line);--rail-on:var(--chrome-quick);--ctl-bg:var(--bg4);--ctl-bd:var(--bd);--ui-act:#1C1D21;--ui-act-rgb:28,29,33;--ui-act-fg:var(--on-accent);
-  --bias-bear:var(--red);
-}
-[data-fx-theme="linear"] .hdr,[data-fx-theme="linear"] #navSidebar{
-  --t0:#F7F8FA;--t1:#E2E5EA;--t2:#C8CCD3;--t3:#B0B6BF;
-  --bg2:#2A2C33;--bg3:#33353C;--bg4:#33353C;--bg5:#33353C;
-  --bd:#33353C;--bd2:#33353C;
-}
-/* Stripe Slate */
-:root[data-fx-theme="stripe"]{
-  --chrome-bg:#0A2540;--chrome-bd:#04162A;--chrome-line:#264260;--chrome-quick:#153454;
-  --bg0:#FFFFFF;--bg1:#F6F9FC;--bg2:#F4F7FB;--bg3:#EBF1F8;--bg4:#E2EAF3;--bg5:#DDE6F1;--bg6:#C9D5E5;
-  --bd:rgba(10,37,64,.13);--bd2:rgba(10,37,64,.24);
-  --t0:#0A2540;--t1:#243851;--t2:#3A495C;--t3:#465A73;--t3-rgb:70,90,115;
-  --green:#0B57B8;--red:#B0322A;--amber:#4E5F74;--due:#B45309;--cotl:#E09B00;--due-rgb:180,83,9;--star:#4E5F74;--blue:#0B57B8;--purple:#6A4BDD;--success:#0C6B41;--live:#C93326;
-  --green-rgb:11,87,184;--red-rgb:176,50,42;--amber-rgb:78,95,116;--star-rgb:78,95,116;--blue-rgb:11,87,184;--purple-rgb:106,75,221;--success-rgb:12,107,65;
-  --accent:#4F46D6;--accent-rgb:79,70,214;
-  --a-infl:#96660F;--a-rate:#5E42AC;--a-lab:#0F6E5F;--a-grow:#A2551A;--a-cot:#186D87;
-  --on-accent:#FFFFFF;
-  --green-lt:#0B57B8;--red-dk:#B0322A;
-  --card:#E2EAF3;
-  --rail-bg:var(--chrome-bg);--rail-edge:var(--chrome-line);--rail-on:var(--chrome-quick);--ctl-bg:var(--bg4);--ctl-bd:var(--bd);--ui-act:#0A2540;--ui-act-rgb:10,37,64;--ui-act-fg:var(--on-accent);
-  --bias-bear:var(--red);
-}
-[data-fx-theme="stripe"] .hdr,[data-fx-theme="stripe"] #navSidebar{
-  --t0:#F7F8FA;--t1:#E2E5EA;--t2:#C8CCD3;--t3:#B0B6BF;
-  --bg2:#153454;--bg3:#264260;--bg4:#264260;--bg5:#264260;
-  --bd:#264260;--bd2:#264260;
-}
-/* Swiss Editorial */
-:root[data-fx-theme="swiss"]{
-  --chrome-bg:#111111;--chrome-bd:#000000;--chrome-line:#333333;--chrome-quick:#242424;
-  --bg0:#FFFFFF;--bg1:#FAFAFA;--bg2:#F6F6F6;--bg3:#F0F0F0;--bg4:#E9E9E9;--bg5:#E4E4E4;--bg6:#D0D0D0;
-  --bd:rgba(0,0,0,.14);--bd2:rgba(0,0,0,.26);
-  --t0:#000000;--t1:#242424;--t2:#383838;--t3:#4A4A4A;--t3-rgb:74,74,74;
-  --green:#0B4BA8;--red:#A81F17;--amber:#4A4A4A;--due:#B45309;--cotl:#E09B00;--due-rgb:180,83,9;--star:#4A4A4A;--blue:#0B4BA8;--purple:#4E3F8C;--success:#0F5C33;--live:#B32B26;
-  --green-rgb:11,75,168;--red-rgb:168,31,23;--amber-rgb:74,74,74;--star-rgb:74,74,74;--blue-rgb:11,75,168;--purple-rgb:78,63,140;--success-rgb:15,92,51;
-  --accent:#1F1F1F;--accent-rgb:31,31,31;
-  --a-infl:#7C540F;--a-rate:#4F3A8C;--a-lab:#105C50;--a-grow:#8A4714;--a-cot:#155C74;
-  --on-accent:#FFFFFF;
-  --green-lt:#0B4BA8;--red-dk:#A81F17;
-  --card:#E9E9E9;
-  --rail-bg:var(--chrome-bg);--rail-edge:var(--chrome-line);--rail-on:var(--chrome-quick);--ctl-bg:var(--bg4);--ctl-bd:var(--bd);--ui-act:#111111;--ui-act-rgb:17,17,17;--ui-act-fg:var(--on-accent);
-  --bias-bear:var(--red);
-}
-[data-fx-theme="swiss"] .hdr,[data-fx-theme="swiss"] #navSidebar{
-  --t0:#F7F8FA;--t1:#E2E5EA;--t2:#C8CCD3;--t3:#B0B6BF;
-  --bg2:#242424;--bg3:#333333;--bg4:#333333;--bg5:#333333;
-  --bd:#333333;--bd2:#333333;
-}
-/* Notion Warm */
-:root[data-fx-theme="notion"]{
-  --chrome-bg:#37352F;--chrome-bd:#211F1B;--chrome-line:#4E4B43;--chrome-quick:#45423A;
-  --bg0:#FFFFFF;--bg1:#FBFBFA;--bg2:#F7F6F3;--bg3:#F1F0EC;--bg4:#EBEAE5;--bg5:#E5E3DE;--bg6:#D5D2CB;
-  --bd:rgba(55,53,47,.14);--bd2:rgba(55,53,47,.25);
-  --t0:#191817;--t1:#302E28;--t2:#423E3A;--t3:#524E48;--t3-rgb:82,78,72;
-  --green:#1461B0;--red:#A93125;--amber:#55514A;--due:#B45309;--cotl:#E09B00;--due-rgb:180,83,9;--star:#55514A;--blue:#1461B0;--purple:#6B44AD;--success:#0F6039;--live:#BE3826;
-  --green-rgb:20,97,176;--red-rgb:169,49,37;--amber-rgb:85,81,74;--star-rgb:85,81,74;--blue-rgb:20,97,176;--purple-rgb:107,68,173;--success-rgb:15,96,57;
-  --accent:#1B6FC4;--accent-rgb:27,111,196;
-  --a-infl:#8F6113;--a-rate:#5B41A0;--a-lab:#136759;--a-grow:#964E17;--a-cot:#166583;
-  --on-accent:#FFFFFF;
-  --green-lt:#1461B0;--red-dk:#A93125;
-  --card:#EBEAE5;
-  --rail-bg:var(--chrome-bg);--rail-edge:var(--chrome-line);--rail-on:var(--chrome-quick);--ctl-bg:var(--bg4);--ctl-bd:var(--bd);--ui-act:#37352F;--ui-act-rgb:55,53,47;--ui-act-fg:var(--on-accent);
-  --bias-bear:var(--red);
-}
-[data-fx-theme="notion"] .hdr,[data-fx-theme="notion"] #navSidebar{
-  --t0:#F7F8FA;--t1:#E2E5EA;--t2:#C8CCD3;--t3:#B0B6BF;
-  --bg2:#45423A;--bg3:#4E4B43;--bg4:#4E4B43;--bg5:#4E4B43;
-  --bd:#4E4B43;--bd2:#4E4B43;
-}
-/* Carbon Dark */
-:root[data-fx-theme="carbon"]{
-  /* Bias-Farben aufgehellt, Farbton beibehalten - gemessen >=4,6:1 gegen --bg2 */
-  --bias-bull:#4A92EF;--bias-bear:#EC636B;--bias-neu:#798FBE;
-  /* Kerzenfarben gedreht: die fallende Kerze ist im hellen Design fast
-     schwarz (#2B3040) und waere hier unsichtbar - die ROLLE bleibt (Blau
-     steigend, neutraler Gegenpol fallend), nur die Helligkeit kippt.
-     ⚠ Das Blau ist #7BA4F8 und nicht #5B86F5, weil check/kerzen.js genau
-     das gefunden hat: gegen nords helle Kartenflaeche (#3B4252) kam
-     #5B86F5 nur auf 2,96:1.
-     ⚠ UND ES STEHT IN JEDEM THEME-BLOCK EINZELN, nicht als eine
-     Sammelregel dahinter. Der erste Versuch war genau so eine Sammelregel
-     - dadurch hatte "solar" ZWEI :root-Bloecke, und check/theme.js las den
-     zweiten: ein halbes Theme, 22 angeblich fehlende Tokens. Steht als
-     Warnung schon in check/README.md. */
-  --cndl-up:#7BA4F8;--cndl-dn:#E4E9F3;
-  --chrome-bg:#000000;--chrome-bd:#2A2A2A;--chrome-line:#393939;--chrome-quick:#1F1F1F;
-  --bg0:#161616;--bg1:#1C1C1C;--bg2:#262626;--bg3:#212121;--bg4:#2C2C2C;--bg5:#333333;--bg6:#474747;
-  --bd:rgba(255,255,255,.16);--bd2:rgba(255,255,255,.30);
-  --t0:#F4F4F4;--t1:#E0E4E9;--t2:#C6CBD0;--t3:#AEB4BB;--t3-rgb:174,180,187;
-  --green:#78A9FF;--red:#FF8389;--amber:#A8B0B8;--due:#F0913A;--cotl:#FFCB52;--due-rgb:240,145,58;--star:#A8B0B8;--blue:#78A9FF;--purple:#BE95FF;--success:#5CD17E;--live:#FF9DA2;
-  --green-rgb:120,169,255;--red-rgb:255,131,137;--amber-rgb:168,176,184;--star-rgb:168,176,184;--blue-rgb:120,169,255;--purple-rgb:190,149,255;--success-rgb:92,209,126;
-  --accent:#78C7FF;--accent-rgb:120,199,255;
-  --a-infl:#E3B23C;--a-rate:#B48CFF;--a-lab:#5FE3E1;--a-grow:#FF9E52;--a-cot:#5CC2F0;
-  --on-accent:#0A1520;
-  --green-lt:#78A9FF;--red-dk:#FF8389;
-  --card:#1C1C1C;
-  --rail-bg:var(--chrome-bg);--rail-edge:var(--chrome-bd);--rail-on:var(--chrome-line);--ctl-bg:var(--bg4);--ctl-bd:var(--bd);--ui-act:var(--accent);--ui-act-rgb:var(--accent-rgb);--ui-act-fg:var(--on-accent);
-}
-[data-fx-theme="carbon"] .hdr,[data-fx-theme="carbon"] #navSidebar{
-  --t0:#F4F4F4;--t1:#E0E4E9;--t2:#C6CBD0;--t3:#AEB4BB;
-  --bg2:#212121;--bg3:#2C2C2C;--bg4:#333333;--bg5:#474747;
-  --bd:#393939;--bd2:#393939;
-}
 /* Midnight Terminal */
 :root[data-fx-theme="midnight"]{
   /* Bias-Farben aufgehellt, Farbton beibehalten - gemessen >=4,6:1 gegen --bg2 */
@@ -1388,109 +1211,6 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   --bg2:#131D31;--bg3:#1B2740;--bg4:#22304C;--bg5:#2C3D5E;
   --bd:#2A3A5C;--bd2:#2A3A5C;
 }
-/* Graphite Dark */
-:root[data-fx-theme="graphite"]{
-  /* Bias-Farben aufgehellt, Farbton beibehalten - gemessen >=4,6:1 gegen --bg2 */
-  --bias-bull:#448EEF;--bias-bear:#EC636B;--bias-neu:#798FBE;
-  /* Kerzenfarben gedreht: die fallende Kerze ist im hellen Design fast
-     schwarz (#2B3040) und waere hier unsichtbar - die ROLLE bleibt (Blau
-     steigend, neutraler Gegenpol fallend), nur die Helligkeit kippt.
-     ⚠ Das Blau ist #7BA4F8 und nicht #5B86F5, weil check/kerzen.js genau
-     das gefunden hat: gegen nords helle Kartenflaeche (#3B4252) kam
-     #5B86F5 nur auf 2,96:1.
-     ⚠ UND ES STEHT IN JEDEM THEME-BLOCK EINZELN, nicht als eine
-     Sammelregel dahinter. Der erste Versuch war genau so eine Sammelregel
-     - dadurch hatte "solar" ZWEI :root-Bloecke, und check/theme.js las den
-     zweiten: ein halbes Theme, 22 angeblich fehlende Tokens. Steht als
-     Warnung schon in check/README.md. */
-  --cndl-up:#7BA4F8;--cndl-dn:#E4E9F3;
-  --chrome-bg:#0F1113;--chrome-bd:#2A2D33;--chrome-line:#3A3E46;--chrome-quick:#1A1D21;
-  --bg0:#17181B;--bg1:#1D1F23;--bg2:#232529;--bg3:#1F2126;--bg4:#282B31;--bg5:#31353C;--bg6:#41454E;
-  --bd:rgba(255,255,255,.15);--bd2:rgba(255,255,255,.28);
-  --t0:#F2F3F5;--t1:#DBDEE3;--t2:#C0C4CB;--t3:#A7ADB6;--t3-rgb:167,173,182;
-  --green:#82B8F5;--red:#F58A86;--amber:#A6ADB8;--due:#F0913A;--cotl:#FFCB52;--due-rgb:240,145,58;--star:#A6ADB8;--blue:#82B8F5;--purple:#BBA4E8;--success:#63C68C;--live:#FA9691;
-  --green-rgb:130,184,245;--red-rgb:245,138,134;--amber-rgb:166,173,184;--star-rgb:166,173,184;--blue-rgb:130,184,245;--purple-rgb:187,164,232;--success-rgb:99,198,140;
-  --accent:#A8CBDC;--accent-rgb:168,203,220;
-  --a-infl:#DFB25A;--a-rate:#AF9AE0;--a-lab:#57C0AE;--a-grow:#E5975A;--a-cot:#78B8D2;
-  --on-accent:#101A20;
-  --green-lt:#82B8F5;--red-dk:#F58A86;
-  --card:#1D1F23;
-  --rail-bg:var(--chrome-bg);--rail-edge:var(--chrome-bd);--rail-on:var(--chrome-line);--ctl-bg:var(--bg4);--ctl-bd:var(--bd);--ui-act:var(--accent);--ui-act-rgb:var(--accent-rgb);--ui-act-fg:var(--on-accent);
-}
-[data-fx-theme="graphite"] .hdr,[data-fx-theme="graphite"] #navSidebar{
-  --t0:#F2F3F5;--t1:#DBDEE3;--t2:#C0C4CB;--t3:#A7ADB6;
-  --bg2:#1F2126;--bg3:#282B31;--bg4:#31353C;--bg5:#41454E;
-  --bd:#3A3E46;--bd2:#3A3E46;
-}
-/* Nordic Dark */
-:root[data-fx-theme="nord"]{
-  /* Bias-Farben aufgehellt, Farbton beibehalten - gemessen >=4,6:1 gegen --bg2 */
-  --bias-bull:#85B4F1;--bias-bear:#F09CA1;--bias-neu:#A2B2D2;
-  /* Kerzenfarben gedreht: die fallende Kerze ist im hellen Design fast
-     schwarz (#2B3040) und waere hier unsichtbar - die ROLLE bleibt (Blau
-     steigend, neutraler Gegenpol fallend), nur die Helligkeit kippt.
-     ⚠ Das Blau ist #7BA4F8 und nicht #5B86F5, weil check/kerzen.js genau
-     das gefunden hat: gegen nords helle Kartenflaeche (#3B4252) kam
-     #5B86F5 nur auf 2,96:1.
-     ⚠ UND ES STEHT IN JEDEM THEME-BLOCK EINZELN, nicht als eine
-     Sammelregel dahinter. Der erste Versuch war genau so eine Sammelregel
-     - dadurch hatte "solar" ZWEI :root-Bloecke, und check/theme.js las den
-     zweiten: ein halbes Theme, 22 angeblich fehlende Tokens. Steht als
-     Warnung schon in check/README.md. */
-  --cndl-up:#7BA4F8;--cndl-dn:#E4E9F3;
-  --chrome-bg:#242933;--chrome-bd:#3B4252;--chrome-line:#4C566A;--chrome-quick:#2B323E;
-  --bg0:#2E3440;--bg1:#333B48;--bg2:#3B4252;--bg3:#374050;--bg4:#3E4756;--bg5:#454F60;--bg6:#4F5A6E;
-  --bd:rgba(216,222,233,.20);--bd2:rgba(216,222,233,.34);
-  --t0:#ECEFF4;--t1:#E0E6EF;--t2:#CFD6E1;--t3:#BDC7D6;--t3-rgb:189,199,214;
-  --green:#9EC1DE;--red:#EE9AA0;--amber:#B4BFCE;--due:#F0913A;--cotl:#FFCB52;--due-rgb:240,145,58;--star:#B4BFCE;--blue:#9EC1DE;--purple:#D2AECB;--success:#8FD4A8;--live:#F2A8AC;
-  --green-rgb:158,193,222;--red-rgb:238,154,160;--amber-rgb:180,191,206;--star-rgb:180,191,206;--blue-rgb:158,193,222;--purple-rgb:210,174,203;--success-rgb:143,212,168;
-  --accent:#A6D3E0;--accent-rgb:166,211,224;
-  --a-infl:#E6C87F;--a-rate:#C7ACDD;--a-lab:#83D8C6;--a-grow:#E7A67F;--a-cot:#A3CCE0;
-  --on-accent:#14202A;
-  --green-lt:#9EC1DE;--red-dk:#EE9AA0;
-  --card:#333B48;
-  --rail-bg:var(--chrome-bg);--rail-edge:var(--chrome-bd);--rail-on:var(--chrome-line);--ctl-bg:var(--bg4);--ctl-bd:var(--bd);--ui-act:var(--accent);--ui-act-rgb:var(--accent-rgb);--ui-act-fg:var(--on-accent);
-}
-[data-fx-theme="nord"] .hdr,[data-fx-theme="nord"] #navSidebar{
-  --t0:#ECEFF4;--t1:#E0E6EF;--t2:#CFD6E1;--t3:#BDC7D6;
-  --bg2:#374050;--bg3:#3E4756;--bg4:#454F60;--bg5:#4F5A6E;
-  --bd:#4C566A;--bd2:#4C566A;
-}
-/* Solarized Dark */
-:root[data-fx-theme="solar"]{
-  /* Bias-Farben aufgehellt, Farbton beibehalten - gemessen >=4,6:1 gegen --bg2 */
-  --bias-bull:#5C9CEF;--bias-bear:#ED7A81;--bias-neu:#899DC6;
-  /* Kerzenfarben gedreht: die fallende Kerze ist im hellen Design fast
-     schwarz (#2B3040) und waere hier unsichtbar - die ROLLE bleibt (Blau
-     steigend, neutraler Gegenpol fallend), nur die Helligkeit kippt.
-     ⚠ Das Blau ist #7BA4F8 und nicht #5B86F5, weil check/kerzen.js genau
-     das gefunden hat: gegen nords helle Kartenflaeche (#3B4252) kam
-     #5B86F5 nur auf 2,96:1.
-     ⚠ UND ES STEHT IN JEDEM THEME-BLOCK EINZELN, nicht als eine
-     Sammelregel dahinter. Der erste Versuch war genau so eine Sammelregel
-     - dadurch hatte "solar" ZWEI :root-Bloecke, und check/theme.js las den
-     zweiten: ein halbes Theme, 22 angeblich fehlende Tokens. Steht als
-     Warnung schon in check/README.md. */
-  --cndl-up:#7BA4F8;--cndl-dn:#E4E9F3;
-  --chrome-bg:#001F27;--chrome-bd:#073642;--chrome-line:#0F4A57;--chrome-quick:#01303B;
-  --bg0:#002B36;--bg1:#03313D;--bg2:#073642;--bg3:#053742;--bg4:#0A3E4A;--bg5:#0F4753;--bg6:#175665;
-  --bd:rgba(147,161,161,.24);--bd2:rgba(147,161,161,.40);
-  --t0:#EEE8D5;--t1:#DCD6C4;--t2:#BEC7C4;--t3:#ADB7B4;--t3-rgb:173,183,180;
-  --green:#7CBCEC;--red:#F58C86;--amber:#A6B2B0;--due:#F0913A;--cotl:#FFCB52;--due-rgb:240,145,58;--star:#A6B2B0;--blue:#7CBCEC;--purple:#CBA6E4;--success:#78CE8A;--live:#FA968E;
-  --green-rgb:124,188,236;--red-rgb:245,140,134;--amber-rgb:166,178,176;--star-rgb:166,178,176;--blue-rgb:124,188,236;--purple-rgb:203,166,228;--success-rgb:120,206,138;
-  --accent:#6FC7D4;--accent-rgb:111,199,212;
-  --a-infl:#E0BC4A;--a-rate:#B79BE6;--a-lab:#55CBB8;--a-grow:#EA9F52;--a-cot:#5FC0D8;
-  --on-accent:#02222A;
-  --green-lt:#7CBCEC;--red-dk:#F58C86;
-  --card:#03313D;
-  --rail-bg:var(--chrome-bg);--rail-edge:var(--chrome-bd);--rail-on:var(--chrome-line);--ctl-bg:var(--bg4);--ctl-bd:var(--bd);--ui-act:var(--accent);--ui-act-rgb:var(--accent-rgb);--ui-act-fg:var(--on-accent);
-}
-[data-fx-theme="solar"] .hdr,[data-fx-theme="solar"] #navSidebar{
-  --t0:#EEE8D5;--t1:#DCD6C4;--t2:#BEC7C4;--t3:#ADB7B4;
-  --bg2:#053742;--bg3:#0A3E4A;--bg4:#0F4753;--bg5:#175665;
-  --bd:#0F4A57;--bd2:#0F4A57;
-}
-
 /* ══ ENDE DESIGN-VORLAGEN ══════════════════════════════════════════════ */
 .hdr,#navSidebar{
   --t0:#f4f5f7;--t1:#d9dce1;--t2:#a2a9b3;--t3:#7a818b;
@@ -1637,6 +1357,16 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
    und kollidiert deshalb nicht mit den Bias-Farben im Inhalt. */
 #navSidebar .ab.np-asset.on{background:var(--bg3);border-left-color:var(--accent);color:var(--t0);font-weight:800}
 #navSidebar .ab.np-asset.on .np-glyph{color:var(--accent)}
+/* Ausgewaehltes Asset in Bias-Farbe, Name UND Score (Nutzer-Wunsch
+   2026-10-24) - davor steht dort das farbige, wehende Symbol statt der
+   Glyphe (renderSidebar). Eigene Werte statt --bias-*: die sind fuer helle
+   Karten gebaut und kaemen auf der dunklen Leiste auf ~2:1. GEMESSEN gegen
+   die markierte Zeile (hell #3E444E / Midnight #1B2740): bull 4,57 / 6,94,
+   bear 4,66 / 7,07, neutral 4,59 / 6,97. */
+#navSidebar{--sb-bull:#85B4F1;--sb-bear:#F09CA1;--sb-neu:#A2B2D2}
+#navSidebar .ab.np-asset.on .an[data-bv="bull"],#navSidebar .ab.np-asset.on .an[data-bv="bull"]~.np-score{color:var(--sb-bull)}
+#navSidebar .ab.np-asset.on .an[data-bv="bear"],#navSidebar .ab.np-asset.on .an[data-bv="bear"]~.np-score{color:var(--sb-bear)}
+#navSidebar .ab.np-asset.on .an[data-bv="neu"],#navSidebar .ab.np-asset.on .an[data-bv="neu"]~.np-score{color:var(--sb-neu)}
 #navSidebar .np-mv{flex:none;width:17px;height:17px;display:flex;align-items:center;
   justify-content:center;padding:0;border:1px solid var(--bd2);border-radius:3px;
   background:var(--bg3);color:var(--t1);font-size:var(--fs-2xs);line-height:1;cursor:pointer}
@@ -2223,7 +1953,7 @@ body.compact-view .rub-summary{display:block}
 .mk-chips{display:flex;flex-wrap:wrap;gap:4px}
 .mk-chart{min-width:0;width:100%}
 .mk-spuren{display:flex;flex-direction:column}
-.mk-spur{border-top:1px solid var(--bd);padding-top:8px;margin-top:4px}
+.mk-spur{border-top:1px solid var(--bd);padding-top:5px;margin-top:3px}
 .mk-spur:first-child{border-top:0;margin-top:0;padding-top:0}
 .mk-spur-kopf{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding:0 0 2px}
 .mk-spur-name{font-size:var(--fs-sm);font-weight:700;color:var(--t0)}
@@ -2242,7 +1972,11 @@ body.compact-view .rub-summary{display:block}
 .mk-tools-g{display:flex;flex-wrap:wrap;gap:4px}
 .mk-cc{display:inline-flex;align-items:center;gap:5px}
 .mk-cc-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:0 0 auto}
-.mk-spur-cmp,.mk-spur-stat{display:flex;flex-wrap:wrap;gap:3px 14px;padding:1px 0 2px}
+.mk-spur-cmp,.mk-spur-stat{display:flex;flex-wrap:wrap;gap:2px 14px;padding:0 0 1px}
+/* Bezugslinie im Spurkopf (2026-10-25): im Chart stiess ihre Beschriftung mit
+   den Werten ueber den Balken zusammen. Ziel blau wie die Linie, sonst grau. */
+.mk-ref{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-xs);font-weight:700;color:var(--t2);white-space:nowrap}
+.mk-ref-ziel{color:var(--blue)}
 .mk-st{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;white-space:nowrap}
 .mk-st i{font-style:normal;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)}
 .mk-st b{font-weight:700;color:var(--t1)}
@@ -2257,6 +1991,10 @@ body.compact-view .rub-summary{display:block}
 @media (max-width:520px){
   .mk-kvs{grid-template-columns:repeat(3,auto);margin-left:0;justify-content:start;row-gap:6px}
   .mk-kv{padding:0 10px}.mk-kv:nth-child(3n+1){border-left:0;padding-left:0}
+  /* Statistik am Handy einzeilig zum Wischen statt drei Zeilen (2026-10-25,
+     "kompakter"): gemessen 179 px je Spur, davon ~45 px Statistik. */
+  .mk-spur-stat{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:none;scrollbar-width:none}
+  .mk-spur-stat::-webkit-scrollbar{display:none}
   /* Zeitraumleiste einzeilig (vorher "Max" allein in Zeile 2), aber nie breiter
      als die Karte: bei 360 px ragte sie mit nowrap 18 px heraus (gemessen).
      Volle Breite, sonst blieben 1Y/3Y/5Y 23 px schmal (zu klein zum Tippen). */
@@ -4825,7 +4563,20 @@ body.dense-mode .cot-card,body.dense-mode .rub-card{margin-bottom:10px}
    #mCloud .modal ist schmaler als der Standard-720px-Modal-Rahmen -
    ID-Selektor gewinnt bewusst gegen die 720px-Regel und deren
    Desktop-Media-Query-Variante, statt beide anzufassen. */
-#mCloud .modal{max-width:min(420px,94vw)}
+/* Seit 2026-10-24 breit und zweispaltig (Nutzer: "die settings sind aktuell
+   so extrem laenglich mach das breiter und ordne es mehr nebeneinander an
+   also eine Gruppe links untereinander und die anderen dann rechts davon
+   oder vlt noch eine dadrunter"): links Appearance + Animation, rechts
+   Data/Security/Layout/Notifications, darunter Cloud Sync ueber die volle
+   Breite mit den vier Feldern im 2x2-Raster. Unter 700 px eine Spalte. */
+#mCloud .modal{max-width:min(880px,94vw)}
+.set-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:start}
+.set-cols>.set-col{min-width:0}
+.set-cloud-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+@media(max-width:700px){.set-cols,.set-cloud-grid{grid-template-columns:1fr}}
+/* Gemessen 390 px: der Density-Umschalter liess seiner Beschriftung ~60 px -
+   die Zeile bricht deshalb um, statt den Text zu quetschen. */
+.set-row:has(>.seg3){flex-wrap:wrap}
 .set-sec{font-size:var(--fs-2xs);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t3);margin:16px 0 6px;padding:0 2px}
 .set-sec:first-child{margin-top:2px}
 .set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;margin-bottom:6px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs)}
@@ -5437,9 +5188,19 @@ body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
 :root{--flame:#E8590C;--flame-rgb:232,89,12}
 .tj-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:14px 16px 16px;margin-bottom:14px;min-width:0}
 .tj-kh{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 14px;margin-bottom:12px}
-.tj-kt{font-size:var(--fs-kt);font-weight:700;color:var(--t0)}
+.tj-kt{font-size:var(--fs-kt);font-weight:700;color:var(--t0);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .tj-kh-r{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--fs-sm);color:var(--t2);font-variant-numeric:tabular-nums}
 .tj-kh-r i{color:var(--t3)}
+/* ⓘ rechts oben auf Titelhoehe (Dauerregeln 2026-09-25/-26, check/hierarchie.js +
+   check/infoi.js). Absolut statt in der Zeile: am Handy bricht die Kennzahlen-
+   Gruppe rechts um, ein ⓘ in der Zeile wanderte mit in die zweite Zeile.
+   right 10.5px = 16px Kartenrand - 5.5px (Kreis 0,6 x 17px mittig im 21px-Knopf,
+   wie margin-right:-5.5px der anderen Karten). line-height 21px = Knopfhoehe:
+   Titelmitte und Knopfmitte liegen beide 10.5px unter der Oberkante. */
+.tj-card{position:relative}
+.tj-kt{line-height:21px}
+.tj-kh:has(.info-b){padding-right:24px}
+.tj-kt>.info-b{position:absolute;top:14px;right:10.5px}
 .tj-leiste{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .tj-nav{display:flex;align-items:center;gap:6px}
 .tj-navb{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center}
@@ -5466,7 +5227,6 @@ body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
 .tj-flamme.an .tj-kv{color:var(--flame)}
 @keyframes tjFlacker{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.08) rotate(-3deg)}}
 body.no-ui-anim .tj-flamme.an svg{animation:none}
-@media (prefers-reduced-motion:reduce){.tj-flamme.an svg{animation:none}}
 /* Equity-Kurve */
 .tj-eq-box{min-height:176px}
 .tj-svg{display:block}
@@ -5561,6 +5321,14 @@ body.no-ui-anim .tj-flamme.an svg{animation:none}
 .tj-hd.zieh{pointer-events:auto;cursor:ns-resize;touch-action:none}
 .tj-hd.zieh::after{content:'';position:absolute;inset:-8px -6px}
 .tj-hd.aktiv{box-shadow:0 0 0 3px rgba(var(--ui-act-rgb),.28)}
+/* Zeitspanne des Werkzeugs: Kanten ziehen = Breite, Mitte ziehen = verschieben */
+.tj-wbox{position:absolute;pointer-events:auto;cursor:grab;touch-action:none;border-radius:2px}
+.tj-wbox.aktiv{cursor:grabbing;outline:1px dashed rgba(var(--ui-act-rgb),.55)}
+.tj-wd{position:absolute;width:0;pointer-events:auto;cursor:ew-resize;touch-action:none}
+.tj-wd::before{content:'';position:absolute;left:-2px;top:0;bottom:0;width:4px;border-radius:2px;background:var(--ui-act);opacity:.75}
+.tj-wd::after{content:'';position:absolute;left:-9px;right:-9px;top:-4px;bottom:-4px}
+.tj-wd.aktiv::before{opacity:1;width:6px;left:-3px}
+@media (hover:hover){.tj-wd:hover::before{opacity:1}}
 .tj-hd-griff{width:6px;height:10px;background:repeating-linear-gradient(to bottom,currentColor 0 1px,transparent 1px 3px);opacity:.75}
 .tj-l-entry,.tj-l-sl,.tj-l-tp{stroke-width:1.5}
 .tj-l-entry{stroke:var(--ui-act)}
@@ -5586,16 +5354,16 @@ body.no-ui-anim .tj-flamme.an svg{animation:none}
 .tj-f2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:10px}
 .tj-f{margin-bottom:10px;min-width:0}
 .tj-lbl{font-size:var(--fs-xs);font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
-.tj-ed .finp:not(textarea){height:40px}
-.tj-ed textarea.finp{min-height:72px;resize:vertical}
+.tj-ed .m-inp,.tjc .m-inp{margin-bottom:0}
+.tj-ed textarea.m-inp{min-height:72px;resize:vertical}
 .tj-seg{display:grid;grid-template-columns:1fr 1fr;height:40px;border:1px solid var(--bd2);border-radius:var(--rs);overflow:hidden}
 .tj-seg-b{border:0;background:var(--bg3);color:var(--t2);font-family:var(--ff-num);font-size:var(--fs-base);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px}
 .tj-seg-b+.tj-seg-b{border-left:1px solid var(--bd2)}
 .tj-seg-b::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--bias-bull)}
 .tj-seg-b[data-dir="short"]::before{background:var(--bias-bear)}
+.tj-st-b::before{display:none}
 .tj-seg-b.on{background:var(--ui-act);color:var(--ui-act-fg)}
-.tj-exit{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px}
-.tj-exit .btn{height:40px}
+.tj-exit{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center}
 .tj-hit-tp{color:var(--bias-bull)}
 .tj-hit-sl{color:var(--bias-bear)}
 .tj-err{color:var(--bias-bear);font-size:var(--fs-sm);font-weight:600;margin-bottom:8px}
@@ -5634,6 +5402,43 @@ body.no-ui-anim .tj-flamme.an svg{animation:none}
 .tjv-ch-kopf i{font-size:var(--fs-sm);color:var(--t3)}
 .tjv-notiz{margin-top:12px;padding:10px 12px;border-radius:var(--rs);background:rgba(var(--t3-rgb),.06)}
 .tjv-notiz i{display:block;margin-top:4px;white-space:pre-wrap;color:var(--t1);font-size:var(--fs-base)}
+/* Cloud-Stand der Trades (rechts in der Monatsleiste) */
+.tj-cloud{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:var(--fs-sm);color:var(--t2)}
+.tj-cloud .ic{flex:none}
+.tj-cloud.ok .ic{color:var(--success)}
+.tj-cloud.warte{color:var(--t3)}
+.tj-cloud.fehler{color:var(--bias-bear);font-weight:600}
+.tj-cloud.lokal{color:var(--t2)}
+/* Offene Trades (oben auf der Seite) */
+.tj-anz{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;margin-left:6px;border-radius:999px;background:var(--ui-act);color:var(--ui-act-fg);font-size:var(--fs-xs);font-weight:700;vertical-align:2px}
+.tj-offen.leer .tj-kh{margin-bottom:6px}
+.tjo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr));gap:10px}
+.tjo{border:1px solid var(--bd);border-left:4px solid var(--bias-neu);border-radius:10px;background:var(--card);padding:10px 12px;display:flex;flex-direction:column;gap:4px;cursor:pointer;min-width:0;font-variant-numeric:tabular-nums;transition:border-color .15s}
+.tjo.plus{border-left-color:var(--bias-bull);background:color-mix(in srgb,var(--bias-bull) 5%,var(--card))}
+.tjo.minus{border-left-color:var(--bias-bear);background:color-mix(in srgb,var(--bias-bear) 5%,var(--card))}
+@media (hover:hover){.tjo:hover{border-top-color:rgba(var(--blue-rgb),.45);border-right-color:rgba(var(--blue-rgb),.45);border-bottom-color:rgba(var(--blue-rgb),.45)}}
+.tjo:focus-visible{outline:2px solid var(--ui-act);outline-offset:1px}
+.tjo-kopf{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tjo-a{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;font-size:var(--fs-md);color:var(--t0)}
+.tjo-r{font-size:var(--fs-lg);font-weight:800;font-family:var(--ff-num);white-space:nowrap}
+.tjo-z{font-size:var(--fs-sm);color:var(--t2)}
+.tjo-z b{color:var(--t0)}
+.tjo-z i{color:var(--t3)}
+.tjo-fuss{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px;font-size:var(--fs-xs);color:var(--t3)}
+.tjo-btn{height:28px}
+.tjp.klein{padding:22px 10px 24px;margin:0}
+.tjp-mk.k-now .tjp-pkt{background:var(--t0)}
+/* Editor: Schluss-Block, Abschluss-Fenster */
+.tj-zu{border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px 2px;margin-bottom:10px;background:rgba(var(--t3-rgb),.04)}
+.tj-zu[hidden]{display:none}
+.tj-zu-kopf{font-size:var(--fs-xs);font-weight:700;color:var(--t1);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.tj-pnl{font-size:var(--fs-md);font-weight:700}
+.tj-pnl::placeholder{font-weight:400}
+.tjc-info{font-size:var(--fs-sm);color:var(--t2);margin-bottom:12px;padding:8px 10px;border-radius:var(--rs);background:rgba(var(--t3-rgb),.06);font-variant-numeric:tabular-nums}
+.tjc-info b{color:var(--t0)}
+.tjc-exit{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:6px;align-items:center}
+.tjc textarea.m-inp{min-height:56px;resize:vertical}
+.tjc .tj-rr{margin:0 0 4px}
 /* Tages-Fenster */
 .tjd-sum{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-size:var(--fs-base);color:var(--t2)}
 .tjd-sum>b{font-size:var(--fs-lg);font-family:var(--ff-num)}
@@ -5679,6 +5484,7 @@ body.no-ui-anim .tj-flamme.an svg{animation:none}
   .tjv-asset{font-size:var(--fs-lg)}
   .tjv-pnl{font-size:var(--fs-xl)}
   .tj-card{padding:12px 12px 14px}
+  .tj-kt>.info-b{top:12px;right:6.5px}   /* ⓘ folgt dem schmaleren Kartenrand (12 px) */
 }
 .wl-row.wl-click{cursor:pointer}
 @media(hover:hover){.wl-row.wl-click:hover .wl-name{text-decoration:underline;color:var(--t0)}}
@@ -6794,7 +6600,7 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
    ⚠ Der Dunkel-Block steht bewusst OHNE ":root" davor - sonst haelt ihn die
    statische Pflicht-Token-Pruefung (theme.js 4) fuer ein Vorlagen-Regelwerk. */
 :root{--tf1:#228a8f;--tf2:#7b3702;--tf3:#8f63b6;--tf4:#446401;--tf5:#802c6d;--tf6:#997c3c}
-[data-fx-theme="carbon"],[data-fx-theme="midnight"],[data-fx-theme="graphite"],[data-fx-theme="nord"],[data-fx-theme="solar"]{
+[data-fx-theme="midnight"]{
   --tf1:#6ddcc0;--tf2:#df9134;--tf3:#a37fd6;--tf4:#5fae63;--tf5:#f4adfa;--tf6:#efe2c6}
 /* Legende = Auswahl: jeder Name ein Knopf in S-Hoehe (28 px), farbiger Punkt
    = farbige Linie, Rand in Aktiv-Navy = in der eigenen Wahl. Kein gefuellter
@@ -6898,11 +6704,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-624 - Journal im TradeZella-Stil: Kennzahl-Kacheln, Equity-Kurve, Wochensumme, Kurs-Chart mit Positions-Werkzeug (SL/TP ziehen)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-630 - Makro-Analyse: Balken wie in den Mini-Charts, alle Werte in Beat-/Miss-/Neutral-Farbe darueber, Forecast-Linie; Surprise-Zeile und Hike/Cut-Striche entfernt; Spur ~115 px statt ~200."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-624</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-630</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -7058,6 +6864,24 @@ window.fxLogoSvg=function(art){
     <div class="m-btns"><button class="btn" style="color:var(--bias-bear);border-color:rgba(var(--red-rgb),.35)" onclick="tjLoeschen()">Delete</button><button class="btn" onclick="tjBearbeiten()">Edit</button><button class="btn g" onclick="closeM('mTradeView')">Done</button></div>
   </div>
 </div>
+<!-- MODAL: Offenen Trade abschliessen (Journal) - in MODAL_GUARD_TABELLE (mTradeClose) -->
+<div class="ov" id="mTradeClose" style="display:none">
+  <div class="modal tjc" style="max-width:480px">
+    <h3 id="tjcTitle">Close trade</h3>
+    <div id="tjcErr" class="tj-err" hidden></div>
+    <div id="tjcInfo" class="tjc-info"></div>
+    <div class="tj-f"><div class="tj-lbl">Exit</div>
+      <div class="tjc-exit"><input class="m-inp" id="tjcExit" type="number" step="any" inputmode="decimal" placeholder="Exit price" oninput="tjZuErgebnis()"><button type="button" class="btn tj-hit-tp" id="tjcHitTp" onclick="tjZuExit('tp')" title="Exit = take profit">Hit TP</button><button type="button" class="btn tj-hit-sl" id="tjcHitSl" onclick="tjZuExit('sl')" title="Exit = stop loss">Hit SL</button><button type="button" class="btn" id="tjcNow" onclick="tjZuExit('now')" title="Exit = latest price from the feed">Now</button></div></div>
+    <div class="tj-f"><div class="tj-lbl">P/L (profit / loss)</div><input class="m-inp tj-pnl" id="tjcPnl" type="number" step="any" inputmode="decimal" placeholder="e.g. 250 or -120" oninput="tjZuErgebnis()"></div>
+    <div class="tj-f2">
+      <div><div class="tj-lbl">Close date</div><input class="m-inp" id="tjcDate" type="date"></div>
+      <div><div class="tj-lbl">Close time</div><input class="m-inp" id="tjcTime" type="time"></div>
+    </div>
+    <div class="tj-f"><div class="tj-lbl">Notes</div><textarea class="m-inp" id="tjcNotes" rows="2" placeholder="What went well, what to change"></textarea></div>
+    <div id="tjcRR" class="tj-rr"></div>
+    <div class="m-btns"><button class="btn" onclick="closeMGuarded('mTradeClose')">Cancel</button><button class="btn" onclick="tjZuBearbeiten()">Edit trade</button><button class="btn g" onclick="tjZuSpeichern()">Close trade</button></div>
+  </div>
+</div>
 <!-- MODAL: Trades eines Tages (Journal, kompakte Zellen: Handy/Wochenende) -->
 <div class="ov" id="mTradeDay" style="display:none">
   <div class="modal" style="max-width:440px">
@@ -7076,32 +6900,42 @@ window.fxLogoSvg=function(art){
     <div id="tjErr" class="tj-err" hidden></div>
     <div class="tj-ed-grid">
       <div class="tj-ed-chart">
-        <div class="tj-ed-ch-kopf"><b id="tjChTitel">Price chart</b><i>daily · tap to place · drag Entry, SL and TP</i></div>
+        <div class="tj-ed-ch-kopf"><b id="tjChTitel">Price chart</b><i>daily · tap to place · drag Entry, SL, TP and the edges</i></div>
         <div id="tjChart" class="tj-chart"></div>
         <div id="tjRR" class="tj-rr"></div>
       </div>
       <div class="tj-ed-form">
+        <div class="tj-f"><div class="tj-lbl">Status</div>
+          <div class="tj-seg" role="group" aria-label="Status"><button type="button" class="tj-seg-b tj-st-b" data-st="open" aria-pressed="true" onclick="tjStatus('open')">Open</button><button type="button" class="tj-seg-b tj-st-b" data-st="closed" aria-pressed="false" onclick="tjStatus('closed')">Closed</button></div>
+          <input type="hidden" id="tjSt" value="open"></div>
         <div class="tj-f2">
-          <div><div class="tj-lbl">Date</div><input class="finp" id="tjDate" type="date" onchange="tjEdEingabe(true)"></div>
-          <div><div class="tj-lbl">Time</div><input class="finp" id="tjTime" type="time"></div>
+          <div><div class="tj-lbl">Open date</div><input class="m-inp" id="tjDate" type="date" onchange="tjEdEingabe(true)"></div>
+          <div><div class="tj-lbl">Open time</div><input class="m-inp" id="tjTime" type="time"></div>
         </div>
-        <div class="tj-f"><div class="tj-lbl">Asset</div><input class="finp" id="tjAsset" list="tjAssetList" placeholder="e.g. EUR/USD, GOLD, NAS100" autocomplete="off" oninput="tjEdEingabe(true)"><datalist id="tjAssetList"></datalist></div>
+        <div class="tj-f"><div class="tj-lbl">Asset</div><input class="m-inp" id="tjAsset" list="tjAssetList" placeholder="e.g. EUR/USD, GOLD, NAS100" autocomplete="off" oninput="tjEdEingabe(true)"><datalist id="tjAssetList"></datalist></div>
         <div class="tj-f"><div class="tj-lbl">Direction</div>
           <div class="tj-seg" role="group" aria-label="Direction"><button type="button" class="tj-seg-b" data-dir="long" aria-pressed="true" onclick="tjRichtung('long')">Long</button><button type="button" class="tj-seg-b" data-dir="short" aria-pressed="false" onclick="tjRichtung('short')">Short</button></div>
-          <input type="hidden" id="tjDir" value="long"></div>
+          <input type="hidden" id="tjDir" value="long"><input type="hidden" id="tjW0"><input type="hidden" id="tjW1"></div>
         <div class="tj-f2">
-          <div><div class="tj-lbl">Entry</div><input class="finp" id="tjEntry" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08500" oninput="tjEdEingabe()"></div>
-          <div><div class="tj-lbl">Size</div><input class="finp" id="tjSize" placeholder="e.g. 1.0 lot"></div>
+          <div><div class="tj-lbl">Entry</div><input class="m-inp" id="tjEntry" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08500" oninput="tjEdEingabe()"></div>
+          <div><div class="tj-lbl">Size</div><input class="m-inp" id="tjSize" placeholder="e.g. 1.0 lot"></div>
         </div>
         <div class="tj-f2">
-          <div><div class="tj-lbl">Stop loss</div><input class="finp" id="tjSl" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08200" oninput="tjEdEingabe()"></div>
-          <div><div class="tj-lbl">Take profit</div><input class="finp" id="tjTp" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.09500" oninput="tjEdEingabe()"></div>
+          <div><div class="tj-lbl">Stop loss</div><input class="m-inp" id="tjSl" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.08200" oninput="tjEdEingabe()"></div>
+          <div><div class="tj-lbl">Take profit</div><input class="m-inp" id="tjTp" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.09500" oninput="tjEdEingabe()"></div>
         </div>
-        <div class="tj-f"><div class="tj-lbl">Exit</div>
-          <div class="tj-exit"><input class="finp" id="tjExit" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.09100" oninput="tjEdEingabe()"><button type="button" class="btn tj-hit-tp" onclick="tjExitAuf('tp')" title="Exit = take profit">Hit TP</button><button type="button" class="btn tj-hit-sl" onclick="tjExitAuf('sl')" title="Exit = stop loss">Hit SL</button></div></div>
-        <div class="tj-f"><div class="tj-lbl">P/L (profit / loss)</div><input class="finp" id="tjPnl" type="number" step="any" inputmode="decimal" placeholder="e.g. 250 or -120"></div>
-        <div class="tj-f"><div class="tj-lbl">Setup</div><input class="finp" id="tjSetup" placeholder="e.g. Breakout, COT reversal, NFP fade"></div>
-        <div class="tj-f"><div class="tj-lbl">Notes</div><textarea class="finp" id="tjNotes" rows="3" placeholder="What went well, what to change"></textarea></div>
+        <div id="tjZuBlock" class="tj-zu" hidden>
+          <div class="tj-zu-kopf">Closed</div>
+          <div class="tj-f2">
+            <div><div class="tj-lbl">Close date</div><input class="m-inp" id="tjCDate" type="date"></div>
+            <div><div class="tj-lbl">Close time</div><input class="m-inp" id="tjCTime" type="time"></div>
+          </div>
+          <div class="tj-f"><div class="tj-lbl">Exit</div>
+            <div class="tj-exit"><input class="m-inp" id="tjExit" type="number" step="any" inputmode="decimal" placeholder="e.g. 1.09100" oninput="tjEdEingabe()"><button type="button" class="btn tj-hit-tp" onclick="tjExitAuf('tp')" title="Exit = take profit">Hit TP</button><button type="button" class="btn tj-hit-sl" onclick="tjExitAuf('sl')" title="Exit = stop loss">Hit SL</button></div></div>
+          <div class="tj-f"><div class="tj-lbl">P/L (profit / loss)</div><input class="m-inp tj-pnl" id="tjPnl" type="number" step="any" inputmode="decimal" placeholder="e.g. 250 or -120"></div>
+        </div>
+        <div class="tj-f"><div class="tj-lbl">Setup</div><input class="m-inp" id="tjSetup" placeholder="e.g. Breakout, COT reversal, NFP fade"></div>
+        <div class="tj-f"><div class="tj-lbl">Notes</div><textarea class="m-inp" id="tjNotes" rows="3" placeholder="What went well, what to change"></textarea></div>
       </div>
     </div>
     <div class="m-btns"><button class="btn" onclick="closeMGuarded('mTrade')">Cancel</button><button class="btn g" onclick="tjFormSpeichern()">Save trade</button></div>
@@ -7545,73 +7379,88 @@ window.fxLogoSvg=function(art){
          ("Data"), Nutzer-Wunsch per /goal ("pack data in die
          Einstellungen") - jetzt hier als erste Zeile, gleiches .set-row-
          Muster wie jede andere Einstellungs-Zeile in diesem Modal. -->
-    <div class="set-sec">Data</div>
-    <div class="set-row" style="flex-wrap:wrap">
-      <span class="set-row-txt">Export, import &amp; local backups</span>
-      <div style="display:flex;gap:6px">
-        <button class="btn" onclick="exportData()">Export</button>
-        <button class="btn" onclick="document.getElementById('impFile').click()">Import</button>
-        <button class="btn" onclick="openBackupM()">Backups</button>
-        <button class="btn" onclick="openTrashM()"><span class="h-ic" data-ic="trash"></span>Trash</button>
+    <div class="set-cols">
+      <div class="set-col">
+        <div class="set-sec">Appearance</div>
+        <!-- Nutzer-Wunsch 2026-10-24: "einen Schalter fuer dark und light mode
+             ... light mode soll terminal pro sein und der darkmode soll Midnight
+             Term sein. Der Rest weg." Hintergrund-Auswahl entfernt. -->
+        <div class="set-row">
+          <span class="set-row-txt">Dark mode<span class="set-row-sub"><b>On</b>: Midnight Term · <b>Off</b>: Terminal Pro</span></span>
+          <label class="tgl"><input type="checkbox" id="fxThemeToggleBtn" onchange="toggleFxTheme()"><span class="tgl-track"></span></label>
+        </div>
+        <div class="set-sec">Animation</div>
+        <div class="set-row">
+          <span class="set-row-txt">Asset symbols<span class="set-row-sub">waving flags, dripping oil, shifting metal sheen</span></span>
+          <label class="tgl"><input type="checkbox" id="assetAnimToggleBtn" onchange="toggleAssetAnimEnabled()"><span class="tgl-track"></span></label>
+        </div>
+        <div class="set-row">
+          <span class="set-row-txt">Interface<span class="set-row-sub">button icons and hover reactions</span></span>
+          <label class="tgl"><input type="checkbox" id="uiAnimToggleBtn" onchange="toggleUiAnimEnabled()"><span class="tgl-track"></span></label>
+        </div>
+        <div class="set-row">
+          <span class="set-row-txt">Data<span class="set-row-sub">bars grow in, cards fade in on tab change</span></span>
+          <label class="tgl"><input type="checkbox" id="dataAnimToggleBtn" onchange="toggleDataAnimEnabled()"><span class="tgl-track"></span></label>
+        </div>
+        <div class="set-row">
+          <span class="set-row-txt">All at once</span>
+          <label class="tgl"><input type="checkbox" id="allAnimToggleBtn" onchange="toggleAllAnim()"><span class="tgl-track"></span></label>
+        </div>
       </div>
-    </div>
-    <div class="set-sec">Security</div>
-    <div class="set-row">
-      <span class="set-row-txt">PIN lock<span class="set-row-sub">code screen on open</span></span>
-      <label class="tgl"><input type="checkbox" id="pinToggleBtn" onchange="togglePinEnabled()"><span class="tgl-track"></span></label>
-    </div>
-    <!-- Score-Schalter "Normalized weighting" entfernt 2026-09-24 (Nutzer:
-         "Entfern bitte den einfachen Modus") - normalized ist die einzige
-         Rechnung. -->
-    <!-- Nutzer-Wunsch 2026-08-04: "genau wie den Code aktivieren und
-         deaktivieren koennen, direkt unter dem Code" - gleiche Zeile/Stil
-         wie der PIN-Toggle, exakt dasselbe An/Aus-Muster. -->
-    <div class="set-sec">Animation</div>
-    <div class="set-row">
-      <span class="set-row-txt">Asset symbols<span class="set-row-sub">waving flags, dripping oil, shifting metal sheen</span></span>
-      <label class="tgl"><input type="checkbox" id="assetAnimToggleBtn" onchange="toggleAssetAnimEnabled()"><span class="tgl-track"></span></label>
-    </div>
-    <div class="set-row">
-      <span class="set-row-txt">Interface<span class="set-row-sub">button icons and hover reactions</span></span>
-      <label class="tgl"><input type="checkbox" id="uiAnimToggleBtn" onchange="toggleUiAnimEnabled()"><span class="tgl-track"></span></label>
-    </div>
-    <div class="set-row">
-      <span class="set-row-txt">Data<span class="set-row-sub">bars grow in, cards fade in on tab change</span></span>
-      <label class="tgl"><input type="checkbox" id="dataAnimToggleBtn" onchange="toggleDataAnimEnabled()"><span class="tgl-track"></span></label>
-    </div>
-    <div class="set-row">
-      <span class="set-row-txt">All at once</span>
-      <label class="tgl"><input type="checkbox" id="allAnimToggleBtn" onchange="toggleAllAnim()"><span class="tgl-track"></span></label>
-    </div>
-    <div class="set-sec">Appearance</div>
-    <div class="set-row set-row-col">
-      <span class="set-row-txt">Theme<span class="set-row-sub">colours that carry meaning stay blue for bullish, red for bearish</span></span>
-      <div class="fxth-grid" id="fxThemeGrid"></div>
-    </div>
-    <div class="set-row set-row-col">
-      <span class="set-row-txt">Background<span class="set-row-sub">marble backgrounds make cards slightly translucent</span></span>
-      <div class="appbg-grid" id="appBgGrid"></div>
-    </div>
-    <div class="set-sec">Layout</div>
-    <div class="set-row">
-      <span class="set-row-txt">Density<span class="set-row-sub"><b>Auto</b>: compact with a mouse on wide screens, roomy on touch</span></span>
-      <div class="seg3" id="denseSeg"><button data-v="auto" onclick="setDenseMode('auto')">Auto</button><button data-v="compact" onclick="setDenseMode('compact')">Compact</button><button data-v="comfy" onclick="setDenseMode('comfy')">Comfortable</button></div>
-    </div>
-    <div class="set-sec">Notifications</div>
-    <div class="set-row">
-      <span class="set-row-txt">Telegram messages<span class="set-row-sub">event &amp; price alerts, score flips, morning and weekly report</span></span>
-      <label class="tgl"><input type="checkbox" id="telegramToggleBtn" onchange="toggleTelegramEnabled()"><span class="tgl-track"></span></label>
+      <div class="set-col">
+        <div class="set-sec">Data</div>
+        <div class="set-row" style="flex-wrap:wrap">
+          <span class="set-row-txt">Export, import &amp; local backups</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn" onclick="exportData()">Export</button>
+            <button class="btn" onclick="document.getElementById('impFile').click()">Import</button>
+            <button class="btn" onclick="openBackupM()">Backups</button>
+            <button class="btn" onclick="openTrashM()"><span class="h-ic" data-ic="trash"></span>Trash</button>
+          </div>
+        </div>
+        <div class="set-sec">Security</div>
+        <div class="set-row">
+          <span class="set-row-txt">PIN lock<span class="set-row-sub">code screen on open</span></span>
+          <label class="tgl"><input type="checkbox" id="pinToggleBtn" onchange="togglePinEnabled()"><span class="tgl-track"></span></label>
+        </div>
+        <!-- Score-Schalter "Normalized weighting" entfernt 2026-09-24 (Nutzer:
+             "Entfern bitte den einfachen Modus") - normalized ist die einzige
+             Rechnung. -->
+        <!-- Nutzer-Wunsch 2026-08-04: "genau wie den Code aktivieren und
+             deaktivieren koennen, direkt unter dem Code" - gleiche Zeile/Stil
+             wie der PIN-Toggle, exakt dasselbe An/Aus-Muster. -->
+        <div class="set-sec">Layout</div>
+        <div class="set-row">
+          <span class="set-row-txt">Density<span class="set-row-sub"><b>Auto</b>: compact with a mouse on wide screens, roomy on touch</span></span>
+          <div class="seg3" id="denseSeg"><button data-v="auto" onclick="setDenseMode('auto')">Auto</button><button data-v="compact" onclick="setDenseMode('compact')">Compact</button><button data-v="comfy" onclick="setDenseMode('comfy')">Comfortable</button></div>
+        </div>
+        <div class="set-sec">Notifications</div>
+        <div class="set-row">
+          <span class="set-row-txt">Telegram messages<span class="set-row-sub">event &amp; price alerts, score flips, morning and weekly report</span></span>
+          <label class="tgl"><input type="checkbox" id="telegramToggleBtn" onchange="toggleTelegramEnabled()"><span class="tgl-track"></span></label>
+        </div>
+      </div>
     </div>
     <h3 style="font-size:var(--fs-base);margin:14px 0 10px"><span class="h-ic" data-ic="cloud"></span>Cloud Sync</h3>
     <div style="font-size:var(--fs-sm);color:var(--t2);line-height:1.6;margin-bottom:10px">Connect a free <a href="https://supabase.com" target="_blank" rel="noopener" style="color:var(--blue)">Supabase</a> project to automatically sync your data across all your devices (iPad, iPhone, PC). The credentials are stored only locally on this device.</div>
-    <label class="dm-lbl">Username (shown on your profile)</label>
-    <input class="m-inp" id="cloudUsername" placeholder="e.g. Jonathan">
-    <label class="dm-lbl">Project URL</label>
-    <input class="m-inp" id="cloudUrl" placeholder="https://xxxxx.supabase.co">
-    <label class="dm-lbl">Anon / Public API Key</label>
-    <input class="m-inp" id="cloudKey" placeholder="eyJhbGciOi...">
-    <label class="dm-lbl">Sync ID (use the same ID on all devices)</label>
-    <input class="m-inp" id="cloudSyncId" placeholder="e.g. my-fx-tracker">
+    <div class="set-cloud-grid">
+      <div>
+        <label class="dm-lbl">Username (shown on your profile)</label>
+        <input class="m-inp" id="cloudUsername" placeholder="e.g. Jonathan">
+      </div>
+      <div>
+        <label class="dm-lbl">Project URL</label>
+        <input class="m-inp" id="cloudUrl" placeholder="https://xxxxx.supabase.co">
+      </div>
+      <div>
+        <label class="dm-lbl">Anon / Public API Key</label>
+        <input class="m-inp" id="cloudKey" placeholder="eyJhbGciOi...">
+      </div>
+      <div>
+        <label class="dm-lbl">Sync ID (use the same ID on all devices)</label>
+        <input class="m-inp" id="cloudSyncId" placeholder="e.g. my-fx-tracker">
+      </div>
+    </div>
     <div id="cloudStatus" style="font-size:var(--fs-sm);color:var(--t3);font-family:var(--ff-num);margin-bottom:10px"></div>
     <div class="m-btns">
       <button class="btn" onclick="closeMGuarded('mCloud')">Close</button>

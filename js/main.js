@@ -19,13 +19,13 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 // 2026-10-20, siehe Kopf von makro.js). Zirkulaerer Import wie bei journal.js.
 // Trading Journal: eigene Trades im Monatskalender (Nutzer-Wunsch 2026-10-24,
 // siehe Kopf von trades.js). Zirkulaerer Import wie bei makro.js.
-import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD} from './trades.js';
-import {makroKartenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle} from './makro.js';
+import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
+import {makroKartenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
   // Was js/trades.js (Journal) fuer seine Charts von hier braucht.
-  chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,
+  chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn,
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
   applyRevisionToValHist,applyTrendModel,checkPriceAlerts,fmtDayHdr,indBiasInputSig,indBiasPinned,
   invalidateRateStepCache,isNonFx,macroCcyFor,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,
@@ -50,7 +50,7 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   // Was js/makro.js von hier liest (zirkulaerer Import, siehe dort).
   indChartSeries,fmtIndVal,achsenTicks,INFL_ZIEL,nivAlle,nivEintrag,nivReihe,indNextTermin,indNextExpected,
   researchAnalysis,chartLeisteHtml,markUserEditTs,
-  indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,kartenIcon,preisReiheAnzeige};
+  indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,kartenIcon,preisReiheAnzeige,makroReiheNeu,saveSoon};
 // ── EINFARBIGER ICON-SATZ (Nutzer-Wunsch 2026-08-23) ───────────────────────
 // "mach davor die Flagge aber ohne Farben also eine Art icon aber schon die
 // richtige Form und nicht animiert und bei Gold und dem Rest auch gleich".
@@ -6666,15 +6666,15 @@ function saveSoon(){
 // passieren) plus die Nicht-Snap-Felder, exakt wie cloudPush() es macht.
 function exportData(){
   const data=JSON.parse(snap());
-  data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=trades;data.scoreMode=scoreMode;
-  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
+  data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.scoreMode=scoreMode;
+  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
   a.download='fx-analyst-'+todayStr()+'.json';a.click();
 }
 function importData(input){
   const f=input.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=FX_THEME_IDS.includes(_imp.fxTheme)?_imp.fxTheme:'';try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();renderFxThemeGrid();}if(_imp.appBg!==undefined){appBg=APP_BG_IDS.includes(_imp.appBg)?_imp.appBg:'';try{appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');}catch(e){}applyAppBg();renderAppBgGrid();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
+  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=normFxTheme(_imp.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
   r.readAsText(f);input.value='';
 }
 
@@ -7109,7 +7109,7 @@ async function cloudPushRoh(manual){
           }
         }
       }catch(e){}
-      if(!geprueft)return false;
+      if(!geprueft){try{tjSendeFehler();}catch(e){}return false;}
     }
     // pinEnabled liegt bewusst außerhalb von snap()/Undo,
     // muss aber ebenfalls geräteübergreifend synchron sein.
@@ -7119,7 +7119,7 @@ async function cloudPushRoh(manual){
     // zuruecksetzen - siehe cloudPull-Kommentar).
     const z0=_userEditZaehler;
     const gesendet=snap();
-    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=trades;data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;data.appBg=appBg;
+    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
     if(APP_VER)data.appVer=APP_VER;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
@@ -7176,6 +7176,8 @@ async function cloudPushRoh(manual){
     // (kein Größenvergleich von Uhren verschiedener Geräte) -> kein einseitiger
     // Sync-Ausfall mehr durch abweichende iPad/PC-Uhrzeiten.
     localStorage.setItem('fxpro_cloud_seen',sentUpdated);
+    // Journal: genau dieser Trade-Stand liegt jetzt in der Cloud (Anzeige + Wiederholung).
+    try{tjGesendet(data.tradeJournal);}catch(e){}
     // Das ist ab jetzt der gemeinsame Stand von Geraet und Cloud (Basis fuer
     // den Drei-Wege-Abgleich in cloudPull).
     basisSetzen(gesendet,sentUpdated);
@@ -7183,6 +7185,7 @@ async function cloudPushRoh(manual){
     if(manual)setCloudStatus('✓ Uploaded: '+fmtStamp(Date.now()));
     return true;
   }catch(e){
+    try{tjSendeFehler();}catch(x){}
     if(manual)setCloudStatus('✗ Error while uploading: '+e.message);
     return false;
   }
@@ -7300,8 +7303,7 @@ async function cloudPullRoh(manual,forceOverwrite){
       // ⚠ !==undefined, nicht truthy: das aktuelle Design ist der LEERE
       // String. Mit einem truthy-Check kaeme "zurueck auf Terminal Pro" nie
       // auf dem anderen Geraet an - derselbe Fall wie bei designHue/null.
-      if(!prefPending&&cd.fxTheme!==undefined){fxTheme=FX_THEME_IDS.includes(cd.fxTheme)?cd.fxTheme:'';try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();renderFxThemeGrid();}
-      if(!prefPending&&cd.appBg!==undefined){appBg=APP_BG_IDS.includes(cd.appBg)?cd.appBg:'';try{appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');}catch(e){}applyAppBg();renderAppBgGrid();}
+      if(!prefPending&&cd.fxTheme!==undefined){fxTheme=normFxTheme(cd.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}
       if(!prefPending&&cd.uiAnimEnabled!==undefined){uiAnimEnabled=cd.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}
       if(!prefPending&&cd.dataAnimEnabled!==undefined){dataAnimEnabled=cd.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}
       if(!prefPending&&cd.telegramEnabled!==undefined){telegramEnabled=cd.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}
@@ -7319,7 +7321,9 @@ async function cloudPullRoh(manual,forceOverwrite){
       // Bewegungen doppelt, die das andere Geraet schon aufgezeichnet hat.
       if(cd.scoreJournal){try{jrUebernehmen(cd.scoreJournal);}catch(e){}}
       // Trading Journal: ebenfalls Merge nach id statt Overwrite (js/trades.js).
-      if(Array.isArray(cd.tradeJournal)){try{tjUebernehmen(cd.tradeJournal);}catch(e){}}
+      // Immer aufrufen - auch ohne Feld (alte App): fehlen der Cloud Trades
+      // dieses Geraets, wird unten wie bei prefPending hochgeladen.
+      let tjFehlt=false;try{tjFehlt=tjUebernehmen(Array.isArray(cd.tradeJournal)?cd.tradeJournal:[]);}catch(e){}
       // Set-ups-/Kalender-/Compare-Filter (Audit-Agent-Fund 2026-07-20,
       // gleiches Muster wie compactLevel/designHue oben): bei anstehender
       // lokaler Praeferenz-Aenderung (prefPending) die lokalen Werte in
@@ -7368,8 +7372,9 @@ async function cloudPullRoh(manual,forceOverwrite){
       }
       localStorage.setItem('fxpro_cloud_seen',cloudUpdated);
       _lsUpdatedSeen=cloudUpdated;
-      if(prefPending){
-        // Die behaltenen lokalen Praeferenzen als NEUE Version einplanen:
+      if(prefPending||tjFehlt){
+        // Die behaltenen lokalen Praeferenzen (bzw. Trades, die der Cloud
+        // fehlen - js/trades.js Verlustweg A/B) als NEUE Version einplanen:
         // fxpro_updated frisch bumpen und den Auto-Push anstossen, damit die
         // Kombination (Cloud-Stand + lokale Stufe/Farbe) in die Cloud geht.
         localStorage.setItem('fxpro_updated',new Date().toISOString());
@@ -7544,6 +7549,7 @@ const MODAL_GUARD_TABELLE={
   // Vergleichsstand neu; "Yes, save" schliesst deshalb erst danach.
   // Trading Journal: alle Felder des Trade-Editors (js/trades.js).
   mTrade:TJ_GUARD,
+  mTradeClose:TJ_GUARD_ZU,
   mCloud:{felder:['cloudUsername','cloudUrl','cloudKey','cloudSyncId'],
     save:()=>{saveCloudCfg();if(!modalIsDirty('mCloud'))closeM('mCloud');},was:'Your sync settings'},
 };
@@ -7573,7 +7579,7 @@ document.addEventListener('click',ev=>{
 // Steht die Nachfrage offen, fuehrt Escape zurueck ins Fenster (der
 // harmlose Weg, wie der Klick neben die Nachfrage).
 const ESC_MODALS=['mAddSym','mAssetCfg','mHist','mAddPair','mRename','mDelSym','mInfo','mCloud','mRateWatch','mIndLink','mBackup','mTrash',
-  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeView','mTradeDay'];
+  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeView','mTradeDay','mTradeClose'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const nf=document.getElementById('mUnsaved');
@@ -7811,10 +7817,17 @@ function renderSidebar(){
       // (.np-score, var(--t3)), damit die Zeile weiterhin keine Bias-Farbe
       // traegt.
       const scTxt=`${sc>0?'+':''}${sc}`;
+      // ⚠ AUSNAHME fuer das AUSGEWAEHLTE Asset (Nutzer-Wunsch 2026-10-24:
+      // "dann wird das ja so markiert mach das dann die Flagge weht und sie
+      // in richtiger Farbe ist und das die Schrift dann die bullish oder
+      // bearish oder neutral bias Farbe hat ... Score auch in der Farbe"):
+      // farbiges, animiertes Symbol statt Glyphe, Name + Score in Bias-Farbe.
+      // Alle anderen Zeilen bleiben neutral wie oben beschrieben.
+      const bv=on?(c.bias||scoreBias(symScore(c))):'';
       return`<div class="np-asset-wrap">
         <button data-sym="${id}" class="np ab np-asset${on?' on':''}" onclick="sbClick('${escJs(id)}')" onpointerdown="sbPressStart('${escJs(id)}')" onpointerup="sbPressEnd()" onpointerleave="sbPressEnd()" onpointercancel="sbPressEnd()" data-tip="${escH(c.name)} ${escH(scTxt)}" aria-label="${escH(c.name)} ${escH(scTxt)}">
-          ${assetGlyphHtml(id,17)}
-          <span class="an np-lbl">${escH(c.name)}</span>
+          ${on?(assetIconHtml(id,17)||assetGlyphHtml(id,17)):assetGlyphHtml(id,17)}
+          <span class="an np-lbl"${bv?` data-bv="${bv}"`:''}>${escH(c.name)}</span>
           <span class="np-score">${escH(scTxt)}</span>
         </button>
         ${bearb?`<span class="np-asset-edit">
@@ -11114,9 +11127,40 @@ function abPinnedHtml(c){
 function abReihenTitel(txt,extra){
   return`<div class="ab-rtitel${extra?' ab-rtitel-x':''}"><span>${escH(txt)}</span>${extra||''}</div>`;
 }
+// Makro-Reihe der Asset-Seite: drei Tabellen-Karten oder EINE Reiter-Karte.
+// Eigene Funktion, damit makroReiheNeu() sie allein austauschen kann.
+function abMakroReiheHtml(c,teil){
+  // Voller Seitenaufbau (jede Datenaenderung) leert die Zwischenspeicher der
+  // Makro-Charts; ein Teil-Aufbau (makroReiheNeu) behaelt sie.
+  makroRenderStart(!teil);
+  const rubs=c.rubrics||[];
+  const tk=makroTabKarteHtml(c);
+  if(tk)return`<div class="ab-col mk-col" data-mkreihe="1">${tk}</div>`;
+  return ASSET_CARDS.map(n=>{const i=rubs.findIndex(r=>r&&r.name===n);return`<div class="ab-col" data-mkreihe="1">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('');
+}
+// ⚠ SCHNELLER WEG fuer jede Makro-Bedienung (Nutzer 2026-10-24: "Mach es
+// maximal schnell"). GEMESSEN, CPU 4x gedrosselt (~iPad): jeder Klick auf
+// Reiter/Chip/Compare/Zeitraum baute ueber renderDetail die GANZE Asset-Seite
+// neu - 595-717 ms, das Zeichnen der Charts selbst nur 84-137 ms; bis zum
+// fertigen Bild 0,9-1,9 s. Jetzt wird nur die Makro-Reihe getauscht. Der
+// Scrollstand bleibt (WebKit, siehe scrollHalten), Symbole und i-Knoepfe
+// ordnen die MutationObserver wie bei jedem anderen Austausch ein.
+function makroReiheNeu(){
+  const c=getSym(),det=document.getElementById('detail');
+  const alt=det?[...det.querySelectorAll('[data-mkreihe]')]:[];
+  if(!c||!alt.length||curPage!=='cur'){renderDetail();return;}
+  const se=document.scrollingElement,st0=det.scrollTop,st1=se?se.scrollTop:0;
+  const t=document.createElement('template');t.innerHTML=abMakroReiheHtml(c,true);
+  const neu=[...t.content.children];
+  if(!neu.length){renderDetail();return;}
+  alt[0].replaceWith(...neu);alt.slice(1).forEach(x=>x.remove());
+  try{makroZeichnenAlle();}catch(e){console.error('[makro]',e);}
+  neu.forEach(n=>{try{attachChartHovers(n);}catch(e){}});
+  if(det.scrollTop!==st0)det.scrollTop=st0;
+  if(se&&se.scrollTop!==st1)se.scrollTop=st1;
+}
 function renderAssetBoard(c){
   const rubs=c.rubrics||[];
-  const idx=n=>rubs.findIndex(r=>r&&r.name===n);
   // ⚠ GEMESSEN 2026-09-13: als zwei getrennte Rasterreihen war die Karten-
   // Reihe so hoch wie die HOECHSTE Karte (526px), waehrend die beiden
   // anderen 407 und 381 hoch waren - unter ihnen standen 145px tote Flaeche,
@@ -11168,8 +11212,7 @@ function renderAssetBoard(c){
       ${abReihenTitel('Macro')}
       ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE
            breite Karte mit Reitern (Nutzer 2026-10-21, siehe Kopf von makro.js). */''}
-      ${(()=>{const tk=makroTabKarteHtml(c);if(tk)return`<div class="ab-col mk-col">${tk}</div>`;
-        return ASSET_CARDS.map(n=>{const i=idx(n);return`<div class="ab-col">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('');})()}
+      ${abMakroReiheHtml(c)}
       ${abReihenTitel('Positioning')}
       ${ASSET_GRAPHS.map(a=>`<div class="ab-col">${abGrafikHtml(a,c)}</div>`).join('')}
     </div>
@@ -25338,27 +25381,25 @@ function applyDataAnim(){document.body.classList.toggle('no-data-anim',!dataAnim
 // wirkt nur auf Indikator-Zeilen; das hier ist der klassische Terminal-Griff
 // "komfortabel / dicht" ueber alle Karten. Liegt wie pinEnabled ausserhalb
 // von snap()/Undo und ist deshalb an allen vier Ecken angebunden.
-// ══ DESIGN-VORLAGEN (Nutzer-Wunsch 2026-09-04) ══════════════════════════
-// ⚠ Das AKTUELLE Design ist der Standard und steht in :root - es hat bewusst
-// KEINEN Eintrag hier und KEIN [data-fx-theme]-Regelwerk. Ein Geraet mit
-// unbekanntem Wert landet dadurch im vertrauten Design, statt ohne eine
-// einzige Farbvariable dazustehen.
-// ⚠ Wird eine Vorlage ENTFERNT, muss die Frueh-Weiche im <head> von
-// index.html den alten Wert migrieren - dort steht dieselbe Liste.
+// ══ DESIGN: HELL / DUNKEL (Nutzer-Wunsch 2026-10-24) ═════════════════════
+// Nutzer: "Es soll einen Schalter fuer dark und light mode geben light mode
+// soll terminal pro sein und der darkmode soll Midnight Term sein. Der Rest
+// weg." Vom 2026-09-04 bis dahin zehn Vorlagen in einem Kachel-Raster.
+// ⚠ Hell = Terminal Pro = :root, bewusst OHNE [data-fx-theme]-Regelwerk: ein
+// Geraet mit unbekanntem Wert landet im vertrauten Design.
+// ⚠ Die acht entfernten Vorlagen werden MIGRIERT, nicht verworfen: die
+// dunklen -> Midnight, die hellen -> Terminal Pro. Sonst spraenge ein
+// dunkles Geraet beim naechsten Sync auf hell. Dieselbe Liste steht in der
+// Frueh-Weiche im <head> von index.html.
+// FX_THEMES bleibt als Liste stehen - check/theme.js prueft jede Vorlage.
 const FX_THEMES=[
-  {id:'',         name:'Terminal Pro',   desc:'The current design',           sw:['#212C49','#E9EAF6','#FFFFFF','#2E8FB0']},
-  {id:'linear',   name:'Linear Light',   desc:'Cool near-white, indigo',      sw:['#1C1D21','#F4F5F8','#FFFFFF','#5E6AD2']},
-  {id:'stripe',   name:'Stripe Slate',   desc:'Pale blue-grey, violet',       sw:['#0A2540','#F0F4F9','#FFFFFF','#635BFF']},
-  {id:'swiss',    name:'Swiss Editorial',desc:'White, hairlines, no colour',  sw:['#111111','#FFFFFF','#FFFFFF','#1F1F1F']},
-  {id:'notion',   name:'Notion Warm',    desc:'Warm off-white, very quiet',   sw:['#37352F','#F7F7F5','#FFFFFF','#2383E2']},
-  {id:'carbon',   name:'Carbon Dark',    desc:'Black chrome, high contrast',  sw:['#000000','#161616','#262626','#33B1FF']},
-  {id:'midnight', name:'Midnight Term.', desc:'Deep navy trading desk',       sw:['#060B16','#0A101C','#16223A','#4FB6DC']},
-  {id:'graphite', name:'Graphite Dark',  desc:'Neutral grey, no colour cast', sw:['#0F1113','#17181B','#232529','#7FB3C8']},
-  {id:'nord',     name:'Nordic Dark',    desc:'Cool blue-grey, soft',         sw:['#242933','#2E3440','#3B4252','#88C0D0']},
-  {id:'solar',    name:'Solarized Dark', desc:'Warm teal, easy on the eyes',  sw:['#001F27','#002B36','#073642','#3EA5B5']},
+  {id:'',         name:'Terminal Pro'},
+  {id:'midnight', name:'Midnight Term'},
 ];
-const FX_THEME_IDS=FX_THEMES.map(t=>t.id).filter(Boolean);
-let fxTheme=(()=>{try{const t=localStorage.getItem('fxpro_theme');return (t&&FX_THEME_IDS.includes(t))?t:'';}catch(e){return '';}})();
+const FX_THEME_DARK='midnight';
+const FX_THEME_ALT_DUNKEL=['carbon','graphite','nord','solar'];
+function normFxTheme(t){return (t===FX_THEME_DARK||FX_THEME_ALT_DUNKEL.includes(t))?FX_THEME_DARK:'';}
+let fxTheme=(()=>{try{return normFxTheme(localStorage.getItem('fxpro_theme'));}catch(e){return '';}})();
 function applyFxTheme(){
   if(fxTheme)document.documentElement.setAttribute('data-fx-theme',fxTheme);
   else document.documentElement.removeAttribute('data-fx-theme');
@@ -25370,74 +25411,27 @@ function applyFxTheme(){
     if(m)m.setAttribute('content',getComputedStyle(document.documentElement).getPropertyValue('--chrome-bg').trim()||'#212C49');
   }catch(e){}
 }
-function renderFxThemeGrid(){
-  const g=document.getElementById('fxThemeGrid');if(!g)return;
-  g.innerHTML=FX_THEMES.map((t,i)=>
-    `<button class="fxth${(t.id||'')===fxTheme?' on':''}" onclick="setFxTheme(${i})" type="button">`
-    +`<span class="fxth-sw">`+t.sw.map(c=>`<i style="background:${c}"></i>`).join('')+`</span>`
-    +`<span class="fxth-n">${t.name}</span><span class="fxth-d">${t.desc}</span></button>`).join('');
-}
-function setFxTheme(i){
-  const t=FX_THEMES[i];if(!t)return;
-  fxTheme=t.id||'';
-  try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}
-  // Damit die Wahl auf dem anderen Geraet ankommt - sonst waere sie reiner
-  // localStorage, genau der in docs/state-sync.md beschriebene Fehler.
-  try{localStorage.setItem('fxpro_updated',new Date().toISOString());}catch(e){}
-  applyFxTheme();renderFxThemeGrid();
-  try{cloudAutoSync();}catch(e){}
-}
-// ══ HINTERGRUND (Nutzer-Wunsch 2026-09-11) ══════════════════════════════
-// Fuenf Moeglichkeiten; die Marmor-Bilder sind prozedural erzeugt (siehe
-// docs/CHANGELOG.md 2026-09-11) und liegen als WebP in img/ - zusammen 172 KB
-// statt 7,5 MB als PNG, weil der Hintergrund bei JEDEM Seitenaufruf mitlaedt.
-// ⚠ 'Current' hat wie bei den Design-Vorlagen die leere Id und KEIN eigenes
-// Regelwerk: ein Geraet mit unbekanntem Wert landet dadurch im vertrauten
-// Zustand statt auf einem leeren Hintergrund.
-// ⚠ Diese Liste steht doppelt - hier und in der Frueh-Weiche im <head> von
-// index.html, die den Wert setzen MUSS, bevor die erste Regel greift (sonst
-// blitzt beim Laden der helle Standard auf und springt dann auf den dunklen
-// Marmor um). check/structure.js haelt beide Listen gegeneinander.
-const APP_BGS=[
-  {id:'',             name:'Current', pv:''},
-  {id:'white',        name:'White',   pv:'#FFFFFF'},
-  {id:'marble-light', name:'Marble',  pv:'url(img/marble-light-tile.webp)'},
-  {id:'marble-vivid', name:'Vivid',   pv:'url(img/marble-vivid-tile.webp)'},
-  {id:'marble-dark',  name:'Dark',    pv:'url(img/marble-dark-tile.webp)'},
-];
-const APP_BG_IDS=APP_BGS.map(b=>b.id).filter(Boolean);
-let appBg=(()=>{try{const b=localStorage.getItem('fxpro_bg');return (b&&APP_BG_IDS.includes(b))?b:'';}catch(e){return '';}})();
-function applyAppBg(){
-  if(appBg)document.documentElement.setAttribute('data-app-bg',appBg);
-  else document.documentElement.removeAttribute('data-app-bg');
-}
-function renderAppBgGrid(){
-  const g=document.getElementById('appBgGrid');if(!g)return;
-  g.innerHTML=APP_BGS.map((b,i)=>{
-    // Die Kachel fuer 'Current' zeigt den Verlauf des heutigen Hintergrunds,
-    // damit die Auswahl nicht mit einem leeren Feld beginnt.
-    const pv=b.pv?`background-image:${b.pv.startsWith('url')?b.pv:'none'};background-color:${b.pv.startsWith('url')?'transparent':b.pv}`
-                 :'background:linear-gradient(180deg,var(--bg1),var(--bg0))';
-    return `<button class="appbg${(b.id||'')===appBg?' on':''}" onclick="setAppBg(${i})" type="button" title="${b.name}">`
-      +`<span class="appbg-pv" style="${pv}"></span><span class="appbg-n">${b.name}</span></button>`;
-  }).join('');
-}
-function setAppBg(i){
-  const b=APP_BGS[i];if(!b)return;
-  appBg=b.id||'';
+function updFxThemeToggleBtn(){const b=document.getElementById('fxThemeToggleBtn');if(b)b.checked=fxTheme===FX_THEME_DARK;}
+function toggleFxTheme(){
+  fxTheme=fxTheme?'':FX_THEME_DARK;
   // ⚠ Kein Schreibpfad ohne try/catch mit sichtbarer Meldung (CLAUDE.md
   // Regel 6): localStorage wirft im privaten Modus und bei vollem Speicher.
-  // Der Hintergrund wuerde dann beim naechsten Start still zurueckspringen -
-  // fuer den Nutzer sieht das aus, als haette der Knopf nicht funktioniert.
   try{
-    appBg?localStorage.setItem('fxpro_bg',appBg):localStorage.removeItem('fxpro_bg');
+    fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');
+    // Damit die Wahl auf dem anderen Geraet ankommt (docs/state-sync.md).
     localStorage.setItem('fxpro_updated',new Date().toISOString());
+    _lsUpdatedSeen=localStorage.getItem('fxpro_updated');
   }catch(e){
-    alert('The background could not be saved: '+(e&&e.message||e)+'\nIt stays active until you reload.');
+    alert('The theme could not be saved: '+(e&&e.message||e)+'\nIt stays active until you reload.');
   }
-  applyAppBg();renderAppBgGrid();
+  markPrefEdit();
+  applyFxTheme();updFxThemeToggleBtn();
   try{cloudAutoSync();}catch(e){}
 }
+// ══ HINTERGRUND: entfernt 2026-10-24 ════════════════════════════════════
+// Nutzer: "background soll immer bei current sein also die Einstellungen
+// dazu loeschen". Die Auswahl (White + drei Marmor-Bilder, seit 2026-09-11)
+// ist samt Bildern weg; die Frueh-Weiche im <head> loescht fxpro_bg.
 // ── DICHTE: Auto / Compact / Comfortable (Nutzer-Wahl 2026-10-11) ────────
 // Nutzer: "am pc ist ja alles deutlich groesser als am iPad aber dadurch
 // entstehen auch viele Luecken wie kann ich das am pc kompakter bekommen da
@@ -25666,7 +25660,7 @@ try{if(getCloudCfg()){const seen=localStorage.getItem('fxpro_cloud_seen');
 try{if(APP_VER>+(localStorage.getItem('fxpro_app_ver')||0))localStorage.setItem('fxpro_app_ver',String(APP_VER));}catch(e){}
 applyCompactView();
 applyAssetAnim();updAssetAnimToggleBtn();
-applyUiAnim();updUiAnimToggleBtn();applyDataAnim();updDataAnimToggleBtn();updAllAnimToggleBtn();updTelegramToggleBtn();applyDenseMode();updDenseToggleBtn();applyFxTheme();renderFxThemeGrid();applyAppBg();renderAppBgGrid();
+applyUiAnim();updUiAnimToggleBtn();applyDataAnim();updDataAnimToggleBtn();updAllAnimToggleBtn();updTelegramToggleBtn();applyDenseMode();updDenseToggleBtn();applyFxTheme();updFxThemeToggleBtn();
 loadTabStacks();renderTabBar();
 loadScoreHist();loadScoreJournal();recordScoreHist();
 const _seedCleaned=cleanLegacySeedEvts();
@@ -26112,6 +26106,9 @@ const LG_KARTEN='.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.ab-ktile,.abc-cal,.rub-
 const LG_MIN_FREI=84;
 const LG_MEDIEN=/^(svg|canvas|img|textarea|input|button|select|video)$/i;
 function lgFreiraum(card){
+  // Makro-Reiter-Karte: so hoch wie ihr Inhalt, nie freie Flaeche - ~1000
+  // Elemente einzeln zu vermessen kostete je Bedienung ~20 ms (CPU 4x).
+  if(card.classList.contains('mk-tk'))return null;
   const cr=card.getBoundingClientRect();
   if(!cr.height||!card.offsetParent)return null;
   const cs=getComputedStyle(card);
@@ -26256,8 +26253,24 @@ function lgAlleKarten(){
   karten.forEach((c,i)=>lgKarte(c,mess[i]));
 }
 function lgPlanen(){if(!_lgPlan)_lgPlan=requestAnimationFrame(()=>requestAnimationFrame(lgAlleKarten));}
+// ⚠ NUR DIE BETROFFENEN KARTEN (2026-10-24, Nutzer: "Mach es maximal schnell").
+// GEMESSEN (CPU 4x, 12 Makro-Bedienungen): lgAlleKarten kostete 742 ms - jede
+// DOM-Aenderung irgendwo vermass ALLE Karten der Seite und in jeder Karte jedes
+// Element (getBoundingClientRect). Die freie Flaeche einer Karte haengt aber
+// nur an ihrem eigenen Inhalt und ihrer eigenen Groesse: Inhalt -> Mutation IN
+// der Karte, Groesse -> ResizeObserver der Karte (meldet auch neu beobachtete
+// Karten einmal). Beides wird jetzt je Karte nachgemessen; der volle Durchlauf
+// bleibt fuer Fenstergroesse und Ladeende (lgPlanen).
+let _lgKPlan=0;const _lgKSet=new Set();
+function lgKartenPlanen(ks){
+  ks.forEach(k=>{if(k&&k.nodeType===1)_lgKSet.add(k);});
+  if(!_lgKSet.size||_lgKPlan)return;
+  _lgKPlan=requestAnimationFrame(()=>requestAnimationFrame(()=>{_lgKPlan=0;
+    const l=[..._lgKSet].filter(k=>k.isConnected);_lgKSet.clear();
+    const mess=l.map(k=>lgFreiraum(k));l.forEach((k,i)=>lgKarte(k,mess[i]));}));
+}
 try{
-  const lgRo=new ResizeObserver(lgPlanen);
+  const lgRo=new ResizeObserver(es=>lgKartenPlanen(es.map(e=>e.target)));
   const lgBeobachten=()=>document.querySelectorAll(LG_KARTEN).forEach(c=>{if(!c.__lgRo){c.__lgRo=1;lgRo.observe(c);}});
   new MutationObserver(ms=>{
     // eigene Logo-Einfuegungen loesen keinen neuen Durchlauf aus
@@ -26273,7 +26286,14 @@ try{
       });
       return;
     }
-    lgBeobachten();lgPlanen();
+    const ks=new Set();
+    ms.forEach(m=>{
+      const k=m.target.closest&&m.target.closest(LG_KARTEN);if(k)ks.add(k);
+      m.addedNodes.forEach(n=>{if(n.nodeType!==1||n.classList.contains('lg-frei'))return;if(n.matches(LG_KARTEN))ks.add(n);n.querySelectorAll(LG_KARTEN).forEach(c=>ks.add(c));});
+    });
+    // nur die neuen Karten beobachten - vorher durchsuchte lgBeobachten bei jeder
+    // Aenderung das ganze Dokument (Profil 2026-10-24: 65 ms auf 12 Bedienungen)
+    ks.forEach(c=>{if(!c.__lgRo&&c.matches(LG_KARTEN)){c.__lgRo=1;lgRo.observe(c);}});lgKartenPlanen(ks);
   }).observe(document.getElementById('pageArea')||document.body,{childList:true,subtree:true});
   window.addEventListener('resize',lgPlanen);
   lgBeobachten();lgPlanen();
@@ -26414,13 +26434,9 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   rgRisk,rgPutCall,rgHafen,rgDollarBreite,rgDrawdown,rgRendite,rgCpiTrend,
   rgArbeitslos,rgClaims,rgUeberraschung,rgProduktivitaet,
 
-  // ⚠ setFxTheme wird aus einem onclick im Einstellungs-Raster gerufen -
-  // ohne diese Zeile wirft der Klick still ein ReferenceError und die
-  // Vorlagen-Auswahl waere fuer den Nutzer einfach kaputt (CLAUDE.md Regel 6).
-  setFxTheme,renderFxThemeGrid,applyFxTheme,FX_THEMES,
-  // ⚠ setAppBg haengt an einem onclick im Hintergrund-Raster - fehlt die
-  // Zeile hier, wirft der Klick still einen ReferenceError (CLAUDE.md Regel 6).
-  setAppBg,renderAppBgGrid,applyAppBg,APP_BGS,APP_BG_IDS,
+  // ⚠ toggleFxTheme haengt am onchange des Dark-mode-Schalters - ohne diese
+  // Zeile wirft der Klick still ein ReferenceError (CLAUDE.md Regel 6).
+  toggleFxTheme,updFxThemeToggleBtn,applyFxTheme,normFxTheme,FX_THEMES,
   // ⚠ Alle fuenf haengen an onclick/oninput im Modal-HTML - fehlt eine,
   // wirft der Klick still ein ReferenceError (CLAUDE.md Regel 6).
   openQuickNote,quickNoteForAsset,qcAnalyse,qcSpeichern,qcTogAsset,qcSetBias,qcTogTag,

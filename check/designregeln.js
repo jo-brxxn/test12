@@ -126,8 +126,10 @@ const oeffne = (p, z) => p.evaluate(z => { const [a, v] = z.split(':'); if (a ==
         if (!e.closest('.rinfo,.info-b,.si-info-btn,.fxlogo')) { const px = parseFloat(getComputedStyle(e).fontSize); out.n.html++; if (px < 10.95) out.html.push(`${px}px "${v.trim().slice(0, 20)}" @${pfad(e)}`); }
       }
       // C) Diagramm-Schrift gerendert
+      // .mk-wert: Werte ueber den Makro-Balken schrumpfen bewusst unter 11 px
+      // (Nutzerwahl 2026-10-25 "Immer alle, kleiner", docs/makro.md).
       document.querySelectorAll('svg text').forEach(e => {
-        if (!e.textContent.trim() || !sicht(e) || e.closest('.fxlogo')) return;
+        if (!e.textContent.trim() || !sicht(e) || e.closest('.fxlogo') || e.classList.contains('mk-wert')) return;
         const m = e.getScreenCTM(); if (!m) return; out.n.svg++;
         const eff = parseFloat(getComputedStyle(e).fontSize) * Math.hypot(m.a, m.b);
         if (eff < 10.8) { let s = e.ownerSVGElement; while (s.ownerSVGElement) s = s.ownerSVGElement; out.svg.push(`${eff.toFixed(1)}px "${e.textContent.trim().slice(0, 12)}" in ${(s.getAttribute('class') || (s.parentElement && s.parentElement.className) || '?').toString().split(' ')[0]}`); }
@@ -156,7 +158,10 @@ const oeffne = (p, z) => p.evaluate(z => { const [a, v] = z.split(':'); if (a ==
       while ((t = w.nextNode())) { const v = t.nodeValue; if (!v.trim()) continue; const e = t.parentElement; if (!e || !sicht(e) || e.closest('svg,textarea,input')) continue;
         if (/\p{Emoji_Presentation}|️/u.test(v)) out.emoji.push(v.trim().slice(0, 30));
         if (!e.closest('.rinfo,.info-b,.si-info-btn,.fxlogo') && parseFloat(getComputedStyle(e).fontSize) < 10.95) out.html.push(getComputedStyle(e).fontSize + ' "' + v.trim().slice(0, 20) + '"'); }
-      [[34, '.btn,select.btn,select.finp,input.finp'], [40, '.m-inp:not(textarea),.uc-btn,.search-inp-wrap'], [28, '.note-dirbtn']].forEach(([h, sel]) =>
+      // Trade-Editor (Journal, 624): Felder, Exit-Knoepfe und Long/Short bewusst in der
+      // L-Stufe 40 - dieselbe Hoehe fuer die ganze Formularspalte neben dem Chart
+      // (docs/design-system.md "Drei Hoehen"). Drei Stufen bleiben drei Stufen.
+      [[34, '.btn:not(.tj-exit .btn),select.btn,select.finp,input.finp:not(.tj-ed .finp)'], [40, '.m-inp:not(textarea),.uc-btn,.search-inp-wrap,.tj-ed input.finp,.tj-exit .btn,.tj-seg'], [28, '.note-dirbtn']].forEach(([h, sel]) =>
         w0.querySelectorAll(sel).forEach(e => { if (!sicht(e)) return; const ist = e.getBoundingClientRect().height; if (Math.abs(ist - h) > 0.6) out.hoehe.push(`${e.tagName.toLowerCase()}.${String(e.className).split(' ')[0]} ${ist.toFixed(1)}px statt ${h}`); }));
       return out;
     }, id);
