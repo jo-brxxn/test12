@@ -13,12 +13,22 @@
 //   F) Kein Datum mit vierstelligem Jahr ("Mar 2026") - App-Regel "Mar '26".
 //   E) country_data.json fehlt (Workflow noch nicht gelaufen / 404): Karte
 //      steht trotzdem, ohne JS-Fehler.
-//   node check/profil.js [--gegenprobe]   (Karte bei einer Waehrung entfernt -> rot)
+//   G) Seit 2026-10-25 (Nutzer: "entfern ... den Teil history und die ganzen
+//      Charts ... ich will das die alle anklickbar sind und dann oeffnet sich
+//      ein Fenster mit dem Chart in normaler Groesse ... zeitintervall
+//      veraendern andere Charts hinzufuegen also so wie bei data"):
+//      kein History-Abschnitt mehr; JEDE Linie der Karte ist anklickbar und
+//      oeffnet #mCpChart mit genau diesem Chart in voller Breite (Y-Achse);
+//      "Add chart" bietet Karte + alle Indikatoren an, bis 8 (der 9. gesperrt);
+//      ein Zeitfilter fuer alle Panels.
+//   node check/profil.js [--gegenprobe | --gegenprobe-fenster]
+//     --gegenprobe         Karte bei JPY entfernt          -> A rot
+//     --gegenprobe-fenster Klick auf eine Linie ausgeschaltet -> G rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
-const GEGENPROBE = process.argv.includes('--gegenprobe');
+const GEGENPROBE = process.argv.includes('--gegenprobe'), GP_FENSTER = process.argv.includes('--gegenprobe-fenster');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 const FX = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'NZD'];
 const NICHT_FX = ['GOLD', 'OIL', 'SP500', 'DAX', 'BTC'];
@@ -57,6 +67,8 @@ async function messen(p, id) {
     // vierstelliges Jahr in den festen Fakten irgendeiner Waehrung.
     const MON = '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*';
     const re = new RegExp(MON + '\\.?,? *\\d{0,2},? *(19|20)\\d{2}\\b|\\b\\d{1,2}\\.? *' + MON + ',? *(19|20)\\d{2}\\b');
+    o.history = [...k.querySelectorAll('.cp-sub')].some(x => /^History/.test(x.textContent.trim())) || !!k.querySelector('.cp-hist');
+    o.linien = k.querySelectorAll('.cp-sp').length; o.klickbar = k.querySelectorAll('.cp-spk[onclick] .cp-sp').length;
     const tw = document.createTreeWalker(k, NodeFilter.SHOW_TEXT); o.datum = [];
     for (let n = tw.nextNode(); n; n = tw.nextNode()) if (re.test(n.nodeValue || '')) o.datum.push(n.nodeValue.trim().slice(0, 60));
     return o;
@@ -81,6 +93,8 @@ async function messen(p, id) {
     else if (!(o.spalten[0].r <= o.spalten[1].x && o.spalten[1].r <= o.spalten[2].x && Math.abs(o.spalten[0].y - o.spalten[2].y) < 4)) fail('NICHT NEBENEINANDER (1440)', id);
     if (o.breiter.length) fail('UEBER DEN KARTENRAND', `${id}: ${o.breiter.join(', ')}`);
     o.datum.forEach(t => fail('DATUM MIT VIERSTELLIGEM JAHR', `${id}: "${t}"`));
+    if (o.history) fail('HISTORY NOCH DA', id);
+    if (o.klickbar !== o.linien) fail('LINIE NICHT ANKLICKBAR', `${id}: ${o.linien - o.klickbar} von ${o.linien} Linien oeffnen kein Chart-Fenster`);
     o.roh.forEach(r => {
       const rid = ROH_ID[r.n.trim()];
       if (!rid) { fail('ROHSTOFF UNBEKANNT', `${id}: "${r.n}" - ROH_ID im Waechter ergaenzen`); return; }
@@ -94,6 +108,46 @@ async function messen(p, id) {
     if (da == null) continue;
     await p.waitForTimeout(700);
     if (await p.$('#cpKarte')) fail('KARTE BEI NICHT-FX', id);
+  }
+  // G) Chart-Fenster: echte Klicks
+  await p.evaluate(gp => { gotoSym('EUR'); if (gp) document.querySelectorAll('#cpKarte .cp-spk').forEach(e => e.removeAttribute('onclick')); }, GP_FENSTER);
+  await p.waitForTimeout(900);
+  if (GP_FENSTER) await p.evaluate(() => document.querySelectorAll('#cpKarte .cp-spk').forEach(e => e.removeAttribute('onclick')));
+  const spk = await p.$('#cpKarte .cp-spk');
+  if (!spk) fail('FENSTER', 'EUR: keine anklickbare Linie');
+  else {
+    await spk.click(); await p.waitForTimeout(700);
+    const f = await p.evaluate(() => {
+      const m = document.getElementById('mCpChart'), body = document.getElementById('cpfBody');
+      const o = { offen: !!m && m.style.display !== 'none' };
+      if (!o.offen) return o;
+      const svg = body.querySelector('.cpf-pc svg'), bw = body.getBoundingClientRect().width;
+      o.panels = body.querySelectorAll('.cpf-panel').length;
+      o.breite = svg ? Math.round(svg.getBoundingClientRect().width / bw * 100) : 0;
+      o.hoehe = svg ? Math.round(svg.getBoundingClientRect().height) : 0;
+      o.yLbl = svg ? new Set([...svg.querySelectorAll('text')].filter(t => /\d/.test(t.textContent) && t.getAttribute('x') && +t.getAttribute('x') < 80).map(t => t.getAttribute('y'))).size : 0;
+      o.zeit = !!body.querySelector('.ind-hist-range-bar .br-sch') && body.querySelectorAll('.ind-hist-range-bar .ind-hist-range-btn').length >= 5;
+      return o;
+    });
+    if (!f.offen) fail('FENSTER', 'Klick auf die Linie oeffnet kein Fenster');
+    else {
+      if (f.panels !== 1) fail('FENSTER', `${f.panels} Panels statt 1 nach dem Klick`);
+      if (f.breite < 85) fail('FENSTER', `Chart nur ${f.breite} % der Fensterbreite - nicht "normale Groesse"`);
+      if (f.hoehe < 200) fail('FENSTER', `Chart nur ${f.hoehe} px hoch`);
+      if (f.yLbl < 2) fail('FENSTER', 'Chart ohne Y-Beschriftung');
+      if (!f.zeit) fail('FENSTER', 'kein Zeitfilter mit Schere');
+      await p.click('#cpfBody .cpf-add-b'); await p.waitForTimeout(300);
+      const anz = await p.evaluate(() => ({ n: document.querySelectorAll('.cpf-pick-i').length, gruppen: [...document.querySelectorAll('.cpf-pick-k')].map(x => x.textContent) }));
+      if (anz.n < 15 || !anz.gruppen.includes('Country profile') || anz.gruppen.length < 3) fail('FENSTER', `"Add chart" bietet ${anz.n} Reihen in ${anz.gruppen.length} Gruppen - erwartet Karte + alle Indikatoren`);
+      for (let i = 0; i < 9; i++) { const b2 = await p.$('.cpf-pick-i:not(.on):not([disabled])'); if (!b2) break; await b2.click(); await p.waitForTimeout(150); }
+      const voll = await p.evaluate(() => ({ panels: document.querySelectorAll('#cpfBody .cpf-panel').length, gesperrt: document.querySelectorAll('.cpf-pick-i:not(.on)[disabled]').length, svgs: document.querySelectorAll('#cpfBody .cpf-pc svg').length }));
+      if (voll.panels !== 8) fail('FENSTER', `${voll.panels} Panels nach 9 Klicks - erwartet hoechstens 8`);
+      if (!voll.gesperrt) fail('FENSTER', 'bei 8 Charts sind weitere Reihen nicht gesperrt');
+      await p.click('#cpfBody .ind-hist-range-btn:has-text("1Y")'); await p.waitForTimeout(500);
+      const r1 = await p.evaluate(() => (document.querySelector('#cpfBody .ind-hist-range-btn.on:not(.br-sch)') || {}).textContent);
+      if (r1 !== '1Y') fail('FENSTER', `Zeitfilter reagiert nicht (steht auf ${r1})`);
+      await p.evaluate(() => closeM('mCpChart'));
+    }
   }
   perr.forEach(x => fail('JS-FEHLER (1440)', x));
   await ctx.close();
@@ -109,7 +163,8 @@ async function messen(p, id) {
   h.perr.forEach(x => fail('JS-FEHLER (390, ohne country_data.json)', x));
   await b.close();
 
+  if (GP_FENSTER) { const r = F.some(x => /^FENSTER/.test(x)); console.log(r ? `profil --gegenprobe-fenster: ok (rot wie erwartet, ${F.length} Befund(e))` : 'profil --gegenprobe-fenster: FEHLER - Waechter bleibt gruen'); process.exit(r ? 0 : 1); }
   if (GEGENPROBE) { if (F.length) { console.log(`profil --gegenprobe: ok (rot wie erwartet, ${F.length} Befund(e))`); process.exit(0); } console.log('profil --gegenprobe: FEHLER - Waechter bleibt gruen'); process.exit(1); }
   if (F.length) { console.log(`profil: ${F.length} Befund(e)`); F.forEach(f => console.log('  ' + f)); process.exit(1); }
-  console.log(`profil: ok (Country profile bei allen ${FX.length} Waehrungen direkt ueber Macro in voller Breite, drei Spalten, Rohstoff-Badges = ROHSTOFF_KORB, nicht bei Nicht-FX, Handy ohne country_data.json fehlerfrei)`);
+  console.log(`profil: ok (Country profile bei allen ${FX.length} Waehrungen direkt ueber Macro in voller Breite, drei Spalten, Rohstoff-Badges = ROHSTOFF_KORB, nicht bei Nicht-FX, kein History-Teil, jede Linie oeffnet das Chart-Fenster (volle Breite, Y-Achse, Zeitfilter + Schere, Add chart bis 8), Handy ohne country_data.json fehlerfrei)`);
 })().catch(e => { console.log('profil: ABBRUCH ' + e.message); process.exit(1); });

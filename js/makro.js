@@ -85,7 +85,11 @@ function mkNeu(){if(window.__gpMakroVoll){renderDetail();return;}   // nur check
   try{makroReiheNeu();}catch(e){console.error('[makro]',e);renderDetail();}}
 function mkBrushReg(ri){
   const key='mk:'+ri;
-  if(window.brushReg)window.brushReg(key,{apply(von,bis){mkZoom[mkZoomKey(ri)]={von,bis};mkNeu();},reset(){delete mkZoom[mkZoomKey(ri)];mkNeu();}});
+  // setze/loesche: Asset-Ansicht (brushAnwenden, main.js) - die Spanne gilt
+  // dann fuer ALLE Makro-Karten des Assets, auch die gerade in Tabellen-Sicht.
+  const alle=f=>{const s=getSym();(s&&s.rubrics||[]).forEach((r,i)=>f(i));};
+  if(window.brushReg)window.brushReg(key,{apply(von,bis){mkZoom[mkZoomKey(ri)]={von,bis};mkNeu();},reset(){delete mkZoom[mkZoomKey(ri)];mkNeu();},
+    setze(von,bis){alle(i=>{mkZoom[mkZoomKey(i)]={von,bis};});},loesche(){alle(i=>{delete mkZoom[mkZoomKey(i)];});}});
   return key;
 }
 // Offizielle Zielbaender (Punktziel = untere = obere Grenze). Die Mitte ist
@@ -554,6 +558,16 @@ function makroZeichnen(box){
     // Werte ueber den Balken (und ueber dem Forecast-Punkt, damit nichts die Ziffern verdeckt)
     if(txt.length){
       const y0=yOf(0),halo=Math.max(1.2,wf*0.27).toFixed(1);
+      // Waagerechte Werte: die Schrift kommt aus dem 10-%-Quantil der Abstaende,
+      // kuerzere Abstaende (verschobene Termine, z. B. NFP 11. Feb / 6. Mrz 2026
+      // = 23 Tage, 20 px) ueberlappten trotzdem (gemessen 1 px, check/makro.js).
+      // Deshalb nur die betroffenen Werte auseinanderschieben - erst nach
+      // rechts, dann vom rechten Rand zurueck; die Schrift bleibt fuer alle gleich.
+      const hw=breite.map(b=>b*wf/22),xx=xs.map((x,i)=>Math.max(padL+hw[i],Math.min(W-1-hw[i],x)));
+      if(!senk){
+        for(let i=1;i<xx.length;i++){const m=xx[i-1]+hw[i-1]+hw[i]+1.5;if(xx[i]<m)xx[i]=m;}
+        for(let i=xx.length-1;i>=0;i--){const m=i===xx.length-1?W-1-hw[i]:xx[i+1]-hw[i+1]-hw[i]-1.5;if(xx[i]>m)xx[i]=m;}
+      }
       use.forEach((p,i)=>{
         const top=Math.min(yOf(p[1]),y0),fcTop=p[2]!=null?yOf(p[2])-fcR-1:Infinity,ay=Math.min(top,fcTop)-3;
         const ton=mkTon(sp.ind,p[1],p[2],sym.id);
@@ -561,8 +575,7 @@ function makroZeichnen(box){
         const da=`data-d="${p[0]}" data-ton="${ton}"`;   // fuer check/makro.js I (Farbe gegen die Reihe)
         const tt=`<title>${escH(fmtDayHdr(p[0]))} · Actual ${escH(txt[i])}${p[2]!=null?' · Forecast '+escH(mkWertTxt(p[2],sp.unit)):''}</title>`;
         if(senk)svg+=`<text class="mk-wert mk-wert-s" ${da} transform="translate(${xs[i].toFixed(1)} ${ay.toFixed(1)}) rotate(-90)" text-anchor="start" dominant-baseline="central" style="${st}">${tt}${escH(txt[i])}</text>`;
-        else{const hw=breite[i]*wf/22,xx=Math.max(padL+hw,Math.min(W-1-hw,xs[i]));
-          svg+=`<text class="mk-wert" ${da} x="${xx.toFixed(1)}" y="${ay.toFixed(1)}" text-anchor="middle" style="${st}">${tt}${escH(txt[i])}</text>`;}
+        else svg+=`<text class="mk-wert" ${da} x="${xx[i].toFixed(1)}" y="${ay.toFixed(1)}" text-anchor="middle" style="${st}">${tt}${escH(txt[i])}</text>`;
       });
     }
     svg+=`<line class="mk-cur" x1="0" x2="0" y1="${yTop}" y2="${yBot}" stroke="var(--t0)" stroke-width="1" style="display:none"/>`;

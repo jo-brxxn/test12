@@ -54,7 +54,9 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   researchAnalysis,chartLeisteHtml,markUserEditTs,
   indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,kartenIcon,preisReiheAnzeige,makroReiheNeu,saveSoon,
   // Was js/profil.js (Country Profile, zirkulaerer Import) von hier liest.
-  COMMODITY_DATA,rohstoffReihe,rohstoffTrend,korbReihe,zinsdiffFuer,ROHSTOFF_KORB};
+  COMMODITY_DATA,rohstoffReihe,rohstoffTrend,korbReihe,zinsdiffFuer,ROHSTOFF_KORB,
+  // ... und fuer sein Chart-Fenster (2026-10-25: dieselben Charts wie Data).
+  indHistChart,rohstoffTrendChartHtml,timeRangeBarHtml,timeRangeCustomHtml,TIME_RANGES,brushCustom,ROHSTOFF_NAME};
 // ── EINFARBIGER ICON-SATZ (Nutzer-Wunsch 2026-08-23) ───────────────────────
 // "mach davor die Flagge aber ohne Farben also eine Art icon aber schon die
 // richtige Form und nicht animiert und bei Gold und dem Rest auch gleich".
@@ -725,6 +727,9 @@ function safeUrl(u){
 const ICONS={
   scissors:'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>',
   filter:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+  // Country profile: Linie oeffnet das Chart-Fenster (2026-10-25) / Chart hinzufuegen
+  expand:'<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
   refresh:'<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
   clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
@@ -7709,7 +7714,7 @@ function sbClick(id){
   if(curPage==='cur'&&id!==selId&&!sbEditMode&&wischErlaubt()){
     const t=++_sbWahl;
     if(expandedStack===ASSET_STACK_ID){expandedStack=null;syncNavExpanded();}
-    document.querySelectorAll('#sidebar .ab').forEach(b=>b.classList.toggle('on',b.dataset.sym===id));
+    document.querySelectorAll('#sidebar .ab[data-sym]').forEach(b=>sbZeileMarkieren(b,b.dataset.sym===id));
     requestAnimationFrame(()=>setTimeout(()=>{
       if(t!==_sbWahl||curPage!=='cur')return;   // inzwischen anders gewaehlt/weg
       selSym(id);
@@ -7828,10 +7833,10 @@ function renderSidebar(){
       // bearish oder neutral bias Farbe hat ... Score auch in der Farbe"):
       // farbiges, animiertes Symbol statt Glyphe, Name + Score in Bias-Farbe.
       // Alle anderen Zeilen bleiben neutral wie oben beschrieben.
-      const bv=on?(c.bias||scoreBias(symScore(c))):'';
+      const bv=on?sbBiasWert(c):'';
       return`<div class="np-asset-wrap">
         <button data-sym="${id}" class="np ab np-asset${on?' on':''}" onclick="sbClick('${escJs(id)}')" onpointerdown="sbPressStart('${escJs(id)}')" onpointerup="sbPressEnd()" onpointerleave="sbPressEnd()" onpointercancel="sbPressEnd()" data-tip="${escH(c.name)} ${escH(scTxt)}" aria-label="${escH(c.name)} ${escH(scTxt)}">
-          ${on?(assetIconHtml(id,17)||assetGlyphHtml(id,17)):assetGlyphHtml(id,17)}
+          ${sbSymbolHtml(id,on)}
           <span class="an np-lbl"${bv?` data-bv="${bv}"`:''}>${escH(c.name)}</span>
           <span class="np-score">${escH(scTxt)}</span>
         </button>
@@ -10689,12 +10694,17 @@ function rohstoffTrendChartHtml(id,opts,cmp){
   if(mitEma.length<2){
     return`<div class="ind-hist-wrap">${kopf}<div class="ind-hist-empty">Building up: ${t.n} of ${TREND_EMA_N} trading days recorded. There is no free daily history for this commodity, so the app records its own close each day — the EMA20 and the score start once ${TREND_EMA_N} days are there. Until then this row counts 0.</div></div>`;
   }
-  const R=indHistRange;let use;
+  // opts.range/from/to wie bei indHistChart (Data-Seite, Chart-Fenster) -
+  // bis 2026-10-25 las der Rohstoff-Chart immer den Mini-Zeitraum, auf der
+  // Data-Seite folgte er deshalb dem Zeitfilter oben nicht.
+  const R=opts.range!=null?opts.range:indHistRange;
+  const CF=opts.range!=null?opts.from:indHistCustomFrom,CT=opts.range!=null?opts.to:indHistCustomTo;
+  let use;
   if(R==='MAX')use=mitEma;
-  else if(R==='CUSTOM')use=mitEma.filter(z=>(!indHistCustomFrom||z.d>=indHistCustomFrom)&&(!indHistCustomTo||z.d<=indHistCustomTo));
+  else if(R==='CUSTOM')use=mitEma.filter(z=>(!CF||z.d>=CF)&&(!CT||z.d<=CT));
   else{const c=new Date();c.setMonth(c.getMonth()-R);const cs=isoLokal(c);use=mitEma.filter(z=>z.d>=cs);}
   if(use.length<2)use=mitEma.slice(-Math.min(mitEma.length,20));
-  const n=use.length,W=720,H=230,padT=12,padB=28,padR=10;
+  const n=use.length,W=Math.max(200,Math.round(opts.W||720)),H=Math.max(120,Math.round(opts.H||230)),padT=12,padB=28,padR=10;
   let lo=Infinity,hi=-Infinity;
   use.forEach(z=>{const b=TREND_NEUTRAL_ATR*z.atr;lo=Math.min(lo,z.c,z.ema-b);hi=Math.max(hi,z.c,z.ema+b);});
   const pad=(hi-lo)*0.06||hi*0.01||1;lo-=pad;hi+=pad;
@@ -10719,8 +10729,10 @@ function rohstoffTrendChartHtml(id,opts,cmp){
   sv+=`<polyline points="${use.map((z,i)=>`${xOf(i).toFixed(1)},${yOf(z.c).toFixed(1)}`).join(' ')}" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
   const l=use[n-1];
   sv+=`<circle cx="${xOf(n-1).toFixed(1)}" cy="${yOf(l.c).toFixed(1)}" r="3.2" fill="var(--blue)"/>`;
-  // x-Beschriftung: hoechstens 6, am Rand buendig.
-  const jede=Math.max(1,Math.ceil(n/6));
+  // x-Beschriftung: hoechstens 6, am Rand buendig - und nur so viele, wie in
+  // die Breite passen (seit der Chart in echter Pixelbreite gezeichnet wird,
+  // Chart-Fenster/Data am Handy: 6 Labels auf 280 px lagen uebereinander).
+  const jede=Math.max(1,Math.ceil(n/Math.max(2,Math.min(6,Math.floor(W/105)))));
   use.forEach((z,i)=>{
     if(i%jede!==0&&i!==n-1)return;
     if(i===n-1&&i%jede!==0&&(i%jede)<jede*0.6)return;
@@ -10731,7 +10743,8 @@ function rohstoffTrendChartHtml(id,opts,cmp){
   const lage=z=>z.seite>0?`<b style="color:${BC.bull}">${z.abst.toFixed(2)} ATR above</b>`:z.seite<0?`<b style="color:${BC.bear}">${Math.abs(z.abst).toFixed(2)} ATR below</b>`:`inside the band (${z.abst>=0?'+':''}${z.abst.toFixed(2)} ATR)`;
   const hp=use.map((z,i)=>({fx:xOf(i)/W,fy:yOf(z.c)/H,t:z.d,col:z.seite>0?BC.bull:z.seite<0?BC.bear:'var(--t3)',
     tip:`<div class="chv-tip-d">${escH(fmtDayHdr(z.d))}</div>Close <b>${escH(fmtP(z.c))}</b> · EMA20 ${escH(fmtP(z.ema))}<br>${lage(z)}`}));
-  return`<div class="ind-hist-wrap">${kopf}${chartHoverWrap(svg,hp,null,opts.group)}</div>`;
+  const brKey=opts.noBrush?null:opts.range!=null?(opts.brKey||'setDataRange'):'setIndHistRange';
+  return`<div class="ind-hist-wrap">${kopf}${chartHoverWrap(svg,hp,null,opts.group,null,brKey)}</div>`;
 }
 function rohstoffRegelText(ccy){
   const k=ROHSTOFF_KORB[ccy];if(!k)return'';
@@ -11740,11 +11753,31 @@ function toggleIndDetailRow(ev,indId){
 // Leisten-Inhalt (Name/Score/Sparkline) aendert sich beim Auswaehlen nicht,
 // also genuegt der Klassen-Wechsel. Volle Re-Renders (Score-Update, Flip-
 // Glow, Reorder, Tab-Wechsel) laufen weiter ueber renderSidebar().
+//
+// ⚠ Seit 2026-10-24 haengt an der Auswahl MEHR als die Klasse: die markierte
+// Zeile traegt das farbige, wehende Symbol und Name + Score in Bias-Farbe
+// (renderSidebar). Bugreport 2026-10-25 (iPad-Screenshot): USD -> NZD
+// gewechselt, USD behielt Flagge + Bias-Farbe, NZD war markiert, aber mit
+// grauer Glyphe und weisser Schrift - nur .on war umgesetzt. Deshalb setzt
+// sbZeileMarkieren() alle drei Teile, hier UND im Sofort-Pfad von sbClick().
+function sbBiasWert(c){return c.bias||scoreBias(symScore(c));}
+function sbSymbolHtml(id,on){return on?(assetIconHtml(id,17)||assetGlyphHtml(id,17)):assetGlyphHtml(id,17);}
+function sbZeileMarkieren(b,on){
+  b.classList.toggle('on',on);
+  const sym=on?syms.find(s=>s.id===b.dataset.sym):null;
+  const lbl=b.querySelector('.an');
+  if(lbl){if(sym)lbl.dataset.bv=sbBiasWert(sym);else delete lbl.dataset.bv;}
+  // Symbol nur tauschen, wenn es nicht schon passt - ein Neuaufbau startet
+  // die Wehen-Animation neu.
+  const ic=b.firstElementChild,farbig=!!(ic&&ic.classList.contains('ai-wrap'));
+  if(ic&&farbig!==on&&(on?!!assetIconHtml(b.dataset.sym,17):true)){
+    const t=document.createElement('template');t.innerHTML=sbSymbolHtml(b.dataset.sym,on).trim();
+    if(t.content.firstElementChild)ic.replaceWith(t.content.firstElementChild);
+  }
+}
 function updateSidebarSelection(){
   const active=curPage==='cur';
-  document.querySelectorAll('#sidebar .ab').forEach(b=>{
-    b.classList.toggle('on',active&&b.dataset.sym===selId);
-  });
+  document.querySelectorAll('#sidebar .ab[data-sym]').forEach(b=>sbZeileMarkieren(b,active&&b.dataset.sym===selId));
 }
 // ══ WISCH-UEBERGANG BEIM SEITENWECHSEL (Nutzer-Wunsch 2026-09-23) ════════
 // Woertlich: "Wenn man ein Fenster wechselt zB von usd auf gbp oder Gold dann
@@ -19827,10 +19860,20 @@ function attachChartHovers(root){
 // Charts mit Zeitfilter (Price, History, Trends, Data, aufgeklappte
 // Indikatoren, Makro-Charts, dazu Price-Tab und Paar-Uebersicht).
 //
-// Bedienung: Maus = gedrueckt ziehen (normales Bewegen bleibt der Tooltip).
-// Touch = kurz lange druecken (BR_LANG_MS), dann ziehen - ein normales Wischen
-// bleibt Tooltip bzw. Scrollen. Neben dem Zeitfilter steht danach ein Chip
-// "Von – Bis ×"; das × stellt den vorherigen Zeitraum her.
+// Bedienung (seit 2026-10-25, Nutzer: "die Funktion soll nur gehen wenn man
+// vorher auf die Schere geklickt hat sonst nicht"): NUR mit scharfer Schere.
+// Vorher waehlte schon ein Ziehen mit der Maus bzw. langes Druecken auf Touch
+// eine Spanne - beim Lesen eines Charts oder Scrollen loeste das ungewollt
+// aus. Neben dem Zeitfilter steht danach ein Chip "Von – Bis ×"; das × stellt
+// den vorherigen Zeitraum her.
+//
+// ANSICHT (Nutzer 2026-10-25: "wenn man das benutzt muss das in allen Charts
+// zu sehen sein", Wahl "alle Charts der Ansicht"): eine Spanne gilt fuer alle
+// Charts derselben Ansicht - Asset-Seite (Price, History, Makro-Charts,
+// aufgeklappte Indikatoren), Chart-Fenster des Country profile, Data, Trends.
+// Seiten mit EINEM Schluessel (Data, Trends, Price-Tab) teilten ihn schon
+// immer; die Asset-Seite hatte vier eigene. Ihre Mitglieder tragen dafuer
+// setze()/loesche() (nur Zustand), gezeichnet wird EINMAL je Ansicht.
 //
 // Ein Chart nimmt teil mit data-br="<schluessel>" am Element, das die volle
 // Plotbreite hat, und Ankerpunkten {fx (0..1), t ('YYYY-MM-DD')}: bei .chv aus
@@ -19840,7 +19883,6 @@ function attachChartHovers(root){
 // ⚠ Die gewaehlte Spanne ist eine ANSICHT bis zum Neuladen, wie trendsFokus
 // (docs/state-sync.md "Bewusst NICHT synchronisiert"): sie ist ein Blick, kein
 // Zustand, den der Nutzer behalten will - dafuer gibt es die Zeitfilter.
-const BR_LANG_MS=380;
 // Schere (Nutzer 2026-10-20: "Ich will eine Schere als Symbol haben um die
 // Zeitspanne auszuwaehlen"): ein Knopf neben dem Zeitfilter schaltet die
 // Auswahl fuer DIESEN Chart scharf - dann waehlt ein einfaches Ziehen die
@@ -19859,6 +19901,29 @@ function brushScharfSetzen(key){
   document.querySelectorAll('[data-br]').forEach(el=>el.classList.toggle('br-scharf',!!brScharf&&el.dataset.br===brScharf));
 }
 function brushSchere(key){brushScharfSetzen(brScharf===key?null:key);}
+// Ansicht eines Schluessels: Asset-Seite = 'asset', sonst der Schluessel selbst.
+function brushAnsicht(key){return key==='ab'||key==='hist'||key==='setIndHistRange'||/^mk:/.test(String(key))?'asset':key;}
+const BR_ANSICHT_NEU={asset(){
+  if(curPage==='cur')renderDetail();
+  try{const m=document.getElementById('mHist');if(m&&m.style.display!=='none')histNeuZeichnen();}catch(e){}
+}};
+// Spanne fuer die ganze Ansicht: erst jeden Zustand setzen, dann EIN Aufbau.
+function brushAnwenden(key,von,bis){
+  const g=brushAnsicht(key),neu=BR_ANSICHT_NEU[g];
+  const keys=Object.keys(BRUSH).filter(k=>brushAnsicht(k)===g);
+  // __gpEinzeln: nur fuer die Gegenprobe in check/zeitspanne.js (alter Stand: nur der eigene Chart)
+  if(!neu||window.__gpEinzeln){const o=BRUSH[key];if(o)o.apply(von,bis);return;}
+  keys.forEach(k=>{const o=BRUSH[k];if(o&&o.setze)o.setze(von,bis);});
+  neu();
+}
+function brushReset(key){
+  try{
+    const g=brushAnsicht(key),neu=BR_ANSICHT_NEU[g];
+    if(!neu){const o=BRUSH[key];if(o)o.reset();return;}
+    Object.keys(BRUSH).filter(k=>brushAnsicht(k)===g).forEach(k=>{const o=BRUSH[k];if(o&&o.loesche)o.loesche();});
+    neu();
+  }catch(e){console.error(e);alert('Could not clear the span: '+(e&&e.message||e));}
+}
 try{document.addEventListener('keydown',e=>{if(e.key==='Escape'&&brScharf)brushScharfSetzen(null);});}catch(e){}
 const BRUSH={};
 const _brPrev={};
@@ -19879,7 +19944,7 @@ function brushAnbinden(root){
   (root||document).querySelectorAll('[data-br]').forEach(el=>{
     el.classList.toggle('br-scharf',!!brScharf&&el.dataset.br===brScharf);
     if(el._brWired)return;el._brWired=1;
-    let st=null,lp=0,sel=null,gezogen=false,x0=0,y0=0;
+    let st=null,sel=null,gezogen=false;
     const breite=()=>el.getBoundingClientRect().width||1;
     const fxAt=cx=>{const r=el.getBoundingClientRect();return Math.max(0,Math.min(1,(cx-r.left)/(r.width||1)));};
     const zeige=(a,b)=>{
@@ -19889,18 +19954,18 @@ function brushAnbinden(root){
     const weg=()=>{st=null;gezogen=false;el._brZieht=false;el.classList.remove('br-an');if(sel)sel.style.display='none';};
     el.addEventListener('pointerdown',e=>{
       if(e.pointerType==='mouse'&&e.button!==0)return;
-      const fx=fxAt(e.clientX);x0=e.clientX;y0=e.clientY;
-      if(e.pointerType==='mouse'||brScharf===el.dataset.br){st=fx;gezogen=false;if(e.pointerType!=='mouse'){try{el.setPointerCapture(e.pointerId);}catch(x){}}return;}
-      clearTimeout(lp);
-      lp=setTimeout(()=>{st=fx;gezogen=false;el.classList.add('br-an');try{el.setPointerCapture(e.pointerId);}catch(x){}zeige(fx,fx);},BR_LANG_MS);
+      // ohne Schere: Tooltip/Scrollen, keine Auswahl (__gpOhneSchere: nur fuer
+      // die Gegenprobe in check/zeitspanne.js - stellt das alte Maus-Ziehen nach)
+      if(brScharf!==el.dataset.br&&!(window.__gpOhneSchere&&e.pointerType==='mouse'))return;
+      st=fxAt(e.clientX);gezogen=false;
+      if(e.pointerType!=='mouse'){try{el.setPointerCapture(e.pointerId);}catch(x){}}
     });
     el.addEventListener('pointermove',e=>{
-      if(st==null){if(lp&&Math.hypot(e.clientX-x0,e.clientY-y0)>8){clearTimeout(lp);lp=0;}return;}
+      if(st==null)return;
       const fx=fxAt(e.clientX);
       if(Math.abs(fx-st)*breite()>6){gezogen=true;el._brZieht=true;zeige(st,fx);if(el._chvHide)try{el._chvHide();}catch(x){}}
     });
     const ende=e=>{
-      clearTimeout(lp);lp=0;
       if(st==null)return;
       const a=st,b=fxAt(e.clientX),war=gezogen;weg();
       if(!war)return;
@@ -19910,28 +19975,25 @@ function brushAnbinden(root){
       const o=BRUSH[el.dataset.br];
       if(!A||!B||A.t===B.t||!o)return;
       brScharf=null;
-      try{o.apply(A.t<B.t?A.t:B.t,A.t<B.t?B.t:A.t);}catch(x){console.error(x);alert('Could not apply the selected span: '+(x&&x.message||x));}
+      try{brushAnwenden(el.dataset.br,A.t<B.t?A.t:B.t,A.t<B.t?B.t:A.t);}catch(x){console.error(x);alert('Could not apply the selected span: '+(x&&x.message||x));}
     };
     el.addEventListener('pointerup',ende);
-    el.addEventListener('pointercancel',()=>{clearTimeout(lp);lp=0;weg();});
+    el.addEventListener('pointercancel',weg);
     el.addEventListener('click',e=>{if(el._brSchlucken){el._brSchlucken=false;e.stopPropagation();e.preventDefault();}},true);
     el.addEventListener('contextmenu',e=>{if(el.classList.contains('br-an'))e.preventDefault();});
   });
 }
 function brushChipHtml(key,von,bis){
   if(!von||!bis)return'';
-  return`<span class="br-chip" title="Selected span — drag in the chart to change it"><span>${escH(fmtDayHdr(von))} – ${escH(fmtDayHdr(bis))}</span><button class="br-x" onclick="brushReset('${escJH(key)}')" aria-label="Clear the selected span" title="Back to the previous range">×</button></span>`;
-}
-function brushReset(key){
-  try{const o=BRUSH[key];if(o)o.reset();}catch(e){console.error(e);alert('Could not clear the span: '+(e&&e.message||e));}
+  return`<span class="br-chip" title="Selected span — applies to every chart on this view; tap the scissors to pick a new one"><span>${escH(fmtDayHdr(von))} – ${escH(fmtDayHdr(bis))}</span><button class="br-x" onclick="brushReset('${escJH(key)}')" aria-label="Clear the selected span" title="Back to the previous range">×</button></span>`;
 }
 // Charts mit eigenem CUSTOM-Zeitraum: Ziehen setzt CUSTOM von-bis, das ×
 // stellt die Stufe von vorher her. Der Chip steht in timeRangeCustomHtml.
-function brushCustom(setFn,aktuell){
-  brushReg(setFn,{
+function brushCustom(setFn,aktuell,zustand){
+  brushReg(setFn,Object.assign({
     apply(von,bis){if(!(setFn in _brPrev)){const c=aktuell();_brPrev[setFn]=c==='CUSTOM'?'MAX':c;}window[setFn]('CUSTOM');window[setFn+'Custom'](von,bis);},
     reset(){const p=_brPrev[setFn];delete _brPrev[setFn];window[setFn](p==null?'MAX':String(p));}
-  });
+  },zustand||{}));
 }
 function sentSpark(series,lo,hi,loTh,hiTh){
   const pts=(series||[]).filter(e=>e&&isFinite(+e[1]));
@@ -20230,7 +20292,9 @@ function tvEconReihe(ind,id){
 }
 function indChartSeries(ind,symId){
   const own=Array.isArray(ind.chartHist)?ind.chartHist:[];
-  if(own.length>=2)return{pts:own,unit:null};
+  // chartUnit: eigene Reihen des Chart-Fensters (js/profil.js) tragen ihre
+  // Einheit selbst ('%', ' bp' ...) - sonst wie bisher ohne.
+  if(own.length>=2)return{pts:own,unit:ind.chartUnit!=null?ind.chartUnit:null};
   const r=ind.research||{};
   const id=symId||symIdOfInd(ind);
   const ccy=id?macroCcyFor(id):null;
@@ -20345,7 +20409,9 @@ function indHistChart(ind,symId,opts){
   //   ein nahezu gleich hoher blauer Block - die eigentliche Bewegung
   //   (3,59 % -> 3,69 %) verschwindet komplett. Solche Reihen bekommen
   //   deshalb eine Linie mit min/max-Skala (Nutzer-Bugreport 2026-09-02).
-  const lineMode=_cs.unit!=null&&n>24;
+  // opts.linie: Niveau-Reihen des Chart-Fensters (Spread, Quote, PMI) auch bei
+  // wenigen Punkten als Linie - Balken ab 0 verstecken dort die Bewegung.
+  const lineMode=!!opts.linie||(_cs.unit!=null&&n>24);
   let vMin,vMax;
   if(lineMode){
     vMin=Math.min(...vals);vMax=Math.max(...vals);
@@ -26501,15 +26567,21 @@ setInterval(()=>{
 // echtem JS-Parser (acorn) aus dem Top-Level-Scope dieses Moduls ermittelt,
 // nie per Regex/Handschrift.
 // Zeitspanne per Ziehen: Charts mit eigenem CUSTOM-Zeitraum (siehe brushCustom).
-brushCustom('setIndHistRange',()=>indHistRange);
+brushCustom('setIndHistRange',()=>indHistRange,{
+  // Asset-Ansicht: nur Zustand, gezeichnet wird einmal fuer alle (brushAnwenden)
+  setze(von,bis){if(!('setIndHistRange' in _brPrev))_brPrev.setIndHistRange=indHistRange==='CUSTOM'?'MAX':indHistRange;indHistRange='CUSTOM';indHistCustomFrom=von;indHistCustomTo=bis;},
+  loesche(){if(!('setIndHistRange' in _brPrev))return;const p=_brPrev.setIndHistRange;delete _brPrev.setIndHistRange;indHistRange=p==null?'MAX':p;indHistCustomFrom=indHistCustomTo=null;}
+});
 brushCustom('setDataRange',()=>dataRange);
 brushCustom('setTrendsRange',()=>trendsRange);
 brushCustom('setPriceRange',()=>priceRange);
 brushCustom('setPairOvRange',()=>pairOvRange);
 // History-Karte und -Fenster: eigene Spanne, nur bis zum × oder einer Stufe.
-brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeichnen();},reset(){histZoom=null;histNeuZeichnen();}});
+brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeichnen();},reset(){histZoom=null;histNeuZeichnen();},
+  setze(von,bis){histZoom={von,bis};histAktivTag=null;},loesche(){histZoom=null;}});
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
-brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();}});
+brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
+  setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
 Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,

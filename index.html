@@ -6206,6 +6206,31 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
   .cp-laender{grid-template-columns:repeat(2,minmax(0,1fr))}
   .cp-sep{width:auto;height:1px;margin:12px 0;background:linear-gradient(to right,transparent,var(--bd2) 10%,var(--bd2) 90%,transparent)}
 }
+/* Linie anklickbar -> Chart-Fenster (2026-10-25). Symbol immer sichtbar
+   (Touch hat kein Hover), Flaeche reagiert auf Hover/Fokus. */
+.cp-spk{position:relative;cursor:pointer;border-radius:6px;outline-offset:2px}
+.cp-spk:focus-visible{outline:2px solid var(--ui-act)}
+@media (hover:hover){.cp-spk:hover{background:rgba(var(--ui-act-rgb),.06)}.cp-spk:hover .cp-spk-i{opacity:1}}
+.cp-spk-i{position:absolute;top:-2px;right:-2px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:5px;background:var(--bg1);border:1px solid var(--bd);color:var(--ui-act);opacity:.85;pointer-events:none}
+.cp-spk .cp-sp{display:block}
+/* Chart-Fenster: Kopfleiste (Add chart | Zeitfilter), Auswahl, Panels wie Data */
+.m-gross>#cpfBody{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.cpf-leiste{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.cpf-add-b{display:inline-flex;align-items:center;gap:6px;height:34px}
+.cpf-add-b b{font-weight:700;color:var(--t2)}
+.cpf-add-b.on{background:var(--ui-act);border-color:var(--ui-act);color:var(--ui-act-fg)}
+.cpf-add-b.on b{color:inherit}
+.cpf-zeit{margin:0 0 0 auto;padding:0}
+.cpf-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 14px;max-height:34vh;overflow:auto;overscroll-behavior:contain;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg1);margin-bottom:10px;flex:none}
+.cpf-pick-k{font:700 var(--fs-xs)/1.2 var(--ff-text);text-transform:uppercase;letter-spacing:.06em;color:var(--t2);margin:2px 0 4px}
+.cpf-pick-i{display:block;width:100%;text-align:left;min-height:28px;padding:4px 8px;border:1px solid transparent;border-radius:6px;background:none;color:var(--t1);font:500 var(--fs-sm)/1.25 var(--ff-text);cursor:pointer}
+.cpf-pick-i.on{background:var(--ui-act);color:var(--ui-act-fg);font-weight:700}
+.cpf-pick-i:disabled{opacity:.4;cursor:default}
+@media (hover:hover){.cpf-pick-i:not(.on):not(:disabled):hover{background:var(--bg3);color:var(--t0)}}
+.cpf-liste{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:10px}
+.cpf-panel{flex:none}
+.cpf-pc{padding:6px 8px 4px}
+@media(max-width:640px){.cpf-zeit{margin-left:0;width:100%}}
 @media(max-width:640px){.cp-hd{flex-wrap:wrap}.cp-hd-sub{order:3;flex-basis:100%;margin-left:0;text-align:left;padding-top:2px}.ab-tile-hd.cp-hd>.ii-nach{margin-left:auto!important}.cp-laender{grid-template-columns:minmax(0,1fr)}.cp-kopf-l{flex-wrap:wrap}.cp-kopf-l .cp-kopf-x{flex-basis:100%;margin-left:0;line-height:1.3}.cp-card{padding:13px 12px}.cp-l{flex-basis:100px}.cp-abh-z{grid-template-columns:72px minmax(0,1fr)}}
 /* ── Wisch-Uebergang beim Seitenwechsel (2026-09-23, siehe wischStart in
    js/main.js). pointer-events:none: der Inhalt darunter ist sofort bedienbar,
@@ -6825,11 +6850,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-633 - Neue Karte Country profile (nur Waehrungen, ueber Macro): Zentralbank | Wirtschaft + Arbeitsmarkt | Was die Waehrung bewegt, beim Euro die fuenf grossen Mitgliedslaender. Neue Datei country_data.json (World Bank, Euro-Spreads, SNB-Giroguthaben, China-PMI, BoE-Abstimmungen), Gas TTF und LNG JKM im Rohstoff-Feed."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-634 - Asset-Leiste: farbige Flagge + Bias-Farbe wandern beim Wechsel mit (blieben am alten Asset). Country profile: History raus, jede Linie oeffnet ein Chart-Fenster (Zeitraum, weitere Charts bis 8, ein Cursor). Schere: Auswahl nur noch nach Klick auf die Schere, Spanne gilt fuer alle Charts der Ansicht. country_data: Spreads mit EZB-Historie, Renditen auch am Wochenende, Schulden vom IWF."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-633</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-634</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -7311,6 +7336,15 @@ window.fxLogoSvg=function(art){
   </div>
 </div>
 <!-- MODAL: History -->
+<!-- CHART-FENSTER DES COUNTRY PROFILE (Nutzer 2026-10-25: Linien anklickbar,
+     Chart in normaler Groesse, Zeitraum, weitere Charts wie bei Data) -->
+<div class="ov" id="mCpChart" style="display:none">
+  <div class="modal m-gross cpf-modal" style="max-width:min(1180px,96vw)">
+    <h3 id="mCpChartTitle">Charts</h3>
+    <div id="cpfBody"></div>
+    <div class="m-btns"><button class="btn g" onclick="closeM('mCpChart')">Done</button></div>
+  </div>
+</div>
 <!-- PREISCHART EINES ASSETS (Nutzer-Wunsch 2026-09-05) -->
 <div class="ov" id="mPrice" style="display:none">
   <div class="modal px-modal" style="max-width:min(1180px,96vw)">

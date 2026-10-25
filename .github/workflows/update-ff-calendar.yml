@@ -5750,6 +5750,16 @@ jobs:
       #    steigen sie stark, kauft die SNB Devisen gegen Franken.
       #  - China NBS PMI und BoE-Abstimmungen aus dem Kalenderarchiv cal_hist/
       #    (dieselbe Quelle wie der Kalender, kein neuer Abruf).
+      #  - Seit 2026-10-25 abends (Nutzer: "lös selber den Workflow aus damit
+      #    die Karte alle Daten bekommt"), gemessen am ersten Lauf (Sonntag):
+      #    * 10Y-Renditen auch am Wochenende - unter dem LETZTEN HANDELSTAG
+      #      (Fr) statt gar nicht (erster Lauf: 0/4). Dazu NL.
+      #    * Monatsreihe der 10Y-Renditen (EZB, Datensatz IRS, Konvergenz-
+      #      Renditen) ab 2016 als Historie der Spreads - die Tageswerte von
+      #      TradingView beginnen erst mit diesem Schritt.
+      #    * Staatsschulden einheitlich vom IWF (WEO, GGXWDG_NGDP, Gesamtstaat)
+      #      - die Weltbank-Reihe (Zentralstaat) fehlte fuer Euroraum, DE, FR,
+      #      IT und NL. Nur Ist-Jahre (bis Vorjahr), keine IWF-Prognosen.
       - name: Fetch country profile data (World Bank + euro spreads + SNB + archive) -> country_data.json
         continue-on-error: true
         run: |
@@ -5762,8 +5772,10 @@ jobs:
             done
           fi
           curl -sL -A "$UA" -H "Origin: https://www.tradingview.com" -H "Content-Type: application/json" \
-            --data '{"symbols":{"tickers":["TVC:IT10Y","TVC:FR10Y","TVC:ES10Y","TVC:DE10Y"],"query":{"types":[]}},"columns":["close"]}' \
+            --data '{"symbols":{"tickers":["TVC:IT10Y","TVC:FR10Y","TVC:ES10Y","TVC:DE10Y","TVC:NL10Y"],"query":{"types":[]}},"columns":["close"]}' \
             "https://scanner.tradingview.com/global/scan" -o cp_tv.json || true
+          curl -sL --connect-timeout 15 --max-time 40 -A "$UA" -w "[debug] ECB IRS 10Y monthly: http=%{http_code} size=%{size_download}\n" "https://data-api.ecb.europa.eu/service/data/IRS/M.DE+FR+IT+ES+NL.L.L40.CI.0000.EUR.N.Z?format=csvdata&startPeriod=2016-01" -o cp_irs.csv || true
+          curl -sL --connect-timeout 15 --max-time 40 -A "$UA" -w "[debug] IMF WEO debt: http=%{http_code} size=%{size_download}\n" "https://www.imf.org/external/datamapper/api/v1/GGXWDG_NGDP/USA/EURO/GBR/JPN/CHE/CAN/AUS/NZL/DEU/FRA/ITA/ESP/NLD" -o cp_imf.json || true
           FROM_D=$(date -u -d '800 days ago' +%Y-%m-%d)
           curl -sL --connect-timeout 15 --max-time 30 -A "$UA" -w "[debug] SNB sight deposits: http=%{http_code} size=%{size_download}\n" "https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en?fromDate=${FROM_D}&toDate=${TODAY}" -o cp_snb.csv || true
           cat > cp_build.js <<'CPJS'
@@ -5787,13 +5799,37 @@ jobs:
             if(n>0){out.wb=wb;log.push("World Bank "+n+" values for "+Object.keys(wb.countries).length+" countries");}
             else log.push("World Bank: no values, previous kept");
           }else log.push("World Bank already fetched today");
-          // 2) 10Y-Renditen fuer die Euro-Spreads (nur Handelstage)
+          // 2) 10Y-Renditen fuer die Euro-Spreads. Am Wochenende liefert der
+          //    Scanner den Freitagsschluss -> unter Freitag ablegen.
           const tv=lies("cp_tv.json"),rows=tv&&Array.isArray(tv.data)?tv.data:[];
           const wt=new Date(today+"T00:00:00Z").getUTCDay();
+          const tag=wt===0||wt===6?new Date(Date.parse(today+"T00:00:00Z")-(wt===0?2:1)*864e5).toISOString().slice(0,10):today;
           const y10=out.y10||{};let ny=0;
-          if(wt>0&&wt<6)rows.forEach(r=>{const k={"TVC:IT10Y":"IT","TVC:FR10Y":"FR","TVC:ES10Y":"ES","TVC:DE10Y":"DE"}[r.s];const v=r.d&&Number(r.d[0]);
-            if(!k||!isFinite(v))return;let s=(y10[k]||[]).filter(e=>e&&e[0]!==today);s.push([today,Math.round(v*1000)/1000]);s.sort((a,b)=>a[0]<b[0]?-1:1);y10[k]=s.slice(-800);ny++;});
-          out.y10=y10;log.push("10Y yields "+ny+"/4");
+          rows.forEach(r=>{const k={"TVC:IT10Y":"IT","TVC:FR10Y":"FR","TVC:ES10Y":"ES","TVC:DE10Y":"DE","TVC:NL10Y":"NL"}[r.s];const v=r.d&&Number(r.d[0]);
+            if(!k||!isFinite(v))return;let s=(y10[k]||[]).filter(e=>e&&e[0]!==tag);s.push([tag,Math.round(v*1000)/1000]);s.sort((a,b)=>a[0]<b[0]?-1:1);y10[k]=s.slice(-800);ny++;});
+          out.y10=y10;log.push("10Y yields "+ny+"/5 ("+tag+")");
+          // 2b) Monatsreihe (EZB IRS, CSV mit Kopfzeile): Historie der Spreads.
+          try{
+            const z=fs.readFileSync("cp_irs.csv","utf8").split(/\r?\n/).filter(Boolean);
+            const kopf=z.shift().split(",").map(x=>x.replace(/"/g,""));
+            const iA=kopf.indexOf("REF_AREA"),iT=kopf.indexOf("TIME_PERIOD"),iV=kopf.indexOf("OBS_VALUE");
+            const m={};let nm=0;
+            if(iA>=0&&iT>=0&&iV>=0)z.forEach(l=>{const f=l.split(",").map(x=>x.replace(/"/g,""));const v=Number(f[iV]);
+              if(!/^\d{4}-\d{2}$/.test(f[iT])||f[iV]===""||!isFinite(v))return;(m[f[iA]]=m[f[iA]]||[]).push([f[iT],Math.round(v*1000)/1000]);nm++;});
+            if(nm>0){Object.keys(m).forEach(k=>m[k].sort((a,b)=>a[0]<b[0]?-1:1));out.y10m={source:"ECB, IRS long-term interest rates (monthly average)",series:m};}
+            log.push("ECB monthly 10Y "+nm+" points");
+          }catch(e){log.push("ECB monthly 10Y: none, previous kept");}
+          // 2c) Staatsschulden (IWF WEO, % des BIP): je Land das juengste
+          //     Ist-Jahr (<= Vorjahr) - spaetere Jahre sind IWF-Prognosen.
+          try{
+            const d=lies("cp_imf.json"),v=d&&d.values&&d.values.GGXWDG_NGDP;
+            const L2={USA:"USD",EURO:"EUR",GBR:"GBP",JPN:"JPY",CHE:"CHF",CAN:"CAD",AUS:"AUD",NZL:"NZD",DEU:"DE",FRA:"FR",ITA:"IT",ESP:"ES",NLD:"NL"};
+            const bis=+today.slice(0,4)-1,debt={};
+            if(v)Object.keys(v).forEach(c=>{const k=L2[c];if(!k)return;const j=Object.keys(v[c]).map(Number).filter(y=>y<=bis&&isFinite(+v[c][y])).sort((a,b)=>b-a)[0];
+              if(j)debt[k]=[j,Math.round(+v[c][j]*10)/10];});
+            if(Object.keys(debt).length){out.imf={source:"IMF World Economic Outlook (general government gross debt, % of GDP)",debt};}
+            log.push("IMF debt "+Object.keys(debt).length+"/13");
+          }catch(e){log.push("IMF debt: none, previous kept");}
           // 3) SNB-Sichtguthaben (CSV: "Date";"D0";"Value", Mio. CHF)
           let snbN=0;
           try{
@@ -5813,18 +5849,19 @@ jobs:
             const k=/^NBS Manufacturing PMI$/.test(t)?"mfg":/^NBS Non[ -]Manufacturing PMI$/.test(t)?"svc":null;if(!k)return;
             cn[k].push([String(e[0]).slice(0,10),zahl(e[4]),zahl(e[5])]);});
           Object.keys(cn).forEach(k=>{const m=new Map();cn[k].forEach(x=>m.set(x[0],x));cn[k]=[...m.values()].sort((a,b)=>a[0]<b[0]?-1:1).slice(-24);});
-          out.china={source:"NBS via TradingView calendar (cal_hist)",pmi:cn};
+          if(cn.mfg.length||cn.svc.length)out.china={source:"NBS via TradingView calendar (cal_hist)",pmi:cn};
           const boe={};
           ev.forEach(e=>{if(!Array.isArray(e)||e[1]!=="GBP"||e[4]==="")return;const m=/^BoE MPC Vote (Hike|Unchanged|Cut)$/.exec(String(e[2]));if(!m)return;
             const d=String(e[0]).slice(0,10);(boe[d]=boe[d]||{})[m[1]]=zahl(e[4]);});
-          out.boe={source:"Bank of England via TradingView calendar (cal_hist)",votes:Object.keys(boe).sort().slice(-12).map(d=>[d,boe[d].Hike||0,boe[d].Unchanged||0,boe[d].Cut||0])};
-          log.push("China PMI "+cn.mfg.length+"/"+cn.svc.length+", BoE meetings "+out.boe.votes.length);
+          const boeV=Object.keys(boe).sort().slice(-12).map(d=>[d,boe[d].Hike||0,boe[d].Unchanged||0,boe[d].Cut||0]);
+          if(boeV.length)out.boe={source:"Bank of England via TradingView calendar (cal_hist)",votes:boeV};
+          log.push("China PMI "+cn.mfg.length+"/"+cn.svc.length+", BoE meetings "+boeV.length+(cn.mfg.length&&boeV.length?"":" (empty parts keep the previous state)"));
           out.updated=new Date().toISOString();
           fs.writeFileSync("country_data.json",JSON.stringify(out));
           console.log("country_data.json: "+log.join(" | "));
           CPJS
           node cp_build.js "$TODAY" "$WB_DONE" || true
-          rm -f cp_build.js cpwb_*.json cp_tv.json cp_snb.csv
+          rm -f cp_build.js cpwb_*.json cp_tv.json cp_snb.csv cp_irs.csv cp_imf.json
 
       - name: Cleanup temp files
         run: rm -f thisweek.json nextweek.json fxstreet.json te.json te_pages.json tepage_*.html invcal.json tv.json tv_wide.json tv_recent.json tv_hist_*.json alt_actuals.json ffhtml_*.html cot_raw.json cot_pct_url.txt cot_pct_raw.json stooq_*.csv stooq_meta.txt news_marketaux.json

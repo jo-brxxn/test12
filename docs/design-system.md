@@ -1593,10 +1593,16 @@ Gilt NUR hier. Geprüft: `check/namen.js` D (6 Breiten, breite Ersatzschrift).
 
 **Zeitspanne per Ziehen (2026-10-20, Nutzer: *„im Chart die Zeitspanne
 auswählen … mit x geht das wieder weg“*).** Jeder Chart mit Zeitfilter nimmt
-teil (`data-br` + Anker, `brushAnbinden` in `js/main.js`). Maus: gedrückt
-ziehen; Touch: lange drücken (380 ms), dann ziehen — normales Wischen bleibt
-Tooltip/Scrollen. Danach ersetzt ein Navy-Chip „Von – Bis ×“ die Stufen; × =
-vorheriger Zeitraum. **Schere** (Nutzer 2026-10-20: *„Ich will eine Schere als Symbol
+teil (`data-br` + Anker, `brushAnbinden` in `js/main.js`). **Seit 2026-10-25
+nur mit Schere** (Nutzer: *„die Funktion soll nur gehen wenn man vorher auf
+die Schere geklickt hat sonst nicht“*): ohne Schere ist Ziehen/langes Drücken
+nur Tooltip bzw. Scrollen. Danach ersetzt ein Navy-Chip „Von – Bis ×“ die
+Stufen; × = vorheriger Zeitraum. **Die Spanne gilt für alle Charts der
+Ansicht** (Nutzer: *„muss das in allen Charts zu sehen sein“*): Asset-Seite =
+Price, History, Makro-Charts, aufgeklappte Indikatoren (`brushAnsicht` →
+`'asset'`, Zustand je Mitglied per `setze/loesche`, EIN Aufbau); Chart-Fenster,
+Data, Trends, Price-Tab je ein gemeinsamer Schlüssel. Ein × nimmt die Spanne
+überall in der Ansicht weg. **Schere** (Nutzer 2026-10-20: *„Ich will eine Schere als Symbol
 haben um die Zeitspanne auszuwählen“*): Symbolknopf 28 px links vor den
 Stufen (`brushSchereHtml`); angetippt (Navy) reicht ein einfaches Ziehen,
 auch auf Touch; nach der Auswahl, nochmal tippen oder Esc wieder aus. Neue Charts mit Zeitfilter bekommen das mit
@@ -1865,4 +1871,6 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - Tempo-Chip: *Fast mover* navy, *Slow mover/Very slow* amber, *Medium* grau.
 - Kopf: Titel · ⓘ ganz rechts (`.ii-nach`), Land · Bank davor rechtsbündig; am Handy Land · Bank in eigener Zeile. Fuß: *Go to Rate Probabilities →*.
 - Feste Daten im Text mit zweistelligem Jahr: *Mar ’26*, *Jan 15, 15* (typografischer Apostroph).
+- **Kein History-Teil** (Nutzer 2026-10-25 entfernt).
+- **Jede Linie ist anklickbar** (`.cp-spk`, Symbol oben rechts immer sichtbar) → Fenster `#mCpChart`: Chart in voller Breite, Zeitfilter + Schere, *Add chart* (Karte + alle Indikatoren des Assets, bis 8), Panel-Kopf wie Data (`.data-ph`, 17 px, ⓘ, ✕), ein Cursor. Gezeichnet mit `indHistChart`/`rohstoffTrendChartHtml` — nie ein eigener Chart-Typ.
 - Geprüft von `check/profil.js`.

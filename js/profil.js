@@ -25,7 +25,9 @@
 import {BC,FX} from './constants.js';
 import {escH,icn,getSym,abInfoBtn,abGoToHtml,biasCss,indName,indZeilenWerte,indNextReleaseCell,stripPeriodSuffix,
   INFL_ZIEL,nivAlle,nivEintrag,nivReihe,DATA_BASE,FEED_TIMEOUT_MS,todayStr,
-  COMMODITY_DATA,rohstoffReihe,rohstoffTrend,korbReihe,zinsdiffFuer,ROHSTOFF_KORB} from './main.js';
+  COMMODITY_DATA,rohstoffReihe,rohstoffTrend,korbReihe,zinsdiffFuer,ROHSTOFF_KORB,
+  indHistChart,indChartSeries,rohstoffTrendChartHtml,timeRangeBarHtml,timeRangeCustomHtml,TIME_RANGES,brushCustom,ROHSTOFF_NAME,
+  attachChartHovers,openM,syms} from './main.js';
 import {priceSeriesFor} from './data-feeds.js';
 import {indScore} from './score.js';
 import {fmtDayShort} from './calendar.js';
@@ -49,7 +51,6 @@ const CP={
     typisch:['<b>Reserve currency</b>: bid in global panics (<i>dollar smile</i>)','A Fed surprise moves every other currency'],
     abh:[['Trade','Exports only ~11% of GDP <i>(lowest in the G10)</i>'],['Energy','Net energy exporter since 2019'],['Fiscal','Large deficits · term-premium risk <i>(Apr ’25)</i>']],
     deals:['<b>USMCA</b> · review Jul ’26 not extended → yearly reviews','<b>IEEPA tariffs</b> struck down (Feb 20, 26) · replaced via Sec. 122/232/301','2025 deals: EU/Japan 15% · UK 10% · Switzerland 15%'],
-    historie:['1979–81 Volcker: rates up to 20%','1985 Plaza Accord: coordinated dollar fall','2022 fastest hikes since 1980 · DXY 114','Apr ’25 "Sell America": yields up, dollar down'],
     roh:[['OIL',1,'net exporter']]},
   EUR:{land:'Euro area',bank:'European Central Bank',kurz:'ECB',ziel:['2%','HICP inflation · symmetric, medium term'],
     tempo:['slow','Slow','consensus of 26 governors · hiked 4 months after the Fed in 2022'],
@@ -61,7 +62,6 @@ const CP={
     typisch:['<b>Rate gap to the USD</b> drives EUR/USD','Spread stress (Italy, France) weakens the euro','Hiked into the oil shocks of 2008 and 2011 — and reversed'],
     abh:[['Energy','Imports most of its gas and oil · gas spikes weigh <i>(2022: parity)</i>'],['Industry','German exports: cars, machinery, chemicals'],['Spreads','Italy / France vs Bund = fragmentation risk']],
     deals:['<b>EU–US deal</b> Jul ’25: 15% tariff cap','EU–UK Trade and Cooperation Agreement (2021)','EU–Japan EPA (2019)'],
-    historie:['1999 euro launch','2010–12 debt crisis · "whatever it takes" (Jul ’12)','2014–22 negative rates','2022 parity on the gas shock'],
     roh:[['GAS',-1,'imports gas'],['OIL',-1,'imports oil']],
     laender:{DE:['Germany','Industry & exports · low debt · fiscal turn 2025 (defence, €500 bn infrastructure)','Energy-hungry industry · China competition · car tariffs'],
       FR:['France','Large services sector · nuclear power','High deficit & debt · unstable governments · rating cuts 2025'],
@@ -78,7 +78,6 @@ const CP={
     typisch:['<b>Twin deficits</b>: needs foreign money → falls when gilts sell off <i>(2022, Jan ’25)</i>','Dissenting votes often lead the next move'],
     abh:[['Services','~80% of output · finance ~9%'],['External','Current account deficit · funded by foreign capital'],['Fiscal','Budget credibility moves gilts and sterling']],
     deals:['<b>Brexit TCA</b> (2021) · Windsor Framework (2023)','<b>US–UK deal</b> May ’25: 10% baseline','CPTPP since Dec ’24 · UK–India FTA (2025)'],
-    historie:['1992 Black Wednesday: out of the ERM','2016 Brexit vote: −8% overnight','2022 Truss mini-budget: 1.035 low, LDI crisis'],
     roh:[['GAS',-1,'imports gas (UK prices track TTF)']]},
   JPY:{land:'Japan',bank:'Bank of Japan',kurz:'BoJ',ziel:['2%','inflation "stable and sustainable" with rising wages'],
     tempo:['vslow','Very slow','moves every few meetings · plans leak beforehand (Nikkei, Jiji)'],
@@ -91,7 +90,6 @@ const CP={
     eingriffe:['2022: at 145.9 and 151.9','2024: at 160.2 and 161.9','2026: above 160 in Apr/May (¥11.7 trn) · 30 Jul with the US at ~164'],
     abh:[['Energy','~90% imported · oil & LNG up = trade deficit'],['Rates abroad','US–Japan yield gap drives USD/JPY'],['Income','Investment income keeps the current account positive']],
     deals:['<b>US–Japan deal</b> Jul ’25: 15% tariffs, $550 bn investment pledge','CPTPP · RCEP · EU–Japan EPA'],
-    historie:['1985 Plaza Accord','1990 bubble burst → lost decades','2011 record 75.3 per USD · G7 intervention','2013 Abenomics · 2016–24 yield curve control','Mar ’24 end of negative rates'],
     roh:[['OIL',-1,'imports oil'],['LNG',-1,'imports LNG']]},
   CHF:{land:'Switzerland',bank:'Swiss National Bank',kurz:'SNB',ziel:['0–2%','CPI = price stability'],
     tempo:['fast','Fast','4 meetings a year · likes to surprise (2015, first G10 cut Mar ’24)'],
@@ -103,7 +101,6 @@ const CP={
     typisch:['<b>Safe haven</b>: rises in crises','<b>SNB sells francs</b> (FX interventions) — sight deposits rise when it does','2011 floor 1.20 · removed Jan 15, 15: +20–30% in minutes'],
     abh:[['Pharma','> 50% of goods exports <i>(2025: CHF 152 bn of 287 bn)</i>'],['Gold','Refining hub: gold flows distort trade and GDP'],['Statistics','Read GDP sport-event adjusted (SECO)']],
     deals:['<b>US tariff</b> 39% → 15% (from Nov 14, 25)','EU Bilaterals I/II · new package agreed Dec ’24','FTA with China (2014)'],
-    historie:['2011 floor 1.20 per EUR','Jan 15, 15: floor removed','2015–22 rates −0.75%','2022 hikes to 1.75% · back at 0% since Jun ’25'],
     roh:[['GOLD',1,'gold refining & trade']]},
   CAD:{land:'Canada',bank:'Bank of Canada',kurz:'BoC',ziel:['2%','CPI · 1–3% band · core trim / median'],
     tempo:['fast','Fast','first G7 bank to cut in 2024 · 50 bp steps when needed'],
@@ -115,7 +112,6 @@ const CP={
     typisch:['Mortgages reset every ~5 years: rate moves hit households fast','Inflation-target framework renewal due by end-2026'],
     abh:[['USA','~75% of exports go to the US'],['Energy','~¼ of goods exports · 63% of US crude imports <i>(2025)</i>'],['Households','Debt ~175% of disposable income']],
     deals:['<b>CUSMA / USMCA</b>: review Jul ’26 not extended → yearly reviews to 2036','<b>US 50% tariffs</b> on some goods (Sec. 338, 2026) · counter-tariffs','CETA (EU) · CPTPP'],
-    historie:['2007 and 2011: parity with the USD','2014–16 oil crash: 1.46','Feb ’25 tariff shock: 1.47','May ’24 Trans Mountain expansion'],
     roh:[['OIL',1,'exports oil']]},
   AUD:{land:'Australia',bank:'Reserve Bank of Australia',kurz:'RBA',ziel:['2–3%','CPI · aims for 2.5% · plus full employment'],
     tempo:['mid','Cautious','2023 peak only 4.35% · 2026: four hikes'],
@@ -127,7 +123,6 @@ const CP={
     typisch:['<b>Risk currency</b>: falls in global sell-offs','China proxy via iron ore'],
     abh:[['China','29% of exports <i>(DFAT 2025)</i>'],['Mining','Iron ore 18% · coal 10% · gas 9% · gold 9% of exports <i>(DFAT 2025)</i>']],
     deals:['<b>ChAFTA</b> with China (2015)','RCEP · CPTPP · AUKUS (2021)','China curbs 2020 (coal, barley, wine) · lifted 2023–24'],
-    historie:['2008: 0.98 → 0.60','2011 mining-boom peak 1.10','2013–20 downtrend with commodities'],
     roh:[['IRON',1,'exports iron ore'],['COAL',1,'exports coal'],['GOLD',1,'exports gold'],['LNG',1,'exports LNG']],china:true},
   NZD:{land:'New Zealand',bank:'Reserve Bank of New Zealand',kurz:'RBNZ',ziel:['1–3%','CPI · aims for 2% · price stability only since end-2023'],
     tempo:['fast','Fast','first G10 hike in 2021 · cut in 50 bp steps 2024/25'],
@@ -139,7 +134,6 @@ const CP={
     typisch:['Fast bank → <b>swings hard on data</b>','<b>Risk currency</b>, moves with the AUD'],
     abh:[['Dairy','~30% of goods exports · 22% of world dairy trade <i>(2025)</i>'],['China','Largest buyer · dairy tariff-free since Jan ’24'],['External','Large current account deficit → needs capital inflows']],
     deals:['<b>CER</b> with Australia (1983)','NZ–China FTA (2008, upgraded 2022)','CPTPP · NZ–UK (2023) · NZ–EU (2024)'],
-    historie:['2014 peak 0.88','Oct ’21 first G10 hike','2024/25 recession and big cuts','Nov 7, 26: general election'],
     roh:[['DAIRY',1,'exports dairy']],china:true}
 };
 const TEMPO_TXT={fast:'Fast mover',mid:'Medium',slow:'Slow mover',vslow:'Very slow'};
@@ -170,6 +164,14 @@ const vz=(v,d)=>{if(v==null||!isFinite(v))return'–';const t=Math.abs(v).toFixe
 const leer=t=>`<div class="cp-leer">${t}</div>`;
 // Gestreckte Linie ohne Text und ohne Kreise (Design-Regel C: gestreckte SVGs
 // tragen keinen Text). Bezugslinie gestrichelt (Ziel = blau wie in den Makro-Charts).
+// o.k: Schluessel im Chart-Fenster (cpfKatalog) - dann oeffnet ein Klick die
+// Linie dort in voller Groesse (Nutzer 2026-10-25). Das Symbol oben rechts ist
+// immer sichtbar (Touch: kein Hover-only, Design-Audit Runde 2).
+function cpKlick(k,svg){
+  if(!k)return svg;
+  const a=`cpfOeffnen('${h(k)}')`;
+  return`<div class="cp-spk" role="button" tabindex="0" onclick="${a}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${a}}" title="Open as a full chart">${svg}<span class="cp-spk-i" aria-hidden="true">${icn('expand',11)||''}</span></div>`;
+}
 function cpSpark(pts,o){
   o=o||{};
   const p=(pts||[]).filter(e=>e&&isFinite(e[1]));
@@ -180,12 +182,19 @@ function cpSpark(pts,o){
   const X=i=>(i/(p.length-1)*100).toFixed(2),Y=v=>(30-(v-lo)/(hi-lo)*30).toFixed(2);
   const linie=p.map((e,i)=>`${X(i)},${Y(e[1])}`).join(' ');
   const ref=o.ref!=null?`<line x1="0" x2="100" y1="${Y(o.ref)}" y2="${Y(o.ref)}" class="cp-sp-ref${o.refZiel?' cp-sp-ziel':''}" vector-effect="non-scaling-stroke"/>`:'';
-  return`<svg class="cp-sp" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">${ref}<polyline points="${linie}" fill="none" style="stroke:${o.col||'var(--ui-act)'}" vector-effect="non-scaling-stroke"/></svg>`;
+  return cpKlick(o.k,`<svg class="cp-sp" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">${ref}<polyline points="${linie}" fill="none" style="stroke:${o.col||'var(--ui-act)'}" vector-effect="non-scaling-stroke"/></svg>`);
 }
 function cpSparZeile(pts,o,von){
   const s=cpSpark(pts,o);if(!s)return'';
   const d0=pts[0]&&pts[0][0],d1=pts[pts.length-1]&&pts[pts.length-1][0];
   return`<div class="cp-spz">${s}<div class="cp-spz-a"><span>${d0?h(fmtDayShort(String(d0).slice(0,10))):''}</span>${o&&o.refLbl?`<span class="${o.refZiel?'cp-zl':''}">${o.refLbl}</span>`:''}<span>${d1?h(fmtDayShort(String(d1).slice(0,10))):''}</span></div></div>`;
+}
+// Staatsschulden: IWF WEO (Gesamtstaat, alle 13 Laender), sonst Weltbank.
+// [Jahr, % des BIP, Quelle] - die Weltbank-Reihe fehlte fuer Euroraum, DE,
+// FR, IT, NL (erster Lauf 2026-10-25).
+function cpSchuld(d,k){
+  const i=d&&d.imf&&d.imf.debt&&d.imf.debt[k];if(i)return[i[0],i[1],'IMF'];
+  const w=d&&d.wb&&d.wb.countries&&d.wb.countries[k]&&d.wb.countries[k]['GC.DOD.TOTL.GD.ZS'];return w?[w[0],w[1],'World Bank']:null;
 }
 const seit=(pts,tage)=>{if(!pts||!pts.length)return[];const ab=Date.parse(todayStr())-tage*864e5;return pts.filter(e=>Date.parse(String(e[0]).slice(0,10))>=ab);};
 function cpInd(sym,base){
@@ -252,7 +261,7 @@ function cpSpalteBank(sym,c,d){
   h1+=kv('Policy rate',lz?`<b>${fmt(lz.wert,2)}%</b>`:'–',lz&&lz.letzte?`<span style="color:${lz.letzte.bp>0?BC.bull:BC.bear}">${lz.letzte.bp>0?'+':'−'}${Math.abs(lz.letzte.bp)} bp</span> <i>${h(fmtDayShort(lz.letzte.d))}</i>`:'');
   if(next)h1+=kv('Next decision',`<b>${h(next)}</b>`,'');
   if(infl)h1+=kv('Inflation vs target',`<b>${h(infl.act)}</b>`,`<i>${h(String(infl.mass||'').replace(/ vs target.*$/,''))}</i>`);
-  h1+=cpSparZeile(cpiR,{ref:INFL_ZIEL[sym.id],refZiel:true,refLbl:/aims for/.test(c.ziel[1])?`aim ${INFL_ZIEL[sym.id]}%`:c.ziel[0].includes('–')?`mid of ${c.ziel[0]}`:`target ${INFL_ZIEL[sym.id]}%`},'');
+  h1+=cpSparZeile(cpiR,{k:'niv:'+cpiBase,ref:INFL_ZIEL[sym.id],refZiel:true,refLbl:/aims for/.test(c.ziel[1])?`aim ${INFL_ZIEL[sym.id]}%`:c.ziel[0].includes('–')?`mid of ${c.ziel[0]}`:`target ${INFL_ZIEL[sym.id]}%`},'');
   h1+=sub('Hikes when','≈ past cycles');
   h1+=`<ul class="cp-list cp-hebt">${c.hebt.map(x=>`<li><span class="cp-pf" style="color:${BC.bull}">▲</span><span>${x}</span></li>`).join('')}</ul>`;
   h1+=sub(c.senktLbl||'Cuts when','≈ past cycles');
@@ -309,7 +318,7 @@ function cpArbeit(sym){
   o+=cpIndZeile(sym,'Unemployment Rate','Unemployment rate');
   if(niv.lab)o+=`<div class="cp-mini"><i>${h(niv.lab.mass)}</i></div>`;
   const med=niv.lab&&/median ([\d.]+)%/.exec(niv.lab.mass||'');
-  o+=cpSparZeile(ur,{ref:med?+med[1]:null,refLbl:med?`10y median ${med[1]}%`:''});
+  o+=cpSparZeile(ur,{k:'niv:Unemployment Rate',ref:med?+med[1]:null,refLbl:med?`10y median ${med[1]}%`:''});
   o+=cpIndZeile(sym,'NFP / Employment Change','Employment change');
   o+=cpIndZeile(sym,'Avg Hourly Earnings','Wages');
   if(niv.wage)o+=`<div class="cp-mini"><i>${h(niv.wage.mass)}</i></div>`;
@@ -324,7 +333,7 @@ function cpLaender(c,d){
   const zeilen=Object.keys(c.laender).map(k=>{
     const [name,plus,minus]=c.laender[k],w=wb&&wb[k]||{};
     const anteil=ez&&w['NY.GDP.MKTP.CD']?w['NY.GDP.MKTP.CD'][1]/ez*100:null;
-    const wachs=w['NY.GDP.MKTP.KD.ZG']?w['NY.GDP.MKTP.KD.ZG'][1]:null,schuld=w['GC.DOD.TOTL.GD.ZS']?w['GC.DOD.TOTL.GD.ZS'][1]:null;
+    const wachs=w['NY.GDP.MKTP.KD.ZG']?w['NY.GDP.MKTP.KD.ZG'][1]:null,sd=cpSchuld(d,k),schuld=sd?sd[1]:null;
     const r=y10[k]&&y10[k].length?y10[k][y10[k].length-1][1]:null,spread=k!=='DE'&&r!=null&&de!=null?Math.round((r-de)*100):null;
     return`<div class="cp-land">
       <div class="cp-land-k"><b>${h(name)}</b>${anteil!=null?`<span class="cp-land-a">${fmt(anteil,0)}% of euro area</span>`:''}</div>
@@ -333,7 +342,7 @@ function cpLaender(c,d){
     </div>`;
   }).join('');
   return`<div class="cp-sep cp-sep-h" aria-hidden="true"></div><div class="cp-kopf cp-kopf-l"><span>Member states</span><span class="cp-kopf-x">what the euro is made of · share of output · growth · debt · 10Y vs Bund</span></div>`
-    +`<div class="cp-laender">${zeilen}</div>${wb?`<div class="cp-quelle">World Bank WDI · 10Y yields: TradingView</div>`:''}`;
+    +`<div class="cp-laender">${zeilen}</div>${wb?`<div class="cp-quelle">World Bank WDI · debt: IMF WEO · 10Y yields: TradingView</div>`:''}`;
 }
 function cpSpalteWirtschaft(sym,c,d){
   const wb=d&&d.wb&&d.wb.countries&&d.wb.countries[sym.id];
@@ -342,7 +351,8 @@ function cpSpalteWirtschaft(sym,c,d){
   o+=cpBip(sym,wb);
   o+=sub('Growth');
   o+=cpIndZeile(sym,'GDP Growth QoQ','GDP q/q');
-  if(wb&&wb['NY.GDP.MKTP.KD.ZG'])o+=`<div class="cp-mini">Real growth ${wb['NY.GDP.MKTP.KD.ZG'][0]}: <b style="color:${wb['NY.GDP.MKTP.KD.ZG'][1]>=0?BC.bull:BC.bear}">${vz(wb['NY.GDP.MKTP.KD.ZG'][1])}%</b>${wb['GC.DOD.TOTL.GD.ZS']?` · government debt <b>${fmt(wb['GC.DOD.TOTL.GD.ZS'][1],0)}%</b> of GDP`:''}</div>`;
+  const sd=cpSchuld(d,sym.id);
+  if(wb&&wb['NY.GDP.MKTP.KD.ZG'])o+=`<div class="cp-mini">Real growth ${wb['NY.GDP.MKTP.KD.ZG'][0]}: <b style="color:${wb['NY.GDP.MKTP.KD.ZG'][1]>=0?BC.bull:BC.bear}">${vz(wb['NY.GDP.MKTP.KD.ZG'][1])}%</b>${sd?` · government debt <b>${fmt(sd[1],0)}%</b> of GDP <i>(${sd[2]} ${sd[0]})</i>`:''}</div>`;
   o+=sub('Labour market');
   o+=cpArbeit(sym);
   return`<section class="cp-col cp-eco">${o}</section>`;
@@ -364,7 +374,7 @@ function cpRohstoff(sym,id,richtung,hinweis){
     <div class="cp-roh-k"><b>${h(ROH_LBL[id]||id)}</b>${pr!=null?`<span class="cp-roh-p">${fmt(pr,pr>100?0:2)}</span>`:''}${m1!=null?`<span class="cp-roh-m" style="color:${m1*richtung>=0?BC.bull:BC.bear}">${vz(m1)}% 1M</span>`:''}
       <span class="cp-roh-s">${korb?`<span class="cp-insc">in score ×${Math.abs(korb[1])}</span>`:'<span class="cp-only">shown only</span>'}</span></div>
     <div class="cp-roh-z"><i>${h(hinweis)}</i>${zustand?` · <span style="color:${col}">${h(zustand)}</span>`:''}</div>
-    ${!it?leer('No price feed yet — arrives with the next data update.'):cpSpark(seit(reihe,180),{col})}
+    ${!it?leer('No price feed yet — arrives with the next data update.'):cpSpark(seit(reihe,180),{col,k:'roh:'+id})}
   </div>`;
 }
 function cpSpalteAbh(sym,c,d){
@@ -391,40 +401,150 @@ function cpSpalteAbh(sym,c,d){
   if(c.roh&&c.roh.length){o+=sub('Commodities','close vs EMA20');o+=c.roh.map(([id,ri,hw])=>cpRohstoff(sym,id,ri,hw)).join('');}
   // Laenderspezifisches aus country_data.json
   if(sym.id==='EUR'){
-    const y=(d&&d.y10)||{};o+=sub('Bond spreads','10Y vs Bund');
-    const sp=k=>{const a=y[k]||[],b=new Map((y.DE||[]).map(e=>[e[0],e[1]]));return a.filter(e=>b.has(e[0])).map(e=>[e[0],Math.round((e[1]-b.get(e[0]))*100)]);};
-    const it=sp('IT'),fr=sp('FR');
+    o+=sub('Bond spreads','10Y vs Bund');
+    const it=cpfSpreadReihe(d,'IT'),fr=cpfSpreadReihe(d,'FR');
     if(it.length||fr.length){
-      [['Italy',it],['France',fr]].forEach(([n,s])=>{if(!s.length)return;const l=s[s.length-1][1],v=s.length>20?l-s[s.length-21][1]:null;
-        o+=kv(n,`<b>${l} bp</b>`,v!=null?`<span style="color:${v>0?BC.bear:v<0?BC.bull:'var(--t2)'}">${v>0?'+':''}${v} bp in 20d</span>`:'<i>building up</i>');
-        o+=cpSpark(s,{col:'var(--ui-act)'});});
-    }else o+=leer('Spreads build up from the next data update (TradingView 10Y yields).');
+      [['Italy',it,'IT'],['France',fr,'FR']].forEach(([n,s,k])=>{if(!s.length)return;
+        const tag=cpfSpreadReihe(d,k,true),l=s[s.length-1],v=tag.length>20?l[1]-tag[tag.length-21][1]:null;
+        o+=kv(n,`<b>${l[1]} bp</b>`,v!=null?`<span style="color:${v>0?BC.bear:v<0?BC.bull:'var(--t2)'}">${v>0?'+':''}${v} bp in 20d</span>`:`<i>${tag.length?'daily from '+h(fmtDayShort(tag[0][0])):'monthly average'}</i>`);
+        o+=cpSpark(seit(s,3*365),{col:'var(--ui-act)',k:'spread:'+k});});
+    }else o+=leer('Spreads build up from the next data update (ECB · TradingView 10Y yields).');
   }
   if(sym.id==='CHF'){
     const s=d&&d.snb&&d.snb.series,g=s&&(s.GI||s.TG);o+=sub('SNB sight deposits','weekly');
     if(g&&g.length>1){const l=g[g.length-1],v4=g.length>4?l[1]-g[g.length-5][1]:null;
       o+=kv('Latest',`<b>${fmt(l[1]/1000,1)} bn CHF</b>`,`<i>${h(fmtDayShort(l[0]))}</i>`);
       if(v4!=null)o+=kv('4-week change',`<b style="color:${v4>0?BC.bear:v4<0?BC.bull:'var(--t1)'}">${vz(v4/1000,1)} bn</b>`,`<i>${v4>0?'rising = SNB may be selling francs':'no sign of franc selling'}</i>`);
-      o+=cpSpark(g.slice(-52),{col:'var(--ui-act)'});
+      o+=cpSpark(g.slice(-52),{col:'var(--ui-act)',k:'snb'});
     }else o+=leer('SNB data arrives with the next data update.');
   }
   if(c.china){
     const p=d&&d.china&&d.china.pmi&&d.china.pmi.mfg;o+=sub('China','NBS manufacturing PMI');
     if(p&&p.length){const l=p[p.length-1],sp=l[2]!=null?l[1]-l[2]:null;
       o+=kv('Latest',`<b style="color:${l[1]>=50?BC.bull:BC.bear}">${fmt(l[1])}</b>`,`${sp!=null?`<span style="color:${sp>0?BC.bull:sp<0?BC.bear:'var(--t2)'}">${vz(sp)} vs forecast</span> · `:''}<i>${h(fmtDayShort(l[0]))}</i>`);
-      o+=cpSparZeile(p.map(e=>[e[0],e[1]]),{ref:50,refLbl:'50'});
+      o+=cpSparZeile(p.map(e=>[e[0],e[1]]),{ref:50,refLbl:'50',k:'cn'});
       o+=`<div class="cp-mini"><i>Tested: China PMI surprises do not forecast the ${sym.id} (t ≤ 1.2) — shown only.</i></div>`;
     }else o+=leer('China PMI arrives with the next data update.');
   }
-  // Feste Abhaengigkeiten, Abkommen, Historie
+  // Feste Abhaengigkeiten, Abkommen (Historie entfernt: Nutzer 2026-10-25)
   o+=sub('Depends on');
   o+=`<div class="cp-abh">${c.abh.map(([k,v])=>`<div class="cp-abh-z"><span class="cp-abh-k">${h(k)}</span><span>${v}</span></div>`).join('')}</div>`;
   o+=sub('Key deals');
   o+=`<ul class="cp-list cp-deals">${c.deals.map(x=>`<li><span class="cp-pf">§</span><span>${x}</span></li>`).join('')}</ul>`;
-  o+=sub('History');
-  o+=`<ul class="cp-list cp-hist">${c.historie.map(x=>`<li><span class="cp-pf">·</span><span>${h(x)}</span></li>`).join('')}</ul>`;
   return`<section class="cp-col cp-dep">${o}</section>`;
 }
+
+// ── 4) Chart-Fenster (Nutzer 2026-10-25) ─────────────────────────────────
+// Woertlich: "die ganzen Charts die du da hast von Preisen usw ich will das
+// die alle anklickbar sind und dann oeffnet sich ein Fenster mit dem Chart in
+// normaler Groesse und man kann zeitintervall veraendern andere Charts
+// hinzufuegen also so wie bei data". Per Rueckfrage: Linien bleiben in der
+// Karte, Klick oeffnet das Fenster; hinzufuegen = alle Reihen der Karte + alle
+// Indikatoren dieses Assets, bis 8; EIN Zeitfilter, EIN Cursor, die Schere
+// gilt fuer alle Charts des Fensters (Ansicht 'cpfSetRange').
+// Gezeichnet wird mit indHistChart/rohstoffTrendChartHtml - derselbe Chart wie
+// auf der Data-Seite (Achsen, Tooltip, Schere), nichts neu erfunden.
+// Zustand = Ansicht bis zum Neuladen, nicht synchronisiert (wie trendsFokus,
+// docs/state-sync.md "Bewusst NICHT synchronisiert").
+const CPF_MAX=8;
+let cpfSymId=null,cpfListe=[],cpfRange=36,cpfVon=null,cpfBis=null,cpfPickAuf=false,cpfBrush=false;
+const CPF_SPREAD={IT:'Italy',FR:'France',ES:'Spain',NL:'Netherlands'};
+// Spread in bp: Monatsmittel der EZB (IRS) bis zum ersten Tageswert, danach
+// die Tageswerte von TradingView. nurTag: nur die Tageswerte (20-Tage-Aenderung).
+function cpfSpreadReihe(d,k,nurTag){
+  const m=(d&&d.y10m&&d.y10m.series)||{},y=(d&&d.y10)||{};
+  const diff=(a,b,f)=>{const B=new Map((b||[]).map(e=>[e[0],e[1]]));return(a||[]).filter(e=>B.has(e[0])).map(e=>[f(e[0]),Math.round((e[1]-B.get(e[0]))*100)]);};
+  const tag=diff(y[k],y.DE,x=>x);
+  if(nurTag)return tag;
+  const erst=tag.length?tag[0][0]:'9999';
+  return diff(m[k],m.DE,x=>x+'-15').filter(e=>e[0]<erst).concat(tag);
+}
+function cpfKatalog(sym){
+  const c=CP[sym.id]||{},K='Country profile',out=[];
+  const cpiBase=sym.id==='USD'?'PCE':'CPI (Headline)';
+  out.push({k:'niv:'+cpiBase,n:(sym.id==='USD'?'PCE':'CPI')+' y/y',g:K,unit:'%',pts:()=>nivReihe(nivEintrag(sym.id,cpiBase))});
+  out.push({k:'niv:Unemployment Rate',n:'Unemployment rate',g:K,unit:'%',pts:()=>nivReihe(nivEintrag(sym.id,'Unemployment Rate'))});
+  const roh=(c.roh||[]).map(([id])=>id);
+  roh.forEach(id=>out.push({k:'roh:'+id,n:ROH_LBL[id]||id,g:K,roh:id}));
+  if(sym.id==='EUR')Object.keys(CPF_SPREAD).forEach(k=>out.push({k:'spread:'+k,n:CPF_SPREAD[k]+' 10Y vs Bund',g:K,unit:' bp',pts:()=>cpfSpreadReihe(CP_DATA,k)}));
+  if(sym.id==='CHF')out.push({k:'snb',n:'SNB sight deposits (bn CHF)',g:K,unit:'',pts:()=>{const s=CP_DATA&&CP_DATA.snb&&CP_DATA.snb.series,g=(s&&(s.GI||s.TG))||[];return g.map(e=>[e[0],Math.round(e[1]/100)/10]);}});
+  if(c.china)out.push({k:'cn',n:'China NBS manufacturing PMI',g:K,unit:'',pts:()=>((CP_DATA&&CP_DATA.china&&CP_DATA.china.pmi&&CP_DATA.china.pmi.mfg)||[]).map(e=>[e[0],e[1]])});
+  // Alle Indikatoren dieses Assets, je Karte gruppiert. Ein Rohstoff, der
+  // schon oben steht (AUD Eisenerz ...), kommt nicht ein zweites Mal.
+  const rohNamen=roh.map(id=>ROHSTOFF_NAME[id]),gesehen=new Set();
+  (sym.rubrics||[]).forEach(r=>(r.indicators||[]).forEach(i=>{
+    const b=stripPeriodSuffix(i.name).base;
+    if(!b||gesehen.has(b)||rohNamen.includes(i.name))return;gesehen.add(b);
+    out.push({k:'ind:'+b,n:indName(i),g:r.name,ind:i});
+  }));
+  return out;
+}
+function cpfAnfang(e,sym){
+  try{
+    if(e.ind){const p=indChartSeries(e.ind,sym.id).pts;return p&&p.length?String(p[0][0]).slice(0,10):null;}
+    if(e.roh){const r=rohstoffTrend(e.roh).r;return r&&r.length?r[0].d:null;}
+    const p=e.pts();return p&&p.length?String(p[0][0]).slice(0,10):null;
+  }catch(x){return null;}
+}
+function cpfChart(e,sym,W,H){
+  const o={noToolbar:true,noLegend:true,group:'cpf',range:cpfRange,from:cpfVon,to:cpfBis,W,H,brKey:'cpfSetRange'};
+  try{
+    if(e.ind)return indHistChart(e.ind,sym.id,o);
+    if(e.roh)return COMMODITY_DATA&&COMMODITY_DATA.items&&COMMODITY_DATA.items[e.roh]?rohstoffTrendChartHtml(e.roh,o,''):leer('No price feed yet — arrives with the next data update.');
+    const pts=(e.pts()||[]).filter(p=>p&&isFinite(+p[1])).map(p=>[String(p[0]).slice(0,10),+p[1]]);
+    if(pts.length<2)return leer('Not enough data yet — arrives with the next data update.');
+    return indHistChart({id:'cpf-'+e.k,name:e.n,chartHist:pts,chartUnit:e.unit||'',research:{}},sym.id,Object.assign(o,{linie:true}));
+  }catch(x){console.error('[cpf]',x);return leer('This chart could not be drawn.');}
+}
+function cpfSym(){return syms.find(x=>x.id===cpfSymId)||null;}
+function cpfPickerHtml(kat){
+  const gr=[];kat.forEach((e,i)=>{let g=gr.find(x=>x.n===e.g);if(!g){g={n:e.g,it:[]};gr.push(g);}g.it.push([e,i]);});
+  const voll=cpfListe.length>=CPF_MAX;
+  return`<div class="cpf-pick">${gr.map(g=>`<div class="cpf-pick-g"><div class="cpf-pick-k">${h(g.n)}</div>${g.it.map(([e,i])=>{const an=cpfListe.includes(e.k);
+    return`<button class="cpf-pick-i${an?' on':''}" onclick="cpfUmschalten(${i})" aria-pressed="${an}"${!an&&voll?' disabled':''}>${h(e.n)}</button>`;}).join('')}</div>`).join('')}</div>`;
+}
+function cpfRender(){
+  const body=document.getElementById('cpfBody'),sym=cpfSym();
+  if(!body||!sym)return;
+  const kat=cpfKatalog(sym),liste=cpfListe.map(k=>kat.find(e=>e.k===k)).filter(Boolean);
+  let ab=null;liste.forEach(e=>{const a=cpfAnfang(e,sym);if(a&&(!ab||a<ab))ab=a;});
+  const kopf=`<div class="cpf-leiste">
+    <div class="cpf-add"><button class="btn cpf-add-b${cpfPickAuf?' on':''}" onclick="cpfPicker()" aria-expanded="${cpfPickAuf}" title="Add more charts of this asset — every tap is applied right away">${icn('plus',14)||''}<span>Add chart</span><b>${liste.length}/${CPF_MAX}</b></button></div>
+    <div class="ind-hist-toolbar cpf-zeit">${timeRangeBarHtml(cpfRange,'cpfSetRange',TIME_RANGES,ab)}${timeRangeCustomHtml(cpfRange,cpfVon,cpfBis,'cpfSetRange',ab)}</div>
+  </div>${cpfPickAuf?cpfPickerHtml(kat):''}`;
+  // Panel-Kopf exakt wie auf der Data-Seite (.data-ph/.data-pt, Titel 17 px, ⓘ).
+  const quelle=e=>e.ind?'the same series as in the macro table of this asset':e.roh?'daily close with EMA20 and its neutral band, as in the score':e.k.indexOf('spread:')===0?'ECB monthly averages, then daily TradingView yields':e.k==='snb'?'SNB data portal, weekly':e.k==='cn'?'NBS via the calendar archive':'the indicator feed of this asset';
+  const panels=liste.length?`<div class="cpf-liste">${liste.map((e,i)=>`<div class="cot-card data-panel cpf-panel"><div class="data-ph"><span class="data-pt">${h(e.n)}<span class="px-panel-sub">${h(e.g)}</span></span><span class="px-panel-ctrls"><button class="px-panel-chip" onclick="cpfWeg(${i})" title="Remove this chart" aria-label="Remove ${h(e.n)}">✕</button></span>${abInfoBtn(sym.id+' — '+e.n,['<b>Source:</b> '+quelle(e)+'.','<b>Time range and scissors</b> apply to every chart in this window.'],'info-b ii-nach')}</div><div class="cpf-pc" data-i="${i}"></div></div>`).join('')}</div>`
+    :`<div class="cot-empty">No chart — add one with “Add chart”.</div>`;
+  body.innerHTML=kopf+panels;
+  // Gezeichnet wird in die GEMESSENE Flaeche (wie Data): 1-2 Charts teilen
+  // sich die Fensterhoehe, ab 3 hat jeder 220 px und die Liste scrollt.
+  const box=body.querySelector('.cpf-liste');
+  if(box){
+    const n=liste.length,kopfH=40,frei=box.clientHeight||480;
+    const H=n<=2?Math.max(220,Math.floor((frei-(n-1)*10)/n)-kopfH):220;
+    box.querySelectorAll('.cpf-pc').forEach(pc=>{const e=liste[+pc.dataset.i];pc.innerHTML=cpfChart(e,sym,Math.max(240,pc.clientWidth-8),H);});
+  }
+  try{attachChartHovers(body);}catch(x){}
+}
+function cpfOeffnen(k){
+  const s=getSym();if(!s||!FX.includes(s.id))return;
+  if(!cpfBrush){brushCustom('cpfSetRange',()=>cpfRange);cpfBrush=true;}
+  cpfSymId=s.id;cpfListe=[k];cpfPickAuf=false;
+  const t=document.getElementById('mCpChartTitle');if(t)t.textContent=`${s.name||s.id} · Charts`;
+  openM('mCpChart');
+  cpfRender();
+}
+function cpfSetRange(v){cpfRange=(v==='MAX'||v==='CUSTOM')?v:+v;cpfRender();}
+function cpfSetRangeCustom(f,t){cpfVon=f||null;cpfBis=t||null;cpfRender();}
+function cpfPicker(){cpfPickAuf=!cpfPickAuf;cpfRender();}
+function cpfUmschalten(i){
+  const sym=cpfSym();if(!sym)return;const e=cpfKatalog(sym)[i];if(!e)return;
+  const at=cpfListe.indexOf(e.k);
+  if(at>=0)cpfListe.splice(at,1);else if(cpfListe.length<CPF_MAX)cpfListe.push(e.k);
+  cpfRender();
+}
+function cpfWeg(i){cpfListe.splice(i,1);cpfRender();}
 
 // ── Karte ────────────────────────────────────────────────────────────────
 function countryProfileHtml(sym,nurKarte){
@@ -435,7 +555,8 @@ function countryProfileHtml(sym,nurKarte){
   const info=abInfoBtn('Country profile',[
     '<b>Left:</b> the central bank — target, how fast it moves, when it typically hikes or cuts (≈ rules of thumb from past cycles), the latest values.',
     '<b>Middle:</b> what the economy is made of (World Bank) and the labour market, with the matching indicators of this page.',
-    '<b>Right:</b> what the currency depends on — measured risk role, carry, commodities, country data, deals, history.',
+    '<b>Right:</b> what the currency depends on — measured risk role, carry, commodities, country data, deals.',
+    '<b>Every line opens as a full chart</b> — change the time range, add more charts of this asset, pick a span with the scissors.',
     '<b>Score:</b> the card itself adds nothing. <i>in score</i> = the score already counts it · <i>shown only</i> = it does not. Coloured values follow the bias colours (<b style="color:'+BC.bull+'">bullish</b> / <b style="color:'+BC.bear+'">bearish</b>).'
   ],'info-b ii-nach');
   const karte=`<div class="ab-tile cp-card" id="cpKarte">
@@ -448,3 +569,5 @@ function countryProfileHtml(sym,nurKarte){
 }
 
 export {countryProfileHtml,CP};
+// Inline-Handler (onclick) brauchen die Funktionen am window.
+Object.assign(window,{cpfOeffnen,cpfSetRange,cpfSetRangeCustom,cpfPicker,cpfUmschalten,cpfWeg});

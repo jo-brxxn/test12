@@ -3,6 +3,9 @@ const URL=process.env.CHECK_URL||'http://127.0.0.1:8935/index.html';
 const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 const MODE=process.argv[2]||'normalized';
+// --gegenprobe-leiste: stellt beim Asset-Wechsel die alte Umschaltung nach
+// (nur .on, Symbol + Bias-Farbe bleiben am alten Asset) - 1b) muss rot werden.
+const GP_LEISTE=process.argv.includes('--gegenprobe-leiste');
 (async()=>{
  const b=await chromium.launch();
  const p=await b.newPage({viewport:{width:1600,height:1100}});
@@ -13,7 +16,7 @@ const MODE=process.argv[2]||'normalized';
  // ⚠ Keine feste Frist mehr - siehe check/warten.js (Messung 2026-09-07:
  // die Leiste wird bei t=645ms noch mit den Werten VOR den Feeds gezeichnet).
  await wartenBisDatenDa(p);
- const r=await p.evaluate(()=>{
+ const r=await p.evaluate((gpLeiste)=>{
   const F=[],ok={};
   const soll={};syms.forEach(s=>soll[s.id]=Math.round(symScoreCmp(s)*10)/10);
   // Der Score steht am ENDE der Zeile (davor kann der Name selbst Ziffern
@@ -48,6 +51,24 @@ const MODE=process.argv[2]||'normalized';
     }else if(bv&&sym&&bv!==sym.bias)F.push({ort:'Sidebar-Bias',id,dom:bv,soll:sym.bias});
   });
   ok.sidebar=n;
+  // 1b) Asset-WECHSEL (Bugreport 2026-10-25, iPad-Screenshot): USD -> NZD,
+  //     USD behielt farbige Flagge + Bias-Farbe, NZD war markiert, aber grau.
+  //     Ursache: der schnelle Pfad (updateSidebarSelection / sbClick) setzte
+  //     nur .on. Nach jedem Wechsel muessen .on, farbiges Symbol und data-bv
+  //     an GENAU einer Zeile stehen - der ausgewaehlten.
+  gotoSym('USD');
+  let n1b=0;
+  ['NZD','GOLD','JPY','USD'].forEach(id=>{
+    if(!syms.find(s=>s.id===id))return;
+    if(gpLeiste)document.querySelectorAll('#sidebar .ab[data-sym]').forEach(b=>b.classList.toggle('on',b.dataset.sym===id));
+    else{const b=document.querySelector('#sidebar .np-asset[data-sym="'+id+'"]');if(b)b.click();selSym(id);}
+    n1b++;
+    const zeilen=[...document.querySelectorAll('#sidebar .np-asset[data-sym]')];
+    const wo=f=>zeilen.filter(f).map(b=>b.dataset.sym).join(',');
+    const on=wo(b=>b.classList.contains('on')),farbig=wo(b=>!!b.querySelector(':scope>.ai-wrap')),bv=wo(b=>!!(b.querySelector('.an')||{dataset:{}}).dataset.bv);
+    if(on!==id||farbig!==id||bv!==id)F.push({ort:'Leiste-Wechsel',nach:id,on,farbig,biasFarbe:bv,hinweis:'Markierung, farbiges Symbol und Bias-Farbe muessen mit der Auswahl wandern'});
+  });
+  ok.leisteWechsel=n1b;
   // 2) Asset-Kopf: Score-Badge im Detailbereich
   let n2=0,fehlend=0;
   Object.keys(soll).forEach(id=>{
@@ -208,7 +229,7 @@ const MODE=process.argv[2]||'normalized';
     if(!isFinite(v))F.push({ort:'Paar',pair:nm,v:String(v)});});
   ok.paare=n4;
   return {fehler:F.length,F:F.slice(0,40),ok};
- });
+ },GP_LEISTE);
  console.log('MODUS',MODE,'pageerrors',perr.length,perr.slice(0,2));
  console.log(JSON.stringify(r,null,1));
  await b.close();
