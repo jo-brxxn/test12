@@ -24,8 +24,8 @@ import {makroKartenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsich
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
-  // Was js/trades.js (Journal) fuer seine Charts von hier braucht.
-  chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,
+  // Was js/trades.js (Journal) fuer seine Charts und Kartenkoepfe von hier braucht.
+  chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn,
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
   applyRevisionToValHist,applyTrendModel,checkPriceAlerts,fmtDayHdr,indBiasInputSig,indBiasPinned,
   invalidateRateStepCache,isNonFx,macroCcyFor,parseNumLike,pushU,recordScoreHist,renderDash,rerender,researchBias,

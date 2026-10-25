@@ -163,9 +163,19 @@ const MODE=process.argv[2]||'normalized';
     const na=newsAiSicht();
     ok.newsAi={geladen:na.aiGeladen,eintraege:na.aiEintraege,mitEinordnung:na.mitEinordnung,
                durchKiZugeordnet:na.durchKiZugeordnet,laengsteEinordnung:na.maxSumLen};
+    // ⚠ "Kommt an" nur, solange die Routine liefert: sie ist seit 2026-09-24
+    // auf Nutzer-Wunsch geloescht ("Loesch die News Routine"), news_ai.json
+    // steht seither auf dem 18.09. - die Meldungen von damals sind aus
+    // news_data.json herausgerollt, 0 Treffer ist dann richtig und kein
+    // Fehler (war 2026-10-24 der einzige rote Punkt dieses Waechters in der
+    // CI). Laeuft wieder eine Routine (2x taeglich), ist die Datei frisch und
+    // die Pruefung von selbst wieder scharf. Sauberkeit (Ids, Laenge, Markup)
+    // gilt immer, solange es Einordnungen gibt.
+    const aiAlterH=na.aiStand?(Date.now()-Date.parse(na.aiStand))/3600e3:Infinity;
+    ok.newsAi.alterStunden=Number.isFinite(aiAlterH)?Math.round(aiAlterH):null;
     if(na.aiGeladen){
-      if(!na.mitEinordnung)F.push({ort:'KI-Einordnung kommt nicht an',
-        hinweis:'news_ai.json ist geladen, aber keine Meldung traegt eine Einordnung - der Abgleich ueber die Adresse greift nicht.'});
+      if(!na.mitEinordnung&&aiAlterH<=72)F.push({ort:'KI-Einordnung kommt nicht an',
+        hinweis:'news_ai.json ist frisch ('+Math.round(aiAlterH)+' h), aber keine Meldung traegt eine Einordnung - der Abgleich ueber die Adresse greift nicht.'});
       // Erfundene Asset-Id: die Meldung landete unter einer Waehrung, die es
       // in der App gar nicht gibt - oder schlimmer, unter der falschen.
       const gueltig=new Set(syms.map(s=>s.id));

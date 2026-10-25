@@ -5176,6 +5176,16 @@ body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
 .tj-kt{font-size:var(--fs-kt);font-weight:700;color:var(--t0)}
 .tj-kh-r{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--fs-sm);color:var(--t2);font-variant-numeric:tabular-nums}
 .tj-kh-r i{color:var(--t3)}
+/* ⓘ rechts oben auf Titelhoehe (Dauerregeln 2026-09-25/-26, check/hierarchie.js +
+   check/infoi.js). Absolut statt in der Zeile: am Handy bricht die Kennzahlen-
+   Gruppe rechts um, ein ⓘ in der Zeile wanderte mit in die zweite Zeile.
+   right 10.5px = 16px Kartenrand - 5.5px (Kreis 0,6 x 17px mittig im 21px-Knopf,
+   wie margin-right:-5.5px der anderen Karten). line-height 21px = Knopfhoehe:
+   Titelmitte und Knopfmitte liegen beide 10.5px unter der Oberkante. */
+.tj-card{position:relative}
+.tj-kt{line-height:21px}
+.tj-kh:has(>.info-b){padding-right:24px}
+.tj-kh>.info-b{position:absolute;top:14px;right:10.5px}
 .tj-leiste{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .tj-nav{display:flex;align-items:center;gap:6px}
 .tj-navb{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center}
@@ -5202,7 +5212,6 @@ body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
 .tj-flamme.an .tj-kv{color:var(--flame)}
 @keyframes tjFlacker{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.08) rotate(-3deg)}}
 body.no-ui-anim .tj-flamme.an svg{animation:none}
-@media (prefers-reduced-motion:reduce){.tj-flamme.an svg{animation:none}}
 /* Equity-Kurve */
 .tj-eq-box{min-height:176px}
 .tj-svg{display:block}
@@ -6634,11 +6643,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-626 - Makro-Analyse schnell: nur die Makro-Reihe neu, kein doppeltes Zeichnen, Logo-Pruefung je Karte (zusammengefuehrt mit Journal 623/624 und Asset-Stapel 625)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-627 - Journal: Erklaer-Knopf an Equity curve, Calendar und Trades; Flammen-Animation nur noch am App-Schalter. Waechter: rote CI-Funde behoben, Import-Abgleich, Regel 6b, Runner mit Paketen."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-626</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-627</span>
     </span>
   </div>
   <div class="hdr-r">

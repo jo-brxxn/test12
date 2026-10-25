@@ -20612,3 +20612,21 @@ die Folgeentwicklung vorhersagen?
 **Wächter:** `check/makro.js` H zählt volle Aufbauten (0) und Zeichnungen (1 je Chart) für 11 Bedienungen; Gegenprobe (alter Weg) rot.
 
 **Nicht angefasst (Befund):** der volle Aufbau der Asset-Seite selbst (560–870 ms bei CPU 4x) und `recordScoreHist` bei jedem `save()` — betrifft die ganze App.
+
+## 2026-10-24 — VERSION-CHECK-627: Rote CI-Funde behoben, Wächter ergänzt
+
+**Nutzer:** *„pushen und kein Prüflauf … das ganze Wächter Prüfverfahren an … entfern was veraltet ist … fasse Sachen zusammen … wenn es noch andere Sachen braucht ergänz sie“*
+
+**Gemessen:** CI-Läufe 603–608 auf `main` alle rot, immer dieselben vier: `display`, `hierarchie`, `pcbewegung`, `designregeln`. Lauf 608: **68,6 min**, Grenze 90.
+
+**Behoben:**
+- `display` 2e: *News-Einordnung kommt nicht an* — Routine seit 2026-09-24 gelöscht, `news_ai.json` steht auf dem 18.09., Meldungen herausgerollt → 0 Treffer richtig. Prüft „kommt an“ nur noch bei frischer Datei (≤ 72 h). Gegenprobe: frische Datei ohne Treffer → rot.
+- `hierarchie`: Journal-Karten *Equity curve*, *Calendar*, *Trades* ohne ⓘ (Dauerregel 2026-09-26) → ⓘ mit Kurz-Erklärung, rechts oben auf Titelhöhe (absolut, bricht am Handy nicht mit um).
+- `pcbewegung`: `@media (prefers-reduced-motion)` an der Journal-Flamme → entfernt, `body.no-ui-anim` stand schon da.
+- `designregeln` E: Trade-Editor-Felder 40 px → bewusst **L-Stufe** (Doku nannte 40 schon für Fenster-Felder), Wächter kennt sie.
+
+**Ergänzt:**
+- `structure.js`: jeder Modul-Import ist im Zielmodul exportiert (fehlt einer → weiße Seite; fing bisher erst `runtime` im Browser). Echte Probe: `saveSoon` aus der Export-Liste → rot.
+- `rules.js` Regel 6b: neues Feld in `snap()` → muss in `neueFelderBehalten()` (Fehlerklasse von 619). Geprüft gegen die Basis vor 620: `mkTab`/`mkOpt` korrekt als behalten erkannt.
+- `all.js`: `--teil i/n` (gleich lange Pakete nach CI-Sekunden), `--nur a,b`, `--liste`; Laufzeit je Prüfung in der Liste.
+

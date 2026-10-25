@@ -400,6 +400,42 @@ if (neueKeys.length) {
       `Gehoert der Schluessel bewusst nur auf dieses Geraet, den Namen in LOKAL_ERLAUBT aufnehmen.`);
 }
 
+// ── Regel 6b: neues Feld in snap() -> auch in neueFelderBehalten() ─────
+// Anlass 2026-10-21 (VERSION-CHECK-619, Nutzer: "wenn man was anklickt das
+// es dann nach ein paar Sekunden wieder umspringt"): eine auf einem zweiten
+// Geraet noch OFFENE alte App kennt ein neues Feld nicht, laesst es beim
+// Hochladen weg - und der naechste Abgleich setzt es ueberall zurueck.
+// neueFelderBehalten() (js/main.js) behaelt in dem Fall den eigenen Wert, aber
+// nur fuer Felder, die dort stehen. Diese Regel vergleicht die Felder von
+// snap() mit der Basis: jedes NEUE Feld muss in neueFelderBehalten()
+// vorkommen. Kann ein fehlendes Feld nichts kaputt machen (abgeleitet, Cache),
+// gehoert es mit Grund in BEHALTEN_FREI. Gegenprobe: --gegenprobe-6b.
+const BEHALTEN_FREI = new Set([]);
+function snapFelder(code) {
+  const m = code.match(/function snap\(\)\{return JSON\.stringify\(\{([^{}]*?)\}(?:\s*,\s*[A-Za-z_$][\w$]*)?\);\}/);
+  return m ? m[1].split(',').map(x => x.split(':')[0].trim()).filter(x => /^[A-Za-z_$][\w$]*$/.test(x)) : null;
+}
+const GP_6B = process.argv.includes('--gegenprobe-6b');
+if (codeGeaendert || GP_6B) {
+  const jetzt = snapFelder(aktuellerCode()), vorher = snapFelder(basisCode());
+  if (jetzt && vorher) {
+    if (GP_6B) jetzt.push('gpNeuesFeld');
+    const koerper = fnKoerper(aktuellerCode(), 'neueFelderBehalten');
+    const neu6b = jetzt.filter(f => !vorher.includes(f) && !BEHALTEN_FREI.has(f));
+    const offen = neu6b.filter(f => !(koerper.includes("'" + f + "'") || koerper.includes('"' + f + '"') || new RegExp('\\.' + f + '\\b').test(koerper)));
+    if (GP_6B) {
+      const ok = offen.includes('gpNeuesFeld');
+      console.log(ok ? '[rules] --gegenprobe-6b: ok (neues snap()-Feld ohne neueFelderBehalten wird gemeldet)' : '[rules] --gegenprobe-6b: FEHLER - neues Feld bleibt unbemerkt');
+      process.exit(ok ? 0 : 1);
+    }
+    if (offen.length)
+      fail('Neues snap()-Feld ohne neueFelderBehalten()',
+        `Neu gegenueber ${BASE}: ${offen.join(', ')}. Eine noch offene alte App laesst das Feld beim Hochladen weg, ` +
+        `der naechste Abgleich setzt es auf allen Geraeten zurueck (Fehler von 619). Feld in neueFelderBehalten() ` +
+        `(js/main.js) eintragen - oder, wenn ein Fehlen nichts kaputt machen kann, mit Grund in BEHALTEN_FREI (check/rules.js).`);
+  }
+}
+
 // ── Regel 7: kein Waechter liest Zahlen nach blosser Wartezeit ──────────
 // ⚠ Messung 2026-09-07 (VERSION-CHECK-485): check/display.js fiel im vollen
 // Lauf mit EINEM Treffer aus (NAS dom=+0.2 soll=+0.1) und war allein

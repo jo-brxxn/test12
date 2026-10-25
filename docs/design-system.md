@@ -1605,6 +1605,9 @@ Ausnahme mit Absicht: „Compare" in der Legendenzeile der Indikator-Charts
 bleibt klein (≤ 24 px, Nutzer 2026-09-27, `check/chartsync.js`).
 Neue Bedienelemente bekommen eine dieser Stufen — die Klassenlisten stehen im
 Block „D6“ am Ende des Haupt-`<style>`.
+Trade-Editor (Journal, seit 624): Felder, *Hit TP/SL* und Long/Short einheitlich
+**L 40** (`.tj-ed .finp`, `.tj-exit .btn`, `.tj-seg`) — eine Höhe für die ganze
+Formularspalte neben dem Chart; `check/designregeln.js` E kennt sie (2026-10-24).
 
 **F — Trefferflächen.** Kleine Ziele (Kalender-Glocke/×, ⓘ, Chips,
 Zeitfilter, Stern/Score/Zinsdifferenz in Set-ups, Quellen-Links) tragen ein

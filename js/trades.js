@@ -33,7 +33,7 @@
 // ATR14 (aus echten Hoch/Tief) neben dem Entry - sichtbar in den Feldern,
 // zum Verschieben gedacht, kein Wert, der still im Hintergrund entsteht.
 import {escH,escJH,openM,closeM,uid,cloudAutoSync,markLsUpdatedSeen,markPrefEdit,curPage,syms,pairs,
-  icn,achsenTicks,chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml} from './main.js';
+  icn,achsenTicks,chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn} from './main.js';
 import {PRICE_DATA_FEED,priceSeriesFor,pairPriceSeries,autoFetchPriceData} from './data-feeds.js';
 import {fmtDayHdr,fmtDayShort} from './calendar.js';
 import {FX,BC} from './constants.js';
@@ -297,6 +297,23 @@ function tjKalenderHtml(y,m,proTag){
   return html+'</div>';
 }
 
+// Erklaerungen hinter dem ⓘ der drei Journal-Karten (Dauerregel 2026-09-26:
+// jede Karte mit Titel hat ein ⓘ; check/hierarchie.js meldete alle drei).
+// Kurz und als Fakten (Dauerregel 2026-10-11) - kurzHtml macht Punkte daraus.
+const TJ_ERKL={
+  eq:['Line: running total of this month’s P/L. One point per trading day = sum of that day’s trades.',
+    'Area: blue above 0. Red below 0.',
+    'Net: sum of all trades this month. Max drawdown: deepest fall from a running high.',
+    'Source: only the trades you logged. Nothing is estimated.'],
+  kal:['Cell: day total in big type. Below it one row per trade.',
+    'Colour: win = bullish colour. Loss = bearish colour. Break-even = grey.',
+    'Week: Monday to Sunday summed in the right column. Weekend columns are narrow.',
+    'Tap a day: add a trade. Tap a trade: all details.'],
+  liste:['All trades of the shown month, newest first.',
+    'R: result in units of the planned risk = (exit − entry) ÷ (entry − stop loss). Needs entry, stop loss and exit.',
+    'P/L: the amount you entered.',
+    'Tap a row: details, edit or delete.']
+};
 function renderJournal(){
   const el=document.getElementById('journalBody');if(!el)return;
   if(!tjMonat)tjMonat=tjHeute().slice(0,7);
@@ -314,18 +331,18 @@ function renderJournal(){
     </div>
   </div>`;
   const eq=`<div class="tj-card tj-eq">
-    <div class="tj-kh"><div class="tj-kt">Equity curve</div><div class="tj-kh-r">
+    <div class="tj-kh"><div class="tj-kt">Equity curve</div>${abInfoBtn('Equity curve',TJ_ERKL.eq)}<div class="tj-kh-r">
       <span>Net <b style="color:${tjFarbe(st.net)}">${st.n?tjGeld(st.net):'–'}</b></span>
       <span>Max drawdown <b style="color:${dd<0?'var(--bias-bear)':'var(--t2)'}">${st.n?tjGeld(dd):'–'}</b></span></div></div>
     <div id="tjEqBox" class="tj-eq-box"></div>
   </div>`;
   const kal=`<div class="tj-card">
-    <div class="tj-kh"><div class="tj-kt">Calendar</div><div class="tj-kh-r"><i>Tap a day to add a trade · tap a trade for all details</i></div></div>
+    <div class="tj-kh"><div class="tj-kt">Calendar</div>${abInfoBtn('Trade calendar',TJ_ERKL.kal)}<div class="tj-kh-r"><i>Tap a day to add a trade · tap a trade for all details</i></div></div>
     ${tjKalenderHtml(y,m,proTag)}
   </div>`;
   const neueste=imMonat.slice().reverse();
   const liste=`<div class="tj-card">
-    <div class="tj-kh"><div class="tj-kt">Trades · ${tjMonTitel(y,m)}</div></div>
+    <div class="tj-kh"><div class="tj-kt">Trades · ${tjMonTitel(y,m)}</div>${abInfoBtn('Trades of the month',TJ_ERKL.liste)}</div>
     ${neueste.length?`<div class="tj-tab-wrap"><table class="tj-tab"><thead><tr><th class="c-d">Date</th><th>Asset</th><th class="c-s">Side</th><th class="c-set">Setup</th><th class="r c-r">R</th><th class="r c-p">P/L</th></tr></thead><tbody>
       ${neueste.map(t=>`<tr class="${tjKlasse(t)}" onclick="tjZeigen('${escJH(t.id)}')" title="Show all details"><td class="c-d">${escH(fmtDayShort(t.d))}${t.t?` <i>${escH(t.t)}</i>`:''}</td><td class="c-a"><b>${escH(t.a)}</b><span class="c-a-s">${tjSeiteHtml(t.dir)}</span></td><td class="c-s">${tjSeiteHtml(t.dir)}</td><td class="c-set">${t.setup?escH(t.setup):'<i>–</i>'}</td><td class="r c-r">${(()=>{const r=tjR(t);return r==null?'–':`<span style="color:${tjFarbe(r)}">${tjRText(r)}</span>`;})()}</td><td class="r c-p"><b style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></td></tr>`).join('')}
     </tbody></table></div>`:`<div class="tj-leertext"><i>No trades in this month yet</i><button class="btn g" onclick="tjNeu()">＋ Add trade</button></div>`}
