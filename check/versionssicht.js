@@ -11,11 +11,15 @@ const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const { wartenBisDatenDa } = require('./warten.js');
 (async () => {
   const b = await PW.chromium.launch(); let f = 0;
+  // EIN Laden, dann die Breite umstellen: der Kopf ist reines CSS (Flex), ein
+  // frisches Laden je Breite kostete 4 x ~20 s in der CI (2026-10-24: 87 s).
+  const p = await b.newPage({ viewport: { width: 1024, height: 834 } });
+  await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); } catch (e) {} });
+  await p.goto(URL); await wartenBisDatenDa(p);
+  if (process.argv.includes('--gegenprobe')) await p.addStyleTag({ content: '.hdr-search{flex:0 0 380px!important}.hdr-status{flex:1 1 0!important}' });
   for (const w of [1024, 1180, 1194, 1366]) {
-    const p = await b.newPage({ viewport: { width: w, height: 834 } });
-    await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) {} });
-    await p.goto(URL); await wartenBisDatenDa(p);
-    if (process.argv.includes('--gegenprobe')) await p.addStyleTag({ content: '.hdr-search{flex:0 0 380px!important}.hdr-status{flex:1 1 0!important}' });
+    await p.setViewportSize({ width: w, height: 834 });
+    await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     const r = await p.evaluate(() => {
       const st = document.querySelector('.hdr-status'), n = document.getElementById('hlbName'), h = document.querySelector('.hdr');
       const nr = n.getBoundingClientRect(), sr = st.getBoundingClientRect();
@@ -23,7 +27,6 @@ const { wartenBisDatenDa } = require('./warten.js');
     });
     if (r.st > 1 || !r.drin || r.hdr > 1) { f++; console.log(`  ✗ ${w}px: Status ${r.st}px abgeschnitten, Version sichtbar=${r.drin}, Kopf-Ueberlauf ${r.hdr}px`); }
     else console.log(`  ✓ ${w}px: "${r.txt}" voll sichtbar, kein Ueberlauf`);
-    await p.close();
   }
   await b.close();
   console.log(f ? `[versionssicht] ${f} Fehler` : '[versionssicht] ok'); process.exit(f ? 1 : 0);

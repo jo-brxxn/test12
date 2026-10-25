@@ -108,7 +108,7 @@ const PRUEFUNGEN = [
   { n: 'kartenlook', s: 34, d: 'Kartenoptik und Kopfleiste der Asset-Seite', f: 'check/kartenlook.js', args: [], browser: true },
   { n: 'regime',    s: 29,  d: 'Regime Radar: Zahlen gegen die Rohdaten, Nenner, Kernbedingung', f: 'check/regime.js', args: [], browser: true },
   { n: 'historie',  s: 70,  d: 'Historie: Score-Linie, Alterung nachgerechnet, jeder Tag einzeln', f: 'check/historie.js', args: [], browser: true },
-  { n: 'versionssicht', s: 87, d: 'Kopfzeile: Versionsnummer ab 1000px voll sichtbar, Suchfeld gibt nach', f: 'check/versionssicht.js', args: [], browser: true },
+  { n: 'versionssicht', s: 20, d: 'Kopfzeile: Versionsnummer ab 1000px voll sichtbar, Suchfeld gibt nach', f: 'check/versionssicht.js', args: [], browser: true },
   // 2026-09-26: jede Score-Aenderung mit exakter Ursache (Nutzer: "alles was
   // den Score aendert aufgezeichnet ... kein Wert soll leer bleiben").
   { n: 'journal',   s: 85,  d: 'Score-Journal: jede Bewegung mit Ursache, Teile = Veraenderung, kein leerer Wert', f: 'check/journal.js', args: [], browser: true },
@@ -119,7 +119,7 @@ const PRUEFUNGEN = [
   // 2026-10-03: "es ruckelt ... Animationen nicht clean ... hakt" - zaehlt statt zu stoppen.
   { n: 'performance', s: 116, d: 'Endlos-Animationen nur transform/opacity, max. 400 gleichzeitig, nichts haengt nach, Leerlauf ohne Vermessung, ein Aufbau je Asset-Wechsel', f: 'check/performance.js', args: [], browser: true },
   { n: 'backtester', s: 34, d: 'Backtester: Sitzungen, Releases, Kursreaktion gegen die Rohdaten', f: 'check/backtester.js', args: [], browser: true },
-  { n: 'erklaerung', s: 283, d: 'Erklaerungen hinter dem ⓘ, zentriert, nicht in der Karte', f: 'check/erklaerung.js', args: [], browser: true },
+  { n: 'erklaerung', s: 40, d: 'Erklaerungen hinter dem ⓘ, zentriert, nicht in der Karte', f: 'check/erklaerung.js', args: [], browser: true },
 ];
 
 // ── Pakete fuer --teil: laengste Einheit zuerst in das kuerzeste Paket ──

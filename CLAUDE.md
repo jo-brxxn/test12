@@ -80,8 +80,11 @@ passenden Datei (oder `docs/CHANGELOG.md`) nachschlagen, nicht raten.
 4. **Nie schätzen/raten/hart eintragen.** Fehlt ein echter Wert aus einer
    Live-Quelle, erzeugt das eine Dashboard-Meldung statt eines geschätzten
    Werts. Policy-Details: `docs/data-sources.md`.
-5. **`node check/all.js` vor jedem Push** (bzw. `--static` für den schnellen
-   Teil ohne Browser). Details: `check/README.md`.
+5. **Vor jedem Push `node check/all.js --static`** (Sekunden), dazu gezielt die
+   Wächter der Änderung (`--nur makro,altgeraet`). **Keinen lokalen Volllauf**
+   (~40 min) — Nutzer 2026-10-24: *„pushen und kein Prüflauf“*; den vollen Lauf
+   macht die CI bei jedem Push auf `main` in 6 parallelen Paketen (~11 min).
+   Lokal voll nur auf Ansage des Nutzers. Details: `check/README.md`.
 6. **Jedes Bedienelement muss auch wirklich etwas tun.** Ein Button, dessen
    Handler auf keine (exportierte) Funktion zeigt, wirft beim Klick still ein
    `ReferenceError` und sieht für den Nutzer einfach kaputt aus — bei

@@ -154,14 +154,19 @@ das ist ab jetzt Standard-Verhalten fuer dieses Projekt.
 
 - **Browser-Verifikation** für UI-Änderungen: lokaler `http.server` +
   Playwright (`/opt/node22/lib/node_modules/playwright`, Chromium). Vor dem
-  Rendern `#introOv` und `#lockScreen` entfernen (Intro/PIN-Sperre).
+  Rendern `#lockScreen` entfernen (PIN-Sperre; das Intro gibt es seit
+  2026-09-24 nicht mehr).
 - **Antworten auf Deutsch.**
-- Commit-Trailer: `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` +
-  `Claude-Session: …`.
-- **`node check/all.js` vor JEDEM Push** (bzw. `--static` für den schnellen
-  Teil ohne Browser). Läuft zusätzlich automatisch bei jedem Push
-  (`.github/workflows/checks.yml`). Details/volle Liste der Prüfungen:
-  `check/README.md`.
+- Commit-Trailer: wie im Sitzungs-Hinweis vorgegeben (`Co-Authored-By: …` +
+  `Claude-Session: …`).
+- **Vor JEDEM Push `node check/all.js --static`** (Sekunden) plus gezielt die
+  Wächter der Änderung (`node check/all.js --nur a,b`). **Kein lokaler
+  Volllauf** (Nutzer 2026-10-24: *„Hatte ich nicht gesagt du sollst pushen und
+  kein Prüflauf machen“*; ebenso 2026-10-24 in der Journal-Sitzung: *„ohne
+  Wächter lauf am Ende ich sag dir wann“*). Den Volllauf macht die CI bei
+  jedem Push auf `main` (`.github/workflows/checks.yml`, 6 Pakete parallel,
+  ~11 min); ihr Ergebnis nach dem Push ansehen und rote Funde beheben.
+  Details/volle Liste der Prüfungen: `check/README.md`.
 
 ## Gezeigte Bugs: der Ablauf (Nutzer-Regel 2026-09-06)
 
