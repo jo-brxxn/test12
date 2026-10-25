@@ -1942,6 +1942,18 @@ body.compact-view .rub-summary{display:block}
    Jede Spur ein eigener, durch eine Linie getrennter Block mit Kopfzeile
    Act | Fc | Prev | Next | Score (Nutzer: "abgetrennt und uebersichtlich"). */
 .mk-kz{display:flex;justify-content:flex-end;margin:0 0 8px}
+/* Ein schmaler Kippschalter rechts in der MACRO-Zeile (Nutzer 2026-10-25:
+   "ganz rechts ganz schmal einfach ein Schalter") - schaltet alle drei
+   Makro-Karten zwischen Tabelle und Charts. Die Linie der Zeile (::after)
+   steht zwischen Titel und Schalter; die Beschriftung ist Teil der
+   Trefferflaeche, der Rand nach oben/unten vergroessert sie ohne Versatz. */
+.ab-rtitel-x::after{order:1}
+.mk-rsw{order:2;flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;padding:6px 0;margin:-6px 0;user-select:none}
+.mk-rsw-l{font:700 var(--fs-2xs)/1 var(--ff-text);color:var(--t3);text-transform:uppercase;letter-spacing:.09em}
+.tgl.tgl-s{width:28px;height:16px}
+.tgl-s .tgl-track::after{top:2px;left:2px;width:10px;height:10px}
+.tgl-s input:checked+.tgl-track::after{transform:translateX(12px)}
+@media(hover:hover){.mk-rsw:hover .mk-rsw-l{color:var(--t1)}}
 .ab-cards .ab-col.mk-col{grid-column:1 / -1}
 .mk-tk-hdr{flex-wrap:wrap;row-gap:6px}
 .mk-tabs{display:flex;flex-wrap:wrap;gap:2px 18px;flex:1 1 0;min-width:min(180px,100%)}
@@ -6086,6 +6098,16 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 /* ── Schnellzugriffe: helle Karten mit blauem Symbol statt Navy-Kacheln ── */
 .aql{background:var(--card);border:1px solid var(--bd);color:var(--t0);box-shadow:var(--shadow-card);border-radius:var(--r)}
 .aql svg{color:var(--ui-act)}
+/* Nutzer 2026-10-25: "die buttons trends data rate prob und all notes waren
+   mal in so einer farbe mach wieder die farbe" - die vier Schnellzugriffe der
+   Asset-Seite wieder als Navy-Kacheln (Grundregel .aql, --chrome-quick). Die
+   hellen Karten oben bleiben fuer die uebrigen .aql (Watchlist). */
+.ab-qzeile .aql{background:var(--chrome-quick);border-color:var(--chrome-line);color:#C3D0E6;box-shadow:none}
+.ab-qzeile .aql svg{color:#C3D0E6}
+.ab-qzeile .aql.on{background:var(--ui-act);border-color:var(--ui-act);color:#fff}
+.ab-qzeile .aql.on svg{color:#fff}
+@media(hover:hover){.ab-qzeile .aql:hover{background:var(--chrome-line);color:var(--on-accent);border-color:var(--accent)}
+  .ab-qzeile .aql:hover svg{color:var(--on-accent)}}
 /* ── Wisch-Uebergang beim Seitenwechsel (2026-09-23, siehe wischStart in
    js/main.js). pointer-events:none: der Inhalt darunter ist sofort bedienbar,
    die Animation laeuft trotzdem bis zum Ende. z-index ueber den Stapel-
@@ -6704,11 +6726,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-631 - Performance: Calendar-Wechsel 1,9 s -> 0,3-0,5 s (Tabelle eigene Ebene), kein erzwungenes Layout beim Seitenwechsel, Trends/Regime nur noch ein Aufbau, Hintergrund-Feeds gebuendelt, heisse Helfer mit Merker. Kugel steht ausserhalb der Overview (Waechter)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-632 - Score-Modell 28 nach Messung (nur Waehrungen): Niveau-Block raus, COT gegen die Spekulanten, 10Y nur Anzeige + neue Zeile Yield Curve (10Y-2Y), Deckel fuer doppelte Bloecke, PPI/Claims halb, PCE/ZEW/EUR-GDP/EUR+GBP-Retail nur Anzeige, CAD-Oel 0,5. Ein Charts-Schalter rechts in der MACRO-Zeile, Schnellzugriffe wieder Navy."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-631</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-632</span>
     </span>
   </div>
   <div class="hdr-r">

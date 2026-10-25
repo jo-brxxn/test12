@@ -20,7 +20,7 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 // Trading Journal: eigene Trades im Monatskalender (Nutzer-Wunsch 2026-10-24,
 // siehe Kopf von trades.js). Zirkulaerer Import wie bei makro.js.
 import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
-import {makroKartenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
+import {makroKartenSchalterHtml,makroReihenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
@@ -5878,6 +5878,7 @@ function reapplyLiveFeeds(){
    // 2Y-Zinsdifferenz und Rohstoffe (2026-09-24) - laufen auch in
    // applySeasRetailFeed mit, stehen hier aber ausdruecklich (check/structure.js).
    ()=>applyZinsDiffFeed(),
+   ()=>applyKurveFeed(),
    ()=>applyRohstoffFeed(),
    ()=>applyNiveauFeed(),
    ()=>applyTrendFeed()].forEach(fn=>{try{fn();}catch(e){}});
@@ -10166,6 +10167,7 @@ function applySeasRetailFeed(){
   // Sync/Undo/Import ueber reapplyLiveFeeds, Sentiment-Abruf) - eine eigene
   // Aufrufstelle je Feed waere die naechste, die irgendwo fehlt.
   try{if(applyZinsDiffFeed())changed=true;}catch(e){}
+  try{if(applyKurveFeed())changed=true;}catch(e){}
   try{if(applyRohstoffFeed())changed=true;}catch(e){}
   try{if(applyNiveauFeed())changed=true;}catch(e){}
   try{if(applyTrendFeed())changed=true;}catch(e){}
@@ -10273,6 +10275,71 @@ function applyZinsDiffFeed(){
   return changed;
 }
 
+// ══ ZINSKURVE 10Y-2Y (Modell 28, 2026-10-25) ════════════════════════════
+// Nutzer: "mach das wenn 10y schneller als 2y steigt das es bearish ist aber
+// wenn beide steigen dann gut wenn 2y schneller". Ersetzt den 10Y-Trend im
+// Score der acht Waehrungen (die 10Y-Zeile bleibt sichtbar, zaehlt 0).
+// Gemessen 2026 (bond_data.json, Tageswerte): steigt der Abstand 10Y-2Y
+// (Versteilerung), faellt die Waehrung - bei allen 8 negativ (-0,01 bis
+// -0,25); die 10Y-Rendite allein haengt schwaecher mit der Waehrung zusammen
+// als die 2Y-Rendite (8 von 8). Steigt die lange Rendite schneller als die
+// kurze, ist das meist Laufzeit-/Haushaltsrisiko (Gilts 2022, US April 2025),
+// kein Zinserwartungs-Signal.
+// Regel: Abstand 10Y-2Y, 5-Tage- gegen 21-Tage-Schnitt (wie die Rendite-
+// Trends), 3 bp Totzone. Versteilerung -> -0,5, Verflachung -> +0,5.
+// Die RICHTUNG der Zinsen zaehlt weiter ueber 2Y-Trend + 2Y-Zinsdifferenz.
+const KURVE_IND='Yield Curve (10Y-2Y)',KURVE_PKT=0.5;
+function kurveFuer(ccy){
+  const bd=BOND_DATA_FEED&&BOND_DATA_FEED[ccy];
+  const s10=bd&&bd['10Y Bond Yield']&&bd['10Y Bond Yield'].series,s2=bd&&bd['2Y Bond Yield']&&bd['2Y Bond Yield'].series;
+  if(!Array.isArray(s10)||!Array.isArray(s2))return null;
+  const gestern=isoMinusDays(todayStr(),1),m2=new Map();
+  s2.forEach(e=>{const d=String(e[0]).slice(0,10),v=Number(e[1]);if(d&&d<=gestern&&isFinite(v))m2.set(d,v);});
+  const r=[];
+  s10.forEach(e=>{const d=String(e[0]).slice(0,10),v=Number(e[1]);if(d&&d<=gestern&&isFinite(v)&&m2.has(d))r.push([d,v-m2.get(d)]);});
+  r.sort((a,b)=>a[0].localeCompare(b[0]));
+  if(r.length<BOND_SMA_SLOW)return null;
+  const schnitt=n=>r.slice(-n).reduce((a,e)=>a+e[1],0)/n;
+  const fast=schnitt(BOND_SMA_FAST),slow=schnitt(BOND_SMA_SLOW),diff=fast-slow;
+  const bp=Math.round(diff*1000)/10;
+  const pkt=diff>BOND_DEAD_BAND?-KURVE_PKT:diff<-BOND_DEAD_BAND?KURVE_PKT:0;
+  return{jetzt:r[r.length-1][1],schnitt21:slow,datum:r[r.length-1][0],bp,pkt};
+}
+function kurveRegelText(){
+  return`Spread = 10-year minus 2-year yield. Its 5-day average against its 21-day average: steeper by more than ${Math.round(BOND_DEAD_BAND*100)} bp (the 10-year rises faster or falls slower than the 2-year) → −${KURVE_PKT}; flatter by more than ${Math.round(BOND_DEAD_BAND*100)} bp → +${KURVE_PKT}; in between 0. The direction of rates counts separately in the 2Y rows.`;
+}
+function applyKurveFeed(){
+  if(!BOND_DATA_FEED||!Array.isArray(syms))return false;
+  let changed=false;
+  syms.forEach(sym=>{
+    if(!FX.includes(sym.id))return;
+    const rub=(sym.rubrics||[]).find(r=>r&&r.name==='Inflation');
+    if(!rub||!Array.isArray(rub.indicators))return;
+    let w=null;try{w=kurveFuer(sym.id);}catch(e){w=null;}
+    let idx=rub.indicators.findIndex(i=>i&&i.name===KURVE_IND);
+    if(!w){if(idx>=0&&DATA_LIVE_OK.bond===true){rub.indicators.splice(idx,1);changed=true;}return;}
+    let ind=idx>=0?rub.indicators[idx]:null;
+    if(!ind){
+      ind={id:uid(),name:KURVE_IND,bias:'neu',imp:false,date:'',interval:'',points:[]};
+      let nach=-1;rub.indicators.forEach((i,k)=>{const b=stripPeriodSuffix(i.name).base;if(BOND_INDS.includes(b)||b===ZINSDIFF_IND)nach=k;});
+      rub.indicators.splice(nach>=0?nach+1:rub.indicators.length,0,ind);changed=true;
+    }
+    const bias=w.pkt>0?'bull':w.pkt<0?'bear':'neu';
+    const col=w.bp>0?'bond-up':w.bp<0?'bond-down':'bond-flat';
+    const act=fmtPp(w.jetzt),prev=fmtPp(w.schnitt21);
+    const r=ind.research||{};
+    if(!(r.kurve&&r.actual===act&&r.previous===prev&&r.stand===w.datum&&r.bp===w.bp)){
+      ind.research={actual:act,forecast:null,previous:prev,stand:w.datum,source:'bond_data.json',kurve:true,bp:w.bp,cotColor:col};
+      changed=true;
+    }
+    if(ind.bias!==bias){ind.bias=bias;changed=true;}
+    if(ind.pkt!==w.pkt){ind.pkt=w.pkt;changed=true;}
+    if(ind.trendBias&&ind.trendBias!=='neu'){ind.trendBias='neu';changed=true;}
+    if(ind.stepDriven||ind.trendDriven){ind.stepDriven=false;ind.trendDriven=false;changed=true;}
+  });
+  return changed;
+}
+
 // ══ NIVEAU-BLOCK: "WIE STEHT DIE ZAHL GEGEN IHR NORMAL" (Modell 22) ═════════
 // Nutzer 2026-10-16: "es ist aktuell viel actual vs forecast aber nicht ist
 // die Inflation ueber Target und wie weit usw gleiches gilt fuer alle anderen
@@ -10296,10 +10363,13 @@ function applyZinsDiffFeed(){
 // Mitte. USD misst am PCE, weil die Fed ihr Ziel am PCE festmacht.
 const INFL_ZIEL={USD:2,EUR:2,GBP:2,JPY:2,CHF:1,CAD:2,AUD:2.5,NZD:2};
 const INFL_ZIEL_TXT={USD:'2% (PCE)',EUR:'2%',GBP:'2%',JPY:'2%',CHF:'0–2% → 1%',CAD:'1–3% → 2%',AUD:'2–3% → 2.5%',NZD:'1–3% → 2%'};
+// ⚠ Modell 28 (2026-10-25, Nutzer): "inflation vs ziel komplett raus und
+// arbeitslosigkeit vs normal und loehne vs normal auch raus" - und davor
+// "Entfern bitte komplett den indikator inflation vs target". Der Block ist
+// damit leer; die drei Zeilen stehen in NIV_ALT und werden aus jedem
+// gespeicherten Stand entfernt. nivWerte/nivReihe bleiben: die Makro-Charts
+// und das Country Profile lesen daraus die Reihen (Ziel-Linie, 10-J-Median).
 const NIV={
-  infl:{name:'Inflation vs Target',rub:'Inflation',stufen:[[2,1],[1,0.75],[0.5,0.5]],einh:'pp'},
-  lab:{name:'Unemployment vs Normal',rub:'Labour Market',stufen:[[1.5,1],[1,0.75],[0.5,0.5]],einh:'z'},
-  wage:{name:'Wages vs Normal',rub:'Labour Market',stufen:[[1.5,0.75],[0.75,0.5]],einh:'z'},
   // ⚠ Modell 27 (2026-10-20, Nutzer-Entscheid): die drei Trend-Zeilen
   // (Inflation Trend 3M, Unemployment Trend 3M seit Modell 23, Consumer
   // Confidence Trend 3M seit Modell 26) sind aus dem Score entfernt - Nutzer:
@@ -10319,7 +10389,7 @@ const NIV={
 // voraus - IC je Monat -0,154 (1M) / -0,308 (3M, t -2,34): das Niveau der
 // Erwartung ist schon im Kurs, es bewegt nur deren Aenderung (= "2Y Yield
 // Gap (20d)"). "PMI vs 50" ohne Effekt (IC +-0,03, Treffer < 50 %). Beide raus.
-const NIV_ALT=['Real Rate vs Peers','Growth vs Trend','PMI vs 50','Rate Path vs Peers','Inflation Trend (3M)','Unemployment Trend (3M)','Consumer Confidence Trend (3M)'];
+const NIV_ALT=['Real Rate vs Peers','Growth vs Trend','PMI vs 50','Rate Path vs Peers','Inflation Trend (3M)','Unemployment Trend (3M)','Consumer Confidence Trend (3M)','Inflation vs Target','Unemployment vs Normal','Wages vs Normal'];
 const NIV_FENSTER_J=10,NIV_MIN_J=5;
 const NIV_NAMEN=Object.values(NIV).map(d=>d.name).concat(NIV_ALT);
 const nivTag=d=>Date.parse(String(d).slice(0,10)+'T00:00:00Z');
@@ -10443,6 +10513,7 @@ function nivAlle(){
   return v;
 }
 function nivRegelText(t,ccy){
+  if(!NIV[t])return'';
   const st=NIV[t].stufen.slice().reverse().map(([ab,p])=>`${ab}${NIV[t].einh==='z'?'σ':NIV[t].einh==='pp'?'pp':NIV[t].einh==='pts'?' pts':''} → ±${p}`).join(', ');
   const T={
     infl:`Average of headline and core inflation (year on year${ccy==='USD'?', PCE — the Fed targets PCE':''}) minus the central bank's target${ccy&&INFL_ZIEL_TXT[ccy]?' ('+INFL_ZIEL_TXT[ccy]+')':''}. Above target counts bullish: an inflation-targeting central bank has to lean against it (higher rates), which supports the currency. ${st}; less → 0.`,
@@ -10540,7 +10611,17 @@ function nivVerlauf(t,ccy){
 // sagt "building up" (Regel 4, kein Ersatzinstrument).
 // Vorher (bis Modell 19): 1-Monats-Veraenderung gegen die typische
 // Monatsbewegung, Milch mit festen GDT-Schwellen.
-const ROHSTOFF_KORB={AUD:[['IRON',0.5],['COAL',0.3],['GOLD',0.2]],NZD:[['DAIRY',1]],CAD:[['OIL',1]]};
+// ⚠ Modell 28 (2026-10-25): CAD-Oel 1 -> 0,5. Gemessen 2016-2026: die
+// EMA20-Regel auf Oel sagt den CAD-Korb NICHT voraus (5 Tage t +0,30, 20 Tage
+// t -0,56), Tageskorrelation nur -0,06 bis +0,20 (2026 +0,28); CIBC: der
+// Zusammenhang ist seit 2018 deutlich schwaecher, der Loonie laeuft heute
+// mehr ueber die Zinsdifferenz. Vorgeschlagen waren auch JPY Oel -0,5 und
+// USD Oel +0,5 - beide durchgefallen (|t| < 0,7) und deshalb NICHT im Score,
+// nur als Anzeige im Country Profile (Aufnahme-Regel: nur Zeilen mit Beleg).
+// ROHSTOFF_NUR_FX: Koerbe, die nur die Waehrung selbst traegt (Gold, Indizes
+// und Renditen spiegeln sie nicht) - derzeit leer.
+const ROHSTOFF_KORB={AUD:[['IRON',0.5],['COAL',0.3],['GOLD',0.2]],NZD:[['DAIRY',1]],CAD:[['OIL',0.5]]};
+const ROHSTOFF_NUR_FX=new Set([]);
 const ROHSTOFF_NAME={IRON:'Iron Ore (EMA20)',COAL:'Coal (EMA20)',GOLD:'Gold (EMA20)',DAIRY:'Dairy (EMA20)',OIL:'Crude Oil (EMA20)'};
 const ROHSTOFF_NAME_ALT=['Iron Ore (1M)','Coal (1M)','Gold (1M)','Dairy (1M)','Crude Oil (1M)'];
 const ROHSTOFF_STUFEN=[[20,1],[10,0.75],[1,0.5]],ROHSTOFF_MAX_ALTER=7;
@@ -10650,7 +10731,8 @@ function rohstoffTrendChartHtml(id,opts,cmp){
 }
 function rohstoffRegelText(ccy){
   const k=ROHSTOFF_KORB[ccy];if(!k)return'';
-  return`${k.map(([id,g])=>ROHSTOFF_KURZ(id)+' '+g).join(', ')} (weights by share of exports). Each is read like the price trend: the close of the last finished day against its EMA20, neutral within ±${TREND_NEUTRAL_ATR} × ATR14 (close-to-close). Outside the band → ±0.5; on the same side for ${ROHSTOFF_STUFEN[1][0]}+ trading days in a row → ±0.75; for ${ROHSTOFF_STUFEN[0][0]}+ → ±1; times the weight. Rising prices support the currency. `
+  const imp=k.some(([,g])=>g<0);
+  return`${k.map(([id,g])=>ROHSTOFF_KURZ(id)+' '+g).join(', ')} (${imp?'negative weight = the country imports it: rising prices weigh on the currency':'weights by share of exports'}). Each is read like the price trend: the close of the last finished day against its EMA20, neutral within ±${TREND_NEUTRAL_ATR} × ATR14 (close-to-close). Outside the band → ±0.5; on the same side for ${ROHSTOFF_STUFEN[1][0]}+ trading days in a row → ±0.75; for ${ROHSTOFF_STUFEN[0][0]}+ → ±1; times the weight. ${imp?'':'Rising prices support the currency. '}`
     +`Iron ore, gold and oil use Yahoo daily closes; coal and dairy have no free history, so their own daily record builds up and counts 0 until ${TREND_EMA_N} days are there. Data older than ${ROHSTOFF_MAX_ALTER} days counts 0.`;
 }
 function applyRohstoffFeed(){
@@ -10661,7 +10743,7 @@ function applyRohstoffFeed(){
     if(!rub||!Array.isArray(rub.indicators))return;
     const fx=!isNonFx(sym.id),ccy=fx?sym.id:macroCcyFor(sym.id);
     const regel=fx?'same':(effDeriveRules(sym)||{})['Economic Growth'];
-    const korb=(ccy&&ROHSTOFF_KORB[ccy]&&(regel==='same'||regel==='inverse'))?ROHSTOFF_KORB[ccy]:[];
+    const korb=(ccy&&ROHSTOFF_KORB[ccy]&&(fx||!ROHSTOFF_NUR_FX.has(ccy))&&(regel==='same'||regel==='inverse'))?ROHSTOFF_KORB[ccy]:[];
     const soll=new Set(korb.map(([id])=>ROHSTOFF_NAME[id]));
     // Zeilen, die hier nicht (mehr) hingehoeren, raus.
     const vorher=rub.indicators.length;
@@ -10897,7 +10979,7 @@ function abGrafikHtml(art,c){
       `${ch.html}${fuss}${abCotScoreZeile(c)}`,null,
       ['Large speculators (CFTC Legacy, non-commercial) — the reporting group whose positioning the score reads.',
        'Blue bars up = long contracts, red bars down = short contracts (left scale). The amber line is the long share in % (right scale).'+(ch.leer?'':` The chart covers ${ch.berichte} weekly reports; tap a column for the numbers.`),
-       'How it counts: '+cotRegelText()]);
+       'How it counts: '+cotRegelText(FX.includes(c.id))]);
   }
   if(art==='retail'){
     const zeilen=abRetailZeilen(c.id);
@@ -11209,7 +11291,7 @@ function renderAssetBoard(c){
            darunter - nur so sitzt sie garantiert buendig zwischen den beiden
            Reihen und nimmt denselben Spaltenabstand mit. */''}
       <div class="ab-col ab-qrow">${abQuickZeileHtml(c)}</div>
-      ${abReihenTitel('Macro')}
+      ${abReihenTitel('Macro',makroReihenSchalterHtml(c))}
       ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE
            breite Karte mit Reitern (Nutzer 2026-10-21, siehe Kopf von makro.js). */''}
       ${abMakroReiheHtml(c)}
@@ -12041,11 +12123,13 @@ function indZaehlText(sym,rub,ind){
   if(!ind)return'';
   const b=stripPeriodSuffix(ind.name).base,r=ind.research||{};
   const spiegel=sym&&isNonFx(sym.id)&&rub&&rubAutoDerived(sym,rub)?` Mirrored from ${macroCcyFor(sym.id)} with its card rule (same or inverse).`:'';
+  if(b==='10Y Bond Yield'&&sym&&FX.includes(sym.id))return`Shown only since 2026-10-25 (model 28). A rising 10-year yield alone is no signal for the currency — the Yield Curve (10Y-2Y) row reads it against the 2-year: ${kurveRegelText()}`;
+  if(b===KURVE_IND)return kurveRegelText();
   if(BOND_INDS.includes(b))return`Yield trend: ±${BOND_PKT} — the 5-day average above the 21-day average by more than 3 bp is bullish, below is bearish, in between 0. No extra weighting, no ageing.`+spiegel;
   if(b===ZINSDIFF_IND)return zinsdiffRegelText()+spiegel;
   if(Object.values(ROHSTOFF_NAME).includes(ind.name))return rohstoffRegelText(sym?macroCcyFor(sym.id):'')+spiegel;
   {const t=Object.keys(NIV).find(k=>NIV[k].name===ind.name);if(t)return nivRegelText(t,sym?(isNonFx(sym.id)?macroCcyFor(sym.id):sym.id):'')+spiegel;}
-  if(b==='Net Bullish Positioning'||b==='Net Bearish Positioning'||b===COT_WOW_BASE)return cotRegelText();
+  if(b==='Net Bullish Positioning'||b==='Net Bearish Positioning'||b===COT_WOW_BASE)return cotRegelText(!!(sym&&FX.includes(sym.id)));
   if(b===RETAIL_IND_NAME)return retailRegelText();
   if(b===SEAS_IND_NAME)return seasRegelText();
   if(r.trend||ind.name===TREND_IND.d||ind.name===TREND_IND.h)return trendRegelText();
@@ -12214,10 +12298,15 @@ function rubrikZusammensetzungText(sym,rub){
   if(!rub)return'';
   const n=rub.name,ccy=sym?macroCcyFor(sym.id):'';
   const spiegel=sym&&isNonFx(sym.id)&&rubAutoDerived(sym,rub)?` For ${sym.id} every indicator is mirrored from ${ccy} (rule: ${effDeriveRules(sym)[n]}).`:'';
-  if(n==='COT Data')return`Five parts, added up. COT: ${cotRegelText()} Retail: ${retailRegelText()} Seasonality: ${seasRegelText()} Trend: ${trendRegelText()} Market sentiment (only some assets): contrarian, half weight.`;
+  if(n==='COT Data')return`Five parts, added up. COT: ${cotRegelText(!!(sym&&FX.includes(sym.id)))} Retail: ${retailRegelText()} Seasonality: ${seasRegelText()} Trend: ${trendRegelText()} Market sentiment (only some assets): contrarian, half weight.`;
   let s=`Card score = sum of its indicators. Macro releases: ${MAKRO_REGEL}`;
-  if(n==='Inflation')s+=` 2Y and 10Y yield trends: ±${BOND_PKT} each (5-day vs 21-day average, 3 bp dead band). 2Y yield gap: ${zinsdiffRegelText()}`;
-  if(n==='Economic Growth'&&ROHSTOFF_KORB[ccy])s+=` Commodities: ${rohstoffRegelText(ccy)}`;
+  const fxSym=!!(sym&&FX.includes(sym.id));
+  if(n==='Inflation')s+=fxSym
+    ?` 2Y yield trend: ±${BOND_PKT} (5-day vs 21-day average, 3 bp dead band). 2Y yield gap: ${zinsdiffRegelText()} Both measure the rate outlook, so together they count at most ±1.25. The 10Y row is shown only; Yield Curve (10Y-2Y): ${kurveRegelText()} PPI and core PPI count half (they rarely move the currency).`
+    :` 2Y and 10Y yield trends: ±${BOND_PKT} each (5-day vs 21-day average, 3 bp dead band). 2Y yield gap: ${zinsdiffRegelText()}`;
+  if(n==='Labour Market'&&fxSym)s+=' Employment change and unemployment rate come from one report and count at most ±1 together; weekly jobless claims count half.';
+  if(n==='Economic Growth'&&fxSym)s+=' Consumer confidence counts at most ±0.5 (it rarely moves the currency).';
+  if(n==='Economic Growth'&&ROHSTOFF_KORB[ccy]&&(fxSym||!ROHSTOFF_NUR_FX.has(ccy)))s+=` Commodities: ${rohstoffRegelText(ccy)}`;
   // Niveau-Block (Modell 22): welche Zeilen in DIESER Karte stehen.
   const niv=Object.keys(NIV).filter(t=>NIV[t].rub===n&&(rub.indicators||[]).some(i=>i&&i.name===NIV[t].name));
   if(niv.length)s+=` Level rows (how far the data sits from its normal, not just against the forecast): ${niv.map(t=>NIV[t].name+' — '+nivRegelText(t,sym?(isNonFx(sym.id)?macroCcyFor(sym.id):sym.id):'')).join(' ')}`;
@@ -19343,7 +19432,11 @@ function cotPunkte(m){
   wow=Math.round((summe-netz)*1000)/1000;
   return{netz,wow,summe,gekappt,stufe:st?st[0]:null};
 }
-function cotRegelText(){
+// kontra=true: die Regel fuer die acht Waehrungen (seit Modell 28 gegen die
+// Spekulanten). Ohne Argument entscheidet das gewaehlte Asset.
+function cotRegelText(kontra){
+  if(kontra===undefined)kontra=typeof selId!=='undefined'&&FX.includes(selId);
+  if(kontra)return`Against the speculators (= with the commercials, since 2026-10-25): ${COT_NETZ_AB}% or more of the large speculators long gives −${COT_NETZ_PKT}, ${COT_NETZ_AB}% or more short gives +${COT_NETZ_PKT}, otherwise 0. Weekly change of their long share: from ${COT_WOW_STUFEN.slice().reverse().map(([ab,p])=>ab+' pts → '+p).join(', ')}, AGAINST the direction of the change. Together at most ±${COT_MAX}. Why: measured 2016–2026, the speculators are long after the currency has risen (+197 bp in the 13 weeks before they cross 60%) and the currency gives back afterwards (−28 bp in 4 weeks, −56 bp in 13).`;
   return`Net positioning: ${COT_NETZ_AB}% or more long gives +${COT_NETZ_PKT}, ${COT_NETZ_AB}% or more short gives −${COT_NETZ_PKT}, otherwise 0. Weekly change of the long share: from ${COT_WOW_STUFEN.slice().reverse().map(([ab,p])=>ab+' pts → '+p).join(', ')} (in the direction of the change). Together at most ±${COT_MAX}; the weekly part is cut back if the sum would go over.`;
 }
 function applyCotDataFeed(){
@@ -19383,9 +19476,19 @@ function applyCotDataFeed(){
     // Netto-Positionierung treibt den Score nur bei klarer Dominanz einer
     // Seite (>=60% Long bzw. Short); bei ausgeglichener Positionierung
     // bleiben beide Indikatoren neutral. Zaehlen je 0,5 (COT_NET_HALF).
-    const cp=cotPunkte(m);
-    setOne(rub,'Net Bullish Positioning',cotPct(m.longPct),cotPct(m.prevLongPct),cp.netz>0?'bull':'neu',cp.netz>0?cp.netz:0);
-    setOne(rub,'Net Bearish Positioning',cotPct(m.shortPct),cotPct(m.prevShortPct),cp.netz<0?'bear':'neu',cp.netz<0?cp.netz:0);
+    // ⚠ Modell 28 (2026-10-25, Nutzer: "Drehen = Commercials folgen"): bei
+    // den acht WAEHRUNGEN zaehlt die Regel GEGEN die Spekulanten. Gemessen
+    // 2016-2026 (cot_hist.json, Korb-Rendite): App-Regel Punkte > 0 -> 4 Wochen
+    // danach -16 bp, < 0 -> +9 bp (t -2,1); Long-Anteil kreuzt 60 % -> davor
+    // +197 bp, danach -28 bp (4 W) / -56 bp (13 W); 8 von 8 Waehrungen.
+    // Die Non-Commercials folgen dem Preis (Korrelation mit den letzten 12
+    // Wochen +0,26); gegen sie stehen die Commercials. Nicht-FX (Gold, Oel,
+    // Indizes) bleiben bei der alten Richtung - dort ist nichts gemessen.
+    const kontra=FX.includes(c.id)?-1:1;
+    const cp0=cotPunkte(m),cp={netz:kontra*cp0.netz,wow:kontra*cp0.wow,summe:kontra*cp0.summe};
+    const nb=kontra<0?(cp0.netz>0?cp.netz:0):(cp.netz>0?cp.netz:0),ns=kontra<0?(cp0.netz<0?cp.netz:0):(cp.netz<0?cp.netz:0);
+    setOne(rub,'Net Bullish Positioning',cotPct(m.longPct),cotPct(m.prevLongPct),nb>0?'bull':nb<0?'bear':'neu',nb);
+    setOne(rub,'Net Bearish Positioning',cotPct(m.shortPct),cotPct(m.prevShortPct),ns>0?'bull':ns<0?'bear':'neu',ns);
     // Einheit pp (Prozentpunkte des Long-Anteils), nicht % - 2026-10-16.
     setOne(rub,'WoW Change in Net Position (%)',cotPct(m.dNetPct,true).replace('%','pp'),null,cp.wow>0?'bull':cp.wow<0?'bear':'neu',cp.wow);
     // Karten-Bias direkt aus dem Score-Vorzeichen ableiten: die COT-Karte
@@ -26401,7 +26504,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();}});
 Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
-  retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
+  retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
   // Umschalter, Vergleichsbank, Hike/Cut-Filter, Holds, Jahresauswahl, Klick
   // auf einen Marker der Treppenkurve). Ohne diese Zeile wirft jeder von

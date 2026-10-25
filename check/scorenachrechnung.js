@@ -86,12 +86,24 @@ const init = () => { try { localStorage.setItem('fxpro_help_seen', '1'); localSt
    if(ser&&ser.length>=60){const px={};ser.forEach(e=>{if(e&&e[0]!=null&&e[1]!=null)px[e[0]]=Number(e[1])});const ds=Object.keys(px).sort();const mv={};for(let k=1;k<ds.length;k++){const a=px[ds[k-1]],c=px[ds[k]];if(a>0&&isFinite(c))mv[ds[k]]=Math.abs(c/a-1)}const all=Object.values(mv);if(all.length>=40)out={mv,base:all.reduce((x,y)=>x+y,0)/all.length}}
    return mvCache[key]=out};
  const mkt=(i,sid)=>{const h=i.chartHist;if(!Array.isArray(h)||h.length<5)return 1;const m=moves(sid);if(!m)return 1;const hits=[];h.forEach(e=>{const d=e&&e[0];if(d&&m.mv[d]!=null)hits.push(m.mv[d])});if(hits.length<5||!(m.base>0))return 1;return Math.sqrt(Math.max(0.1,hits.reduce((x,y)=>x+y,0)/hits.length/m.base))};
- const indMine=(i,rub,sid)=>{if(typeof i.pkt==='number'&&isFinite(i.pkt))return rnd2(i.pkt);if(stale(i))return 0;const w=weight(i,rub);
-   const n=BOND.has(i.name)?1:Math.min(1.8,Math.max(0.4,mag(i)*decay(i,rub)*mkt(i,sid)));return rnd2((BIAS[i.bias]||0)*w*n)};
+ const indRoh=(i,rub,sid)=>{if(typeof i.pkt==='number'&&isFinite(i.pkt))return rnd2(i.pkt);if(stale(i))return 0;const w=weight(i,rub);
+   const n=BOND.has(i.name)?1:Math.min(1.8,Math.max(0.4,mag(i)*decay(i,rub)*mkt(i,sid)));return (BIAS[i.bias]||0)*w*n};
+ // Modell 28 (2026-10-25), nur die acht Waehrungen - hier UNABHAENGIG nachgebaut:
+ // Nur-Anzeige-Zeilen 0, PPI/Core PPI/Erstantraege halbes Gewicht, Bloecke gedeckelt.
+ const M28A={_:['PCE','10Y Bond Yield','ZEW Economic Sentiment'],EUR:['GDP Growth QoQ','Retail Sales'],GBP:['Retail Sales']};
+ const m28a=(bn,sid)=>FX.includes(sid)&&(M28A._.includes(bn)||(M28A[sid]||[]).includes(bn));
+ const M28M={'PPI':0.5,'Core PPI':0.5,'Unemployment Claims':0.5};
+ const M28D=[[['2Y Bond Yield','2Y Yield Gap (20d)'],1.25],[['NFP / Employment Change','Unemployment Rate'],1],[['Consumer Confidence'],0.5]];
+ const indM28=(i,rub,sid)=>{const bn=strip(i.name);if(m28a(bn,sid))return 0;const r=indRoh(i,rub,sid);
+   const isPkt=typeof i.pkt==='number'&&isFinite(i.pkt);return FX.includes(sid)&&M28M[bn]!=null&&!isPkt&&!stale(i)?r*M28M[bn]:r};
+ const indMine=(i,rub,sid)=>{const bn=strip(i.name);let v=indM28(i,rub,sid);
+   if(FX.includes(sid)&&v){const g=M28D.find(x=>x[0].includes(bn));if(g){const s=(rub.indicators||[]).filter(o=>g[0].includes(strip(o.name))).reduce((a,o)=>a+indM28(o,rub,sid),0);
+     if(Math.abs(s)>g[1]+1e-9)v=v*g[1]/Math.abs(s);}}
+   return rnd2(v)};
  const F=[];let nInd=0;const symMine={},trk={};
  syms.forEach(s=>{let sum=0,n=0;(s.rubrics||[]).forEach(rub=>{let rs=0;(rub.indicators||[]).forEach(i=>{nInd++;const mine=indMine(i,rub,s.id),app=SC.indScore(i,rub);
      if(Math.abs(mine-app)>0.005)F.push(`IND ${s.id}/${rub.name}/${i.name}: mine ${mine} app ${app} bias ${i.bias} pkt ${i.pkt} stale ${stale(i)}`);
-     rs+=mine;if(!stale(i))n++});
+     rs+=mine;if(!stale(i)&&!m28a(strip(i.name),s.id))n++});
    rs=rnd2(rs);const ra=SC.rubScore(rub);if(Math.abs(rs-ra)>0.005)F.push(`RUB ${s.id}/${rub.name}: mine ${rs} app ${ra}`);sum+=rs});
    symMine[s.id]=rnd2(sum);trk[s.id]=n;const sa=SC.symScore(s);if(Math.abs(symMine[s.id]-sa)>0.005)F.push(`SYM ${s.id}: mine ${symMine[s.id]} app ${sa}`);
    if(SC.symTrackedCount(s)!==n)F.push(`TRK ${s.id}: mine ${n} app ${SC.symTrackedCount(s)}`)});

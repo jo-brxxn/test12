@@ -16,9 +16,11 @@ zum analysieren“) | Zahlen je Spur, **„abgetrennt und übersichtlich — das
 
 ## Regeln
 
-- **Schalter `Table | Charts` je Makro-Karte**, in der Zeile **direkt unter dem Kopf**
-  (`.mk-kz`). *Gemessen:* im Kopf frei 15 px (1024) bzw. 29 px (390), der Schalter
-  braucht ~110 px, Namen werden nie gekürzt.
+- **EIN Kippschalter „Charts“ rechts in der MACRO-Zeile** (seit 2026-10-25, Nutzer:
+  *„Verschieb bitte den umschalter table charts in die zeile wo macro steht ganz rechts
+  ganz schmal einfach ein schalter“*): `makroReihenSchalterHtml` → `.mk-rsw` mit `.tgl.tgl-s`
+  (28×16 px), schaltet alle drei Karten; öffnet den zuletzt gewählten Reiter (`mkTab`).
+  ~~Schalter je Karte unter dem Kopf (`.mk-kz`) und im Kopf der Reiter-Karte~~ entfernt.
 - **Charts = EINE breite Karte mit Reitern** (`#mkTabKarte`) statt der drei Karten.
   Aktiv ist der Reiter der geklickten Karte. Kopf: Symbol des aktiven Reiters |
   Reiter (17 px, aktiv = Navy-Unterstrich) | Score der aktiven Karte | `Table | Charts` | ⓘ.

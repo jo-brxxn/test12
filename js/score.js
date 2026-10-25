@@ -774,7 +774,66 @@ function awaitingIndicators(){
 // Formel biasScore x Gewicht x Normierung neben dieser Funktion ein zweites
 // Mal hinschreiben - und zwei Kopien laufen irgendwann auseinander.
 // Nachgewiesen von check/scorediff.js: kein Score veraendert sich.
+// ══ MODELL 28 (2026-10-25): GEWICHTE NACH GEMESSENER WIRKUNG, NUR FX ══════
+// Nutzer: "setz bitte alle deine Vorschlaege um". Grundlage ist die Messung
+// an den eigenen Daten (2016-10 bis 2026-10, Waehrung als Korb gegen die
+// sieben anderen, Release-Tag Beat gegen Miss, t-Wert; docs/CHANGELOG.md
+// VERSION-CHECK-632). Gilt NUR fuer die acht FX-Waehrungen - gemessen wurde
+// nur dort; Nicht-FX-Assets (Gold, Indizes, Yields) rechnen wie bisher.
+//   1. Nur Anzeige: die Waehrung bewegt sich am Release-Tag NICHT mit der
+//      Ueberraschung (t <= -1: EUR GDP -1,75, EUR Retail -1,54, GBP Retail
+//      -1,83, ZEW -1,25) bzw. die Reihe ist aus anderen vorhersagbar (PCE
+//      aus CPI+PPI, t 0,5). 10Y Bond Yield: ersetzt durch "Yield Curve
+//      (10Y-2Y)" (Nutzer-Regel: 10Y steigt schneller als 2Y = bearish).
+//   2. Halbes Gewicht: PPI/Core PPI (nur USD t 1,9, sonst ~0), woechentliche
+//      Erstantraege (USD t 0,27).
+//   3. Deckel fuer Bloecke, die dasselbe messen: 2Y-Trend + 2Y-Zinsdifferenz
+//      (beide = Zinserwartung) zusammen hoechstens +-1,25; Beschaeftigung +
+//      Arbeitslosenquote (eine Veroeffentlichung) hoechstens +-1;
+//      Verbrauchervertrauen hoechstens +-0,5 (Wirkung ~0, Faktor bis 1,8).
+//      Beim Deckeln werden alle Mitglieder im selben Verhaeltnis gekuerzt -
+//      jede Zeile zeigt ihren echten Anteil, die Summe ist genau der Deckel.
+const M28_NUR_ANZEIGE={_alle:['PCE','10Y Bond Yield','ZEW Economic Sentiment'],EUR:['GDP Growth QoQ','Retail Sales'],GBP:['Retail Sales']};
+const M28_GRUND={
+  'PCE':'Predictable from CPI and PPI before it is released (release-day effect t 0.5) — shown only.',
+  '10Y Bond Yield':'Replaced by the Yield Curve (10Y−2Y) row: a rising 10-year yield alone is no signal — if it rises faster than the 2-year it is bearish. Shown only.',
+  'ZEW Economic Sentiment':'Measured 2016–2026: the euro moves against a ZEW surprise on release day (t −1.25) — shown only.',
+  'GDP Growth QoQ':'Measured 2016–2026: the currency moves against the surprise on release day (t −1.75) — shown only.',
+  'Retail Sales':'Measured 2016–2026: the currency moves against the surprise on release day (t −1.5 to −1.8) — shown only.'
+};
+const M28_GEWICHT={'PPI':0.5,'Core PPI':0.5,'Unemployment Claims':0.5};
+const M28_DECKEL=[
+  {id:'rates',name:'Rate expectations (2Y)',namen:['2Y Bond Yield','2Y Yield Gap (20d)'],max:1.25},
+  {id:'jobs',name:'Jobs report',namen:['NFP / Employment Change','Unemployment Rate'],max:1},
+  {id:'conf',name:'Consumer confidence',namen:['Consumer Confidence'],max:0.5}
+];
+function m28Fx(rub,symId){const s=symId||(rub&&rub._symId)||null;return s&&FX.includes(s)?s:null;}
+function m28NurAnzeige(base,sid){return M28_NUR_ANZEIGE._alle.includes(base)||(M28_NUR_ANZEIGE[sid]||[]).includes(base);}
+// Roh-Beitrag mit Gewichts-Multiplikator (ohne Deckel) - fuer den Deckel der Gruppe.
+function m28Roh(ind,rub,symId,ohne,sid){
+  const base=stripPeriodSuffix(ind.name).base;
+  if(m28NurAnzeige(base,sid))return{w:0,base:0,trend:0,rev:0,total:0,zero:true,noTrend:false,norm:1,grund:M28_GRUND[base]||'Shown only.'};
+  const p=indScorePartsRoh(ind,rub,symId,ohne);
+  const mult=M28_GEWICHT[base];
+  if(mult==null||p.zero||p.stale||p.fest)return p;
+  return Object.assign({},p,{w:p.w*mult,base:p.base*mult,total:p.total*mult,mult});
+}
 function indScoreParts(ind,rub,symId,ohneAltersgrenze){
+  const sid=m28Fx(rub,symId);
+  if(!sid)return indScorePartsRoh(ind,rub,symId,ohneAltersgrenze);
+  const p=m28Roh(ind,rub,symId,ohneAltersgrenze,sid);
+  if(p.zero||p.stale||!p.total)return p;
+  const base=stripPeriodSuffix(ind.name).base;
+  const g=M28_DECKEL.find(x=>x.namen.includes(base));
+  if(!g)return p;
+  const summe=((rub&&rub.indicators)||[]).filter(i=>g.namen.includes(stripPeriodSuffix(i.name).base))
+    .reduce((s,i)=>s+(i===ind?p.total:m28Roh(i,rub,symId,ohneAltersgrenze,sid).total),0);
+  if(Math.abs(summe)<=g.max+1e-9)return p;
+  const f=g.max/Math.abs(summe);
+  return Object.assign({},p,{base:p.base*f,total:p.total*f,deckel:{name:g.name,max:g.max,summe,f}});
+}
+function m28DeckelText(d){return`${d.name}: together at most ±${d.max}; the block adds up to ${d.summe>0?'+':''}${Math.round(d.summe*100)/100}, so every row of it is cut ×${d.f.toFixed(2)}`;}
+function indScorePartsRoh(ind,rub,symId,ohneAltersgrenze){
   if(SCORE_ZERO.has(stripPeriodSuffix(ind.name).base))return{w:0,base:0,trend:0,rev:0,total:0,zero:true,noTrend:false,norm:1};
   // Veralteter Wert: traegt 0, bleibt aber vollstaendig sichtbar (eigener
   // Hinweis an der Zeile + Dashboard-Meldung). Bewusst VOR jeder weiteren
@@ -910,7 +969,7 @@ function scoreInfoIndRow(ind,rub){
   // ── Display-only / veraltet: schlanke Karte ohne Formel-Kette ──
   if(p.zero||p.stale){
     let sub;
-    if(p.zero)sub='Display-only — excluded from the score by design.';
+    if(p.zero)sub=p.grund?escH(p.grund):'Display-only — excluded from the score by design.';
     else{
       const c=indOverdueCycles(ind);
       sub=`Last release ${escH(r.date||'?')}, ${c?c.toFixed(1):'?'}× its own cycle overdue — excluded from the score until a new one arrives.`;
@@ -932,13 +991,16 @@ function scoreInfoIndRow(ind,rub){
     if(r.cot){
       const m=String(ind.name);
       erkl=/WoW/.test(m)?`Weekly change of the long share ${escH(r.actual||'?')}`:`${/Bearish/.test(m)?'Short':'Long'} share ${escH(r.actual||'?')}`;
-      regel=W.cotRegelText?W.cotRegelText():'';
+      regel=W.cotRegelText?W.cotRegelText(!!m28Fx(rub,null)):'';
     }else if(ind.name==='Retail Positioning'){
       const rt=W.retailBiasFor?W.retailBiasFor((rub&&rub._symId)||selId):null;
       if(rt&&Array.isArray(rt.stimmen)){
         erkl=`<table class="si-ftab">${rt.stimmen.map(x=>`<tr><td>${escH(x.name)}</td><td>${x.langAsset}% long${x.dAsset!=null?` <small>(${x.dAsset>0?'+':''}${Math.round(x.dAsset)} in 5d)</small>`:''}</td><td style="color:${x.st>0?BC.bull:x.st<0?BC.bear:'var(--t3)'}">${x.st>0?'+':''}${x.st}</td></tr>`).join('')}<tr><td><b>Average</b></td><td></td><td><b>${fmtScNum(rt.pkt)}</b></td></tr></table>`;
       }else erkl=escH(r.actual||'');
       regel=W.retailRegelText?W.retailRegelText():'';
+    }else if(r.kurve){
+      erkl=`10Y−2Y now ${escH(r.actual||'?')}, 21-day average ${escH(r.previous||'?')} → 5-day vs 21-day ${r.bp>0?'+':''}${r.bp} bp`;
+      regel=W.kurveRegelText?W.kurveRegelText():'';
     }else if(r.zinsdiff){
       erkl=`Gap now ${escH(r.actual||'?')}, ${escH(r.prevDate||'')} ${escH(r.previous||'?')} → change ${r.bp>0?'+':''}${r.bp} bp`;
       regel=W.zinsdiffRegelText?W.zinsdiffRegelText():'';
@@ -961,6 +1023,7 @@ function scoreInfoIndRow(ind,rub){
         <div class="si-delta"><div class="si-delta-n" style="color:${scoreColor(p.total*3)}">${fmtScNum(p.total)}</div></div>
       </div>
       ${regel?`<div class="si-sub"><b>Rule:</b> ${escH(regel)}</div>`:''}
+      ${p.deckel?`<div class="si-sub"><b>Capped:</b> ${escH(m28DeckelText(p.deckel))}</div>`:''}
     </div>`;
   }
   // ── Meta-Zeile: Actual vs. Forecast/Vorwert, Beat/Miss ──
@@ -1021,6 +1084,8 @@ function scoreInfoIndRow(ind,rub){
   if(r.sent)extra.push('contrarian sentiment, half weight, only counts at extremes');
   const partners=indGroupPartners(ind,rub);
   if(partners)extra.push('shares weight with '+partners.join(' + '));
+  if(p.mult!=null)chips.push(`<span class="si-chip">Half weight <span class="v">×${p.mult}</span></span>`);
+  if(p.deckel){chips.push(`<span class="si-chip">Cap <span class="v">×${p.deckel.f.toFixed(2)}</span></span>`);extra.push(m28DeckelText(p.deckel));}
 
   const relDate=r.date||(Array.isArray(ind.valDates)?ind.valDates[ind.valDates.length-1]:null);
   let ageNote='';
@@ -1582,8 +1647,13 @@ function pairCarryAdjAt(baseId,quoteId,datum){
 // immer ausgenommen.
 function symTrackedCount(sym){
   let n=0;
+  // Modell 28: Nur-Anzeige-Zeilen der Waehrungen zaehlen wie SCORE_ZERO nicht
+  // im Divisor - sonst doppelt bestraft (kein Signal UND groesserer Teiler,
+  // der Merksatz aus docs/score-model.md "Altersgrenze").
+  const fx=sym&&FX.includes(sym.id);
   (sym&&sym.rubrics||[]).forEach(rub=>(rub.indicators||[]).forEach(i=>{
     if(SCORE_ZERO.has(stripPeriodSuffix(i.name).base))return;
+    if(fx&&m28NurAnzeige(stripPeriodSuffix(i.name).base,sym.id))return;
     if(indIsStale(i))return;
     n++;
   }));
@@ -1831,7 +1901,7 @@ function symScoreCmp(sym){
 // PMI vs 50 (kein Effekt) raus. Wages bleibt (Pool-IC +0,043/+0,069).
 // 25 -> 26 (2026-10-17): Consumer Confidence Trend (3M) neu (Economic Growth) -
 // besteht Einzel- UND Block-Test (Block-IC Ø 0,052 -> 0,070, beide Haelften positiv).
-const SCORE_MODEL_VERSION=27;
+const SCORE_MODEL_VERSION=28;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.

@@ -150,15 +150,19 @@ function mkReferenz(ind,ccy,pts){
 }
 
 // ── Schalter ──────────────────────────────────────────────────────────────
-function mkSchalter(aktiv,rubName){
-  return`<span class="ctyp mk-sw" role="group" aria-label="Macro view">${[['table','Table','Show the indicator tables'],['charts','Charts','Show the macro cards as one large chart card with tabs: every indicator stacked on one time axis']].map(([v,l,t])=>
-    `<button class="ind-hist-range-btn${v===aktiv?' on':''}" aria-pressed="${v===aktiv}" onclick="makroSicht('${v}'${v==='charts'&&rubName?`,'${escJH(rubName)}'`:''})" title="${t}">${l}</button>`).join('')}</span>`;
-}
-// Zeile direkt unter dem Kopf jeder Makro-Karte (Table-Ansicht).
-function makroKartenSchalterHtml(rub){
-  const s=getSym();
-  if(!mkHatCharts(rub,s))return'';
-  return`<div class="mk-kz">${mkSchalter('table',rub.name)}</div>`;
+// ⚠ Seit 2026-10-25 (Nutzer: "Verschieb bitte den umschalter table charts in
+// die zeile wo macro steht ganz rechts ganz schmal einfach ein schalter"):
+// EIN Kippschalter rechts in der MACRO-Zeile fuer alle drei Karten
+// (makroReihenSchalterHtml). Die Zeile unter jedem Kartenkopf und der
+// Schalter im Kopf der Reiter-Karte sind weg.
+function makroKartenSchalterHtml(rub){return'';}
+function makroReihenSchalterHtml(sym){
+  if(!sym)return'';
+  const rubs=sym.rubrics||[];
+  if(!ASSET_CARDS.some(n=>{const r=rubs.find(x=>x.name===n);return r&&mkHatCharts(r,sym);}))return'';
+  const an=makroGross();
+  return`<label class="mk-rsw" title="${an?'Back to the indicator tables':'Show the macro cards as one large chart card with tabs'}">`
+    +`<span class="mk-rsw-l">Charts</span><span class="tgl tgl-s"><input type="checkbox"${an?' checked':''} aria-label="Show the macro cards as charts" onchange="makroSicht(this.checked?'charts':'table')"><span class="tgl-track"></span></span></label>`;
 }
 
 // ── Reiter-Karte (Charts-Ansicht) ─────────────────────────────────────────
@@ -197,7 +201,6 @@ function makroTabKarteHtml(sym){
       ${tabs}
       <div class="mk-tk-ctl">
         <span class="rub-score" role="button" onclick="openScoreInfoRub('${escJH(sym.id)}','${escJH(rub.id)}')" style="cursor:pointer;color:${biasCss(rub.bias)};border-color:${biasCss(rub.bias)}" title="Card score of ${escH(rub.name)} - tap to see which indicators it is made of">${sc>0?'+':''}${sc}</span>
-        ${mkSchalter('charts')}
         <button class="rinfo" onclick="openInfoM(${ri})" title="Info">i</button>
       </div>
     </div>
@@ -633,7 +636,7 @@ function makroHoverAus(el){try{const box=el.closest('.mk-chart');const m=box&&bo
 let _mkRz=0;
 try{window.addEventListener('resize',()=>{clearTimeout(_mkRz);_mkRz=setTimeout(()=>makroZeichnenAlle(),150);});}catch(e){}
 
-export {MK_RUBS,MK_ZIELBAND,makroKartenSchalterHtml,makroTabKarteHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart,mkReferenz,mkCcy};
+export {MK_RUBS,MK_ZIELBAND,makroKartenSchalterHtml,makroReihenSchalterHtml,makroTabKarteHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart,mkReferenz,mkCcy};
 if(typeof window!=='undefined')Object.assign(window,{makroSicht,makroTab,makroGross,makroRange,makroSpur,makroVergleich,makroPreis,makroHover,makroHoverAus,makroZeichnenAlle,mkReferenz,MK_ZIELBAND,makroTabWert,makroOptWert,
   // nur fuer check/makro.js (Statistik unabhaengig nachrechnen, Werte-Farbe gegen die Reihe)
   mkStatistik,mkTon,

@@ -7,10 +7,12 @@
 // keine Einstufungen, Zahlen je Spur "abgetrennt und uebersichtlich").
 //
 // Geprueft (im Browser, echte Daten, 1180 und 390 px):
-//   A) jede Makro-Karte mit Reihen hat ihren Schalter; "Charts" auf Karte X
-//      -> genau EINE breite Reiter-Karte (>= 90 % der Reihe), aktiver Reiter X,
-//      keine Makro-Tabelle mehr; Reiter-Klick wechselt; "Table" bringt alle
-//      drei Tabellen zurueck
+//   A) seit 2026-10-25 (Nutzer: "Verschieb bitte den umschalter table charts
+//      in die zeile wo macro steht ganz rechts ganz schmal einfach ein
+//      schalter") EIN Kippschalter rechts in der MACRO-Zeile, keiner mehr in
+//      den Karten; Schalter an -> genau EINE breite Reiter-Karte (>= 90 % der
+//      Reihe), keine Makro-Tabelle mehr; Reiter-Klick wechselt; Schalter aus
+//      bringt alle drei Tabellen zurueck
 //   B) Spurkopf = Tabellenzeile: Act/Fc/Prev der Spur stimmen Zeichen fuer
 //      Zeichen mit der Tabelle ueberein (eine Rechnung, indZeilenWerte);
 //      je Spur ein eigener Block mit Kopf, Zahl der Spuren = Chips an;
@@ -65,13 +67,16 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
         return out;
       }, MAKRO);
       const karten = await p.evaluate(MAKRO => [...document.querySelectorAll('#detail .rub-card')].filter(c => MAKRO.includes((c.querySelector('.rub-inp') || {}).value))
-        .map(c => ({ name: c.querySelector('.rub-inp').value, sw: !!c.querySelector('.mk-kz .mk-sw') })), MAKRO);
+        .map(c => ({ name: c.querySelector('.rub-inp').value, sw: !!c.querySelector('.mk-kz .mk-sw, .mk-sw') })), MAKRO);
       if (karten.length < 3) { fail(`${ort} ${id}`, `nur ${karten.length} Makro-Karten`); continue; }
-      karten.filter(k => !k.sw).forEach(k => fail(`${ort} ${id}`, `Karte ${k.name}: kein Table|Charts-Schalter`));
-      // A) Charts auf der ZWEITEN Karte -> deren Reiter ist aktiv
-      const ziel = karten[1].name;
-      await p.evaluate(ziel => { const c = [...document.querySelectorAll('#detail .rub-card')].find(c => (c.querySelector('.rub-inp') || {}).value === ziel);
-        [...c.querySelectorAll('.mk-kz .mk-sw button')].find(x => x.textContent.trim() === 'Charts').click(); }, ziel);
+      karten.filter(k => k.sw).forEach(k => fail(`${ort} ${id}`, `Karte ${k.name}: hat noch einen eigenen Table|Charts-Schalter`));
+      const sw = await p.evaluate(() => { const s = [...document.querySelectorAll('#detail .ab-rtitel .mk-rsw input')]; const t = s[0] && s[0].closest('.ab-rtitel');
+        return { n: s.length, titel: t ? t.querySelector('span').textContent.trim() : null, rechts: t ? Math.round(t.getBoundingClientRect().right - s[0].closest('.mk-rsw').getBoundingClientRect().right) : null }; });
+      if (sw.n !== 1 || sw.titel !== 'Macro') fail(`${ort} ${id}`, `MACRO-Zeile: ${sw.n} Schalter (Titel ${sw.titel}) statt genau einem`);
+      else if (sw.rechts > 2) fail(`${ort} ${id}`, `Schalter steht ${sw.rechts} px vor dem rechten Rand der MACRO-Zeile`);
+      // A) Schalter an -> eine Reiter-Karte, Reiter = zuletzt gewaehlter oder erster
+      const ziel = await p.evaluate(K => (typeof makroTabWert === 'function' && K.includes(makroTabWert())) ? makroTabWert() : K[0], karten.map(k => k.name));
+      await p.evaluate(() => document.querySelector('#detail .mk-rsw input').click());
       await p.waitForTimeout(600);
       if (GP) await p.evaluate(() => { document.querySelectorAll('.mk-chart').forEach(x => { x.innerHTML = ''; }); });
       const a = await p.evaluate(MAKRO => {
@@ -197,8 +202,8 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
             ['Chip', () => document.querySelector('#mkTabKarte .mk-chip:not(.on)').click()], ['Chip zurueck', () => document.querySelector('#mkTabKarte .mk-chip.on').click()],
             ['Compare', () => makroVergleich('CHF')], ['Compare zurueck', () => makroVergleich('CHF')], ['Price', () => makroPreis()], ['Price zurueck', () => makroPreis()],
             ['Zeitraum', () => [...document.querySelectorAll('#mkTabKarte .ind-hist-range-btn')].find(x => x.textContent.trim() === '5Y').click()],
-            ['Table', () => [...document.querySelectorAll('#mkTabKarte .mk-sw button')].find(x => x.textContent.trim() === 'Table').click()],
-            ['Charts', () => [...document.querySelectorAll('#detail .mk-kz .mk-sw button')].find(x => x.textContent.trim() === 'Charts').click()]];
+            ['Table', () => document.querySelector('#detail .mk-rsw input').click()],
+            ['Charts', () => document.querySelector('#detail .mk-rsw input').click()]];
           for (const [name, fn] of schritte) {
             let voll = 0, gezeichnet = 0;
             const mo = new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(x => { if (x.nodeType !== 1) return;
@@ -220,8 +225,8 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
       // E) Sync-Weg: Ansicht + Reiter ueberleben snap -> applySnap
       const e = await p.evaluate(() => { const s = snap(); const o = JSON.parse(s); return { ans: o.mkAnsicht, tab: o.mkTab }; });
       if (e.ans !== 'charts' || !a.reiter.includes(e.tab)) fail(`${ort} ${id} SYNC`, `snap traegt mkAnsicht=${e.ans}, mkTab=${e.tab}`);
-      // zurueck auf Table (Schalter im Kopf der Reiter-Karte)
-      await p.evaluate(() => [...document.querySelectorAll('#mkTabKarte .mk-sw button')].find(x => x.textContent.trim() === 'Table').click());
+      // zurueck auf Table (der eine Schalter in der MACRO-Zeile)
+      await p.evaluate(() => document.querySelector('#detail .mk-rsw input').click());
       await p.waitForTimeout(450);
       const zur = await p.evaluate(MAKRO => ({ tk: !!document.getElementById('mkTabKarte'), tabs: [...document.querySelectorAll('#detail .rub-card')].filter(c => MAKRO.includes((c.querySelector('.rub-inp') || {}).value) && c.querySelector('.ind-table')).length }), MAKRO);
       if (zur.tk || zur.tabs < 3) fail(`${ort} ${id}`, `Table bringt nur ${zur.tabs} von 3 Tabellen zurueck`);
@@ -246,5 +251,5 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
     process.exit(ok ? 0 : 1);
   }
   if (F.length) { console.log(`makro: ${F.length} Befund(e)`); F.slice(0, 40).forEach(x => console.log('  ' + x)); process.exit(1); }
-  console.log('makro: ok (Schalter je Makro-Karte, Charts = eine Reiter-Karte mit aktivem Reiter der geklickten Karte, Spurkopf = Tabellenzeile, Zielband, Balken mit allen Werten in Beat/Miss-Farbe + Forecast-Linie, keine Surprise-Zeile/Zinsstriche, kompakt, Chips, Hover, Table zurueck, Einstufungen weg und gespeicherte erhalten, Sync-Weg - USD/AUD/GOLD bei 1180 und 390 px)');
+  console.log('makro: ok (ein Schalter rechts in der MACRO-Zeile, Charts = eine Reiter-Karte mit aktivem Reiter der geklickten Karte, Spurkopf = Tabellenzeile, Zielband, Balken mit allen Werten in Beat/Miss-Farbe + Forecast-Linie, keine Surprise-Zeile/Zinsstriche, kompakt, Chips, Hover, Table zurueck, Einstufungen weg und gespeicherte erhalten, Sync-Weg - USD/AUD/GOLD bei 1180 und 390 px)');
 })().catch(e => { console.error(e); process.exit(2); });

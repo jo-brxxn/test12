@@ -70,9 +70,10 @@ function altStand(d) {
   await p.evaluate(() => gotoSym('GOLD')); await p.waitForTimeout(600);
   const klick = (sel, txt) => p.evaluate(([sel, txt]) => { const x = [...document.querySelectorAll(sel)].find(y => y.textContent.trim() === txt); if (!x) return false; x.click(); return true; }, [sel, txt]);
   const zustand = () => p.evaluate(() => { const inf = getSym().rubrics.find(r => r.name === 'Inflation'); const a = ((researchAnalysis.USD || {}).Inflation || {});
-    return { ui: (document.querySelector('#detail .mk-sw .on') || {}).textContent || '', charts: !!document.querySelector('#detail .mk-chart svg'), range: inf.mkRange, inds: JSON.stringify(inf.mkInds || null),
+    return { ui: (i => i ? (i.checked ? 'Charts' : 'Table') : '')(document.querySelector('#detail .mk-rsw input')), charts: !!document.querySelector('#detail .mk-chart svg'), range: inf.mkRange, inds: JSON.stringify(inf.mkInds || null),
       tab: (document.querySelector('#mkTabKarte .mk-tab.on') || {}).textContent || '', tags: JSON.stringify(a.tags || {}), hist: (a.hist || []).length }; });
-  if (!await klick('#detail .mk-sw button', 'Charts')) fail('Aufbau', 'kein Charts-Knopf'); await p.waitForTimeout(300);
+  // Seit 2026-10-25 ein Kippschalter rechts in der MACRO-Zeile (statt Table|Charts je Karte)
+  if (!await p.evaluate(() => { const i = document.querySelector('#detail .mk-rsw input'); if (!i) return false; if (!i.checked) i.click(); return true; })) fail('Aufbau', 'kein Charts-Schalter'); await p.waitForTimeout(300);
   await klick('#detail .ind-hist-range-btn', '10Y'); await p.waitForTimeout(300);
   await p.evaluate(() => { const c = document.querySelector('#detail .mk-chip.on'); if (c) c.click(); }); await p.waitForTimeout(300);
   // Reiter Labour Market, dann zurueck auf Inflation-Spuren ist nicht noetig: der Reiter selbst wird geprueft
@@ -144,8 +145,9 @@ function altStand(d) {
   await p2.evaluate(gp => { if (gp) window.__gpKeinBehalten = true; ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); sessionStorage.clear(); }, GP);
   await p2.waitForTimeout(2500);
   await p2.evaluate(() => gotoSym('GOLD')); await p2.waitForTimeout(500);
-  // Charts an und hochgeladen (B hatte Table gesetzt)
-  await p2.evaluate(() => { const b = [...document.querySelectorAll('#detail .mk-sw button')].find(x => x.textContent.trim() === 'Charts'); if (b) b.click(); });
+  // Charts an und hochgeladen (B hatte Table gesetzt). Seit 2026-10-25 EIN Schalter
+  // fuer alle Karten - er oeffnet den zuletzt gewaehlten Reiter; D liest Inflation.
+  await p2.evaluate(() => { const i = document.querySelector('#detail .mk-rsw input'); if (i && !i.checked) i.click(); makroTab('Inflation'); });
   await p2.waitForTimeout(3000);
   // Eingabe, dann SOFORT neu laden (Push kommt nicht mehr durch: Netz weg)
   const sperre = r => r.abort();
@@ -169,7 +171,7 @@ function altStand(d) {
 
   // ── E: aelterer Tab desselben Geraets ──
   console.log('E) aelterer Tab schreibt localStorage ohne die neuen Felder');
-  await p2.evaluate(() => { const b = [...document.querySelectorAll('#detail .mk-sw button')].find(x => x.textContent.trim() === 'Charts'); if (b) b.click(); });
+  await p2.evaluate(() => { const i = document.querySelector('#detail .mk-rsw input'); if (i && !i.checked) i.click(); });
   await p2.waitForTimeout(3500);
   const vorE = await p2.evaluate(() => makroGross());
   await p2.evaluate(() => { const o = JSON.parse(localStorage.getItem(SK)); delete o.mkAnsicht; localStorage.setItem(SK, JSON.stringify(o)); localStorage.setItem('fxpro_updated', new Date().toISOString()); adoptExternalState(); });

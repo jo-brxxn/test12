@@ -8,6 +8,50 @@ Score - bei Widerspruch zu irgendeiner aelteren Herleitung in
 siehe eigenen Abschnitt weiter unten, sonst vergleicht die Stärke-Note zwei
 verschiedene Rechnungen.
 
+## ⚠️ Stand 2026-10-25 (SCORE_MODEL_VERSION 28): Umbau nach Messung, nur die acht Waehrungen
+
+Nutzer: *„setz bitte alle deine Vorschläge um“* (nach der Recherche „was bewegt
+jede Währung wirklich“) + Einzelentscheidungen per Rückfrage. Gemessen an den
+eigenen Daten 2016-10 bis 2026-10, Währung als **Korb gegen die sieben anderen**
+(Skripte und Zahlen: `docs/CHANGELOG.md`, VERSION-CHECK-632). Gilt **nur für
+USD/EUR/GBP/JPY/CHF/CAD/AUD/NZD** — Nicht-FX (Gold, Indizes, Renditen) rechnen
+wie bisher (`m28Fx` in `js/score.js`).
+
+| Teil | Vorher | Seit Modell 28 | Beleg |
+|---|---|---|---|
+| Niveau-Block (Inflation vs Target, Unemployment vs Normal, Wages vs Normal) | feste Punkte | **entfernt** (auch Nicht-FX), `NIV={}`, Zeilen in `NIV_ALT` | Nutzer-Entscheid |
+| COT Netto + Woche | mit den Spekulanten | **gegen die Spekulanten** (= mit den Commercials) | Regel-Punkte >0 → 4 W −16 bp, <0 → +9 bp, t −2,1; Long-Anteil kreuzt 60 % → davor +197 bp, danach −28/−56 bp (4/13 W); 8 von 8 |
+| 10Y Bond Yield | ±0,75 Trend | **nur Anzeige**; neu **Yield Curve (10Y-2Y)** ±0,5: Abstand 10Y−2Y, SMA5 vs SMA21, 3 bp Totzone, steiler = bearish | Nutzer-Regel; 2026: Versteilerung bei 8/8 negativ korreliert |
+| 2Y-Trend + 2Y Yield Gap | je bis ±0,75 | **zusammen ≤ ±1,25** (Deckel, anteilig gekürzt) | beide = Zinserwartung |
+| Beschäftigung + Arbeitslosenquote | je ±1 × Faktor | **zusammen ≤ ±1** | eine Veröffentlichung |
+| Consumer Confidence | ±1 × Faktor (bis 1,8) | **≤ ±0,5** | Release-Tag-Effekt ≈ 0 (USD t 0,6, EUR −0,3, GBP −0,5) |
+| PPI / Core PPI, Unemployment Claims | voll / Core-Paar | **× 0,5** | PPI nur USD t 1,9, sonst ≈ 0; Claims t 0,27 |
+| PCE, ZEW, EUR GDP, EUR + GBP Retail Sales | gewertet | **nur Anzeige**, nicht im Divisor | PCE aus CPI/PPI vorhersagbar; die übrigen t −1,25 bis −1,83 |
+| CAD Öl | Gewicht 1 | **0,5** | Öl-EMA20-Regel → CAD 5 T t +0,30, 20 T t −0,56 |
+
+**Getestet und NICHT aufgenommen** (nur Anzeige im Country Profile):
+JPY-Öl / USD-Öl (|t| < 0,7), China-PMI-Überraschung für AUD/NZD (t ≤ 1,16,
+gemischt), BoE-Stimmenverhältnis für GBP (t −0,5 bis +0,25), Risiko als
+Score-Zeile (Nutzer-Entscheid: nur Anzeige „Hafen ja/nein“; die klassische
+Hafen-Regel hatte vorhersagend das falsche Vorzeichen, t −1,8).
+
+**Bewusst unverändert (Nutzer-Entscheid):** Trend 1D/4H (gemessen ohne
+Vorhersagewert: EMA20 → 20 T −0,9 bp, t −0,1 — Nutzer: *„Lass es erstmal im
+Score“*), Saisonalität 15 Jahre (10 Jahre gemessen schlechter: Filter auf
+Zufallsniveau; außerhalb der Stichprobe schwach positiv, t 0,35–1,25).
+
+**Merksätze:**
+- Nur-Anzeige-Zeilen (`M28_NUR_ANZEIGE`) zählen **nicht im Divisor**
+  (`symTrackedCount`) — sonst doppelt bestraft.
+- Deckel kürzen alle Mitglieder eines Blocks **im selben Verhältnis**
+  (`indScoreParts` → `deckel`), das Score-Fenster nennt den Grund.
+- Neue Zeile nur mit Test (Release-Tag-Effekt bzw. Vorhersage über 5–20
+  Tage) — dieselbe Aufnahme-Regel wie beim Niveau-Block.
+- Wächter: `check/modell28.js` (Kurve unabhängig aus `bond_data.json`,
+  10Y, Divisor, Deckel), `check/scorenachrechnung.js` (jede Zahl unabhängig
+  mit den Modell-28-Regeln), `check/regeln.js` (COT gedreht, CAD 0,5),
+  `check/niveau.js` (Block weg).
+
 ## ⚠️ Es gibt nur EINEN Modus: `normalized` (seit 2026-09-24)
 
 Nutzer: *„Entfern bitte den einfachen Modus"*. Der Modus `classic` (jeder
@@ -52,7 +96,14 @@ Einschätzungen, überall neutral), der Edge-Tab. **Nicht im Score:** Momentum
 Geprüft von `check/regeln.js` (Zinsdifferenz und Rohstoffe unabhängig aus den
 Rohdateien nachgerechnet) und `check/seasretail.js` (Retail-Tabelle).
 
-## ⚠️ Niveau-Block (seit Modell 22, 2026-10-16): „wie steht die Zahl gegen ihr Normal“
+## ⚠️ Niveau-Block (Modell 22–27) — SEIT MODELL 28 ENTFERNT
+
+> Nutzer 2026-10-25: *„Entfern bitte komplett den indikator inflation vs
+> target“* und *„inflation vs ziel komplett raus und arbeitslosigkeit vs
+> normal und löhne vs normal auch raus“*. Der Abschnitt bleibt als Protokoll
+> (Backtests, Aufnahme-Regel); keine dieser Zeilen zählt mehr.
+
+### Historisch: „wie steht die Zahl gegen ihr Normal“
 
 Nutzer: *„es ist aktuell viel actual vs forecast aber nicht ist die Inflation
 über Target und wie weit usw gleiches gilt für alle anderen Zahlen“*. Bis

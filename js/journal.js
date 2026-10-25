@@ -90,6 +90,7 @@ const JR_MODELL_NOTIZ={
   25:'archive backtest: rate path vs peers removed (priced path predicted the opposite move), PMI vs 50 removed (no predictive power); wages vs normal kept',
   26:'new row consumer confidence trend (3 months, Economic Growth): the only growth series that improves the level block in both halves of the backtest',
   27:'trend rows removed from the score (inflation, unemployment and consumer confidence trend over 3 months): the level block keeps inflation vs target, unemployment and wages vs normal',
+  28:'rebuild after measuring 2016–2026 (currencies only): level block removed, COT counts against the speculators, 10Y trend replaced by the yield curve (10Y−2Y), 2Y trend + gap capped at ±1.25, jobs report at ±1, consumer confidence at ±0.5, PPI and claims half, PCE/ZEW/EUR GDP/EUR+GBP retail shown only, CAD oil weight 0.5',
 };
 
 // ── Zustand ────────────────────────────────────────────────────────────────
@@ -167,6 +168,7 @@ function jrTyp(ind){
   const r=ind.research||{};
   if(r.trend)return't';
   if(r.zinsdiff)return'z';
+  if(r.kurve)return'k';
   if(r.niveau)return'n';
   if(r.rohstoff)return'm';
   if(r.cot)return'c';
@@ -189,6 +191,7 @@ function jrEingabeText(ind){
   const a=v(r.actual),f=v(r.forecast),p=v(r.previous);
   switch(jrTyp(ind)){
     case't':return(a||'?')+(p?' ('+p+')':'')+(r.stand?' · '+(r.trend==='d'?'daily':'4-hour')+' candle '+jrDatum(r.stand):'');
+    case'k':return'10Y−2Y '+(a||'?')+(p?' vs 21-day '+p:'')+(r.bp!=null?' → '+(r.bp>0?'+':'')+r.bp+' bp':'');
     case'z':return'2Y gap '+(a||'?')+(p?' vs '+p+(r.prevDate?' on '+jrDatum(r.prevDate):''):'')+(r.bp!=null?' → '+(r.bp>0?'+':'')+r.bp+' bp':'');
     case'n':return(v(r.mass)||a||'?')+(r.stand?' · as of '+jrDatum(r.stand):'');
     case'm':if(r.ema20)return r.aufbau?'own daily record building up ('+(v(r.mass)||'?')+') · counts 0':'close '+(a||'?')+' vs EMA20 · '+(v(r.mass)||'')+' · step '+r.stufe+(r.gewicht!=null?' · weight '+r.gewicht:'')+(r.frisch===false?' · data older than 7 days':'');
@@ -543,10 +546,11 @@ function jrFaktorText(art,fo,fn){
   const nm={dec:'age',mkt:'market relevance',mag:'surprise size'}[art]||'factor';
   return nm+' ×'+(+fo).toFixed(3)+' → ×'+(+fn).toFixed(3);
 }
-function jrRegelText(p){
+function jrRegelText(p,symId){
   const W=typeof window!=='undefined'?window:{};
   try{
-    if(p.y==='c'&&W.cotRegelText)return W.cotRegelText();
+    if(p.y==='c'&&W.cotRegelText)return W.cotRegelText(['USD','EUR','GBP','JPY','CHF','CAD','AUD','NZD'].includes(symId));
+    if(p.y==='k'&&W.kurveRegelText)return W.kurveRegelText();
     if(p.y==='p'&&W.retailRegelText)return W.retailRegelText();
     if(p.y==='z'&&W.zinsdiffRegelText)return W.zinsdiffRegelText();
     if(p.y==='t'&&W.trendRegelText)return W.trendRegelText();
@@ -660,7 +664,7 @@ function jrFakten(p,l,e,symId){
     case'rel':{art={r:'New release',b:'New yield reading',c:'New COT report',s:'New reading',h:'New value'}[p.y]||'New reading';kurz=neu;
       add('Now',`<b>${escH(neu)}</b>`+(p.d?` <i>${escH(fmtDayShort(p.d))}</i>`:''));add('Before',escH(alt)+(p.da?` <i>${escH(fmtDayShort(p.da))}</i>`:''));break;}
     case'wert':art='Value updated';kurz=neu;add('Now',`<b>${escH(neu)}</b>`+(p.d?` <i>${escH(fmtDayShort(p.d))}</i>`:''));add('Before',escH(alt));break;
-    case'regel':{art='Rule input changed';kurz=neu;add('Now',`<b>${escH(neu)}</b>`);add('Before',escH(alt));const rg=jrRegelText(p);if(rg)add('Rule',`<i>${escH(rg)}</i>`);break;}
+    case'regel':{art='Rule input changed';kurz=neu;add('Now',`<b>${escH(neu)}</b>`);add('Before',escH(alt));const rg=jrRegelText(p,symId);if(rg)add('Rule',`<i>${escH(rg)}</i>`);break;}
     case'bias':art='Rating changed';kurz=(JR_BIAS_TXT[p.bo]||p.bo)+' → '+(JR_BIAS_TXT[p.bn]||p.bn);add('Rating',jrBiasHtml(p.bo)+' → '+jrBiasHtml(p.bn));if(neu&&neu!=='set by hand')add('Based on',escH(neu));break;
     case'gew':art='Base weight changed';kurz=p.wo+' → '+p.wn;add('Weight',`${escH(String(p.wo))} → <b>${escH(String(p.wn))}</b>`);add('½ weight for','<i>no forecast · core/headline pairs · small weekly COT shifts</i>');break;
     case'cmp':{art='Comparability factor';kurz='×'+(+p.cfo).toFixed(2)+' → ×'+(+p.cfn).toFixed(2);

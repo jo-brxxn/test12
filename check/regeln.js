@@ -55,7 +55,8 @@ function zinsSoll(bond, ccy) {
     syms.forEach(sym => {
       const rub = (sym.rubrics || []).find(r => r.name === 'COT Data'); if (!rub || !COT_DATA || !COT_DATA.symbols || !COT_DATA.symbols[sym.id]) return;
       const m = cotMetrics(COT_DATA.symbols[sym.id]); if (!m) return;
-      const soll = cotPunkte(m);
+      const s0 = cotPunkte(m), k = ['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD'].includes(sym.id) ? -1 : 1;   // Modell 28: Waehrungen gegen die Spekulanten
+      const soll = { netz: k * s0.netz, wow: k * s0.wow };
       const w = n => { const i = rub.indicators.find(x => stripPeriodSuffix(x.name).base === n); return i ? indScore(i, rub) : null; };
       out.zeilen.push({ id: sym.id, soll, netz: roundSc((w('Net Bullish Positioning') || 0) + (w('Net Bearish Positioning') || 0)), wow: w('WoW Change in Net Position (%)') });
     });
@@ -74,8 +75,11 @@ function zinsSoll(bond, ccy) {
     const out = { bond: [], gap: {}, weg: [] };
     syms.forEach(sym => (sym.rubrics || []).forEach(rub => (rub.indicators || []).forEach(i => {
       const t = indScoreParts(i, rub);
-      if (/^(2Y|10Y) Bond Yield$/.test(i.name) && ![0, 0.75, -0.75].includes(roundSc(t.total))) out.bond.push({ id: sym.id, n: i.name, v: t.total });
-      if (i.name === '2Y Yield Gap (20d)' && ['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD'].includes(sym.id)) out.gap[sym.id] = t.total;
+      const istFx = ['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD'].includes(sym.id);
+      // Modell 28: bei Waehrungen zaehlt 10Y nur noch als Anzeige (Kurve ersetzt sie); 2Y darf im Zins-Block gedeckelt sein.
+      if (istFx && i.name === '10Y Bond Yield' && t.total !== 0) out.bond.push({ id: sym.id, n: i.name, v: t.total, grund: '10Y zaehlt bei Waehrungen seit Modell 28 nicht mehr' });
+      else if (/^(2Y|10Y) Bond Yield$/.test(i.name) && !t.deckel && ![0, 0.75, -0.75].includes(roundSc(t.total))) out.bond.push({ id: sym.id, n: i.name, v: t.total });
+      if (i.name === '2Y Yield Gap (20d)' && istFx) out.gap[sym.id] = i.pkt;
       if (i.name === 'CB Tone' || i.name === 'Next CB Move') out.weg.push(sym.id + ':' + i.name);
     })));
     return out;
@@ -94,8 +98,13 @@ function zinsSoll(bond, ccy) {
   // von der App-Funktion gerechnet.
   const com = lies('commodity_data.json');
   if (com && com.items) {
-    const KORB = { AUD: [['IRON', 'Iron Ore (EMA20)', 0.5], ['COAL', 'Coal (EMA20)', 0.3], ['GOLD', 'Gold (EMA20)', 0.2]], NZD: [['DAIRY', 'Dairy (EMA20)', 1]], CAD: [['OIL', 'Crude Oil (EMA20)', 1]] };
+    // Modell 28: CAD-Oel 0,5 (die Oel-Regel sagt den CAD nicht voraus); JPY/USD-Oel getestet und NICHT im Score.
+    const KORB = { AUD: [['IRON', 'Iron Ore (EMA20)', 0.5], ['COAL', 'Coal (EMA20)', 0.3], ['GOLD', 'Gold (EMA20)', 0.2]], NZD: [['DAIRY', 'Dairy (EMA20)', 1]], CAD: [['OIL', 'Crude Oil (EMA20)', 0.5]] };
     const heute = await p.evaluate(() => todayStr());
+    const ohneOel = await p.evaluate(() => ['GOLD', 'SP500', 'NAS', 'USYIELD', 'JPYIELD'].filter(id => { const s = syms.find(x => x.id === id), r = s && (s.rubrics || []).find(x => x.name === 'Economic Growth'); return r && (r.indicators || []).some(i => i.name === 'Crude Oil (EMA20)'); }));
+    ohneOel.forEach(id => fail('OEL-ZEILE AM FALSCHEN ASSET', `${id}: eine Oel-Zeile gehoert seit Modell 28 nur zu CAD (USD/JPY-Oel getestet, durchgefallen)`));
+    const jpUs = await p.evaluate(() => ['USD', 'JPY'].filter(id => { const s = syms.find(x => x.id === id), r = s && (s.rubrics || []).find(x => x.name === 'Economic Growth'); return r && (r.indicators || []).some(i => i.name === 'Crude Oil (EMA20)'); }));
+    jpUs.forEach(id => fail('OEL-ZEILE OHNE BELEG', `${id}: Oel-Regel ohne Vorhersagewert (|t| < 0,7) - nur Anzeige im Country Profile`));
     const ist = await p.evaluate(() => { const o = {}; ['AUD', 'NZD', 'CAD'].forEach(id => { const s = syms.find(x => x.id === id), r = s.rubrics.find(x => x.name === 'Economic Growth'); o[id] = {}; r.indicators.forEach(i => { if (/\((1M|EMA20)\)$/.test(i.name)) o[id][i.name] = indScore(i, r); }); }); return o; });
     const soll = it => {
       const q = Array.isArray(it.yhist) && it.yhist.length > 20 ? it.yhist : (it.history || []);

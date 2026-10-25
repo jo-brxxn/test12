@@ -451,6 +451,11 @@ werden nicht frei erfunden** — immer diese Werte verwenden.
 Kopfzeile und Sidebar bleiben **dunkel**, während der Inhalt hell ist
 (Nutzer-Entscheid). Die Schnellzugriffe sind dunkelblau, aber eine Spur
 heller als Kopfzeile/Sidebar.
+⚠ **Asset-Seite, Zeile Trends | Data | Rate Probabilities | All notes**
+(`.ab-qzeile .aql`): seit 2026-10-25 wieder **Navy-Kacheln** (`--chrome-quick`,
+Schrift `#C3D0E6`, aktiv `--ui-act`) — Nutzer: *„die buttons … waren mal in
+so einer farbe mach wieder die farbe“*. Die hellen Karten mit blauem Symbol
+gelten nur noch für die übrigen `.aql` (Watchlist).
 
 ⚠ **In `.hdr` und `#navSidebar` werden die Textstufen umgedreht.** Dort MUSS
 `color` explizit gesetzt werden: geerbt wird der *berechnete* Wert von `body`
