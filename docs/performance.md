@@ -122,6 +122,50 @@ iPad-Prüfung steht beim Nutzer aus (Stand 2026-10-03).
 - **Merker statt Neurechnen** auch für `indCycleIsGuess` (Array-Identität
   von `chartHist`): Score-Kette beim Laden 366 → 210 ms.
 
+## 10. Großer, mitwachsender Scroll-Container = eigene Ebene
+
+(Prüfdurchgang 2026-10-24, gemessen, VERSION-CHECK-631.) Ein Element mit
+`overflow:auto`, das NICHT selbst senkrecht scrollt (z. B. `overflow-x` nur
+für schmale Bildschirme) und viele Elemente hält, bekommt
+`will-change: transform`. Sonst ordnet Chrome es in JEDEM Bild der
+Seiten-Einblendung (`pageFadeIn`, `translateY`) neu: Calendar-Tabelle
+(5.215 Elemente, 17.700 px) 7× ~170 ms Layerize, Wechsel **1.294 ms**
+(Handy dpr 3: 929 ms) → **160–180 ms**. Echte Scrollbereiche (`.detail`,
+`.histp`) sind nicht betroffen (gemessen). Geprüft: `check/performance.js` I
+(ab 1.000 Elementen).
+
+## 11. Beim Seitenwechsel kein Layout erzwingen
+
+`void el.offsetWidth` vor dem Neuaufbau legt die Zielseite mit ihrem ALTEN
+Inhalt komplett aus — Calendar 133 ms, Asset 90 ms, Trends 48 ms je Wechsel,
+reine Verschwendung. Eine CSS-Animation startet von selbst neu, wenn das
+Element aus `display:none` kommt; nur bei derselben, schon sichtbaren Seite
+braucht es einen Neustart, und dafür reicht `getComputedStyle` (Stil, kein
+Layout). Neue Animations-Neustarts: genauso.
+
+## 12. Hintergrund-Daten zeichnen gebündelt — und nur, wenn sich etwas ändert
+
+- Was im Hintergrund ankommt (Feeds), ruft `rerenderBald()` statt
+  `rerender()`/`renderDash()`: alles innerhalb von 150 ms = EIN Aufbau.
+  Dashboard beim Start 6 → 4 Aufbauten. Nutzeraktionen zeichnen weiter sofort.
+- Gleicher Feed-Inhalt = kein neuer Aufbau (`fetchPriceData` vergleicht den
+  Text). Trends/Regime bauten sich bei JEDEM Besuch zweimal auf, weil der
+  Besuch den Preis-Feed neu holte — jetzt einmal. Ausnahme Dashboard: dort
+  steht der Abrufzeitpunkt.
+
+## 13. Heiße reine Helfer: Merker mit Obergrenze, Datum je Schleife einmal lesen
+
+Beim Start liefen `parseNumLike` 381.000×, `istWochenende` 65.000×,
+`indOverdueCycles` 90.000× — für wenige tausend verschiedene Eingaben.
+Reine Funktionen eines Textes bekommen einen `Map`-Merker (Obergrenze 20.000,
+dann leeren). Doppelschleifen lesen Daten nicht je Paar: `applyResearchToCal`
+(345 × 570 Paare, je zwei `Date.parse`) und der Actual-Abgleich in `fetchFF`
+(`evts.find` mit `new Date` je Kalender-Zeile → Index). Ein
+`Intl.DateTimeFormat` wird einmal gebaut (`cotNyParts`). Gemessen
+(Eigenzeit beim Start, alt → neu): `parseNumLike` 167 → 58 ms,
+Kalender-Abgleich 131 → ~0, FF-Abgleich 93 → ~0, `indOverdueCycles` 63 → 20,
+`indCycleDaysCalc` 59 → 16, `istWochenende` 38 → ~0.
+
 
 ## Teil-Aufbau statt ganzer Seite (seit 2026-10-24, VERSION-CHECK-626)
 

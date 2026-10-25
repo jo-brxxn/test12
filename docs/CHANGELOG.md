@@ -20690,3 +20690,26 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter:** `check/makro.js` I — Balken = Werte (immer alle), Farbe gegen die Reihe nachgerechnet, nichts außerhalb des Charts, waagerecht keine Überlappung, Forecast-Linie, keine Surprise-Zeile/Zinsstriche, Spur ≤ 125 px (Handy 165). Gegenprobe (je Spur ein Wert weg) rot. `designregeln` C nimmt `.mk-wert` aus (Nutzerwahl).
 
+## 2026-10-24 — VERSION-CHECK-631: Performance-Prüfdurchgang
+
+**Nutzer:** *„Die Webseite hat jetzt sehr viele Funktionen … bitte schau dir dann was die ganze Performance zieht wenn man nicht auf der Weltkugel ist soll diese sich auch nicht drehen. Aber auch was sonst der Grund ist und optimier es maximal schnell"*
+
+**Kugel (Annahme geprüft, nicht bestätigt):** außerhalb der Overview lief sie schon vorher NICHT — 0 Bild-Aufrufe, 0 Animationen auf allen 17 anderen Seiten (Playwright, `requestAnimationFrame` gezählt). Kein Fix nötig; Wächter `check/performance.js` J ergänzt, Gegenprobe `--gegenprobe-kugelweg` rot.
+
+**Gemessen vorher (Chromium, 1440×900, Tracing, Median aus 3):** Seitenwechsel Calendar **1.294 ms** (davon Layerize 1.039), Trends 815–1.302, Overview 650–870, Dashboard 350–700; Start ~2,4 s Hauptthread (4× gedrosselt **7,0 s**, lange Blöcke 5,7 s).
+
+**Ursachen + Fixes (je Ursache belegt):**
+- **Calendar 1.294 ms:** `.cal-table` (`overflow-x:auto`, 5.215 Elemente, 17.700 px) ohne eigene Ebene → Chrome ordnete sie in JEDEM Bild von `pageFadeIn` neu (7× ~170 ms Layerize). Gegenexperimente: Einblendung aus → 263 ms; nur `opacity` → 258; `overflow:visible` an der Tabelle → 340; ausgegraute Knöpfe (opacity/filter) ohne Wirkung. Fix `will-change:transform` → **160–180 ms** (Handy dpr 3: 929 → 168, iPad-Breite 1.371 → 184). Keine fixierten/positionierten Kinder in der Tabelle (geprüft).
+- **Erzwungenes Layout in `showTab`:** `void pgEl.offsetWidth` legte die Zielseite mit ALTEM Inhalt aus (Calendar 133 ms, Asset 90, Trends 48, Dashboard 39). Fix: aus `display:none` startet die Animation selbst; bei derselben Seite `getComputedStyle`. Einblendkurve alt/neu gemessen identisch (0 → 1, 9 px → 0); alt kam die Calendar-Einblendung auf **2 Bilder in 1,3 s**, neu läuft sie flüssig.
+- **Trends/Regime je 2 Aufbauten:** Besuch holt `price_data.json` (636 KB) neu, danach `rerender()` — auch bei identischem Text. Fix: `fetchPriceData` meldet „neu" per Textvergleich, sonst kein Neuaufbau (Ausnahme Dashboard: Abrufzeitpunkt). `renderTrends`/`renderRegime` 2 → **1**.
+- **Dashboard beim Start 6× aufgebaut:** Preis-, News-, Risk-, Score-Feed und FF zeichneten einzeln. Fix `rerenderBald()` (150 ms bündeln, entfällt bei Seitenwechsel) → **4×**. Klick-Pfade (FF-Refresh) weiter sofort.
+- **Heiße Helfer:** `parseNumLike` 381.000 Aufrufe → Merker; `istWochenende` 64.800 → Merker; `indOverdueCycles`/`indCycleDaysCalc` Datums-Text → ms gemerkt (`tagMs`); `cotNyParts` Formatierer einmal; `applyResearchToCal` 197.000 Paare je 2 `Date.parse` → Datum je Zeile/Eintrag einmal; `fetchFF` `evts.find` je Kalender-Zeile → verschachtelter Map-Index (erstes Event je Schlüssel = `find`). Eigenzeit alt → neu: 167→58, 131→~0, 93→~0, 63→20, 59→16, 38→~0 ms.
+
+**Gemessen nachher (gleiche Maschine, abwechselnd gegen `main` 71a3f3d):** Summe aller 18 Seitenwechsel **7.844 → 5.417 ms (−31 %)**; Calendar 2.025 → 317, Regime 245 → 121, Trends 961 → 815, Asset 462 → 392 ms. Start (5 Läufe, Median Hauptthread) 3.742 → 3.433 ms. Scores/Kartentexte unverändert (`scorediff`/`summarydiff`).
+
+**Fehlerklasse gesucht:** alle Scroll-Container aller Seiten bei 390/820/1440 px gelistet — außer der Calendar-Tabelle keiner mit ≥ 1.000 Elementen, der mitwächst (Matrix 274, COT 213; `.detail`/`.histp` scrollen selbst und zeigten keinen Effekt). Weitere `void …offsetWidth`: `triggerEnterAnim` (Body, VOR dem Ausblenden, Seite sauber → billig, gelassen).
+
+**Bewusst NICHT geändert (Entscheidung beim Nutzer):** Trends-Linien zeichnen sich 1 s lang ein — 4 SVG mit ~2.300 Punkten werden dabei in jedem Bild neu gemalt (Paint ~320 ms, Layerize ~250 ms je Wechsel); billiger nur mit sichtbarer Änderung. Daten-Feeds laden bei jedem Start komplett (`?t=` + `no-store`, ~2,3 MB roh) — bewusst für Aktualität. Versteckte, besuchte Seiten behalten ihr DOM (Dashboard-Wechsel nach allen Seiten +14 %).
+
+**Wächter:** `check/performance.js` I (große mitwachsende Scroll-Container = eigene Ebene, Gegenprobe `--gegenprobe-ebene` rot) und J (Kugel steht außerhalb der Overview). Regeln: `docs/performance.md` 10–13.
+

@@ -51,7 +51,7 @@ betrifft.
 | Modul-Aufteilung von `index.html` in `js/*.js` (Vorgehen, window-Bruecke, AST-Verifikation) | `docs/module-split.md` |
 | **Regime Radar** (Szenarien, Bausteine, die drei Schutzregeln) | `docs/regime.md` |
 | **Makro-Charts** (Table\|Charts-Schalter je Makro-Karte, Charts = eine Karte mit Reitern, jede Spur eigener Block mit Act\|Fc\|Prev\|Next\|Score aus derselben Rechnung wie die Tabelle, **Balken wie Mini-Charts mit ALLEN Werten in Beat/Miss/Neutral-Farbe + Forecast-Linie**, Zielband/Normal/nächster Termin, ~115 px je Spur, keine Surprise-Zeile/Zinsstriche/Einstufungen) | `docs/makro.md` |
-| **Performance** (Endlos-Animationen nur transform/opacity, Gruppen- statt Einzel-Animation, Ticker nur Text, eine Seite = ein Aufbau, erst messen dann schreiben) | `docs/performance.md` |
+| **Performance** (Endlos-Animationen nur transform/opacity, Gruppen- statt Einzel-Animation, Ticker nur Text, eine Seite = ein Aufbau, erst messen dann schreiben; große mitwachsende Scroll-Container = eigene Ebene, kein erzwungenes Layout beim Seitenwechsel, Hintergrund-Feeds gebündelt per `rerenderBald()`) | `docs/performance.md` |
 | Prüfskripte (`check/*.js`), was sie prüfen und warum | `check/README.md` |
 | Volle Änderungshistorie (jeder Bugfix/jede Iteration mit Datum) | `docs/CHANGELOG.md` |
 
