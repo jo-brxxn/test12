@@ -20613,7 +20613,46 @@ die Folgeentwicklung vorhersagen?
 
 **Nicht angefasst (Befund):** der volle Aufbau der Asset-Seite selbst (560–870 ms bei CPU 4x) und `recordScoreHist` bei jedem `save()` — betrifft die ganze App.
 
-## 2026-10-24 — VERSION-CHECK-627: Rote CI-Funde behoben, Wächter ergänzt
+## 2026-10-24 — VERSION-CHECK-627: Journal — offene Trades, Abschluss-Fenster, Kalender am Schlusstag
+
+*Nummer 627: als 625 gebaut, parallel waren 625 (Asset-Stapel) und 626 (Makro) auf `main` vergeben.*
+
+- **Nutzer:** *„… das man ein Open Trade sieht also das man erst nur eingibt was man hat und am Ende erst wie es geendet ist … die App [kann] durch den Preis den sie hat auch anzeigen wie es aktuell ist … ganz oben ein Bereich für open trades … die kann man dann abschließen wenn man drauf drückt“*. Per Rückfrage: Live-Stand = **R + Kursabstand** (kein Geldbetrag — ohne Wert je Punkt geschätzt, Regel 4) · Schalter **Open | Closed** · Kalender am **Schlusstag** · **kleines Abschluss-Fenster**.
+- *„ich glaube es gibt noch kein Profit Eingabe“* — gab es (`P/L (profit / loss)` im Editor, Pflicht). Jetzt im Block **Closed** und groß im Abschluss-Fenster.
+- **Felder:** `st` (`open`/`closed`; alt ohne `st` = geschlossen), `d/t` = Eröffnung, `cd/ct` = Schluss (alt ohne `cd` → `d`). Läuft über dasselbe Sync-Feld `tradeJournal` (Merge nach `id`).
+- **Open trades (oben):** Karte je Trade — Asset + Long/Short, unrealisiertes **R** (braucht SL) bzw. Kursabstand, *Entry · Now*, Leiste SL – Entry – Now – TP, *Opened … · price …*. Kurs = letzter Wert der Tagesreihe (Feed stündlich, `:17`). Ohne Entry: *„Add an entry price to track it live“*; ohne Reihe: *„No price data“*.
+- **Abschluss-Fenster `#mTradeClose`:** Exit mit *Hit TP · Hit SL · Now*, P/L Pflicht, Schlussdatum/-zeit (heute/jetzt), Notiz, *Edit trade*. Warnt, wenn P/L-Vorzeichen und Exit sich widersprechen. In `MODAL_GUARD_TABELLE` + `ESC_MODALS`, Öffner in `check/eingaben.js`.
+- **Neu:** „+ Add trade“ = offen; Tipp auf einen Kalendertag = an diesem Tag geschlossen. Kennzahlen, Equity, Streak, Kalender, Tabelle zählen nur geschlossene Trades.
+- **Gemessen + behoben:** Leisten-Beschriftung SL/Entry überlappte in der 270-px-Karte (Abstand in % sagt nichts über Pixel) → immer abwechselnd oben/unten, 0 Überlappungen. Open-Karten standen auf 390 px rechts über (Mindestbreite 290 > 270 px Platz) → `minmax(min(290px,100%),1fr)`.
+
+### 2026-10-24 (627, Nachtrag) — Trades sicher in Supabase: vier Verlustwege gemessen und geschlossen
+
+- **Nutzer:** *„stell sicher das die Sachen gespeichert werden und nicht verloren gehen also alle in supabase sicher landen“*.
+- **Reproduziert** mit nachgestellter Cloud (`check/trades.js --gegenprobe`, mehrere Browser-Kontexte, eine `fx_sync`-Zeile):
+  - **A** Abgleich ≥ 15 s nach dem Start, ein anderes Gerät hat ohne TB hochgeladen → Cloud `A-TA,A-TX`, lokal `A-TA,A-TB,A-TX`: **TB blieb nur lokal**. Ursache: `cloudPullRoh` lädt nur bei `prefPending` wieder hoch.
+  - **B** Cloud-Stand ohne `tradeJournal` (alte App) → *Cloud hat kein tradeJournal*, dieselbe Ursache.
+  - **C** zwei Tabs, Tab 1 legt C-1 an, Tab 2 danach C-2 → localStorage **und** Cloud nur `C-2`. Ursache: `tjSpeichern` schrieb den Speicherstand des Tabs über die Platte.
+  - **D** Upload 35 s gescheitert → *Uploads nach Freigabe: keiner*, keine Meldung. Ursache: kein Nachholen.
+- **Fund nebenbei:** `cloudAutoSync` setzt `_cloudPushTimer` nach dem Feuern nicht zurück; `flushAndSave` (15-s-Takt) lädt deshalb genau EINMAL nach. Das verdeckte A/B in den ersten 15 s und D bei kürzeren Ausfällen — deshalb im Wächter 20 s bzw. 35 s. Nicht geändert (gehört nicht zum Journal), nur dokumentiert.
+- **Fix (js/trades.js + cloudPull/cloudPush in js/main.js):**
+  - `tjUebernehmen()` meldet, ob der Cloud eigene Trades fehlen; `cloudPullRoh` lädt dann hoch wie bei `prefPending` (A/B). Wird jetzt auch ohne Feld in der Cloud aufgerufen.
+  - `tjVonPlatte()`: vor jedem Schreiben, vor jedem Upload/Export mit localStorage vereinigen; `storage`-Ereignis für `fxpro_trades` (C).
+  - Cloud-Stand sichtbar in der Monatsleiste: *„N trades in the cloud · Zeit“* / *„Uploading …“* / **„Not in the cloud yet · retrying every 15 s“** + *Retry now* / *„Only on this device“* + *Set up sync*. Fingerabdruck des zuletzt erfolgreich hochgeladenen Stands (`fxpro_trades_cloud`), Fehlerzeit (`fxpro_trades_cloud_err`), Wiederholung alle 15 s und beim Wieder-online (D).
+- **Geprüft:** Server-Workflows schreiben `fx_sync` nie (nur lesen; Schreiben nur in `fx_alert_log`) — dort kein Verlustweg.
+- **Danach gemessen:** A Cloud `A-TA, A-TB, A-TX` · B danach alle vier Trades beider Geräte · C localStorage + Cloud `C-1, C-2` · D Meldung sichtbar, Upload 4,1 s nach Freigabe, Anzeige *in the cloud* · E Grabstein bleibt.
+- **Wächter:** `check/trades.js` (neu, in `check/all.js`), Gegenprobe A–D rot.
+
+## 2026-10-25 — VERSION-CHECK-628: Positions-Werkzeug mit eigener Zeitspanne
+
+- **Nutzer:** *„Ich will von dem Werkzeug im Chart auch die Breite verstellen können also es soll nicht die gesamte Breite sein ich will es richtig an die Stelle machen.“* Push direkt, danach alle Wächter.
+- **Vorher:** Zonen und Linien über die ganze Plotbreite.
+- **Jetzt:** Kasten wie bei TradingView: erster Tipp setzt ihn an die angetippte Kerze (12 Kerzen breit), **linke/rechte Kante ziehen** = Anfang/Ende (rastet auf Kerzen, min. 1), **Mitte ziehen** = verschieben. Rechts 14 leere Zukunfts-Slots im Editor (sonst klebte ein heute eröffneter Trade als eine Kerze am Rand). Gespeichert als Datum `w0`/`w1` am Trade (Sync wie alle Trade-Felder), Detail-Fenster zeigt den Kasten an denselben Tagen. Versteckte Felder `tjW0`/`tjW1` im Fensterschutz.
+- **Gemessen + behoben:** erste Fassung — Etiketten (~140 px) lagen über dem 72-px-Kasten; Ziehen an der rechten Kante und in der Mitte landete beim Entry-/SL-Etikett (*„rechte Kante −60: keine Änderung“*). Etiketten jetzt außerhalb (rechts, sonst links, unter 520 px ohne R-Zusatz), Kanten über der Fläche. Danach 1440 + 390 px: Mitte +40 → verschoben, rechte Kante −30 → kürzer, linke Kante −30 → länger, *kein Etikett über dem Kasten*, TP weiter ziehbar.
+- **Fehler aus 627 mitgefunden:** Status-Schalter Open/Closed zeigte nie die aktive Wahl — die Long/Short-Logik setzte `.on` an ALLEN `.tj-seg-b` im Fenster zurück. Jetzt nur `[data-dir]`. Gemessen: Add trade → *Open+Long*, Kalendertag → *Closed+Long*, Short → *Closed+Short*, Open → *Open+Short*.
+
+## 2026-10-24 — VERSION-CHECK-629: Rote CI-Funde behoben, Wächter ergänzt
+
+*Nummer 629: 627/628 waren parallel auf `main` für das Journal vergeben (Zusammenführung).*
 
 **Nutzer:** *„pushen und kein Prüflauf … das ganze Wächter Prüfverfahren an … entfern was veraltet ist … fasse Sachen zusammen … wenn es noch andere Sachen braucht ergänz sie“*
 
@@ -20621,7 +20660,7 @@ die Folgeentwicklung vorhersagen?
 
 **Behoben:**
 - `display` 2e: *News-Einordnung kommt nicht an* — Routine seit 2026-09-24 gelöscht, `news_ai.json` steht auf dem 18.09., Meldungen herausgerollt → 0 Treffer richtig. Prüft „kommt an“ nur noch bei frischer Datei (≤ 72 h). Gegenprobe: frische Datei ohne Treffer → rot.
-- `hierarchie`: Journal-Karten *Equity curve*, *Calendar*, *Trades* ohne ⓘ (Dauerregel 2026-09-26) → ⓘ mit Kurz-Erklärung, rechts oben auf Titelhöhe (absolut, bricht am Handy nicht mit um).
+- `hierarchie`: Journal-Karten *Equity curve*, *Calendar*, *Trades* ohne ⓘ (Dauerregel 2026-09-26) — parallel in 627/628 ergänzt (`tjTitel`); hier dazu: ⓘ **rechts oben auf Titelhöhe** (Dauerregel 2026-09-25), absolut, bricht am Handy nicht mit um.
 - `pcbewegung`: `@media (prefers-reduced-motion)` an der Journal-Flamme → entfernt, `body.no-ui-anim` stand schon da.
 - `designregeln` E: Trade-Editor-Felder 40 px → bewusst **L-Stufe** (Doku nannte 40 schon für Fenster-Felder), Wächter kennt sie.
 

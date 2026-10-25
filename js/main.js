@@ -19,12 +19,12 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 // 2026-10-20, siehe Kopf von makro.js). Zirkulaerer Import wie bei journal.js.
 // Trading Journal: eigene Trades im Monatskalender (Nutzer-Wunsch 2026-10-24,
 // siehe Kopf von trades.js). Zirkulaerer Import wie bei makro.js.
-import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD} from './trades.js';
+import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 import {makroKartenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
-  // Was js/trades.js (Journal) fuer seine Charts und Kartenkoepfe von hier braucht.
+  // Was js/trades.js (Journal) fuer seine Charts von hier braucht.
   chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn,
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
   applyRevisionToValHist,applyTrendModel,checkPriceAlerts,fmtDayHdr,indBiasInputSig,indBiasPinned,
@@ -6658,7 +6658,7 @@ function saveSoon(){
 // passieren) plus die Nicht-Snap-Felder, exakt wie cloudPush() es macht.
 function exportData(){
   const data=JSON.parse(snap());
-  data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=trades;data.scoreMode=scoreMode;
+  data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.scoreMode=scoreMode;
   data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
   a.download='fx-analyst-'+todayStr()+'.json';a.click();
@@ -7101,7 +7101,7 @@ async function cloudPushRoh(manual){
           }
         }
       }catch(e){}
-      if(!geprueft)return false;
+      if(!geprueft){try{tjSendeFehler();}catch(e){}return false;}
     }
     // pinEnabled liegt bewusst außerhalb von snap()/Undo,
     // muss aber ebenfalls geräteübergreifend synchron sein.
@@ -7111,7 +7111,7 @@ async function cloudPushRoh(manual){
     // zuruecksetzen - siehe cloudPull-Kommentar).
     const z0=_userEditZaehler;
     const gesendet=snap();
-    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=trades;data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
+    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
     if(APP_VER)data.appVer=APP_VER;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
@@ -7168,6 +7168,8 @@ async function cloudPushRoh(manual){
     // (kein Größenvergleich von Uhren verschiedener Geräte) -> kein einseitiger
     // Sync-Ausfall mehr durch abweichende iPad/PC-Uhrzeiten.
     localStorage.setItem('fxpro_cloud_seen',sentUpdated);
+    // Journal: genau dieser Trade-Stand liegt jetzt in der Cloud (Anzeige + Wiederholung).
+    try{tjGesendet(data.tradeJournal);}catch(e){}
     // Das ist ab jetzt der gemeinsame Stand von Geraet und Cloud (Basis fuer
     // den Drei-Wege-Abgleich in cloudPull).
     basisSetzen(gesendet,sentUpdated);
@@ -7175,6 +7177,7 @@ async function cloudPushRoh(manual){
     if(manual)setCloudStatus('✓ Uploaded: '+fmtStamp(Date.now()));
     return true;
   }catch(e){
+    try{tjSendeFehler();}catch(x){}
     if(manual)setCloudStatus('✗ Error while uploading: '+e.message);
     return false;
   }
@@ -7310,7 +7313,9 @@ async function cloudPullRoh(manual,forceOverwrite){
       // Bewegungen doppelt, die das andere Geraet schon aufgezeichnet hat.
       if(cd.scoreJournal){try{jrUebernehmen(cd.scoreJournal);}catch(e){}}
       // Trading Journal: ebenfalls Merge nach id statt Overwrite (js/trades.js).
-      if(Array.isArray(cd.tradeJournal)){try{tjUebernehmen(cd.tradeJournal);}catch(e){}}
+      // Immer aufrufen - auch ohne Feld (alte App): fehlen der Cloud Trades
+      // dieses Geraets, wird unten wie bei prefPending hochgeladen.
+      let tjFehlt=false;try{tjFehlt=tjUebernehmen(Array.isArray(cd.tradeJournal)?cd.tradeJournal:[]);}catch(e){}
       // Set-ups-/Kalender-/Compare-Filter (Audit-Agent-Fund 2026-07-20,
       // gleiches Muster wie compactLevel/designHue oben): bei anstehender
       // lokaler Praeferenz-Aenderung (prefPending) die lokalen Werte in
@@ -7359,8 +7364,9 @@ async function cloudPullRoh(manual,forceOverwrite){
       }
       localStorage.setItem('fxpro_cloud_seen',cloudUpdated);
       _lsUpdatedSeen=cloudUpdated;
-      if(prefPending){
-        // Die behaltenen lokalen Praeferenzen als NEUE Version einplanen:
+      if(prefPending||tjFehlt){
+        // Die behaltenen lokalen Praeferenzen (bzw. Trades, die der Cloud
+        // fehlen - js/trades.js Verlustweg A/B) als NEUE Version einplanen:
         // fxpro_updated frisch bumpen und den Auto-Push anstossen, damit die
         // Kombination (Cloud-Stand + lokale Stufe/Farbe) in die Cloud geht.
         localStorage.setItem('fxpro_updated',new Date().toISOString());
@@ -7535,6 +7541,7 @@ const MODAL_GUARD_TABELLE={
   // Vergleichsstand neu; "Yes, save" schliesst deshalb erst danach.
   // Trading Journal: alle Felder des Trade-Editors (js/trades.js).
   mTrade:TJ_GUARD,
+  mTradeClose:TJ_GUARD_ZU,
   mCloud:{felder:['cloudUsername','cloudUrl','cloudKey','cloudSyncId'],
     save:()=>{saveCloudCfg();if(!modalIsDirty('mCloud'))closeM('mCloud');},was:'Your sync settings'},
 };
@@ -7564,7 +7571,7 @@ document.addEventListener('click',ev=>{
 // Steht die Nachfrage offen, fuehrt Escape zurueck ins Fenster (der
 // harmlose Weg, wie der Klick neben die Nachfrage).
 const ESC_MODALS=['mAddSym','mAssetCfg','mHist','mAddPair','mRename','mDelSym','mInfo','mCloud','mRateWatch','mIndLink','mBackup','mTrash',
-  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeView','mTradeDay'];
+  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeView','mTradeDay','mTradeClose'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const nf=document.getElementById('mUnsaved');

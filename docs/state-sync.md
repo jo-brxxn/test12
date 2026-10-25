@@ -108,6 +108,9 @@ vier Stellen: `cloudPush`/`exportData` (`data.tradeJournal`), `cloudPull`/
 - **Merge** (`mergeTrades`): Vereinigung nach `id`, bei Kollision gewinnt das jüngere `up`.
 - **Löschen = Grabstein** (`{id,del:true,up}`), nie Entfernen — sonst bringt der nächste Merge den Trade vom anderen Gerät zurück.
 - Angezeigter Monat (`tjMonat`) bewusst nur Sitzung.
+- Seit 628 zusätzlich `w0`/`w1` (Zeitspanne des Positions-Werkzeugs, Datum). Seit 627 je Trade `st` (`open`/`closed`), `cd`/`ct` (Schluss) — dieselbe Zeile, derselbe Merge; alte Einträge ohne `st` gelten als geschlossen.
+- **Sicherung (seit 627, `check/trades.js`):** `cloudPull` ruft `tjUebernehmen()` IMMER (auch ohne Feld) und lädt hoch, wenn der Cloud eigene Trades fehlen (`tjFehlt`, wie `prefPending`). Vor jedem Schreiben/Upload/Export Vereinigung mit localStorage (`tjVonPlatte`), `storage`-Ereignis. Sichtbarer Cloud-Stand + Wiederholung alle 15 s (`fxpro_trades_cloud`/`fxpro_trades_cloud_err`, beide nur lokal).
+- ⚠ Muster für jedes künftige Log-Feld dieser Art: ein Pull, der vereinigt, MUSS hochladen, wenn das Ergebnis mehr enthält als die Cloud — sonst bleibt der Rest nur lokal.
 
 ## Sonderfall `research`/`researchFolders` (Notizen/Ordner/Papierkorb): Merge statt Overwrite + `navigator.locks`
 
