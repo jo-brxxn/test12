@@ -21,11 +21,20 @@
 //      bleiben im Speicher (snap -> sanitizeSnapIds behaelt tags/hist)
 //   E) Ansicht und Reiter gehen in den Sync-Weg (snap -> applySnap)
 //   F) Hover schreibt die Werte in die Lesezeile; keine JS-Fehler
+//   G) Analyse-Werkzeuge: Vergleich, Statistik (nachgerechnet), Kurs-Spur
+//   I) Balken (Nutzer 2026-10-25: "Balken ... die Werte in der Farbe ob es ein
+//      Beat Miss oder neutral ist direkt ueber den Balken und halt die forecast
+//      Linie ... entfern die Striche fuer Hikes und Cuts ... kompakter"):
+//      je Release ein Balken und IMMER ein Wert darueber (Nutzerwahl "Immer
+//      alle, kleiner"), Farbe = mkTon gegen die Reihe nachgerechnet, kein Wert
+//      ausserhalb des Charts, waagerecht keine Ueberlappung, Forecast-Linie,
+//      keine Surprise-Zeile, keine Zinsstriche, Spur <= 125 px (Handy 165)
 //   H) Tempo: jede Makro-Bedienung baut nur die Makro-Reihe (0 volle Aufbauten)
 //      und zeichnet jeden Chart genau einmal (Gegenprobe: alter Weg -> rot)
 //
 //   node check/makro.js [--gegenprobe]
-//   --gegenprobe: Zeichnen abgeschaltet und ein Spurkopf verfaelscht -> A + B rot
+//   --gegenprobe: Zeichnen abgeschaltet, ein Spurkopf verfaelscht, je Spur ein
+//   Wert entfernt -> A + B + I rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const { chromium } = require(PW);
@@ -96,6 +105,43 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
           if (!soll) fail(`${ort} ${id} ${r} SPURKOPF`, `${k.name} steht nicht in der Tabelle`);
           else if (JSON.stringify(soll) !== JSON.stringify(k.werte)) fail(`${ort} ${id} ${r} SPURKOPF`, `${k.name}: Kopf ${k.werte.join(' / ')}, Tabelle ${soll.join(' / ')}`);
         });
+        // I) Balken, Werte in Beat/Miss/Neutral-Farbe, Forecast-Linie, kompakt
+        if (GP) await p.evaluate(() => document.querySelectorAll('#mkTabKarte .mk-spur').forEach(sp => { const w = sp.querySelectorAll('text.mk-wert'); if (w.length) w[w.length - 1].remove(); }));
+        const ib = await p.evaluate(() => {
+          const t = document.getElementById('mkTabKarte'), sym = getSym();
+          const rub = sym.rubrics.find(x => x.name === (t.querySelector('.mk-tab.on') || {}).textContent);
+          const farbe = v => { const i = document.createElement('i'); i.style.color = v; document.body.appendChild(i); const c = getComputedStyle(i).color; i.remove(); return c; };
+          const soll = { bull: farbe('var(--bias-bull)'), bear: farbe('var(--bias-bear)'), neu: farbe('var(--bias-neu)') };
+          const out = { zins: t.querySelectorAll('.mk-zins,.mk-zins-t').length, surp: /Surp\./.test(t.textContent), spuren: [] };
+          t.querySelectorAll('.mk-spur:not(.mk-spur-preis)').forEach(sp => {
+            const name = sp.querySelector('.mk-spur-name').textContent.trim(), ind = rub && rub.indicators.find(i => indName(i) === name);
+            const werte = [...sp.querySelectorAll('text.mk-wert')], svg = sp.querySelector('svg.mk-svg').getBoundingClientRect();
+            const amTag = {}; (ind ? indChartSeries(ind, sym.id).pts : []).forEach(q => { amTag[String(q[0]).slice(0, 10)] = q; });
+            const ton = [], fb = []; let raus = 0, ueber = 0, mitFc = 0;
+            werte.forEach(w => { const q = amTag[w.dataset.d]; if (!q) { ton.push(w.dataset.d + ' ohne Punkt in der Reihe'); return; }
+              if (q[2] != null) mitFc++;
+              const tn = mkTon(ind, +q[1], q[2] == null ? null : +q[2], sym.id); if (tn !== w.dataset.ton) ton.push(`${w.dataset.d}: ${w.dataset.ton} statt ${tn}`);
+              const f = getComputedStyle(w).fill; if (f !== soll[w.dataset.ton]) fb.push(`${w.dataset.d}: ${f} statt ${soll[w.dataset.ton]}`);
+              const rc = w.getBoundingClientRect(); if (rc.top < svg.top - 0.5 || rc.left < svg.left - 0.5 || rc.right > svg.right + 0.5) raus++; });
+            if (!sp.querySelector('.mk-wert-s')) { const rs = werte.map(w => w.getBoundingClientRect()).sort((a, b) => a.left - b.left); for (let i = 1; i < rs.length; i++) if (rs[i].left < rs[i - 1].right - 0.5) ueber++; }
+            out.spuren.push({ name, linie: !!sp.querySelector('path.mk-linie'), bars: sp.querySelectorAll('rect.mk-bar').length, werte: werte.length, ton: ton.slice(0, 3), fb: fb.slice(0, 3), raus, ueber, mitFc, fc: !!sp.querySelector('path.mk-fc'), h: Math.round(sp.getBoundingClientRect().height) });
+          });
+          return out;
+        });
+        if (ib.zins) fail(`${ort} ${id} ${r} ZINSSTRICHE`, `${ib.zins} Hike/Cut-Elemente (entfernt 2026-10-25)`);
+        if (ib.surp) fail(`${ort} ${id} ${r} SURPRISE`, 'Surprise-Zeile steht noch da (entfernt 2026-10-25)');
+        ib.spuren.forEach(x => {
+          const o = `${ort} ${id} ${r} ${x.name}`;
+          if (!x.linie) {
+            if (!x.bars) fail(`${o} BALKEN`, 'Release-Reihe ohne Balken');
+            if (x.werte !== x.bars) fail(`${o} WERTE`, `${x.bars} Balken, aber ${x.werte} Werte darueber (Nutzerwahl: immer alle)`);
+          }
+          x.ton.forEach(y => fail(`${o} WERTE-FARBE`, y)); x.fb.forEach(y => fail(`${o} WERTE-FARBE`, y));
+          if (x.raus) fail(`${o} WERTE`, `${x.raus} Werte ragen aus dem Chart`);
+          if (x.ueber) fail(`${o} WERTE`, `${x.ueber} waagerechte Werte ueberlappen sich`);
+          if (x.mitFc && !x.fc) fail(`${o} FORECAST`, `${x.mitFc} Releases mit Forecast, aber keine Forecast-Linie`);
+          if (x.h > (w >= 900 ? 125 : 165)) fail(`${o} KOMPAKT`, `Spur ${x.h} px hoch (soll <= ${w >= 900 ? 125 : 165})`);
+        });
         if (r === 'Inflation' && s.koepfe.some(k => /CPI \(Headline\)/.test(k.name))) {
           const soll = id === 'AUD' ? 'Target 2–3%' : 'Target 2%';
           if (!s.txt.includes(soll)) fail(`${ort} ${id} Inflation`, `Zielband "${soll}" fehlt`);
@@ -120,7 +166,7 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
           if (lese === 0) fail(`${ort} ${id} ${r}`, 'Hover schreibt nichts in die Lesezeile');
         }
       }
-      // G) Analyse-Werkzeuge (2026-10-24): Vergleich, Statistik, Zinsentscheide, Kurs
+      // G) Analyse-Werkzeuge (2026-10-24): Vergleich, Statistik, Kurs
       const g = await p.evaluate(async () => {
         const vor = makroOptWert(); makroTab('Inflation'); makroVergleich('EUR'); await new Promise(r => setTimeout(r, 450));
         const k = document.getElementById('mkTabKarte'); const eigen = getSym().id === 'GOLD' ? 'USD' : getSym().id;
@@ -132,15 +178,12 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
         const l = pts[pts.length - 1]; const z = new Date(l[0] + 'T00:00:00Z'); z.setUTCMonth(z.getUTCMonth() - 3); let b = null; pts.forEach(q => { if (Date.parse(q[0] + 'T00:00:00Z') <= z.getTime()) b = q; });
         const st = mkStatistik({ ind, pts: indChartSeries(ind, getSym().id).pts.map(q => [String(q[0]).slice(0, 10), +q[1], q[2] == null ? null : +q[2]]), unit: '' }, getSym().id);
         if (b && z.getTime() - Date.parse(b[0] + 'T00:00:00Z') <= 62 * 864e5 && Math.abs(st.ch[3] - (l[1] - b[1])) > 1e-9) r.falsch.push(`3M ${st.ch[3]} statt ${l[1] - b[1]}`);
-        // Zinsentscheide = Aenderungen der Leitzinsreihe im Fenster, je Spur eine Linie
-        const R = rub.mkRange == null ? 36 : rub.mkRange; const ab = new Date(); if (R !== 'MAX') ab.setUTCMonth(ab.getUTCMonth() - R);
-        r.zinsSoll = mkZinsentscheide(eigen).filter(e => R === 'MAX' || Date.parse(e.d + 'T00:00:00Z') >= ab.getTime() + 31 * 864e5).length; r.zinsLinien = k.querySelectorAll('.mk-spur:first-child .mk-zins').length;
         if (!vor.cmp.includes('EUR')) makroVergleich('EUR'); return r; });
       if (g.cmpL < 1 || !g.legende) fail(`${ort} ${id} VERGLEICH`, `EUR gewaehlt, ${g.cmpL} EUR-Linien, Legende ${g.legende}`);
       if (!g.preis) fail(`${ort} ${id} KURS`, 'keine Kurs-Spur');
       if (g.stat !== g.spuren) fail(`${ort} ${id} STATISTIK`, `${g.stat} Statistikzeilen fuer ${g.spuren} Spuren`);
       g.falsch.forEach(x => fail(`${ort} ${id} STATISTIK`, x));
-      if (g.zinsSoll && !g.zinsLinien && !GP) fail(`${ort} ${id} ZINS`, `${g.zinsSoll} Zinsentscheide in der Reihe, aber keine Markerlinie`);
+      if (await p.evaluate(() => typeof window.mkZinsentscheide !== 'undefined')) fail(`${ort} ${id} ZINSSTRICHE`, 'mkZinsentscheide ist noch aufrufbar');
       // H) Tempo (Nutzer 2026-10-24: "Mach es maximal schnell"): jede Makro-
       //    Bedienung baut NUR die Makro-Reihe (0 volle Aufbauten der Asset-Seite)
       //    und zeichnet jeden Chart genau EINMAL. Gemessen vorher: voller Aufbau
@@ -198,10 +241,10 @@ const MAKRO = ['Inflation', 'Labour Market', 'Economic Growth'];
   }
   await b.close();
   if (GP) {
-    const ok = F.some(x => /kein Chart gezeichnet|ohne Chart/.test(x)) && F.some(x => /SPURKOPF/.test(x)) && F.some(x => /ZIELLINIE/.test(x)) && F.some(x => /TEMPO/.test(x));
+    const ok = F.some(x => /kein Chart gezeichnet|ohne Chart/.test(x)) && F.some(x => /SPURKOPF/.test(x)) && F.some(x => /ZIELLINIE/.test(x)) && F.some(x => /TEMPO/.test(x)) && F.some(x => / WERTE: /.test(x));
     console.log(ok ? `makro --gegenprobe: ok (rot wie erwartet, ${F.length} Befunde)` : 'makro --gegenprobe: FEHLER - nicht gemeldet\n' + F.slice(0, 5).join('\n'));
     process.exit(ok ? 0 : 1);
   }
   if (F.length) { console.log(`makro: ${F.length} Befund(e)`); F.slice(0, 40).forEach(x => console.log('  ' + x)); process.exit(1); }
-  console.log('makro: ok (Schalter je Makro-Karte, Charts = eine Reiter-Karte mit aktivem Reiter der geklickten Karte, Spurkopf = Tabellenzeile, Zielband, Chips, Hover, Table zurueck, Einstufungen weg und gespeicherte erhalten, Sync-Weg - USD/AUD/GOLD bei 1180 und 390 px)');
+  console.log('makro: ok (Schalter je Makro-Karte, Charts = eine Reiter-Karte mit aktivem Reiter der geklickten Karte, Spurkopf = Tabellenzeile, Zielband, Balken mit allen Werten in Beat/Miss-Farbe + Forecast-Linie, keine Surprise-Zeile/Zinsstriche, kompakt, Chips, Hover, Table zurueck, Einstufungen weg und gespeicherte erhalten, Sync-Weg - USD/AUD/GOLD bei 1180 und 390 px)');
 })().catch(e => { console.error(e); process.exit(2); });

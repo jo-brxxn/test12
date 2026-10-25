@@ -1953,7 +1953,7 @@ body.compact-view .rub-summary{display:block}
 .mk-chips{display:flex;flex-wrap:wrap;gap:4px}
 .mk-chart{min-width:0;width:100%}
 .mk-spuren{display:flex;flex-direction:column}
-.mk-spur{border-top:1px solid var(--bd);padding-top:8px;margin-top:4px}
+.mk-spur{border-top:1px solid var(--bd);padding-top:5px;margin-top:3px}
 .mk-spur:first-child{border-top:0;margin-top:0;padding-top:0}
 .mk-spur-kopf{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding:0 0 2px}
 .mk-spur-name{font-size:var(--fs-sm);font-weight:700;color:var(--t0)}
@@ -1972,7 +1972,11 @@ body.compact-view .rub-summary{display:block}
 .mk-tools-g{display:flex;flex-wrap:wrap;gap:4px}
 .mk-cc{display:inline-flex;align-items:center;gap:5px}
 .mk-cc-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:0 0 auto}
-.mk-spur-cmp,.mk-spur-stat{display:flex;flex-wrap:wrap;gap:3px 14px;padding:1px 0 2px}
+.mk-spur-cmp,.mk-spur-stat{display:flex;flex-wrap:wrap;gap:2px 14px;padding:0 0 1px}
+/* Bezugslinie im Spurkopf (2026-10-25): im Chart stiess ihre Beschriftung mit
+   den Werten ueber den Balken zusammen. Ziel blau wie die Linie, sonst grau. */
+.mk-ref{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-xs);font-weight:700;color:var(--t2);white-space:nowrap}
+.mk-ref-ziel{color:var(--blue)}
 .mk-st{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;white-space:nowrap}
 .mk-st i{font-style:normal;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)}
 .mk-st b{font-weight:700;color:var(--t1)}
@@ -1987,6 +1991,10 @@ body.compact-view .rub-summary{display:block}
 @media (max-width:520px){
   .mk-kvs{grid-template-columns:repeat(3,auto);margin-left:0;justify-content:start;row-gap:6px}
   .mk-kv{padding:0 10px}.mk-kv:nth-child(3n+1){border-left:0;padding-left:0}
+  /* Statistik am Handy einzeilig zum Wischen statt drei Zeilen (2026-10-25,
+     "kompakter"): gemessen 179 px je Spur, davon ~45 px Statistik. */
+  .mk-spur-stat{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:none;scrollbar-width:none}
+  .mk-spur-stat::-webkit-scrollbar{display:none}
   /* Zeitraumleiste einzeilig (vorher "Max" allein in Zeile 2), aber nie breiter
      als die Karte: bei 360 px ragte sie mit nowrap 18 px heraus (gemessen).
      Volle Breite, sonst blieben 1Y/3Y/5Y 23 px schmal (zu klein zum Tippen). */
@@ -6689,11 +6697,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-629 - Journal: Erklaer-Knopf rechts oben auf Titelhoehe, Flammen-Animation nur noch am App-Schalter. Waechter: rote CI-Funde behoben, Import-Abgleich, Regel 6b, Runner mit Paketen (zusammengefuehrt mit Journal 627/628)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-630 - Makro-Analyse: Balken wie in den Mini-Charts, alle Werte in Beat-/Miss-/Neutral-Farbe darueber, Forecast-Linie; Surprise-Zeile und Hike/Cut-Striche entfernt; Spur ~115 px statt ~200."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-629</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-630</span>
     </span>
   </div>
   <div class="hdr-r">

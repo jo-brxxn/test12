@@ -20669,3 +20669,24 @@ die Folgeentwicklung vorhersagen?
 - `rules.js` Regel 6b: neues Feld in `snap()` → muss in `neueFelderBehalten()` (Fehlerklasse von 619). Geprüft gegen die Basis vor 620: `mkTab`/`mkOpt` korrekt als behalten erkannt.
 - `all.js`: `--teil i/n` (gleich lange Pakete nach CI-Sekunden), `--nur a,b`, `--liste`; Laufzeit je Prüfung in der Liste.
 
+## 2026-10-25 — VERSION-CHECK-630: Makro-Analyse mit Balken, kompakt
+
+**Nutzer:** *„Ich will in dem Analyse Tool Balken und ich will dann keine surprise Zeile sondern die Werte in der Farbe ob es ein Beat Miss oder neutral ist direkt über den Balken und halt die forecast Linie. Und entfern die Striche für Hikes und Cuts und mach das ganze kompakter das man mehr Charts sehen kann untereinander“*
+
+**Rückfrage:** Balken *„So wie normal auch in den Mini Diagrammen und bei data“* · Werte bei Enge *„Immer alle, kleiner“* (Option nannte den Verstoß gegen die 11-px-Regel) · *~115 px je Spur*.
+
+**Gemessen vorher (1440 px, USD Inflation, 3Y):** Spur **194–203 px** (Kopf 17, Statistik 15, Chart 158 inkl. 26 px Surprise-Zeile), Reiter-Karte **1035 px**, 28 Hike/Cut-Striche; Handy **245–254 px**.
+
+**Umgesetzt:**
+- Release-Reihen als **Säulen ab 0** (`--blue` .8, 56 % Spaltenplatz) wie `indHistChart`; Level-Reihen (Einheit, > 24 Punkte) bleiben Linie — dieselbe Weiche.
+- **Jeder Balken mit Wert**, Farbe `mkTon` (= `actualColor`, Tabelle) über `--bias-bull/-bear/-neu` (theme-fähig), über Balken und Forecast-Punkt; Schrift auf den Spaltenplatz, unter 7 px senkrecht.
+- **Forecast-Linie + Punkte** `--t1`; Surprise-Zeile und Zinsentscheide (`mkZinsentscheide`, Striche, bp-Zeile) **entfernt**.
+- Ziel-/Bezugs-Beschriftung und *Next*-Datum aus dem Chart in den **Spurkopf** (stießen mit den Werten zusammen).
+- Handy: Statistik einzeilig zum Wischen.
+
+**Gemessen nachher:** 1440 px Spur **107–115 px**, Karte **698 px**; 3Y 11 px waagerecht ohne Überlappung, 10Y 8–10 px senkrecht, Max 5,5–8,5 px; Handy 1Y **142–147 px** (10–11 px), 3Y 5 px senkrecht. 0 JS-Fehler.
+
+**⚠ Grenze der Nutzerwahl:** Handy ab 3Y ≈ 3–8 px je Balken → Werte 5 px, bei 10Y/Max überlappen sie (76–158 je Spur). Lesbar dort nur per Hover oder mit 1Y.
+
+**Wächter:** `check/makro.js` I — Balken = Werte (immer alle), Farbe gegen die Reihe nachgerechnet, nichts außerhalb des Charts, waagerecht keine Überlappung, Forecast-Linie, keine Surprise-Zeile/Zinsstriche, Spur ≤ 125 px (Handy 165). Gegenprobe (je Spur ein Wert weg) rot. `designregeln` C nimmt `.mk-wert` aus (Nutzerwahl).
+

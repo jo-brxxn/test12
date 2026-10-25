@@ -57,7 +57,9 @@ function makroTabSetzen(v){mkTab=typeof v==='string'&&MK_RUBS.includes(v)?v:null
 function makroTabWert(){return mkTab;}
 // Analyse-Werkzeuge (Nutzer 2026-10-24: "Veraender die Funktion zu einem
 // richtigen Analyse Tool"; Rueckfrage: Laender-Vergleich, Statistik je Spur,
-// Zinsentscheide als Marker, Kurs als eigene Spur - alle vier).
+// Zinsentscheide als Marker, Kurs als eigene Spur - alle vier). Die
+// Zinsentscheid-Striche sind seit 2026-10-25 wieder weg (Nutzer: "entfern die
+// Striche fuer Hikes und Cuts").
 //   mkOpt.cmp    Waehrungen, deren gleicher Indikator mit in die Spur kommt (max. 3)
 //   mkOpt.preis  Kurs des Assets als eigene Spur unter den Indikatoren
 // Synct ueber snap (mkOpt) und steht in neueFelderBehalten().
@@ -288,15 +290,14 @@ function mkAchsWert(v){
   if(a>=1e4)return+(v/1e3).toFixed(0)+'K';
   return fmtIndVal(v,'');
 }
-const mkFarbe=t=>t==='bull'?BC.bull:t==='bear'?BC.bear:'var(--t3)';
 // Kopfzeile einer Spur: Name, dann je Wert ein eigenes, beschriftetes Feld -
 // dieselben Werte und Farben wie die Tabellenzeile (indZeilenWerte).
-function mkSpurKopf(ind,rub,sym){
-  const k=sym.id+'|'+ind.id;
-  if(!_mkKoepfe.has(k))_mkKoepfe.set(k,mkSpurKopfRoh(ind,rub,sym));
+function mkSpurKopf(ind,rub,sym,ref){
+  const k=sym.id+'|'+ind.id+'|'+(ref?ref.lbl:'');
+  if(!_mkKoepfe.has(k))_mkKoepfe.set(k,mkSpurKopfRoh(ind,rub,sym,ref));
   return _mkKoepfe.get(k);
 }
-function mkSpurKopfRoh(ind,rub,sym){
+function mkSpurKopfRoh(ind,rub,sym,ref){
   let w;try{w=indZeilenWerte(ind,rub);}catch(e){w={actTxt:'–',actCls:'',fcTxt:'–',prevTxt:'–',prevCls:''};}
   let next='–';try{next=indNextReleaseCell(sym.id,ind)||'–';}catch(e){}
   let sc=null;try{sc=indScore(ind,rub);}catch(e){}
@@ -304,11 +305,11 @@ function mkSpurKopfRoh(ind,rub,sym){
   const scFarbe=sc>0?BC.bull:sc<0?BC.bear:'var(--t2)';
   const feld=(lbl,html,cls,title)=>`<span class="mk-kv${cls?' '+cls:''}"${title?` title="${escH(title)}"`:''}><i>${lbl}</i><b>${html}</b></span>`;
   return`<div class="mk-spur-kopf">
-    <span class="mk-spur-name">${escH(indName(ind))}</span>
+    <span class="mk-spur-name">${escH(indName(ind))}</span>${ref?`<span class="mk-ref${ref.ziel?' mk-ref-ziel':''}" title="${ref.ziel?'Inflation target of the central bank - the blue dashed line':'Reference line - the grey dashed line'}"><svg width="16" height="6" aria-hidden="true"><line x1="0" x2="16" y1="3" y2="3" stroke="currentColor" stroke-width="1.6" stroke-dasharray="4 3"/></svg>${escH(ref.lbl)}</span>`:''}
     <span class="mk-kvs">${feld('Act',escH(w.actTxt),w.actCls,'Actual — the released value')}${feld('Fc',escH(w.fcTxt),'','Forecast — what the market expected')}${feld('Prev',escH(w.prevTxt),w.prevCls,'Previous — the value before this release')}${feld('Next',next,'mk-kv-next','Next release — days until it; ~N = expected from the release rhythm')}${`<span class="mk-kv mk-kv-sc" title="Points this indicator adds to the card score"><i>Score</i><b style="color:${scFarbe}">${escH(scTxt)}</b></span>`}</span>
   </div>`;
 }
-// ── Analyse: Vergleich, Statistik, Zinsentscheide (2026-10-24) ─────────────
+// ── Analyse: Vergleich, Statistik (2026-10-24) ─────────────────────────────
 function mkCmpFarbe(c,eigen){const l=MK_CCYS.filter(x=>x!==eigen);return MK_CMP_FARBEN[Math.max(0,l.indexOf(c))%MK_CMP_FARBEN.length];}
 // Gleicher Indikator einer anderen Waehrung: gleiche Karte, gleicher Name (sonst
 // gleiche Basis). Kein Gegenstueck -> kein Strich, nie ein Ersatzwert.
@@ -373,18 +374,6 @@ function mkCmpHtml(sp){
   return`<div class="mk-spur-cmp">${sp.cmp.map(c=>{const cl=c.pts[c.pts.length-1];
     return`<span class="mk-st" title="${escH(c.ccy)} ${escH(indName(c.ind))}: ${escH(fmtIndVal(cl[1],c.unit||''))} on ${escH(cl[0])} · gap = ${escH(sp.ccy)} minus ${escH(c.ccy)}, latest readings"><span class="mk-cc-dot" style="background:${c.farbe}"></span><i>${escH(c.ccy)}</i><b>${escH(fmtIndVal(cl[1],c.unit||''))}</b><i>Gap</i><b>${escH(mkDelta(l[1]-cl[1],sp.unit))}</b></span>`;}).join('')}${sp.cmpFehlt.length?`<span class="mk-st mk-st-nd"><i>No ${escH(sp.cmpFehlt.join(', '))} series for this indicator</i></span>`:''}</div>`;
 }
-// Zinsentscheide der eigenen Notenbank: jede Aenderung des Leitzinses (>= 5 bp)
-// aus derselben Reihe, die der Score fuer "Central Bank Rate" liest.
-function mkZinsentscheide(ccy){
-  let r=[];try{r=nivReihe(nivEintrag(ccy,'Central Bank Rate'))||[];}catch(e){r=[];}
-  const out=[];for(let i=1;i<r.length;i++){const dx=r[i][1]-r[i-1][1];if(Math.abs(dx)>=0.05)out.push({d:String(r[i][0]).slice(0,10),dx});}
-  return out;
-}
-function mkZinsLinien(zins,x0,x1,xOf,yTop,H){
-  let s='';zins.forEach(z=>{const t=tagMs(z.d);if(t<x0||t>x1)return;const xx=xOf(t).toFixed(1);
-    s+=`<line class="mk-zins" x1="${xx}" x2="${xx}" y1="${yTop}" y2="${H-2}" stroke="${z.dx>0?BC.bull:BC.bear}" stroke-width="1.2" stroke-dasharray="3 3" stroke-opacity=".7"><title>Rate ${z.dx>0?'hike':'cut'} ${Math.round(z.dx*100)>0?'+':'−'}${Math.abs(Math.round(z.dx*100))} bp on ${z.d}</title></line>`;});
-  return s;
-}
 function FX_KORB(sym){return!!sym&&MK_CCYS.includes(sym.id);}
 function mkPreisPunkte(symId){
   if(!_mkPreise.has(symId))_mkPreise.set(symId,mkPreisPunkteRoh(symId));
@@ -405,6 +394,24 @@ function makroZeichnenFehlende(){
 function makroZeichnenAlle(){
   document.querySelectorAll('.mk-chart[data-ri]').forEach(box=>{try{makroZeichnen(box);}catch(e){console.error('[makro]',e);box.innerHTML='<div class="mk-leer">Chart could not be drawn: '+escH(e&&e.message||String(e))+'</div>';}});
 }
+// ── Balken statt Linie (Nutzer 2026-10-25) ───────────────────────────────
+// "Ich will in dem Analyse Tool Balken und ich will dann keine surprise Zeile
+// sondern die Werte in der Farbe ob es ein Beat Miss oder neutral ist direkt
+// ueber den Balken und halt die forecast Linie. Und entfern die Striche fuer
+// Hikes und Cuts und mach das ganze kompakter". Rueckfrage: Balken "so wie
+// normal auch in den Mini Diagrammen und bei data" (indHistChart: blau .8, ab
+// der Nulllinie, Forecast als Linie + Punkte in --t1), Werte "Immer alle,
+// kleiner", ~115 px je Spur. Werte in Beat/Miss/Neutral = mkTon (dieselbe
+// Richtung wie die Tabelle, actualColor), Farben theme-faehig (--bias-*).
+let _mkMess=null;
+function mkTextBreite(t,fam){
+  if(_mkMess===null){try{_mkMess=document.createElement('canvas').getContext('2d')||false;}catch(e){_mkMess=false;}}
+  if(!_mkMess)return String(t).length*6.6;
+  _mkMess.font='700 11px '+(fam||'sans-serif');
+  return _mkMess.measureText(String(t)).width;
+}
+const mkWertFarbe=t=>t==='bull'?'var(--bias-bull)':t==='bear'?'var(--bias-bear)':'var(--bias-neu)';
+function mkWertTxt(v,unit){return Math.abs(v)>=1e4?mkAchsWert(v):fmtIndVal(v,unit||'');}
 function makroZeichnen(box){
   const sym=getSym();if(!sym)return;
   const ri=+box.dataset.ri,rub=sym.rubrics&&sym.rubrics[ri];if(!rub)return;
@@ -413,13 +420,15 @@ function makroZeichnen(box){
   const ccy=mkCcy(sym),R=rub.mkRange!=null?rub.mkRange:MK_RANGE_DEF;
   const schmal=W<520;
   const padR=schmal?8:12;
-  const SH=20,OBEN=8,ACHSE=24;
+  // Kompakt: Werteflaeche 46 px (Handy 40), darueber nur so viel Kopfraum, wie
+  // die Beschriftung braucht. Vorher 118/92 px + 26 px Surprise-Zeile.
+  const PH=schmal?40:46,OBEN=3,UNTEN=5,ACHSE=20;
   const heute=tagMs(todayStr());
+  let fam='';try{fam=getComputedStyle(box).fontFamily;}catch(e){}
   const spuren=gew.map(ind=>{const s=mkSerie(ind,sym.id);
     const cmp=[],cmpFehlt=[];
     mkOpt.cmp.filter(c=>c!==ccy).forEach(c=>{const g=mkGegenstueck(ind,rub.name,c);if(g)cmp.push(Object.assign(g,{ccy:c,farbe:mkCmpFarbe(c,ccy)}));else cmpFehlt.push(c);});
     return{ind,pts:s.pts,unit:s.unit,next:mkNaechster(sym,ind),cmp,cmpFehlt,ccy};});
-  const zins=mkZinsentscheide(ccy);
   const preisPts=mkOpt.preis?mkPreisPunkte(sym.id):[];
   // Gemeinsame Zeitachse: vom Fensterbeginn bis zum spaetesten naechsten Termin.
   const alle=spuren.flatMap(s=>s.pts);alle.sort((a,b)=>a[0].localeCompare(b[0]));
@@ -429,25 +438,30 @@ function makroZeichnen(box){
   // Erster Durchgang: Wertebereich und Achsenwerte je Spur - der linke Rand
   // richtet sich nach der laengsten Beschriftung, fuer alle Spuren gleich
   // (sonst fluchten die Zeitachsen nicht).
-  const PHx=schmal?92:118;
   spuren.forEach(sp=>{
     const vis=sp.pts.filter(p=>tagMs(p[0])>=x0&&tagMs(p[0])<=x1);
     sp.use=vis.length>=1?vis:sp.pts.slice(-2);
     sp.ref=mkReferenz(sp.ind,ccy,sp.pts);
+    // Dieselbe Weiche wie im Mini-Chart: Level-Reihen (eigene Einheit, viele
+    // Punkte) bleiben eine Linie mit Min/Max-Skala - als Saeulen ab 0 waeren
+    // 3,6 % -> 3,7 % ein gleich hoher Block.
+    sp.linie=sp.unit!=null&&sp.use.length>24;
     const werte=[];sp.use.forEach(p=>{werte.push(p[1]);if(p[2]!=null)werte.push(p[2]);});
     sp.cmp.forEach(c=>{c.use=c.pts.filter(p=>tagMs(p[0])>=x0&&tagMs(p[0])<=x1);c.use.forEach(p=>werte.push(p[1]));});
     if(sp.ref)werte.push(sp.ref.lo,sp.ref.hi);
     if(sp.next&&sp.next.fc!=null)werte.push(sp.next.fc);
     let lo=Math.min(...werte),hi=Math.max(...werte);
-    const pad=(hi-lo)*0.1||Math.abs(hi||1)*0.05||1;sp.lo=lo-pad;sp.hi=hi+pad;
-    sp.ticks=achsenTicks(sp.lo,sp.hi,schmal?3:4).filter(t=>t>=sp.lo&&t<=sp.hi);
+    if(sp.linie){const pad=(hi-lo)*0.1||Math.abs(hi||1)*0.05||1;lo-=pad;hi+=pad;}
+    else{lo=Math.min(0,lo);hi=Math.max(0,hi);if(lo===hi)hi=lo+1;}
+    sp.lo=lo;sp.hi=hi;
+    sp.ticks=achsenTicks(sp.lo,sp.hi,schmal?2:3).filter(t=>t>=sp.lo-1e-9&&t<=sp.hi+1e-9);
   });
   // Kurs-Spur: dieselbe Zeitachse, eigene Werteachse
   let preis=null;
   if(preisPts.length){
     const use=preisPts.filter(p=>tagMs(p[0])>=x0&&tagMs(p[0])<=x1);
     if(use.length>=2){const v=use.map(p=>p[1]);let lo=Math.min(...v),hi=Math.max(...v);const pad=(hi-lo)*0.08||hi*0.02||1;
-      preis={use,lo:lo-pad,hi:hi+pad};preis.ticks=achsenTicks(preis.lo,preis.hi,schmal?3:4).filter(t=>t>=preis.lo&&t<=preis.hi);}
+      preis={use,lo:lo-pad,hi:hi+pad};preis.ticks=achsenTicks(preis.lo,preis.hi,schmal?2:3).filter(t=>t>=preis.lo&&t<=preis.hi);}
   }
   const laengste=Math.max(5,...spuren.flatMap(sp=>sp.ticks.map(t=>mkAchsWert(t).length)),...(preis?preis.ticks.map(t=>mkAchsWert(t).length):[0]));
   const padL=Math.round(Math.max(schmal?34:42,laengste*6.4+10));
@@ -465,72 +479,104 @@ function makroZeichnen(box){
   const hover=[];
   const bloecke=spuren.map(sp=>{
     const use=sp.use,ref=sp.ref,lo=sp.lo,hi=sp.hi;
-    // Nur echte Ueberraschungen: Actual = Forecast zeichnete sonst je Release einen
-    // Mini-Strich, die Nulllinie sah gestrichelt aus (gesehen 2026-10-20).
-    const sur=use.filter(p=>p[2]!=null&&Math.abs(p[1]-p[2])>1e-9).map(p=>({d:p[0],s:p[1]-p[2],ton:mkTon(sp.ind,p[1],p[2],sym.id)}));
-    const yTop=OBEN,yBot=yTop+PHx;
-    const yOf=v=>yTop+(1-(v-lo)/(hi-lo))*PHx;
-    const H=(sur.length?yBot+6+SH:yBot)+6;
+    const xs=use.map(p=>xOf(tagMs(p[0])));
+    // Spaltenplatz auf der Zeitachse: Saeulenbreite aus dem mittleren Abstand
+    // (56 % wie im Mini-Chart), Schrift aus einem kurzen (10 %-Quantil) - die
+    // Abstaende schwanken mit den Release-Terminen.
+    const ab=[];for(let i=1;i<xs.length;i++)ab.push(xs[i]-xs[i-1]);ab.sort((a,b)=>a-b);
+    const slot=ab.length?Math.max(1,ab[Math.floor(ab.length/2)]):Math.min(80,(W-padL-padR)/2);
+    const slotK=ab.length?Math.max(1,ab[Math.floor(ab.length*0.1)]):slot;
+    const fcR=use.length>40?1.6:3.2;
+    // Werte: IMMER alle (Nutzerwahl 2026-10-25 "Immer alle, kleiner"): die Schrift
+    // schrumpft auf den Spaltenplatz (bewusst auch unter die 11-px-Mindestschrift);
+    // waere sie waagerecht kleiner als 7 px, steht der Wert senkrecht (bis 10 px).
+    const txt=sp.linie?[]:use.map(p=>mkWertTxt(p[1],sp.unit));
+    const breite=txt.map(t=>mkTextBreite(t,fam));
+    const b11=breite.length?Math.max(...breite):0;
+    let wf=0,senk=false,kopf=4;
+    if(txt.length){
+      wf=Math.min(11,11*slotK*0.9/b11);
+      if(wf<7){senk=true;wf=Math.max(5,Math.min(10,slotK*0.85));}
+      wf=Math.floor(wf*2)/2;
+      kopf=(senk?b11*wf/11:wf)+fcR+5;
+    }
+    // Senkrechte Werte brauchen mehr Kopfraum - die Spur bleibt trotzdem gleich
+    // hoch (kompakt), die Werteflaeche gibt nach, aber nie unter 34/30 px.
+    const PHs=senk?Math.max(schmal?30:34,PH-Math.max(0,kopf-(11+fcR+5))):PH;
+    const yTop=OBEN+kopf,yBot=yTop+PHs,H=yBot+UNTEN;
+    const yOf=v=>yTop+(1-(v-lo)/(hi-lo))*PHs;
     let svg='';
-    ticks.forEach(tt=>{const xx=xOf(tt);svg+=`<line x1="${xx.toFixed(1)}" x2="${xx.toFixed(1)}" y1="${yTop}" y2="${H-2}" stroke="var(--bd)" stroke-width="1" stroke-dasharray="1 3"/>`;});
+    ticks.forEach(tt=>{const xx=xOf(tt);svg+=`<line x1="${xx.toFixed(1)}" x2="${xx.toFixed(1)}" y1="${yTop}" y2="${yBot}" stroke="var(--bd)" stroke-width="1" stroke-dasharray="1 3"/>`;});
     // Gitter + Achse
     sp.ticks.forEach(t=>{const yy=yOf(t);if(yy<yTop-1||yy>yBot+1)return;
       svg+=`<line x1="${padL}" x2="${W-padR}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--bd)" stroke-width="1"/><text x="${padL-6}" y="${(yy+3.5).toFixed(1)}" text-anchor="end" style="${fs}">${escH(mkAchsWert(t))}</text>`;});
     // Ziel-/Normal-Linie. Das Inflationsziel ist eine waagerechte BLAUE
-    // gestrichelte Linie (Nutzer 2026-10-21: "Mach das Target als waagerechte
-    // blaue gestrichelte Linie"), bei Zielbaendern auf der Mitte (INFL_ZIEL),
-    // das Band ganz blass blau dahinter. Median/50/0 bleiben grau - keine Ziele.
+    // gestrichelte Linie (Nutzer 2026-10-21), bei Zielbaendern auf der Mitte
+    // (INFL_ZIEL), das Band ganz blass blau dahinter. Median/50/0 bleiben grau.
+    // Die Beschriftung steht seit 2026-10-25 im Spurkopf (mkSpurKopf) - im Chart
+    // stiess sie mit den Werten ueber den Balken zusammen.
     if(ref){
       const zf=ref.ziel?'var(--blue)':'var(--t2)';
       if(ref.hi>ref.lo)svg+=`<rect x="${padL}" y="${yOf(ref.hi).toFixed(1)}" width="${W-padL-padR}" height="${(yOf(ref.lo)-yOf(ref.hi)).toFixed(1)}" fill="${ref.ziel?'var(--blue)':'var(--t3)'}" fill-opacity="${ref.ziel?'.07':'.12'}"/>`;
       svg+=`<line class="${ref.ziel?'mk-ziel':'mk-norm'}" x1="${padL}" x2="${W-padR}" y1="${yOf(ref.mid).toFixed(1)}" y2="${yOf(ref.mid).toFixed(1)}" stroke="${zf}" stroke-width="${ref.ziel?1.6:1.2}" stroke-dasharray="6 4"/>`;
-      svg+=`<text x="${W-padR-4}" y="${(yOf(ref.hi)-4).toFixed(1)}" text-anchor="end" style="${fs};font-weight:700;${ref.ziel?'fill:var(--blue);':''}paint-order:stroke;stroke:var(--bg1);stroke-width:3px">${escH(ref.lbl)}</text>`;
     }
     // Heute
-    svg+=`<line x1="${xh.toFixed(1)}" x2="${xh.toFixed(1)}" y1="${yTop}" y2="${H-2}" stroke="var(--t2)" stroke-width="1"/>`;
-    svg+=mkZinsLinien(zins,x0,x1,xOf,yTop,H);
+    svg+=`<line x1="${xh.toFixed(1)}" x2="${xh.toFixed(1)}" y1="${yTop}" y2="${yBot}" stroke="var(--t2)" stroke-width="1"/>`;
+    if(sp.linie){
+      let d='';use.forEach((p,i)=>{d+=(i?'L':'M')+xs[i].toFixed(1)+' '+yOf(p[1]).toFixed(1);});
+      svg+=`<path class="mk-linie" d="${d}" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }else{
+      const y0=yOf(0),bw=Math.max(1.5,slot*0.56);
+      use.forEach((p,i)=>{const y=yOf(p[1]),top=Math.min(y,y0),h=Math.max(0.6,Math.abs(y-y0));
+        const l=Math.max(padL,xs[i]-bw/2),r=Math.min(W-padR,xs[i]+bw/2);if(r<=l)return;
+        svg+=`<rect class="mk-bar" x="${l.toFixed(1)}" y="${top.toFixed(1)}" width="${(r-l).toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(3,(r-l)/4).toFixed(1)}" fill="var(--blue)" fill-opacity=".8"/>`;});
+    }
     // Vergleichswaehrungen: gleicher Indikator, eigene Farbe (Trends-Palette)
     sp.cmp.forEach(c=>{if(c.use.length<1)return;let dc='';c.use.forEach((p,i)=>{dc+=(i?'L':'M')+xOf(tagMs(p[0])).toFixed(1)+' '+yOf(p[1]).toFixed(1);});
       svg+=`<path class="mk-cmp-l" data-ccy="${c.ccy}" d="${dc}" fill="none" stroke="${c.farbe}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>`;
       if(c.use.length<=80)c.use.forEach(p=>{svg+=`<circle cx="${xOf(tagMs(p[0])).toFixed(1)}" cy="${yOf(p[1]).toFixed(1)}" r="1.6" fill="${c.farbe}"/>`;});});
-    // Actual-Linie + Punkte, Forecast als hohle Punkte
-    let d='';use.forEach((p,i)=>{d+=(i?'L':'M')+xOf(tagMs(p[0])).toFixed(1)+' '+yOf(p[1]).toFixed(1);});
-    svg+=`<path d="${d}" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
-    const r=use.length>80?1.4:2.4;
-    use.forEach(p=>{const xx=xOf(tagMs(p[0]));
-      if(p[2]!=null)svg+=`<circle cx="${xx.toFixed(1)}" cy="${yOf(p[2]).toFixed(1)}" r="${r+0.6}" fill="none" stroke="var(--t1)" stroke-width="1"/>`;
-      svg+=`<circle cx="${xx.toFixed(1)}" cy="${yOf(p[1]).toFixed(1)}" r="${r}" fill="var(--blue)"/>`;});
-    // Naechster Termin
+    // Forecast: Linie + Punkte in --t1 wie im Mini-Chart (Luecke, wo keiner da ist)
+    let fd='',fp=false,fk='';
+    use.forEach((p,i)=>{if(p[2]==null){fp=false;return;}const y=yOf(p[2]).toFixed(1);fd+=(fp?' L':'M')+xs[i].toFixed(1)+' '+y;fp=true;
+      fk+=`<circle cx="${xs[i].toFixed(1)}" cy="${y}" r="${fcR}" fill="var(--t1)"/>`;});
+    if(fd)svg+=`<path class="mk-fc" d="${fd}" fill="none" stroke="var(--t1)" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/>${fk}`;
+    // Naechster Termin: gestrichelt (Kalender) bzw. gepunktet (~Rhythmus) +
+    // Forecast-Raute. Datum steht im Spurkopf (Next) - im Chart stiess es mit den
+    // Werten der letzten Balken zusammen.
     if(sp.next&&tagMs(sp.next.d)<=x1){
       const xn=xOf(tagMs(sp.next.d));
-      svg+=`<line x1="${xn.toFixed(1)}" x2="${xn.toFixed(1)}" y1="${yTop}" y2="${yBot}" stroke="var(--t1)" stroke-width="1.2" stroke-dasharray="${sp.next.sicher?'4 3':'2 4'}"/>`;
-      svg+=`<text x="${(xn-4).toFixed(1)}" y="${yTop+11}" text-anchor="end" style="${fs};font-weight:700;paint-order:stroke;stroke:var(--bg1);stroke-width:3px">${sp.next.sicher?'Next':'~Next'} ${escH(fmtDayHdr(sp.next.d))}</text>`;
+      svg+=`<line x1="${xn.toFixed(1)}" x2="${xn.toFixed(1)}" y1="${yTop}" y2="${yBot}" stroke="var(--t1)" stroke-width="1.2" stroke-dasharray="${sp.next.sicher?'4 3':'2 4'}"><title>${sp.next.sicher?'Next':'~Next'} ${escH(fmtDayHdr(sp.next.d))}</title></line>`;
       if(sp.next.fc!=null){const yf=yOf(sp.next.fc);svg+=`<path d="M${xn.toFixed(1)} ${(yf-4.5).toFixed(1)} L${(xn+4.5).toFixed(1)} ${yf.toFixed(1)} L${xn.toFixed(1)} ${(yf+4.5).toFixed(1)} L${(xn-4.5).toFixed(1)} ${yf.toFixed(1)} Z" fill="var(--bg1)" stroke="var(--t0)" stroke-width="1.3"><title>Forecast ${escH(fmtIndVal(sp.next.fc,''))}</title></path>`;}
     }
-    // Ueberraschungs-Balken (Actual minus Forecast)
-    if(sur.length){
-      const ys=yBot+6,mid=ys+SH/2,mx=Math.max(...sur.map(o=>Math.abs(o.s)))||1;
-      svg+=`<line x1="${padL}" x2="${W-padR}" y1="${mid}" y2="${mid}" stroke="var(--bd)" stroke-width="1"/><text x="${padL-6}" y="${mid+3.5}" text-anchor="end" style="${fs}">Surp.</text>`;
-      const bw=Math.max(1.5,Math.min(7,(W-padL-padR)/Math.max(1,use.length)*0.6));
-      sur.forEach(o=>{const xx=xOf(tagMs(o.d)),h=Math.abs(o.s)/mx*(SH/2-1);
-        svg+=`<rect x="${(xx-bw/2).toFixed(1)}" y="${(o.s>=0?mid-h:mid).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.8,h).toFixed(1)}" fill="${mkFarbe(o.ton)}" fill-opacity=".85"/>`;});
+    // Werte ueber den Balken (und ueber dem Forecast-Punkt, damit nichts die Ziffern verdeckt)
+    if(txt.length){
+      const y0=yOf(0),halo=Math.max(1.2,wf*0.27).toFixed(1);
+      use.forEach((p,i)=>{
+        const top=Math.min(yOf(p[1]),y0),fcTop=p[2]!=null?yOf(p[2])-fcR-1:Infinity,ay=Math.min(top,fcTop)-3;
+        const ton=mkTon(sp.ind,p[1],p[2],sym.id);
+        const st=`font-size:${wf}px;font-weight:700;fill:${mkWertFarbe(ton)};paint-order:stroke;stroke:var(--bg1);stroke-width:${halo}px;stroke-linejoin:round`;
+        const da=`data-d="${p[0]}" data-ton="${ton}"`;   // fuer check/makro.js I (Farbe gegen die Reihe)
+        const tt=`<title>${escH(fmtDayHdr(p[0]))} · Actual ${escH(txt[i])}${p[2]!=null?' · Forecast '+escH(mkWertTxt(p[2],sp.unit)):''}</title>`;
+        if(senk)svg+=`<text class="mk-wert mk-wert-s" ${da} transform="translate(${xs[i].toFixed(1)} ${ay.toFixed(1)}) rotate(-90)" text-anchor="start" dominant-baseline="central" style="${st}">${tt}${escH(txt[i])}</text>`;
+        else{const hw=breite[i]*wf/22,xx=Math.max(padL+hw,Math.min(W-1-hw,xs[i]));
+          svg+=`<text class="mk-wert" ${da} x="${xx.toFixed(1)}" y="${ay.toFixed(1)}" text-anchor="middle" style="${st}">${tt}${escH(txt[i])}</text>`;}
+      });
     }
-    svg+=`<line class="mk-cur" x1="0" x2="0" y1="${yTop}" y2="${H-2}" stroke="var(--t0)" stroke-width="1" style="display:none"/>`;
+    svg+=`<line class="mk-cur" x1="0" x2="0" y1="${yTop}" y2="${yBot}" stroke="var(--t0)" stroke-width="1" style="display:none"/>`;
     hover.push({name:indName(sp.ind),unit:sp.unit||'',pts:use});
     sp.cmp.forEach(c=>hover.push({name:c.ccy,unit:c.unit||'',pts:c.use,farbe:c.farbe}));
-    return`<div class="mk-spur">${mkSpurKopf(sp.ind,rub,sym)}${mkCmpHtml(sp)}${mkStatHtml(mkStatistik(sp,sym.id))}<svg class="mk-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escH(indName(sp.ind))} over time">${svg}</svg></div>`;
+    return`<div class="mk-spur">${mkSpurKopf(sp.ind,rub,sym,ref)}${mkCmpHtml(sp)}${mkStatHtml(mkStatistik(sp,sym.id))}<svg class="mk-svg" width="${W}" height="${H.toFixed(0)}" viewBox="0 0 ${W} ${H.toFixed(0)}" role="img" aria-label="${escH(indName(sp.ind))} over time">${svg}</svg></div>`;
   });
   if(preis){
-    const PHp=schmal?72:92,yTop=OBEN,yBot=yTop+PHp,H=yBot+6;
+    const PHp=schmal?40:48,yTop=OBEN+5,yBot=yTop+PHp,H=yBot+UNTEN;
     const yOf=v=>yTop+(1-(v-preis.lo)/(preis.hi-preis.lo))*PHp;
     let svg='';
-    ticks.forEach(tt=>{const xx=xOf(tt);svg+=`<line x1="${xx.toFixed(1)}" x2="${xx.toFixed(1)}" y1="${yTop}" y2="${H-2}" stroke="var(--bd)" stroke-width="1" stroke-dasharray="1 3"/>`;});
+    ticks.forEach(tt=>{const xx=xOf(tt);svg+=`<line x1="${xx.toFixed(1)}" x2="${xx.toFixed(1)}" y1="${yTop}" y2="${yBot}" stroke="var(--bd)" stroke-width="1" stroke-dasharray="1 3"/>`;});
     preis.ticks.forEach(t=>{const yy=yOf(t);svg+=`<line x1="${padL}" x2="${W-padR}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--bd)" stroke-width="1"/><text x="${padL-6}" y="${(yy+3.5).toFixed(1)}" text-anchor="end" style="${fs}">${escH(mkAchsWert(t))}</text>`;});
-    svg+=`<line x1="${xh.toFixed(1)}" x2="${xh.toFixed(1)}" y1="${yTop}" y2="${H-2}" stroke="var(--t2)" stroke-width="1"/>`;
-    svg+=mkZinsLinien(zins,x0,x1,xOf,yTop,H);
+    svg+=`<line x1="${xh.toFixed(1)}" x2="${xh.toFixed(1)}" y1="${yTop}" y2="${yBot}" stroke="var(--t2)" stroke-width="1"/>`;
     let d='';preis.use.forEach((p,i)=>{d+=(i?'L':'M')+xOf(tagMs(p[0])).toFixed(1)+' '+yOf(p[1]).toFixed(1);});
     svg+=`<path class="mk-preis-l" d="${d}" fill="none" stroke="var(--t0)" stroke-width="1.4" stroke-linejoin="round"/>`;
-    svg+=`<line class="mk-cur" x1="0" x2="0" y1="${yTop}" y2="${H-2}" stroke="var(--t0)" stroke-width="1" style="display:none"/>`;
+    svg+=`<line class="mk-cur" x1="0" x2="0" y1="${yTop}" y2="${yBot}" stroke="var(--t0)" stroke-width="1" style="display:none"/>`;
     const a=preis.use[0],z=preis.use[preis.use.length-1];
     const p1=mkPunktVor(preisPts,12);
     const pc=(v,b)=>{const x=(v/b-1)*100;return(x>0?'+':x<0?'−':'±')+Math.abs(x).toFixed(1)+'%';};
@@ -542,16 +588,9 @@ function makroZeichnen(box){
   // Gemeinsame Zeitachse unten
   let ax='';
   ticks.forEach(tt=>{const xx=xOf(tt);const dd=new Date(tt),lbl=dd.toLocaleString('en-US',{month:'short',timeZone:'UTC'})+' '+String(dd.getUTCFullYear()).slice(2);
-    ax+=`<text x="${xx.toFixed(1)}" y="15" text-anchor="middle" style="${fs}">${lbl}</text>`;});
-  ax+=`<text x="${xh.toFixed(1)}" y="15" text-anchor="middle" style="${fs};font-weight:700;paint-order:stroke;stroke:var(--bg1);stroke-width:3px">Today</text>`;
-  // Zinsentscheide: Beschriftung in einer eigenen Zeile unter den Monaten
-  const zSicht=zins.filter(z=>{const t=tagMs(z.d);return t>=x0&&t<=x1;});
-  let AH=ACHSE;
-  if(zSicht.length){AH=ACHSE+16;let lx=-1e9;
-    zSicht.forEach(z=>{const xx=xOf(tagMs(z.d));if(xx-lx<30)return;lx=xx;const bp=Math.round(z.dx*100);
-      ax+=`<text class="mk-zins-t" x="${xx.toFixed(1)}" y="${ACHSE+10}" text-anchor="middle" style="font-size:var(--fs-2xs);font-weight:700;fill:${z.dx>0?BC.bull:BC.bear}">${bp>0?'+':'−'}${Math.abs(bp)}</text>`;});
-    ax+=`<text x="${padL-6}" y="${ACHSE+10}" text-anchor="end" style="${fs}">bp</text>`;}
-  box.innerHTML=`<div class="mk-spuren" onpointermove="makroHover(event,this)" onpointerdown="makroHover(event,this)" onpointerleave="makroHoverAus(this)">${bloecke.join('')}<svg class="mk-achse" width="${W}" height="${AH}" viewBox="0 0 ${W} ${AH}" aria-hidden="true">${ax}</svg></div>`;
+    ax+=`<text x="${xx.toFixed(1)}" y="14" text-anchor="middle" style="${fs}">${lbl}</text>`;});
+  ax+=`<text x="${xh.toFixed(1)}" y="14" text-anchor="middle" style="${fs};font-weight:700;paint-order:stroke;stroke:var(--bg1);stroke-width:3px">Today</text>`;
+  box.innerHTML=`<div class="mk-spuren" onpointermove="makroHover(event,this)" onpointerdown="makroHover(event,this)" onpointerleave="makroHoverAus(this)">${bloecke.join('')}<svg class="mk-achse" width="${W}" height="${ACHSE}" viewBox="0 0 ${W} ${ACHSE}" aria-hidden="true">${ax}</svg></div>`;
   hover.forEach(h=>{h.ts=h.pts.map(p=>tagMs(p[0]));});
   box.__mk={x0,span,padL,padR,W,hover,cur:[...box.querySelectorAll('.mk-cur')],letzt:''};
   // Zeitspanne per Ziehen: Tagesanker ueber die Plotbreite.
@@ -596,7 +635,7 @@ try{window.addEventListener('resize',()=>{clearTimeout(_mkRz);_mkRz=setTimeout((
 
 export {MK_RUBS,MK_ZIELBAND,makroKartenSchalterHtml,makroTabKarteHtml,makroGross,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart,mkReferenz,mkCcy};
 if(typeof window!=='undefined')Object.assign(window,{makroSicht,makroTab,makroGross,makroRange,makroSpur,makroVergleich,makroPreis,makroHover,makroHoverAus,makroZeichnenAlle,mkReferenz,MK_ZIELBAND,makroTabWert,makroOptWert,
-  // nur fuer check/makro.js (Statistik und Zinsentscheide unabhaengig nachrechnen)
-  mkStatistik,mkZinsentscheide,
+  // nur fuer check/makro.js (Statistik unabhaengig nachrechnen, Werte-Farbe gegen die Reihe)
+  mkStatistik,mkTon,
   // nur fuer check/makro.js (Spurkopf gegen die echte Reihe)
   fmtIndVal});

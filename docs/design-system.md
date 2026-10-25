@@ -1573,7 +1573,8 @@ verzerrter Schrift) — oder werden in echter Breite gebaut.
 
 **D — Mindestschrift 11 px.** `--fs-2xs` ist 11 px (vorher 10), auch in der
 verkleinerten Skala der Asset-Karten. Ausgenommen nur das „i“ im ⓘ-Kreis
-(Symbol) und das FX-Logo (Bild). Wo 11 px nicht passt, wird umverteilt, nie
+(Symbol), das FX-Logo (Bild) und die Werte über den Makro-Balken (`.mk-wert`,
+Nutzerwahl 2026-10-25 *„Immer alle, kleiner“*, `docs/makro.md`). Wo 11 px nicht passt, wird umverteilt, nie
 abgeschnitten: Leisten-Beschriftung (Rail-Polster 5 px, sonst „Dashboar/d“),
 Indikator-Tabelle ≤ 430 px (Wertspalten 15 %), Score-Hinweis bricht um statt
 „…“. Englische Ordinalzahlen über `ordEn()` (nie „24.“ oder „21th“).

@@ -126,8 +126,10 @@ const oeffne = (p, z) => p.evaluate(z => { const [a, v] = z.split(':'); if (a ==
         if (!e.closest('.rinfo,.info-b,.si-info-btn,.fxlogo')) { const px = parseFloat(getComputedStyle(e).fontSize); out.n.html++; if (px < 10.95) out.html.push(`${px}px "${v.trim().slice(0, 20)}" @${pfad(e)}`); }
       }
       // C) Diagramm-Schrift gerendert
+      // .mk-wert: Werte ueber den Makro-Balken schrumpfen bewusst unter 11 px
+      // (Nutzerwahl 2026-10-25 "Immer alle, kleiner", docs/makro.md).
       document.querySelectorAll('svg text').forEach(e => {
-        if (!e.textContent.trim() || !sicht(e) || e.closest('.fxlogo')) return;
+        if (!e.textContent.trim() || !sicht(e) || e.closest('.fxlogo') || e.classList.contains('mk-wert')) return;
         const m = e.getScreenCTM(); if (!m) return; out.n.svg++;
         const eff = parseFloat(getComputedStyle(e).fontSize) * Math.hypot(m.a, m.b);
         if (eff < 10.8) { let s = e.ownerSVGElement; while (s.ownerSVGElement) s = s.ownerSVGElement; out.svg.push(`${eff.toFixed(1)}px "${e.textContent.trim().slice(0, 12)}" in ${(s.getAttribute('class') || (s.parentElement && s.parentElement.className) || '?').toString().split(' ')[0]}`); }
