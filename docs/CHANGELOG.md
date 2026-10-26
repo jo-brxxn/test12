@@ -20794,3 +20794,12 @@ die Folgeentwicklung vorhersagen?
 ## 2026-10-25 — VERSION-CHECK-635: Staatsschulden über Eurostat
 
 **Workflow-Lauf 1369 (selbst ausgelöst, Nutzer: *„lös selber den Workflow aus damit die Karte alle Daten bekommt“*):** 10Y-Renditen **5/5** (unter Fr 2026-10-23), EZB-Monatsreihe **645 Punkte** (je Land 129 Monate 2016-01 … 2026-09), SNB 342, China-PMI 24/24, BoE 12. **IWF: HTTP 403** (528 Bytes) — die Datamapper-API blockt den Runner. **Neu:** zweiter IWF-Versuch ohne Browser-Kennung; **Eurostat** `gov_10dd_edpt1` (Gesamtstaat, % BIP, JSON-stat) für Euroraum (EA20) + DE/FR/IT/ES/NL. Reihenfolge in der Karte: IWF → Eurostat → Weltbank, die Quelle steht an jedem Wert bzw. in der Quellenzeile der Länderleiste. Parser lokal mit JSON-stat-Probe geprüft (fehlendes 2025 → 2024).
+
+## 2026-10-26 — VERSION-CHECK-636: Chart-Fenster wie die Data-Seite
+
+**Nutzer:** *„Die Charts wenn man die vergrößert soll das so aussehen wie bei data auch von der Anordnung“*.
+- Vorher: Liste untereinander (ab 3 Charts je 220 px, Fenster scrollte), eigener Knopf *Add chart* + Auswahl als Fläche im Fenster.
+- Jetzt dieselben Bausteine wie Data: `.data-head` (Unterzeile, *Charts n/8* mit Filtersymbol rechts, ⓘ; darunter Zeitfilter + Schere rechts), Auswahl als Popover `.data-picker` (Chips je Gruppe, jeder Tipp gilt sofort, schließt bei 8 oder Tipp daneben), Raster `dataRaster()` + Füllen wie `dataRasterFuellen` (gemessen 1440 px: 1 Chart 1340 × 603, 3 Charts 2 Spalten je 665 × 291, 8 Charts 4 × 2 je 328 × 291, kein Scrollen), Panel-Kopf `.data-ph` mit Legende (*■ Actual — Forecast* bzw. *— Close — EMA20*) und *As of / Next*. Fenster breiter (bis 1500 px wie History).
+- **Namen nie gekürzt:** bei 8 Charts wurden „Unemployment rate…“, „Netherlands 10Y vs …“ abgeschnitten → im Fenster darf der Titel bis an die Knöpfe, unter 470 px fällt zuerst die Gruppe weg.
+- **Geprüft:** Spread-Sprung am Übergang EZB-Monat → Tageswert ist echt, kein Nahtfehler: DE EZB Sep 3,473 % vs. TradingView-Tageswerte Sep Ø 3,491 %; FR steigt schon Aug 4,00 → Sep 4,44 → Okt 23 5,02 %.
+- **Wächter:** `check/profil.js` G erweitert (8 Charts = 4 × 2 ohne Scrollen, 1 Chart ≥ 400 px hoch, `.data-ph` mit ⓘ, Popover schließt bei 8, kein Name gekürzt). Gegenprobe: neuer Wächter gegen den alten Stand (HEAD 94dbd09) → 3 Befunde rot.

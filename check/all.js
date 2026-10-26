@@ -84,7 +84,7 @@ const PRUEFUNGEN = [
   { n: 'makro',     s: 82,  d: 'Makro: Schalter je Karte, Reiter-Karte, Spurkopf = Tabellenzeile, Ziellinie, Analyse-Werkzeuge, Sync-Weg, Tempo (Teil-Aufbau)', f: 'check/makro.js', args: [], browser: true },
   { n: 'trades',    s: 50,  d: 'Journal: kein Trade geht verloren - Abgleich laedt eigene hoch, alte App, zwei Tabs, Upload-Fehler sichtbar + Wiederholung, Grabstein', f: 'check/trades.js', args: [], browser: true },
   { n: 'altgeraet', s: 46,  d: 'Noch offene alte App loescht keine neuen Felder, bewusste Aenderungen kommen an, veraltete App laedt nicht hoch, Basis ueberlebt Neuladen', f: 'check/altgeraet.js', args: [], browser: true },
-  { n: 'zeitspanne', s: 71, d: 'Zeitspanne per Ziehen an allen Charts mit Zeitfilter: Chip mit ×, weniger Punkte, × stellt her, Touch per langem Druck', f: 'check/zeitspanne.js', args: [], browser: true },
+  { n: 'zeitspanne', s: 71, d: 'Schere: Auswahl nur nach Klick auf die Schere, Spanne gilt fuer alle Charts der Ansicht (Asset-Seite, Chart-Fenster), ein × fuer alle, Touch nur mit Schere', f: 'check/zeitspanne.js', args: [], browser: true },
   { n: 'kartentitel', s: 32, d: 'Kartentitel einheitlich 17 px, Info-i blau und kleiner, Notizen in Bias-Farbe', f: 'check/kartentitel.js', args: [], browser: true },
   { n: 'kalender',  s: 24,  d: 'Kalender-Karte: vergangene Tage blass mit Punkt, Releases aus der Historie; Next-Termine inkl. gleicher Veroeffentlichung', f: 'check/kalender.js', args: [], browser: true },
   { n: 'namen',     s: 217, d: 'Asset-/Paarnamen nie gekuerzt (auch mit breiter Schrift wie auf dem iPad), Set-ups-Chip bleibt in seiner Zelle', f: 'check/namen.js', args: [], browser: true },

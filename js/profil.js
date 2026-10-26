@@ -27,7 +27,7 @@ import {escH,icn,getSym,abInfoBtn,abGoToHtml,biasCss,indName,indZeilenWerte,indN
   INFL_ZIEL,nivAlle,nivEintrag,nivReihe,DATA_BASE,FEED_TIMEOUT_MS,todayStr,
   COMMODITY_DATA,rohstoffReihe,rohstoffTrend,korbReihe,zinsdiffFuer,ROHSTOFF_KORB,
   indHistChart,indChartSeries,rohstoffTrendChartHtml,timeRangeBarHtml,timeRangeCustomHtml,TIME_RANGES,brushCustom,ROHSTOFF_NAME,
-  attachChartHovers,openM,syms} from './main.js';
+  attachChartHovers,openM,closeM,syms,indAsOfNextHtml,dataRaster,DATA_MIN_CHART_H,chartLeisteHtml,fmtDayHdr} from './main.js';
 import {priceSeriesFor} from './data-feeds.js';
 import {indScore} from './score.js';
 import {fmtDayShort} from './calendar.js';
@@ -500,53 +500,110 @@ function cpfChart(e,sym,W,H){
   }catch(x){console.error('[cpf]',x);return leer('This chart could not be drawn.');}
 }
 function cpfSym(){return syms.find(x=>x.id===cpfSymId)||null;}
-function cpfPickerHtml(kat){
+// Auswahl wie die Data-Seite (#dataIndPicker): Popover unter dem Knopf, Chips je
+// Gruppe, jeder Tipp gilt sofort, schliesst bei 8 oder bei Tipp daneben.
+function cpfPickerZu(){
+  cpfPickAuf=false;
+  document.removeEventListener('pointerdown',cpfPickerDaneben,true);
+  const el=document.getElementById('cpfPicker');if(el)el.remove();
+  const b=document.getElementById('cpfBtn');if(b)b.classList.remove('on');
+}
+function cpfPickerDaneben(e){const t=e.target;if(t&&t.closest&&t.closest('#cpfPicker,#cpfBtn'))return;cpfPickerZu();}
+function cpfPickerZeichnen(sym,kat){
+  if(!cpfPickAuf)return;
+  const btn=document.getElementById('cpfBtn');if(!btn){cpfPickerZu();return;}
+  btn.classList.add('on');
+  let el=document.getElementById('cpfPicker');
+  if(!el){el=document.createElement('div');el.id='cpfPicker';el.className='data-picker';document.body.appendChild(el);}
   const gr=[];kat.forEach((e,i)=>{let g=gr.find(x=>x.n===e.g);if(!g){g={n:e.g,it:[]};gr.push(g);}g.it.push([e,i]);});
   const voll=cpfListe.length>=CPF_MAX;
-  return`<div class="cpf-pick">${gr.map(g=>`<div class="cpf-pick-g"><div class="cpf-pick-k">${h(g.n)}</div>${g.it.map(([e,i])=>{const an=cpfListe.includes(e.k);
-    return`<button class="cpf-pick-i${an?' on':''}" onclick="cpfUmschalten(${i})" aria-pressed="${an}"${!an&&voll?' disabled':''}>${h(e.n)}</button>`;}).join('')}</div>`).join('')}</div>`;
+  el.innerHTML=`<div class="data-picker-hd"><span>Pick up to ${CPF_MAX} charts</span><b>${cpfListe.length}/${CPF_MAX}</b></div>
+    <div class="data-picker-body">${gr.map(g=>`<div class="data-picker-grp"><span class="cmp-filter-lbl">${h(g.n)}</span><div class="cmp-filter-grp">${g.it.map(([e,i])=>{const an=cpfListe.includes(e.k);
+      return`<button class="cmp-chip cpf-pick-i${an?' on':''}"${!an&&voll?' disabled':''} onclick="cpfUmschalten(${i})" aria-pressed="${an}" title="${h(e.n)}">${h(e.n)}</button>`;}).join('')}</div></div>`).join('')}</div>
+    <div class="data-picker-ft">All of ${h(sym.name||sym.id)} · every tap is applied right away · closes at ${CPF_MAX} or when you tap outside</div>`;
+  const r=btn.getBoundingClientRect();
+  el.style.top=Math.round(r.bottom+6)+'px';
+  el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+'px';
+  el.style.maxHeight=Math.max(160,Math.round(window.innerHeight-r.bottom-24))+'px';
 }
+// Kopf je Panel wie Data: Name + Gruppe · Legende · As of/Next · ✕ · ⓘ
+function cpfLegende(e,sym){
+  if(e.ind){let fc=false;try{fc=(indChartSeries(e.ind,sym.id).pts||[]).some(p=>p[2]!=null);}catch(x){}
+    return`<span class="data-lg"><span class="lg-act">■ Actual</span>${fc?'<span class="lg-fc">— Forecast</span>':''}</span>`;}
+  if(e.roh)return`<span class="data-lg"><span class="lg-act">— Close</span><span style="color:#7172AC">— EMA20</span></span>`;
+  return'';
+}
+function cpfStand(e,sym){
+  if(e.ind){try{return indAsOfNextHtml(sym.id,e.ind);}catch(x){return'';}}
+  let d=null;
+  try{if(e.roh){const r=rohstoffTrend(e.roh).r;d=r&&r.length?r[r.length-1].d:null;}else{const p=e.pts();d=p&&p.length?String(p[p.length-1][0]).slice(0,10):null;}}catch(x){d=null;}
+  return d?`<div class="px-asof"><span class="px-asof-lbl">As of</span> <b>${h(fmtDayHdr(d))}</b></div>`:'';
+}
+const cpfQuelle=e=>e.ind?'the same series as in the macro table of this asset':e.roh?'daily close with EMA20 and its neutral band, as in the score':e.k.indexOf('spread:')===0?'ECB monthly averages, then daily TradingView yields':e.k==='snb'?'SNB data portal, weekly':e.k==='cn'?'NBS via the calendar archive':'the indicator feed of this asset';
 function cpfRender(){
   const body=document.getElementById('cpfBody'),sym=cpfSym();
   if(!body||!sym)return;
-  const kat=cpfKatalog(sym),liste=cpfListe.map(k=>kat.find(e=>e.k===k)).filter(Boolean);
+  const kat=cpfKatalog(sym),liste=cpfListe.map(k=>kat.find(e=>e.k===k)).filter(Boolean),N=CPF_MAX;
   let ab=null;liste.forEach(e=>{const a=cpfAnfang(e,sym);if(a&&(!ab||a<ab))ab=a;});
-  const kopf=`<div class="cpf-leiste">
-    <div class="cpf-add"><button class="btn cpf-add-b${cpfPickAuf?' on':''}" onclick="cpfPicker()" aria-expanded="${cpfPickAuf}" title="Add more charts of this asset — every tap is applied right away">${icn('plus',14)||''}<span>Add chart</span><b>${liste.length}/${CPF_MAX}</b></button></div>
-    <div class="ind-hist-toolbar cpf-zeit">${timeRangeBarHtml(cpfRange,'cpfSetRange',TIME_RANGES,ab)}${timeRangeCustomHtml(cpfRange,cpfVon,cpfBis,'cpfSetRange',ab)}</div>
-  </div>${cpfPickAuf?cpfPickerHtml(kat):''}`;
-  // Panel-Kopf exakt wie auf der Data-Seite (.data-ph/.data-pt, Titel 17 px, ⓘ).
-  const quelle=e=>e.ind?'the same series as in the macro table of this asset':e.roh?'daily close with EMA20 and its neutral band, as in the score':e.k.indexOf('spread:')===0?'ECB monthly averages, then daily TradingView yields':e.k==='snb'?'SNB data portal, weekly':e.k==='cn'?'NBS via the calendar archive':'the indicator feed of this asset';
-  const panels=liste.length?`<div class="cpf-liste">${liste.map((e,i)=>`<div class="cot-card data-panel cpf-panel"><div class="data-ph"><span class="data-pt">${h(e.n)}<span class="px-panel-sub">${h(e.g)}</span></span><span class="px-panel-ctrls"><button class="px-panel-chip" onclick="cpfWeg(${i})" title="Remove this chart" aria-label="Remove ${h(e.n)}">✕</button></span>${abInfoBtn(sym.id+' — '+e.n,['<b>Source:</b> '+quelle(e)+'.','<b>Time range and scissors</b> apply to every chart in this window.'],'info-b ii-nach')}</div><div class="cpf-pc" data-i="${i}"></div></div>`).join('')}</div>`
-    :`<div class="cot-empty">No chart — add one with “Add chart”.</div>`;
+  // Kopf wie Data: Unterzeile + Auswahlknopf rechts, darunter der Zeitfilter rechts.
+  const btn=`<button class="btn cpf-add-b" id="cpfBtn" onclick="cpfPicker()" aria-expanded="${cpfPickAuf}" title="Pick up to ${N} charts of this asset at once — every tap is applied right away">${icn('filter',13)||''}<span style="margin-left:5px">Charts</span> <b style="font-family:var(--ff-num)">${liste.length}/${N}</b></button>`;
+  const zeit=liste.length?`<div class="ind-hist-toolbar data-range">${timeRangeBarHtml(cpfRange,'cpfSetRange',TIME_RANGES,ab)}${timeRangeCustomHtml(cpfRange,cpfVon,cpfBis,'cpfSetRange',ab)}</div>`:'';
+  const kopf=`<div class="data-head cpf-head"><div class="data-row"><div class="data-tt"><div class="pg-sub">One asset · up to ${N} charts side by side · one time range</div></div><span class="data-row-r">${btn}</span>${abInfoBtn(sym.id+' · Charts',['Up to '+N+' charts of this asset side by side — the series of the Country profile and every indicator. The time range applies to all charts.','<b>Scissors:</b> tap it, then drag in any chart — the span applies to every chart in this window.'],'info-b ii-nach')}</div><div class="data-row2">${chartLeisteHtml('',zeit)}</div></div>`;
+  const panels=liste.length?`<div class="data-grid cpf-grid">${liste.map((e,i)=>`<div class="cot-card data-panel cpf-panel"><div class="data-ph"><span class="data-pt">${h(e.n)}<span class="px-panel-sub">${h(e.g)}</span></span>${cpfLegende(e,sym)}${cpfStand(e,sym)}<span class="px-panel-ctrls"><button class="px-panel-chip" onclick="cpfWeg(${i})" title="Remove this panel" aria-label="Remove ${h(e.n)}">✕</button></span>${abInfoBtn(sym.id+' — '+e.n,['<b>Source:</b> '+cpfQuelle(e)+'.','<b>Time range and scissors</b> apply to every chart in this window.'],'info-b ii-nach')}</div><div class="data-pc cpf-pc" data-i="${i}"></div></div>`).join('')}</div>`
+    :`<div class="cot-empty">Pick up to ${N} charts of ${h(sym.name||sym.id)} above to compare them side by side.</div>`;
   body.innerHTML=kopf+panels;
-  // Gezeichnet wird in die GEMESSENE Flaeche (wie Data): 1-2 Charts teilen
-  // sich die Fensterhoehe, ab 3 hat jeder 220 px und die Liste scrollt.
-  const box=body.querySelector('.cpf-liste');
-  if(box){
-    const n=liste.length,kopfH=40,frei=box.clientHeight||480;
-    const H=n<=2?Math.max(220,Math.floor((frei-(n-1)*10)/n)-kopfH):220;
-    box.querySelectorAll('.cpf-pc').forEach(pc=>{const e=liste[+pc.dataset.i];pc.innerHTML=cpfChart(e,sym,Math.max(240,pc.clientWidth-8),H);});
-  }
+  cpfFuellen(body,liste,sym);
   try{attachChartHovers(body);}catch(x){}
+  cpfPickerZeichnen(sym,kat);
 }
+// Raster wie Data (dataRaster): 1 = ganze Flaeche, 2 = untereinander, 3-4 = 2x2,
+// 5-6 = 3x2, 7-8 = 4x2; schmale Fenster weniger Spalten. Die Zeilen teilen sich
+// die freie Hoehe des Fensters; unter DATA_MIN_CHART_H wird gescrollt.
+function cpfFuellen(body,liste,sym){
+  const grid=body.querySelector('.data-grid');if(!grid)return;
+  const n=liste.length,{c,r}=dataRaster(n,grid.clientWidth);
+  const gap=parseFloat(getComputedStyle(grid).rowGap)||10;
+  grid.style.gridTemplateColumns=`repeat(${c},minmax(0,1fr))`;
+  const kopfH=(grid.querySelector('.data-ph')||{offsetHeight:40}).offsetHeight;
+  const minZeile=DATA_MIN_CHART_H+kopfH+14,sichtbar=c===1?Math.min(r,2):r;
+  const zeile=Math.max(minZeile,Math.floor((grid.clientHeight-gap*(sichtbar-1))/sichtbar));
+  grid.style.gridAutoRows=zeile+'px';
+  grid.querySelectorAll('.cpf-pc').forEach(box=>{
+    const e=liste[+box.dataset.i];if(!e)return;
+    const bs=getComputedStyle(box),px=k=>parseFloat(bs[k])||0;
+    const w=box.clientWidth-px('paddingLeft')-px('paddingRight')-8;
+    const zeichne=hh=>{box.innerHTML=cpfChart(e,sym,Math.max(200,w),Math.max(120,hh));};
+    const h0=box.clientHeight-px('paddingTop')-px('paddingBottom');
+    zeichne(h0);
+    const ueber=box.scrollHeight-box.clientHeight;
+    if(ueber>0)zeichne(h0-ueber);
+  });
+}
+let _cpfRz=0;
+try{window.addEventListener('resize',()=>{clearTimeout(_cpfRz);_cpfRz=setTimeout(()=>{const m=document.getElementById('mCpChart');if(m&&m.style.display!=='none')cpfRender();},150);});}catch(x){}
 function cpfOeffnen(k){
   const s=getSym();if(!s||!FX.includes(s.id))return;
   if(!cpfBrush){brushCustom('cpfSetRange',()=>cpfRange);cpfBrush=true;}
-  cpfSymId=s.id;cpfListe=[k];cpfPickAuf=false;
+  cpfPickerZu();cpfSymId=s.id;cpfListe=[k];
   const t=document.getElementById('mCpChartTitle');if(t)t.textContent=`${s.name||s.id} · Charts`;
   openM('mCpChart');
   cpfRender();
 }
 function cpfSetRange(v){cpfRange=(v==='MAX'||v==='CUSTOM')?v:+v;cpfRender();}
 function cpfSetRangeCustom(f,t){cpfVon=f||null;cpfBis=t||null;cpfRender();}
-function cpfPicker(){cpfPickAuf=!cpfPickAuf;cpfRender();}
+function cpfPicker(){
+  if(cpfPickAuf){cpfPickerZu();return;}
+  cpfPickAuf=true;const sym=cpfSym();if(sym)cpfPickerZeichnen(sym,cpfKatalog(sym));
+  setTimeout(()=>{if(cpfPickAuf)document.addEventListener('pointerdown',cpfPickerDaneben,true);},0);
+}
 function cpfUmschalten(i){
   const sym=cpfSym();if(!sym)return;const e=cpfKatalog(sym)[i];if(!e)return;
   const at=cpfListe.indexOf(e.k);
-  if(at>=0)cpfListe.splice(at,1);else if(cpfListe.length<CPF_MAX)cpfListe.push(e.k);
+  if(at>=0)cpfListe.splice(at,1);else if(cpfListe.length<CPF_MAX)cpfListe.push(e.k);else return;
   cpfRender();
+  if(cpfListe.length>=CPF_MAX)cpfPickerZu();
 }
+function cpfZu(){cpfPickerZu();closeM('mCpChart');}
 function cpfWeg(i){cpfListe.splice(i,1);cpfRender();}
 
 // ── Karte ────────────────────────────────────────────────────────────────
@@ -573,4 +630,4 @@ function countryProfileHtml(sym,nurKarte){
 
 export {countryProfileHtml,CP};
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window,{cpfOeffnen,cpfSetRange,cpfSetRangeCustom,cpfPicker,cpfUmschalten,cpfWeg});
+Object.assign(window,{cpfOeffnen,cpfSetRange,cpfSetRangeCustom,cpfPicker,cpfUmschalten,cpfWeg,cpfZu});

@@ -20,7 +20,10 @@
 //      kein History-Abschnitt mehr; JEDE Linie der Karte ist anklickbar und
 //      oeffnet #mCpChart mit genau diesem Chart in voller Breite (Y-Achse);
 //      "Add chart" bietet Karte + alle Indikatoren an, bis 8 (der 9. gesperrt);
-//      ein Zeitfilter fuer alle Panels.
+//      ein Zeitfilter fuer alle Panels. Seit 2026-10-26 (Nutzer: "soll das so
+//      aussehen wie bei data auch von der Anordnung"): Raster wie Data (8 =
+//      4x2 ohne Scrollen, 1 = ganze Flaeche), Panel-Kopf .data-ph, Auswahl als
+//      Popover, das bei 8 schliesst, kein Name gekuerzt.
 //   node check/profil.js [--gegenprobe | --gegenprobe-fenster]
 //     --gegenprobe         Karte bei JPY entfernt          -> A rot
 //     --gegenprobe-fenster Klick auf eine Linie ausgeschaltet -> G rot
@@ -133,16 +136,27 @@ async function messen(p, id) {
     else {
       if (f.panels !== 1) fail('FENSTER', `${f.panels} Panels statt 1 nach dem Klick`);
       if (f.breite < 85) fail('FENSTER', `Chart nur ${f.breite} % der Fensterbreite - nicht "normale Groesse"`);
-      if (f.hoehe < 200) fail('FENSTER', `Chart nur ${f.hoehe} px hoch`);
+      if (f.hoehe < 400) fail('FENSTER', `ein Chart nur ${f.hoehe} px hoch - wie bei Data soll er die Flaeche fuellen`);
       if (f.yLbl < 2) fail('FENSTER', 'Chart ohne Y-Beschriftung');
       if (!f.zeit) fail('FENSTER', 'kein Zeitfilter mit Schere');
       await p.click('#cpfBody .cpf-add-b'); await p.waitForTimeout(300);
-      const anz = await p.evaluate(() => ({ n: document.querySelectorAll('.cpf-pick-i').length, gruppen: [...document.querySelectorAll('.cpf-pick-k')].map(x => x.textContent) }));
+      const anz = await p.evaluate(() => ({ n: document.querySelectorAll('#cpfPicker .cpf-pick-i').length, gruppen: [...document.querySelectorAll('#cpfPicker .cmp-filter-lbl')].map(x => x.textContent) }));
       if (anz.n < 15 || !anz.gruppen.includes('Country profile') || anz.gruppen.length < 3) fail('FENSTER', `"Add chart" bietet ${anz.n} Reihen in ${anz.gruppen.length} Gruppen - erwartet Karte + alle Indikatoren`);
       for (let i = 0; i < 9; i++) { const b2 = await p.$('.cpf-pick-i:not(.on):not([disabled])'); if (!b2) break; await b2.click(); await p.waitForTimeout(150); }
-      const voll = await p.evaluate(() => ({ panels: document.querySelectorAll('#cpfBody .cpf-panel').length, gesperrt: document.querySelectorAll('.cpf-pick-i:not(.on)[disabled]').length, svgs: document.querySelectorAll('#cpfBody .cpf-pc svg').length }));
+      const voll = await p.evaluate(() => {
+        const g = document.querySelector('#cpfBody .data-grid'), ps = [...document.querySelectorAll('#cpfBody .cpf-panel')];
+        const zeilen = [...new Set(ps.map(x => Math.round(x.getBoundingClientRect().top)))].length;
+        const gekuerzt = ps.map(x => x.querySelector('.data-pt')).filter(t => t && t.scrollWidth > t.clientWidth + 1).map(t => t.textContent);
+        return { panels: ps.length, picker: !!document.getElementById('cpfPicker'), spalten: g ? g.style.gridTemplateColumns : '', zeilen, gekuerzt,
+          dataKopf: ps.every(x => x.querySelector('.data-ph .data-pt') && x.querySelector('.data-ph .info-b')), scroll: g ? g.scrollHeight > g.clientHeight + 2 : true };
+      });
       if (voll.panels !== 8) fail('FENSTER', `${voll.panels} Panels nach 9 Klicks - erwartet hoechstens 8`);
-      if (!voll.gesperrt) fail('FENSTER', 'bei 8 Charts sind weitere Reihen nicht gesperrt');
+      if (voll.picker) fail('FENSTER', 'Auswahl bleibt bei 8 Charts offen (Data schliesst sie)');
+      // Anordnung wie Data (dataRaster): 8 Charts bei 1440 px = 4 Spalten x 2 Zeilen, ohne Scrollen
+      if (!/repeat\(4,/.test(voll.spalten) || voll.zeilen !== 2) fail('FENSTER', `8 Charts nicht wie Data als 4x2 (${voll.spalten}, ${voll.zeilen} Zeilen)`);
+      if (voll.scroll) fail('FENSTER', '8 Charts passen nicht ins Fenster (Data: Bildschirm fuellen, kein Scrollen bei 1440 px)');
+      if (!voll.dataKopf) fail('FENSTER', 'Panel-Kopf nicht wie Data (.data-ph mit Titel und ⓘ)');
+      voll.gekuerzt.forEach(t => fail('FENSTER', `Name gekuerzt: "${t}"`));
       await p.click('#cpfBody .ind-hist-range-btn:has-text("1Y")'); await p.waitForTimeout(500);
       const r1 = await p.evaluate(() => (document.querySelector('#cpfBody .ind-hist-range-btn.on:not(.br-sch)') || {}).textContent);
       if (r1 !== '1Y') fail('FENSTER', `Zeitfilter reagiert nicht (steht auf ${r1})`);
@@ -166,5 +180,5 @@ async function messen(p, id) {
   if (GP_FENSTER) { const r = F.some(x => /^FENSTER/.test(x)); console.log(r ? `profil --gegenprobe-fenster: ok (rot wie erwartet, ${F.length} Befund(e))` : 'profil --gegenprobe-fenster: FEHLER - Waechter bleibt gruen'); process.exit(r ? 0 : 1); }
   if (GEGENPROBE) { if (F.length) { console.log(`profil --gegenprobe: ok (rot wie erwartet, ${F.length} Befund(e))`); process.exit(0); } console.log('profil --gegenprobe: FEHLER - Waechter bleibt gruen'); process.exit(1); }
   if (F.length) { console.log(`profil: ${F.length} Befund(e)`); F.forEach(f => console.log('  ' + f)); process.exit(1); }
-  console.log(`profil: ok (Country profile bei allen ${FX.length} Waehrungen direkt ueber Macro in voller Breite, drei Spalten, Rohstoff-Badges = ROHSTOFF_KORB, nicht bei Nicht-FX, kein History-Teil, jede Linie oeffnet das Chart-Fenster (volle Breite, Y-Achse, Zeitfilter + Schere, Add chart bis 8), Handy ohne country_data.json fehlerfrei)`);
+  console.log(`profil: ok (Country profile bei allen ${FX.length} Waehrungen direkt ueber Macro in voller Breite, drei Spalten, Rohstoff-Badges = ROHSTOFF_KORB, nicht bei Nicht-FX, kein History-Teil, jede Linie oeffnet das Chart-Fenster (volle Flaeche, Y-Achse, Zeitfilter + Schere, Auswahl bis 8, Raster wie Data 4x2, Namen ungekuerzt), Handy ohne country_data.json fehlerfrei)`);
 })().catch(e => { console.log('profil: ABBRUCH ' + e.message); process.exit(1); });

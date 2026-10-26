@@ -56,7 +56,8 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   // Was js/profil.js (Country Profile, zirkulaerer Import) von hier liest.
   COMMODITY_DATA,rohstoffReihe,rohstoffTrend,korbReihe,zinsdiffFuer,ROHSTOFF_KORB,
   // ... und fuer sein Chart-Fenster (2026-10-25: dieselben Charts wie Data).
-  indHistChart,rohstoffTrendChartHtml,timeRangeBarHtml,timeRangeCustomHtml,TIME_RANGES,brushCustom,ROHSTOFF_NAME};
+  indHistChart,rohstoffTrendChartHtml,timeRangeBarHtml,timeRangeCustomHtml,TIME_RANGES,brushCustom,ROHSTOFF_NAME,
+  indAsOfNextHtml,dataRaster,DATA_MIN_CHART_H};
 // ── EINFARBIGER ICON-SATZ (Nutzer-Wunsch 2026-08-23) ───────────────────────
 // "mach davor die Flagge aber ohne Farben also eine Art icon aber schon die
 // richtige Form und nicht animiert und bei Gold und dem Rest auch gleich".
