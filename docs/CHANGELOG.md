@@ -20803,3 +20803,24 @@ die Folgeentwicklung vorhersagen?
 - **Namen nie gekürzt:** bei 8 Charts wurden „Unemployment rate…“, „Netherlands 10Y vs …“ abgeschnitten → im Fenster darf der Titel bis an die Knöpfe, unter 470 px fällt zuerst die Gruppe weg.
 - **Geprüft:** Spread-Sprung am Übergang EZB-Monat → Tageswert ist echt, kein Nahtfehler: DE EZB Sep 3,473 % vs. TradingView-Tageswerte Sep Ø 3,491 %; FR steigt schon Aug 4,00 → Sep 4,44 → Okt 23 5,02 %.
 - **Wächter:** `check/profil.js` G erweitert (8 Charts = 4 × 2 ohne Scrollen, 1 Chart ≥ 400 px hoch, `.data-ph` mit ⓘ, Popover schließt bei 8, kein Name gekürzt). Gegenprobe: neuer Wächter gegen den alten Stand (HEAD 94dbd09) → 3 Befunde rot.
+
+## 2026-10-26 — VERSION-CHECK-637: Data „Asset vs asset“
+
+**Nutzer:** *„Mach die Funktion bei data das man nicht nur in einem Asset Indikatoren vergleichen kann sondern auch mehrere Indikatoren von einem Asset vs mehrere von einem anderen"*
+
+**Rückfrage (4 Fragen):** gleiche Liste **paarweise** (nicht je Asset eigene, nicht überlagert) · **genau 2** Assets · **bis 4** Indikatoren · **dritter Schalter** neben By asset / By indicator.
+
+**Umgesetzt (`js/main.js`):**
+- `dataMode='vs'`, `dataVsAssets` (Standard USD | EUR), `dataVsList` (bis `DATA_VS_MAX`=4); Browse-Zustand wie die übrige Data-Auswahl, nicht gespeichert.
+- Kopf: zwei Asset-Auswahlen mit *vs*, Knopf *Indicators x/4*. Gleiches Asset auf beiden Seiten → Seiten tauschen.
+- Indikator-Fenster: Vereinigung beider Assets nach Karte, Chip *„· USD only“*, wenn nur eines ihn führt (das andere Panel zeigt dann *does not track*).
+- Raster fest **2 Spalten** (`dataRaster(n,breite,spalten)`), je Indikator Panel A, dann B → eine Zeile = ein Indikator; unter 700 px eine Spalte, A über B. Gemeinsame Y-Skala je Zeile kommt aus der bestehenden Regel *gleicher Basisname = gleiche Spanne*.
+- Panel-Titel: Asset-Kürzel fett, Indikator daneben; ✕ entfernt den Indikator für beide.
+- Wechsel in den Modus: aktuelles Asset wird A, Liste aus *By indicator* bzw. der *By asset*-Indikator kommt mit. Schnelllinks/Compare-Knopf (`setDataAsset`, `indCompareGo`) springen aus *vs* zurück nach *By asset*.
+- Nebenbei: Fußzeile der Auswahlfenster sagte fest *„closes at 4“*, obwohl bei 8 Schluss ist → nennt jetzt die echte Grenze.
+
+**Gemessen (Playwright):** 1440/1180/820 px: 2 Spalten, Zeilen gepaart, CPI 0|2|4 links und rechts, Arbeitslosigkeit 0|2|4|6 beidseitig; 390 px: eine Spalte, USD/EUR abwechselnd; 0 JS-Fehler. **Bis 3 Indikatoren kein Seiten-Scroll (1180×820); der 4. erzeugt eine 4. Zeile → Seite scrollt ~200 px**, weil die Regel *Chart-Zelle ≥ 150 px, lieber scrollen als stauchen* (2026-09-26) greift — in der Rückfrage war „nichts scrollt“ angekündigt, das stimmte für 2×4 nicht (By asset legt 8 Panels als 4×2).
+- EUR *Manufacturing PMI*: Panel leer (*Not enough history yet*) — Datenstand, in allen Ansichten gleich.
+
+**Wächter:** `check/datalayout.js` Abschnitt *Asset vs asset* (8 Panels, A | B je Zeile, gleicher Indikator, gleiche Achse, bis 6 Panels ohne Scroll, Zelle ≥ 150 px, 5. abgelehnt, Tausch, Handy A über B). Gegenprobe `--gegenprobe-vs` (Raster 4-spaltig) rot.
+

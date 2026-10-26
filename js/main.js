@@ -15574,6 +15574,7 @@ function indCompareGo(indId){
   (c.rubrics||[]).forEach(r=>(r.indicators||[]).forEach(i=>{if(i.id===indId)base=stripPeriodSuffix(i.name).base;}));
   dataAssets=[c.id];
   if(base)dataIndBase=base;
+  if(dataMode==='vs')dataMode='assets';   // der Knopf verspricht "By asset" mit diesem Asset
   _resReturnActive=true;_quickReturnAssetId=c.id;_quickReturnTab=null;quickReturnMerken();
   document.body.classList.add('res-return-active');
   setBackPillTitle(`Back to ${c.name||c.id}`);
@@ -21360,10 +21361,25 @@ function relinkDataInd(id){delete dataIndOverride[id];renderDataTab();}
 //
 // Beide nutzen dieselben Panels, dieselbe Zeitraum-Leiste und denselben
 // gemeinsamen Chart-Cursor.
-let dataMode='assets';                  // 'assets' | 'inds'
-let dataIndList=['CPI (Headline)'];     // bis zu 4 Indikatoren im Modus 'inds'
+let dataMode='assets';                  // 'assets' | 'inds' | 'vs'
+let dataIndList=['CPI (Headline)'];     // bis zu 8 Indikatoren im Modus 'inds'
+// ── Dritte Leserichtung: Asset vs asset (Nutzer-Wunsch 2026-10-26) ──
+// "Mach die Funktion bei data das man nicht nur in einem Asset Indikatoren
+// vergleichen kann sondern auch mehrere Indikatoren von einem Asset vs
+// mehrere von einem anderen". Per Rueckfrage festgelegt:
+//   - GLEICHE Liste paarweise: jede Zeile = ein Indikator, links Asset A,
+//     rechts Asset B, beide auf derselben Y-Skala (gleicher Basisname ->
+//     dieselbe Spanne, siehe dataRasterFuellen)
+//   - genau 2 Assets, bis zu 4 Indikatoren (= 8 Panels, Bildschirm gefuellt)
+//   - eigener, dritter Schalter "Asset vs asset"; die zwei bestehenden
+//     Ansichten bleiben unveraendert
+// Wie der Rest der Data-Auswahl reiner Browse-Zustand (nicht gespeichert).
+const DATA_VS_MAX=4;
+let dataVsAssets=['USD','EUR'];
+let dataVsList=['CPI (Headline)'];
 function setDataMode(m){
-  dataMode=(m==='inds')?'inds':'assets';
+  const vorher=dataMode;
+  dataMode=(m==='inds'||m==='vs')?m:'assets';
   // Beim Wechsel den jeweils festen Teil sinnvoll vorbelegen, damit nie ein
   // leeres Raster dasteht: das erste gewaehlte Asset bzw. der gemeinsame
   // Indikator wandern in den neuen Modus mit.
@@ -21371,9 +21387,41 @@ function setDataMode(m){
     if(!dataAssets.length)dataAssets=['USD'];
     dataAssets=[dataAssets[0]];
     if(!dataIndList.length)dataIndList=[dataIndBase||'CPI (Headline)'];
+  }else if(dataMode==='vs'){
+    // Das gerade gezeigte Asset wird Asset A, seine Indikatoren die Liste.
+    const a=dataAssets[0];
+    if(a&&a!==dataVsAssets[0]){
+      if(a===dataVsAssets[1])dataVsAssets=[a,dataVsAssets[0]];
+      else dataVsAssets=[a,dataVsAssets[1]];
+    }
+    if(vorher==='inds'&&dataIndList.length)dataVsList=dataIndList.slice(0,DATA_VS_MAX);
+    else if(vorher==='assets'&&dataIndBase&&!dataVsList.includes(dataIndBase))dataVsList=[dataIndBase,...dataVsList].slice(0,DATA_VS_MAX);
+    if(!dataVsList.length)dataVsList=['CPI (Headline)'];
   }
   closeDataAssetPicker();closeDataIndPicker();
   renderDataTab();
+}
+// Asset A bzw. B waehlen. Dasselbe Asset auf beiden Seiten vergleicht
+// nichts - dann tauschen die zwei Seiten statt doppelt dazustehen.
+function setDataVsAsset(i,v){
+  if(!v)return;
+  const andere=dataVsAssets[1-i];
+  if(v===andere)dataVsAssets=[dataVsAssets[1],dataVsAssets[0]];
+  else dataVsAssets[i]=v;
+  renderDataTab();
+}
+function setDataVsA(v){setDataVsAsset(0,v);}
+function setDataVsB(v){setDataVsAsset(1,v);}
+// Indikatoren BEIDER Assets, gruppiert nach Karte (Vereinigung - was nur
+// eines der zwei fuehrt, zeigt beim anderen "does not track").
+function dataVsGroups(){
+  const out=[];
+  dataVsAssets.forEach(id=>dataIndGroupsOf(syms.find(s=>s.id===id)).forEach(g=>{
+    let o=out.find(x=>x.name===g.name);
+    if(!o){o={name:g.name,items:[]};out.push(o);}
+    g.items.forEach(it=>{const x=o.items.find(y=>y.b===it.b);if(x)x.ids.push(id);else o.items.push({b:it.b,n:it.n,ids:[id]});});
+  }));
+  return out;
 }
 // Alle Indikator-Basisnamen EINES Assets, gruppiert nach Karte.
 function dataIndGroupsOf(sym){
@@ -21407,16 +21455,21 @@ function openDataIndPicker(){
   renderDataIndPicker();
   setTimeout(()=>{if(_dataIndPickerOpen)document.addEventListener('pointerdown',_dataIndPickerOutside,true);},0);
 }
+// Die Indikatorliste des aktuellen Modus samt Obergrenze ('inds': 8 eines
+// Assets, 'vs': 4 fuer beide Assets).
+function dataListeJetzt(){return dataMode==='vs'?{l:dataVsList,max:DATA_VS_MAX}:{l:dataIndList,max:DATA_MAX_PANELS};}
 function toggleDataListInd(base){
-  const i=dataIndList.indexOf(base);
-  if(i>=0)dataIndList.splice(i,1);
-  else if(dataIndList.length<DATA_MAX_PANELS)dataIndList.push(base);
+  const {l,max}=dataListeJetzt();
+  const i=l.indexOf(base);
+  if(i>=0)l.splice(i,1);
+  else if(l.length<max)l.push(base);
   else return;
   renderDataTab();
-  if(dataIndList.length>=DATA_MAX_PANELS)closeDataIndPicker();
+  if(l.length>=max)closeDataIndPicker();
 }
 function removeDataListInd(base){
-  const i=dataIndList.indexOf(base);if(i>=0)dataIndList.splice(i,1);
+  const {l}=dataListeJetzt();
+  const i=l.indexOf(base);if(i>=0)l.splice(i,1);
   renderDataTab();
 }
 function renderDataIndPicker(){
@@ -21426,16 +21479,21 @@ function renderDataIndPicker(){
   btn.classList.add('on');
   let el=document.getElementById('dataIndPicker');
   if(!el){el=document.createElement('div');el.id='dataIndPicker';el.className='data-picker';document.body.appendChild(el);}
-  const sym=syms.find(s=>s.id===dataAssets[0]);
-  const full=dataIndList.length>=DATA_MAX_PANELS;
-  const groups=dataIndGroupsOf(sym);
+  const vs=dataMode==='vs';
+  const {l,max}=dataListeJetzt();
+  const sym=vs?null:syms.find(s=>s.id===dataAssets[0]);
+  const full=l.length>=max;
+  const groups=vs?dataVsGroups():dataIndGroupsOf(sym);
+  // 'vs': fuehrt nur EINES der zwei Assets den Indikator, steht es am Chip.
+  const nur=it=>vs&&it.ids&&it.ids.length<dataVsAssets.length?` · ${escH(it.ids[0])} only`:'';
   const body=groups.map(g=>`<div class="data-picker-grp"><span class="cmp-filter-lbl">${escH(g.name)}</span><div class="cmp-filter-grp">${g.items.map(it=>{
-    const on=dataIndList.includes(it.b);
-    return`<button class="cmp-chip${on?' on':''}"${!on&&full?' disabled':''} onclick="toggleDataListInd('${escJH(it.b)}')" title="${escH(it.n)}">${escH(it.n)}</button>`;
-  }).join('')}</div></div>`).join('')||`<div class="cmp-filter-none">This asset tracks no indicators.</div>`;
-  el.innerHTML=`<div class="data-picker-hd"><span>Pick up to ${DATA_MAX_PANELS} indicators</span><b>${dataIndList.length}/${DATA_MAX_PANELS}</b></div>
+    const on=l.includes(it.b);
+    return`<button class="cmp-chip${on?' on':''}"${!on&&full?' disabled':''} onclick="toggleDataListInd('${escJH(it.b)}')" title="${escH(it.n)}">${escH(it.n)}${nur(it)}</button>`;
+  }).join('')}</div></div>`).join('')||`<div class="cmp-filter-none">${vs?'These assets track':'This asset tracks'} no indicators.</div>`;
+  const wer=vs?`${escH(dataVsAssets[0])} and ${escH(dataVsAssets[1])}`:`All of ${escH(sym?(sym.name||sym.id):'this asset')}`;
+  el.innerHTML=`<div class="data-picker-hd"><span>Pick up to ${max} indicators</span><b>${l.length}/${max}</b></div>
     <div class="data-picker-body">${body}</div>
-    <div class="data-picker-ft">All of ${escH(sym?(sym.name||sym.id):'this asset')} · every tap is applied right away · closes at 4 or when you tap outside</div>`;
+    <div class="data-picker-ft">${wer} · every tap is applied right away · closes at ${max} or when you tap outside</div>`;
   const r=btn.getBoundingClientRect();
   el.style.top=Math.round(r.bottom+6)+'px';
   el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+'px';
@@ -21444,7 +21502,7 @@ function renderDataIndPicker(){
 // Watchlist-Quicklinks springen mit GENAU EINEM Asset hierher - das ersetzt
 // die ganze Panel-Auswahl, sonst landet man auf einem Raster, in dem das
 // angeklickte Asset irgendwo dazwischen steht.
-function setDataAsset(v){dataAssets=v?[v]:[];dataIndBase='';renderDataTab();}
+function setDataAsset(v){if(dataMode==='vs')dataMode='assets';dataAssets=v?[v]:[];dataIndBase='';renderDataTab();}
 function addDataAsset(v){
   if(v&&!dataAssets.includes(v)&&dataAssets.length<DATA_MAX_PANELS)dataAssets.push(v);
   renderDataTab();
@@ -21531,10 +21589,12 @@ function renderDataTab(){
 // Hoehe, volle Breite), 3-4 = 2x2, 5-6 = 3x2, 7-8 = 4x2. Schmale Fenster: weniger Spalten.
 // Unter DATA_MIN_CHART_H px Chart wird gescrollt statt weiter gestaucht.
 const DATA_MIN_CHART_H=150;
-function dataRaster(n,breite){
+function dataRaster(n,breite,spalten){
   // 2 = UNTEREINANDER in voller Breite (Nutzer 2026-09-26: "bei 2 Charts
   // mach das untereinander").
   let c=n<=2?1:n<=4?2:n<=6?3:4;
+  // Asset vs asset: immer 2 Spalten (A | B), eine Zeile je Indikator.
+  if(spalten)c=spalten;
   if(breite<700)c=1;else if(breite<1000)c=Math.min(c,2);
   return{c,r:Math.ceil(n/c)};
 }
@@ -21548,6 +21608,7 @@ function renderDataTabRoh(){
   const modeBar=`<div class="px-modes">
     <button class="ind-hist-range-btn${dataMode==='assets'?' on':''}" onclick="setDataMode('assets')" title="One indicator, up to ${N} assets side by side">By asset</button>
     <button class="ind-hist-range-btn${dataMode==='inds'?' on':''}" onclick="setDataMode('inds')" title="One asset, up to ${N} of its indicators side by side">By indicator</button>
+    <button class="ind-hist-range-btn${dataMode==='vs'?' on':''}" onclick="setDataMode('vs')" title="Two assets, the same up to ${DATA_VS_MAX} indicators paired row by row">Asset vs asset</button>
   </div>`;
   // Die Leiste steht im Kopf, die Datentiefe kennt man erst nach den Panels:
   // Platzhalter, am Ende ersetzt (fruehester Punkt ueber alle Panels).
@@ -21575,9 +21636,30 @@ function renderDataTabRoh(){
   // Dauerregel 2026-09-26: Filter (Asset-/Indikator-Auswahl) rechtsbuendig
   // in der Titelzeile; darunter die Werkzeugzeile - Ansicht (By asset / By
   // indicator) links, Zeitfilter rechts.
-  const kopf=(sub,filter,knopf,zeit)=>`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset. The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar,zeit)}</div></div>`;
+  const kopf=(sub,filter,knopf,zeit)=>`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each. The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar,zeit)}</div></div>`;
   let head,body,n=0;
-  if(dataMode==='inds'){
+  if(dataMode==='vs'){
+    // ── ZWEI Assets, dieselben bis zu DATA_VS_MAX Indikatoren paarweise ──
+    // Reihenfolge der Panels: je Indikator A, dann B -> im 2-Spalten-Raster
+    // steht jede Zeile fuer einen Indikator (schmal: A ueber B).
+    dataVsAssets=dataVsAssets.filter(id=>ids.includes(id));
+    while(dataVsAssets.length<2)dataVsAssets.push(['USD','EUR','GBP'].find(x=>ids.includes(x)&&!dataVsAssets.includes(x)));
+    const paar=dataVsAssets.map(id=>syms.find(s=>s.id===id));
+    const groups=dataVsGroups();
+    const known=groups.reduce((a,g)=>a.concat(g.items.map(i=>i.b)),[]);
+    dataVsList=dataVsList.filter(b=>known.includes(b)).slice(0,DATA_VS_MAX);
+    const sel=(i,fn,t)=>assetFilterSelect(ids,dataVsAssets[i],fn,'',t,null).replace('<div class="cot-filterbar">','').replace(/<\/div>$/,'');
+    const assetSel=`<div class="cot-filterbar data-vs-sel">${sel(0,'setDataVsA','Asset A - left column')}<span class="data-vs">vs</span>${sel(1,'setDataVsB','Asset B - right column')}</div>`;
+    const indBtn=`<button class="btn" id="dataIndBtn" onclick="openDataIndPicker()" title="Pick up to ${DATA_VS_MAX} indicators for both assets at once — every tap is applied right away">${icn('filter',13)}<span style="margin-left:5px">Indicators</span> <b style="font-family:var(--ff-num)">${dataVsList.length}/${DATA_VS_MAX}</b></button>`;
+    head=kopf(`Two assets · the same up to ${DATA_VS_MAX} indicators, one row each · one time range`,assetSel,indBtn,dataVsList.length?rangeBarHtml():'');
+    if(!dataVsList.length)body=`<div class="cot-empty">Pick up to ${DATA_VS_MAX} indicators above to compare ${escH(dataVsAssets[0])} and ${escH(dataVsAssets[1])} side by side.</div>`;
+    else{n=dataVsList.length*2;body=`<div class="data-grid data-vs">`+dataVsList.map(b=>{
+      const g=groups.find(x=>x.items.some(i=>i.b===b));
+      const nm=g?(g.items.find(i=>i.b===b)||{}).n:b;
+      const x=`<button class="px-panel-chip" onclick="removeDataListInd('${escJH(b)}')" title="Remove this indicator for both assets">✕</button>`;
+      return paar.map(sym=>sym?panelHtml(sym,b,`${escH(sym.id)}<span class="px-panel-sub">${escH(nm||b)}</span>`,x):'').join('');
+    }).join('')+`</div>`;}
+  }else if(dataMode==='inds'){
     // ── EIN Asset, bis zu N Indikatoren ──
     const sym=syms.find(s=>s.id===dataAssets[0]);
     const groups=sym?dataIndGroupsOf(sym):[];
@@ -21639,7 +21721,7 @@ function renderDataTabRoh(){
 function dataRasterFuellen(el,n,jobs){
   const grid=el.querySelector('.data-grid'),pg=document.getElementById('pgData');
   if(!grid||!pg)return;
-  const {c,r}=dataRaster(n,grid.clientWidth);
+  const {c,r}=dataRaster(n,grid.clientWidth,dataMode==='vs'?2:0);
   const gap=parseFloat(getComputedStyle(grid).rowGap)||10;
   const cs=getComputedStyle(pg);
   // Freie Hoehe = sichtbare Hoehe von #pgData minus alles oberhalb des Rasters.
@@ -26766,7 +26848,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   btZinspfadChart,btJump,btRender,setBtCcy,setBtCmp,setBtFilter,toggleBtHolds,setBtJahr,openBacktester,
   CHART_TYPEN,setPxChartTyp,toggleCotVsPrice,setCotHistRange,setCotHistRangeCustom,openPriceChart,setPriceRange,setPriceRangeCustom,priceEventsByDay,renderPriceChart,
   drawPriceConnectors,markPriceCards,priceWindow,
-  dataIndFor,setDataIndFor,relinkDataInd,setDataMode,dataIndGroupsOf,openDataIndPicker,closeDataIndPicker,
+  dataIndFor,setDataIndFor,relinkDataInd,setDataMode,setDataVsAsset,setDataVsA,setDataVsB,dataIndGroupsOf,openDataIndPicker,closeDataIndPicker,
   renderDataIndPicker,toggleDataListInd,removeDataListInd,
   DATA_MAX_PANELS,setDataAsset,addDataAsset,removeDataAsset,toggleDataAsset,openDataAssetPicker,closeDataAssetPicker,
   renderDataAssetPicker,indCompareGo,setDataInd,renderDataTab,sentReadBadge,SENT_INFO,openSentInfoM,iBtn,toggleSentCcy,setSentScope,
