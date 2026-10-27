@@ -362,6 +362,41 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
       + `Eine eingesetzte Testzeile wurde bei geladener Quelle NICHT entfernt - die quelleDa-Pruefung darf das `
       + `Entfernen nur aussetzen, solange die QUELLE fehlt, nicht generell.`);
 
+  // ── 8) SEASONALITY-SEITE MIT PAAREN (seit 2026-10-27) ──────────────────
+  // Nutzer: "bei seasonality will ich jetzt das auch fuer Paare haben also zB
+  // euraud aber halt fuer alle und auch fuer alle Non fx" - Entscheide:
+  // Gruppen-Filter + Karte "All pairs", Paare nur Anzeige, US 10Y in bp.
+  // Eingespeist, damit der Abschnitt nicht vom Feed-Stand abhaengt.
+  const s8 = await p.evaluate(() => {
+    const echt = SEASONALITY_DATA;
+    const m = (a) => Array.from({ length: 12 }, (_, k) => [k + 1, +(a * (k % 3 - 1)).toFixed(2), 50 + (k % 3) * 10, 15]);
+    SEASONALITY_DATA = { updated: new Date().toISOString(),
+      assets: { EUR: { proxy: 'basket vs 7 majors', basis: 'pairs', inv: 0, months: m(0.4) }, GOLD: { proxy: 'GLD', inv: 0, months: m(1) }, USYIELD: { proxy: '^TNX', unit: 'bp', inv: 0, months: m(6) } },
+      pairs: { 'EUR/USD': { proxy: 'EURUSD=X', months: m(0.5) }, 'EUR/AUD': { proxy: 'EURAUD=X', months: m(0.7) }, 'AUD/NZD': { proxy: 'AUDNZD=X', months: m(0.3) } } };
+    showTab('seas');
+    const o = {};
+    const sel = document.querySelector('#seasBody select');
+    o.gruppen = sel ? [...sel.querySelectorAll('optgroup')].map(g => g.label + ':' + g.querySelectorAll('option').length) : [];
+    const karten = [...document.querySelectorAll('#seasBody .cot-card')];
+    const paarKarte = karten.find(k => /All pairs in/.test(k.querySelector('.cot-card-title').textContent));
+    o.paarZeilen = paarKarte ? paarKarte.querySelectorAll('[onclick^="setSeasAsset"]').length : -1;
+    setSeasAsset('EUR/AUD');
+    o.paarTitel = document.querySelector('#seasBody .cot-card-title').textContent;
+    o.paarHinweis = /display only/.test(document.querySelector('#seasBody').textContent);
+    setSeasAsset('USYIELD');
+    o.bp = [...document.querySelectorAll('#seasBody .sz-z span:first-child')].slice(1, 4).map(x => x.textContent);
+    // Paare gehen in keinen Score: kein Asset traegt eine Paar-Zeile
+    o.paarImScore = syms.some(sy => (sy.rubrics || []).some(r => (r.indicators || []).some(i => /\//.test(i.name) && /season/i.test(i.name))));
+    SEASONALITY_DATA = echt; seasAsset = ''; showTab('over');
+    return o;
+  });
+  if (JSON.stringify(s8.gruppen) !== JSON.stringify(['Currencies (basket):1', 'Pairs:3', 'Non-FX:1', 'Yields:1']))
+    fail('SEASONALITY GRUPPEN', `Auswahlfeld ${JSON.stringify(s8.gruppen)} - erwartet Currencies (basket) / Pairs / Non-FX / Yields`);
+  if (s8.paarZeilen !== 3) fail('SEASONALITY PAAR-KARTE', `"All pairs in ..." zeigt ${s8.paarZeilen} statt 3 Zeilen`);
+  if (!/EUR\/AUD/.test(s8.paarTitel || '') || !s8.paarHinweis) fail('SEASONALITY PAAR', `Paar-Auswahl: Titel "${s8.paarTitel}", Hinweis "display only" ${s8.paarHinweis ? 'da' : 'fehlt'}`);
+  if (!s8.bp.length || !s8.bp.every(x => / bp$/.test(x))) fail('SEASONALITY EINHEIT', `US 10Y muss in Basispunkten stehen, steht: ${JSON.stringify(s8.bp)}`);
+  if (s8.paarImScore) fail('SEASONALITY PAAR IM SCORE', 'ein Asset traegt eine Paar-Saisonalitaets-Zeile - Paare sind reine Anzeige');
+
   await b.close();
   if (perr.length) fail('SEITENFEHLER', perr.slice(0, 3).join(' | '));
   if (F.length) {

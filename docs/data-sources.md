@@ -924,3 +924,14 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
 - **Fällt eine Quelle aus, bleibt ihr alter Stand**; die anderen laufen weiter (`continue-on-error`).
 - **Kein Score-Teil.** China-PMI und BoE-Stimmen wurden gemessen und haben keinen Vorhersagewert (CHANGELOG 632).
 - Rohstoff-Feed: **GAS** (TTF, `ICEEUR:TFM1!`, Historie `TTF=F`) und **LNG** (JKM, `NYMEX:JKM1!`, eigene Aufzeichnung) — nur Anzeige im Country profile.
+
+## Saisonalitaet (`seasonality_data.json`, Schritt *Fetch seasonality*)
+
+- Yahoo-Monats-Bars, 15 Jahre, Monat **in der Zeitzone der Boerse je Bar**
+  (`Intl`, nie der heutige Versatz - Sommerzeit-Fehler vom 25.10.2026).
+- Waehrungen: **Korb gegen die sieben anderen** aus den 28 Paaren
+  (`EURAUD=X` …), wie `korbReihe` in der App. Paare unter `pairs`, nur Anzeige.
+- Non-FX: GLD, SLV, USO, SPY, QQQ, ^GDAXI, BTC-USD, ETH-USD; US 10Y = ^TNX in bp.
+  Die anderen Renditen haben keine freie 15-Jahres-Monatsreihe.
+- Was ein Lauf nicht rechnen kann, behaelt seinen letzten Stand.
+- Waechter: `check/saisonfeed.js` (Workflow-Block), `check/seasretail.js` 8 (Seite).

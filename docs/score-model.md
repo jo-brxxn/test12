@@ -271,6 +271,13 @@ zu sesonality kurz dadrunter … Und retail kommt zu retail dadrunter"*.
 `abScoreZeile()` liest `indScore()` — nie eine zweite Rechnung danebenstellen,
 sonst nennen Kachel und Score-Fenster verschiedene Zahlen.
 
+**Quelle seit 2026-10-27** (Nutzer-Entscheide): Waehrung = **Korb gegen die
+sieben anderen** aus den 28 Yahoo-FX-Paaren (dieselbe Formel wie `korbReihe`,
+vorher CurrencyShares-ETF gegen USD); neu **ETH** (ab 12/2017) und **US 10Y**
+(`USYIELD`, Monatsaenderung in **Basispunkten**, `unit:'bp'`) - beide zaehlen
+nach derselben Regel ±0,5. Die **28 Paare** (`pairs`) sind **nur Anzeige**:
+der Paar-Score ist Basis minus Quote und traegt beide Waehrungen schon.
+
 **Saisonalitaet** (`seasBiasFor`, `SEAS_HIT_HOCH=60` / `SEAS_HIT_TIEF=40`):
 Monatsschnitt **und** Trefferquote muessen dasselbe sagen, sonst 0. Ein
 positiver Schnitt braucht mindestens 60 % gestiegene Jahre, ein negativer

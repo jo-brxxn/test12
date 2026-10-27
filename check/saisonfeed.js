@@ -35,11 +35,13 @@ if (code && GEGENPROBE) code = code.replace('timeZone:tz,year', 'timeZone:"UTC",
 if (code) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'saisonfeed-'));
   // Mitternacht Ortszeit am 1. des Monats als UTC-Sekunden
+  const FMT = {};
   const mitternacht = (jahr, mon, tz) => {
     const utc = Date.UTC(jahr, mon - 1, 1);
-    for (const off of [-14, -12, -11, -10, -9, -8, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13]) {
+    const f = FMT[tz] || (FMT[tz] = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', hourCycle: 'h23' }));
+    for (const off of [0, 1, -1, 2, -2, -3, -4, -5, -6, 3, 4, 5, 6, -8, -9, -10, -11, -12, 8, 9, 10, 11, 12, 13, -14]) {
       const t = utc - off * 3600e3;
-      const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(t));
+      const p = f.formatToParts(new Date(t));
       const g = k => +p.find(x => x.type === k).value;
       if (g('year') === jahr && g('month') === mon && g('day') === 1 && g('hour') === 0) return t / 1000;
     }

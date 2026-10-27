@@ -9848,7 +9848,7 @@ function posAbwKopf(name,ab){
 // laufende Monat ist hinterlegt, Monate mit Score-Signal (Schnitt und
 // Trefferquote einig, seasBiasFor) stehen fett. Die Trefferquote steht im
 // Tooltip und in der Fusszeile - nicht als Spalte.
-function seasZeilenHtml(months,curMon,cy,gross){
+function seasZeilenHtml(months,curMon,cy,gross,unit){
   const mo=months.slice().sort((a,b)=>a[0]-b[0]);
   cy=cy||{};
   // ZWEI Skalen (Nutzer-Wahl 2026-10-11 auf Rueckfrage): mit einer gemeinsamen
@@ -9861,7 +9861,7 @@ function seasZeilenHtml(months,curMon,cy,gross){
   const xp=v=>50+(+v)/max*48;                     // Prozent der Spurbreite (Balken)
   const xc=v=>50+(+v)/maxCy*48;                   // dito, Kurslinie
   const n=mo.length,hp=[];
-  const pct=v=>(v>0?'+':'')+(+v).toFixed(2)+'%';
+  const pct=v=>seasFmt(v,unit);
   const namen=mo.map(([nr])=>`<span class="sz-n${nr===curMon?' on':''}">${SEAS_MON[nr-1]}</span>`).join('');
   const balken=mo.map(([nr,avg])=>{const a=+avg,w=Math.abs(a)/max*48;
     return`<span class="sz-r${nr===curMon?' on':''}"><i class="sz-b" style="left:${a>=0?50:50-w}%;width:${w}%;background:${a>=0?BC.bull:BC.bear}"></i></span>`;}).join('');
@@ -10055,7 +10055,7 @@ function seasBiasFor(id){
   if(!isFinite(avg)||!isFinite(hit))return{bias:'neu',txt:null,grund:'no value for this month'};
   const einig=(avg>=0&&hit>=SEAS_HIT_HOCH)||(avg<0&&hit<=SEAS_HIT_TIEF);
   return{bias:einig?(avg>=0?'bull':'bear'):'neu',avg,hit,einig,
-    txt:`${avg>0?'+':''}${avg.toFixed(2)}% · up in ${hit}%`,
+    txt:`${seasFmt(avg,A.unit)} · up in ${hit}%`,
     grund:einig?null:'average and hit rate disagree'};
 }
 
@@ -11128,7 +11128,7 @@ function abGrafikHtml(art,c){
   const A=D&&D.assets?D.assets[c.id]:null;
   if(!A||!Array.isArray(A.months)||!A.months.length)return abTileZ('seas','Seasonality','',
     AB_LEER(D&&D.assets
-      ?`No long-run price proxy for ${escH(c.name||c.id)}. Seasonality is computed from 15+ years of ETF history — where there is none, there is no average to show.`
+      ?`No long-run price history for ${escH(c.name||c.id)}. Seasonality needs at least 8 years of monthly prices — where there are none, there is no average to show.`
       :'Seasonality has not loaded yet — it is computed once a day into seasonality_data.json.'));
   const jetzt=new Date().getMonth()+1;
   const monate=A.months.slice().sort((a,b)=>a[0]-b[0]);
@@ -11152,15 +11152,17 @@ function abGrafikHtml(art,c){
   const stark=!!(sb&&sb.einig);
   return abTileZ('seas','Seasonality',
     `<span class="ab-tile-s">${escH(A.proxy||'')} · ${cur?cur[3]:'–'}y</span>`,
-    `<div class="ab-big" style="color:${cur?biasCss(+cur[1]>=0?'bull':'bear'):'var(--t3)'}">${cur?`${+cur[1]>0?'+':''}${(+cur[1]).toFixed(2)}% in ${SEAS_MON[jetzt-1]}`:'–'}</div>
-     ${seasZeilenHtml(monate,jetzt,cy,false)}
+    `<div class="ab-big" style="color:${cur?biasCss(+cur[1]>=0?'bull':'bear'):'var(--t3)'}">${cur?`${seasFmt(cur[1],A.unit)} in ${SEAS_MON[jetzt-1]}`:'–'}</div>
+     ${seasZeilenHtml(monate,jetzt,cy,false,A.unit)}
      <div class="ab-foot">
        <span><span class="ab-foot-l">Up in</span> <b>${cur?cur[2]:'–'}%</b> <span class="ab-foot-n">of years</span></span>
        <span><span class="ab-foot-l">Sample</span> <b>${cur?cur[3]:'–'}</b> <span class="ab-foot-n">years</span></span>
        <span><span class="ab-foot-l">Signal</span> <b style="color:${stark?biasCss(+cur[1]>=0?'bull':'bear'):'var(--t3)'}">${stark?'aligned':'mixed'}</b></span>
      </div>
      ${abScoreZeile(c,SEAS_IND_NAME,sb&&sb.grund)}`,null,
-    [`Average calendar-month move over ${cur?cur[3]:'–'} years, from ${escH(A.proxy||'a long-run price proxy')}${A.inv?', inverted so the sign matches this asset':''}.`,
+    [A.basis==='pairs'
+       ?`Average calendar-month move of the <b>${escH(c.id)} basket</b> against the 7 other majors over ${cur?cur[3]:'–'} years — the same basket as the price chart.`
+       :`Average calendar-month ${A.unit==='bp'?'change in basis points':'move'} over ${cur?cur[3]:'–'} years, from ${escH(A.proxy||'a long-run price proxy')}${A.inv?', inverted so the sign matches this asset':''}.`,
      `The dashed line is this year's actual move month by month on its own scale (exact values in the right column), so you see at a glance whether ${escH(new Date().getFullYear()+'')} follows the pattern.`,
      `"Aligned" means the average return and the hit rate point the same way — ${escH(SEAS_MON[jetzt-1])} ${stark?'does':'does not'}.`,
      escH(seasRegelText())]);
@@ -20439,14 +20441,14 @@ function seasProfilHtml(id){
   const mx=Math.max(...m.map(x=>Math.abs(+x[1])||0),0.1);
   const y0=H/2,sk=(H/2-pad)/mx,jetzt=new Date().getMonth()+1;
   const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  let sv=achsenTicks(-mx,mx,4).map(v=>{const yy=y0-v*sk;return`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-pad}" y2="${yy.toFixed(1)}" stroke="var(--bd)" stroke-width="1" stroke-dasharray="2 3" opacity=".75"/><text class="y-lbl" x="${padL-6}" y="${(yy+3.5).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--t3)">${v>0?'+':''}${+v.toFixed(2)}%</text>`;}).join('');
+  let sv=achsenTicks(-mx,mx,4).map(v=>{const yy=y0-v*sk;return`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-pad}" y2="${yy.toFixed(1)}" stroke="var(--bd)" stroke-width="1" stroke-dasharray="2 3" opacity=".75"/><text class="y-lbl" x="${padL-6}" y="${(yy+3.5).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--t3)">${v>0?'+':''}${+v.toFixed(2)}${A.unit==='bp'?' bp':'%'}</text>`;}).join('');
   sv+=`<line x1="${padL}" y1="${y0}" x2="${W-pad}" y2="${y0}" stroke="var(--bd2)" stroke-width="1"/>`;
   m.forEach(([mo,avg,hit,jahre],i)=>{
     const v=+avg||0,x=padL+i*bw+bw*0.15,h=Math.abs(v)*sk,col=v>0?BC.bull:v<0?BC.bear:'var(--t3)';
-    sv+=`<rect x="${x.toFixed(1)}" y="${(v>0?y0-h:y0).toFixed(1)}" width="${(bw*0.7).toFixed(1)}" height="${Math.max(1,h).toFixed(1)}" fill="${col}" opacity="${mo===jetzt?1:.55}"${mo===jetzt?' stroke="var(--t0)" stroke-width="1.5"':''}><title>${MN[mo-1]}: average ${v>0?'+':''}${v.toFixed(2)}% · up in ${hit}% of ${jahre} years</title></rect>`;
+    sv+=`<rect x="${x.toFixed(1)}" y="${(v>0?y0-h:y0).toFixed(1)}" width="${(bw*0.7).toFixed(1)}" height="${Math.max(1,h).toFixed(1)}" fill="${col}" opacity="${mo===jetzt?1:.55}"${mo===jetzt?' stroke="var(--t0)" stroke-width="1.5"':''}><title>${MN[mo-1]}: average ${seasFmt(v,A.unit)} · up in ${hit}% of ${jahre} years</title></rect>`;
     sv+=`<text x="${(padL+i*bw+bw/2).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="11" fill="${mo===jetzt?'var(--t0)':'var(--t3)'}" font-weight="${mo===jetzt?700:500}">${MN[mo-1]}</text>`;
   });
-  return`<div class="ind-hist-wrap"><div class="ind-hist-toolbar"><span class="ind-hist-start">Average return per calendar month over ${escH(String(m[0][3]||'?'))} years (${escH(A.proxy||id)}) — the current month is outlined.</span></div>
+  return`<div class="ind-hist-wrap"><div class="ind-hist-toolbar"><span class="ind-hist-start">Average ${A.unit==='bp'?'change (bp)':'return'} per calendar month over ${escH(String(m[0][3]||'?'))} years (${escH(A.proxy||id)}) — the current month is outlined.</span></div>
     <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-width:100%">${sv}</svg></div>`;
 }
 function indHistChart(ind,symId,opts){
@@ -24078,7 +24080,14 @@ function autoFetchSeasonality(){
 function setSeasAsset(v){seasAsset=v||'';renderSeasonality();}
 const SEAS_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 // Anzeige-Reihenfolge = Reihenfolge der App-Listung (FX-Majors, dann Non-FX)
-const SEAS_ORDER=['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD','GOLD','SILVER','OIL','BTC','SP500','NAS'];
+const SEAS_ORDER=['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD','GOLD','SILVER','OIL','BTC','ETH','SP500','NAS','DAX','USYIELD'];
+// Seit 2026-10-27: Renditen (US 10Y) als Monatsaenderung in Basispunkten -
+// eine Rendite hat keinen Prozent-Return. Alles andere in Prozent.
+function seasFmt(v,unit){return(+v>0?'+':'')+(unit==='bp'?(+v).toFixed(1)+' bp':(+v).toFixed(2)+'%');}
+// Eintrag eines Assets ODER eines FX-Paares ("EUR/AUD", seit 2026-10-27,
+// reine Anzeige - Nutzer-Entscheid: Paar-Score = Basis minus Quote traegt die
+// Saisonalitaet beider Waehrungen schon).
+function seasEintrag(key){const D=SEASONALITY_DATA;if(!D||!key)return null;return(D.assets&&D.assets[key])||(D.pairs&&D.pairs[key])||null;}
 function seasSortIds(ids){return[...ids].sort((a,b)=>{const ia=SEAS_ORDER.indexOf(a),ib=SEAS_ORDER.indexOf(b);return(ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});}
 // 12-Monats-Balkenchart: Balken = O-Return des Monats, Label darunter =
 // Monat + Trefferquote, aktueller Monat mit hellem Band + Rahmen markiert.
@@ -24093,7 +24102,12 @@ function seasSortIds(ids){return[...ids].sort((a,b)=>{const ia=SEAS_ORDER.indexO
 // der letzte bekannte Kurs VOR Monatsbeginn, damit auch der laufende
 // (unvollstaendige) Monat einen echten Zwischenstand zeigt statt zu fehlen.
 function seasCurYearReturns(id,inv){
-  const ser=priceSeriesFor(id);
+  // Paar: synthetischer Cross aus den USD-Kursen; Waehrung mit Korb-
+  // Saisonalitaet (seit 2026-10-27 aus den 28 Paaren): derselbe Korb wie die
+  // Kursanzeige (korbReihe) - sonst laege EUR gegen USD neben EUR gegen alle.
+  const E=seasEintrag(id);
+  const ser=String(id).includes('/')?pairPriceSeries(id.slice(0,3),id.slice(4))
+    :(FX.includes(id)&&E&&E.basis==='pairs')?korbReihe(id,false):priceSeriesFor(id);
   if(!ser||ser.length<2)return{};
   const px={};ser.forEach(e=>{if(e&&e[0]&&e[1]!=null)px[e[0]]=Number(e[1]);});
   const dates=Object.keys(px).sort();
@@ -24313,44 +24327,63 @@ function renderSeasonalityRoh(){
     return;
   }
   const ids=seasSortIds(Object.keys(D.assets));
-  if(!seasAsset||!D.assets[seasAsset])seasAsset=ids[0];
-  const A=D.assets[seasAsset];
+  const paare=Object.keys(D.pairs||{});
+  // Paare in der Reihenfolge der App-Listung (FX_PAIRS), Rest alphabetisch
+  const paarOrd=k=>{const i=FX_PAIRS.indexOf(k);return i<0?999:i;};
+  paare.sort((a,b)=>paarOrd(a)-paarOrd(b)||a.localeCompare(b));
+  if(!seasAsset||!seasEintrag(seasAsset))seasAsset=ids[0];
+  const A=seasEintrag(seasAsset);
+  const istPaar=seasAsset.includes('/');
   const curMon=new Date().getMonth()+1;
   const cur=A.months.find(m=>m[0]===curMon);
   const upd=D.updated?fmtStamp(D.updated):'–';
-  const filt=assetFilterSelect(ids,seasAsset,'setSeasAsset',null,'Pick an asset',null);
-  const proxyLink=`<a href="https://finance.yahoo.com/quote/${encodeURIComponent(A.proxy)}" target="_blank" rel="noopener" class="cct-src">${escH(A.proxy)} ↗</a>`;
-  const curLine=cur?`<div style="text-align:center;font-size:var(--fs-base);color:var(--t2);margin-top:8px">${SEAS_MON[curMon-1]} (current month): <b style="color:${cur[1]>=0?BC.bull:BC.bear}">${cur[1]>0?'+':''}${cur[1].toFixed(2)}%</b> average return, up in <b>${cur[2]}%</b> of the last ${cur[3]} years${A.inv?' · pair inverted from a USD-first quote so the sign matches this side':''}</div>`:'';
+  // Auswahl mit Gruppen (Nutzer-Entscheid 2026-10-27: "Gruppen-Filter +
+  // Paar-Karte"): Currencies (Korb) / Pairs / Non-FX / Yields.
+  const gruppe=(lbl,keys,name)=>keys.length?`<optgroup label="${escH(lbl)}">${keys.map(k=>`<option value="${escH(k)}"${k===seasAsset?' selected':''}>${escH(name(k))}</option>`).join('')}</optgroup>`:'';
+  const fxIds=ids.filter(id=>FX.includes(id)),yIds=ids.filter(id=>assetCls(id)==='yield'),restIds=ids.filter(id=>!FX.includes(id)&&assetCls(id)!=='yield');
+  const filt=`<div class="cot-filterbar"><select class="btn" onchange="setSeasAsset(this.value)" title="Pick an asset or a pair" style="cursor:pointer">${
+    gruppe('Currencies (basket)',fxIds,k=>k)+gruppe('Pairs',paare,k=>k)+gruppe('Non-FX',restIds,k=>COT_NAME[k]||k)+gruppe('Yields',yIds,k=>COT_NAME[k]||k)}</select></div>`;
+  const quelle=A.basis==='pairs'?`basket vs 7 majors (Yahoo FX pairs)`
+    :`proxy: <a href="https://finance.yahoo.com/quote/${encodeURIComponent(A.proxy)}" target="_blank" rel="noopener" class="cct-src">${escH(A.proxy)} ↗</a>`;
+  const titel=istPaar?seasAsset:(A.basis==='pairs'?`${seasAsset} basket`:(COT_NAME[seasAsset]||seasAsset));
+  const curLine=cur?`<div style="text-align:center;font-size:var(--fs-base);color:var(--t2);margin-top:8px">${SEAS_MON[curMon-1]} (current month): <b style="color:${cur[1]>=0?BC.bull:BC.bear}">${seasFmt(cur[1],A.unit)}</b> average ${A.unit==='bp'?'change':'return'}, up in <b>${cur[2]}%</b> of the last ${cur[3]} years${istPaar?' · <i>display only — the pair score already carries both currencies</i>':''}</div>`:'';
   // "vs Price" (Nutzer-Wunsch 2026-08-12): dauerhaft aktive Ueberlagerung mit
   // dem tatsaechlichen Kursverlauf des laufenden Jahres, kein Toggle/keine
   // sichtbare Option - siehe seasCurYearReturns()-Kommentar oben.
   const curYear=seasCurYearReturns(seasAsset,A.inv);
-  // Filter jetzt IM Karten-Titel oben rechts, wie bei Retail Sentiment/
-  // Put-Call/Net Options Flow (Nutzer-Wunsch 2026-08-31: "Asset Filter
-  // sollen ueberall einheitlich sein... immer oben rechts") - vorher stand
-  // er als eigene Zeile UEBER der Karte, keins der anderen Tabs macht das so.
+  // Filter IM Karten-Titel oben rechts, wie bei Retail Sentiment/Put-Call/
+  // Net Options Flow (Nutzer-Wunsch 2026-08-31: "immer oben rechts").
   const chartCard=`<div class="cot-card">
-    <div class="cot-card-title">Monthly Seasonality — ${escH(COT_NAME[seasAsset]||seasAsset)}${iBtn('seas')}<span style="margin-left:auto">${filt}</span><small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">15y stats · proxy: ${proxyLink} · ${escH(upd)}</small></div>
-    <div style="padding:12px 14px">${seasZeilenHtml(A.months,curMon,curYear,true)}${curLine}</div>
+    <div class="cot-card-title">Monthly Seasonality — ${escH(titel)}${iBtn('seas')}<span style="margin-left:auto">${filt}</span><small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">${cur?cur[3]:15}y stats · ${quelle} · ${escH(upd)}</small></div>
+    <div style="padding:12px 14px">${seasZeilenHtml(A.months,curMon,curYear,true,A.unit)}${curLine}</div>
   </div>`;
-  // Kompakte Uebersicht: der AKTUELLE Monat quer ueber alle Assets,
-  // staerkster historischer Rueckenwind zuerst.
-  const rows=ids.map(id=>{const e=D.assets[id].months.find(m=>m[0]===curMon);return e?{id,avg:e[1],hit:e[2],n:e[3]}:null;}).filter(Boolean).sort((a,b)=>b.avg-a.avg);
-  const maxA=Math.max(0.2,...rows.map(r=>Math.abs(r.avg)));
-  const ovRows=rows.map(r=>{
-    const col=r.avg>=0?BC.bull:BC.bear,w=(Math.abs(r.avg)/maxA*100).toFixed(0);
-    return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;cursor:pointer" onclick="setSeasAsset('${r.id}')" title="Show the full 12-month profile of ${escH(COT_NAME[r.id]||r.id)}">
-      <div style="flex:none;width:64px;font-weight:700;font-size:var(--fs-sm);color:var(--t1);font-family:var(--ff-num)">${escH(r.id)}</div>
-      <div style="flex:1;height:16px;border-radius:4px;background:var(--bg3);overflow:hidden"><div style="width:${w}%;height:100%;background:${col};opacity:.85"></div></div>
-      <div style="flex:none;width:64px;text-align:right;font-size:var(--fs-sm);font-weight:700;color:${col}">${r.avg>0?'+':''}${r.avg.toFixed(2)}%</div>
-      <div style="flex:none;width:56px;text-align:right;font-size:var(--fs-xs);color:${r.hit>=60?BC.bull:r.hit<=40?BC.bear:'var(--t3)'}">${r.hit}% up</div>
-    </div>`;
-  }).join('');
+  // Kompakte Uebersicht: der AKTUELLE Monat quer ueber alle Eintraege einer
+  // Gruppe, staerkster historischer Rueckenwind zuerst. Prozent und
+  // Basispunkte stehen nie in derselben Skala (Renditen eigene Zeilen).
+  const zeile=(key,E)=>{const e=E.months.find(m=>m[0]===curMon);return e?{key,avg:e[1],hit:e[2],n:e[3],unit:E.unit}:null;};
+  const zeilenHtml=rows=>{
+    const maxA=Math.max(0.2,...rows.map(r=>Math.abs(r.avg)));
+    return rows.map(r=>{
+      const col=r.avg>=0?BC.bull:BC.bear,w=(Math.abs(r.avg)/maxA*100).toFixed(0),nm=r.key;
+      return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;cursor:pointer" onclick="setSeasAsset('${r.key}')" title="Show the full 12-month profile of ${escH(r.key)}">
+        <div style="flex:none;width:72px;font-weight:700;font-size:var(--fs-sm);color:var(--t1);font-family:var(--ff-num)">${escH(nm)}</div>
+        <div style="flex:1;height:16px;border-radius:4px;background:var(--bg3);overflow:hidden"><div style="width:${w}%;height:100%;background:${col};opacity:.85"></div></div>
+        <div style="flex:none;width:72px;text-align:right;font-size:var(--fs-sm);font-weight:700;color:${col}">${seasFmt(r.avg,r.unit)}</div>
+        <div style="flex:none;width:56px;text-align:right;font-size:var(--fs-xs);color:${r.hit>=60?BC.bull:r.hit<=40?BC.bear:'var(--t3)'}">${r.hit}% up</div>
+      </div>`;}).join('');
+  };
+  const assetRows=ids.filter(id=>D.assets[id].unit!=='bp').map(id=>zeile(id,D.assets[id])).filter(Boolean).sort((a,b)=>b.avg-a.avg);
+  const yRows=ids.filter(id=>D.assets[id].unit==='bp').map(id=>zeile(id,D.assets[id])).filter(Boolean);
   const ovCard=`<div class="cot-card" style="margin-top:12px">
-    <div class="cot-card-title">All assets in ${SEAS_MON[curMon-1]}<span style="font-weight:500;color:var(--t2);font-size:var(--fs-xs);margin-left:auto">avg return &amp; share of up years · tap a row for the full profile</span>${abInfoBtn('All assets in '+SEAS_MON[curMon-1],['Average return and share of up years of every tracked asset in the <b>current calendar month</b>, from the same ETF-proxy history as the chart above.','Sorted from best to worst average. A context layer only — a month that was strong in the past says nothing certain about this year.','Tap a row to open that asset\'s full monthly profile.'])}</div>
-    <div style="padding:12px 14px">${ovRows}</div>
+    <div class="cot-card-title">All assets in ${SEAS_MON[curMon-1]}<span style="font-weight:500;color:var(--t2);font-size:var(--fs-xs);margin-left:auto">avg return &amp; share of up years · tap a row for the full profile</span>${abInfoBtn('All assets in '+SEAS_MON[curMon-1],['Average return and share of up years of every tracked asset in the <b>current calendar month</b>.','<b>Currencies</b> · basket against the 7 other majors. <b>Yields</b> · change in basis points, on their own scale.','Sorted from best to worst average. A context layer — a month that was strong in the past says nothing certain about this year.'])}</div>
+    <div style="padding:12px 14px">${zeilenHtml(assetRows)}${yRows.length?`<div style="margin:10px 0 6px;font-size:var(--fs-xs);font-weight:700;color:var(--t3)">Yields (bp)</div>${zeilenHtml(yRows)}`:''}</div>
   </div>`;
-  el.innerHTML=chartCard+ovCard;
+  const paarRows=paare.map(k=>zeile(k,D.pairs[k])).filter(Boolean).sort((a,b)=>b.avg-a.avg);
+  const paarCard=paarRows.length?`<div class="cot-card" style="margin-top:12px">
+    <div class="cot-card-title">All pairs in ${SEAS_MON[curMon-1]}<span style="font-weight:500;color:var(--t2);font-size:var(--fs-xs);margin-left:auto">avg return &amp; share of up years · tap a row for the full profile</span>${abInfoBtn('All pairs in '+SEAS_MON[curMon-1],['All <b>28 FX pairs</b> in the <b>current calendar month</b>, as quoted (base/quote) — a positive average means the base currency gained.','From 15+ years of monthly pair prices (Yahoo).','<b>Display only</b> · the pair score is base minus quote and already carries the seasonality of both currencies.'])}</div>
+    <div style="padding:12px 14px">${zeilenHtml(paarRows)}</div>
+  </div>`:'';
+  el.innerHTML=chartCard+ovCard+paarCard;
   attachChartHovers(el);
 }
 // Info-Text fuer den i-Button (nutzt das generische Sentiment-Info-Modal)
@@ -24383,10 +24416,16 @@ SENT_INFO.news=['Headlines (free RSS feeds, no key)',
    <p><b>Leading topic:</b> the most frequent subject word across market-relevant headlines of the last 24 hours, plus the two words that most often appear with it. The number is simply how many of those headlines contain the leading word — nothing is estimated.</p>
    <p><b>Limits:</b> the archive reaches back 35 days, but not evenly: the last 3 days are kept in depth, up to 10 days back only what rates MED or higher, and beyond that only HIGH. Holding all 35 days in full would be roughly 7000 headlines and 2.5 MB that your browser reloads on every visit — the older an item, the less likely you look for the small stuff. So an older day legitimately shows fewer entries than today. A single prolific feed is also capped, so its bulk output never crowds out the rest. A headline is never scored — this is context, not a signal. Where a headline lands on a day your score flipped, that is shown as a coincidence on the asset page, not as a cause.</p>`];
 SENT_INFO.seas=['Seasonality (15-year monthly pattern)',
-  `<p><b>What it is:</b> for each calendar month, the <b>average return</b> of the asset over roughly the last 15 years and the <b>hit rate</b> — the share of those years in which the month closed higher. Computed from long-run monthly price history of a liquid ETF proxy (Yahoo Finance), refreshed once a day.</p>
-   <p><b>How to read the chart:</b> each bar is one calendar month. <b style="color:#0B5FCC">Blue up-bars</b> = the month was positive on average; <b style="color:#DC2430">red down-bars</b> = negative on average. The small percentage under each month is the hit rate; the highlighted column is the current month. Hover or touch a bar for the exact numbers.</p>
-   <p><b>Why it matters — and its limits:</b> some seasonal patterns are real and persistent (commodity demand cycles, fiscal-year flows, "sell in May"-type equity effects). But a 15-year monthly average is a weak, slow signal: a 60% hit rate still means the month fell in 4 of 10 years. That is why this layer is <b>display-only</b> — it never adds to or subtracts from any score. Use it as a tailwind/headwind check on ideas you already have from fundamentals, COT and sentiment, not as a reason to trade on its own.</p>
-   <p><b>Note for FX:</b> currencies use liquid CurrencyShares ETFs (e.g. FXY for JPY, FXE for EUR) that are already quoted in the currency's own strength — no USD-first inversion needed. USD uses a dollar-index ETF (UUP) as proxy. Very young tickers without enough real history (e.g. spot-Bitcoin ETFs) are left out rather than shown with too little data.</p>`];
+  `<p><b>What it is:</b> for each calendar month, the <b>average move</b> over roughly the last 15 years and the <b>hit rate</b> — the share of those years in which the month closed higher. Built from monthly prices (Yahoo Finance), refreshed once a day.</p>
+   <ul>
+   <li><b>Currencies</b> · a <b>basket against the 7 other majors</b>, from the 28 FX pairs — the same basket as the price chart. Not one pair against the dollar.</li>
+   <li><b>Pairs</b> · all 28, as quoted (base/quote). <i>Display only</i> — the pair score is base minus quote and already carries both currencies.</li>
+   <li><b>Non-FX</b> · the asset itself or a liquid ETF (GLD, SLV, USO, SPY, QQQ, ^GDAXI, BTC-USD, ETH-USD). ETH has about 9 years, not 15.</li>
+   <li><b>Yields</b> · US 10Y only, as the monthly <b>change in basis points</b>. The other yields have no free 15-year monthly history.</li>
+   </ul>
+   <p><b>How to read the chart:</b> each bar is one calendar month — <b style="color:#0B5FCC">blue</b> = positive on average, <b style="color:#DC2430">red</b> = negative. The highlighted row is the current month; the line is this year's actual move.</p>
+   <p><b>Score:</b> on an asset page the current month counts <b>±0.5</b> only when the average and the hit rate agree (≥60% up for a positive average, ≤40% for a negative one) — otherwise 0. Pairs never count.</p>
+   <p><b>Limits:</b> a slow, weak signal — a 60% hit rate still means the month fell in 4 of 10 years. Use it as a tailwind/headwind check, not as a reason to trade.</p>`];
 // ══ RATE PROBABILITIES (Nutzer-Wunsch 2026-07-20) ═══════════════════
 // CME-FedWatch-artige Anzeige, aber die offizielle CME-API ist bezahlt -
 // stattdessen eine freie Eigenberechnung aus 30-Day Fed Funds Futures

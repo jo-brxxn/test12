@@ -21033,3 +21033,19 @@ die Folgeentwicklung vorhersagen?
 **⚠ Hinweis an den Nutzer:** GDT und die bestehende Zeile *Dairy (EMA20)* zählen dasselbe Thema doppelt.
 
 **Wächter:** `check/feedregeln.js` A (+12 Titel), E (Stats-NZ-Schritt mit künstlicher CSV; Gegenprobe falsche Reihe rot). Gezielt grün: score, scorenachrechnung, regeln, niveau, modell28, kalender, journal, altgeraet (im Parallellauf einmal Navigations-Abbruch, einzeln 2× grün).
+
+## 2026-10-27 — VERSION-CHECK-649: Seasonality für alle 28 Paare, Währungen als Korb, ETH, US 10Y
+
+**Nutzer:** *„bei seasonality will ich jetzt das auch für Paare haben also zB euraud aber halt für alle und auch für alle Non fx also alles was geht“* — Rückfragen: Paare *nur Anzeige*; Währungen *Korb gegen die 7 anderen*; Renditen *nur US 10Y*; Darstellung *Gruppen-Filter + Paar-Karte*.
+
+**Quelle gemessen (Sonde):** Yahoo liefert alle 28 Paare ab 2006 (12 Monate × 15–16 Jahre in Börsenzeit), ETH-USD ab 12/2017 (8–10 Jahre), ^TNX ab 2006. Für DE/GB/CH/JP/CA/AU/NZ-Renditen keine freie 15-Jahres-Reihe (`bond_data` reicht ~1 Jahr).
+
+**Umgesetzt:**
+- Workflow: Paare unter `pairs`; Währung = Mittel der sieben vorzeichenrichtigen Paar-Log-Renditen = `korbReihe` (FXE maß EUR gegen USD, also ebenso USD-Saisonalität); ETH; US 10Y als Monatsänderung in bp (`unit:'bp'`); letzter Stand je Asset/Paar bei Fehlabruf.
+- App: Auswahlfeld mit Gruppen *Currencies (basket) / Pairs / Non-FX / Yields*; Karte *All pairs in <Monat>* (28 Zeilen, sortiert); Paar-Ansicht mit Hinweis *display only*; Kurslinie des laufenden Jahres für Paare (`pairPriceSeries`) und Körbe (`korbReihe`); bp-Format in Seite, Kachel, Score-Text und Insights-Profil (`seasFmt`); ⓘ-Text und Seiten-Untertitel aktualisiert (der alte sagte *„context layer, not a signal“* — falsch seit 14.09., Assets zählen ±0,5).
+
+**Gemessen (App, Seasonality aus dem echten Workflow-Block auf 10 Jahren `price_hist`):** 1180 und 390 px: Gruppen 8/28/8/1, drei Karten, 28 Paar-Zeilen, kein Quer-Scroll, 0 JS-Fehler; EUR/AUD Oktober +0,23 % / 60 %; US 10Y in bp (−4,6 bp im Oktober, Score −0,5); NZD-Kachel *basket vs 7 majors*.
+
+**Wächter:** `check/saisonfeed.js` D–F (28 Paare, Korb exakt wie `korbReihe`, bp); `check/seasretail.js` 8 (Seite). Gegenproben rot.
+
+**Folge:** die ±0,5-Saisonalitäts-Zeile der acht Währungen rechnet ab dem nächsten Feed-Lauf mit dem Korb statt dem ETF; USYIELD (und ETH, wo angelegt) bekommen eine Saisonalitäts-Zeile.
