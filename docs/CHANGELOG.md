@@ -20937,3 +20937,19 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter `check/zentralbank.js`:** A vier Säulen; A3 (GOLD 1180 + 1024 px: Köpfe auf einer Höhe, kein Schaft breiter als die Säule, Karte = EUR); C General *inverse*. Gegenproben: ohne subgrid/Höhenausgleich → A3 KOPF + HOEHE rot; ohne `minmax` mit Chip in der Titelzeile → A3 SCHAFT + KOPF + HOEHE rot.
 
+## 2026-10-27 — VERSION-CHECK-645: Central bank — Zinsentscheid unter dem Namen
+
+**Nutzer:** *„Die erste Notiz bei generel soll immer fest sein decision mit 5 Optionen -0.5 -0.25 hold 0.25 0.5 und das dann wenn es negativ in bearish bias Farbe usw und das kann man dann so anklicken und dann steht da nur noch was gemacht wurde bei nochmal klicken öffnet sich ein kleines Fenster das noch mehr Optionen anzeigt bis zu -1.5 und +1.5 in 0.25 Schritten“* — Rückfragen: Quelle *aus dem Feed, änderbar* (der Feed kennt die Entscheide schon: Fed 16.09. +0.25, BoE 17.09. Hold …); Position *„Schreib das unter dem Namen der Bank mittig find Platz dafür“* (also nicht in der Säule General).
+
+**Umgesetzt:**
+- `zbEntscheidFeed(ccy, Sitzung)`: Stand an der Sitzung (±2 Tage) minus Stand davor aus `rateSteps`; `zbEntscheidWert`: eigene Wahl vor Feed.
+- Fries zweizeilig: Name, darunter mittig *DECISION +0.25* (Bias-Farbe, Asset-Sicht nach *Interest Rates*) bzw. fünf Knöpfe, solange der Feed die Sitzung nicht hat.
+- Kleines Fenster `#zbEntPop`: 13 Schritte in 3 Spalten, aktueller Wert mit Navy-Ring, Fuß mit Feed-Wert und *Use feed value* / *Clear*; schließt bei Tipp daneben und Esc.
+- Neuer synchronisierter Zustand `zbEntscheid` (snap/applySnap/Defaults/`neueFelderBehalten`), Schreibpfad mit `try/catch` + Meldung; gleich dem Feed = kein Eintrag.
+- Archiv-Kopf zeigt den Entscheid der gewählten Sitzung.
+- Höhe: Fries +35 px, die Notizfläche gibt sie ab (`--zb-ex`).
+
+**Gemessen:** Karte EUR und GOLD 574 / 562 / 550 px (1440 / 1180 / 1024) — wie vorher; Werte USD/EUR/JPY +0.25 (blau), GBP/CHF Hold (grau), GOLD +0.25 rot (gedreht); Uhr 29.10. (Fed 28.10. noch nicht im Feed) → fünf Knöpfe, *Hold* gewählt → *Hold*; −0.50 auf EUR hält über Neuladen, *Use feed value* → +0.25; 0 JS-Fehler.
+
+**Wächter `check/zentralbank.js`:** I (Feed-Wert unabhängig nachgerechnet, Farbe, 13 Schritte, Speichern/Neuladen/Snapshot, Feed zurück) und H (fünf Knöpfe vor dem Feed). Gegenprobe: Regel bei der Farbe aus + `zbEntscheid` nicht im `snap()` → I FARBE, I NEULADEN, I SYNC rot.
+

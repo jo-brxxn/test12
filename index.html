@@ -6134,6 +6134,9 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 .zb-hd-sub{margin-left:auto;font:italic 500 var(--fs-xs)/1.2 var(--ff-text);color:var(--t3)}
 .zb-hd-sub b{font-style:normal;font-weight:700;color:var(--t1)}
 .zb-hd-sub+.zb-arch{margin-left:0}
+/* Zinsentscheid unter dem Namen macht den Fries hoeher - die Notizflaeche
+   gibt es ab, die Karte bleibt gleich hoch (gemessen, siehe CHANGELOG 645) */
+.zb-bau:has(.zb-ent){--zb-ex:35px}
 /* Dach bis in die Titelzeile (Nutzer 2026-10-27, VERSION-CHECK-642: "mit dem
    Dach weiter hoch ... sodass die Spitze des Dachs auf der gleichen Hoehe wie
    der Kartentitel ist"): Kopfzeile fest 34 px und ueber dem Gebaeude, der
@@ -6160,7 +6163,7 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 .zb-banner-x{flex:none;width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:17px;line-height:1;cursor:pointer}
 @media (hover:hover){.zb-banner-x:hover{background:rgba(255,255,255,.3)}}
 /* Gebaeude: Stein in drei Toenen + Licht/Kante (Midnight siehe unten) */
-.zb-bau{--zb-stein:var(--bg4);--zb-stein2:var(--bg5);--zb-kante:var(--bg6);--zb-hell:var(--bg2);--zb-laub:#97A6BF;--zb-tief:rgba(20,27,46,.16);--zb-schatten:rgba(20,27,46,.10);
+.zb-bau{--zb-ex:0px;--zb-stein:var(--bg4);--zb-stein2:var(--bg5);--zb-kante:var(--bg6);--zb-hell:var(--bg2);--zb-laub:#97A6BF;--zb-tief:rgba(20,27,46,.16);--zb-schatten:rgba(20,27,46,.10);
   margin:0;padding:0}
 .zb-giebel{--zb-gh:clamp(78px,8vw,116px);position:relative;height:var(--zb-gh);margin:16px 0 0;pointer-events:none}
 .zb-giebel-svg{display:block;width:100%;height:100%;overflow:visible}
@@ -6186,10 +6189,32 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 .zb-zweig{width:100%;height:100%;display:block;overflow:visible}
 .zb-zweig-ast{fill:none;stroke:var(--zb-laub);stroke-width:1.3;stroke-linecap:round}
 .zb-zweig-bl{fill:var(--zb-laub);stroke:var(--zb-hell);stroke-width:.5}
-/* Fries: Name in Gravur-Optik (App-Schrift) zwischen zwei Zierlinien */
-.zb-fries{position:relative;margin:0;padding:11px 12px 10px;display:flex;align-items:center;justify-content:center;gap:16px;
+/* Fries: Name in Gravur-Optik (App-Schrift) zwischen zwei Zierlinien, darunter
+   mittig der Zinsentscheid (seit 645) */
+.zb-fries{position:relative;margin:0;padding:11px 12px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
   background:linear-gradient(var(--zb-hell),var(--zb-stein) 55%,var(--zb-stein2));
   border-top:3px double var(--zb-kante);border-bottom:1px solid var(--zb-kante);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 0 var(--zb-schatten)}
+.zb-fries-z{display:flex;align-items:center;justify-content:center;gap:16px;width:100%}
+/* Zinsentscheid: 5 Knoepfe, bis einer gilt; dann nur der Wert (Bias-Farbe in
+   der Sicht des Assets), Tipp oeffnet .zb-ent-pop mit allen Schritten */
+.zb-ent{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+.zb-ent-l{font:800 var(--fs-2xs)/1 var(--ff-text);letter-spacing:.14em;text-transform:uppercase;color:var(--t3)}
+.zb-ent-b{height:28px;min-width:52px;padding:0 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--nb) 45%,var(--bd));background:color-mix(in srgb,var(--nb) 8%,var(--card));
+  color:var(--nb);font:700 var(--fs-sm)/1 var(--ff-num);cursor:pointer}
+.zb-ent-b.on{box-shadow:0 0 0 2px var(--ui-act)}
+@media (hover:hover){.zb-ent-b:hover{background:color-mix(in srgb,var(--nb) 16%,var(--card))}}
+.zb-ent-wert{height:28px;display:inline-flex;align-items:center;gap:9px;padding:0 13px;border-radius:999px;cursor:pointer;
+  border:1px solid color-mix(in srgb,var(--nb) 45%,var(--bd));background:color-mix(in srgb,var(--nb) 10%,var(--card))}
+.zb-ent-wert b{font:800 var(--fs-md)/1 var(--ff-num);color:var(--nb)}
+.zb-ent-pop{position:fixed;z-index:260;width:min(330px,calc(100vw - 16px));padding:12px;border-radius:var(--r);background:var(--bg2);border:1px solid var(--bd);box-shadow:var(--shadow-pop)}
+.zb-ent-pop-hd{font-size:var(--fs-sm);color:var(--t2);margin-bottom:10px}
+.zb-ent-pop-hd b{color:var(--t0)}
+.zb-ent-pop-hd span{display:block;font-size:var(--fs-xs);font-style:italic;color:var(--t3);margin-top:2px}
+.zb-ent-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.zb-ent-raster .zb-ent-b{min-width:0;padding:0 4px}
+.zb-ent-raster .zb-ent-b:nth-child(7){grid-column:1 / -1}
+.zb-ent-pop-ft{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;font-size:var(--fs-sm);color:var(--t2)}
+.zb-ent-pop-ft .btn{height:28px;padding:0 10px;font-size:var(--fs-sm)}
 .zb-name{font:800 var(--fs-lg)/1.2 var(--ff-text);letter-spacing:.34em;padding-left:.34em;text-transform:uppercase;color:var(--t1);text-align:center;
   text-shadow:0 1px 0 rgba(255,255,255,.85),0 -1px 0 rgba(20,27,46,.25)}
 .zb-orn{position:relative;flex:0 1 64px;height:1px;background:linear-gradient(90deg,transparent,var(--zb-kante))}
@@ -6263,7 +6288,7 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 /* Saeule = kleine Pinned-notes-Karte: dieselben .ab-nt-Zeilen und derselbe
    "＋ New note…"-Einstieg (Nutzer 2026-10-27: "genau so wie bei den quick
    Notes"), nur etwas kompakter */
-.zb-inhalt{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:calc(198px - var(--zb-kx,0px))}
+.zb-inhalt{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:calc(198px - var(--zb-kx,0px) - var(--zb-ex,0px))}
 .zb-schaft .ab-nt-add{margin-bottom:0}
 .zb-schaft .ab-nt-neu{height:30px;font-size:var(--fs-sm)}
 .zb-liste{overflow:visible}
@@ -7057,11 +7082,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-644 - Central bank: vierte Saeule General (Regel und Farbe der Zins-Karte), 701-1000 px als 2 x 2."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-645 - Central bank: Zinsentscheid unter dem Banknamen - aus dem Zins-Feed, aenderbar (5 Knoepfe bzw. Fenster -1.50 bis +1.50), Farbe nach Bias."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-644</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-645</span>
     </span>
   </div>
   <div class="hdr-r">

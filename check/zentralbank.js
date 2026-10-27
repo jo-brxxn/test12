@@ -249,6 +249,50 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
   if (g !== 'ok') rot('G PAPIERKORB', g); else gruen('geloeschte Notiz liegt im Papierkorb');
   await p.close();
 
+  // ── I ── Zinsentscheid unter dem Namen (seit 645, Nutzer 2026-10-27:
+  // "decision mit 5 Optionen -0.5 -0.25 hold 0.25 0.5 ... negativ in bearish
+  // bias Farbe ... nochmal klicken oeffnet sich ein kleines Fenster ... bis zu
+  // -1.5 und +1.5 in 0.25 Schritten"; Rueckfrage: Wert aus dem Feed,
+  // aenderbar). Der Sollwert wird hier unabhaengig aus rateSteps nachgerechnet.
+  console.log('I) Zinsentscheid (Feed, Farbe, Fenster, Speichern)');
+  const pi = await oeffnen(ctx, 'EUR');
+  const feed = id => pi.evaluate(async c => { const m = await import('./js/score.js'); const st = m.rateSteps(c) || [], d = zbSitzungen(c).letzte.d;
+    const tage = (a, b) => Math.abs(Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5;
+    const i = st.map((e, j) => tage(e[0], d) <= 2 ? j : -1).filter(j => j >= 0); if (!i.length || i[0] < 1) return null;
+    return Math.round((st[i[i.length - 1]][1] - st[i[0] - 1][1]) * 100) / 100; }, id);
+  const chip = q => q.evaluate(() => { const w = document.querySelector('#zbKarte .zb-ent-wert b'); return w ? { t: w.textContent, f: getComputedStyle(w).color } : null; });
+  const txt = w => Math.abs(w) < 1e-9 ? 'Hold' : (w > 0 ? '+' : '−') + Math.abs(w).toFixed(2);
+  const fi = F.length;
+  const [blau, rotF, grau] = [await farbe(pi, 'bull'), await farbe(pi, 'bear'), await farbe(pi, 'neu')];
+  const sollFarbe = (w, dreht) => Math.abs(w) < 1e-9 ? grau : (w > 0) !== !!dreht ? blau : rotF;
+  for (const [id, ccy, dreht] of [['EUR', 'EUR', false], ['USD', 'USD', false], ['GBP', 'GBP', false], ['GOLD', 'USD', true]]) {
+    await pi.evaluate(i => gotoSym(i), id); await pi.waitForTimeout(350);
+    const w = await feed(ccy), c = await chip(pi);
+    if (w == null) { rot('I TESTAUFBAU', `${ccy}: letzte Sitzung nicht im Feed`); continue; }
+    if (!c) { rot('I WERT', `${id}: kein Entscheid unter dem Namen (Feed ${txt(w)})`); continue; }
+    if (c.t !== txt(w)) rot('I WERT', `${id}: zeigt ${c.t}, Feed ${txt(w)}`);
+    if (c.f !== sollFarbe(w, dreht)) rot('I FARBE', `${id}: ${c.t} in ${c.f}, erwartet ${sollFarbe(w, dreht)}${dreht ? ' (GOLD: Regel Interest Rates inverse)' : ''}`);
+  }
+  await pi.evaluate(() => gotoSym('EUR')); await pi.waitForTimeout(350);
+  const wEur = await feed('EUR');
+  await pi.click('#zbEntBtn'); await pi.waitForTimeout(250);
+  const pop = await pi.evaluate(() => [...document.querySelectorAll('#zbEntPop .zb-ent-b')].map(b => b.textContent));
+  const SOLL = Array.from({ length: 13 }, (_, i) => txt((i - 6) / 4));
+  if (pop.join(' ') !== SOLL.join(' ')) rot('I FENSTER', `Schritte "${pop.join(' ')}" statt "${SOLL.join(' ')}"`);
+  const ziel = Math.abs(wEur + 0.5) < 1e-9 ? '+0.50' : '−0.50';
+  await pi.evaluate(t => { const b = [...document.querySelectorAll('#zbEntPop .zb-ent-b')].find(x => x.textContent === t); if (b) b.click(); }, ziel); await pi.waitForTimeout(400);
+  if (((await chip(pi)) || {}).t !== ziel) rot('I SETZEN', `nach Klick auf ${ziel}: ${JSON.stringify(await chip(pi))}`);
+  await pi.reload(); await wartenBisDatenDa(pi);
+  await pi.evaluate(() => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); gotoSym('EUR'); }); await pi.waitForTimeout(700);
+  if (((await chip(pi)) || {}).t !== ziel) rot('I NEULADEN', `nach dem Neuladen ${JSON.stringify(await chip(pi))} statt ${ziel}`);
+  const imSnap = await pi.evaluate(() => { const d = JSON.parse(snap()); return d.zbEntscheid && d.zbEntscheid.EUR ? Object.values(d.zbEntscheid.EUR)[0] : null; });
+  if (imSnap == null) rot('I SYNC', 'zbEntscheid fehlt im Snapshot (snap) - wuerde nicht synchronisiert');
+  await pi.click('#zbEntBtn'); await pi.waitForTimeout(250);
+  await pi.evaluate(() => { const b = [...document.querySelectorAll('#zbEntPop .btn')].find(x => /Use feed value/.test(x.textContent)); if (b) b.click(); }); await pi.waitForTimeout(400);
+  if (((await chip(pi)) || {}).t !== txt(wEur)) rot('I FEED', `"Use feed value" -> ${JSON.stringify(await chip(pi))} statt ${txt(wEur)}`);
+  await pi.close();
+  if (F.length === fi) gruen(`Entscheid = Feed (EUR ${txt(wEur)}), Farbe nach Bias/Regel (GOLD gedreht), Fenster 13 Schritte, ${ziel} haelt ueber Neuladen + im Snapshot, "Use feed value" zurueck`);
+
   // ── H ── Uhr hinter die naechste USD-Sitzung
   console.log('H) Archiv nach der naechsten Sitzung');
   const naechste = await (async () => { const q = await oeffnen(ctx, 'USD'); const d = await q.evaluate(() => { const s = zbSitzungen('USD'); return s.naechste ? s.naechste.d : null; }); await q.close(); return d; })();
@@ -265,11 +309,17 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
     if (k.saeulen.some(s => s.n.length)) rot('H LEER', `Saeulen nach der neuen Sitzung nicht leer: ${k.saeulen.map(s => s.n.length).join('/')}`);
     if (k.archiv < 1) rot('H ARCHIV', `Archiv-Zaehler ${k.archiv}`);
     if (!k.banner) rot('H BANNER', 'kein Banner nach der neuen Sitzung');
+    // Sitzung noch nicht im Feed -> fuenf Knoepfe zum Waehlen (seit 645)
+    const wahl = await q.evaluate(() => [...document.querySelectorAll('#zbKarte .zb-ent-wahl .zb-ent-b')].map(b => b.textContent));
+    if (wahl.join(' ') !== '−0.50 −0.25 Hold +0.25 +0.50') rot('H ENTSCHEID', `vor dem Feed: Knoepfe "${wahl.join(' ')}" statt "−0.50 −0.25 Hold +0.25 +0.50"`);
+    else { await q.click('#zbKarte .zb-ent-wahl .zb-ent-b:nth-of-type(3)'); await q.waitForTimeout(400);
+      const t = await q.evaluate(() => { const w = document.querySelector('#zbKarte .zb-ent-wert b'); return w ? w.textContent : null; });
+      if (t !== 'Hold') rot('H ENTSCHEID', `nach Klick auf Hold steht "${t}"`); }
     await q.click('#zbKarte .zb-arch'); await q.waitForTimeout(300);
     const a = await q.evaluate(tx => { const b = document.getElementById('zbArchivBody'); const m = document.getElementById('mZbArchiv');
       return { offen: m && getComputedStyle(m).display !== 'none', text: b ? b.textContent : '', tage: b ? b.querySelectorAll('.zb-a-tag').length : 0, drin: b ? b.textContent.includes(tx) : false }; }, TX);
     if (!a.offen || !a.drin) rot('H FENSTER', `Archiv offen ${a.offen}, Notiz darin ${a.drin} (${a.tage} Sitzungen)`);
-    if (!F.some(f => /^H /.test(f))) gruen(`Uhr auf ${naechste}: Saeulen leer, Banner da, Archiv ${k.archiv} Sitzung(en), Notiz im Fenster`);
+    if (!F.some(f => /^H /.test(f))) gruen(`Uhr auf ${naechste}: Saeulen leer, Banner da, Archiv ${k.archiv} Sitzung(en), Notiz im Fenster, Entscheid noch nicht im Feed -> 5 Knoepfe, Hold gewaehlt`);
     await q.close();
   }
 

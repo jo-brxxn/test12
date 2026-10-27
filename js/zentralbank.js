@@ -42,7 +42,7 @@
 import {BC,FX} from './constants.js';
 import {escH,escJH,icn,abInfoBtn,getSym,macroCcyFor,effDeriveRules,invertBias,biasCss,
   resNotes,pushU,save,todayStr,calEvts,evtMatchesSym,IND_EVENT_MATCHERS,curPage,
-  fmtDayHdr,assetIconHtml,openM,zbQuittung,syms,resZbNeu} from './main.js';
+  fmtDayHdr,assetIconHtml,openM,zbQuittung,zbEntscheid,syms,resZbNeu} from './main.js';
 import {rateSteps} from './score.js';
 import {isEvtPast,daysUntil} from './calendar.js';
 import {CP} from './profil.js';
@@ -202,6 +202,7 @@ function zentralbankKarteHtml(sym,nurKarte){
   const info=abInfoBtn('Central bank',[
     '<b>Four pillars</b> · <i>Inflation, Labour market, Economy, General</i> — your notes on what the bank said about each. <b>General</b> · decision, guidance, tone; reads like the <i>Interest Rates</i> card for linked assets.',
     '<b>Notes belong to the latest rate decision</b> · when the next decision has happened, the pillars start empty and the earlier notes are in the <b>Archive</b> under their meeting date.',
+    '<b>Decision</b> · under the name: the rate change of the latest meeting from the rate feed — tap to change it (−1.50 … +1.50); before the feed has it, pick one of five.',
     '<b>Red base step</b> · the bank decided and this meeting has no note yet — it goes away with your first note or with ✕.',
     '<b>Colours</b> · ▲ <b style="color:'+BC.bull+'">bullish</b> · ◆ neutral · ▼ <b style="color:'+BC.bear+'">bearish</b>, for the asset you are on. Assets linked to a currency share its bank and its notes; a pillar that reads <i>inverse</i> for this asset shows the colours flipped.',
     '<b>Saved like every note</b> · synced across devices, deleted notes go to the trash for 30 days.'
@@ -236,7 +237,7 @@ function zentralbankKarteHtml(sym,nurKarte){
     <div class="ab-tile-hd">${ic}<span class="ab-tile-t">Central bank</span>${verknuepft}${archivBtn}${info}</div>
     <div class="zb-bau">
       ${zbGiebelHtml(ccy)}
-      <div class="zb-fries"><span class="zb-orn" aria-hidden="true"></span><span class="zb-name">${h(bank.name)}</span><span class="zb-orn r" aria-hidden="true"></span></div>
+      <div class="zb-fries"><div class="zb-fries-z"><span class="zb-orn" aria-hidden="true"></span><span class="zb-name">${h(bank.name)}</span><span class="zb-orn r" aria-hidden="true"></span></div>${zbEntscheidHtml(sym,ccy,s.letzte?akt:null)}</div>
       <div class="zb-zahn" aria-hidden="true"></div>
       <div class="zb-architrav" aria-hidden="true"></div>
       <div class="zb-saeulen">${ZB_SAEULEN.map(x=>zbSaeuleHtml(sym,ccy,x,jetzt.filter(n=>n.cb.s===x.k),false)).join('')}</div>
@@ -251,6 +252,78 @@ function zentralbankKarteHtml(sym,nurKarte){
 }
 // Nur die Karte neu zeichnen (docs/performance.md 5: nachladende Aenderungen
 // tauschen nur ihre Karte).
+// ── Zinsentscheid unter dem Namen ─────────────────────────────────────────
+// Nutzer 2026-10-27: "Die erste Notiz bei generel soll immer fest sein
+// decision mit 5 Optionen -0.5 -0.25 hold 0.25 0.5 und das dann wenn es negativ
+// in bearish bias Farbe usw und das kann man dann so anklicken und dann steht
+// da nur noch was gemacht wurde bei nochmal klicken oeffnet sich ein kleines
+// Fenster das noch mehr Optionen anzeigt bis zu -1.5 und +1.5 in 0.25
+// Schritten". Rueckfragen: Wert aus dem Zins-Feed (rateSteps), aenderbar;
+// Platz "unter dem Namen der Bank mittig". Farben in der Sicht des Assets
+// nach der Regel der Zins-Karte (wie die Saeule General): auf GOLD ist eine
+// Fed-Senkung bullish.
+const ZB_ENT_KURZ=[-0.5,-0.25,0,0.25,0.5];
+const ZB_ENT_ALLE=Array.from({length:13},(_,i)=>(i-6)/4);
+// Veraenderung des Leitzinses an dieser Sitzung laut Feed: letzter Stand
+// innerhalb der Toleranz minus Stand davor. null = Sitzung noch nicht im Feed.
+function zbEntscheidFeed(ccy,m){
+  const st=rateSteps(ccy);if(!st||!m)return null;
+  const idx=[];st.forEach((p,i)=>{if(p&&p[0]&&tageAbstand(p[0],m)<=ZB_TOL_TAGE)idx.push(i);});
+  if(!idx.length||idx[0]<1)return null;
+  const w=st[idx[idx.length-1]][1]-st[idx[0]-1][1];
+  return isFinite(w)?Math.round(w*100)/100:null;
+}
+function zbEntscheidWert(ccy,m){
+  const eig=zbEntscheid&&zbEntscheid[ccy]?zbEntscheid[ccy][m]:undefined;
+  if(typeof eig==='number')return{w:eig,q:'du'};
+  const f=zbEntscheidFeed(ccy,m);
+  return f==null?null:{w:f,q:'feed'};
+}
+const zbEntText=w=>Math.abs(w)<1e-9?'Hold':(w>0?'+':'−')+Math.abs(w).toFixed(2);
+const zbEntBias=(w,dreht)=>zbSicht(Math.abs(w)<1e-9?'neu':w>0?'bull':'bear',dreht);
+function zbEntscheidHtml(sym,ccy,m){
+  if(!m)return'';
+  const dreht=zbDreht(sym,ccy,'Interest Rates'),e=zbEntscheidWert(ccy,m);
+  const knopf=(w,an)=>`<button type="button" class="zb-ent-b${an?' on':''}" style="--nb:${biasCss(zbEntBias(w,dreht))}" onclick="zbEntscheidSetzen('${escJH(ccy)}','${m}',${w})">${zbEntText(w)}</button>`;
+  if(!e)return`<div class="zb-ent zb-ent-wahl" role="group" aria-label="Rate decision of ${h(fmtDayHdr(m))}"><span class="zb-ent-l">Decision</span>${ZB_ENT_KURZ.map(w=>knopf(w,false)).join('')}</div>`;
+  return`<div class="zb-ent"><button type="button" class="zb-ent-wert" id="zbEntBtn" style="--nb:${biasCss(zbEntBias(e.w,dreht))}" onclick="zbEntscheidAuf('${escJH(ccy)}','${m}')" aria-haspopup="dialog" title="${e.q==='feed'?'From the rate feed':'Set by you'} — tap to change"><span class="zb-ent-l">Decision</span><b>${zbEntText(e.w)}</b></button></div>`;
+}
+// Kleines Fenster unter dem Wert: alle Schritte -1.50 ... +1.50, darunter der
+// Feed-Wert und "Use feed value" bzw. "Clear".
+function zbEntDaneben(ev){const t=ev.target;if(t&&t.closest&&t.closest('#zbEntPop,#zbEntBtn'))return;zbEntscheidZu();}
+function zbEntEsc(ev){if(ev.key==='Escape')zbEntscheidZu();}
+function zbEntscheidZu(){
+  document.removeEventListener('pointerdown',zbEntDaneben,true);document.removeEventListener('keydown',zbEntEsc,true);
+  const el=document.getElementById('zbEntPop');if(el)el.remove();
+}
+function zbEntscheidAuf(ccy,m){
+  if(document.getElementById('zbEntPop')){zbEntscheidZu();return;}
+  const btn=document.getElementById('zbEntBtn'),sym=getSym();if(!btn||!sym)return;
+  const dreht=zbDreht(sym,ccy,'Interest Rates'),e=zbEntscheidWert(ccy,m),f=zbEntscheidFeed(ccy,m);
+  const el=document.createElement('div');el.id='zbEntPop';el.className='zb-ent-pop';el.setAttribute('role','dialog');
+  const setz=w=>`zbEntscheidSetzen('${escJH(ccy)}','${m}',${w})`;
+  el.innerHTML=`<div class="zb-ent-pop-hd"><b>${h(zbBank(ccy).kurz)} decision</b> · ${h(fmtDayHdr(m))}<span>rate change · percentage points</span></div>
+    <div class="zb-ent-raster">${ZB_ENT_ALLE.map(w=>`<button type="button" class="zb-ent-b${e&&Math.abs(e.w-w)<1e-9?' on':''}" style="--nb:${biasCss(zbEntBias(w,dreht))}" onclick="${setz(w)}">${zbEntText(w)}</button>`).join('')}</div>
+    <div class="zb-ent-pop-ft">${f!=null?`<span>Rate feed · <b style="color:${biasCss(zbEntBias(f,dreht))}">${zbEntText(f)}</b></span>${e&&e.q==='du'?`<button type="button" class="btn" onclick="${setz('null')}">Use feed value</button>`:''}`
+      :`<span><i>not in the rate feed yet</i></span>${e?`<button type="button" class="btn" onclick="${setz('null')}">Clear</button>`:''}`}</div>`;
+  document.body.appendChild(el);
+  const r=btn.getBoundingClientRect(),w=el.offsetWidth;
+  el.style.left=Math.round(Math.min(Math.max(8,r.left+r.width/2-w/2),window.innerWidth-w-8))+'px';
+  el.style.top=Math.round(r.bottom+6)+'px';
+  setTimeout(()=>{if(document.getElementById('zbEntPop')){document.addEventListener('pointerdown',zbEntDaneben,true);document.addEventListener('keydown',zbEntEsc,true);}},0);
+}
+function zbEntscheidSetzen(ccy,m,w){
+  const f=zbEntscheidFeed(ccy,m);
+  try{
+    pushU();
+    const t=zbEntscheid[ccy]||(zbEntscheid[ccy]={});
+    // gleich dem Feed-Wert = kein eigener Eintrag (bleibt "aus dem Feed")
+    if(w==null||(f!=null&&Math.abs(f-w)<1e-9))delete t[m];else t[m]=w;
+    if(!Object.keys(t).length)delete zbEntscheid[ccy];
+    save();
+  }catch(e){alert('Could not be saved: '+(e&&e.message||e));return;}
+  zbEntscheidZu();zbNeuZeichnen();
+}
 function zbNeuZeichnen(){
   const alt=document.getElementById('zbKarte');const sym=getSym();
   if(!alt||!sym)return;
@@ -328,7 +401,7 @@ function zbArchivZeichnen(){
   body.innerHTML=`<div class="zb-a">
     <div class="zb-a-liste" role="list">${liste}</div>
     <div class="zb-a-detail">
-      <div class="zb-a-kopf"><b>${h(bank.kurz)} decision</b> · ${h(fmtDayHdr(_zbArchivTag))}${ccy!==sym.id?` · <i>colours for ${h(sym.name||sym.id)}</i>`:''}</div>
+      <div class="zb-a-kopf"><b>${h(bank.kurz)} decision</b>${(()=>{const e=zbEntscheidWert(ccy,_zbArchivTag);return e?` <b style="color:${biasCss(zbEntBias(e.w,zbDreht(sym,ccy,'Interest Rates')))}">${zbEntText(e.w)}</b>`:'';})()} · ${h(fmtDayHdr(_zbArchivTag))}${ccy!==sym.id?` · <i>colours for ${h(sym.name||sym.id)}</i>`:''}</div>
       <div class="zb-saeulen zb-a-saeulen">${ZB_SAEULEN.map(x=>zbSaeuleHtml(sym,ccy,x,sel.filter(n=>n.cb.s===x.k),true)).join('')}</div>
     </div>
   </div>`;
@@ -336,4 +409,4 @@ function zbArchivZeichnen(){
 
 export {zentralbankKarteHtml,zbFensterKontext,zbSitzungen,zbNotizen,ZB_SAEULEN};
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window,{zbNeuFenster,zbVerschieben,zbQuittieren,zbArchivAuf,zbArchivZeig,zbSitzungen,zbNotizen});
+Object.assign(window,{zbEntscheidAuf,zbEntscheidSetzen,zbNeuFenster,zbVerschieben,zbQuittieren,zbArchivAuf,zbArchivZeig,zbSitzungen,zbNotizen});
