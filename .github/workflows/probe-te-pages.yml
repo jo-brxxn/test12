@@ -16,45 +16,22 @@ jobs:
       - name: Fetch
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-          while IFS='|' read -r key path; do
-            [ -z "$key" ] && continue
-            curl -sL -A "$UA" -m 25 "https://tradingeconomics.com/$path" -o "te_$key.html" || true
-            sleep 1
-          done <<'URLS'
-          nzcore|new-zealand/core-inflation-rate
-          cadsvc|canada/services-pmi
-          jpygdp|japan/gdp-growth
-          eurmfg|euro-area/manufacturing-pmi
-          audcore|australia/core-inflation-rate
-          chfcore|switzerland/core-inflation-rate
-          jpyemp|japan/employed-persons
-          URLS
           curl -sL -A "$UA" -m 25 "https://www.stats.govt.nz/information-releases/consumers-price-index-september-2026-quarter/" -o statsnz.html || true
       - name: Inspect
         run: |
           node -e '
             const fs=require("fs");
-            const strip=h=>h.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ");
-            const sq=s=>s.replace(/\s+/g," ");
-            for(const f of fs.readdirSync(".").filter(f=>/^te_.*\.html$/.test(f)).sort()){
-              const h=fs.readFileSync(f,"utf8");
-              console.log("\n===== "+f);
-              const desc=/"description":\s*"([^"]{0,400})/.exec(h);console.log("DESC: "+(desc?desc[1]:"-"));
-              const md=/<meta[^>]+name="description"[^>]+content="([^"]{0,400})/i.exec(h);console.log("META: "+(md?md[1]:"-"));
-              // Kalenderzeilen roh
-              const rows=h.match(/<tr[^>]*data-category[\s\S]*?<\/tr>/gi)||[];
-              console.log("KALENDERZEILEN: "+rows.length);
-              rows.slice(0,4).forEach((r,i)=>console.log("ROW"+i+" RAW: "+sq(r).slice(0,900)));
-              rows.slice(0,6).forEach((r,i)=>console.log("ROW"+i+" TXT: "+strip(r)));
-              // Stream-Eintraege roh (600 Zeichen vor jedem Datum)
-              const re=/te-stream-date[^>]*>([^<]*)</g;let m,n=0;
-              while((m=re.exec(h))&&n<4){n++;console.log("STREAM"+n+" "+m[1]+" TXT: "+strip(h.slice(Math.max(0,m.index-900),m.index)).slice(-420));}
-              if(n){const r0=/te-stream-date/.exec(h);console.log("STREAM RAW: "+sq(h.slice(Math.max(0,r0.index-1500),r0.index+200)).slice(0,1700));}
-            }
-            let h="";try{h=fs.readFileSync("statsnz.html","utf8");}catch(e){}
+            const h=fs.readFileSync("statsnz.html","utf8");
+            const strip=x=>x.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ");
             const t=strip(h);
-            console.log("\n===== statsnz ("+h.length+" B)");
-            const re=/[^.]{0,260}(?:tradab|tradeab|non-trad|core|excluding food)[^.]{0,260}\./gi;let m,n=0;
-            while((m=re.exec(t))&&n<12){n++;console.log("NZ "+n+": "+m[0].trim());}
-            const k=t.search(/key facts/i);console.log("KEYFACTS: "+(k>=0?t.slice(k,k+1500):"-"));
+            console.log("LEN "+h.length+" TEXT "+t.length);
+            console.log("TEXT: "+t.slice(0,3000));
+            const links=[...h.matchAll(/href="([^"]+)"/g)].map(m=>m[1]).filter(u=>/csv|xlsx|download|assets\/uploads/i.test(u));
+            console.log("LINKS: "+[...new Set(links)].join("\n"));
           '
+          for u in $(node -e 'const h=require("fs").readFileSync("statsnz.html","utf8");console.log([...new Set([...h.matchAll(/href="([^"]+\.csv)"/gi)].map(m=>m[1]))].slice(0,3).join(" "))'); do
+            case "$u" in http*) url="$u";; *) url="https://www.stats.govt.nz$u";; esac
+            echo "== $url"; curl -sL -A "Mozilla/5.0" -m 30 "$url" -o d.csv || true
+            echo "bytes $(wc -c <d.csv)"; head -3 d.csv; grep -i -m5 "non-trad\|nontrad" d.csv | head -5
+            awk -F, 'NR>1{print $1}' d.csv | sort | uniq -c | sort -rn | head -5
+          done
