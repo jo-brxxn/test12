@@ -407,6 +407,12 @@ jobs:
             const MAP={
               mfg:{ind:"Manufacturing PMI",anchor:"manufacturing pmi"},
               svc:{ind:"Services PMI",anchor:"(?:services pmi|services psi)"},
+              // ⚠ svc_CAD ist S&P Globals Canada Services PMI, CADs "Services
+              // PMI" in ind_data aber die Ivey-Reihe (RULES, TradingView, MIT
+              // Prognose) - eine andere Umfrage (Sep: S&P 48,3 / Ivey 58,2).
+              // Beide liefen abwechselnd in DIESELBE Reihe. Seit 2026-10-27
+              // fuellt svc_CAD nur noch die S&P-Kalenderzeile (TE_NUR_KALENDER
+              // im Schritt te->ind_data, Ivey-Ausschluss in isKind).
               // Anker = wie die Seite die Reihe im BERICHTSSATZ nennt, nicht
               // wie sie im Menue heisst. Die Schweiz schreibt "Core consumer
               // prices", Australien nennt beim Kernmass die RBA-Reihe
@@ -569,32 +575,57 @@ jobs:
                        :/billion/.test(unit)?"B":null;
               if(SUF===null){console.log("[te] "+key+": Einheit \""+unit+"\" nicht unterstuetzt - uebersprungen");return;}
               const fmtU=v=>v==null?null:v+SUF;
-              const fmtA=fmtU(actual),fmtP=fmtU(prev);
               // Release-DATUM. Ohne echtes Datum wird NICHTS geschrieben - es
               // steuert Altersgrenze und Zyklus-Rechnung, ein geratenes waere
               // schlimmer als kein Eintrag (Grundsatz "nie schaetzen").
-              // WICHTIG: auch im ROHEN HTML suchen. Das Tag-Strippen entfernt
-              // die Attribute, und genau dort stehen die Termine haeufig
-              // (data-date="2026-08-04") - bei vier Seiten war deshalb im
-              // reinen Text ueberhaupt keine Datumsangabe zu finden.
-              const dates=[];let dm;
-              [txt,h].forEach(src=>{
-                const D1=/\b([a-z]{3})[a-z]*\s+(\d{1,2}),?\s+(\d{4})\b/gi;
-                while((dm=D1.exec(src))){const mo=MON[dm[1].toLowerCase()];if(mo)dates.push(dm[3]+"-"+String(mo).padStart(2,"0")+"-"+String(dm[2]).padStart(2,"0"));}
-                const D2=/\b(\d{4})-(\d{2})-(\d{2})\b/g;
-                while((dm=D2.exec(src)))dates.push(dm[1]+"-"+dm[2]+"-"+dm[3]);
-                const D3=/\b(\d{2})\/(\d{2})\/(\d{4})\b/g;
-                while((dm=D3.exec(src)))dates.push(dm[3]+"-"+dm[1]+"-"+dm[2]);
-              });
+              // ⚠ Seit 2026-10-27 nicht mehr "juengstes Datum irgendwo auf der
+              // Seite". Per Sonde an den echten Seiten gemessen, was das war:
+              // mal der Release, mal das ENDE des Berichtszeitraums aus den
+              // Seiten-Metadaten ("Historical Dataset (2000-06-30/2026-09-30)"
+              // -> CHF/AUD Core CPI "Release 30.09."), mal eine Nachricht zu
+              // einem anderen Thema. Folge: woechentliche Scheinpunkte gleichen
+              // Werts (JPY GDP 0.40 % am 11./25./30.09.) und TE-Werte, die
+              // juengere TV-Werte verdraengten (CAD: S&P-PMI 48.3 statt Ivey).
+              // Jetzt nur noch zwei Stellen, die nachweislich den Release nennen:
+              //  1) die Kalendertabelle (<tr data-category>; Spalten Datum |
+              //     Zeit | Reihe | Referenz | Actual | Previous | Consensus |
+              //     TEForecast) - die Zeile mit DIESEM Actual UND dieser
+              //     Referenzperiode (JPY-BIP fuehrt Prel und Final, beide Q2);
+              //  2) sonst der juengste Nachrichteneintrag der Reihe (<small
+              //     class="te-stream-date">), fruehestens am ersten Tag der
+              //     Referenzperiode - die PMI-Seiten fuehren keine Tabelle.
+              // Fehlt beides, bleibt das Datum leer; der Zusammenfuehrungs-
+              // schritt (te->ind_data) entscheidet ueber den gespeicherten Stand.
               const today=new Date().toISOString().slice(0,10);
-              const floor=new Date(Date.now()-120*86400000).toISOString().slice(0,10);
-              const past=dates.filter(d=>d<=today&&d>=floor).sort();
-              const relDate=past.length?past[past.length-1]:null;
-              if(!relDate)console.log("      [datum] keine vergangene Datumsangabe gefunden; gefundene Kandidaten: "+dates.slice(0,6).join(", ")||"(keine)");
+              const zahl=x=>{const m=String(x==null?"":x).replace(/,/g,"").match(/-?\d+(?:\.\d+)?/);return m?parseFloat(m[0]):null;};
+              const QW={first:1,second:2,third:3,fourth:4};
+              const rm=String(refMonth||"").toLowerCase();
+              const refQ=QW[rm]||null,refMi=refQ?null:(MON[rm.slice(0,3)]||null);
+              const refStart=refYear&&(refQ||refMi)?refYear+"-"+String(refQ?(refQ-1)*3+1:refMi).padStart(2,"0")+"-01":null;
+              const refPasst=r=>{const x=String(r||"").trim().toLowerCase();return refQ?x==="q"+refQ:(refMi?MON[x.slice(0,3)]===refMi:false);};
+              let relDate=null,dateSrc=null;
+              const zeilen=(h.match(/<tr[^>]*data-category[\s\S]*?<\/tr>/gi)||[]).map(r=>{
+                const td=[...r.matchAll(/<td([^>]*)>([\s\S]*?)<\/td>/gi)].map(m=>({attr:m[1],txt:m[2].replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim()}));
+                const ia=td.findIndex(x=>/id="actual"/.test(x.attr)),ip=td.findIndex(x=>/id="previous"/.test(x.attr)),ir=td.findIndex(x=>/id="reference"/.test(x.attr));
+                return {date:(td[0]&&/^\d{4}-\d{2}-\d{2}$/.test(td[0].txt))?td[0].txt:null,ref:ir>=0?td[ir].txt:"",actual:ia>=0?td[ia].txt:"",previous:ip>=0?td[ip].txt:"",consensus:(ip>=0&&td[ip+1])?td[ip+1].txt:""};
+              }).filter(z=>z.date&&z.date<=today&&zahl(z.actual)!=null&&zahl(z.actual)===zahl(actual)&&refPasst(z.ref)).sort((p,q)=>p.date<q.date?-1:1);
+              if(zeilen.length){
+                const z=zeilen[zeilen.length-1];relDate=z.date;dateSrc="Kalender";
+                // Consensus/Previous derselben Zeile = dieselbe Quelle wie der
+                // Actual (Gleichquellen-Regel) - nur, wo der Satz sie nicht nennt.
+                if(fc==null&&zahl(z.consensus)!=null)fc=String(zahl(z.consensus));
+                if(prev==null&&zahl(z.previous)!=null)prev=String(zahl(z.previous));
+              }else if(refStart){
+                const st=[...h.matchAll(/class="te-stream-date"[^>]*>\s*(\d{4}-\d{2}-\d{2})\s*</g)].map(m=>m[1]).filter(d=>d<=today&&d>=refStart).sort();
+                if(st.length){relDate=st[st.length-1];dateSrc="Nachricht";}
+              }
+              if(!relDate)console.log("      [datum] weder Kalenderzeile (Actual "+actual+", Referenz "+refMonth+" "+refYear+") noch Nachrichtendatum ab "+refStart);
+              const fmtA=fmtU(actual),fmtP=fmtU(prev);
               const fmtF=fmtU(fc);
               out.push({source:"tepage",country:ccy,key:kind,ind:cfg.ind,label:cfg.label||null,
-                        actual:fmtA,previous:fmtP,forecast:fmtF,date:relDate,refMonth:refMonth,refYear:refYear});
-              console.log("[te] "+key+" -> "+cfg.ind+": "+fmtA+(fmtP?" (vorher "+fmtP+")":"")+(fmtF?" (fc "+fmtF+")":"")+" ["+shape+"/"+unit+"] "+refMonth+" "+refYear+" | Release: "+(relDate||"KEINS"));
+                        actual:fmtA,previous:fmtP,forecast:fmtF,date:relDate,dateSrc:dateSrc,refMonth:refMonth,refYear:refYear,
+                        ref:(refMonth&&refYear)?String(refMonth).toLowerCase()+" "+refYear:null});
+              console.log("[te] "+key+" -> "+cfg.ind+": "+fmtA+(fmtP?" (vorher "+fmtP+")":"")+(fmtF?" (fc "+fmtF+")":"")+" ["+shape+"/"+unit+"] "+refMonth+" "+refYear+" | Release: "+(relDate?relDate+" ("+dateSrc+")":"KEINS"));
               console.log("      Satz: "+hit);
             });
             // Termin-Uebernahme innerhalb DERSELBEN Veroeffentlichung.
@@ -613,7 +644,7 @@ jobs:
               const sib=out.find(x=>x.key+"_"+x.country===sibKey);
               if(!sib||!sib.date)return;
               if(String(sib.refMonth).toLowerCase()!==String(e.refMonth).toLowerCase()||sib.refYear!==e.refYear)return;
-              e.date=sib.date;
+              e.date=sib.date;e.dateSrc="Schwesterreihe";
               console.log("[te] "+key+": Termin aus derselben Veroeffentlichung uebernommen ("+sibKey+", "+e.date+", beide "+e.refMonth+" "+e.refYear+")");
             });
             fs.writeFileSync("te_pages.json",JSON.stringify(out));
@@ -1194,7 +1225,9 @@ jobs:
                 const t=String(title||"").toLowerCase();
                 if(!/pmi/.test(t))return false;
                 if(ind==="Manufacturing PMI")return /manufacturing pmi/.test(t)&&!/non-?manufacturing/.test(t);
-                if(ind==="Services PMI")return /services pmi|non-?manufacturing pmi|\bpsi\b|ivey/.test(t);
+                // Ohne Ivey (2026-10-27): die TE-Seiten fuehren S&P Global, eine
+                // andere Umfrage - ihr Wert gehoert nie auf die Ivey-Zeile.
+                if(ind==="Services PMI")return /services pmi|non-?manufacturing pmi|\bpsi\b/.test(t)&&!/ivey/.test(t);
                 return false;
               };
               // Nationale Teilreihen tragen bei der Eurozone dieselbe
@@ -1401,9 +1434,16 @@ jobs:
           # Lauf wegen Rate-Limiting mittendrin ab, holt der naechste nur die
           # noch fehlenden nach, statt wieder bei 0 anzufangen.
           export TARGET_CHUNKS=84   # export, damit das node -e darunter ihn sieht
+          # Stand der Feed-Regeln. Wer die RULES so aendert, dass schon
+          # gespeicherte Historie falsch ist (fremde Reihe am selben Tag, z.B.
+          # USD Retail Control Group 2026-10-27), hebt dieses Datum: der naechste
+          # Lauf holt dann die Tiefen-Historie einmal komplett neu, und die
+          # Bereinigung im Merge (gesehen[]) ersetzt bzw. entfernt die alten
+          # Punkte bis 2013 zurueck.
+          export HIST_REGELN=2026-10-27
           CHUNKS_DONE=$(node -e '
             const T=+process.env.TARGET_CHUNKS||84;
-            try{const d=JSON.parse(require("fs").readFileSync("ind_data.json","utf8"));console.log(Math.max(5,Math.min(T,+d._histChunksFetched||5)));}catch(e){console.log(5);}
+            try{const d=JSON.parse(require("fs").readFileSync("ind_data.json","utf8"));console.log(d._histRegeln!==process.env.HIST_REGELN?5:Math.max(5,Math.min(T,+d._histChunksFetched||5)));}catch(e){console.log(5);}
           ')
           rm -f tv_hist_deep_*.json
           i=$CHUNKS_DONE
@@ -1416,7 +1456,7 @@ jobs:
             i=$((i+1))
             sleep 2
           done
-          export CHUNKS_DONE TARGET_CHUNKS
+          export CHUNKS_DONE TARGET_CHUNKS HIST_REGELN
           node -e '
             const fs=require("fs");
             // TradingView-Laendercode -> unsere Symbol-Waehrung. DE wird als
@@ -1449,7 +1489,15 @@ jobs:
               {ind:"CPI (Headline)",period:"y/y",test:t=>/\binflation rate\b/.test(t)&&!EXCORE.test(t)&&!/wage|expectation|harmoni/.test(t)},
               {ind:"CPI",period:"m/m",test:t=>/\binflation rate\b/.test(t)&&!EXCORE.test(t)&&!/wage|expectation|harmoni/.test(t)},
               {ind:"Core CPI",period:"y/y",test:t=>/core inflation rate/.test(t)},
-              {ind:"PPI",period:"y/y",test:t=>(/producer pric/.test(t)||/\bppi\b/.test(t))&&!EXCORE.test(t)&&!/input|import|\btrade\b/.test(t)},
+              // ⚠ 2026-10-27: ohne Dienstleistungs-PPI. Japans "Services
+              // Producer Price Index YoY" (CSPI, eigene Reihe "Services
+              // Inflation") stand am 26.10. als JPY-PPI im Score (3,7 % statt
+              // 6,8 %). Regel: ein Muster trifft nur den EIGENEN Release.
+              {ind:"PPI",period:"y/y",test:t=>(/producer pric/.test(t)||/\bppi\b/.test(t))&&!EXCORE.test(t)&&!/input|import|\btrade\b|services/.test(t)},
+              // NZD: Stats NZ meldet den PPI nur quartalsweise als q/q - die
+              // y/y-Zeile oben findet dort nie etwas. "PPI Output QoQ" ist die
+              // Headline (Input = Vorleistungen, ausgeschlossen).
+              {ind:"PPI",period:"q/q",test:(t,c)=>c==="NZD"&&/ppi output/.test(t)},
               {ind:"Core PPI",period:"y/y",test:t=>/core producer pric|core ppi/.test(t)},
               {ind:"PCE",period:"y/y",test:(t,c)=>c==="USD"&&/\bpce price index\b/.test(t)&&!EXCORE.test(t)},
               {ind:"Core PCE",period:"y/y",test:(t,c)=>c==="USD"&&/core pce price index/.test(t)},
@@ -1458,7 +1506,11 @@ jobs:
               // Payrolls Annual Revision Prel") - sie stand dreimal als NFP-Wert
               // in der Historie (2024-08-21 -818K, 2025-09-09 -911K, 2026-08-28
               // -79K, jeweils ohne Prognose). Bereinigung: keinRelease() unten.
-              {ind:"NFP / Employment Change",period:null,test:(t,c)=>c==="USD"?/non.?farm payrolls/.test(t)&&!/private|revision|benchmark/.test(t):/employment change/.test(t)&&!/adp/.test(t)},
+              // ⚠ 2026-10-27: "unemployment change" enthaelt "employment
+              // change" (DE-Arbeitslosenzahl lief in die EUR-Reihe), und die
+              // Eurozone meldet q/q UND y/y am selben Tag - welche gewann, hing
+              // an der Sortierung. Die Reihe ist q/q (wie die Startbefuellung).
+              {ind:"NFP / Employment Change",period:null,test:(t,c)=>c==="USD"?/non.?farm payrolls/.test(t)&&!/private|revision|benchmark/.test(t):/employment change/.test(t)&&!/adp|unemployment|yoy|y\/y/.test(t)},
               {ind:"ADP Employment",period:null,test:(t,c)=>c==="USD"&&/adp employment/.test(t)&&!/weekly/.test(t)},
               {ind:"JOLTS Job Openings",period:null,test:(t,c)=>c==="USD"&&/job openings/.test(t)},
               {ind:"Unemployment Claims",period:null,test:(t,c)=>c==="USD"&&/initial jobless claims/.test(t)},
@@ -1479,7 +1531,11 @@ jobs:
               {ind:"Avg Hourly Earnings",period:"y/y",test:(t,c)=>c==="CAD"&&/average hourly wages/.test(t)},
               {ind:"Avg Hourly Earnings",period:null,test:(t,c)=>c==="EUR"&&/negotiated wage growth/.test(t)},
               {ind:"Avg Hourly Earnings",period:"y/y",test:(t,c)=>c==="AUD"&&/wage price index/.test(t)},
-              {ind:"Avg Hourly Earnings",period:"q/q",test:(t,c)=>c==="NZD"&&/labou?r cost index/.test(t)},
+              // ⚠ 2026-10-27: TradingView schreibt "Labour CostS Index" - das
+              // alte Muster "labour cost index" traf nie, die Reihe stand seit
+              // der Startbefuellung (Mai) still. y/y wie die Lohnreihen der
+              // anderen Waehrungen und wie die Startbefuellung.
+              {ind:"Avg Hourly Earnings",period:"y/y",test:(t,c)=>c==="NZD"&&/labou?r costs? index/.test(t)},
               {ind:"GDP Growth QoQ",period:"q/q",test:t=>/\bgdp growth rate\b/.test(t)&&!/year/.test(t)},
               // ⚠ USD = ISM (wie IND_EVENT_MATCHERS in js/event-matchers.js).
               // Bis 2026-10-07 traf das Muster auch S&P Globals Flash-/Final-
@@ -1508,7 +1564,12 @@ jobs:
               // Ueberall den m/m-Release ziehen (nicht y/y), ausser bei CHF -
               // die Schweiz (BFS) meldet Detailhandelsumsatz nur als y/y, es
               // gibt dort keine eigene m/m-Reihe auf TradingView.
-              {ind:"Retail Sales",period:"m/m",test:(t,c)=>c!=="CHF"&&c!=="NZD"&&/retail sales/.test(t)&&!/core|\bex[\s-]|ex fuel|yoy|y\/y/.test(t)},
+              // ⚠ 2026-10-27: zwei Fremdreihen am SELBEN Tag wie die Headline
+              // - welche gewann, entschied die Sortierung: USD "Retail Sales
+              // Control Group MoM" (15.10.: 0,1 % statt Headline 0,8 %) und
+              // CAD "Retail Sales MoM Prel" (StatCans Vorabschaetzung des
+              // FOLGEmonats, ohne Prognose; Headline ist "... Final").
+              {ind:"Retail Sales",period:"m/m",test:(t,c)=>c!=="CHF"&&c!=="NZD"&&/retail sales/.test(t)&&!/core|\bex[\s-]|ex fuel|yoy|y\/y|control/.test(t)&&!(c==="CAD"&&/\bprel\b/.test(t))},
               {ind:"Retail Sales",period:"y/y",test:(t,c)=>c==="CHF"&&/retail sales/.test(t)&&!/core|\bex[\s-]|ex fuel/.test(t)},
               // NZD: TradingView fuehrt keine "Retail Sales m/m"-Reihe (nur
               // q/q und y/y bei den Stats-NZ-Quartalszahlen) - stattdessen
@@ -1561,7 +1622,15 @@ jobs:
             // Momentum-Trend-Historie der Quartals-Indikatoren; jedes darf
             // fehlen (continue-on-error-Charakter: hist ist reine Anreicherung).
             let histEvts=[],histN=[];
-            for(let i=0;i<5;i++){const h=readEvts("tv_hist_"+i+".json");histN.push(h?h.length:0);if(h)histEvts=histEvts.concat(h);}
+            // Zeitraeume, die DIESER Lauf tatsaechlich gesehen hat (je geladenem
+            // Fenster sein Intervall, 1 Tag Sicherheitsrand) - Grundlage der
+            // Historien-Bereinigung im Merge unten.
+            const gesehen=[];
+            const tagVor=t=>new Date(Date.now()-t*864e5).toISOString().slice(0,10);
+            const fenster=(alt,jung)=>gesehen.push([tagVor(alt-1),jung===0?tagVor(-1):tagVor(jung+1)]);
+            if(wide&&wide.length)fenster(95,0);
+            if(recent&&recent.length)fenster(45,0);
+            for(let i=0;i<5;i++){const h=readEvts("tv_hist_"+i+".json");histN.push(h?h.length:0);if(h)histEvts=histEvts.concat(h);if(h&&h.length)fenster(95+60*(i+1),95+60*i);}
             // Alle in diesem Lauf geholten TIEFEN-Haeppchen (bis zu 3 Jahre
             // insgesamt) fuer den Indikator-Verlaufschart einsammeln - und
             // dabei merken, ob eines fehlgeschlagen ist (leer/kaputtes JSON,
@@ -1573,6 +1642,7 @@ jobs:
             for(let i=CHUNKS_DONE_ENV;i<TARGET_CHUNKS_ENV;i++){
               const h=readEvts(`tv_hist_deep_${i}.json`);
               if(h)histEvts=histEvts.concat(h);
+              if(h&&h.length)fenster(95+60*(i+1),95+60*i);
               else if(firstFailedChunk===null)firstFailedChunk=i;
             }
             const nextChunksDone=firstFailedChunk===null?TARGET_CHUNKS_ENV:firstFailedChunk;
@@ -1612,12 +1682,10 @@ jobs:
                 });
               });
             });
-            // In nach Waehrung gruppiertes Objekt umwandeln. "Previous" wird,
-            // wenn moeglich, durch den ACTUAL-Wert des vorhergehenden Release
-            // ERSETZT statt dem von TradingView selbst gemeldeten previous-Feld
-            // zu vertrauen. Das ist aber nur der FALLBACK: wo der Forex-Factory-
-            // Kalender (unten) einen passenden Eintrag hat, gewinnen dessen
-            // Werte (siehe FF-Overlay).
+            const numOf=s=>{if(s==null)return null;const m=String(s).replace(/,/g,"").match(/-?\d+(?:\.\d+)?/);return m?parseFloat(m[0]):null;};
+            // In nach Waehrung gruppiertes Objekt umwandeln. Wo der Forex-
+            // Factory-Kalender (unten) einen passenden Eintrag hat und TV keinen
+            // Actual, gewinnt dessen komplettes Trio (siehe FF-Overlay).
             const out={};
             Object.keys(hist).forEach(k=>{
               const [ccy,ind]=k.split("|");
@@ -1635,7 +1703,30 @@ jobs:
               const uniq=[];const seenD=new Set();
               for(const e of list){if(seenD.has(e.date))continue;seenD.add(e.date);uniq.push(e);}
               const v={...uniq[0]};delete v._t;delete v.origin;
-              if(uniq[1])v.previous=uniq[1].actual;
+              // ── Vorwert und Revision (2026-10-27) ──────────────────────
+              // Bis hierher wurde "previous" IMMER durch den Actual des
+              // vorigen Release ersetzt - also durch den ERSTDRUCK. Gemessen
+              // an 91 Reihen (cal_hist, Stand 27.10.): 39 weichen von
+              // TradingViews eigenem Vorwert ab, und zwar in zwei Klassen:
+              //  - echte Revisionen: NZD BIP Q1 0,8 -> 0,9 (Nutzer-Meldung),
+              //    USD NFP 162K -> 133K, GBP Claimant 27,8K -> 7K ... - die
+              //    App zeigte den alten Stand, und die Revisions-Erkennung
+              //    unten konnte nie anschlagen (sie verglich den Erstdruck mit
+              //    sich selbst);
+              //  - Stufen-Releases: EUR CPI Final 3,8 % bekam als Vorwert den
+              //    Flash DESSELBEN Monats (3,8 %) statt des Vormonats (3,2 %),
+              //    das Step-Signal war damit immer 0. Ebenso CHF/GBP/JPY/USD BIP.
+              // Jetzt: TradingViews Vorwert (= Vorperiode, revidierter Stand);
+              // nur wenn er fehlt, der Actual des vorigen Release.
+              // revisedFrom = Erstdruck, wenn derselbe Release-Titel (> 3 Tage
+              // frueher; Flash und Final sind verschiedene Titel) etwas anderes
+              // gemeldet hatte. Anzeige + Werte-Historie, Score-Anteil 0
+              // (js/score.js, Nutzer-Entscheid 2026-08-08).
+              const vor=uniq.slice(1).find(e=>e.event===uniq[0].event&&uniq[0]._t-e._t>3*864e5)||null;
+              const tvPrev=uniq[0].previous;
+              if((tvPrev==null||tvPrev==="")&&uniq[1])v.previous=uniq[1].actual;
+              if(vor&&tvPrev!=null&&tvPrev!==""&&numOf(tvPrev)!=null&&numOf(vor.actual)!=null&&numOf(tvPrev)!==numOf(vor.actual))v.revisedFrom=vor.actual;
+              v._vorAct=vor?vor.actual:null;
               // Release-Historie fuer den Momentum-Trend der App: die letzten
               // bis zu 4 veroeffentlichten Werte [[Datum,Actual],...], aeltester
               // zuerst. Damit hat die App die noetigen 3 Datenpunkte sofort,
@@ -1799,19 +1890,36 @@ jobs:
                 const prevHist=(prevEntry&&Array.isArray(prevEntry.historyFull))?prevEntry.historyFull:[];
                 const newHist=v._newHistFull||[];
                 const byDate={};
-                prevHist.forEach(h=>{if(h&&h[0])byDate[h[0]]=h;});
+                // ⚠ Punkte, die TradingView fuer diese Reihe NICHT (mehr) fuehrt
+                // (2026-10-27, Nutzer: "Konsumklima steht doppelt im Feed, 15.
+                // und 16.09."). Die Vor-Historie kam bisher ungeprueft mit -
+                // was einmal drin war, blieb fuer immer. Gemessen:
+                //   - umdatiert: TV fuehrte Westpac 89,5 im Lauf vom 15.09.
+                //     23:25 UTC unter dem 16.09., ab dem naechsten unter dem 15.;
+                //   - TE-Scheinpunkte mit falschem Datum: JPY BIP 0.40 % am
+                //     11./25./30.09., CHF PMI 57.10 am 04.09., EUR Beschaeftigung
+                //     0.10 % am 16.10., CAD S&P-PMI-Werte in der Ivey-Reihe;
+                //   - Fremdreihen alter Regeln: JPY Dienstleistungs-PPI 26.10.
+                // Regel: liegt ein Punkt in einem Zeitraum, den dieser Lauf
+                // gesehen hat (gesehen[]), und fuehrt TV dort fuer diese Reihe
+                // keinen Release, faellt er weg. Was ausserhalb liegt, bleibt
+                // unangetastet - nach einem Fehlabruf geht also nichts verloren.
+                const neuD=new Set(newHist.map(h=>h&&h[0]));
+                const gesehenAm=d=>gesehen.some(([a,b])=>d>=a&&d<=b);
+                const nichtBeiTv=h=>!neuD.has(h[0])&&gesehenAm(String(h[0]).slice(0,10));
+                prevHist.forEach(h=>{if(h&&h[0]&&!nichtBeiTv(h))byDate[h[0]]=h;});
                 newHist.forEach(h=>{if(h&&h[0])byDate[h[0]]=h;});
                 v.historyFull=keinRelease(ccy+"|"+indName,Object.values(byDate).filter(h=>String(h[0]).slice(0,10)>=HIST_FULL_FROM).sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0));
                 delete v._newHistFull;
               });
             });
             out._histChunksFetched=Math.max(5,Math.min(TARGET_CHUNKS_ENV,nextChunksDone));
+            if(process.env.HIST_REGELN)out._histRegeln=process.env.HIST_REGELN;
             let invEvts=[];
             try{
               const alt=JSON.parse(fs.readFileSync("alt_actuals.json","utf8"));
               if(Array.isArray(alt))invEvts=alt.filter(a=>a.source==="investingcom");
             }catch(e){}
-            const numOf=s=>{if(s==null)return null;const m=String(s).replace(/,/g,"").match(/-?\d+(?:\.\d+)?/);return m?parseFloat(m[0]):null;};
             const dayDiff=(a,b)=>Math.abs(new Date(String(a).slice(0,10))-new Date(String(b).slice(0,10)))/86400e3;
             // (1) Gleichquellen-Regel (Nutzer-Wunsch 2026-07-23): der Forecast
             // wird NICHT mehr quellenuebergreifend von Investing.com geliehen
@@ -1851,20 +1959,21 @@ jobs:
               (out.JPY=out.JPY||{})["Services Inflation"]=prevOut.JPY["Services Inflation"];
             }
 
-            // (3) Revisions-Erkennung (Nutzer-Wunsch 2026-07-21): kommt ein
-            //     NEUES Release (Datum wechselt ggue. dem letzten Lauf) und
-            //     weicht dessen "previous" numerisch vom Actual des
-            //     VORHERIGEN Release ab (wie er damals gemeldet wurde, via
-            //     prevOut), wurde der alte Wert revidiert -> revisedFrom
-            //     traegt den urspruenglich gemeldeten Wert. Innerhalb
-            //     desselben Release wird revisedFrom aus dem Vor-Lauf
-            //     weitergetragen (Persistenz wie beim Forecast oben), beim
-            //     NAECHSTEN Release ohne neue Abweichung faellt es weg.
-            //     Server-seitig statt im Client, damit ALLE Geraete dieselbe
-            //     Revision sehen - ein Geraet, das zwischen zwei Releases nie
-            //     offen war, koennte den Vergleich lokal nicht anstellen
-            //     (sein gespeicherter Stand ist dann 2+ Releases alt und
-            //     wuerde faelschlich eine "Revision" melden).
+            // (3) Revision (Nutzer-Wunsch 2026-07-21), seit 2026-10-27 in der
+            //     Aggregation oben erkannt (TV-Vorwert gegen den Erstdruck
+            //     desselben Release-Titels). Hier nur noch die Persistenz:
+            //     TV setzt das previous-Feld einige Tage nach dem Release
+            //     wieder auf den UNrevidierten Originalwert zurueck
+            //     (beobachtet bei USD NFP Juli 2026: revidiertes previous
+            //     129K stand nur vom 02.-04.07. im Feed, danach wieder 172K).
+            //     Innerhalb DESSELBEN Release werden revisedFrom und der
+            //     revidierte Vorwert deshalb aus dem Vor-Lauf weitergetragen.
+            //     ⚠ Nur, wenn revisedFrom wirklich der Erstdruck des vorigen
+            //     Release ist. Der bisherige Datums-Vergleich hielt jede
+            //     Umdatierung und jeden Quellenwechsel fuer eine Revision
+            //     (NZD Konsumklima: "89,5 revidiert von 89,5"; CHF PMI 55,30
+            //     von der TE-Seite gegen 55,3 von TV) - und trug das danach
+            //     fuer immer weiter.
             let revN=0;
             Object.keys(out).forEach(ccy=>{
               const grp=out[ccy];
@@ -1872,26 +1981,17 @@ jobs:
               Object.keys(grp).forEach(indName=>{
                 const v=grp[indName];
                 if(!v||typeof v!=="object")return;
+                const vorAct=v._vorAct;delete v._vorAct;
+                if(v.revisedFrom!=null){revN++;return;}
                 const pv=prevOut[ccy]&&prevOut[ccy][indName];
-                if(!pv)return;
-                if(pv.date&&v.date&&pv.date!==v.date&&pv.actual!=null&&v.previous!=null){
-                  const a=numOf(pv.actual),b=numOf(v.previous);
-                  if(a!=null&&b!=null&&a!==b){v.revisedFrom=pv.actual;revN++;}
-                }else if(pv.date===v.date&&pv.revisedFrom!=null){
-                  v.revisedFrom=pv.revisedFrom;
-                  // TV setzt das previous-Feld einige Tage nach dem Release
-                  // wieder auf den UNrevidierten Originalwert zurueck
-                  // (beobachtet bei USD NFP Juli 2026: revidiertes previous
-                  // 129K stand nur vom 02.-04.07. im Feed, danach wieder
-                  // 172K = der alte Juni-Actual; TVs history-Reihe fuehrt
-                  // ebenfalls durchgehend den Originalwert). Springt das
-                  // frische previous exakt auf revisedFrom zurueck, den
-                  // REVIDIERTEN Stand aus dem Vor-Lauf behalten - sonst
-                  // loescht sich jede Revision nach wenigen Tagen von
-                  // selbst. Ein DRITTER Wert (echte Zweitrevision) wird
-                  // dagegen normal uebernommen.
-                  if(v.previous!=null&&pv.previous!=null&&numOf(v.previous)===numOf(pv.revisedFrom)&&numOf(pv.previous)!==numOf(pv.revisedFrom))v.previous=pv.previous;
-                }
+                // Derselbe Release = gleiches Datum UND gleicher Titel. Nur das
+                // Datum reichte nicht: EUR trug "Employment Change YoY Final"
+                // (0,5 %) mit TE-revisedFrom 0.10 % - und 0,1 % war zufaellig
+                // auch der Vorwert der richtigen q/q-Reihe.
+                if(!pv||pv.date!==v.date||pv.event!==v.event||pv.revisedFrom==null||vorAct==null)return;
+                if(numOf(pv.revisedFrom)!==numOf(vorAct))return;
+                v.revisedFrom=pv.revisedFrom;revN++;
+                if(v.previous!=null&&pv.previous!=null&&numOf(v.previous)===numOf(pv.revisedFrom)&&numOf(pv.previous)!==numOf(pv.revisedFrom))v.previous=pv.previous;
               });
             });
             if(revN)console.log("ind_data revisions detected this run: "+revN);
@@ -1909,51 +2009,75 @@ jobs:
             try{
               const tep=JSON.parse(fs.readFileSync("te_pages.json","utf8"));
               let tepN=0,tepSkip=0;
+              // Reihen, deren TE-Seite eine ANDERE Umfrage misst als die
+              // gleichnamige Reihe der RULES: nur Kalender, nie ind_data.
+              const TE_NUR_KALENDER={"CAD|Services PMI":"S&P Global statt Ivey"};
+              const heute=new Date().toISOString().slice(0,10);
               tep.forEach(e=>{
-                if(!e.date){tepSkip++;console.log("[te->ind_data] "+e.country+" "+e.ind+": uebersprungen, kein Release-Datum");return;}
                 const ind=e.ind;
+                if(TE_NUR_KALENDER[e.country+"|"+ind]){console.log("[te->ind_data] "+e.country+" "+ind+": nur Kalender ("+TE_NUR_KALENDER[e.country+"|"+ind]+")");return;}
+                const evName=(e.label||ind)+" (Trading Economics)";
+                // Gespeicherter TE-Stand DERSELBEN Reihe (gleiches Label).
+                const pAlt=prevOut[e.country]&&prevOut[e.country][ind];
+                const pTe=(pAlt&&pAlt.source==="tepage"&&pAlt.event===evName)?pAlt:null;
+                // Ohne Datum von der Seite (Kalenderzeile/Nachricht, siehe
+                // Parser): derselbe Release wie gespeichert -> dessen Datum;
+                // gespeichert war eine ANDERE Referenzperiode -> der Wert ist
+                // seit dem letzten Lauf neu, sein Datum ist heute (gemessen,
+                // die Laeufe kommen stuendlich). Sonst bleibt es leer.
+                if(!e.date&&pTe){
+                  if(pTe.ref?pTe.ref===e.ref:numOf(pTe.actual)===numOf(e.actual)){e.date=pTe.date;e.dateSrc="gespeichert";}
+                  // (ohne gespeicherte Referenz - Staende vor 2026-10-27 - zeigt
+                  // ein geaenderter Wert dasselbe: der Vor-Lauf sah noch den alten)
+                  else if(pTe.ref?(e.ref&&pTe.ref!==e.ref):numOf(pTe.actual)!==numOf(e.actual)){e.date=heute;e.dateSrc="erstmals gesehen";}
+                }
+                if(!e.date){tepSkip++;console.log("[te->ind_data] "+e.country+" "+ind+": uebersprungen, kein Release-Datum");return;}
                 out[e.country]=out[e.country]||{};
                 const cur=out[e.country][ind];
                 if(cur&&cur.date&&cur.date>=e.date)return;   // schon aktueller
+                // Gleicher Wert wie die TV-Reihe = derselbe Release (TE meldet
+                // ihn nur spaeter oder mit anderem Datum) - TV bleibt fuehrend.
+                if(cur&&cur.source!=="tepage"&&!e.label&&numOf(cur.actual)===numOf(e.actual))return;
                 // ⚠ Historie nur uebernehmen, wenn es DIESELBE Reihe ist.
                 // Ein eigenes Label heisst per Definition: die Quelle misst
-                // etwas anderes als bisher (AUD Retail Sales -> Household
-                // Spending, JPY Beschaeftigung -> Erwerbstaetige). Die alte
-                // Historie weiterzuschleppen wuerde zwei Messgroessen in
-                // einer Reihe mischen - der Verlaufschart, das Trend-Signal
-                // und im normalisierten Modus auch die Streuung der
-                // Prognosefehler waeren damit schlicht falsch. Lieber keine
-                // Historie als eine vermischte; sie baut sich neu auf.
+                // etwas anderes als die TV-Reihe (AUD Retail Sales -> Household
+                // Spending, JPY Beschaeftigung -> Erwerbstaetige) - deren
+                // Historie bleibt draussen. Die EIGENE Historie der TE-Reihe
+                // kommt aus dem Vor-Lauf (pTe).
+                // ⚠ Bis 2026-10-27 kam sie nur aus `cur` - also aus der in
+                // DIESEM Lauf aus TradingView gebauten Reihe. Reine TE-Reihen
+                // (EUR/GBP/JPY/AUD-PMI, CHF Core CPI ...) haben dort keinen
+                // Eintrag, ihre Historie begann deshalb in JEDEM Lauf neu:
+                // gemessen 17 von 17 TE-Reihen mit genau 1 Punkt.
                 const sameSeries=!e.label;
-                // Bugfix (Nutzer-Bugreport 2026-09-02, "viele Indikatoren haben
-                // Werte, aber der Verlaufschart bleibt leer"): dieser Zweig
-                // aktualisierte bisher NUR actual/forecast/previous/date,
-                // historyFull wurde nur uebernommen, nie ERWEITERT - fuer Reihen,
-                // die AUSSCHLIESSLICH ueber diesen TE-Fallback einen Actual
-                // bekommen (S&P/HCOB/Jibun-PMI etc., siehe docs/data-sources.md),
-                // wuchs historyFull dadurch NIE, obwohl der aktuelle Wert bei
-                // jedem neuen Release brav aktualisiert wurde - der Chart zeigte
-                // seit Monaten dauerhaft "Not enough history yet", obwohl echte,
-                // sich aendernde Werte da waren. Jetzt wird der frisch gescrapte
-                // Punkt genau wie beim Kalender-Pfad oben (v._newHistFull) an
-                // historyFull angehaengt (nach Datum entdoppelt, chronologisch
-                // sortiert, 3-Jahres-Fenster wie dort) - bei einem Reihenwechsel
-                // (!sameSeries) startet sie bewusst NEU mit nur diesem einen
-                // Punkt statt fuer immer leer zu bleiben.
-                const carriedHist=(sameSeries&&cur&&Array.isArray(cur.historyFull))?cur.historyFull:[];
+                const carriedHist=(sameSeries&&cur&&Array.isArray(cur.historyFull))?cur.historyFull:(pTe&&Array.isArray(pTe.historyFull)?pTe.historyFull:[]);
                 const histByDate={};
                 carriedHist.forEach(h=>{if(h&&h[0])histByDate[h[0]]=h;});
                 histByDate[e.date]=[e.date,e.actual,e.forecast||null];
-                const histCutoff=Date.now()-1095*86400000;
-                const mergedHist=Object.values(histByDate).filter(h=>new Date(h[0]).getTime()>=histCutoff).sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0);
+                const mergedHist=Object.values(histByDate).filter(h=>String(h[0]).slice(0,10)>=HIST_FULL_FROM).sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0);
                 out[e.country][ind]={actual:e.actual,forecast:e.forecast||((cur&&cur.date===e.date)?cur.forecast:null)||null,
-                  previous:e.previous,date:e.date,event:(e.label||ind)+" (Trading Economics)",source:"tepage",
+                  previous:e.previous,date:e.date,event:evName,source:"tepage",ref:e.ref||null,
                   history:(sameSeries&&cur&&cur.history)||undefined,historyFull:mergedHist};
                 if(!sameSeries&&cur&&cur.historyFull)console.log("[te->ind_data] "+e.country+" "+ind+": Historie der alten Reihe verworfen ("+cur.historyFull.length+" Punkte) - neue Reihe ist "+e.label);
                 tepN++;
-                console.log("[te->ind_data] "+e.country+" "+ind+" = "+e.actual+" ("+e.date+", "+(e.label||ind)+")");
+                console.log("[te->ind_data] "+e.country+" "+ind+" = "+e.actual+" ("+e.date+" "+(e.dateSrc||"")+", "+(e.label||ind)+")");
               });
-              console.log("ind_data <- TE country pages: "+tepN+" written, "+tepSkip+" skipped (no release date)");
+              // Reine TE-Reihen, die DIESER Lauf nicht schreiben konnte (Seite
+              // nicht geladen, kein Datum): letzten Stand behalten. Ohne das
+              // waeren sie nach einem einzigen Fehlabruf fuer immer weg - das
+              // Datum einer Seite ohne Kalender/Nachricht haengt seit
+              // 2026-10-27 am gespeicherten Stand (pTe oben).
+              let tepKeep=0;
+              Object.keys(prevOut).forEach(c=>{
+                const g=prevOut[c];if(!g||typeof g!=="object")return;
+                Object.keys(g).forEach(ind=>{
+                  const pv=g[ind];
+                  if(!pv||pv.source!=="tepage"||TE_NUR_KALENDER[c+"|"+ind])return;
+                  if(out[c]&&out[c][ind])return;
+                  (out[c]=out[c]||{})[ind]=pv;tepKeep++;
+                });
+              });
+              console.log("ind_data <- TE country pages: "+tepN+" written, "+tepSkip+" skipped (no release date), "+tepKeep+" kept from previous run");
             }catch(err){console.log("ind_data <- TE country pages: nicht nutzbar ("+err.message+")");}
             fs.writeFileSync("ind_data.json",JSON.stringify(out));
             // Report: welche (ccy|ind) der RULES KEINEN Wert bekamen.

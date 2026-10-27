@@ -151,11 +151,28 @@ Weil `historyFull` über `prevOut` von Lauf zu Lauf mitgeführt wird, entfernt
 vorigen) — auch gegen einen zeitgleichen Lauf mit altem Stand. Wächter:
 `check/feedregeln.js`.
 
-⚠ **Offen:** der Trading-Economics-Pfad (`te_pages.json`) nimmt als
-Release-Datum das jüngste Datum irgendwo auf der Seite. Folge: wöchentliche
-Scheinpunkte mit gleichem Wert (JPY GDP, CAD Ivey PMI, CHF Manufacturing PMI)
-bzw. Historien mit einem Punkt (CHF Core CPI, JPY Beschäftigung) — der
-gemessene Takt dieser Reihen ist falsch.
+**Seit 2026-10-27 zusätzlich** (Nutzer-Meldung NZD BIP/Konsumklima, Details
+`docs/CHANGELOG.md`):
+- **Kein Tag mit zwei Titeln je Reihe.** Kommen Headline und Fremdreihe am
+  selben Tag (USD *Retail Sales Control Group*, CAD *Retail Sales Prel*, EUR
+  Beschäftigung y/y), gewinnt sonst die Sortierung. Muster entsprechend eng.
+- **Vorwert = TradingViews Vorwert** (Vorperiode, revidiert), nicht der
+  Erstdruck des vorigen Release — der ist bei Stufen-Releases (Flash/Final)
+  sogar derselbe Monat. `revisedFrom` nur gegen **denselben Release-Titel**.
+- **Historie:** ein Punkt in einem Zeitraum, den der Lauf gesehen hat, den TV
+  dort für die Reihe aber nicht führt, fällt weg (umdatierte Releases,
+  Scheinpunkte, Fremdreihen). Wer RULES so ändert, dass gespeicherte Historie
+  falsch ist, hebt `HIST_REGELN` → einmaliger Neuabruf bis 2013.
+- **Trading-Economics-Datum:** Kalenderzeile der Seite (gleicher Actual +
+  Referenzperiode) → jüngste Nachricht ab Beginn der Referenzperiode →
+  gespeicherter Stand (gleiche Referenz) → *erstmals gesehen*. Nie mehr „irgendein
+  Datum auf der Seite“ (das war das Ende des Berichtszeitraums oder eine fremde
+  Nachricht). Gleicher Wert wie TV = derselbe Release, TV führt.
+- **CAD Services PMI = Ivey** (TV, mit Prognose). Die TE-Seite ist S&P Global —
+  nur Kalenderzeile (`TE_NUR_KALENDER`), nie die Ivey-Reihe.
+- **NZD:** LCI (*Labour Costs Index YoY*) und PPI (*PPI Output QoQ*) live über
+  TV. **Core CPI hat keine Quelle**: RBNZ sperrt den Runner, Stats NZ rendert
+  per JavaScript, TE nennt keine Messgröße.
 
 ## ⚠️ PMI-FEED: TradingView liefert fuer S&P Global/HCOB/Jibun KEINE Actuals
 

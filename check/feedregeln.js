@@ -17,8 +17,18 @@
 //      regulaeren (auch nicht bei anderen Waehrungen);
 //   C) Info (kein Fehler): wie viele Punkte der aktuellen ind_data.json der
 //      naechste Lauf entfernt - die Daten im Repo bereinigt erst der Workflow.
-//   node check/feedregeln.js [--gegenprobe]   (alte Regeln ohne die beiden
-//   Ausschluesse -> A muss rot werden)
+// Erweitert 2026-10-27 (Nutzer: "BIP Q1 ist auf 0.9 % revidiert, die App
+// fuehrt noch 0.8 %"; "Konsumklima steht doppelt im Feed, 15. und 16.09."):
+//   A2) keine Reihe bekommt am SELBEN Tag zwei verschiedene Titel (an allen
+//       Releases in cal_hist) - sonst entscheidet die Sortierung, welcher gilt
+//       (USD Retail Control Group 0,1 % statt Headline 0,8 % am 15.10.);
+//   D) der ECHTE Aggregationsblock des Workflows laeuft hier mit kuenstlichen
+//      TradingView-/Trading-Economics-Daten: Vorwert = TVs revidierter Vorwert
+//      (nicht der Erstdruck), revisedFrom nur gegen denselben Release-Titel,
+//      Punkte, die TV nicht mehr fuehrt, fallen aus der Historie, TE-Reihen
+//      behalten ihr Datum und ihre Historie, S&P-PMI nie in der Ivey-Reihe.
+//   node check/feedregeln.js [--gegenprobe]   (alte Regeln und alte
+//   Aggregation -> A und D muessen rot werden)
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
 const GEGENPROBE = process.argv.includes('--gegenprobe');
@@ -37,7 +47,8 @@ let kein = block('function keinRelease(', '// ENDE keinRelease');
 if (!excore || !rules) fail('RULES', 'const EXCORE / const RULES nicht in update-ff-calendar.yml gefunden');
 if (!kein) fail('BEREINIGUNG', 'function keinRelease(...) // ENDE keinRelease nicht in update-ff-calendar.yml gefunden');
 if (GEGENPROBE && rules) {
-  rules = rules.replace('!/private|revision|benchmark/.test(t)', '!/private/.test(t)').split('&&(c!=="USD"||/\\bism\\b/.test(t))').join('');
+  rules = rules.replace('!/private|revision|benchmark/.test(t)', '!/private/.test(t)').split('&&(c!=="USD"||/\\bism\\b/.test(t))').join('')
+    .replace('|control/.test(t)', '/.test(t)');
 }
 
 if (rules && excore) {
@@ -65,11 +76,136 @@ if (rules && excore) {
       ['S&P Global Manufacturing PMI Final', 'JPY', 'Manufacturing PMI', true],
       ['S&P Global Services PMI Flash', 'GBP', 'Services PMI', true],
       ['Employment Change', 'CAD', 'NFP / Employment Change', true],
+      // 2026-10-27: Fremdreihen am selben Tag bzw. im selben Muster
+      ['Retail Sales MoM', 'USD', 'Retail Sales', true],
+      ['Retail Sales Control Group MoM', 'USD', 'Retail Sales', false],
+      ['Retail Sales MoM Final', 'CAD', 'Retail Sales', true],
+      ['Retail Sales MoM Prel', 'CAD', 'Retail Sales', false],
+      ['PPI YoY', 'JPY', 'PPI', true],
+      ['Services Producer Price Index YoY', 'JPY', 'PPI', false],
+      ['Employment Change QoQ Final', 'EUR', 'NFP / Employment Change', true],
+      ['Employment Change YoY Final', 'EUR', 'NFP / Employment Change', false],
+      ['Unemployment Change', 'EUR', 'NFP / Employment Change', false],
+      // NZD: bis 2026-10-27 ohne Live-Pfad (Startbefuellung vom Mai)
+      ['Labour Costs Index YoY', 'NZD', 'Avg Hourly Earnings', true],
+      ['PPI Output QoQ', 'NZD', 'PPI', true],
+      ['PPI Input QoQ', 'NZD', 'PPI', false],
     ];
     FALL.forEach(([t, c, ind, soll]) => {
       const ist = trifft(t, c, ind);
       if (ist !== soll) fail(soll ? 'EIGENER RELEASE FEHLT' : 'FREMDER RELEASE', `${c} "${t}" ${ist ? 'trifft' : 'trifft nicht'} ${ind}`);
     });
+  }
+}
+
+// ── A2) kein Tag mit zwei verschiedenen Titeln in derselben Reihe ──────────
+{
+  const normB = block('const norm=s=>', ';\n'), perB = block('const period=t=>{', '\n            };');
+  let R = null, norm = null, period = null;
+  try { ({ RULES: R, norm, period } = new Function(normB + '\n' + perB + '\n' + excore + '\n' + rules + '\nreturn {RULES,norm,period};')()); } catch (e) { fail('SELBER TAG', 'Regeln nicht auswertbar: ' + e.message); }
+  if (R) {
+    const PRE = { 'German ': 'DE', 'French ': 'FR', 'Italian ': 'IT', 'Spanish ': 'ES' };
+    const tag = {};
+    const dir = path.join(ROOT, 'cal_hist');
+    for (const f of fs.readdirSync(dir).filter(f => /^\d{4}\.json$/.test(f))) {
+      for (const e of JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).ev) {
+        let [zeit, ccy, titel, , act] = e; if (!act) continue;
+        let origin = ccy === 'EUR' ? 'EU' : ccy;
+        for (const [p, c] of Object.entries(PRE)) if (titel.startsWith(p)) { origin = c; titel = titel.slice(p.length); }
+        if (origin !== ccy && origin !== 'EU') continue;   // DE nur Ersatz, wenn EU fehlt
+        const t = norm(titel), per = period(titel);
+        R.forEach(r => {
+          if (!r.test(t, ccy) || (r.period && per !== r.period)) return;
+          const k = ccy + '|' + r.ind + '|' + zeit.slice(0, 10);
+          (tag[k] = tag[k] || new Set()).add(titel);
+        });
+      }
+    }
+    const konf = Object.entries(tag).filter(([, s]) => s.size > 1);
+    if (konf.length) fail('SELBER TAG', `${konf.length} Release-Tage mit 2+ Titeln in einer Reihe, z.B. ${konf.slice(-3).map(([k, s]) => k + ' ' + JSON.stringify([...s])).join('; ')}`);
+  }
+}
+
+// ── D) der echte Aggregationsblock mit kuenstlichen Daten ─────────────────
+{
+  const i = y.indexOf('const RULES=[');
+  const a = y.lastIndexOf("node -e '\n", i), b = y.indexOf("\n          '\n", i);
+  let code = (a < 0 || b < 0) ? null : y.slice(a + 9, b);
+  if (!code) fail('AGGREGATION', 'node-Block mit const RULES=[ nicht gefunden');
+  if (code && GEGENPROBE) {
+    code = code.replace('if((tvPrev==null||tvPrev==="")&&uniq[1])v.previous=uniq[1].actual;', 'if(uniq[1])v.previous=uniq[1].actual;')
+      .replace('!nichtBeiTv(h)', 'true');
+  }
+  if (code) {
+    const os = require('os'), cp = require('child_process');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'feedregeln-'));
+    const tag = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+    const zeit = n => tag(n) + 'T12:00:00.000Z';
+    const ev = (country, title, n, actual, forecast, previous, extra) => Object.assign({ country, title, date: zeit(n), actual, forecast, previous, unit: '%' }, extra || {});
+    const wide = [
+      // NZD BIP: Q1 0,8 % erstgemeldet, TV fuehrt beim Q2-Release 0,9 % als Vorwert
+      ev('NZ', 'GDP Growth Rate QoQ', 41, '0.2', '0.1', '0.9'),
+      // NZD Konsumklima: TV fuehrt den Release heute am Tag 42 (frueher: Tag 41)
+      ev('NZ', 'Westpac Consumer Confidence', 42, '89.5', null, '80.4', { unit: '' }),
+      // EUR CPI: Flash und Final DESSELBEN Monats, Vorwert = Vormonat
+      ev('EU', 'Inflation Rate YoY Flash', 25, '3.8', '3.7', '3.2'),
+      ev('EU', 'Inflation Rate YoY Final', 11, '3.8', '3.8', '3.2'),
+      // USD Retail: Headline und Control Group am selben Tag
+      ev('US', 'Retail Sales Control Group MoM', 12, '0.1', '0.3', '1.2'),
+      ev('US', 'Retail Sales MoM', 12, '0.8', '0.3', '1.3'),
+      // USD NFP: TV hat den revidierten Vorwert schon wieder auf den Erstdruck gestellt
+      ev('US', 'Non Farm Payrolls', 20, '29', '50', '162', { unit: '', scale: 'K' }),
+      ev('US', 'Non Farm Payrolls', 48, '162', '60', '20', { unit: '', scale: 'K' }),
+      // EUR Beschaeftigung: q/q und y/y am selben Tag, gespeichert war y/y
+      ev('EU', 'Employment Change QoQ Final', 10, '0.1', '0.1', '0.1'),
+      ev('EU', 'Employment Change YoY Final', 10, '0.5', '0.5', '0.5'),
+      ev('EU', 'Employment Change QoQ Final', 101, '0.1', '0.1', '0.2'),
+      // CAD Ivey (Services PMI der RULES)
+      ev('CA', 'Ivey PMI s.a', 21, '58.2', '65.2', '64.3', { unit: '' }),
+    ];
+    const hist0 = [ev('NZ', 'GDP Growth Rate QoQ', 132, '0.8', '0.9', '0.5'), ev('NZ', 'Westpac Consumer Confidence', 133, '80.4', null, '94.7', { unit: '' })];
+    const prev = {
+      NZD: { 'Consumer Confidence': { actual: '89.5', previous: '80.4', revisedFrom: '89.5', date: tag(41), event: 'Westpac Consumer Confidence', source: 'tv', historyFull: [[tag(133), '80.4', null], [tag(42), '89.5', null], [tag(41), '89.5', null]] } },
+      USD: { 'NFP / Employment Change': { actual: '29K', previous: '133K', revisedFrom: '162K', date: tag(20), event: 'Non Farm Payrolls', source: 'tv', historyFull: [] } },
+      CHF: { 'Core CPI': { actual: '0.50%', previous: null, date: tag(25), event: 'Core CPI (Trading Economics)', source: 'tepage', ref: 'september 2026', historyFull: [[tag(55), '0.40%', null], [tag(25), '0.50%', null]] } },
+      EUR: {
+        'Manufacturing PMI': { actual: '52.90', date: tag(26), event: 'Manufacturing PMI (Trading Economics)', source: 'tepage', ref: 'september 2026', historyFull: [[tag(26), '52.90', null]] },
+        'NFP / Employment Change': { actual: '0.5%', previous: '0.5%', revisedFrom: '0.10%', date: tag(10), event: 'Employment Change YoY Final', source: 'tv', historyFull: [] },
+      },
+      AUD: { 'Core CPI': { actual: '3.60%', date: tag(27), event: 'Core CPI (Trading Economics)', source: 'tepage', ref: 'august 2026', historyFull: [[tag(27), '3.60%', null]] } },
+      JPY: { 'JOLTS Job Openings': { actual: '787K', date: tag(58), event: 'Job Vacancies (Trading Economics)', source: 'tepage', ref: null, historyFull: [[tag(58), '787K', null]] } },
+      _histChunksFetched: 84,
+    };
+    const tep = [
+      { source: 'tepage', country: 'CHF', key: 'corecpi', ind: 'Core CPI', label: null, actual: '0.50%', previous: null, forecast: null, date: null, ref: 'september 2026' },
+      { source: 'tepage', country: 'AUD', key: 'corecpi', ind: 'Core CPI', label: null, actual: '3.70%', previous: '3.60%', forecast: null, date: null, ref: 'september 2026' },
+      { source: 'tepage', country: 'EUR', key: 'mfg', ind: 'Manufacturing PMI', label: null, actual: '52.40', previous: '52.90', forecast: null, date: tag(4), ref: 'october 2026' },
+      { source: 'tepage', country: 'CAD', key: 'svc', ind: 'Services PMI', label: null, actual: '48.30', previous: '46.80', forecast: null, date: tag(1), ref: 'september 2026' },
+    ];
+    const w = (f, x) => fs.writeFileSync(path.join(dir, f), JSON.stringify(x));
+    w('tv_wide.json', wide); w('tv_recent.json', wide.filter(e => Date.now() - Date.parse(e.date) < 45 * 864e5)); w('tv_hist_0.json', hist0);
+    for (let k = 1; k < 5; k++) w(`tv_hist_${k}.json`, [ev('JP', 'Unemployment Rate', 100 + 60 * k, '2.5', '2.5', '2.5')]);
+    w('ind_data.json', prev); w('te_pages.json', tep);
+    fs.writeFileSync(path.join(dir, 'agg.js'), code);
+    const r = cp.spawnSync(process.execPath, ['agg.js'], { cwd: dir, env: Object.assign({}, process.env, { CHUNKS_DONE: '84', TARGET_CHUNKS: '84' }), encoding: 'utf8' });
+    let out = null;
+    try { out = JSON.parse(fs.readFileSync(path.join(dir, 'ind_data.json'), 'utf8')); } catch (e) { fail('AGGREGATION', 'Block lief nicht durch: ' + String(r.stderr || e.message).slice(0, 300)); }
+    fs.rmSync(dir, { recursive: true, force: true });
+    if (out) {
+      const g = (c, k) => (out[c] || {})[k] || {};
+      const soll = (name, ist, erwartet) => { if (JSON.stringify(ist) !== JSON.stringify(erwartet)) fail(name, `ist ${JSON.stringify(ist)}, soll ${JSON.stringify(erwartet)}`); };
+      soll('VORWERT REVIDIERT (NZD BIP)', [g('NZD', 'GDP Growth QoQ').previous, g('NZD', 'GDP Growth QoQ').revisedFrom], ['0.9%', '0.8%']);
+      soll('UMDATIERTER RELEASE (NZD Konsumklima)', [(g('NZD', 'Consumer Confidence').historyFull || []).map(h => h[0]), g('NZD', 'Consumer Confidence').revisedFrom || null], [[tag(133), tag(42)], null]);
+      soll('STUFEN-RELEASE (EUR CPI Final)', [g('EUR', 'CPI (Headline)').previous, g('EUR', 'CPI (Headline)').revisedFrom || null], ['3.2%', null]);
+      soll('FREMDREIHE AM SELBEN TAG (USD Retail)', g('USD', 'Retail Sales').actual, '0.8%');
+      soll('REVISION BLEIBT IM RELEASE (USD NFP)', [g('USD', 'NFP / Employment Change').previous, g('USD', 'NFP / Employment Change').revisedFrom], ['133K', '162K']);
+      soll('TE-DATUM GESPEICHERT (CHF Core CPI)', [g('CHF', 'Core CPI').date, (g('CHF', 'Core CPI').historyFull || []).length], [tag(25), 2]);
+      soll('TE-DATUM ERSTMALS GESEHEN (AUD Core CPI)', [g('AUD', 'Core CPI').date, (g('AUD', 'Core CPI').historyFull || []).length], [new Date().toISOString().slice(0, 10), 2]);
+      soll('TE-HISTORIE WAECHST (EUR PMI)', (g('EUR', 'Manufacturing PMI').historyFull || []).map(h => h[1]), ['52.90', '52.40']);
+      soll('FREMDE REVISION NICHT WEITERGETRAGEN (EUR Beschaeftigung)', [g('EUR', 'NFP / Employment Change').actual, g('EUR', 'NFP / Employment Change').previous, g('EUR', 'NFP / Employment Change').revisedFrom || null], ['0.1%', '0.1%', null]);
+      soll('S&P NICHT IN IVEY (CAD)', g('CAD', 'Services PMI').actual, '58.2');
+      soll('TE-REIHE OHNE ABRUF BLEIBT (JPY offene Stellen)', g('JPY', 'JOLTS Job Openings').actual || null, '787K');
+    }
   }
 }
 
@@ -102,9 +238,10 @@ if (keinRelease) {
 }
 
 if (GEGENPROBE) {
-  const ok = F.some(x => x.startsWith('FREMDER RELEASE'));
-  console.log(ok ? 'feedregeln --gegenprobe: ok (alte Regeln mit Benchmark-Revision und S&P-Flash werden gemeldet)' : 'feedregeln --gegenprobe: FEHLER - nicht gemeldet\n  ' + F.join('\n  '));
+  const ok = F.some(x => x.startsWith('FREMDER RELEASE')) && F.some(x => x.startsWith('SELBER TAG')) &&
+    F.some(x => x.startsWith('VORWERT REVIDIERT')) && F.some(x => x.startsWith('UMDATIERTER RELEASE'));
+  console.log(ok ? 'feedregeln --gegenprobe: ok (alte Regeln: Benchmark-Revision, S&P-Flash, Control Group; alte Aggregation: Erstdruck als Vorwert, Doppelpunkt bleibt - alles gemeldet)' : 'feedregeln --gegenprobe: FEHLER - nicht gemeldet\n  ' + F.join('\n  '));
   process.exit(ok ? 0 : 1);
 }
 if (F.length) { console.log(`feedregeln: ${F.length} Befund(e)\n  ` + F.join('\n  ')); process.exit(1); }
-console.log('feedregeln: ok (Indikator-Feed: NFP ohne Benchmark-Revision, US-PMI nur ISM, andere Waehrungen unveraendert; Bereinigung entfernt genau die eingeschleppten Punkte)');
+console.log('feedregeln: ok (Indikator-Feed: NFP ohne Benchmark-Revision, US-PMI nur ISM, kein Tag mit zwei Titeln je Reihe, revidierter Vorwert, keine umdatierten/fremden Historienpunkte, TE-Datum und -Historie stabil; Bereinigung entfernt genau die eingeschleppten Punkte)');

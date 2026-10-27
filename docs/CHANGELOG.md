@@ -20977,3 +20977,32 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter `check/zentralbank.js` I/H** auf die Zeile umgestellt + Leitzins = Feed, Position. Gegenprobe: Zeile unter *New note* und Stand davor aus → I POSITION und I LEITZINS rot.
 
+
+## 2026-10-27 — Indikator-Feed: NZD-Reihen live, revidierter Vorwert, keine Doppel-/Fremdpunkte (nur Workflow, kein VERSION-CHECK)
+
+**Nutzer:** *„Das BIP Q1 ist auf 0.9 % revidiert, die App führt noch 0.8 %. Das Konsumklima steht doppelt im Feed (15. und 16.09.). Dann bind die an.“* (die drei veralteten NZD-Reihen Core CPI, PPI, LCI aus der Indikator-Prüfung).
+
+**Reproduziert (Datenverlauf von `ind_data.json`, Archiv `cal_hist`, Nachbau des echten Aggregationsblocks):**
+- BIP: TV meldet beim Q2-Release 0,9 % als Vorwert; der Workflow ersetzte *previous* immer durch den Erstdruck des vorigen Release (0,8 %). Gemessen an 91 Reihen: **39** weichen so ab — echte Revisionen (USD NFP 162K → 133K, GBP Claimant 27,8K → 7K, USD PCE …) und Stufen-Releases (EUR CPI *Final* 3,8 % bekam den *Flash* desselben Monats als Vorwert statt 3,2 % → Step-Signal immer 0; ebenso CHF/GBP/JPY/USD BIP). Die Revisions-Erkennung konnte deshalb nie anschlagen.
+- Konsumklima: Lauf 15.09. 23:25 UTC führte Westpac 89,5 unter dem **16.09.**, ab dem nächsten Lauf unter dem **15.09.** Die alte Zeile kam über `prevOut` für immer mit; der Datumswechsel galt zudem als „neues Release“ → *revisedFrom 89.5* (= eigener Wert), danach endlos weitergetragen.
+- LCI: TV schreibt *Labour Cost**s** Index* — das Muster traf nie. PPI: Stats NZ meldet nur *PPI Output QoQ*, die Regel verlangte y/y.
+- Core CPI: **keine** Quelle. RBNZ sperrt den Runner (*„Your access … has been restricted“*), die Stats-NZ-Seite ist reines JavaScript (63 Zeichen Text in 88 KB HTML), TE nennt 3,20 % ohne Messgröße (passt weder zu Non-tradables 3,3 % noch zu Trimmed Mean 3,0 % / Median 3,1 %).
+
+**Fehlerklasse gesucht (Regel 8) — dabei gefunden:**
+- **Zwei Titel am selben Tag in einer Reihe** (115 Release-Tage seit 2016, Gewinner per Sortierung): USD *Retail Sales Control Group* stand als Retail-Wert im Score (15.10.: **0,1 % statt 0,8 %**, Miss statt Beat; 7 der letzten 10 Punkte), CAD *Retail Sales MoM Prel* (Vorabschätzung des Folgemonats) statt *Final*, EUR Beschäftigung y/y statt q/q. Dazu Fremdreihen an anderen Tagen: JPY *Services PPI* als PPI (26.10.), DE *Unemployment Change* im EUR-Muster.
+- **Trading-Economics-Pfad:** Release-Datum war „jüngstes Datum irgendwo auf der Seite“ — per Sonde gemessen: Ende des Berichtszeitraums aus den Metadaten (CHF/AUD Core CPI „30.09.“) oder fremde Nachrichten → wöchentliche Scheinpunkte (JPY BIP 0.40 % am 11./18./25./30.09., 09./16.10.; CHF PMI 57.10 ×4; EUR Beschäftigung 0.10 % am 16.10.). CAD: die TE-Seite ist **S&P Global**, die Reihe aber **Ivey** — beide liefen abwechselnd in dieselbe Reihe. Reine TE-Reihen hatten **17 von 17** genau einen Historienpunkt (Historie kam nur aus der TV-Reihe des Laufs).
+
+**Umgesetzt (`update-ff-calendar.yml`):**
+- RULES: NZD LCI `labou?r costs? index` y/y, NZD *PPI Output* q/q; Retail ohne *control* und ohne CAD *Prel*; PPI ohne *services*; Beschäftigung ohne *unemployment* und y/y.
+- Vorwert = TVs Vorwert (Fallback Erstdruck); `revisedFrom` nur gegen denselben Release-Titel > 3 Tage früher; Persistenz nur bei gleichem Datum **und** Titel und wenn `revisedFrom` wirklich der Erstdruck ist.
+- Historie: Punkte in einem Zeitraum, den der Lauf gesehen hat (`gesehen[]`), die TV dort nicht führt, fallen weg; außerhalb bleibt alles. `HIST_REGELN` (2026-10-27) holt die Tiefen-Historie einmal neu → ersetzt die Control-Group-/Prel-Werte bis 2013.
+- TE: Datum aus der Kalenderzeile (gleicher Actual + Referenzperiode; Consensus/Previous derselben Zeile als Forecast/Vorwert), sonst jüngste Nachricht ab Beginn der Referenzperiode, sonst gespeicherter Stand (gleiche Referenz) bzw. *erstmals gesehen* (Referenz/Wert neu seit letztem Lauf). Historie aus dem eigenen Vor-Stand; gleicher Wert wie TV → TV bleibt führend; `TE_NUR_KALENDER` (CAD S&P nur Kalender, nie Ivey); nicht geschriebene TE-Reihen behalten ihren Stand.
+
+**Nachbau mit echten Daten (Archiv als TV-Fenster, aktuelle `ind_data.json` als Vor-Lauf):**
+- NZD: BIP Vorwert **0,9 %** (*revised from 0.8 %*), Konsumklima ohne 16.09. und ohne *revisedFrom*, LCI **2,1 % y/y** (fc 2,0 %), PPI Output **1,6 % q/q** (fc 0,8 %), Mfg PMI Vorwert 53,3 (rev. 53,1), PSI 51,0 (rev. 51,2).
+- Entfernte Historienpunkte: ausschließlich die oben genannten Schein-/Fremdpunkte (CAD 7, JPY BIP 7, CHF PMI 6, NZD/EUR/JPY je 1) — kein echter Release.
+- Scores (App, Seite geladen mit nachgebautem Feed): NZD 4,63 → **5,40**, USD −1,34 → **0,13** (Retail-Headline), CAD 1,53 → **0,67** (Retail Final = Miss), JPY −0,85 → **−1,52** (PPI 6,8 % vs. 7,6 %), CHF −1,18 → −1,19, EUR/GBP/AUD unverändert. 0 JS-Fehler.
+
+**Wächter `check/feedregeln.js`:** A (+14 Titelfälle), A2 (kein Tag mit zwei Titeln je Reihe, alle `cal_hist`-Releases), D (der echte Aggregationsblock mit künstlichen Daten: Vorwert revidiert, umdatierter Release, Stufen-Release, Control Group, NFP-Persistenz, fremde Revision nicht weitergetragen, TE-Datum gespeichert/erstmals gesehen, TE-Historie wächst, S&P nie in Ivey, TE-Reihe ohne Abruf bleibt). Gegen den alten Workflow: **15 Befunde**; ohne die Titel-Bedingung der Persistenz: D rot. `--gegenprobe` (alte Regeln + alte Aggregation) rot.
+
+**Offen beim Nutzer:** NZD Core CPI ohne Quelle; Stufen-Releases (Flash + Final) stehen weiter beide in der Historie (Trend-Fenster von 4 Punkten = 2 Monate bei EUR CPI).
