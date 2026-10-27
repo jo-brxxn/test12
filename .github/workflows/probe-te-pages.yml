@@ -1,0 +1,63 @@
+name: Probe TE pages (dates + NZ core inflation)
+
+# Einmal-Probe 2026-10-27, liest nichts in die App ein.
+# 1) Woher nimmt der TE-Laenderseiten-Pfad sein Release-Datum? Gibt jede
+#    Datumsangabe der Seite mit Umgebung aus (Messung statt Vermutung,
+#    CLAUDE.md Regel 8) - Anlass: woechentliche Scheinpunkte gleichen Werts.
+# 2) Fuehrt TE eine NZ-Kerninflation, und welche Reihe ist es?
+# 3) Stats NZ / RBNZ: was liefern sie dem Runner (Titel der Antwort)?
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          while IFS='|' read -r key path; do
+            [ -z "$key" ] && continue
+            curl -sL -A "$UA" -m 25 "https://tradingeconomics.com/$path" -o "te_$key.html" || true
+            echo "$key: $(wc -c <"te_$key.html") bytes"
+            sleep 1
+          done <<'URLS'
+          nzcore|new-zealand/core-inflation-rate
+          nzlci|new-zealand/labour-costs
+          cadsvc|canada/services-pmi
+          jpygdp|japan/gdp-growth
+          chfmfg|switzerland/manufacturing-pmi
+          URLS
+          curl -sL -A "$UA" -m 25 "https://www.stats.govt.nz/information-releases/consumers-price-index-september-2026-quarter/" -o statsnz.html || true
+          curl -sL -A "$UA" -m 25 "https://www.rbnz.govt.nz/-/media/project/sites/rbnz/files/statistics/series/m/m1/hm1.xlsx" -o rbnz.html || true
+          echo "statsnz: $(wc -c <statsnz.html) bytes, rbnz: $(wc -c <rbnz.html) bytes"
+      - name: Inspect
+        run: |
+          node -e '
+            const fs=require("fs");
+            const strip=h=>h.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ");
+            for(const f of fs.readdirSync(".").filter(f=>/^te_.*\.html$/.test(f)).sort()){
+              const h=fs.readFileSync(f,"utf8"),t=strip(h);
+              console.log("\n===== "+f+" ("+h.length+" B) title: "+((/<title>([^<]*)/i.exec(h)||[])[1]||"-"));
+              // Berichtssaetze: alles mit increased/decreased/rose/fell ... in <Monat|quarter> of <Jahr>
+              const S=/[^.]{0,200}\b(?:increased|decreased|rose|fell|grew|contracted|edged|was unchanged|remained|stood|expanded|declined|jumped|dropped|eased|accelerated|slowed)\b[^.]{0,200}\d{4}[^.]{0,40}\./gi;
+              let m,n=0;while((m=S.exec(t))&&n<4){n++;console.log("SATZ "+n+": "+m[0].trim().slice(0,330));}
+              // Jede Datumsangabe mit Umgebung (Text + rohes HTML)
+              const seen=new Set();
+              [["TXT",t],["HTML",h]].forEach(([tag,src])=>{
+                const re=/\b(?:[A-Z][a-z]{2,8}\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})\b/g;let d,k=0;
+                while((d=re.exec(src))&&k<40){
+                  const ctx=src.slice(Math.max(0,d.index-110),d.index+90).replace(/\s+/g," ");
+                  const key=d[0]+"|"+ctx.slice(60,140);if(seen.has(key))continue;seen.add(key);k++;
+                  console.log(tag+" "+d[0]+"  ::  "+ctx);
+                }
+              });
+            }
+            for(const f of ["statsnz.html","rbnz.html"]){
+              let h="";try{h=fs.readFileSync(f,"utf8");}catch(e){}
+              const t=strip(h);
+              console.log("\n===== "+f+" ("+h.length+" B) title: "+((/<title>([^<]*)/i.exec(h)||[])[1]||"-"));
+              console.log(t.slice(0,400));
+              const re=/[^.]{0,220}non-?tradab[^.]{0,220}\./gi;let m,n=0;while((m=re.exec(t))&&n<5){n++;console.log("NT "+n+": "+m[0].trim());}
+            }
+          '
