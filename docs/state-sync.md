@@ -115,7 +115,7 @@ vier Stellen: `cloudPush`/`exportData` (`data.tradeJournal`), `cloudPull`/
 ## Zentralbank-Notizen (seit 2026-10-27): KEINE eigene Speicherform
 
 Die Notizen der Zentralbank-Karte (`js/zentralbank.js`) sind ganz normale
-Einträge in `research.notes` mit einem Feld `cb = {b: Bank-Währung, s: 'infl'|'arb'|'wirt', m: Sitzungsdatum}`
+Einträge in `research.notes` mit einem Feld `cb = {b: Bank-Währung, s: 'infl'|'arb'|'wirt'|'allg', m: Sitzungsdatum}` (`'allg'` = General, seit 644; eine ältere App-Version blendet solche Notizen nur aus, der Abgleich nach `id` behält sie)
 (ohne `asset`/`fids`, erscheinen also in keiner Asset-Ordneransicht, aber in der
 globalen Suche). Damit gelten Merge nach `id`, `navigator.locks`, Drei-Wege-Abgleich
 und Papierkorb unverändert. Gespeichert wird der Bias in der Sicht der

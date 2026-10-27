@@ -51,12 +51,17 @@ import {CP} from './profil.js';
 // zentralbank.js) laesst escH beim Laden dieser Datei noch in der Todeszone
 // (gleiche Falle wie in profil.js).
 const h=x=>escH(x);
-// Die drei Saeulen = die drei Makro-Karten, deren Regel (same/inverse) die
+// Jede Saeule = eine Makro-Karte, deren Regel (same/inverse) die
 // Farbe bestimmt. Akzentfarben wie die Makro-Karten selbst (--a-*).
 const ZB_SAEULEN=[
   {k:'infl',t:'Inflation',rub:'Inflation',a:'--a-infl',ic:'barsUp'},
   {k:'arb',t:'Labour market',rub:'Labour Market',a:'--a-lab',ic:'briefcase'},
   {k:'wirt',t:'Economy',rub:'Economic Growth',a:'--a-grow',ic:'chartUp'},
+  // Vierte Saeule (Nutzer 2026-10-27: "Ergaenz noch eine Saeule mit dem Namen
+  // generel"): alles Uebrige der Sitzung - Entscheid, Ausblick, Ton. Regel und
+  // Farbe der Zins-Karte (Interest Rates): eine allgemeine Notiz zur Bank
+  // betrifft ihren Zinskurs, auf GOLD/SP500 also gedreht wie dort.
+  {k:'allg',t:'General',rub:'Interest Rates',a:'--a-rate',ic:'percent'},
 ];
 const ZB_TOL_TAGE=2;   // Kalender (Ortsdatum) und Feed (Datum am Sitz der Bank) liegen bis 1 Tag auseinander
 
@@ -142,8 +147,7 @@ function zbSaeuleHtml(sym,ccy,s,notizen,lesen){
     <div class="zb-kap" aria-hidden="true"><span class="zb-vol l"></span><span class="zb-aba"></span><span class="zb-vol r"></span></div>
     <div class="zb-schaft">
       <div class="zb-s-hd"><span class="zb-s-ic">${icn(s.ic,13)}</span><span class="zb-s-t">${h(s.t)}</span>${dreht?`<span class="zb-s-inv" title="For ${h(sym.name||sym.id)} this pillar reads inverse: the colours are flipped against the ${h(ccy)} view">inverse</span>`:''}<span class="zb-s-n">${notizen.length}</span></div>
-      ${neu}
-      <div class="ab-nt-list zb-liste">${zeilen}</div>
+      <div class="zb-inhalt">${neu}<div class="ab-nt-list zb-liste">${zeilen}</div></div>
     </div>
     <div class="zb-fuss" aria-hidden="true"></div>
   </div>`;
@@ -196,7 +200,7 @@ function zentralbankKarteHtml(sym,nurKarte){
   if(!sym)return'';
   const ccy=macroCcyFor(sym.id);
   const info=abInfoBtn('Central bank',[
-    '<b>Three pillars</b> · <i>Inflation, Labour market, Economy</i> — your notes on what the bank said about each.',
+    '<b>Four pillars</b> · <i>Inflation, Labour market, Economy, General</i> — your notes on what the bank said about each. <b>General</b> · decision, guidance, tone; reads like the <i>Interest Rates</i> card for linked assets.',
     '<b>Notes belong to the latest rate decision</b> · when the next decision has happened, the pillars start empty and the earlier notes are in the <b>Archive</b> under their meeting date.',
     '<b>Red base step</b> · the bank decided and this meeting has no note yet — it goes away with your first note or with ✕.',
     '<b>Colours</b> · ▲ <b style="color:'+BC.bull+'">bullish</b> · ◆ neutral · ▼ <b style="color:'+BC.bear+'">bearish</b>, for the asset you are on. Assets linked to a currency share its bank and its notes; a pillar that reads <i>inverse</i> for this asset shows the colours flipped.',

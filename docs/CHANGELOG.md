@@ -20918,3 +20918,22 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter `check/profil.js`** auf das Fenster umgestellt (Knopf → Fenster → Spalten/Badges/Daten/Linien, keine Karte auf der Seite, kein Knopf bei Non-FX, Chart-Fenster liegt darüber und lässt das Profil offen) + K (Knopfbeschriftungen bei 1440/1180/820/390 im Knopf). Gegenproben: Knopf bei JPY entfernt → rot; Linien-Klick aus → rot; ohne 3 + 2 → KNOPFZEILE 820 px rot.
 
+## 2026-10-27 — VERSION-CHECK-644: Central bank — vierte Säule *General*
+
+**Nutzer:** *„Ergänz noch eine Säule mit dem Namen generel“* → auf der Oberfläche *General* (Übersetzungsregel), angehängt als vierte Säule.
+
+**Umgesetzt:**
+- `ZB_SAEULEN` + `{k:'allg',t:'General',rub:'Interest Rates',a:'--a-rate',ic:'percent'}` — Regel und Farbe der Zins-Karte (GOLD/SP500: *inverse*). Speicherform unverändert (`cb.s='allg'`), Archiv und Notizfenster folgen automatisch.
+- Raster 4 Spalten; 701–1000 px 2 × 2 (vier nebeneinander wären bei 820 px ~140 px).
+- ⓘ-Text: *Four pillars* … *General* = decision, guidance, tone.
+
+**Dabei gefunden und an der Wurzel behoben (Regel 8):**
+- 1180 px, GOLD: *LABOUR MARKET* + *inverse* + Zähler brauchen 227 px, die Säule hat 228 − 20 → Titel brach um, Farblinie 5 px tiefer als bei den anderen (gemessen 1421/1426/1421/1421). Ursache: jede Säule bemisst ihren Kopf allein. → Säulen als `subgrid` über vier Rasterzeilen (Kapitell | Kopf | Notizen | Basis), Schaft reicht Kopf/Notizen durch: Köpfe einer Reihe gleich hoch.
+- Erster subgrid-Versuch: auto-Spalte wuchs auf die Mindestbreite des Kopfes (203 px bei 192 px Säule, 1024 px) → Schaft 13 px breiter, Volute 5 px in der Nachbarsäule (gemessen *Voluten −5/8/8*). → `grid-template-columns:minmax(0,1fr)` in Säule und Schaft.
+- Kopf je nach Breite mal mit Chip, mal mit Zähler allein in Zeile 2 → fester Aufbau: Zeile 1 Symbol · Titel · Zähler, Zeile 2 Chip; Titel ohne Chip oben ausgerichtet (`align-content:flex-start`).
+- Zweite Kopfzeile machte GOLD/SP500 27 px höher als EUR (601 vs. 574 bei 1440) → Notizfläche gibt sie ab (`--zb-kx`).
+
+**Gemessen nachher:** Säulen 292 / 228 / 192 px (1440 / 1180 / 1024), 820: 2 × 2 à 310 px; Titel und Farblinien je Breite auf einer Höhe (1180 GOLD: Titel 1395, Linien 1448 bei allen vier); Karte EUR = GOLD = 574 / 562 / 550 px (1440 / 1180 / 1024); 820 und Handy inhaltsbestimmt (EUR 599 / GOLD 653 bzw. 1035 / 1147); Voluten ≥ 8 px auseinander; 0 JS-Fehler, kein Quer-Scroll.
+
+**Wächter `check/zentralbank.js`:** A vier Säulen; A3 (GOLD 1180 + 1024 px: Köpfe auf einer Höhe, kein Schaft breiter als die Säule, Karte = EUR); C General *inverse*. Gegenproben: ohne subgrid/Höhenausgleich → A3 KOPF + HOEHE rot; ohne `minmax` mit Chip in der Titelzeile → A3 SCHAFT + KOPF + HOEHE rot.
+

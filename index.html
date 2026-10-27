@@ -6206,8 +6206,29 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
   background:linear-gradient(var(--zb-stein) 0 45%,var(--zb-kante) 45% calc(45% + 1px),var(--zb-hell) calc(45% + 1px),var(--zb-stein2))}
 /* Abstand >= 26 px: die Kapitelle ragen je 9 px ueber den Schaft, sonst
    stossen die Voluten benachbarter Saeulen aneinander (gemessen bei 17 px) */
-.zb-saeulen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(26px,2.4vw,32px);padding:0 clamp(10px,1.4%,16px)}
-.zb-s{display:flex;flex-direction:column;min-width:0}
+.zb-saeulen{--zb-kx:0px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:clamp(26px,2.4vw,32px);row-gap:0;padding:0 clamp(10px,1.4%,16px)}
+/* mit inverse-Chip ist jeder Kopf eine Zeile hoeher (gemessen +27 px) - die
+   Notizflaeche gibt sie ab, die Karte bleibt auf jedem Asset gleich hoch */
+.zb-saeulen:has(.zb-s-inv){--zb-kx:27px}
+/* Jede Saeule belegt vier Zeilen des Rasters (Kapitell | Kopf | Notizen |
+   Basis) und reicht sie per subgrid bis in den Schaft durch: so sind die
+   Koepfe einer Reihe immer gleich hoch. Ohne das brach "LABOUR MARKET" neben
+   dem inverse-Chip bei 228 px Saeulenbreite um und seine Farblinie sass 5 px
+   tiefer als die der anderen (gemessen 1180 px, GOLD). Abstand zwischen
+   Saeulenreihen deshalb per margin, nicht per row-gap (der liefe sonst auch
+   zwischen Kapitell, Kopf und Basis). */
+.zb-s{display:grid;grid-row:span 4;grid-template-rows:subgrid;grid-template-columns:minmax(0,1fr);row-gap:0;min-width:0}
+/* minmax(0,1fr) hier und im Schaft: eine auto-Spalte wuchs auf die
+   Mindestbreite des Kopfes (INFLATION + inverse + Zaehler = 203 px bei 192 px
+   Saeule, 1024 px) und schob die Volute 5 px in die Nachbarsaeule */
+/* vier Saeulen (seit 644): 701-1000 px waeren sie ~140 px schmal -> 2 x 2,
+   zwischen den Reihen Luft wie am Handy, Notizflaeche niedriger (die Karte
+   soll nicht um eine ganze Saeulenhoehe wachsen) */
+@media (min-width:701px) and (max-width:1000px){
+  .zb-saeulen{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .zb-s:nth-child(-n+2){margin-bottom:14px}
+  .zb-saeulen .zb-inhalt{min-height:calc(59px - var(--zb-kx))}
+}
 /* Kapitell (ionisch): Abakus-Platte, Echinus, zwei Voluten als Spirale -
    seit 641 kraeftiger (28 statt 20 px, Voluten 24 statt 18 px) */
 .zb-kap{position:relative;height:28px;margin:0 -9px}
@@ -6219,7 +6240,7 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
   background:repeating-radial-gradient(circle at 46% 54%,var(--zb-kante) 0 1.5px,var(--zb-stein2) 1.5px 4.6px);box-shadow:0 1px 3px var(--zb-schatten)}
 .zb-vol.l{left:0}.zb-vol.r{right:0}
 /* Schaft = kleine Notes-Karte auf kanneliertem, gerundetem Stein */
-.zb-schaft{flex:1 1 auto;display:flex;flex-direction:column;gap:8px;min-height:260px;padding:10px 10px 14px;
+.zb-schaft{display:grid;grid-row:span 2;grid-template-rows:subgrid;grid-template-columns:minmax(0,1fr);row-gap:8px;padding:10px 10px 14px;
   background:repeating-linear-gradient(90deg,transparent 0 10px,rgba(20,27,46,.06) 10px 11px,rgba(255,255,255,.45) 11px 12px),
     linear-gradient(90deg,var(--zb-stein2) 0%,var(--zb-stein) 16%,var(--zb-hell) 50%,var(--zb-stein) 84%,var(--zb-stein2) 100%);
   border-left:1px solid var(--zb-kante);border-right:1px solid var(--zb-kante)}
@@ -6228,15 +6249,21 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
   background:linear-gradient(var(--zb-hell),var(--zb-stein) 40%,var(--zb-stein2) 60%,var(--zb-stein) 100%)}
 .zb-fuss::after{content:"";position:absolute;left:-3px;right:-3px;top:100%;height:8px;border:1px solid var(--zb-kante);border-top:none;
   background:linear-gradient(var(--zb-stein),var(--zb-stein2))}
-.zb-s-hd{display:flex;align-items:center;gap:6px;padding:0 1px 6px;border-bottom:2px solid var(--zb-a)}
+.zb-s-hd{display:flex;align-items:center;align-content:flex-start;flex-wrap:wrap;gap:6px;row-gap:4px;padding:0 1px 6px;border-bottom:2px solid var(--zb-a)}
 .zb-s-ic{display:inline-flex;color:var(--zb-a)}
 .zb-s-t{font:800 var(--fs-xs)/1.2 var(--ff-text);letter-spacing:.14em;text-transform:uppercase;color:var(--t0)}
 .zb-s-inv{font:italic 600 var(--fs-2xs)/1 var(--ff-text);color:var(--t2);border:1px solid var(--bd2);border-radius:999px;padding:3px 7px;background:var(--card)}
+/* Kopf immer gleich gebaut: Zeile 1 Symbol · Titel · Zaehler rechts, Zeile 2
+   der inverse-Chip unter dem Titel (vorher rutschte je nach Breite mal der
+   Chip, mal der Zaehler allein in die zweite Zeile) */
+.zb-s-hd:has(.zb-s-inv)::after{content:"";order:2;flex-basis:100%;height:0}
+.zb-s-inv{order:3;margin-left:19px}
 .zb-s-n{margin-left:auto;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:var(--card);border:1px solid var(--bd);
   display:inline-flex;align-items:center;justify-content:center;font:700 var(--fs-2xs)/1 var(--ff-num);color:var(--t2)}
 /* Saeule = kleine Pinned-notes-Karte: dieselben .ab-nt-Zeilen und derselbe
    "＋ New note…"-Einstieg (Nutzer 2026-10-27: "genau so wie bei den quick
    Notes"), nur etwas kompakter */
+.zb-inhalt{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:calc(198px - var(--zb-kx,0px))}
 .zb-schaft .ab-nt-add{margin-bottom:0}
 .zb-schaft .ab-nt-neu{height:30px;font-size:var(--fs-sm)}
 .zb-liste{overflow:visible}
@@ -6266,9 +6293,10 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
   .zb-name{letter-spacing:.2em;padding-left:.2em;font-size:var(--fs-md)}
   .zb-orn{display:none}
   .zb-akro-l,.zb-akro-r{display:none}
-  .zb-saeulen{grid-template-columns:1fr;gap:14px;padding:0 12px}
+  .zb-saeulen{grid-template-columns:1fr;row-gap:0;padding:0 12px}
+  .zb-s:not(:last-child){margin-bottom:14px}
   /* untereinander braucht die Saeule keine Hoehe auf Vorrat */
-  .zb-schaft{min-height:96px}
+  .zb-saeulen .zb-inhalt{min-height:max(0px,calc(35px - var(--zb-kx)))}
 }
 [data-fx-theme="midnight"] .zb-bau{--zb-laub:#4A5F86;--zb-stein:var(--bg4);--zb-stein2:var(--bg3);--zb-hell:var(--bg6);--zb-kante:rgba(150,180,225,.38);--zb-tief:rgba(0,0,0,.4);--zb-schatten:rgba(0,0,0,.35)}
 [data-fx-theme="midnight"] .zb-st1.zb-banner{background:#B3202B;border-color:#B3202B}
@@ -6288,7 +6316,7 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 .zb-a-kopf{font-size:var(--fs-sm);color:var(--t2);margin-bottom:10px}
 .zb-a-kopf b{color:var(--t0)}
 .zb-a-saeulen{padding:0 12px}
-.zb-a-saeulen .zb-schaft{min-height:140px}
+.zb-a-saeulen .zb-inhalt{min-height:calc(79px - var(--zb-kx))}
 @media (max-width:700px){.zb-a{grid-template-columns:1fr}.zb-a-liste{flex-direction:row;overflow-x:auto;max-height:none}.zb-a-tag{flex:none}}
 /* ── COUNTRY PROFILE (js/profil.js, Nutzer 2026-10-25) ──────────────────
    Volle Breite zwischen Schnellzugriffen und MACRO, nur bei den acht
@@ -7029,11 +7057,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-643 - Country profile: fuenfter Knopf in der Schnellzugriffszeile oeffnet die Karte als Fenster, auf der Asset-Seite steht sie nicht mehr."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-644 - Central bank: vierte Saeule General (Regel und Farbe der Zins-Karte), 701-1000 px als 2 x 2."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-643</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-644</span>
     </span>
   </div>
   <div class="hdr-r">

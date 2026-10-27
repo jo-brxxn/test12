@@ -90,9 +90,9 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
     if (!k) { rot('A KARTE', `${id}: keine Zentralbank-Karte`); continue; }
     if (k.name !== n) rot('A NAME', `${id}: "${k.name}" statt "${n}"`);
     if (!k.flagge) rot('A FLAGGE', `${id}: keine Flagge im Medaillon`);
-    if (k.saeulen.map(x => x.t).join('|') !== 'Inflation|Labour market|Economy') rot('A SAEULEN', `${id}: ${k.saeulen.map(x => x.t).join('|')}`);
+    if (k.saeulen.map(x => x.t).join('|') !== 'Inflation|Labour market|Economy|General') rot('A SAEULEN', `${id}: ${k.saeulen.map(x => x.t).join('|')}`);
   }
-  if (!F.length) gruen(`${Object.keys(namen).length} Assets: Name, Flagge, drei Saeulen`);
+  if (!F.length) gruen(`${Object.keys(namen).length} Assets: Name, Flagge, vier Saeulen`);
 
   // A2: Aufteilung und Bauform (Nutzer 2026-10-27). Seit 642: die vier
   // Knoepfe als Zeile UEBER der Karte, Karte volle Breite, Knopftext mittig;
@@ -120,7 +120,29 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
   if (!bau.luecke) rot('A2 ARCHITRAV', 'kein .zb-architrav - Saeulen haengen nicht am Dach');
   else if (bau.luecke.some(x => Math.abs(x) > 1)) rot('A2 VERBUNDEN', `Luecke Architrav -> Kapitell ${bau.luecke.join('/')} px`);
   if (bau.voluten.some(x => x < 4)) rot('A2 VOLUTEN', `Abstand benachbarter Voluten ${bau.voluten.join('/')} px (< 4 = sie stossen aneinander)`);
-  if (F.length === fa) gruen(`Knoepfe ueber der Karte, volle Breite, Text mittig; Dachspitze ${bau.spitze} px zur Titelmitte, Kopf ${bau.frei} px ueber dem Dach; Kapitelle am Architrav, Voluten ${bau.voluten.join('/')} px auseinander`);
+  // A3 (seit 644, vierte Saeule General): bei 1180 px (iPad quer) sind die
+  // Saeulen 228 px schmal; GOLD hat inverse-Chips -> zweizeilige Koepfe. Alle
+  // Titel und Farblinien einer Reihe auf gleicher Hoehe (subgrid), kein Schaft
+  // breiter als seine Saeule (eine auto-Spalte schob die Volute 5 px in die
+  // Nachbarsaeule), Karte so hoch wie auf EUR (ohne Chips).
+  await p.setViewportSize({ width: 1180, height: 900 });
+  const mess3 = id => p.evaluate(async i => { gotoSym(i); await new Promise(r => setTimeout(r, 600));
+    const s = [...document.querySelectorAll('#zbKarte .zb-s')];
+    return { h: Math.round(document.getElementById('zbKarte').getBoundingClientRect().height), chips: document.querySelectorAll('#zbKarte .zb-s-inv').length,
+      titel: [...new Set(s.map(x => Math.round(x.querySelector('.zb-s-t').getBoundingClientRect().top)))], linie: [...new Set(s.map(x => Math.round(x.querySelector('.zb-s-hd').getBoundingClientRect().bottom)))],
+      breiter: s.filter(x => x.querySelector('.zb-schaft').getBoundingClientRect().right > x.getBoundingClientRect().right + 1).map(x => x.querySelector('.zb-s-t').textContent) }; }, id);
+  const g3 = await mess3('GOLD'), e3 = await mess3('EUR');
+  // schmalste Breite mit vier Saeulen nebeneinander (192 px): dort lief der Schaft ueber
+  await p.setViewportSize({ width: 1024, height: 900 });
+  const g4 = await mess3('GOLD');
+  await p.setViewportSize({ width: 1440, height: 900 }); await p.waitForTimeout(300);
+  if (g4.breiter.length) rot('A3 SCHAFT', `GOLD 1024 px: Schaft breiter als die Saeule bei ${g4.breiter.join(', ')}`);
+  if (g4.titel.length > 1 || g4.linie.length > 1) rot('A3 KOPF', `GOLD 1024 px: Titel auf ${g4.titel.join('/')} px, Farblinien auf ${g4.linie.join('/')} px`);
+  if (!g3.chips) rot('A3 TESTAUFBAU', 'GOLD ohne inverse-Chip - Kopfhoehe nicht pruefbar');
+  if (g3.titel.length > 1 || g3.linie.length > 1) rot('A3 KOPF', `GOLD 1180 px: Titel auf ${g3.titel.join('/')} px, Farblinien auf ${g3.linie.join('/')} px - nicht auf einer Hoehe`);
+  if (g3.breiter.length) rot('A3 SCHAFT', `GOLD 1180 px: Schaft breiter als die Saeule bei ${g3.breiter.join(', ')}`);
+  if (Math.abs(g3.h - e3.h) > 1) rot('A3 HOEHE', `Karte GOLD ${g3.h} px, EUR ${e3.h} px (1180 px) - soll gleich hoch sein`);
+  if (F.length === fa) gruen(`Knoepfe ueber der Karte, volle Breite, Text mittig; Dachspitze ${bau.spitze} px zur Titelmitte, Kopf ${bau.frei} px ueber dem Dach; Kapitelle am Architrav, Voluten ${bau.voluten.join('/')} px auseinander; 1180 px GOLD: Koepfe auf einer Linie, Karte ${g3.h} = EUR ${e3.h} px`);
 
   // ── B + D ──
   console.log('B) Speichern + Neuladen, D) Banner');
@@ -177,11 +199,13 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
   if (!gi) rot('C NOTIZ', 'USD-Notiz fehlt auf GOLD (gleiche Bank)');
   else if (gi.farbe !== bear) rot('C FARBE', `USD bullish -> auf GOLD ${gi.farbe}, erwartet bearish ${bear}`);
   if (k.saeulen[2].inv) rot('C REGEL', 'Economy auf GOLD faelschlich inverse');
+  // General folgt der Regel der Zins-Karte (Interest Rates: GOLD inverse)
+  if (!k.saeulen[3] || !k.saeulen[3].inv) rot('C REGEL', 'General auf GOLD nicht als inverse markiert (Regel Interest Rates)');
   const TX2 = 'Gold bullish Inflation ' + Date.now();
   await neueNotiz(p, 1, TX2, 'bull');
   const n2 = await p.evaluate(tx => (research.notes || []).find(n => n.title === tx) || null, TX2);
   if (!n2 || n2.bias !== 'bear') rot('C SPEICHERSICHT', `auf GOLD bullish eingegeben -> gespeichert ${n2 && n2.bias} (erwartet bear in USD-Sicht)`);
-  if (!F.some(f => /^C /.test(f))) gruen('USD bullish = GOLD bearish (Inflation), Economy unveraendert, Eingabe auf GOLD in USD-Sicht gespeichert');
+  if (!F.some(f => /^C /.test(f))) gruen('USD bullish = GOLD bearish (Inflation), General inverse wie Interest Rates, Economy unveraendert, Eingabe auf GOLD in USD-Sicht gespeichert');
 
   // ── E ──
   console.log('E) Snapshot-Runde');
