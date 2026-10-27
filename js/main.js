@@ -11323,14 +11323,15 @@ function renderAssetBoard(c){
            im SELBEN Raster statt in einem eigenen Block darueber oder
            darunter - nur so sitzt sie garantiert buendig zwischen den beiden
            Reihen und nimmt denselben Spaltenabstand mit. */''}
-      <div class="ab-col ab-qrow">${abQuickZeileHtml(c)}</div>
+      ${/* Zentralbank-Karte + Schnellzugriffe in EINER Reihe (Nutzer 2026-10-27,
+           Bildschirmfoto: "mach die Karte in die gleiche Zeile wie die 4
+           Buttons ... aber mach die 4 Buttons rechts daneben untereinander").
+           Karte links, die vier Knoepfe rechts als Spalte, gemeinsam so hoch
+           wie die Karte; Handy: Knoepfe 2x2 unter der Karte. */''}
+      <div class="ab-col zb-qrow">${zentralbankKarteHtml(c,true)}<div class="zb-qcol">${abQuickZeileHtml(c)}</div></div>
       ${/* Country Profile (Nutzer 2026-10-25: "eine neue karte die sich von
            ganz links nach ganz rechts erstreckt ueber macro ... erstmal nur
            bei fx") - volle Breite zwischen Schnellzugriffen und MACRO. */''}
-      ${/* Zentralbank-Karte (Nutzer 2026-10-27, js/zentralbank.js): volle
-           Breite direkt ueber dem Country profile - auf JEDEM Asset, Non-FX
-           mit der verknuepften Bank. */''}
-      ${zentralbankKarteHtml(c)}
       ${countryProfileHtml(c)}
       ${abReihenTitel('Macro',makroReihenSchalterHtml(c))}
       ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE

@@ -20841,3 +20841,17 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter:** `check/zentralbank.js` A–H (Karte auf 10 Assets, Speichern + Neuladen, Regel inverse, Banner + Quittung über Neuladen, Snapshot-Runde, Tippen beim Neuzeichnen, Papierkorb, Archiv per `page.clock` hinter die nächste Fed-Sitzung). Gegenproben `--gegenprobe-regel` (3 Befunde), `--gegenprobe-speichern` (rot). Erste Fassung der Gegenprobe *Regel* blieb grün — Schalter ging beim Neuladen verloren → per Init-Skript gesetzt.
 
+## 2026-10-27 — VERSION-CHECK-639: Central bank kompakter, in der Reihe der Schnellzugriffe
+
+**Nutzer (iPad-Bildschirmfoto mit gelben Markierungen über dem Dach und neben den Säulen):** *„Das verschwendet zu viel Platz … das Dach der Bank ist zu gros und da wo die Flagge drinne ist das muss mehr länglich und mach die Karte in die gleiche Zeile wie die 4 Buttons … aber mach die 4 Buttons rechts daneben untereinander. Wenn eine Name zu lang ist wie Rate probabilities dann schreib es untereinander“*
+
+**Gemessen vorher (1180×820):** Giebel ~113 px hoch, Gebäude mit Seitenrand (Polster 2,5 % + Säulenreihe 3 %), Karte ~495 px über der Knopfzeile.
+
+**Umgesetzt:**
+- Giebel flach (46–64 px, viewBox 1000×60), Flagge als **Tafel 3:2** mit Lorbeerzweig links und rechts statt rundem Medaillon mit Kranz; Akroterien kleiner.
+- Kein Seitenrand: Giebel, Fries, Zahnschnitt, Stufen über die volle Kartenbreite; Säulenabstand `clamp(14px,2.2vw,30px)`, Schaft min. 104 px statt 150.
+- Neue Reihe `.zb-qrow`: Karte + Spalte `.zb-qcol` mit den vier `.aql` (gleich hoch, füllen die Kartenhöhe); Beschriftung bricht um (`white-space:normal`, Symbol direkt daneben). ≤ 1000 px Knöpfe als 4er-Zeile darunter, ≤ 700 px 2×2.
+- Richtungswahl ▲◆▼ rutscht in schmalen Säulen unter das Eingabefeld (`flex-wrap`).
+
+**Gemessen nachher:** 1180×820 Karte 855×449 px, Giebel 52 px, Säulen je 248 px, Knöpfe 191×107 px (*Rate Probabilities* 2 Zeilen); 1440 Giebel 63 px, Säulen 318 px; 820 Karte volle Breite, Säulen 203 px; 390 eine Spalte, 2×2-Knöpfe; nirgends Quer-Scroll, 0 JS-Fehler.
+

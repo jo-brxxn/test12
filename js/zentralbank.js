@@ -142,27 +142,24 @@ function zbSaeuleHtml(sym,ccy,s,notizen,lesen){
     <div class="zb-fuss" aria-hidden="true"></div>
   </div>`;
 }
-// Der Giebel: Dachkoerper und vertieftes Tympanon als SVG (dehnt sich mit der
-// Breite; Kanten mit non-scaling-stroke, damit sie ueberall gleich duenn
-// bleiben), Zierspitzen (Akroterien) an First und Ecken, in der Mitte die
-// Flagge im Medaillon mit Lorbeerkranz - Spitzen, Kranz und Medaillon als
-// eigene Elemente in festen Pixeln, damit sie beim Dehnen nicht verzerren.
+// Der Giebel - FLACH und laenglich (Nutzer 2026-10-27, Bildschirmfoto: "das
+// Dach der Bank ist zu gross und da wo die Flagge drinne ist das muss mehr
+// laenglich"). Dachkoerper und vertieftes Tympanon als SVG (dehnt sich mit der
+// Breite, Kanten mit non-scaling-stroke), Zierspitzen an First und Ecken, in
+// der Mitte die Flagge als Tafel im Flaggenformat mit je einem Lorbeerzweig
+// links und rechts - Tafel, Zweige und Spitzen in festen Pixeln, damit nichts
+// verzerrt.
 const ZB_PALMETTE='<svg viewBox="0 0 40 30" aria-hidden="true"><path class="zb-p1" d="M20 29C9 24 5 13 11 3c3 9 6 13 9 15 3-2 6-6 9-15 6 10 2 21-9 26z"/><path class="zb-p2" d="M20 27c-2-8-2-17 0-26 2 9 2 18 0 26z"/></svg>';
-// Lorbeer: je Seite 6 Blattpaare auf einem Bogen um die Kranzmitte, vom Fuss
-// (phi = 0, unten) bis knapp unter den Scheitel (phi = 150 Grad). Je Paar ein
-// Blatt nach aussen, eines nach innen geneigt, Spitze entlang des Bogens.
-const ZB_KRANZ=(()=>{
-  const cx=60,cy=46,r=37,bl=[];
-  for(const seite of[-1,1])for(let i=0;i<6;i++){
-    const phi=(24+i*24)*Math.PI/180;
-    const tang=Math.atan2(-Math.sin(phi),seite*Math.cos(phi))*180/Math.PI;   // Richtung des Bogens nach oben
-    for(const [dr,kipp] of[[4.5,-seite*24],[-4.5,seite*24]]){
-      const x=cx+seite*Math.sin(phi)*(r+dr),y=cy+Math.cos(phi)*(r+dr);
-      bl.push(`<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="6.8" ry="2.7" transform="rotate(${(tang+kipp).toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`);
-    }
+// Lorbeerzweig nach rechts: leicht gebogener Stiel, 5 Blattpaare (oben/unten
+// im Wechsel schraeg nach aussen), Spitze am Ende. Links = gespiegelt.
+const ZB_ZWEIG=(()=>{
+  const bl=[];
+  for(let i=0;i<5;i++){
+    const x=7+i*8.4,y=12-Math.sin(i/4*Math.PI*.9)*1.6;
+    bl.push(`<ellipse cx="${x.toFixed(1)}" cy="${(y-3.4).toFixed(1)}" rx="5.2" ry="2.1" transform="rotate(-28 ${x.toFixed(1)} ${(y-3.4).toFixed(1)})"/>`);
+    bl.push(`<ellipse cx="${(x+3.4).toFixed(1)}" cy="${(y+3.2).toFixed(1)}" rx="5.2" ry="2.1" transform="rotate(26 ${(x+3.4).toFixed(1)} ${(y+3.2).toFixed(1)})"/>`);
   }
-  const ast=seite=>{const p=[];for(let i=0;i<=30;i++){const ph=(8+i*4.8)*Math.PI/180;p.push(`${(cx+seite*Math.sin(ph)*r).toFixed(1)} ${(cy+Math.cos(ph)*r).toFixed(1)}`);}return'M'+p.join('L');};
-  return`<svg class="zb-kranz" viewBox="0 0 120 92" aria-hidden="true"><path class="zb-kranz-ast" d="${ast(-1)}${ast(1)}"/><g class="zb-kranz-bl">${bl.join('')}</g><path class="zb-kranz-band" d="M54 83.5l6 4 6-4-6 2.2z"/></svg>`;
+  return`<svg class="zb-zweig" viewBox="0 0 52 24" aria-hidden="true"><path class="zb-zweig-ast" d="M1 12.5C14 11 30 9.5 50 11.5"/><g class="zb-zweig-bl">${bl.join('')}<ellipse cx="48.5" cy="11.3" rx="4.6" ry="1.9"/></g></svg>`;
 })();
 function zbGiebelHtml(ccy){
   let flagge='';
@@ -171,19 +168,19 @@ function zbGiebelHtml(ccy){
     flagge=`<svg viewBox="0 0 36 24" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#ai-${ccy}" width="36" height="24"/></svg>`;
   }
   return`<div class="zb-giebel">
-    <svg class="zb-giebel-svg" viewBox="0 0 1000 150" preserveAspectRatio="none" aria-hidden="true">
+    <svg class="zb-giebel-svg" viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <linearGradient id="zbGDach" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="zb-gs-hell"/><stop offset="1" class="zb-gs-stein"/></linearGradient>
         <linearGradient id="zbGTymp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="zb-gs-stein2"/><stop offset="1" class="zb-gs-stein"/></linearGradient>
       </defs>
-      <polygon points="0,150 500,3 1000,150" fill="url(#zbGDach)"/>
-      <polygon points="74,141 500,28 926,141" fill="url(#zbGTymp)"/>
-      <polyline class="zb-g-tiefe" points="74,141 500,28 926,141" vector-effect="non-scaling-stroke"/>
-      <polyline class="zb-g-licht" points="0,150 500,3 1000,150" vector-effect="non-scaling-stroke"/>
-      <line class="zb-g-boden" x1="74" y1="141" x2="926" y2="141" vector-effect="non-scaling-stroke"/>
+      <polygon points="0,60 500,2 1000,60" fill="url(#zbGDach)"/>
+      <polygon points="56,56 500,11 944,56" fill="url(#zbGTymp)"/>
+      <polyline class="zb-g-tiefe" points="56,56 500,11 944,56" vector-effect="non-scaling-stroke"/>
+      <polyline class="zb-g-licht" points="0,60 500,2 1000,60" vector-effect="non-scaling-stroke"/>
+      <line class="zb-g-boden" x1="56" y1="56" x2="944" y2="56" vector-effect="non-scaling-stroke"/>
     </svg>
     <span class="zb-akro zb-akro-m">${ZB_PALMETTE}</span><span class="zb-akro zb-akro-l">${ZB_PALMETTE}</span><span class="zb-akro zb-akro-r">${ZB_PALMETTE}</span>
-    ${flagge?`<span class="zb-wappen">${ZB_KRANZ}<span class="zb-medaillon" aria-hidden="true">${flagge}</span></span>`:''}
+    ${flagge?`<span class="zb-wappen"><span class="zb-zweig-l">${ZB_ZWEIG}</span><span class="zb-tafel" aria-hidden="true">${flagge}</span><span class="zb-zweig-r">${ZB_ZWEIG}</span></span>`:''}
   </div>`;
 }
 

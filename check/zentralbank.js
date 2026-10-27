@@ -50,7 +50,7 @@ const karte = p => p.evaluate(() => {
   const s = [...k.querySelectorAll('.zb-saeulen .zb-s')].map(x => ({
     t: (x.querySelector('.zb-s-t') || {}).textContent, inv: !!x.querySelector('.zb-s-inv'),
     n: [...x.querySelectorAll('.zb-n')].map(n => ({ tx: (n.querySelector('.zb-n-tx') || {}).textContent, farbe: getComputedStyle(n).borderLeftColor })) }));
-  return { name: (k.querySelector('.zb-name') || {}).textContent, flagge: !!k.querySelector('.zb-medaillon use'), banner: !!k.querySelector('.zb-banner'),
+  return { name: (k.querySelector('.zb-name') || {}).textContent, flagge: !!k.querySelector('.zb-tafel use'), banner: !!k.querySelector('.zb-banner'),
     archiv: +(((k.querySelector('.zb-arch b') || {}).textContent) || 0), saeulen: s, ohne: !!k.querySelector('.zb-nolink') };
 });
 const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'); d.style.color = `var(--bias-${b})`; document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c; }, b);
