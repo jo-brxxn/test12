@@ -122,7 +122,9 @@ und Papierkorb unverändert. Gespeichert wird der Bias in der Sicht der
 **Bank-Währung**; die Sicht eines verknüpften Assets (Asset-Regel `inverse`)
 entsteht nur beim Anzeigen/Eingeben. „Archivieren“ verschiebt nichts: eine Notiz
 behält `m`, die Karte zeigt die Notizen der letzten Sitzung, das Archiv die
-älteren. Geprüft von `check/zentralbank.js`.
+älteren. Angelegt/bearbeitet wird über das normale Notizfenster (`resZbNeu()`/
+`openResNote()`, Kontext `_resZb` in `js/main.js`) — derselbe Speicherpfad
+`saveResNote()` wie jede Notiz, kein eigener. Geprüft von `check/zentralbank.js`.
 
 ## Sonderfall `research`/`researchFolders` (Notizen/Ordner/Papierkorb): Merge statt Overwrite + `navigator.locks`
 

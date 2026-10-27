@@ -20855,3 +20855,16 @@ die Folgeentwicklung vorhersagen?
 
 **Gemessen nachher:** 1180×820 Karte 855×449 px, Giebel 52 px, Säulen je 248 px, Knöpfe 191×107 px (*Rate Probabilities* 2 Zeilen); 1440 Giebel 63 px, Säulen 318 px; 820 Karte volle Breite, Säulen 203 px; 390 eine Spalte, 2×2-Knöpfe; nirgends Quer-Scroll, 0 JS-Fehler.
 
+## 2026-10-27 — VERSION-CHECK-640: Central bank — Notizen wie Pinned notes, normales Dach
+
+**Nutzer:** *„Und die Notizen und wie man sie einfügt soll genau so sein wie bei den quick Notes. Das Dach soll nicht länglicher nur das wo die Flagge drinne ist das Gebäude soll eher größer als breiter“* — Rückfrage: *Normales Dach, höher*; Notizen *wie „Pinned notes“*. Der flache Giebel aus 639 war also ein Missverständnis von *„muss mehr länglich“* (gemeint: nur die Flaggen-Tafel).
+
+**Umgesetzt:**
+- Giebel wieder mit Tempel-Neigung (viewBox 1000×120, `clamp(78px,8vw,116px)`), Flaggen-Tafel 3:2 größer (`clamp(28px,3.1vw,42px)`), Schaft min. 160 px statt 104 (Handy untereinander 96 px).
+- Säulen-Notizen wie *Pinned notes*: *＋ New note…* öffnet das normale Notizfenster (`resZbNeu()`), Kontext-Zeile *Bank · Säule · meeting Datum*, Fenstertitel *Central bank note*, *Places*/*Pinned* ausgeblendet; Zeilen mit Bias-Rand, ★, Titel + Vorschau, ▲▼ (`zbVerschieben`, Feld `ord`). Bias im Fenster in Asset-Sicht, gespeichert in Bank-Sicht (GOLD: USD bullish = Bearish im Fenster, unverändert gespeichert bleibt bullish).
+- Die eigene Eingabezeile aus 638/639 (Textfeld + ▲◆▼ + ×) ist weg.
+
+**Gemessen:** 1440 Karte 1072×548 (mit Banner), Giebel 115 px, Tafel 63×42, Säulen 318 px; 1180 Karte 855×536, Giebel 94, Tafel 55×37, Säulen 248 px; 820 Giebel 78, Säulen 203 px; 390 eine Spalte, Schaft 125 px (vorher 160 bei leerer Säule, Karte 983 → 877 px); nirgends Quer-Scroll, 0 JS-Fehler.
+
+**Wächter `check/zentralbank.js`** auf den Fenster-Weg umgestellt (B: Fenster offen, Kontext-Zeile, Titel, Places/Pinned versteckt, Speichern → Karte/`research.notes`/Neuladen; F: Asset-Sicht im Fenster, neue Notiz oben, ▼ verschiebt). Gegenproben: Regel aus → 4 rot, Speichern aus → B rot, Titel *Archive note* → B KOPF rot.
+

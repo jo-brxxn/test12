@@ -22,13 +22,13 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {countryProfileHtml} from './profil.js';
-import {zentralbankKarteHtml,zbNachRender} from './zentralbank.js';
+import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 import {makroKartenSchalterHtml,makroReihenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
   // Was js/zentralbank.js von hier braucht (Notizen = research.notes, Banner-Quittung = zbQuittung).
-  research,resNotes,trashResNote,assetIconHtml,invertBias,zbQuittung,
+  research,resNotes,trashResNote,assetIconHtml,invertBias,zbQuittung,resZbNeu,openResNote,abNoteHl,
   // Was js/trades.js (Journal) fuer seine Charts von hier braucht.
   chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn,
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
@@ -7983,8 +7983,6 @@ function renderDetail(){
   syncSidebarScores();
   setTimeout(syncSidebarScores,0);
   animChanges();
-  // Zentralbank-Karte: gerade getippten Text/Fokus nach dem Neuaufbau zurueck.
-  try{zbNachRender();}catch(e){}
 }
 
 // ── KARTEN-GRID (gleich hohe Zeilen) ──
@@ -16114,7 +16112,7 @@ function researchNotesPanelHtml(assetId,fid){
 // Oeffnen gefuellt: openM() nimmt den Stand fuer die Ungespeichert-Nachfrage
 // auf, ein spaeter gesetzter Haken saehe dort wie eine Eingabe des Nutzers aus.
 function newResNoteIn(assetId,fid,anpinnen){
-  _resEditId=null;
+  _resEditId=null;_resZb=null;
   resFillNoteModal({title:'',body:'',fids:[fid||researchGenFidFor(assetId)].filter(Boolean),tags:[],fav:false,pin:!!anpinnen});
   resOpenNoteShell();
   setTimeout(()=>{const t=document.getElementById('resNTitle');if(t)t.focus();},60);
@@ -16141,7 +16139,7 @@ function resOpenNoteShell(){
   openM('mResNote');
 }
 function newResNote(){
-  _resEditId=null;
+  _resEditId=null;_resZb=null;
   resFillNoteModal({title:'',body:'',fids:[],tags:[],fav:false});
   resOpenNoteShell();
   setTimeout(()=>{const t=document.getElementById('resNTitle');if(t)t.focus();},60);
@@ -16149,8 +16147,37 @@ function newResNote(){
 function openResNote(id){
   const n=resNotes().find(x=>x.id===id);if(!n)return;
   _resEditId=id;
+  _resZb=n.cb?zbFensterKontext(n.cb):null;
   resFillNoteModal(n);
   resOpenNoteShell();
+}
+// ── Zentralbank-Notizen im SELBEN Notizfenster (Nutzer 2026-10-27: "die
+// Notizen und wie man sie einfuegt soll genau so sein wie bei den quick
+// Notes" - per Rueckfrage: wie Pinned notes). Solange das Fenster eine
+// Zentralbank-Notiz zeigt, steht _resZb = {b,s,m,dreht,zeile}:
+//  - Bank, Saeule und Sitzung stehen als Zeile oben (resNZb)
+//  - "Places" und "Pinned" sind ausgeblendet: eine Bank-Notiz liegt in
+//    keinem Asset-Ordner und erscheint auf keiner Pinned-Liste - ein Haken
+//    ohne Wirkung waere ein totes Bedienelement (Regel 6)
+//  - dreht = Asset-Regel inverse (z.B. Gold, Inflation): das Fenster zeigt
+//    und nimmt den Bias in der Sicht des Assets, gespeichert wird er in der
+//    Sicht der Bank-Waehrung (js/zentralbank.js).
+let _resZb=null;
+function resZbAnzeigen(){
+  const box=document.getElementById('resNPlacesBox'),pin=document.getElementById('resNPinRow'),z=document.getElementById('resNZb');
+  if(box)box.hidden=!!_resZb;
+  if(pin)pin.hidden=!!_resZb;
+  if(z){z.hidden=!_resZb;z.innerHTML=_resZb?_resZb.zeile:'';}
+  // "Archive" heisst auf der Zentralbank-Karte die Liste vergangener
+  // Sitzungen - dort waere "Archive note" irrefuehrend.
+  const k=document.getElementById('resNKopf');
+  if(k)k.textContent=_resZb?'Central bank note':'Archive note';
+}
+function resZbNeu(kontext){
+  _resEditId=null;_resZb=kontext||null;
+  resFillNoteModal({title:'',body:'',fids:[],tags:[],fav:false,pin:false,bias:'neu'});
+  resOpenNoteShell();
+  setTimeout(()=>{const t=document.getElementById('resNTitle');if(t)t.focus();},60);
 }
 // 3-stufiger Bias statt der frueheren 2-stufigen "Richtung" (Nutzer-Wunsch
 // 2026-08-30: "deutlich ob sie neutral bullish oder bearish sind") - rein
@@ -16225,7 +16252,9 @@ function resFillNoteModal(n){
   resFillPlaceFolderSelect(startAsset);
   as.onchange=()=>resFillPlaceFolderSelect(as.value);
   _resBias=(n.bias==='bull'||n.bias==='bear')?n.bias:'neu';
+  if(_resZb&&_resZb.dreht)_resBias=invertBias(_resBias);   // Sicht des Assets
   resPaintBias();
+  resZbAnzeigen();
   document.getElementById('resNDel').style.display=_resEditId?'':'none';
   document.getElementById('resNMeta').textContent=_resEditId&&n.ts?('Created '+resFmtDate(n.ts)+(n.up&&n.up!==n.ts?'  ·  updated '+resFmtDate(n.up):'')):'New note';
 }
@@ -16249,7 +16278,15 @@ function saveResNote(){
     pushU();
     if(_resEditId){
       const n=resNotes().find(x=>x.id===_resEditId);
-      if(n){if(n.seed&&!n.replacesSeed)n.replacesSeed=n.id;n.title=title||researchTitleFrom(body);n.body=body;n.tags=tags;n.fids=fids;n.fav=fav;n.pin=n.arch?false:pin;n.up=now;n.bias=_resBias;n.evt=evt;delete n.seed;}
+      const biasGesp=_resZb&&_resZb.dreht?invertBias(_resBias):_resBias;   // Bank-Notiz: zurueck in die Sicht der Bank-Waehrung
+      if(n){if(n.seed&&!n.replacesSeed)n.replacesSeed=n.id;n.title=title||researchTitleFrom(body);n.body=body;n.tags=tags;n.fids=n.cb?[]:fids;n.fav=fav;n.pin=n.arch||n.cb?false:pin;n.up=now;n.bias=biasGesp;n.evt=evt;delete n.seed;}
+    }else if(_resZb){
+      // Neue Zentralbank-Notiz: oben in ihrer Saeule (ord), Bias in Bank-Sicht.
+      const z=_resZb,ords=resNotes().filter(x=>x&&x.cb&&x.cb.b===z.b&&x.cb.s===z.s&&typeof x.ord==='number').map(x=>x.ord);
+      const id=uid();
+      research.notes.push({id,fids:[],title:title||researchTitleFrom(body),body:body,tags:tags,fav:fav,pin:false,arch:false,ord:Math.min(0,...ords)-1,ts:now,up:now,
+        bias:z.dreht?invertBias(_resBias):_resBias,evt:evt,asset:'',cb:{b:z.b,s:z.s,m:z.m}});
+      _resEditId=id;
     }else{
       const asset=primaryAsset&&!fids.length?primaryAsset:'';
       // Neue Notizen stehen in der Asset-Reihenfolge (n.ord, Pinned-notes-
@@ -16265,7 +16302,7 @@ function saveResNote(){
       _resEditId=id;
     }
     _resAutoPin=null;
-    save();
+    if(!(window.__gpZbOhneSave&&_resZb))save();   // __gpZbOhneSave: nur Gegenprobe check/zentralbank.js
   }catch(e){
     alert('The note could not be saved: '+(e&&e.message||e)+'\nYour text is still in the window.');
     return;

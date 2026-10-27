@@ -16,7 +16,12 @@
 //    einem anderen Asset nicht also da muss auch die Regel uebernommen
 //    werden": die Bias-Farbe einer Notiz folgt der Asset-Regel der Saeule
 //    (effDeriveRules: inverse -> gedreht).
-//  - mehrere kurze Notizen je Saeule (wie die Pinned-notes-Karte)
+//  - mehrere kurze Notizen je Saeule; seit 2026-10-27 (Nutzer: "die Notizen
+//    und wie man sie einfuegt soll genau so sein wie bei den quick Notes",
+//    per Rueckfrage = Pinned notes) EXAKT wie dort: "＋ New note…" oeffnet das
+//    volle Notizfenster (Titel, Text, Tags, Bias, Event), die Zeilen sind
+//    dieselben .ab-nt-Zeilen (★ markieren, Titel + Textanfang, ▲▼ sortieren,
+//    Antippen oeffnet die Notiz, Loeschen im Fenster).
 //  - Banner ab dem Zinsentscheid, weg nach der ersten Notiz oder per ✕
 //  - Name in Gravur-Optik in der App-Schrift (Regel "eine Schrift")
 //
@@ -35,9 +40,9 @@
 // ein neuer Zinsentscheid, ist die Karte damit von selbst leer - es wird
 // nichts kopiert oder geloescht, also kann dabei auch nichts verloren gehen.
 import {BC,FX} from './constants.js';
-import {escH,escJH,icn,abInfoBtn,getSym,isNonFx,macroCcyFor,effDeriveRules,invertBias,biasCss,
-  research,resNotes,trashResNote,pushU,save,uid,todayStr,calEvts,evtMatchesSym,IND_EVENT_MATCHERS,
-  fmtDayHdr,assetIconHtml,openM,zbQuittung,syms} from './main.js';
+import {escH,escJH,icn,abInfoBtn,getSym,macroCcyFor,effDeriveRules,invertBias,biasCss,
+  resNotes,pushU,save,todayStr,calEvts,evtMatchesSym,IND_EVENT_MATCHERS,curPage,
+  fmtDayHdr,assetIconHtml,openM,zbQuittung,syms,resZbNeu} from './main.js';
 import {rateSteps} from './score.js';
 import {isEvtPast,daysUntil} from './calendar.js';
 import {CP} from './profil.js';
@@ -101,50 +106,52 @@ const zbSicht=(b,dreht)=>dreht?invertBias(b||'neu'):(b||'neu');
 const BIAS_ZEICHEN={bull:'▲',neu:'◆',bear:'▼'};
 const BIAS_WORT={bull:'bullish',neu:'neutral',bear:'bearish'};
 
-// Sitzungszustand der Karte (nicht gespeichert): Entwurf je Saeule, gewaehlte
-// Richtung fuer die naechste Notiz, gerade bearbeitete Notiz, Fokus.
-const _zbEntwurf={},_zbWahl={};
-let _zbEdit=null,_zbFokus=null,_zbArchivAsset=null,_zbArchivTag=null;
-
-function zbNotizHtml(n,dreht,lesen){
+let _zbArchivAsset=null,_zbArchivTag=null;
+// Reihenfolge wie Pinned notes (abNotizen): eigene Ordnung ord, sonst neueste zuerst.
+function zbSortiert(liste){
+  return liste.slice().sort((a,b)=>{
+    const ao=typeof a.ord==='number'?a.ord:1e9,bo=typeof b.ord==='number'?b.ord:1e9;
+    if(ao!==bo)return ao-bo;
+    return String(b.up||b.ts||'').localeCompare(String(a.up||a.ts||''));
+  });
+}
+// Eine Zeile = dieselbe Zeile wie in Pinned notes (.ab-nt). Im Archiv (lesen)
+// ohne ★ und ▲▼, Antippen oeffnet die Notiz trotzdem.
+function zbNotizZeile(n,dreht,lesen,i,anz){
   const b=zbSicht(n.bias,dreht);
-  const tx=n.title||n.body||'';
-  if(!lesen&&_zbEdit===n.id)return`<div class="zb-n zb-n-ed" style="--nb:${biasCss(b)}">
-      <input class="finp zb-n-in" id="zbEd-${h(n.id)}" value="${h(tx)}" maxlength="400" aria-label="Edit note" onkeydown="zbEditTaste(event,'${escJH(n.id)}')" onblur="zbEditFertig('${escJH(n.id)}',this.value)">
-    </div>`;
-  return`<div class="zb-n" style="--nb:${biasCss(b)}">
-      ${lesen?`<span class="zb-n-b" style="color:${biasCss(b)}" title="${BIAS_WORT[b]}">${BIAS_ZEICHEN[b]}</span>`
-        :`<button class="zb-n-b" style="color:${biasCss(b)}" onclick="zbBias('${escJH(n.id)}')" title="${BIAS_WORT[b]} — tap to change">${BIAS_ZEICHEN[b]}</button>`}
-      ${lesen?`<span class="zb-n-tx">${h(tx)}</span>`:`<button class="zb-n-tx" onclick="zbBearb('${escJH(n.id)}')" title="Tap to edit">${h(tx)}</button>`}
-      ${lesen?'':`<button class="zb-n-x" onclick="zbWeg('${escJH(n.id)}')" title="Delete note (goes to the trash for 30 days)" aria-label="Delete note">×</button>`}
+  return`<div class="ab-nt zb-nt${n.hl?' hl':''}" style="--nb:${biasCss(b)}">
+      ${lesen?'':`<button class="ab-nt-hl${n.hl?' on':''}" onclick="abNoteHl('${escJH(n.id)}')" title="${n.hl?'Remove highlight':'Mark as important'}">${n.hl?'★':'☆'}</button>`}
+      <button class="ab-nt-tx" onclick="openResNote('${escJH(n.id)}')" title="Open this note">
+        <span class="ab-nt-ti">${h(n.title||'Untitled note')}</span>
+        ${n.body?`<span class="ab-nt-bd">${h(String(n.body).replace(/\s+/g,' ').slice(0,90))}</span>`:''}
+      </button>
+      ${lesen?'':`<span class="ab-nt-mv">
+        <button onclick="zbVerschieben('${escJH(n.id)}',-1)" ${i===0?'disabled':''} title="Move up">▲</button>
+        <button onclick="zbVerschieben('${escJH(n.id)}',1)" ${i===anz-1?'disabled':''} title="Move down">▼</button>
+      </span>`}
     </div>`;
 }
-// Eine Saeule: Kapitell, Schaft (= kleine Notes-Karte), Basis.
+// Eine Saeule: Kapitell, Schaft (= kleine Pinned-notes-Karte), Basis.
 function zbSaeuleHtml(sym,ccy,s,notizen,lesen){
   const dreht=zbDreht(sym,ccy,s.rub);
-  const wahl=_zbWahl[ccy+'|'+s.k]||'neu';
-  const liste=notizen.slice().sort((a,b)=>String(b.ts||'').localeCompare(String(a.ts||'')));
-  const zeilen=liste.map(n=>zbNotizHtml(n,dreht,lesen)).join('')
-    ||`<div class="zb-leer">${lesen?'No notes.':'<i>No notes for this meeting yet.</i>'}</div>`;
-  const neu=lesen?'':`<div class="zb-add">
-      <input class="finp zb-in" id="zbIn-${s.k}" placeholder="＋ New note…" maxlength="400" value="${h(_zbEntwurf[ccy+'|'+s.k]||'')}"
-        aria-label="New ${h(s.t)} note" oninput="zbEntwurf('${escJH(ccy)}','${s.k}',this.value)" onkeydown="zbTaste(event,'${s.k}')"
-        onfocus="zbFokus('${s.k}')" onfocusout="zbFokusWeg(event)">
-      <span class="zb-wahl" role="group" aria-label="Bias of the next note">${['bull','neu','bear'].map(b=>`<button class="zb-w zb-w-${b}${wahl===b?' on':''}" onclick="zbWahl('${escJH(ccy)}','${s.k}','${b}')" title="Next note: ${BIAS_WORT[b]}${dreht?' for '+h(sym.name||sym.id):''}" aria-pressed="${wahl===b}">${BIAS_ZEICHEN[b]}</button>`).join('')}</span>
-    </div>`;
+  const liste=zbSortiert(notizen);
+  const zeilen=liste.map((n,i)=>zbNotizZeile(n,dreht,lesen,i,liste.length)).join('')
+    ||`<div class="ab-nt-empty zb-leer">${lesen?'No notes.':'No notes for this meeting yet.'}</div>`;
+  const neu=lesen?'':`<div class="ab-nt-add"><button type="button" class="finp ab-nt-neu" onclick="zbNeuFenster('${escJH(ccy)}','${s.k}')" title="Opens the note window — title, text, tags, bias and the related event">＋ New note…</button></div>`;
   return`<div class="zb-s" style="--zb-a:var(${s.a})">
     <div class="zb-kap" aria-hidden="true"><span class="zb-vol l"></span><span class="zb-aba"></span><span class="zb-vol r"></span></div>
     <div class="zb-schaft">
       <div class="zb-s-hd"><span class="zb-s-ic">${icn(s.ic,13)}</span><span class="zb-s-t">${h(s.t)}</span>${dreht?`<span class="zb-s-inv" title="For ${h(sym.name||sym.id)} this pillar reads inverse: the colours are flipped against the ${h(ccy)} view">inverse</span>`:''}<span class="zb-s-n">${notizen.length}</span></div>
       ${neu}
-      <div class="zb-liste">${zeilen}</div>
+      <div class="ab-nt-list zb-liste">${zeilen}</div>
     </div>
     <div class="zb-fuss" aria-hidden="true"></div>
   </div>`;
 }
-// Der Giebel - FLACH und laenglich (Nutzer 2026-10-27, Bildschirmfoto: "das
-// Dach der Bank ist zu gross und da wo die Flagge drinne ist das muss mehr
-// laenglich"). Dachkoerper und vertieftes Tympanon als SVG (dehnt sich mit der
+// Der Giebel - normale Dachneigung, nur die Flagge laenglich (Nutzer
+// 2026-10-27, zweite Runde: "Das Dach soll nicht laenglicher nur das wo die
+// Flagge drinne ist das Gebaeude soll eher groesser als breiter"; per
+// Rueckfrage "Normales Dach, hoeher"). Dachkoerper und vertieftes Tympanon als SVG (dehnt sich mit der
 // Breite, Kanten mit non-scaling-stroke), Zierspitzen an First und Ecken, in
 // der Mitte die Flagge als Tafel im Flaggenformat mit je einem Lorbeerzweig
 // links und rechts - Tafel, Zweige und Spitzen in festen Pixeln, damit nichts
@@ -168,16 +175,16 @@ function zbGiebelHtml(ccy){
     flagge=`<svg viewBox="0 0 36 24" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#ai-${ccy}" width="36" height="24"/></svg>`;
   }
   return`<div class="zb-giebel">
-    <svg class="zb-giebel-svg" viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true">
+    <svg class="zb-giebel-svg" viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <linearGradient id="zbGDach" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="zb-gs-hell"/><stop offset="1" class="zb-gs-stein"/></linearGradient>
         <linearGradient id="zbGTymp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="zb-gs-stein2"/><stop offset="1" class="zb-gs-stein"/></linearGradient>
       </defs>
-      <polygon points="0,60 500,2 1000,60" fill="url(#zbGDach)"/>
-      <polygon points="56,56 500,11 944,56" fill="url(#zbGTymp)"/>
-      <polyline class="zb-g-tiefe" points="56,56 500,11 944,56" vector-effect="non-scaling-stroke"/>
-      <polyline class="zb-g-licht" points="0,60 500,2 1000,60" vector-effect="non-scaling-stroke"/>
-      <line class="zb-g-boden" x1="56" y1="56" x2="944" y2="56" vector-effect="non-scaling-stroke"/>
+      <polygon points="0,120 500,3 1000,120" fill="url(#zbGDach)"/>
+      <polygon points="64,112 500,22 936,112" fill="url(#zbGTymp)"/>
+      <polyline class="zb-g-tiefe" points="64,112 500,22 936,112" vector-effect="non-scaling-stroke"/>
+      <polyline class="zb-g-licht" points="0,120 500,3 1000,120" vector-effect="non-scaling-stroke"/>
+      <line class="zb-g-boden" x1="64" y1="112" x2="936" y2="112" vector-effect="non-scaling-stroke"/>
     </svg>
     <span class="zb-akro zb-akro-m">${ZB_PALMETTE}</span><span class="zb-akro zb-akro-l">${ZB_PALMETTE}</span><span class="zb-akro zb-akro-r">${ZB_PALMETTE}</span>
     ${flagge?`<span class="zb-wappen"><span class="zb-zweig-l">${ZB_ZWEIG}</span><span class="zb-tafel" aria-hidden="true">${flagge}</span><span class="zb-zweig-r">${ZB_ZWEIG}</span></span>`:''}
@@ -232,110 +239,44 @@ function zentralbankKarteHtml(sym,nurKarte){
   return nurKarte?karte:`<div class="ab-col zb-row">${karte}</div>`;
 }
 // Nur die Karte neu zeichnen (docs/performance.md 5: nachladende Aenderungen
-// tauschen nur ihre Karte), danach den Fokus zurueckholen.
+// tauschen nur ihre Karte).
 function zbNeuZeichnen(){
   const alt=document.getElementById('zbKarte');const sym=getSym();
   if(!alt||!sym)return;
   alt.outerHTML=zentralbankKarteHtml(sym,true);
-  zbNachRender();
 }
-// Ein Neuzeichnen (auch das ganze Asset-Seite durch einen Feed) darf einen
-// gerade getippten Text nicht aus dem Feld werfen: Entwurf steht im Feld (aus
-// _zbEntwurf), Fokus und Cursor kommen zurueck.
-// ⚠ focus({preventScroll:true}): ein normales focus() scrollt das Feld ins
-// Bild - wurde die Seite woanders neu gezeichnet (Preis-Chart umgeschaltet),
-// sprang sie zur Karte (check/scrollhalt.js, GOLD 2399 -> 1142 px, 2026-10-27).
-function zbNachRender(){
-  if(_zbEdit){const e=document.getElementById('zbEd-'+_zbEdit);if(e&&document.activeElement!==e){e.focus({preventScroll:true});const l=e.value.length;try{e.setSelectionRange(l,l);}catch(x){}}return;}
-  if(!_zbFokus)return;
-  const el=document.getElementById('zbIn-'+_zbFokus.k);
-  if(!el||document.activeElement===el)return;
-  el.focus({preventScroll:true});
-  try{el.setSelectionRange(_zbFokus.a,_zbFokus.e);}catch(x){}
-}
-
 // ── Bedienung ────────────────────────────────────────────────────────────
-function zbCcyJetzt(){const sym=getSym();return sym?macroCcyFor(sym.id):null;}
-function zbEntwurf(ccy,k,v){_zbEntwurf[ccy+'|'+k]=v;const el=document.getElementById('zbIn-'+k);if(el)_zbFokus={k,a:el.selectionStart,e:el.selectionEnd};}
-function zbFokus(k){const el=document.getElementById('zbIn-'+k);_zbFokus={k,a:el?el.selectionStart:0,e:el?el.selectionEnd:0};}
-// Ein Feld, das beim Neuzeichnen aus dem Dokument faellt, verliert den Fokus
-// nicht wirklich - nur ein echtes Wegklicken loescht die Merkung.
-function zbFokusWeg(ev){
-  const t=ev&&ev.target;
-  setTimeout(()=>{if(t&&t.isConnected&&document.activeElement!==t)_zbFokus=null;},0);
+// Kontext fuer das Notizfenster (main.js, _resZb): Bank, Saeule, Sitzung, und
+// ob der Bias fuer das GERADE OFFENE Asset gedreht gelesen wird. Ausserhalb
+// der Asset-Seite (Suche im Archiv-Tab) gilt die Sicht der Bank-Waehrung.
+function zbFensterKontext(cb){
+  const sym=curPage==='cur'?getSym():null;
+  const s=ZB_SAEULEN.find(x=>x.k===cb.s)||ZB_SAEULEN[0];
+  const dreht=zbDreht(sym,cb.b,s.rub);
+  const bank=zbBank(cb.b);
+  const zeile=`${icn('landmark',13)}<b>${h(bank.name)}</b> · ${h(s.t)} · <i>meeting ${h(fmtDayHdr(cb.m))}</i>${dreht?` · <i>bias as seen for ${h(sym.name||sym.id)} (reads inverse)</i>`:''}`;
+  return{b:cb.b,s:cb.s,m:cb.m,dreht,zeile};
 }
-function zbWahl(ccy,k,b){
-  _zbWahl[ccy+'|'+k]=b;
-  // Nach der Richtungswahl geht es im Feld weiter (tippen, Enter).
-  const el=document.getElementById('zbIn-'+k);const l=el?el.value.length:0;
-  _zbFokus={k,a:l,e:l};
-  zbNeuZeichnen();
+// "＋ New note…" einer Saeule: das volle Notizfenster, vorbelegt mit Bank,
+// Saeule und der letzten Sitzung.
+function zbNeuFenster(ccy,k){
+  if(!ZB_SAEULEN.some(x=>x.k===k))return;
+  resZbNeu(zbFensterKontext({b:ccy,s:k,m:zbAktSitzung(ccy,zbSitzungen(ccy))}));
 }
-function zbTaste(ev,k){
-  if(ev.key==='Enter'&&!ev.isComposing){ev.preventDefault();zbNeu(k);}
-  else if(ev.key==='Escape'){const ccy=zbCcyJetzt();if(ccy)delete _zbEntwurf[ccy+'|'+k];ev.target.value='';}
-}
-// Neue Notiz. ⚠ Kein Schreibpfad ohne try/catch mit sichtbarer Meldung (Regel
-// 6) - scheitert es, bleibt der Text im Feld stehen.
-function zbNeu(k){
-  const sym=getSym(),ccy=zbCcyJetzt();
-  const saeule=ZB_SAEULEN.find(x=>x.k===k);
-  if(!sym||!ccy||!saeule)return;
-  const el=document.getElementById('zbIn-'+k);
-  const tx=String((el&&el.value)||_zbEntwurf[ccy+'|'+k]||'').trim();
-  if(!tx)return;
-  const dreht=zbDreht(sym,ccy,saeule.rub);
-  const bias=zbSicht(_zbWahl[ccy+'|'+k]||'neu',dreht);   // zurueck in die Sicht der Bank-Waehrung
+// ▲▼ wie abNoteMove: erst durchnummerieren, dann tauschen.
+function zbVerschieben(id,richtung){
+  const n=resNotes().find(x=>x&&x.id===id&&x.cb);if(!n)return;
+  const ccy=n.cb.b,s=zbSitzungen(ccy),akt=zbAktSitzung(ccy,s);
+  const liste=zbSortiert(zbNotizen(ccy).filter(x=>x.cb.s===n.cb.s&&zbIstAktuell(x,akt)));
+  const i=liste.findIndex(x=>x.id===id),j=i+richtung;
+  if(i<0||j<0||j>=liste.length)return;
   try{
     pushU();
-    const jetzt=new Date().toISOString();
-    if(!Array.isArray(research.notes))research.notes=[];
-    research.notes.push({id:uid(),title:tx,body:'',tags:[],fids:[],asset:'',fav:false,pin:false,arch:false,ts:jetzt,up:jetzt,bias,
-      cb:{b:ccy,s:k,m:zbAktSitzung(ccy,zbSitzungen(ccy))}});
-    if(!window.__gpZbOhneSave)save();   // __gpZbOhneSave: nur Gegenprobe check/zentralbank.js
-  }catch(e){
-    alert('The note could not be saved: '+(e&&e.message||e)+'\nYour text is still in the field.');
-    return;
-  }
-  delete _zbEntwurf[ccy+'|'+k];
-  _zbFokus={k,a:0,e:0};
-  zbNeuZeichnen();
-}
-function zbFinde(id){return resNotes().find(n=>n&&n.id===id&&n.cb);}
-// Richtung reihum: neutral -> bullish -> bearish (in der Sicht des Assets).
-function zbBias(id){
-  const n=zbFinde(id),sym=getSym();if(!n||!sym)return;
-  const s=ZB_SAEULEN.find(x=>x.k===n.cb.s);const dreht=zbDreht(sym,n.cb.b,s&&s.rub);
-  const jetzt=zbSicht(n.bias,dreht),neu=jetzt==='neu'?'bull':jetzt==='bull'?'bear':'neu';
-  try{pushU();n.bias=zbSicht(neu,dreht);n.up=new Date().toISOString();save();}
-  catch(e){alert('The change could not be saved: '+(e&&e.message||e));return;}
-  zbNeuZeichnen();
-}
-function zbBearb(id){_zbEdit=id;_zbFokus=null;zbNeuZeichnen();}
-function zbEditTaste(ev,id){
-  if(ev.key==='Enter'&&!ev.isComposing){ev.preventDefault();ev.target.blur();}
-  else if(ev.key==='Escape'){_zbEdit=null;zbNeuZeichnen();}
-}
-function zbEditFertig(id,v){
-  if(_zbEdit!==id)return;
-  _zbEdit=null;
-  const n=zbFinde(id);const tx=String(v||'').trim();
-  if(n&&tx&&tx!==(n.title||'')){
-    try{pushU();n.title=tx;n.body='';n.up=new Date().toISOString();save();}
-    catch(e){_zbEdit=id;alert('The change could not be saved: '+(e&&e.message||e)+'\nYour text is still in the field.');return;}
-  }
-  zbNeuZeichnen();
-}
-// Loeschen = Papierkorb (30 Tage wiederherstellbar), nie sofort weg.
-function zbWeg(id){
-  const n=zbFinde(id);if(!n)return;
-  if(!confirm('Delete this note? It stays in the trash for 30 days.'))return;
-  try{
-    pushU();
-    trashResNote(n);
-    research.notes=resNotes().filter(x=>x.id!==id);
+    liste.forEach((x,k)=>{x.ord=k;});
+    liste[i].ord=j;liste[j].ord=i;
+    const jetzt=new Date().toISOString();liste[i].up=jetzt;liste[j].up=jetzt;
     save();
-  }catch(e){alert('The note could not be deleted: '+(e&&e.message||e));return;}
+  }catch(e){alert('Could not move the note: '+(e&&e.message||e));return;}
   zbNeuZeichnen();
 }
 // Banner fuer DIESE Sitzung wegklicken - gespeichert und synchronisiert
@@ -382,6 +323,6 @@ function zbArchivZeichnen(){
   </div>`;
 }
 
-export {zentralbankKarteHtml,zbNachRender,zbSitzungen,zbNotizen,ZB_SAEULEN};
+export {zentralbankKarteHtml,zbFensterKontext,zbSitzungen,zbNotizen,ZB_SAEULEN};
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window,{zbEntwurf,zbFokus,zbFokusWeg,zbWahl,zbTaste,zbNeu,zbBias,zbBearb,zbEditTaste,zbEditFertig,zbWeg,zbQuittieren,zbArchivAuf,zbArchivZeig,zbSitzungen,zbNotizen});
+Object.assign(window,{zbNeuFenster,zbVerschieben,zbQuittieren,zbArchivAuf,zbArchivZeig,zbSitzungen,zbNotizen});

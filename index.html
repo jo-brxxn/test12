@@ -6152,32 +6152,32 @@ body.dense-mode .zb-qrow{gap:10px}
 /* Gebaeude: Stein in drei Toenen + Licht/Kante (Midnight siehe unten) */
 .zb-bau{--zb-stein:var(--bg4);--zb-stein2:var(--bg5);--zb-kante:var(--bg6);--zb-hell:var(--bg2);--zb-laub:#97A6BF;--zb-tief:rgba(20,27,46,.16);--zb-schatten:rgba(20,27,46,.10);
   margin:0;padding:0}
-.zb-giebel{position:relative;height:clamp(46px,4.4vw,64px);margin:12px 0 0}
+.zb-giebel{position:relative;height:clamp(78px,8vw,116px);margin:16px 0 0}
 .zb-giebel-svg{display:block;width:100%;height:100%;overflow:visible}
 .zb-gs-hell{stop-color:var(--zb-hell)}.zb-gs-stein{stop-color:var(--zb-stein)}.zb-gs-stein2{stop-color:var(--zb-stein2)}
 .zb-g-tiefe{fill:none;stroke:var(--zb-tief);stroke-width:2.5}
 .zb-g-licht{fill:none;stroke:var(--zb-kante);stroke-width:1.5}
 .zb-g-boden{stroke:var(--zb-kante);stroke-width:1}
 /* Akroterien: Palmetten an First und Ecken (klein, das Dach bleibt flach) */
-.zb-akro{position:absolute;width:22px;height:17px;display:block}
+.zb-akro{position:absolute;width:28px;height:21px;display:block}
 .zb-akro svg{width:100%;height:100%;display:block}
 .zb-p1{fill:var(--zb-stein2);stroke:var(--zb-kante);stroke-width:1.2}
 .zb-p2{fill:var(--zb-hell);stroke:var(--zb-kante);stroke-width:.8}
-.zb-akro-m{left:50%;top:-12px;transform:translateX(-50%)}
+.zb-akro-m{left:50%;top:-15px;transform:translateX(-50%)}
 .zb-akro-l{left:-3px;bottom:-1px;transform:scale(.75);transform-origin:left bottom}
 .zb-akro-r{right:-3px;bottom:-1px;transform:scale(.75);transform-origin:right bottom}
 /* Wappen: Flagge als Tafel im Flaggenformat, Lorbeerzweig links und rechts */
-.zb-wappen{position:absolute;left:50%;bottom:7%;transform:translateX(-50%);display:flex;align-items:center;gap:3px}
-.zb-tafel{display:block;height:clamp(24px,2.5vw,34px);aspect-ratio:3/2;border-radius:3px;overflow:hidden;background:var(--card);
+.zb-wappen{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);display:flex;align-items:center;gap:4px}
+.zb-tafel{display:block;height:clamp(28px,3.1vw,42px);aspect-ratio:3/2;border-radius:3px;overflow:hidden;background:var(--card);
   border:2px solid var(--card);box-shadow:0 0 0 1px var(--zb-kante),0 2px 5px var(--zb-schatten)}
 .zb-tafel svg{width:100%;height:100%;display:block}
-.zb-zweig-l,.zb-zweig-r{display:block;width:clamp(30px,3.2vw,44px);aspect-ratio:52/24}
+.zb-zweig-l,.zb-zweig-r{display:block;width:clamp(36px,4vw,56px);aspect-ratio:52/24}
 .zb-zweig-l{transform:scaleX(-1)}
 .zb-zweig{width:100%;height:100%;display:block;overflow:visible}
 .zb-zweig-ast{fill:none;stroke:var(--zb-laub);stroke-width:1.3;stroke-linecap:round}
 .zb-zweig-bl{fill:var(--zb-laub);stroke:var(--zb-hell);stroke-width:.5}
 /* Fries: Name in Gravur-Optik (App-Schrift) zwischen zwei Zierlinien */
-.zb-fries{position:relative;margin:0;padding:9px 12px 8px;display:flex;align-items:center;justify-content:center;gap:16px;
+.zb-fries{position:relative;margin:0;padding:11px 12px 10px;display:flex;align-items:center;justify-content:center;gap:16px;
   background:linear-gradient(var(--zb-hell),var(--zb-stein) 55%,var(--zb-stein2));
   border-top:3px double var(--zb-kante);border-bottom:1px solid var(--zb-kante);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 0 var(--zb-schatten)}
 .zb-name{font:800 var(--fs-lg)/1.2 var(--ff-text);letter-spacing:.34em;padding-left:.34em;text-transform:uppercase;color:var(--t1);text-align:center;
@@ -6201,7 +6201,7 @@ body.dense-mode .zb-qrow{gap:10px}
   background:repeating-radial-gradient(circle at 46% 54%,var(--zb-kante) 0 1.2px,var(--zb-stein2) 1.2px 3.6px);box-shadow:0 1px 2px var(--zb-schatten)}
 .zb-vol.l{left:0}.zb-vol.r{right:0}
 /* Schaft = kleine Notes-Karte auf kanneliertem, gerundetem Stein */
-.zb-schaft{flex:1 1 auto;display:flex;flex-direction:column;gap:8px;min-height:104px;padding:9px 10px 11px;
+.zb-schaft{flex:1 1 auto;display:flex;flex-direction:column;gap:8px;min-height:160px;padding:10px 10px 14px;
   background:repeating-linear-gradient(90deg,transparent 0 10px,rgba(20,27,46,.06) 10px 11px,rgba(255,255,255,.45) 11px 12px),
     linear-gradient(90deg,var(--zb-stein2) 0%,var(--zb-stein) 16%,var(--zb-hell) 50%,var(--zb-stein) 84%,var(--zb-stein2) 100%);
   border-left:1px solid var(--zb-kante);border-right:1px solid var(--zb-kante)}
@@ -6214,26 +6214,19 @@ body.dense-mode .zb-qrow{gap:10px}
 .zb-s-inv{font:italic 600 var(--fs-2xs)/1 var(--ff-text);color:var(--t2);border:1px solid var(--bd2);border-radius:999px;padding:3px 7px;background:var(--card)}
 .zb-s-n{margin-left:auto;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:var(--card);border:1px solid var(--bd);
   display:inline-flex;align-items:center;justify-content:center;font:700 var(--fs-2xs)/1 var(--ff-num);color:var(--t2)}
-.zb-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.zb-in{flex:1 1 110px;min-width:0;height:28px;padding:0 9px;font-size:var(--fs-sm);background:var(--card)}
-.zb-wahl{display:inline-flex;flex:none;border:1px solid var(--bd2);border-radius:var(--rss);overflow:hidden;background:var(--card)}
-.zb-w{width:26px;height:26px;border:none;background:none;cursor:pointer;font-size:var(--fs-2xs);color:var(--t3);padding:0}
-.zb-w+.zb-w{border-left:1px solid var(--bd)}
-.zb-w.on{color:#fff}
-.zb-w-bull.on{background:var(--bias-bull)}.zb-w-neu.on{background:var(--bias-neu)}.zb-w-bear.on{background:var(--bias-bear)}
-.zb-liste{display:flex;flex-direction:column;gap:5px}
-.zb-n{display:flex;align-items:flex-start;gap:5px;min-width:0;padding:6px 5px 6px 7px;background:var(--card);border:1px solid var(--bd);border-left:3px solid var(--nb);
-  border-radius:var(--rss);box-shadow:0 1px 2px var(--zb-schatten)}
-.zb-n-b{flex:none;background:none;border:none;padding:0 2px;font-size:var(--fs-2xs);line-height:19px;cursor:pointer}
-span.zb-n-b{cursor:default}
-.zb-n-tx{flex:1 1 auto;min-width:0;background:none;border:none;padding:0;text-align:left;cursor:text;
-  font:500 var(--fs-sm)/1.45 var(--ff-text);color:var(--t0);white-space:normal;overflow-wrap:anywhere}
-span.zb-n-tx{cursor:default}
-.zb-n-x{flex:none;background:none;border:none;padding:0 3px;color:var(--t3);font-size:16px;line-height:19px;cursor:pointer}
-@media (hover:hover){.zb-n-x{opacity:0}.zb-n:hover .zb-n-x,.zb-n-x:focus-visible{opacity:1}}
-.zb-n-ed{padding:3px}
-.zb-n-in{width:100%;height:28px;padding:0 8px;font-size:var(--fs-sm)}
-.zb-leer{font-size:var(--fs-sm);color:var(--t3);padding:4px 2px}
+/* Saeule = kleine Pinned-notes-Karte: dieselben .ab-nt-Zeilen und derselbe
+   "＋ New note…"-Einstieg (Nutzer 2026-10-27: "genau so wie bei den quick
+   Notes"), nur etwas kompakter */
+.zb-schaft .ab-nt-add{margin-bottom:0}
+.zb-schaft .ab-nt-neu{height:30px;font-size:var(--fs-sm)}
+.zb-liste{overflow:visible}
+.zb-schaft .ab-nt{padding:6px 7px;box-shadow:0 1px 2px var(--zb-schatten)}
+.zb-leer{font-size:var(--fs-sm);color:var(--t3);padding:4px 2px;font-style:italic}
+/* Notizfenster einer Bank-Notiz: Kontextzeile, Places/Pin ausgeblendet */
+.res-zb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-4px 0 10px;padding:7px 10px;border-radius:var(--rss);background:var(--bg3);
+  border:1px solid var(--bd);font-size:var(--fs-sm);color:var(--t2)}
+.res-zb b{color:var(--t0)}
+.res-zb[hidden],#resNPlacesBox[hidden],#resNPinRow[hidden]{display:none}
 /* Stufen */
 .zb-st{background:linear-gradient(var(--zb-hell),var(--zb-stein) 60%,var(--zb-stein2));border:1px solid var(--zb-kante);border-top:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
 .zb-st1{margin:0 .8%;padding:6px 12px;border-top:1px solid var(--zb-kante);display:flex;justify-content:center;align-items:center;gap:8px 14px;flex-wrap:wrap;
@@ -6249,6 +6242,8 @@ span.zb-n-tx{cursor:default}
   .zb-orn{display:none}
   .zb-akro-l,.zb-akro-r{display:none}
   .zb-saeulen{grid-template-columns:1fr;gap:14px;padding:10px 3% 0}
+  /* untereinander braucht die Saeule keine Hoehe auf Vorrat */
+  .zb-schaft{min-height:96px}
 }
 [data-fx-theme="midnight"] .zb-bau{--zb-laub:#4A5F86;--zb-stein:var(--bg4);--zb-stein2:var(--bg3);--zb-hell:var(--bg6);--zb-kante:rgba(150,180,225,.38);--zb-tief:rgba(0,0,0,.4);--zb-schatten:rgba(0,0,0,.35)}
 [data-fx-theme="midnight"] .zb-banner{background:#B3202B;box-shadow:0 3px 10px rgba(0,0,0,.35)}
@@ -7004,11 +6999,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-639 - Central bank kompakter: flaches laengliches Dach mit Flaggentafel und Lorbeerzweigen, keine Seitenraender, Karte in einer Reihe mit den 4 Schnellzugriffen (rechts untereinander, lange Namen zweizeilig)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-640 - Central bank: Notizen wie Pinned notes (New note oeffnet das Notizfenster, Zeilen mit Stern und Sortierung), Dach wieder mit normaler Neigung, nur die Flagge laenglich, Saeulen hoeher."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-639</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-640</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -7383,15 +7378,17 @@ window.fxLogoSvg=function(art){
 </div>
 <div class="ov" id="mResNote" style="display:none">
   <div class="modal res-note-modal">
-    <h3><span class="h-ic" data-ic="note"></span>Archive note</h3>
+    <h3><span class="h-ic" data-ic="note"></span><span id="resNKopf">Archive note</span></h3>
     <div id="resNMeta" style="font-size:var(--fs-xs);color:var(--t3);font-family:var(--ff-num);margin-bottom:10px"></div>
+    <!-- Zentralbank-Notiz (js/zentralbank.js): Bank · Saeule · Sitzung -->
+    <div id="resNZb" class="res-zb" hidden></div>
     <input class="finp" id="resNTitle" placeholder="Title — e.g. Core CPI surprised to the downside" style="margin-bottom:8px">
     <textarea class="nbox res-nbody" id="resNBody" rows="9" placeholder="What happened, what you concluded, what to watch next…"></textarea>
     <!-- Orte (Nutzer-Wunsch 2026-08-30): eine Notiz kann in mehreren
          Ordnern gleichzeitig liegen, auch ueber verschiedene Assets hinweg
          (z.B. CAD UND USD) - Asset+Ordner waehlen, "+ Add" haengt einen
          weiteren Platz an, die Chips darunter sind einzeln entfernbar. -->
-    <div style="margin-bottom:8px">
+    <div id="resNPlacesBox" style="margin-bottom:8px">
       <div class="res-flbl">Places (folders this note is filed in — add as many as you like, across any asset)</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
         <select class="finp" id="resNPlaceAsset" style="flex:1;min-width:120px"></select>
@@ -7421,7 +7418,7 @@ window.fxLogoSvg=function(art){
          stille Entscheidung. -->
     <div class="res-chk-row">
       <label class="res-chk"><input type="checkbox" id="resNFav"> <span class="h-ic" data-ic="star"></span>Mark as favorite</label>
-      <label class="res-chk"><input type="checkbox" id="resNPin"> <span class="h-ic" data-ic="pin"></span>Pinned — shows on the asset page and the watchlist</label>
+      <label class="res-chk" id="resNPinRow"><input type="checkbox" id="resNPin"> <span class="h-ic" data-ic="pin"></span>Pinned — shows on the asset page and the watchlist</label>
     </div>
     <div class="m-btns"><button class="btn" id="resNDel" onclick="delResNote()" style="margin-right:auto">Delete</button><button class="btn" onclick="closeMGuarded('mResNote')">Cancel</button><button class="btn g" onclick="saveResNote()">Save</button></div>
   </div>

@@ -8,17 +8,20 @@
 // Geprueft:
 //   A) Karte auf allen 8 Waehrungen (eigene Bank, Flagge) und auf Non-FX
 //      (verknuepfte Bank)
-//   B) Notiz per Eingabe + Enter: steht in der Karte, in research.notes mit
-//      cb {b,s,m=letzte Sitzung}, im gespeicherten Stand (localStorage) und
-//      nach dem NEULADEN wieder in der Karte
+//   B) Notiz wie bei Pinned notes (seit 2026-10-27): "＋ New note…" oeffnet
+//      das volle Notizfenster mit Bank-Zeile, ohne Places/Pinned; nach Save
+//      steht sie in der Karte (.ab-nt-Zeile), in research.notes mit cb
+//      {b,s,m=letzte Sitzung}, im gespeicherten Stand (localStorage) und nach
+//      dem NEULADEN wieder in der Karte
 //   C) Regel der Asset-Verknuepfung: dieselbe USD-Notiz ist auf GOLD in der
 //      Inflations-Saeule (inverse) umgekehrt gefaerbt, in Economy (same)
 //      nicht; eine auf GOLD eingegebene Notiz wird in USD-Sicht gespeichert
 //   D) Banner: steht ohne Notiz der aktuellen Sitzung, weg nach der ersten
 //      Notiz; ✕ haelt ueber das Neuladen (zbQuittung im Speicher)
 //   E) Snapshot-Runde (snap -> applySnap): cb-Feld bleibt
-//   F) Tippen waehrend die Asset-Seite neu gezeichnet wird: Text und Fokus bleiben
-//   G) Loeschen = Papierkorb
+//   F) Fenster in Asset-Sicht: die USD-Notiz (bullish) oeffnet auf GOLD mit
+//      Bearish, unveraendert gespeichert bleibt sie bullish; ▲▼ sortiert
+//   G) Loeschen ueber das Fenster = Papierkorb
 //   H) Archiv: Uhr hinter die naechste Sitzung gestellt -> Saeulen leer,
 //      Archiv zaehlt 1, Fenster zeigt die Notizen unter dem Sitzungsdatum
 // Gegenproben (muessen ROT werden):
@@ -49,10 +52,21 @@ const karte = p => p.evaluate(() => {
   const k = document.getElementById('zbKarte'); if (!k) return null;
   const s = [...k.querySelectorAll('.zb-saeulen .zb-s')].map(x => ({
     t: (x.querySelector('.zb-s-t') || {}).textContent, inv: !!x.querySelector('.zb-s-inv'),
-    n: [...x.querySelectorAll('.zb-n')].map(n => ({ tx: (n.querySelector('.zb-n-tx') || {}).textContent, farbe: getComputedStyle(n).borderLeftColor })) }));
+    n: [...x.querySelectorAll('.ab-nt')].map(n => ({ tx: (n.querySelector('.ab-nt-ti') || {}).textContent, farbe: getComputedStyle(n).borderLeftColor })) }));
   return { name: (k.querySelector('.zb-name') || {}).textContent, flagge: !!k.querySelector('.zb-tafel use'), banner: !!k.querySelector('.zb-banner'),
     archiv: +(((k.querySelector('.zb-arch b') || {}).textContent) || 0), saeulen: s, ohne: !!k.querySelector('.zb-nolink') };
 });
+async function neueNotiz(p, saeule, titel, bias) {
+  await p.click(`#zbKarte .zb-s:nth-child(${saeule}) .ab-nt-neu`);
+  await p.waitForTimeout(250);
+  const f = await p.evaluate(() => { const z = document.getElementById('resNZb'), pl = document.getElementById('resNPlacesBox'), pin = document.getElementById('resNPinRow'), m = document.getElementById('mResNote');
+    const sicht = e => !!e && getComputedStyle(e).display !== 'none' && e.getClientRects().length > 0;
+    return { offen: sicht(m), zeile: sicht(z) ? z.textContent : '', places: sicht(pl), pin: sicht(pin), kopf: (document.getElementById('resNKopf') || {}).textContent }; });
+  await p.fill('#resNTitle', titel);
+  await p.click({ bull: '#resNBiasBull', neu: '#resNBiasNeu', bear: '#resNBiasBear' }[bias]);
+  await p.click('#mResNote .m-btns .btn.g'); await p.waitForTimeout(400);
+  return f;
+}
 const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'); d.style.color = `var(--bias-${b})`; document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c; }, b);
 
 (async () => {
@@ -86,8 +100,11 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
   const vorher = k.saeulen[0].n.length;
   const bannerVorher = k.banner;
   const TX = 'Prueftext Inflation ' + Date.now();
-  await p.click('#zbKarte .zb-s:nth-child(1) .zb-w-bull');
-  await p.fill('#zbIn-infl', TX); await p.press('#zbIn-infl', 'Enter'); await p.waitForTimeout(400);
+  const fen = await neueNotiz(p, 1, TX, 'bull');
+  if (!fen.offen) rot('B FENSTER', '"＋ New note…" oeffnet das Notizfenster nicht');
+  if (!/Federal Reserve/.test(fen.zeile) || !/Inflation/.test(fen.zeile)) rot('B KONTEXT', `Bank-Zeile im Fenster: "${fen.zeile}"`);
+  if (fen.kopf !== 'Central bank note') rot('B KOPF', `Fenstertitel "${fen.kopf}" - "Archive" heisst auf der Karte die Sitzungsliste`);
+  if (fen.places || fen.pin) rot('B FENSTER', `Places ${fen.places}, Pinned ${fen.pin} sichtbar - bei einer Bank-Notiz ohne Wirkung`);
   k = await karte(p);
   const sitz = await p.evaluate(() => { const s = zbSitzungen('USD'); return s.letzte ? s.letzte.d : null; });
   const nr = await p.evaluate(tx => (research.notes || []).find(n => n.title === tx) || null, TX);
@@ -126,8 +143,7 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
   else if (gi.farbe !== bear) rot('C FARBE', `USD bullish -> auf GOLD ${gi.farbe}, erwartet bearish ${bear}`);
   if (k.saeulen[2].inv) rot('C REGEL', 'Economy auf GOLD faelschlich inverse');
   const TX2 = 'Gold bullish Inflation ' + Date.now();
-  await p.click('#zbKarte .zb-s:nth-child(1) .zb-w-bull');
-  await p.fill('#zbIn-infl', TX2); await p.press('#zbIn-infl', 'Enter'); await p.waitForTimeout(400);
+  await neueNotiz(p, 1, TX2, 'bull');
   const n2 = await p.evaluate(tx => (research.notes || []).find(n => n.title === tx) || null, TX2);
   if (!n2 || n2.bias !== 'bear') rot('C SPEICHERSICHT', `auf GOLD bullish eingegeben -> gespeichert ${n2 && n2.bias} (erwartet bear in USD-Sicht)`);
   if (!F.some(f => /^C /.test(f))) gruen('USD bullish = GOLD bearish (Inflation), Economy unveraendert, Eingabe auf GOLD in USD-Sicht gespeichert');
@@ -137,25 +153,40 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
   const e = await p.evaluate(tx => { applySnap(snap()); const n = (research.notes || []).find(x => x.title === tx); return n && n.cb ? n.cb.b + '/' + n.cb.s + '/' + n.cb.m : null; }, TX);
   if (!e) rot('E SNAPSHOT', 'cb-Feld nach snap -> applySnap weg'); else gruen('cb bleibt ueber snap -> applySnap (' + e + ')');
 
-  // ── F ──
-  console.log('F) Tippen waehrend Neuzeichnen');
-  await p.evaluate(() => gotoSym('EUR')); await p.waitForTimeout(300);
-  await p.click('#zbIn-arb'); await p.keyboard.type('halb getippt');
-  await p.evaluate(() => renderDetail()); await p.waitForTimeout(150);
-  const f = await p.evaluate(() => { const el = document.getElementById('zbIn-arb'); return { v: el && el.value, fokus: document.activeElement === el }; });
-  if (f.v !== 'halb getippt' || !f.fokus) rot('F ENTWURF', `nach renderDetail: Text "${f.v}", Fokus ${f.fokus}`); else gruen('Text und Fokus bleiben beim Neuzeichnen');
-  await p.keyboard.press('Escape');
+  // ── F ── Fenster in Asset-Sicht + Sortieren
+  console.log('F) Fenster in Asset-Sicht, Sortieren');
+  await p.evaluate(() => gotoSym('GOLD')); await p.waitForTimeout(300);
+  const f = await p.evaluate(async tx => {
+    const n = research.notes.find(x => x.title === tx); if (!n) return { fehlt: true };
+    openResNote(n.id); await new Promise(r => setTimeout(r, 200));
+    const an = ['Bull', 'Neu', 'Bear'].find(b => document.getElementById('resNBias' + b).classList.contains('on'));
+    saveResNote(); await new Promise(r => setTimeout(r, 300));
+    return { an, danach: research.notes.find(x => x.id === n.id).bias };
+  }, TX);
+  if (f.fehlt) rot('F NOTIZ', 'USD-Notiz nicht gefunden');
+  else { if (f.an !== 'Bear') rot('F SICHT', `USD bullish oeffnet auf GOLD mit ${f.an} (erwartet Bear)`); if (f.danach !== 'bull') rot('F RUECKWEG', `unveraendert gespeichert -> ${f.danach} (erwartet bull)`); }
+  await p.evaluate(() => gotoSym('USD')); await p.waitForTimeout(300);
+  const TX3 = 'Zweite Notiz ' + Date.now();
+  await neueNotiz(p, 1, TX3, 'neu');
+  let r1 = (await karte(p)).saeulen[0].n.map(n => n.tx);
+  const pos = r1.indexOf(TX3);
+  await p.evaluate(tx => { const n = research.notes.find(x => x.title === tx); zbVerschieben(n.id, 1); }, TX3); await p.waitForTimeout(300);
+  const r2 = (await karte(p)).saeulen[0].n.map(n => n.tx);
+  if (pos !== 0) rot('F NEU OBEN', `neue Notiz an Stelle ${pos + 1} (wie Pinned notes oben erwartet)`);
+  else if (r2.indexOf(TX3) !== 1) rot('F SORTIEREN', `▼ verschiebt nicht: ${r2.join(' | ')}`);
+  if (!F.some(x => /^F /.test(x))) gruen('USD bullish = Bearish im GOLD-Fenster, unveraendert gespeichert bleibt bullish; neu = oben, ▼ verschiebt');
 
   // ── G ──
   console.log('G) Loeschen = Papierkorb');
   await p.evaluate(() => gotoSym('USD')); await p.waitForTimeout(300);
-  p.once('dialog', d => d.accept());
+  p.on('dialog', d => d.accept());
   const g = await p.evaluate(async tx2 => {
     const n = research.notes.find(x => x.title === tx2); if (!n) return 'fehlt';
-    zbWeg(n.id); await new Promise(r => setTimeout(r, 200));
+    openResNote(n.id); await new Promise(r => setTimeout(r, 150));
+    delResNote(); await new Promise(r => setTimeout(r, 250));
     const weg = !research.notes.some(x => x.id === n.id), korb = (research.trash || []).some(t => t.data && t.data.id === n.id);
     return weg && korb ? 'ok' : `weg ${weg}, Papierkorb ${korb}`;
-  }, TX2);
+  }, TX3);
   if (g !== 'ok') rot('G PAPIERKORB', g); else gruen('geloeschte Notiz liegt im Papierkorb');
   await p.close();
 
