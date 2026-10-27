@@ -4214,14 +4214,28 @@ jobs:
           node tvw/hol.js || true
           rm -rf tvw
 
-      - name: Fetch seasonality (Yahoo ETF proxies, monthly bars) -> seasonality_data.json
+      # Seit 2026-10-27 (Nutzer: "bei seasonality will ich jetzt das auch fuer
+      # Paare haben also zB euraud aber halt fuer alle und auch fuer alle Non fx
+      # also alles was geht" - Entscheide per Rueckfrage):
+      #  - alle 28 FX-Paare (Yahoo "EURAUD=X", Monats-Bars ab 2006), NUR Anzeige;
+      #  - Waehrungen als KORB gegen die sieben anderen aus genau diesen Paaren
+      #    statt CurrencyShares-ETF gegen USD (FXE war ebenso USD-Saisonalitaet).
+      #    Monats-Log-Rendite des Korbs = Mittel der sieben vorzeichenrichtigen
+      #    Paar-Log-Renditen - identisch mit korbReihe() in js/main.js
+      #    (exp(ln P_X - Mittel ln P_Y)), damit Saisonalitaet und Kurslinie
+      #    dieselbe Groesse zeigen;
+      #  - ETH (ETH-USD, ab 12/2017) und US 10Y (^TNX, Monatsaenderung in
+      #    Basispunkten - eine Rendite hat keinen Prozent-Return). Fuer die
+      #    anderen sieben Renditen gibt es keine freie 15-Jahres-Reihe.
+      - name: Fetch seasonality (Yahoo monthly bars - FX pairs, ETF and index proxies) -> seasonality_data.json
         continue-on-error: true
         run: |
           TODAY=$(date -u +%Y-%m-%d)
-          # Nur ueberspringen, wenn heute schon geholt UND jedes Asset der
-          # Proxy-Liste drinsteht - sonst wartete ein neu aufgenommenes Asset
-          # (NZD/DAX/BTC am 2026-09-25) bis zum naechsten UTC-Tag.
-          if node -e 'try{const d=JSON.parse(require("fs").readFileSync("seasonality_data.json","utf8"));const alle=["USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD","GOLD","SILVER","OIL","BTC","SP500","NAS","DAX"].every(k=>d.assets&&d.assets[k]);process.exit(String(d.updated||"").slice(0,10)==="'"$TODAY"'"&&alle?0:1);}catch(e){process.exit(1);}'; then
+          PAIRS="EURUSD GBPUSD USDJPY USDCHF AUDUSD NZDUSD USDCAD EURGBP EURJPY EURCHF EURAUD EURNZD EURCAD GBPJPY GBPCHF GBPAUD GBPNZD GBPCAD AUDJPY AUDNZD AUDCAD AUDCHF NZDJPY NZDCHF NZDCAD CADJPY CADCHF CHFJPY"
+          export SEAS_PAIRS="$PAIRS"
+          # Nur ueberspringen, wenn heute schon geholt UND jedes Asset und jedes
+          # Paar drinsteht - sonst wartete ein neu aufgenommenes bis morgen.
+          if node -e 'try{const d=JSON.parse(require("fs").readFileSync("seasonality_data.json","utf8"));const alle=["USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD","GOLD","SILVER","OIL","BTC","ETH","SP500","NAS","DAX","USYIELD"].every(k=>d.assets&&d.assets[k]);const paare=process.env.SEAS_PAIRS.split(" ").every(p=>d.pairs&&d.pairs[p.slice(0,3)+"/"+p.slice(3)]);process.exit(String(d.updated||"").slice(0,10)==="'"$TODAY"'"&&alle&&paare?0:1);}catch(e){process.exit(1);}'; then
             echo "[debug] seasonality: already fetched today, skipping"
             exit 0
           fi
@@ -4229,120 +4243,152 @@ jobs:
           curl -sL --max-time 15 -A "$UA" -c yscookies.txt "https://fc.yahoo.com" -o /dev/null || true
           CRUMB=$(curl -sL --max-time 15 -A "$UA" -b yscookies.txt -c yscookies.txt "https://query2.finance.yahoo.com/v1/test/getcrumb")
           echo "[debug] seasonality Yahoo crumb: len=${#CRUMB}"
-          # NZD/DAX/BTC (2026-09-25, Nutzer: "guck ob NZD Seasonality hat"): es
-          # gibt keinen NZD-ETF, IBIT ist erst seit 01/2024 da. Stattdessen das
-          # Paar bzw. der Index selbst - NZDUSD=X steigt, wenn NZD staerker wird
-          # (dieselbe Richtung wie die CurrencyShares-ETFs), ^GDAXI ist der DAX,
-          # BTC-USD der Kurs. Echte Monats-Bars, 15 Jahre wie die anderen.
-          declare -A PROXY=( [USD]=UUP [EUR]=FXE [GBP]=FXB [JPY]=FXY [CHF]=FXF [CAD]=FXC [AUD]=FXA [NZD]=NZDUSD%3DX [GOLD]=GLD [SILVER]=SLV [OIL]=USO [BTC]=BTC-USD [SP500]=SPY [NAS]=QQQ [DAX]=%5EGDAXI )
+          # Nicht-FX-Assets: ETF/Index/Kurs selbst. NZD/DAX/BTC (2026-09-25):
+          # ^GDAXI ist der DAX, BTC-USD der Kurs (IBIT erst seit 01/2024).
+          declare -A PROXY=( [GOLD]=GLD [SILVER]=SLV [OIL]=USO [BTC]=BTC-USD [ETH]=ETH-USD [SP500]=SPY [NAS]=QQQ [DAX]=%5EGDAXI [USYIELD]=%5ETNX )
+          export SEAS_ALLE="USD EUR GBP JPY CHF CAD AUD NZD ${!PROXY[*]}"
+          hole(){  # $1 Dateiname, $2 Yahoo-Symbol (URL-kodiert)
+            HCODE=$(curl -sL --max-time 30 -A "$UA" -b yscookies.txt -H "Accept: application/json" -w "%{http_code}" "https://query1.finance.yahoo.com/v8/finance/chart/${2}?range=20y&interval=1mo&crumb=${CRUMB}" -o "$1" || echo "000")
+            SZ=$(wc -c < "$1" 2>/dev/null || echo 0)
+            if [ "$HCODE" = "200" ] && [ "$SZ" -gt 500 ]; then return 0; fi
+            echo "[debug] seasonality $2: http=$HCODE $SZ bytes $(head -c 200 "$1" 2>/dev/null | tr -d '\r')"; rm -f "$1"; return 1
+          }
           rm -f seas_meta.txt
-          export SEAS_ALLE="${!PROXY[*]}"
           for ASSET in "${!PROXY[@]}"; do
-            SYM="${PROXY[$ASSET]}"
-            HCODE=$(curl -sL --max-time 30 -A "$UA" -b yscookies.txt -H "Accept: application/json" -w "%{http_code}" "https://query1.finance.yahoo.com/v8/finance/chart/${SYM}?range=20y&interval=1mo&crumb=${CRUMB}" -o "seas_${ASSET}.json" || echo "000")
-              SZ=$(wc -c < "seas_${ASSET}.json" 2>/dev/null || echo 0)
-              echo "[debug] seasonality $ASSET <- $SYM: http=$HCODE $SZ bytes"
-              if [ "$HCODE" = "200" ] && [ "$SZ" -gt 500 ]; then
-                echo "$ASSET $SYM" >> seas_meta.txt
-              else
-                echo "[debug] seasonality $ASSET body: $(head -c 300 "seas_${ASSET}.json" 2>/dev/null | tr -d '\r')"
-                rm -f "seas_${ASSET}.json"
-              fi
+            hole "seas_${ASSET}.json" "${PROXY[$ASSET]}" && echo "$ASSET ${PROXY[$ASSET]}" >> seas_meta.txt
+            sleep 0.3
           done
+          for P in $PAIRS; do hole "seasp_${P}.json" "${P}%3DX"; sleep 0.3; done
           node -e '
             const fs=require("fs");
             const YEARS=15, MIN_YEARS=8;
+            const UNIT={USYIELD:"bp"};   // Rendite: Monatsaenderung in Basispunkten
+            const cutoff=new Date();cutoff.setUTCFullYear(cutoff.getUTCFullYear()-YEARS);
             let meta=[];
             try{meta=fs.readFileSync("seas_meta.txt","utf8").trim().split("\n").filter(Boolean).map(l=>{const p=l.split(" ");return{id:p[0],sym:decodeURIComponent(p[1])};});}catch(e){}
-            // Assets der Proxy-Liste, deren Abruf scheiterte (stehen nicht in
-            // seas_meta.txt) - fuer "letzten Stand behalten" unten.
-            const fehlend=String(process.env.SEAS_ALLE||"").split(" ").filter(id=>id&&!meta.some(m=>m.id===id)).map(id=>({id}));
-            const out={updated:new Date().toISOString(),assets:{}};
+            const alleIds=String(process.env.SEAS_ALLE||"").split(" ").filter(Boolean);
+            const paare=String(process.env.SEAS_PAIRS||"").split(" ").filter(Boolean);
+            const out={updated:new Date().toISOString(),assets:{},pairs:{}};
             const log=[];
-            meta.forEach(m=>{
-              let j;try{j=JSON.parse(fs.readFileSync("seas_"+m.id+".json","utf8"));}catch(e){log.push(m.id+":bad-json");return;}
+            // Monats-Schlusskurse einer Yahoo-Antwort: {"YYYY-MM": close}.
+            // ⚠ In BOERSEN-Zeit datieren (2026-09-25): Yahoo stempelt einen
+            // Monat auf Mitternacht der Boersenzeit - im Sommer 23:00 UTC
+            // (London) bzw. 22:00 UTC (Berlin) des Vormonats.
+            // ⚠ 2026-10-27: und zwar je Bar in der DAMALS gueltigen Zeit. Bis
+            // dahin wurde der HEUTIGE Versatz (meta.gmtoffset) auf alle 15
+            // Jahre gelegt - nach dem Ende der Sommerzeit (25.10.) fielen die
+            // Sommermonate in den Vormonat; per Sonde gemessen NZDUSD=X, ^GDAXI
+            // und alle 28 FX-Paare mit Monaten von 1 und 30 Jahren statt 15-16
+            // -> NZD und DAX flogen aus der Datei.
+            function monate(datei,id){
+              let j;try{j=JSON.parse(fs.readFileSync(datei,"utf8"));}catch(e){log.push(id+":bad-json");return null;}
               const r=j&&j.chart&&j.chart.result&&j.chart.result[0];
               const ts=r&&r.timestamp,closes=r&&r.indicators&&r.indicators.quote&&r.indicators.quote[0]&&r.indicators.quote[0].close;
-              const gran=r&&r.meta&&r.meta.dataGranularity;
-              console.log("[debug] seasonality "+m.id+" granularity="+gran+" bars="+(ts?ts.length:0));
-              if(!ts||!closes||!ts.length){log.push(m.id+":no-bars");return;}
-              // Absicherung gegen zu junge Ticker (z.B. IBIT/BTC seit 01/2024):
-              // Yahoo liefert fuer sehr kurze Historien manchmal feinere Bars
-              // als angefordert statt eines Fehlers - echte Monats-Bars pruefen
-              // (Median-Abstand >=25 Tage), sonst Asset ueberspringen statt
-              // Tages-Rauschen faelschlich als "Monats-Saisonalitaet" zu zeigen.
+              if(!ts||!closes||!ts.length){log.push(id+":no-bars");return null;}
+              // zu junge Ticker: Yahoo liefert dann teils feinere Bars als
+              // angefordert - echte Monats-Bars pruefen (Median-Abstand >= 25 Tage)
               if(ts.length>=2){
                 const gaps=[];for(let i=1;i<ts.length;i++)gaps.push((ts[i]-ts[i-1])/86400);
                 gaps.sort((a,b)=>a-b);
                 const medGap=gaps[Math.floor(gaps.length/2)];
-                if(medGap<25){log.push(m.id+":bars-too-fine("+medGap.toFixed(1)+"d)");return;}
+                if(medGap<25){log.push(id+":bars-too-fine("+medGap.toFixed(1)+"d)");return null;}
               }
-              const cutoff=new Date();cutoff.setUTCFullYear(cutoff.getUTCFullYear()-YEARS);
-              // Return je Bar ggue. dem VORHERIGEN Bar (chronologisch; prevClose
-              // laeuft auch vor dem Cutoff schon mit, damit der erste Monat IM
-              // Fenster einen echten Vormonats-Bezugswert hat statt verworfen
-              // zu werden), gebucket nach Kalendermonat.
-              const byMonth={};
-              let prevClose=null;
-              // ⚠ In BOERSEN-Zeit datieren (2026-09-25): NZDUSD=X kam mit
-              // 275 Monats-Bars, aber nur 11 Kalendermonaten - Yahoo stempelt
-              // Devisen-Monate auf Mitternacht London, im Sommer also 23:00
-              // UTC des Vormonats. In UTC gelesen rutschte ein Monat weg.
-              // ⚠ 2026-10-27: und zwar je Bar in der DAMALS gueltigen Zeit.
-              // Bis dahin wurde der HEUTIGE Versatz (meta.gmtoffset) auf alle
-              // 15 Jahre gelegt - das ging nur im Sommer gut. Seit dem Ende der
-              // Sommerzeit (25.10.) fielen die Sommermonate in den Vormonat:
-              // per Sonde gemessen NZDUSD=X, ^GDAXI und alle 28 FX-Paare mit
-              // Monaten von 1 und 30 Jahren statt 15-16 -> NZD und DAX flogen
-              // aus der Datei. Jetzt ueber die Zeitzone der Boerse (Intl).
               const tz=(r.meta&&r.meta.exchangeTimezoneName)||"UTC";
-              let fmtMon;
-              try{fmtMon=new Intl.DateTimeFormat("en-US",{timeZone:tz,month:"numeric"});}catch(e){fmtMon=new Intl.DateTimeFormat("en-US",{timeZone:"UTC",month:"numeric"});}
-              const monatVon=t=>+fmtMon.formatToParts(new Date(t*1000)).find(p=>p.type==="month").value;
+              let fmt;
+              try{fmt=new Intl.DateTimeFormat("en-US",{timeZone:tz,year:"numeric",month:"numeric"});}catch(e){fmt=new Intl.DateTimeFormat("en-US",{timeZone:"UTC",year:"numeric",month:"numeric"});}
+              const m={};
               for(let i=0;i<ts.length;i++){
                 const c=closes[i];
                 if(c==null||!isFinite(c)||c<=0)continue;
-                const d=new Date(ts[i]*1000);
-                if(prevClose!=null&&d>=cutoff){
-                  const ret=(c/prevClose-1)*100;
-                  const mon=monatVon(ts[i]);
-                  (byMonth[mon]=byMonth[mon]||[]).push(ret);
-                }
-                prevClose=c;
+                const p=fmt.formatToParts(new Date(ts[i]*1000));
+                const ym=p.find(x=>x.type==="year").value+"-"+String(p.find(x=>x.type==="month").value).padStart(2,"0");
+                m[ym]=c;
               }
+              return m;
+            }
+            const ymFolge=ym=>{let y=+ym.slice(0,4),mo=+ym.slice(5,7)+1;if(mo>12){mo=1;y++;}return y+"-"+String(mo).padStart(2,"0");};
+            const cutYm=cutoff.toISOString().slice(0,7);
+            // Monats-Rendite je "YYYY-MM" (nur lueckenlose Vormonate)
+            function renditen(m,art){
+              const r={};const yms=Object.keys(m).sort();
+              for(let i=1;i<yms.length;i++){
+                if(ymFolge(yms[i-1])!==yms[i])continue;
+                r[yms[i]]=art==="bp"?(m[yms[i]]-m[yms[i-1]])*100:Math.log(m[yms[i]]/m[yms[i-1]]);
+              }
+              return r;
+            }
+            // Statistik je Kalendermonat aus {ym: Wert}; Wert = Log-Rendite
+            // (-> Prozent) oder Basispunkte
+            function statistik(r,art,id){
+              const byMonth={};
+              Object.keys(r).forEach(ym=>{if(ym<cutYm)return;const mon=+ym.slice(5,7);(byMonth[mon]=byMonth[mon]||[]).push(art==="bp"?r[ym]:(Math.exp(r[ym])-1)*100);});
               const months=[];
               for(let mon=1;mon<=12;mon++){
-                const arr=byMonth[mon]||[];
-                if(!arr.length)continue;
+                const arr=byMonth[mon]||[];if(!arr.length)continue;
                 const avg=arr.reduce((a,b)=>a+b,0)/arr.length;
-                const hit=arr.filter(v=>v>0).length/arr.length*100;
-                months.push([mon,Math.round(avg*100)/100,Math.round(hit),arr.length]);
+                months.push([mon,Math.round(avg*100)/100,Math.round(arr.filter(v=>v>0).length/arr.length*100),arr.length]);
               }
-              if(months.length===12&&months.every(e=>e[3]>=MIN_YEARS)){
-                out.assets[m.id]={proxy:m.sym,inv:0,months};
-                log.push(m.id+"("+m.sym+","+months[0][3]+"y)");
-              }else log.push(m.id+":too-little-history("+months.length+"mo)");
+              if(months.length===12&&months.every(e=>e[3]>=MIN_YEARS))return months;
+              log.push(id+":too-little-history("+months.length+"mo, min "+Math.min(...months.map(e=>e[3]))+"y)");
+              return null;
+            }
+            // 1) Nicht-FX-Assets
+            meta.forEach(x=>{
+              let m=monate("seas_"+x.id+".json",x.id);if(!m)return;
+              if(UNIT[x.id]==="bp"){
+                // ^TNX: Rendite in Prozent; aeltere Yahoo-Staende in Zehntel-Prozent (x10)
+                const v=Object.values(m).sort((a,b)=>a-b),med=v[Math.floor(v.length/2)];
+                if(med>20)Object.keys(m).forEach(k=>{m[k]=m[k]/10;});
+              }
+              const months=statistik(renditen(m,UNIT[x.id]),UNIT[x.id],x.id);
+              if(!months)return;
+              out.assets[x.id]=Object.assign({proxy:x.sym,inv:0,months},UNIT[x.id]?{unit:UNIT[x.id]}:{});
+              log.push(x.id+"("+x.sym+","+months[0][3]+"y)");
             });
-            // Was DIESER Lauf nicht rechnen konnte (Abruf gescheitert, zu wenig
-            // Monate), behaelt seinen letzten Stand - vorher verschwand es still
-            // aus der Datei (NZD/DAX ab 25.10., siehe oben), und mit ihm die
-            // Saisonalitaets-Zeile im Score. 15-Jahres-Monatsmittel aendern
-            // sich von einem Tag auf den naechsten ohnehin kaum.
+            // 2) FX-Paare + Waehrungs-Koerbe aus denselben Paaren
+            const paarRend={};
+            paare.forEach(p=>{
+              const key=p.slice(0,3)+"/"+p.slice(3);
+              const m=monate("seasp_"+p+".json",key);if(!m)return;
+              const r=renditen(m,"log");paarRend[key]=r;
+              const months=statistik(r,"log",key);
+              if(months)out.pairs[key]={proxy:p+"=X",months};
+            });
+            ["USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD"].forEach(c=>{
+              const beteiligt=Object.keys(paarRend).filter(k=>k.split("/").includes(c));
+              if(beteiligt.length!==7){log.push(c+":korb-unvollstaendig("+beteiligt.length+"/7)");return;}
+              const yms=Object.keys(paarRend[beteiligt[0]]).filter(ym=>beteiligt.every(k=>paarRend[k][ym]!=null));
+              const korb={};
+              yms.forEach(ym=>{korb[ym]=beteiligt.reduce((a,k)=>a+(k.startsWith(c+"/")?1:-1)*paarRend[k][ym],0)/7;});
+              const months=statistik(korb,"log",c);
+              if(months){out.assets[c]={proxy:"basket vs 7 majors",basis:"pairs",inv:0,months};log.push(c+"(Korb,"+months[0][3]+"y)");}
+            });
+            // Was DIESER Lauf nicht rechnen konnte, behaelt seinen letzten
+            // Stand (vorher verschwand es still aus der Datei - samt der
+            // Saisonalitaets-Zeile im Score). Nur fuer Assets/Paare, die noch
+            // in der Liste stehen.
             try{
               const alt=JSON.parse(fs.readFileSync("seasonality_data.json","utf8"));
               Object.keys((alt&&alt.assets)||{}).forEach(id=>{
-                if(out.assets[id]||!meta.concat(fehlend).some(m=>m.id===id))return;
+                if(out.assets[id]||!alleIds.includes(id))return;
+                // eine Waehrung im alten ETF-Format ist kein "letzter Stand" der Korb-Reihe
+                if(["USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD"].includes(id)&&alt.assets[id].basis!=="pairs")return;
                 out.assets[id]=alt.assets[id];log.push(id+":letzter-Stand");
+              });
+              const paarKeys=paare.map(p=>p.slice(0,3)+"/"+p.slice(3));
+              Object.keys((alt&&alt.pairs)||{}).forEach(k=>{
+                if(out.pairs[k]||!paarKeys.includes(k))return;
+                out.pairs[k]=alt.pairs[k];log.push(k+":letzter-Stand");
               });
             }catch(e){}
             if(Object.keys(out.assets).length>=5){
               fs.writeFileSync("seasonality_data.json",JSON.stringify(out,null,1));
-              console.log("seasonality_data.json: "+log.join(" | "));
+              console.log("seasonality_data.json: "+Object.keys(out.assets).length+" assets, "+Object.keys(out.pairs).length+" pairs | "+log.join(" | "));
             }else{
               console.log("seasonality: only "+Object.keys(out.assets).length+" assets usable, keeping existing file ("+log.join(" | ")+")");
             }
           '
-          rm -f seas_*.json seas_meta.txt yscookies.txt
+          rm -f seas_*.json seasp_*.json seas_meta.txt yscookies.txt
 
       # ── COT / Commitments of Traders (cot_data.json) ──────────────────
       # CFTC "Legacy Futures-Only", Kategorie Non-Commercial (Grossspekulanten).

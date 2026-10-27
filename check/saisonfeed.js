@@ -16,6 +16,11 @@
 //   B) das eingebaute Muster kommt im richtigen Monat an (Juli +1 %, Januar -1 %);
 //   C) ein Asset, dessen Abruf scheitert, behaelt seinen letzten Stand;
 //      eines, das nicht mehr in der Proxy-Liste steht, faellt weg.
+// Seit 2026-10-27 auch (Nutzer: Saisonalitaet fuer alle Paare und alle Non-FX):
+//   D) alle 28 FX-Paare in "pairs", Muster im richtigen Monat (EUR/NZD Juli);
+//   E) Waehrungen = Korb gegen die sieben anderen aus den Paaren, exakt wie
+//      korbReihe() in js/main.js: EUR Juli = exp(0,01 + 0,01/7) - 1;
+//   F) US 10Y in Basispunkten (+10 bp im Juli), Kennzeichen unit "bp".
 //   node check/saisonfeed.js [--gegenprobe]   (alte gmtoffset-Zuordnung -> rot)
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 const ROOT = path.join(__dirname, '..');
@@ -26,7 +31,7 @@ const i = y.indexOf('const YEARS=15');
 const a = y.lastIndexOf("node -e '\n", i), b = y.indexOf("\n          '\n", i);
 let code = (i < 0 || a < 0 || b < 0) ? null : y.slice(a + 9, b);
 if (!code) fail('WORKFLOW', 'Node-Block des Schritts "Fetch seasonality" (const YEARS=15) nicht gefunden');
-if (code && GEGENPROBE) code = code.replace('const mon=monatVon(ts[i]);', 'const mon=new Date((ts[i]+((r.meta&&r.meta.gmtoffset)||0))*1000).getUTCMonth()+1;');
+if (code && GEGENPROBE) code = code.replace('timeZone:tz,year', 'timeZone:"UTC",year').replace('fmt.formatToParts(new Date(ts[i]*1000))', 'fmt.formatToParts(new Date((ts[i]+((r.meta&&r.meta.gmtoffset)||0))*1000))');
 if (code) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'saisonfeed-'));
   // Mitternacht Ortszeit am 1. des Monats als UTC-Sekunden
@@ -59,11 +64,36 @@ if (code) {
     meta.push(`${id} SYM_${id}`);
   });
   fs.writeFileSync(path.join(dir, 'seas_meta.txt'), meta.join('\n') + '\n');
+  // FX-Paare (Londoner Boersenzeit wie bei Yahoo): Staerke je Waehrung im Juli
+  // EUR +1 % (log 0,01), NZD -1 %, sonst 0; Paar-Logrendite = s_Basis - s_Quote
+  const PAARE = 'EURUSD GBPUSD USDJPY USDCHF AUDUSD NZDUSD USDCAD EURGBP EURJPY EURCHF EURAUD EURNZD EURCAD GBPJPY GBPCHF GBPAUD GBPNZD GBPCAD AUDJPY AUDNZD AUDCAD AUDCHF NZDJPY NZDCHF NZDCAD CADJPY CADCHF CHFJPY'.split(' ');
+  const staerke = { EUR: 0.01, NZD: -0.01 };
+  PAARE.forEach(pp => {
+    const B = pp.slice(0, 3), Q = pp.slice(3), ts = [], close = [];
+    let c = 1;
+    for (let j = jetzt.getUTCFullYear() - 20; j <= jetzt.getUTCFullYear(); j++) for (let m = 1; m <= 12; m++) {
+      if (j === jetzt.getUTCFullYear() && m > jetzt.getUTCMonth() + 1) break;
+      if (m === 7) c = c * Math.exp((staerke[B] || 0) - (staerke[Q] || 0));
+      ts.push(mitternacht(j, m, 'Europe/London')); close.push(c);
+    }
+    fs.writeFileSync(path.join(dir, `seasp_${pp}.json`), JSON.stringify({ chart: { result: [{ meta: { gmtoffset: 0, exchangeTimezoneName: 'Europe/London', dataGranularity: '1mo' }, timestamp: ts, indicators: { quote: [{ close }] } }] } }));
+  });
+  // US 10Y (^TNX, Prozent): +0,10 Prozentpunkte jeden Juli
+  {
+    const ts = [], close = []; let c = 3;
+    for (let j = jetzt.getUTCFullYear() - 20; j <= jetzt.getUTCFullYear(); j++) for (let m = 1; m <= 12; m++) {
+      if (j === jetzt.getUTCFullYear() && m > jetzt.getUTCMonth() + 1) break;
+      if (m === 7) c = +(c + 0.1).toFixed(4);
+      ts.push(mitternacht(j, m, 'America/Chicago')); close.push(c);
+    }
+    fs.writeFileSync(path.join(dir, 'seas_USYIELD.json'), JSON.stringify({ chart: { result: [{ meta: { gmtoffset: -18000, exchangeTimezoneName: 'America/Chicago', dataGranularity: '1mo' }, timestamp: ts, indicators: { quote: [{ close }] } }] } }));
+    fs.appendFileSync(path.join(dir, 'seas_meta.txt'), 'USYIELD %5ETNX\n');
+  }
   // Vor-Stand: WEG (Abruf scheitert heute, steht in der Proxy-Liste) und ALT (nicht mehr in der Liste)
   const zwoelf = Array.from({ length: 12 }, (_, k) => [k + 1, 0.1, 50, 15]);
   fs.writeFileSync(path.join(dir, 'seasonality_data.json'), JSON.stringify({ updated: '2026-01-01', assets: { WEG: { proxy: 'X', inv: 0, months: zwoelf }, ALT: { proxy: 'Y', inv: 0, months: zwoelf } } }));
   fs.writeFileSync(path.join(dir, 'seas.js'), code);
-  const r = cp.spawnSync(process.execPath, ['seas.js'], { cwd: dir, env: Object.assign({}, process.env, { SEAS_ALLE: Object.keys(ASSETS).join(' ') + ' WEG' }), encoding: 'utf8' });
+  const r = cp.spawnSync(process.execPath, ['seas.js'], { cwd: dir, env: Object.assign({}, process.env, { SEAS_ALLE: 'USD EUR GBP JPY CHF CAD AUD NZD USYIELD ' + Object.keys(ASSETS).join(' ') + ' WEG', SEAS_PAIRS: 'EURUSD GBPUSD USDJPY USDCHF AUDUSD NZDUSD USDCAD EURGBP EURJPY EURCHF EURAUD EURNZD EURCAD GBPJPY GBPCHF GBPAUD GBPNZD GBPCAD AUDJPY AUDNZD AUDCAD AUDCHF NZDJPY NZDCHF NZDCAD CADJPY CADCHF CHFJPY' }), encoding: 'utf8' });
   let out = null;
   try { out = JSON.parse(fs.readFileSync(path.join(dir, 'seasonality_data.json'), 'utf8')); } catch (e) { fail('LAUF', String(r.stderr || e.message).slice(0, 300)); }
   fs.rmSync(dir, { recursive: true, force: true });
@@ -76,14 +106,31 @@ if (code) {
       const mon = k => (A.months.find(m => m[0] === k) || [])[1];
       if (Math.abs(mon(7) - 1) > 0.01 || Math.abs(mon(1) + 1) > 0.01 || Math.abs(mon(6)) > 0.01) fail('MONAT FALSCH', `${id}: Juli ${mon(7)} %, Januar ${mon(1)} %, Juni ${mon(6)} % - erwartet +1 / -1 / 0`);
     });
+    // D) Paare
+    const P = out.pairs || {};
+    if (Object.keys(P).length !== 28) fail('PAARE', `${Object.keys(P).length} statt 28 Paare in "pairs"`);
+    const juli = (A) => A && (A.months.find(m => m[0] === 7) || [])[1];
+    const soll = (name, ist, wert) => { if (ist == null || Math.abs(ist - wert) > 0.01) fail(name, `ist ${ist}, soll ${wert.toFixed(2)}`); };
+    soll('PAAR EUR/NZD Juli', juli(P['EUR/NZD']), (Math.exp(0.02) - 1) * 100);
+    soll('PAAR USD/JPY Juli', juli(P['USD/JPY']), 0);
+    if (P['EUR/NZD'] && P['EUR/NZD'].months.some(m => m[3] < 8)) fail('PAARE', 'EUR/NZD mit Monaten unter 8 Jahren');
+    // E) Koerbe aus den Paaren (wie korbReihe)
+    soll('KORB EUR Juli', juli(out.assets.EUR), (Math.exp(0.01 + 0.01 / 7) - 1) * 100);
+    soll('KORB NZD Juli', juli(out.assets.NZD), (Math.exp(-0.01 - 0.01 / 7) - 1) * 100);
+    soll('KORB USD Juli', juli(out.assets.USD), 0);
+    if (out.assets.EUR && out.assets.EUR.basis !== 'pairs') fail('KORB', 'EUR ohne basis "pairs"');
+    // F) US 10Y in Basispunkten
+    const Y = out.assets.USYIELD;
+    if (!Y || Y.unit !== 'bp') fail('RENDITE', 'USYIELD fehlt oder ohne unit "bp"');
+    else soll('RENDITE US10Y Juli (bp)', juli(Y), 10);
     if (!out.assets.WEG) fail('LETZTER STAND', 'WEG (Abruf gescheitert, in der Proxy-Liste) fehlt - er muss seinen letzten Stand behalten');
     if (out.assets.ALT) fail('LETZTER STAND', 'ALT steht nicht mehr in der Proxy-Liste und darf nicht mitgeschleppt werden');
   }
 }
 if (GEGENPROBE) {
-  const ok = F.some(x => x.startsWith('MONATE') || x.startsWith('MONAT FALSCH'));
+  const ok = F.some(x => x.startsWith('MONATE') || x.startsWith('MONAT FALSCH')) || F.some(x => x.startsWith('PAAR') || x.startsWith('KORB'));
   console.log(ok ? 'saisonfeed --gegenprobe: ok (alte gmtoffset-Zuordnung wird gemeldet: ' + F.filter(x => /^MONAT/.test(x)).length + ' Befunde)' : 'saisonfeed --gegenprobe: FEHLER - nicht gemeldet\n  ' + F.join('\n  '));
   process.exit(ok ? 0 : 1);
 }
 if (F.length) { console.log(`saisonfeed: ${F.length} Befund(e)\n  ` + F.join('\n  ')); process.exit(1); }
-console.log('saisonfeed: ok (Saisonalitaet: Monatszuordnung in Boersenzeit fuer London/Berlin/New York/Auckland/UTC, Muster im richtigen Monat, gescheiterter Abruf behaelt letzten Stand)');
+console.log('saisonfeed: ok (Saisonalitaet: Monatszuordnung in Boersenzeit fuer London/Berlin/New York/Auckland/UTC, Muster im richtigen Monat, 28 Paare, Waehrung = Korb wie korbReihe, US 10Y in bp, gescheiterter Abruf behaelt letzten Stand)');
