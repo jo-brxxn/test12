@@ -6118,44 +6118,40 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
    Basis), drei Stufen mit den Sitzungsdaten. Alle Farben aus den Tokens, damit
    Terminal Pro und Midnight Term ohne eigene Zeichnung stimmen. */
 .zb-row{grid-column:1 / -1}
-/* Karte + Schnellzugriffe in EINER Reihe (Nutzer 2026-10-27): Karte links,
-   die vier Knoepfe rechts untereinander, zusammen so hoch wie die Karte.
-   Seit 641 Karte 2/3, Knoepfe 1/3 ("Zentralbank Karte 2 Drittel ... die
-   Buttons den Rest"), Beschriftung zentriert; lange Namen brechen um statt
-   gekuerzt zu werden. */
-.zb-qrow{grid-column:1 / -1;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:14px;align-items:stretch}
-body.dense-mode .zb-qrow{gap:10px}
-.zb-qcol{display:flex;min-width:0}
-.zb-qcol .ab-qzeile{flex:1 1 auto;display:flex;flex-direction:column;gap:8px}
-.zb-qcol .ab-qzeile .aql{flex:1 1 0;min-height:56px;padding:8px 12px}
-.zb-qcol .aql span{flex:0 1 auto;min-width:0;white-space:normal;overflow:visible;text-overflow:clip;text-align:center;overflow-wrap:normal}
-/* Schmal: Karte volle Breite, Knoepfe als Zeile darunter; Handy 2x2.
-   Grenze seit 641 bei 1100 px: mit der 2/3-Karte waeren die Saeulen bei
-   1024 px nur 162 px breit, Notiz-Titel rissen nach ~8 Zeichen ab. */
-@media (max-width:1100px){
-  .zb-qrow{grid-template-columns:minmax(0,1fr)}
-  .zb-qcol .ab-qzeile{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
-  .zb-qcol .ab-qzeile .aql{min-height:52px}
-}
-@media (max-width:700px){.zb-qcol .ab-qzeile{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .zb-card{padding:14px 16px 14px;min-width:0}
-.zb-hd-sub{font:600 var(--fs-xs)/1.2 var(--ff-text);color:var(--t3)}
-.zb-hd-sub i{font-weight:500}
+/* Kopf rechts: nur die Verknuepfung (Non-FX), der Bankname steht im Fries */
+.zb-hd-sub{margin-left:auto;font:italic 500 var(--fs-xs)/1.2 var(--ff-text);color:var(--t3)}
+.zb-hd-sub b{font-style:normal;font-weight:700;color:var(--t1)}
+.zb-hd-sub+.zb-arch{margin-left:0}
+/* Dach bis in die Titelzeile (Nutzer 2026-10-27, VERSION-CHECK-642: "mit dem
+   Dach weiter hoch ... sodass die Spitze des Dachs auf der gleichen Hoehe wie
+   der Kartentitel ist"): Kopfzeile fest 34 px und ueber dem Gebaeude, der
+   Giebel rueckt um die halbe Kopfzeile darunter hoch - so sitzt die
+   Dachspitze (y=3 von 120 im SVG) auf der Titelmitte, egal welche Polsterung
+   die Karte gerade hat (1440: 10 px, 1180: 14 px). Die gewonnene Hoehe geht
+   an die Saeulen, die Karte bleibt gleich hoch. Handy: Kopf bricht um, dort
+   bleibt das Dach darunter. */
+@media (min-width:701px){
+  .zb-card[data-ccy]>.ab-tile-hd{position:relative;z-index:2;height:34px;margin-bottom:0;flex-wrap:nowrap}
+  .zb-card[data-ccy] .zb-giebel{margin-top:calc(-17px - var(--zb-gh) / 40)}
+}
 .zb-arch{margin-left:auto;height:28px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-sm);cursor:pointer}
 .zb-arch b{font:700 var(--fs-sm)/1 var(--ff-num);color:var(--t1)}
 .zb-nolink{font-size:var(--fs-sm);color:var(--t3);padding:4px 2px}
-/* Roter Banner: Erinnerung, dass die Bank entschieden hat (Warnung -> Rot erlaubt) */
-.zb-banner{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:8px 10px 8px 14px;border-radius:var(--rss);
-  background:var(--red);color:#fff;box-shadow:0 3px 10px rgba(var(--red-rgb),.28)}
+/* Erinnerung, dass die Bank entschieden hat = oberste Stufe in Rot (Warnung
+   -> Rot erlaubt; seit 642 statt eines Banners ueber dem Gebaeude) */
+.zb-st1.zb-banner{justify-content:flex-start;flex-wrap:nowrap;gap:10px;padding:3px 4px 3px 12px;
+  background:var(--red);border-color:var(--red);color:#fff;box-shadow:none}
 .zb-banner-ic{display:inline-flex;flex:none}
 .zb-banner-tx{flex:1 1 auto;min-width:0;font:500 var(--fs-sm)/1.35 var(--ff-text)}
 .zb-banner-tx b{font-weight:800}
+.zb-st1.zb-banner i{color:rgba(255,255,255,.9)}
 .zb-banner-x{flex:none;width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:17px;line-height:1;cursor:pointer}
 @media (hover:hover){.zb-banner-x:hover{background:rgba(255,255,255,.3)}}
 /* Gebaeude: Stein in drei Toenen + Licht/Kante (Midnight siehe unten) */
 .zb-bau{--zb-stein:var(--bg4);--zb-stein2:var(--bg5);--zb-kante:var(--bg6);--zb-hell:var(--bg2);--zb-laub:#97A6BF;--zb-tief:rgba(20,27,46,.16);--zb-schatten:rgba(20,27,46,.10);
   margin:0;padding:0}
-.zb-giebel{position:relative;height:clamp(78px,8vw,116px);margin:16px 0 0}
+.zb-giebel{--zb-gh:clamp(78px,8vw,116px);position:relative;height:var(--zb-gh);margin:16px 0 0;pointer-events:none}
 .zb-giebel-svg{display:block;width:100%;height:100%;overflow:visible}
 .zb-gs-hell{stop-color:var(--zb-hell)}.zb-gs-stein{stop-color:var(--zb-stein)}.zb-gs-stein2{stop-color:var(--zb-stein2)}
 .zb-g-tiefe{fill:none;stroke:var(--zb-tief);stroke-width:2.5}
@@ -6212,7 +6208,7 @@ body.dense-mode .zb-qrow{gap:10px}
   background:repeating-radial-gradient(circle at 46% 54%,var(--zb-kante) 0 1.5px,var(--zb-stein2) 1.5px 4.6px);box-shadow:0 1px 3px var(--zb-schatten)}
 .zb-vol.l{left:0}.zb-vol.r{right:0}
 /* Schaft = kleine Notes-Karte auf kanneliertem, gerundetem Stein */
-.zb-schaft{flex:1 1 auto;display:flex;flex-direction:column;gap:8px;min-height:220px;padding:10px 10px 14px;
+.zb-schaft{flex:1 1 auto;display:flex;flex-direction:column;gap:8px;min-height:260px;padding:10px 10px 14px;
   background:repeating-linear-gradient(90deg,transparent 0 10px,rgba(20,27,46,.06) 10px 11px,rgba(255,255,255,.45) 11px 12px),
     linear-gradient(90deg,var(--zb-stein2) 0%,var(--zb-stein) 16%,var(--zb-hell) 50%,var(--zb-stein) 84%,var(--zb-stein2) 100%);
   border-left:1px solid var(--zb-kante);border-right:1px solid var(--zb-kante)}
@@ -6247,7 +6243,7 @@ body.dense-mode .zb-qrow{gap:10px}
 .res-zb[hidden],#resNPlacesBox[hidden],#resNPinRow[hidden]{display:none}
 /* Stufen */
 .zb-st{background:linear-gradient(var(--zb-hell),var(--zb-stein) 60%,var(--zb-stein2));border:1px solid var(--zb-kante);border-top:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
-.zb-st1{margin:0 .8%;padding:6px 12px;border-top:1px solid var(--zb-kante);display:flex;justify-content:center;align-items:center;gap:8px 14px;flex-wrap:wrap;
+.zb-st1{min-height:36px;margin:0 .8%;padding:6px 12px;border-top:1px solid var(--zb-kante);display:flex;justify-content:center;align-items:center;gap:8px 14px;flex-wrap:wrap;
   font:600 var(--fs-sm)/1.3 var(--ff-text);color:var(--t1)}
 .zb-st1 i{font-style:italic;font-weight:500;color:var(--t2)}
 .zb-st-l{font:800 var(--fs-2xs)/1 var(--ff-text);letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-right:5px}
@@ -6264,7 +6260,7 @@ body.dense-mode .zb-qrow{gap:10px}
   .zb-schaft{min-height:96px}
 }
 [data-fx-theme="midnight"] .zb-bau{--zb-laub:#4A5F86;--zb-stein:var(--bg4);--zb-stein2:var(--bg3);--zb-hell:var(--bg6);--zb-kante:rgba(150,180,225,.38);--zb-tief:rgba(0,0,0,.4);--zb-schatten:rgba(0,0,0,.35)}
-[data-fx-theme="midnight"] .zb-banner{background:#B3202B;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+[data-fx-theme="midnight"] .zb-st1.zb-banner{background:#B3202B;border-color:#B3202B}
 [data-fx-theme="midnight"] .zb-name{text-shadow:0 1px 0 rgba(0,0,0,.65),0 -1px 0 rgba(255,255,255,.08)}
 [data-fx-theme="midnight"] .zb-fries{box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 [data-fx-theme="midnight"] .zb-schaft{background:repeating-linear-gradient(90deg,transparent 0 10px,rgba(0,0,0,.18) 10px 11px,rgba(255,255,255,.05) 11px 12px),
@@ -7018,11 +7014,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-641 - Central bank: Karte 2/3, Knoepfe 1/3 mit zentrierter Schrift; Saeulen hoeher und kraeftiger, Kapitelle liegen direkt auf einem Architrav (Saeulen und Dach verbunden)."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-642 - Central bank: volle Breite, die vier Knoepfe wieder als Zeile darueber; Dachspitze auf Hoehe des Kartentitels, die gewonnene Hoehe geht an die Saeulen; Erinnerung nach dem Zinsentscheid als rote Stufe unten."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-641</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-642</span>
     </span>
   </div>
   <div class="hdr-r">

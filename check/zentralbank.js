@@ -16,8 +16,9 @@
 //   C) Regel der Asset-Verknuepfung: dieselbe USD-Notiz ist auf GOLD in der
 //      Inflations-Saeule (inverse) umgekehrt gefaerbt, in Economy (same)
 //      nicht; eine auf GOLD eingegebene Notiz wird in USD-Sicht gespeichert
-//   D) Banner: steht ohne Notiz der aktuellen Sitzung, weg nach der ersten
-//      Notiz; ✕ haelt ueber das Neuladen (zbQuittung im Speicher)
+//   D) Banner (rote oberste Stufe): steht ohne Notiz der aktuellen Sitzung,
+//      weg nach der ersten Notiz; ✕ haelt ueber das Neuladen (zbQuittung im
+//      Speicher); Karte mit und ohne gleich hoch
 //   E) Snapshot-Runde (snap -> applySnap): cb-Feld bleibt
 //   F) Fenster in Asset-Sicht: die USD-Notiz (bullish) oeffnet auf GOLD mit
 //      Bearish, unveraendert gespeichert bleibt sie bullish; ▲▼ sortiert
@@ -93,22 +94,33 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
   }
   if (!F.length) gruen(`${Object.keys(namen).length} Assets: Name, Flagge, drei Saeulen`);
 
-  // A2: Aufteilung und Bauform (Nutzer 2026-10-27, VERSION-CHECK-641):
-  // Karte 2/3, Knoepfe 1/3 mit zentrierter Schrift; Kapitelle liegen ohne
-  // Luecke am Architrav ("Saeulen und das Dach muessen verbunden sein"),
-  // benachbarte Voluten beruehren sich nicht.
+  // A2: Aufteilung und Bauform (Nutzer 2026-10-27). Seit 642: die vier
+  // Knoepfe als Zeile UEBER der Karte, Karte volle Breite, Knopftext mittig;
+  // Dachspitze auf Hoehe der Titelmitte ("die Spitze des Dachs auf der
+  // gleichen Hoehe wie der Kartentitel"), kein Kopf-Element liegt auf dem
+  // Dach; Kapitelle ohne Luecke am Architrav ("Saeulen und das Dach muessen
+  // verbunden sein", 641), benachbarte Voluten beruehren sich nicht.
   const fa = F.length;
   const bau = await p.evaluate(() => { const B = s => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null; };
-    const k = B('#zbKarte'), q = B('.zb-qcol'), a = B('.zb-architrav'), kap = [...document.querySelectorAll('#zbKarte .zb-kap')].map(e => e.getBoundingClientRect());
+    const k = B('#zbKarte'), q = B('.ab-qrow'), a = B('.zb-architrav'), g = B('#zbKarte .zb-giebel'), t = B('#zbKarte .ab-tile-t');
+    const kap = [...document.querySelectorAll('#zbKarte .zb-kap')].map(e => e.getBoundingClientRect());
     const v = [...document.querySelectorAll('#zbKarte .zb-vol')].map(e => e.getBoundingClientRect()); const ab = []; for (let i = 1; i + 1 < v.length; i += 2) ab.push(Math.round(v[i + 1].left - v[i].right));
-    return { anteil: k && q ? k.width / (k.width + q.width) : 0, nebeneinander: !!(k && q && q.left > k.right - 1), ausr: [...document.querySelectorAll('.zb-qcol .aql span')].map(x => getComputedStyle(x).textAlign),
+    const mitte = [...document.querySelectorAll('.ab-qrow .aql')].map(b => { const r = b.getBoundingClientRect(), kids = [...b.children].map(c => c.getBoundingClientRect()).filter(c => c.width);
+      return Math.round(Math.abs((kids[0].left - r.left) - (r.right - kids[kids.length - 1].right))); });
+    let frei = null;
+    if (g) { const cx = g.left + g.width / 2, yDach = x => g.top + g.height * (3 + 117 * Math.min(1, Math.abs(x - cx) / (g.width / 2))) / 120;
+      frei = Math.min(...[...document.querySelectorAll('#zbKarte>.ab-tile-hd>*')].map(e => e.getBoundingClientRect()).filter(r => r.width).map(r => yDach(Math.min(Math.max(cx, r.left), r.right)) - r.bottom)); }
+    return { ueber: !!(k && q && q.bottom <= k.top + 1), breit: k && q ? Math.round(q.width - k.width) : null, mitte, spitze: g && t ? Math.round(g.top + g.height * 3 / 120 - (t.top + t.height / 2)) : null, frei: frei === null ? null : Math.round(frei),
       luecke: a ? kap.map(r => Math.round(r.top - a.bottom)) : null, voluten: ab }; });
-  if (!bau.nebeneinander || bau.anteil < .62 || bau.anteil > .71) rot('A2 ANTEIL', `Karte ${(bau.anteil * 100).toFixed(0)} % der Reihe (soll 2/3), nebeneinander ${bau.nebeneinander}`);
-  if (bau.ausr.some(x => x !== 'center')) rot('A2 KNOPFTEXT', `Ausrichtung ${bau.ausr.join(',')} statt center`);
+  if (!bau.ueber) rot('A2 KNOEPFE', 'Knopfzeile steht nicht ueber der Karte');
+  if (bau.breit === null || Math.abs(bau.breit) > 2) rot('A2 BREITE', `Karte ${bau.breit} px schmaler als die Knopfzeile (soll volle Breite)`);
+  if (!bau.mitte.length || bau.mitte.some(x => x > 2)) rot('A2 KNOPFTEXT', `Inhalt nicht mittig: links/rechts-Differenz ${bau.mitte.join('/')} px`);
+  if (bau.spitze === null || Math.abs(bau.spitze) > 2) rot('A2 DACHSPITZE', `Dachspitze ${bau.spitze} px neben der Titelmitte`);
+  if (bau.frei === null || bau.frei < 4) rot('A2 KOPF', `Kopf-Element liegt auf dem Dach (Abstand ${bau.frei} px)`);
   if (!bau.luecke) rot('A2 ARCHITRAV', 'kein .zb-architrav - Saeulen haengen nicht am Dach');
   else if (bau.luecke.some(x => Math.abs(x) > 1)) rot('A2 VERBUNDEN', `Luecke Architrav -> Kapitell ${bau.luecke.join('/')} px`);
   if (bau.voluten.some(x => x < 4)) rot('A2 VOLUTEN', `Abstand benachbarter Voluten ${bau.voluten.join('/')} px (< 4 = sie stossen aneinander)`);
-  if (F.length === fa) gruen(`Karte ${(bau.anteil * 100).toFixed(0)} %, Knopftext zentriert, Kapitelle am Architrav (${bau.luecke.join('/')} px), Voluten ${bau.voluten.join('/')} px auseinander`);
+  if (F.length === fa) gruen(`Knoepfe ueber der Karte, volle Breite, Text mittig; Dachspitze ${bau.spitze} px zur Titelmitte, Kopf ${bau.frei} px ueber dem Dach; Kapitelle am Architrav, Voluten ${bau.voluten.join('/')} px auseinander`);
 
   // ── B + D ──
   console.log('B) Speichern + Neuladen, D) Banner');
@@ -141,7 +153,13 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
   await p.evaluate(() => gotoSym('CAD')); await p.waitForTimeout(300);
   k = await karte(p);
   if (k.banner && !k.saeulen.some(s => s.n.length)) {
+    // Erinnerung = rote oberste Stufe (seit 642): die Karte ist mit und ohne
+    // gleich hoch, sie steht unten im Gebaeude statt ueber dem Dach
+    const hMit = await p.evaluate(() => ({ h: document.getElementById('zbKarte').getBoundingClientRect().height, stufe: !!document.querySelector('#zbKarte .zb-stufen .zb-banner') }));
     await p.click('#zbKarte .zb-banner-x'); await p.waitForTimeout(400);
+    const hOhne = await p.evaluate(() => document.getElementById('zbKarte').getBoundingClientRect().height);
+    if (!hMit.stufe) rot('D STUFE', 'Erinnerung steht nicht in den Stufen des Gebaeudes');
+    if (Math.abs(hMit.h - hOhne) > 1) rot('D HOEHE', `Karte mit Erinnerung ${Math.round(hMit.h)} px, ohne ${Math.round(hOhne)} px`);
     await p.reload(); await wartenBisDatenDa(p);
     await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); gotoSym('CAD'); }); await p.waitForTimeout(600);
     k = await karte(p);

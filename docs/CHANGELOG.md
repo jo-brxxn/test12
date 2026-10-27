@@ -20885,3 +20885,20 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter:** `check/zentralbank.js` A2 (Anteil, Knopftext, Lücke, Voluten). Gegenprobe mit den alten Werten: alle vier rot (82 %, `left`, 10 px, −6 px).
 
+## 2026-10-27 — VERSION-CHECK-642: Central bank volle Breite, Dach bis zur Titelzeile, Erinnerung als rote Stufe
+
+**Nutzer:** *„Mach die Säulen größer ohne das die Karte Größe wird in dem du mir dem Dach weiter hoch gehst sodass die spitzendes Dachs auf der gleichen Höhe wie der Karten Titel ist. Und die 4 Buttons links mach die doch wieder als Zeile dadrüber und mach dafür die central bank Karte maximal breit dann hat man auch mehr Platz und die Notizen werden größer lass die Höhe aber so“* — Rückfrage zum Banner (über dem Gebäude kein Platz mehr): *Rote Stufe unten*.
+
+**Gemessen vorher (ohne Banner):** Dachspitze **47 px** unter der Titelmitte; Karte 574 px (1440) / 562 px (1180) / 549 (1024) / 545 (820) hoch; mit Banner +54 px; Karte 873 bzw. 697 px breit (2/3).
+
+**Umgesetzt:**
+- `renderDetail`: wieder `.ab-qrow` (Knopfzeile) und darunter `zentralbankKarteHtml(c)` in voller Breite; `.zb-qrow`/`.zb-qcol` entfernt.
+- Kopf fest 34 px über dem Gebäude, Giebel `margin-top: calc(-17px - var(--zb-gh)/40)` → Spitze (SVG y=3/120) auf der Kopfmitte. Erster Ansatz (Kopf absolut, `top:14px`) lag 3–7 px daneben, weil die Kartenpolsterung je nach Breite 10 oder 14 px ist.
+- Schaft 220 → 260 px (gewonnene Höhe abzüglich der auf 36 px vereinheitlichten Stufe).
+- Erinnerung als rote oberste Stufe (`.zb-st1.zb-banner`), statt Banner über dem Gebäude; Kursivtext weiß (die Stufen-Regel `.zb-st1 i{color:var(--t2)}` machte ihn rot auf rot).
+- Kopf ohne Banknamen (steht im Fries), *linked via USD* rechts vor *Archive*.
+
+**Gemessen nachher:** Dachspitze **0 px** zur Titelmitte (1440, 1180, 1024, 820); Karte 574 / 562 / 550 / 546 px — mit und ohne Erinnerung gleich; Breite 1320 / 1060 / 904 / 700 px, Säulen 399 / 314 / 265 / 198 px; Abstand Kopf-Elemente → Dach mind. 23 px (*linked via* bei 820), EUR/GOLD/NZYIELD/SP500; Handy unverändert (Dach unter dem Kopf); 0 JS-Fehler, kein Quer-Scroll; Midnight geprüft.
+
+**Wächter `check/zentralbank.js`:** A2 (Knopfzeile darüber, volle Breite, Knopfinhalt mittig, Dachspitze ±2 px, Kopf ≥ 4 px über dem Dach, Architrav, Voluten), D (Erinnerung in den Stufen, Höhe mit/ohne ±1 px). Gegenprobe: Dach unter dem Kopf → DACHSPITZE 36 px rot; höhere rote Stufe → HOEHE 622/610 rot; Knopfzeile unter der Karte → KNOEPFE rot.
+

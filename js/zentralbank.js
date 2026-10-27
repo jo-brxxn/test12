@@ -198,7 +198,7 @@ function zentralbankKarteHtml(sym,nurKarte){
   const info=abInfoBtn('Central bank',[
     '<b>Three pillars</b> · <i>Inflation, Labour market, Economy</i> — your notes on what the bank said about each.',
     '<b>Notes belong to the latest rate decision</b> · when the next decision has happened, the pillars start empty and the earlier notes are in the <b>Archive</b> under their meeting date.',
-    '<b>Red banner</b> · the bank decided and this meeting has no note yet — it goes away with your first note or with ✕.',
+    '<b>Red base step</b> · the bank decided and this meeting has no note yet — it goes away with your first note or with ✕.',
     '<b>Colours</b> · ▲ <b style="color:'+BC.bull+'">bullish</b> · ◆ neutral · ▼ <b style="color:'+BC.bear+'">bearish</b>, for the asset you are on. Assets linked to a currency share its bank and its notes; a pillar that reads <i>inverse</i> for this asset shows the colours flipped.',
     '<b>Saved like every note</b> · synced across devices, deleted notes go to the trash for 30 days.'
   ],'info-b ii-nach');
@@ -212,18 +212,24 @@ function zentralbankKarteHtml(sym,nurKarte){
   const alle=zbNotizen(ccy),jetzt=alle.filter(n=>zbIstAktuell(n,akt));
   const archivTage=[...new Set(alle.filter(n=>!zbIstAktuell(n,akt)).map(n=>n.cb.m))];
   const quittiert=zbQuittung&&zbQuittung[ccy]&&tageAbstand(zbQuittung[ccy],akt)<=ZB_TOL_TAGE;
-  const banner=s.letzte&&!jetzt.length&&!quittiert?`<div class="zb-banner" role="status">
-      <span class="zb-banner-ic">${icn('bell',15)}</span>
-      <span class="zb-banner-tx"><b>${h(bank.kurz)} decided</b> · ${h(fmtDayHdr(s.letzte.d))} · <i>add your notes for this meeting</i></span>
-      <button class="zb-banner-x" onclick="zbQuittieren('${escJH(ccy)}')" title="Dismiss for this meeting" aria-label="Dismiss">×</button>
-    </div>`:'';
-  const verknuepft=ccy!==sym.id?` · <i>linked via ${h(ccy)}</i>`:'';
   const naechste=s.naechste?(()=>{const d=daysUntil(s.naechste.d);return`${h(fmtDayHdr(s.naechste.d))} <i>${d<=0?'today':d+'d'}</i>`;})():'<i>not in the calendar yet</i>';
   const letzte=s.letzte?h(fmtDayHdr(s.letzte.d)):'<i>unknown</i>';
+  // Erinnerung nach dem Zinsentscheid = die oberste Stufe wird rot (seit
+  // 642, Nutzer-Wahl "Rote Stufe unten"): das Dach reicht bis in die
+  // Titelzeile, ueber dem Gebaeude ist kein Platz mehr, und so bleibt die
+  // Karte mit und ohne Erinnerung gleich hoch.
+  const stufe=s.letzte&&!jetzt.length&&!quittiert?`<div class="zb-st zb-st1 zb-banner" role="status">
+          <span class="zb-banner-ic">${icn('bell',15)}</span>
+          <span class="zb-banner-tx"><b>${h(bank.kurz)} decided</b> · ${h(fmtDayHdr(s.letzte.d))} · <i>add your notes for this meeting</i></span>
+          <button class="zb-banner-x" onclick="zbQuittieren('${escJH(ccy)}')" title="Dismiss for this meeting" aria-label="Dismiss">×</button>
+        </div>`
+    :`<div class="zb-st zb-st1"><span><span class="zb-st-l">Last decision</span> ${letzte}</span><span class="zb-st-dot" aria-hidden="true">◆</span><span><span class="zb-st-l">Next</span> ${naechste}</span></div>`;
+  // Der Bankname steht gross im Fries; im Kopf nur noch die Verknuepfung -
+  // rechts, wo das Dach flach ist (links/mittig laege sie auf dem Dach).
+  const verknuepft=ccy!==sym.id?`<span class="zb-hd-sub">linked via <b>${h(ccy)}</b></span>`:'';
   const archivBtn=`<button class="btn zb-arch" onclick="zbArchivAuf('${escJH(sym.id)}')" title="Notes of earlier meetings">${icn('folder',14)}<span>Archive</span><b>${archivTage.length}</b></button>`;
   const karte=`<div class="ab-tile zb-card" id="zbKarte" data-ccy="${h(ccy)}">
-    <div class="ab-tile-hd">${ic}<span class="ab-tile-t">Central bank</span><span class="zb-hd-sub">${h(bank.name)}${verknuepft}</span>${archivBtn}${info}</div>
-    ${banner}
+    <div class="ab-tile-hd">${ic}<span class="ab-tile-t">Central bank</span>${verknuepft}${archivBtn}${info}</div>
     <div class="zb-bau">
       ${zbGiebelHtml(ccy)}
       <div class="zb-fries"><span class="zb-orn" aria-hidden="true"></span><span class="zb-name">${h(bank.name)}</span><span class="zb-orn r" aria-hidden="true"></span></div>
@@ -231,7 +237,7 @@ function zentralbankKarteHtml(sym,nurKarte){
       <div class="zb-architrav" aria-hidden="true"></div>
       <div class="zb-saeulen">${ZB_SAEULEN.map(x=>zbSaeuleHtml(sym,ccy,x,jetzt.filter(n=>n.cb.s===x.k),false)).join('')}</div>
       <div class="zb-stufen">
-        <div class="zb-st zb-st1"><span><span class="zb-st-l">Last decision</span> ${letzte}</span><span class="zb-st-dot" aria-hidden="true">◆</span><span><span class="zb-st-l">Next</span> ${naechste}</span></div>
+        ${stufe}
         <div class="zb-st zb-st2" aria-hidden="true"></div>
         <div class="zb-st zb-st3" aria-hidden="true"></div>
       </div>
