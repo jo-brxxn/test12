@@ -1,0 +1,28 @@
+name: Probe NZ core CPI sources
+
+# Einmal-Probe 2026-10-27, schreibt nichts ins Repo.
+# Gesucht: eine freie, eindeutig benannte NZ-Kerninflation, die der Runner
+# erreicht. Kandidaten: OECD SDMX (CPI ohne Nahrung und Energie, Schluessel
+# wie bei den FRED-Spiegeln), Stats-NZ-Downloaddateien im Seitenquelltext.
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: OECD
+        run: |
+          for K in "NZL.Q.N.CPI.PA._TXCP01_NRG.N.GY" "NZL.Q.N.CPI.PA._T.N.GY" "NZL.Q.N.CPI.IX._TXCP01_NRG.N._Z"; do
+            U="https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/${K}?startPeriod=2024-Q1&dimensionAtObservation=AllDimensions&format=csvfilewithlabels"
+            echo "== $K"; curl -sL -m 40 -w "\nHTTP %{http_code} %{size_download}B\n" "$U" | tail -c 1800
+          done
+      - name: Stats NZ page source
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+          curl -sL -A "$UA" -m 30 "https://www.stats.govt.nz/information-releases/consumers-price-index-september-2026-quarter/" -o s.html
+          echo "bytes $(wc -c < s.html)"
+          grep -o 'assets/Uploads[^"<> ]*' s.html | sort -u | head -30
+          grep -o '[a-zA-Z0-9/_.-]*\.\(csv\|xlsx\)' s.html | sort -u | head -30
+          grep -o '"[a-zA-Z]*[Aa]pi[a-zA-Z]*"[^,]\{0,120\}' s.html | head -10
+          grep -o 'https://[a-z0-9.]*stats[a-z0-9.]*/[^"<> ]\{0,100\}' s.html | sort -u | head -30
