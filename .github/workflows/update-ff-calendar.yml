@@ -1440,7 +1440,7 @@ jobs:
           # Lauf holt dann die Tiefen-Historie einmal komplett neu, und die
           # Bereinigung im Merge (gesehen[]) ersetzt bzw. entfernt die alten
           # Punkte bis 2013 zurueck.
-          export HIST_REGELN=2026-10-27b
+          export HIST_REGELN=2026-10-27c
           CHUNKS_DONE=$(node -e '
             const T=+process.env.TARGET_CHUNKS||84;
             try{const d=JSON.parse(require("fs").readFileSync("ind_data.json","utf8"));console.log(d._histRegeln!==process.env.HIST_REGELN?5:Math.max(5,Math.min(T,+d._histChunksFetched||5)));}catch(e){console.log(5);}
@@ -1644,9 +1644,14 @@ jobs:
             // Zeitraeume, die DIESER Lauf tatsaechlich gesehen hat (je geladenem
             // Fenster sein Intervall, 1 Tag Sicherheitsrand) - Grundlage der
             // Historien-Bereinigung im Merge unten.
-            const gesehen=[];
+            // ⚠ Erst angrenzende Fenster zusammenlegen, den Rand nur an den
+            // AUSSENkanten abziehen (2026-10-27): mit Rand an jedem Fenster lag
+            // jeder Grenztag zweier Fenster in keinem - gemessen ein Westpac-
+            // Punkt vom 20.09.2015 genau 4055 Tage zurueck (Grenze Haeppchen
+            // 65/66), der so nie bereinigt wurde.
+            const fensterTage=[];   // [altTage, jungTage]
             const tagVor=t=>new Date(Date.now()-t*864e5).toISOString().slice(0,10);
-            const fenster=(alt,jung)=>gesehen.push([tagVor(alt-1),jung===0?tagVor(-1):tagVor(jung+1)]);
+            const fenster=(alt,jung)=>fensterTage.push([alt,jung]);
             if(wide&&wide.length)fenster(95,0);
             if(recent&&recent.length)fenster(45,0);
             for(let i=0;i<5;i++){const h=readEvts("tv_hist_"+i+".json");histN.push(h?h.length:0);if(h)histEvts=histEvts.concat(h);if(h&&h.length)fenster(95+60*(i+1),95+60*i);}
@@ -1668,6 +1673,13 @@ jobs:
             // Enges Fenster zuerst -> bei gleichem Datum gewinnt trotzdem das
             // spaetere Event (s.u.), aber so sind die juengsten Actuals nicht
             // vom 2000er-Limit der 95-Tage-Abfrage betroffen.
+            let _gesehen=null;
+            const gesehen=()=>{
+              if(_gesehen)return _gesehen;
+              const f=fensterTage.slice().sort((x,y)=>x[1]-y[1]),m=[];
+              f.forEach(([alt,jung])=>{const l=m[m.length-1];if(l&&jung<=l[0])l[0]=Math.max(l[0],alt);else m.push([alt,jung]);});
+              return(_gesehen=m.map(([alt,jung])=>[tagVor(alt-1),jung===0?tagVor(-1):tagVor(jung+1)]));
+            };
             const evts=[...(recent||[]),...(wide||[]),...histEvts];
             console.log("ind_data: "+(wide?wide.length:0)+" TV events in 95d window, "+(recent?recent.length:0)+" in 45d window, hist windows: "+histN.join("/"));
             // Pro (ccy|ind) ALLE Events mit Actual sammeln (nicht nur das
@@ -1924,7 +1936,7 @@ jobs:
                 // keinen Release, faellt er weg. Was ausserhalb liegt, bleibt
                 // unangetastet - nach einem Fehlabruf geht also nichts verloren.
                 const neuD=new Set(newHist.map(h=>h&&h[0]));
-                const gesehenAm=d=>gesehen.some(([a,b])=>d>=a&&d<=b);
+                const gesehenAm=d=>gesehen().some(([a,b])=>d>=a&&d<=b);
                 const nichtBeiTv=h=>!neuD.has(h[0])&&gesehenAm(String(h[0]).slice(0,10));
                 prevHist.forEach(h=>{if(h&&h[0]&&!nichtBeiTv(h))byDate[h[0]]=h;});
                 newHist.forEach(h=>{if(h&&h[0])byDate[h[0]]=h;});

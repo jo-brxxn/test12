@@ -21049,3 +21049,5 @@ die Folgeentwicklung vorhersagen?
 **Wächter:** `check/saisonfeed.js` D–F (28 Paare, Korb exakt wie `korbReihe`, bp); `check/seasretail.js` 8 (Seite). Gegenproben rot.
 
 **Folge:** die ±0,5-Saisonalitäts-Zeile der acht Währungen rechnet ab dem nächsten Feed-Lauf mit dem Korb statt dem ETF; USYIELD (und ETH, wo angelegt) bekommen eine Saisonalitäts-Zeile.
+
+**Nachtrag (Live-Kontrolle nach dem ersten Lauf):** in der NZD-Konsumklima-Historie blieb **ein** Westpac-Punkt stehen (20.09.2015, 106). Gemessen: er lag genau 4055 Tage zurück = Grenze der Abruf-Häppchen 65/66; der 1-Tag-Rand an **jedem** Fenster nahm Grenztage aus beiden heraus. Fix: angrenzende Fenster erst zusammenlegen, Rand nur an den Außenkanten; `HIST_REGELN` → `2026-10-27c` (einmal neu abrufen). Wächter `feedregeln` D: Punkt auf der Grenze `tv_wide`/`tv_hist_0` muss weg (vorheriger Stand: rot).

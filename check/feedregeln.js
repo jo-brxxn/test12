@@ -179,7 +179,7 @@ if (rules && excore) {
     ];
     const hist0 = [ev('NZ', 'GDP Growth Rate QoQ', 132, '0.8', '0.9', '0.5'), ev('NZ', 'ANZ Roy Morgan Consumer Confidence', 133, '80.4', null, '94.7', { unit: '' })];
     const prev = {
-      NZD: { 'Consumer Confidence': { actual: '89.5', previous: '80.4', revisedFrom: '89.5', date: tag(41), event: 'ANZ Roy Morgan Consumer Confidence', source: 'tv', historyFull: [[tag(133), '80.4', null], [tag(42), '89.5', null], [tag(41), '89.5', null]] } },
+      NZD: { 'Consumer Confidence': { actual: '89.5', previous: '80.4', revisedFrom: '89.5', date: tag(41), event: 'ANZ Roy Morgan Consumer Confidence', source: 'tv', historyFull: [[tag(133), '80.4', null], [tag(95), '106', null], [tag(42), '89.5', null], [tag(41), '89.5', null]] } },
       USD: { 'NFP / Employment Change': { actual: '29K', previous: '133K', revisedFrom: '162K', date: tag(20), event: 'Non Farm Payrolls', source: 'tv', historyFull: [] } },
       CHF: { 'Core CPI': { actual: '0.50%', previous: null, date: tag(25), event: 'Core CPI (Trading Economics)', source: 'tepage', ref: 'september 2026', historyFull: [[tag(55), '0.40%', null], [tag(25), '0.50%', null]] } },
       EUR: {
@@ -209,6 +209,8 @@ if (rules && excore) {
       const g = (c, k) => (out[c] || {})[k] || {};
       const soll = (name, ist, erwartet) => { if (JSON.stringify(ist) !== JSON.stringify(erwartet)) fail(name, `ist ${JSON.stringify(ist)}, soll ${JSON.stringify(erwartet)}`); };
       soll('VORWERT REVIDIERT (NZD BIP)', [g('NZD', 'GDP Growth QoQ').previous, g('NZD', 'GDP Growth QoQ').revisedFrom], ['0.9%', '0.8%']);
+      // tag(95) = Grenze zwischen tv_wide (0-95) und tv_hist_0 (95-155): beide
+      // geladen, TV fuehrt dort nichts -> muss weg (Fremdpunkt der alten Reihe)
       soll('UMDATIERTER RELEASE (NZD Konsumklima)', [(g('NZD', 'Consumer Confidence').historyFull || []).map(h => h[0]), g('NZD', 'Consumer Confidence').revisedFrom || null], [[tag(133), tag(42)], null]);
       soll('STUFEN-RELEASE (EUR CPI Final)', [g('EUR', 'CPI (Headline)').previous, g('EUR', 'CPI (Headline)').revisedFrom || null], ['3.2%', null]);
       soll('FREMDREIHE AM SELBEN TAG (USD Retail)', g('USD', 'Retail Sales').actual, '0.8%');
