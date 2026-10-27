@@ -9919,7 +9919,7 @@ function abRetailZeilen(assetId){
     const L=rec?wert(rec):null;
     // Ein einzelnes Buch (Gold, Silber, BTC, Nasdaq): Broker-Quote und
     // Asset-Sicht sind dasselbe, es gibt keine zweite Seite.
-    return L==null?[]:[{name:sym,sym,vorn:true,lang:Math.round(L),kurz:100-Math.round(L),langAsset:Math.round(L)}];
+    return L==null?[]:[{name:sym,nameAsset:sym,sym,vorn:true,lang:Math.round(L),kurz:100-Math.round(L),langAsset:Math.round(L)}];
   }
   const out=[];
   liste.forEach(r=>{
@@ -9941,13 +9941,17 @@ function abRetailZeilen(assetId){
     //
     // Die Sicht des Assets wird dadurch nicht verworfen, sie wandert nur
     // dorthin, wo sie hingehoert: `langAsset` ist die auf das Asset gedrehte
-    // Quote und traegt die Zusammenfassung und den Score. Der Grund, warum es
+    // Quote und traegt die Zusammenfassung und den Score.
+    // Seit 2026-10-27 (VERSION-CHECK-646) zeigt die Asset-KARTE nameAsset +
+    // langAsset (eigene Waehrung vorn, Name und Zahl gemeinsam gedreht);
+    // `lang` bleibt die Broker-Quote fuer Tooltip und Sentiment-Tab. Der Grund, warum es
     // beides braucht: bei USD steht das Asset mal vorn (USD/JPY) und mal
     // hinten (EUR/USD) - ein Mittelwert ueber ungedrehte Zeilen waere die
     // Vermischung zweier Blickrichtungen und damit sinnlos.
     const lang=Math.round(L);
     const langAsset=vorn?lang:100-lang;
-    out.push({name:basis+'/'+quote,sym:s,vorn,lang,kurz:100-lang,langAsset});
+    // nameAsset: dasselbe Paar mit diesem Asset vorn (Karte seit 646)
+    out.push({name:basis+'/'+quote,nameAsset:vorn?basis+'/'+quote:quote+'/'+basis,sym:s,vorn,lang,kurz:100-lang,langAsset});
   });
   // Sortiert nach der Sicht des Assets - sonst springt die Reihenfolge, je
   // nachdem auf welcher Seite das Asset in dem jeweiligen Paar steht.
@@ -11032,22 +11036,25 @@ function abGrafikHtml(art,c){
       AB_LEER('Retail positioning has not loaded yet — it is written hourly into sentiment_data.json.'));
     if(!zeilen.length)return abTileZ('retail','Retail Positioning','',
       AB_LEER(`No retail book for ${escH(c.name||c.id)}. The broker feed carries the FX majors plus Gold, Silver, BTC and Nasdaq — nothing is filled in for the rest.`));
-    // ⚠ DIE ZEILEN ZEIGEN DIE BROKER-QUOTE, UNGEDREHT (Nutzer 2026-09-14,
-    // nach zwei Bildschirmfotos nebeneinander: "lass es doch richtig da
-    // stehen was fuer einen sinn hat es das zu drehen"). Neben "NZD/JPY"
-    // stehen also dieselben 95%, die auch der Sentiment-Tab zeigt.
-    // Damit trotzdem sichtbar bleibt, auf welcher Seite dieses Asset in dem
-    // Paar steht, wird sein Kuerzel im Paarnamen hervorgehoben - und der
-    // Titel sagt, was die Broker-Zahl fuer das Asset bedeutet.
+    // ⚠ EIGENE WAEHRUNG IMMER VORN (Nutzer 2026-10-27: "immer die Waehrung an
+    // erster Stelle schreibst aber nur auf der Karte also musst du dann auch
+    // die Werte dahinter teilweise drehen"). Name UND Zahl drehen gemeinsam:
+    // auf der USD-Karte steht "USD/NZD 58% long" statt "NZD/USD 42% long".
+    // Das hebt die Regel vom 2026-09-14 ("lass es doch richtig da stehen was
+    // fuer einen sinn hat es das zu drehen") nicht im Kern auf: damals stand
+    // die GEDREHTE Zahl neben dem UNGEDREHTEN Ticker (NZD/JPY 5%) - genau das
+    // bleibt verboten. Jetzt passen Name und Zahl wieder zusammen (JPY/NZD
+    // 5%). Der Sentiment-Tab zeigt weiter die Broker-Quote.
     const bars=zeilen.map(z=>{
-      const teile=String(z.name).split('/');
+      const teile=String(z.nameAsset).split('/');
       const marke=t=>t===c.id?`<b class="ab-bar-me">${escH(t)}</b>`:escH(t);
-      const nameHtml=teile.length===2?`${marke(teile[0])}/${marke(teile[1])}`:escH(z.name);
+      const nameHtml=teile.length===2?`${marke(teile[0])}/${marke(teile[1])}`:escH(z.nameAsset);
       const tip=z.vorn
-        ?`${z.lang}% of the broker book is long ${z.name}. ${c.id} is the base currency here, so that is ${z.lang}% long ${c.id}.`
-        :`${z.lang}% of the broker book is long ${z.name}. ${c.id} is the QUOTE currency here, so being long this pair means being short ${c.id} — ${z.langAsset}% long ${c.id}.`;
-      // Abweichung von 50 % (Nutzer-Wahl 2026-10-11), Broker-Quote ungedreht.
-      return posAbwZeile({nameHtml,lang:z.lang,ab:RETAIL_AB,tip});}).join('');
+        ?`Broker quote ${z.name}: ${z.lang}% long = ${z.lang}% long ${c.id}.`
+        :`Broker quote ${z.name}: ${z.lang}% long. Turned to ${c.id} first: ${z.nameAsset} ${z.langAsset}% long.`;
+      // Abweichung von 50 % (Nutzer-Wahl 2026-10-11), in der Sicht des Assets.
+      return posAbwZeile({nameHtml,lang:z.langAsset,ab:RETAIL_AB,tip});}).join('');
+    const gedreht=zeilen.find(z=>!z.vorn);
     const kopf=posAbwKopf('Pair',RETAIL_AB);
     // Verlauf, wenn der Feed schon einen hat. Bewusst nur fuer EIN Buch
     // (Gold, Silber, BTC, Nasdaq) - bei einer Waehrung waeren es sieben
@@ -11067,7 +11074,7 @@ function abGrafikHtml(art,c){
     let rb=null;try{rb=retailBiasFor(c.id);}catch(e){}
     return abTileZ('retail','Retail Positioning',
       `<span class="ab-tile-s">${zeilen.length===1?'1 book':zeilen.length+' pairs'}</span>`,
-      `<div class="ab-big" style="color:${biasCss(schnitt>=60?'bear':schnitt<=40?'bull':'neu')}" title="The same book seen from ${escH(c.id)}'s own side — this is what the score reads. The rows below are the broker's quote, unchanged.">${schnitt}% long ${escH(c.id)}</div>
+      `<div class="ab-big" style="color:${biasCss(schnitt>=60?'bear':schnitt<=40?'bull':'neu')}" title="The same book seen from ${escH(c.id)}'s own side — this is what the score reads. The rows below are turned the same way: ${escH(c.id)} first.">${schnitt}% long ${escH(c.id)}</div>
        <div class="ab-bars pd-list">${kopf}${bars}</div>
        ${verlauf?verlauf.html:''}
        <div class="ab-foot">
@@ -11076,8 +11083,9 @@ function abGrafikHtml(art,c){
          <span><span class="ab-foot-l">Average</span> <b>${schnitt}% long ${escH(c.id)}</b></span>
        </div>
        ${abScoreZeile(c,RETAIL_IND_NAME,rb&&rb.grund)}`,null,
-      [`The rows are the broker's own quote, exactly as published — the same numbers as the Sentiment tab. Each bar grows from the 50% centre toward the side the majority is on; the ticks mark ${RETAIL_AB}% long and ${RETAIL_AB}% short.`]
-        .concat(mehrfach?[`${escH(c.id)} is highlighted in each pair so its side is visible. Where it is the quote currency, long the pair means short ${escH(c.id)}; the figure at the top turns the whole book onto ${escH(c.id)}'s side.`]:[])
+      (mehrfach?[`<b>${escH(c.id)} always first</b> · long = long ${escH(c.id)} in every row.`]:[`<b>Broker quote</b> · the same number as the Sentiment tab.`])
+        .concat(gedreht?[`<b>Turned rows</b> · the Sentiment tab keeps the broker's quote (${escH(gedreht.name)} ${gedreht.lang}% long); here the same book reads ${escH(gedreht.nameAsset)} ${gedreht.langAsset}% long.`]:[])
+        .concat([`<b>Bars</b> · from the 50% centre toward the majority side; ticks at ${RETAIL_AB}% long and ${RETAIL_AB}% short.`])
         .concat([`Read against the crowd: a one-sided retail book counts the other way.`,escH(retailRegelText())]));
   }
   // ── Seasonality ───────────────────────────────────────────────────────

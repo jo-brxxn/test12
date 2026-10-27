@@ -1437,8 +1437,10 @@ per Rückfrage gewählt, gilt in Asset-Karten **und** Tabs:
   5 px (Tab 6 px).
 - **Retail = Abweichung von 50 %.** Je Zeile eine Spur 0–100 %, Balken von
   der Mitte zur Mehrheitsseite (Blau long, Rot short, volle Farbe), Striche
-  bei `RETAIL_AB` (65/35 %), Text „68% long“ / „71% short“. Broker-Quote
-  ungedreht, eigenes Kürzel hervorgehoben (`.ab-bar-me`). Die Asset-Liste
+  bei `RETAIL_AB` (65/35 %), Text „68% long“ / „71% short“. Auf der
+  Asset-Karte **eigene Währung vorn, Zahl mitgedreht** (seit 646: *USD/NZD
+  22 % long*), eigenes Kürzel hervorgehoben (`.ab-bar-me`); Sentiment-Tab =
+  Broker-Quote ungedreht. Die Asset-Liste
   im COT-Tab nutzt dieselbe Zeile mit 60/40 %.
 - Retail-Verläufe (Karte bei Einzelbüchern, Sentiment-Tab) = Linie mit
   Zonen ab 65 %; der Netto-Chart mit Kurs im Tab bleibt.

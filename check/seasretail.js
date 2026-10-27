@@ -242,10 +242,13 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
   // faellt in keinem Diff auf und in keiner Rechenprobe - beide Zahlen sind
   // ja richtig. Nur der direkte Vergleich mit der Quelle zeigt es.
   //
-  // Geprueft wird deshalb JEDE angezeigte Zeile gegen sentiment_data.json:
-  // die Prozentzahl neben "NZD/JPY" muss die Zahl sein, die der Broker fuer
-  // NZDJPY fuehrt. Die Sicht des Assets darf weiter vorkommen, aber nur
-  // beschriftet (Kopfzahl/Fusszeile tragen das Kuerzel) und nur im Score.
+  // Geprueft wird deshalb JEDE angezeigte Zeile gegen sentiment_data.json.
+  // Seit 2026-10-27 (VERSION-CHECK-646, Nutzer: "immer die Waehrung an erster
+  // Stelle ... aber nur auf der Karte also musst du dann auch die Werte
+  // dahinter teilweise drehen") steht die eigene Waehrung VORN und Name und
+  // Zahl drehen gemeinsam: "JPY/NZD" muss 100 - (Broker NZDJPY) zeigen,
+  // "USD/JPY" genau den Broker-Wert. Verboten bleibt, was am 2026-09-14
+  // gemeldet wurde: eine gedrehte Zahl neben dem ungedrehten Ticker.
   const FX8 = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'NZD'];
   let rzeilen = 0;
   for (const id of FX8) {
@@ -271,15 +274,16 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
     if (r.fehlt) { fail('RETAIL-KACHEL FEHLT', `${id}: keine Retail-Kachel auf der Asset-Seite`); continue; }
     r.zeilen.forEach(z => {
       rzeilen++;
-      const sym = z.name.replace('/', '').toUpperCase();
-      const soll = r.roh[sym];
-      if (soll == null) { fail('ZEILE NICHT IM FEED', `${id} ${z.name}: der Broker fuehrt kein Symbol ${sym}`); return; }
-      if (z.lang !== soll) fail('RETAIL-ZEILE GEDREHT',
-        `${id} ${z.name}: die Kachel zeigt ${z.lang}%, der Feed (und damit der Sentiment-Tab) fuehrt ${soll}%. `
-        + `Genau dieser Widerspruch wurde am 2026-09-14 gemeldet - die Zeile gehoert dem PAAR, nur Kopfzahl und Fusszeile drehen auf das Asset.`);
+      const t = z.name.toUpperCase().split('/');
+      if (t.length === 2 && t[0] !== id) fail('EIGENE WAEHRUNG NICHT VORN', `${id} ${z.name}: auf der Karte steht ${id} immer an erster Stelle`);
+      const direkt = r.roh[t.join('')], gedreht = t.length === 2 ? r.roh[t[1] + t[0]] : undefined;
+      const soll = direkt != null ? direkt : gedreht != null ? 100 - gedreht : null;
+      if (soll == null) { fail('ZEILE NICHT IM FEED', `${id} ${z.name}: der Broker fuehrt weder ${t.join('')} noch ${t.slice().reverse().join('')}`); return; }
+      if (z.lang !== soll) fail('RETAIL-ZEILE PASST NICHT ZUM NAMEN',
+        `${id} ${z.name}: die Kachel zeigt ${z.lang}%, zum Namen gehoeren ${soll}% (`
+        + (direkt != null ? `Broker ${t.join('')} ${direkt}%` : `Broker ${t[1] + t[0]} ${gedreht}%, gedreht`) + `). Genau so ein Widerspruch wurde am 2026-09-14 gemeldet.`);
       if (z.lang + z.kurz !== 100) fail('ZEILE ERGIBT NICHT 100', `${id} ${z.name}: ${z.lang}% + ${z.kurz}% = ${z.lang + z.kurz}`);
-      // Auf welcher Seite das Asset steht, muss sichtbar sein - sonst ist
-      // die ungedrehte Zahl zwar richtig, aber nicht deutbar.
+      // Das eigene Kuerzel bleibt hervorgehoben (steht jetzt immer vorn).
       if (z.name.includes('/') && !z.markiert.includes(id)) fail('EIGENE SEITE NICHT MARKIERT',
         `${id} ${z.name}: das eigene Kuerzel ist im Paarnamen nicht hervorgehoben (.ab-bar-me). Ohne das ist nicht zu sehen, ob "long" fuer oder gegen ${id} spricht.`);
     });
@@ -368,5 +372,5 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
   console.log(`[seasretail] ok (${r1.seas.length + r1.ret.length + r1.paare.length} Schwellen-Faelle, `
     + `${r2.zeilen} Indikatoren in ${new Set(r2.treffer.map(t => t.sym)).size} Assets, davon ${mit.length} mit Beitrag; `
     + `laufender Monat "${r3.jetzt}" markiert, Kachel und Score-Fenster deckungsgleich; `
-  + `${rzeilen} Retail-Zeilen ungedreht gegen den Feed geprueft)`);
+  + `${rzeilen} Retail-Zeilen gegen den Feed geprueft, eigene Waehrung vorn)`);
 })().catch(e => { console.error('SEASRETAIL-WAECHTER abgestuerzt:', e && e.message || e); process.exit(1); });

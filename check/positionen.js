@@ -15,7 +15,8 @@
 //      liegt zwischen 50 % und der Quote (px-genau auf der Spur), die
 //      Schwellen-Striche liegen bei ab und 100-ab, der
 //      Text nennt die Mehrheitsseite mit der richtigen Zahl.
-//   C) Retail-Zeilen tragen die Broker-Quote unveraendert (= Feed).
+//   C) Retail-Zeilen: eigene Waehrung vorn, Zahl = Feed bzw. 100 - Feed, wenn
+//      das Paar dafuer gedreht ist (seit 2026-10-27, VERSION-CHECK-646).
 //   D) COT-Tab-Verlauf (EUR): je Bericht Long ueber / Short unter der Mitte.
 //   node check/positionen.js [--gegenprobe]
 //   (Gegenprobe: Balken ab 0 statt ab 50 %, Zonen entfernt -> B und A rot)
@@ -88,8 +89,13 @@ const zeilenPruefen = (p, wurzelSel, ab, ort) => p.evaluate(([wurzelSel, ab, ort
     const roh = await p.evaluate(() => { const r = {}; ((window.SENTIMENT_DATA || {}).retail || []).forEach(x => { if (x && x.sym) r[String(x.sym).toUpperCase()] = Math.round(+x.long); }); return r; });
     const r = await zeilenPruefen(p, sel, ab.ret, `Retail-Karte ${id}`);
     r.out.forEach(x => fail('B ZEILE', x)); zeilen += r.n;
-    const c = await p.evaluate(() => [...document.querySelectorAll('#detail .ab-tile .pd-list .pd-row:not(.pd-hd)')].map(z => [(z.querySelector('.pd-n').textContent || '').replace('/', '').trim().toUpperCase(), +z.dataset.lang]));
-    c.forEach(([s, L]) => { if (roh[s] == null) fail('C RETAIL', `${id} ${s}: nicht im Feed`); else if (roh[s] !== L) fail('C RETAIL', `${id} ${s}: Zeile ${L}%, Feed ${roh[s]}% - die Zeile zeigt die Broker-Quote ungedreht`); });
+    const c = await p.evaluate(() => [...document.querySelectorAll('#detail .ab-tile .pd-list .pd-row:not(.pd-hd)')].map(z => [(z.querySelector('.pd-n').textContent || '').trim().toUpperCase(), +z.dataset.lang]));
+    c.forEach(([n, L]) => {
+      const t = n.split('/'), direkt = roh[t.join('')], gedreht = t.length === 2 ? roh[t[1] + t[0]] : undefined;
+      if (t.length === 2 && t[0] !== id) fail('C RETAIL', `${id} ${n}: eigene Waehrung nicht vorn`);
+      const soll = direkt != null ? direkt : gedreht != null ? 100 - gedreht : null;
+      if (soll == null) fail('C RETAIL', `${id} ${n}: nicht im Feed`); else if (soll !== L) fail('C RETAIL', `${id} ${n}: Zeile ${L}%, zum Namen gehoeren ${soll}%`);
+    });
   }
   // B) COT-Tab-Liste + D) Verlauf
   await p.evaluate(() => { showTab('cot'); pickCotFilter(null); }); await p.waitForTimeout(1200);

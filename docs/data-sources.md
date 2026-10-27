@@ -656,14 +656,25 @@ Neuseeland-Dollar long und für den Yen short — dieselbe Zahl, entgegengesetzt
 Aussage. Daraus entstand am 2026-09-14 ein gemeldeter Widerspruch: der
 Sentiment-Tab zeigte *„NZDJPY 95 % long"*, die JPY-Kachel daneben *„5 %"*.
 
-**Dauerregel seither:** eine Retail-Zeile zeigt **die Quote des Brokers,
-unverändert**. Gedreht wird nur, was über das ganze Buch aussagt — und das
+**Seit 2026-10-27 (VERSION-CHECK-646) gilt auf der Retail-Karte der
+Asset-Seite:** die eigene Währung steht **immer vorn**, Name **und** Zahl
+werden gemeinsam gedreht (Nutzer: *„immer die Währung an erster Stelle
+schreibst aber nur auf der Karte also musst du dann auch die Werte dahinter
+teilweise drehen“*). Auf der USD-Karte steht also *USD/NZD 22 % long* statt
+*NZD/USD 78 % long*. Der Kern der Regel vom 2026-09-14 bleibt: **eine Zahl
+gehört immer zu genau dem Namen daneben** — verboten ist die gedrehte Zahl
+neben dem ungedrehten Ticker. Der **Sentiment-Tab** zeigt weiter die
+Broker-Quote. Die Karte nutzt dafür `nameAsset` + `langAsset`.
+
+**Regel bis 646 (Karte), weiter gültig für den Sentiment-Tab:** eine
+Retail-Zeile zeigt **die Quote des Brokers, unverändert**. Gedreht wird nur, was über das ganze Buch aussagt — und das
 trägt dann ausdrücklich das Kürzel des Assets im Text.
 
 | Feld in `abRetailZeilen()` | Bedeutung | wo es hingehört |
 |---|---|---|
-| `lang` / `kurz` | Broker-Quote, unverändert | **jede Zeile der Kachel** |
-| `langAsset` | dieselbe Quote auf dieses Asset gedreht | Kopfzahl, Fußzeile, **`retailBiasFor()` / Score** |
+| `lang` / `kurz` | Broker-Quote, unverändert | Tooltip der Karte (*Broker quote …*); Sentiment-Tab |
+| `nameAsset` | Paar mit diesem Asset vorn (`USD/NZD`) | **Name jeder Zeile der Karte** (seit 646) |
+| `langAsset` | dieselbe Quote auf dieses Asset gedreht | **Zahl jeder Zeile der Karte** (seit 646), Kopfzahl, Fußzeile, **`retailBiasFor()` / Score** |
 
 **Warum es beides braucht und der gedrehte Wert nicht einfach wegfallen kann:**
 bei USD steht das Asset mal vorn (USD/JPY) und mal hinten (EUR/USD). Ein

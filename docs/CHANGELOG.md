@@ -20953,3 +20953,17 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter `check/zentralbank.js`:** I (Feed-Wert unabhängig nachgerechnet, Farbe, 13 Schritte, Speichern/Neuladen/Snapshot, Feed zurück) und H (fünf Knöpfe vor dem Feed). Gegenprobe: Regel bei der Farbe aus + `zbEntscheid` nicht im `snap()` → I FARBE, I NEULADEN, I SYNC rot.
 
+## 2026-10-27 — VERSION-CHECK-646: Retail-Karte — eigene Währung immer vorn
+
+**Nutzer:** *„Und jetzt nur bei Assets die Karte retail da steht ja teilweise usd/cad nzd/usd also einmal usd an erster Stelle und Einmal an zweiter. Damit es einfacher zu lesen ist will ich das du immer die Währung an erster Stelle schreibst aber nur auf der Karte also musst du dann auch die Werte dahinter teilweise drehen“*
+
+**Abgleich mit der Regel vom 2026-09-14** (*„lass es doch richtig da stehen was für einen sinn hat es das zu drehen“*): damals stand die gedrehte Zahl neben dem **ungedrehten** Ticker (NZD/JPY 5 %). Jetzt drehen Name und Zahl gemeinsam (JPY/NZD 16 %) — Zahl und Name passen zusammen, der Kern der alten Regel bleibt. Sentiment-Tab unverändert (Broker-Quote).
+
+**Gemessen vorher (USD-Karte):** AUD/USD 36 %, GBP/USD 42 %, USD/JPY 54 %, USD/CHF 46 %, USD/CAD 41 %, NZD/USD 78 %, EUR/USD 86 % — USD mal vorn, mal hinten; JPY-Karte: JPY immer hinten.
+
+**Umgesetzt:** `abRetailZeilen` liefert zusätzlich `nameAsset`; die Karte zeigt `nameAsset` + `langAsset` (Tooltip nennt die Broker-Quote); ⓘ-Text: *USD always first*, Beispiel einer gedrehten Zeile mit beiden Zahlen. Kopfzahl/Fußzeile/Score unverändert (rechneten schon in Asset-Sicht).
+
+**Gemessen nachher:** USD/AUD 64, USD/GBP 58, USD/JPY 54, USD/CHF 46, USD/CAD 41, USD/NZD 22, USD/EUR 14 % (Durchschnitt weiter 43 % long USD); JPY/USD 46 … JPY/NZD 16 %; Einzelbücher (XAUUSD) unverändert; 0 JS-Fehler.
+
+**Wächter:** `check/seasretail.js` Abschnitt 6 und `check/positionen.js` C prüfen jetzt: eigene Währung vorn, Zahl = Feed bzw. 100 − Feed passend zum Namen. Gegenprobe mit dem Fehlerbild vom 14.09. (gedrehter Name, ungedrehte Zahl): beide rot (*USD/AUD: Zeile 36 %, zum Namen gehören 64 %*).
+
