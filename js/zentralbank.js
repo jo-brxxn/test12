@@ -228,6 +228,7 @@ function zentralbankKarteHtml(sym,nurKarte){
       ${zbGiebelHtml(ccy)}
       <div class="zb-fries"><span class="zb-orn" aria-hidden="true"></span><span class="zb-name">${h(bank.name)}</span><span class="zb-orn r" aria-hidden="true"></span></div>
       <div class="zb-zahn" aria-hidden="true"></div>
+      <div class="zb-architrav" aria-hidden="true"></div>
       <div class="zb-saeulen">${ZB_SAEULEN.map(x=>zbSaeuleHtml(sym,ccy,x,jetzt.filter(n=>n.cb.s===x.k),false)).join('')}</div>
       <div class="zb-stufen">
         <div class="zb-st zb-st1"><span><span class="zb-st-l">Last decision</span> ${letzte}</span><span class="zb-st-dot" aria-hidden="true">◆</span><span><span class="zb-st-l">Next</span> ${naechste}</span></div>

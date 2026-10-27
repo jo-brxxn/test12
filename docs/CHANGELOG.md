@@ -20868,3 +20868,20 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter `check/zentralbank.js`** auf den Fenster-Weg umgestellt (B: Fenster offen, Kontext-Zeile, Titel, Places/Pinned versteckt, Speichern → Karte/`research.notes`/Neuladen; F: Asset-Sicht im Fenster, neue Notiz oben, ▼ verschiebt). Gegenproben: Regel aus → 4 rot, Speichern aus → B rot, Titel *Archive note* → B KOPF rot.
 
+## 2026-10-27 — VERSION-CHECK-641: Central bank 2/3, Knöpfe zentriert, Säulen kräftig und am Dach
+
+**Nutzer:** *„Ich will das die Zentralbank Karte 2 Drittel ausmacht und die Buttons den Rest und die Schrift der Buttons soll nicht linksbündig sondern zentriert in der Karte und lass die Säulen größer wirken lassen“* — Rückfrage zu den Säulen: *„höher und kräftiger und die Säulen und das Dach müssen verbunden sein“*.
+
+**Gemessen vorher (1180×820):** Karte **82 %** der Reihe (855 / 191 px), Knopftext `text-align:left`, **10 px Lücke** zwischen Zahnschnitt und Kapitell, Kapitell 20 px, Schaft 160 px.
+
+**Umgesetzt:**
+- `.zb-qrow` = `2fr 1fr`, Knopfbeschriftung zentriert.
+- Neuer Architrav (`.zb-architrav`, 12 px, zwei Faszien) unter dem Zahnschnitt, `.zb-saeulen` ohne Abstand oben → Kapitelle liegen direkt auf.
+- Kapitell 28 px (Abakus 10, Echinus 18), Voluten 24 px, Basis 14 px + Plinthe 8 px bis auf die Stufen, Schaft min. 220 px.
+- Erster Versuch mit 12–20 px Säulenabstand: Voluten benachbarter Säulen überlappten (−6 px gemessen) → Abstand `clamp(26px,2.4vw,32px)`, Kapitell ragt 9 statt 12 px über.
+- Folge der schmaleren Karte: bei 1024 px nur 162 px breite Säulen, Titel rissen nach ~8 Zeichen ab (*„Wage trac…“*) → Grenze für die Knopfspalte 1000 → **1100 px**, Titel in der Säule bis 3 Zeilen, Vorschau bis 2.
+
+**Gemessen nachher:** 1440 Karte 873 / Knöpfe 437 px (67 %), Säulen 253 px; 1180 697 / 349 px (67 %), Säulen 196 px, Voluten 10 px auseinander; 1100 und 1024 Karte volle Breite (Säulen 289 / 265 px); 390 eine Spalte; Lücke Architrav → Kapitell überall 0 px; nirgends Quer-Scroll, 0 JS-Fehler; Midnight geprüft.
+
+**Wächter:** `check/zentralbank.js` A2 (Anteil, Knopftext, Lücke, Voluten). Gegenprobe mit den alten Werten: alle vier rot (82 %, `left`, 10 px, −6 px).
+

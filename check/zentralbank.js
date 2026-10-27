@@ -93,6 +93,23 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
   }
   if (!F.length) gruen(`${Object.keys(namen).length} Assets: Name, Flagge, drei Saeulen`);
 
+  // A2: Aufteilung und Bauform (Nutzer 2026-10-27, VERSION-CHECK-641):
+  // Karte 2/3, Knoepfe 1/3 mit zentrierter Schrift; Kapitelle liegen ohne
+  // Luecke am Architrav ("Saeulen und das Dach muessen verbunden sein"),
+  // benachbarte Voluten beruehren sich nicht.
+  const fa = F.length;
+  const bau = await p.evaluate(() => { const B = s => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null; };
+    const k = B('#zbKarte'), q = B('.zb-qcol'), a = B('.zb-architrav'), kap = [...document.querySelectorAll('#zbKarte .zb-kap')].map(e => e.getBoundingClientRect());
+    const v = [...document.querySelectorAll('#zbKarte .zb-vol')].map(e => e.getBoundingClientRect()); const ab = []; for (let i = 1; i + 1 < v.length; i += 2) ab.push(Math.round(v[i + 1].left - v[i].right));
+    return { anteil: k && q ? k.width / (k.width + q.width) : 0, nebeneinander: !!(k && q && q.left > k.right - 1), ausr: [...document.querySelectorAll('.zb-qcol .aql span')].map(x => getComputedStyle(x).textAlign),
+      luecke: a ? kap.map(r => Math.round(r.top - a.bottom)) : null, voluten: ab }; });
+  if (!bau.nebeneinander || bau.anteil < .62 || bau.anteil > .71) rot('A2 ANTEIL', `Karte ${(bau.anteil * 100).toFixed(0)} % der Reihe (soll 2/3), nebeneinander ${bau.nebeneinander}`);
+  if (bau.ausr.some(x => x !== 'center')) rot('A2 KNOPFTEXT', `Ausrichtung ${bau.ausr.join(',')} statt center`);
+  if (!bau.luecke) rot('A2 ARCHITRAV', 'kein .zb-architrav - Saeulen haengen nicht am Dach');
+  else if (bau.luecke.some(x => Math.abs(x) > 1)) rot('A2 VERBUNDEN', `Luecke Architrav -> Kapitell ${bau.luecke.join('/')} px`);
+  if (bau.voluten.some(x => x < 4)) rot('A2 VOLUTEN', `Abstand benachbarter Voluten ${bau.voluten.join('/')} px (< 4 = sie stossen aneinander)`);
+  if (F.length === fa) gruen(`Karte ${(bau.anteil * 100).toFixed(0)} %, Knopftext zentriert, Kapitelle am Architrav (${bau.luecke.join('/')} px), Voluten ${bau.voluten.join('/')} px auseinander`);
+
   // ── B + D ──
   console.log('B) Speichern + Neuladen, D) Banner');
   await p.evaluate(() => gotoSym('USD')); await p.waitForTimeout(300);
