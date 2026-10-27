@@ -22,10 +22,13 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {countryProfileHtml} from './profil.js';
+import {zentralbankKarteHtml,zbNachRender} from './zentralbank.js';
 import {makroKartenSchalterHtml,makroReihenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
+  // Was js/zentralbank.js von hier braucht (Notizen = research.notes, Banner-Quittung = zbQuittung).
+  research,resNotes,trashResNote,assetIconHtml,invertBias,zbQuittung,
   // Was js/trades.js (Journal) fuer seine Charts von hier braucht.
   chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn,
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
@@ -5718,7 +5721,13 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,mkAnsicht:makroAnsichtWert(),mkTab:makroTabWert(),mkOpt:makroOptWert()},SNAP_REPLACER);}
+function snap(){return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,mkAnsicht:makroAnsichtWert(),mkTab:makroTabWert(),mkOpt:makroOptWert(),zbQuittung},SNAP_REPLACER);}
+// Banner-Quittungen der Zentralbank-Karte: nur Waehrung -> Datum, alles andere faellt raus.
+function zbQuittungRein(v){
+  const o={};
+  if(v&&typeof v==='object')Object.keys(v).forEach(k=>{if(/^[A-Z]{3}$/.test(k)&&typeof v[k]==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v[k]))o[k]=v[k];});
+  return o;
+}
 function pushU(){_userEditZaehler++;_lastUserEditTs=Date.now();_userEditedSinceSync=true;try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}uStack.push(snap());if(uStack.length>60)uStack.shift();rStack=[];updUB();}
 // Sicherheits-Grenze fuer JEDEN Weg, wie Zustand von aussen in die App kommt
 // (Cloud-Sync, Datei-Import, Undo/Redo/Backup) - applySnap() ist dafuer laut
@@ -5919,7 +5928,7 @@ function applySnap(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){research.notes=mergeResearchNotes(_prevResNotes,research.notes);researchFolders=mergeResearchFolders(_prevResFolders,researchFolders);research.trash=mergeResearchTrash(_prevResTrash,research.trash);}researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};makroAnsichtSetzen(d.mkAnsicht);makroTabSetzen(d.mkTab);makroOptSetzen(d.mkOpt);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){research.notes=mergeResearchNotes(_prevResNotes,research.notes);researchFolders=mergeResearchFolders(_prevResFolders,researchFolders);research.trash=mergeResearchTrash(_prevResTrash,research.trash);}researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);makroAnsichtSetzen(d.mkAnsicht);makroTabSetzen(d.mkTab);makroOptSetzen(d.mkOpt);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6164,6 +6173,9 @@ function permaDeleteTrashItem(id){
 }
 
 // ══ STATE ═══════════════════════════════════════════════════════════
+// zbQuittung (seit 2026-10-27): je Bank-Waehrung das Datum der Sitzung, deren
+// roter Banner auf der Zentralbank-Karte weggeklickt wurde ({USD:'2026-10-28'}).
+let zbQuittung={};
 let syms,pairCats,pairs,noteCats,research,researchFolders=[],researchAnalysis={},calEvts,widgets,customIds=[],rubOrder=[],sbOrder={},catOrder=[],rateWatchCustom={},indLinkCustom={},btReasons={},seedNoteFlags={},dashV=0,eventAlerts=[],priceAlerts=[],dashRemovedTypes=[];
 // Risk-Sentiment-Regler im Dashboard (Nutzer-Wunsch 2026-07-13): riskEnvLevel
 // 0=keine/1=halbe/2=volle Risiko-Umgebung, riskEnvCfg={assetId:'bullish'|
@@ -6438,6 +6450,7 @@ function loadState(){
       // Wert ist gespeichert, kommt aber nie an. Genau so ging der Test
       // 2026-09-07 aus (angepinnte Seed-Notiz nach dem Neuladen ohne Pin).
       btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};
+      zbQuittung=zbQuittungRein(d.zbQuittung);
       seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};
       eventAlerts=pruneEventAlerts(d.eventAlerts||[]);
       priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];
@@ -6445,7 +6458,7 @@ function loadState(){
       recomputeAuto();
       return;}
   }catch(e){}
-  syms=DEF.map(d=>({...d}));pairCats=mkPairCats();pairs=[];noteCats=mkNCs();research=mkResearch();researchFolders=[];researchAnalysis={};calEvts=mkCalEvts();widgets=mkWidgets();dashRemovedTypes=[];customIds=[];rubOrder=mkRubOrder();sbOrder={};catOrder=[];rateWatchCustom={};indLinkCustom={};btReasons={};seedNoteFlags={};eventAlerts=[];priceAlerts=[];
+  syms=DEF.map(d=>({...d}));pairCats=mkPairCats();pairs=[];noteCats=mkNCs();research=mkResearch();researchFolders=[];researchAnalysis={};zbQuittung={};calEvts=mkCalEvts();widgets=mkWidgets();dashRemovedTypes=[];customIds=[];rubOrder=mkRubOrder();sbOrder={};catOrder=[];rateWatchCustom={};indLinkCustom={};btReasons={};seedNoteFlags={};eventAlerts=[];priceAlerts=[];
   syms.forEach(addMacroRub);applyRubOrder();
   // Ein brandneuer Nutzer (kein gespeicherter Zustand) durchlaeuft
   // migrateResearch() nie (mkResearch() liefert bereits einen frischen,
@@ -6978,7 +6991,8 @@ function neueFelderBehalten(fremd,lokal){
   if(!fremd||typeof fremd!=='object'||!lokal||typeof lokal!=='object')return fremd;
   if(window.__gpKeinBehalten)return fremd;   // nur check/altgeraet.js --gegenprobe
   // Makro-Ansicht Table|Charts (seit 614), aktiver Reiter (seit 620), Analyse-Werkzeuge (seit 622)
-  ['mkAnsicht','mkTab','mkOpt'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
+  // Banner-Quittungen der Zentralbank-Karte (seit 2026-10-27)
+  ['mkAnsicht','mkTab','mkOpt','zbQuittung'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
   const fa=fremd.researchAnalysis,la=lokal.researchAnalysis;
@@ -7969,7 +7983,8 @@ function renderDetail(){
   syncSidebarScores();
   setTimeout(syncSidebarScores,0);
   animChanges();
-  
+  // Zentralbank-Karte: gerade getippten Text/Fokus nach dem Neuaufbau zurueck.
+  try{zbNachRender();}catch(e){}
 }
 
 // ── KARTEN-GRID (gleich hohe Zeilen) ──
@@ -11312,6 +11327,10 @@ function renderAssetBoard(c){
       ${/* Country Profile (Nutzer 2026-10-25: "eine neue karte die sich von
            ganz links nach ganz rechts erstreckt ueber macro ... erstmal nur
            bei fx") - volle Breite zwischen Schnellzugriffen und MACRO. */''}
+      ${/* Zentralbank-Karte (Nutzer 2026-10-27, js/zentralbank.js): volle
+           Breite direkt ueber dem Country profile - auf JEDEM Asset, Non-FX
+           mit der verknuepften Bank. */''}
+      ${zentralbankKarteHtml(c)}
       ${countryProfileHtml(c)}
       ${abReihenTitel('Macro',makroReihenSchalterHtml(c))}
       ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE

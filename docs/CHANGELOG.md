@@ -20824,3 +20824,19 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter:** `check/datalayout.js` Abschnitt *Asset vs asset* (8 Panels, A | B je Zeile, gleicher Indikator, gleiche Achse, bis 6 Panels ohne Scroll, Zelle ≥ 150 px, 5. abgelehnt, Tausch, Handy A über B). Gegenprobe `--gegenprobe-vs` (Raster 4-spaltig) rot.
 
+## 2026-10-27 — VERSION-CHECK-638: Karte „Central bank“
+
+**Nutzer:** *„auf jeder Asset Seite eine neue Karte … eine große Zentralbank … auf 3 Säulen … Inflation Arbeitsmarkt und Wirtschaft … wie die Notes Karte nur kleiner … wenn die Zentralbank gesprochen hat … roter Banner … Sobald ein neues Meeting kommt … in ein Archiv … Archiv Button … Leg Fokus auf Qualität … Namen schön … Flagge … Notizen müssen sicher zuverlässig gespeichert werden“*
+
+**Rückfrage:** alle Assets, Non-FX mit der verknüpften Bank — *„denk dran das da Notizen bei zb Inflation bei Dollar positiv sind aber vlt bei einem anderen Asset nicht also da muss auch die Regel übernommen werden“* · mehrere kurze Notizen je Säule · Banner ab Zinsentscheid, weg nach Notiz oder × · Name in Gravur-Optik in der App-Schrift.
+
+**Umgesetzt:** `js/zentralbank.js` (neu), Einbau in `renderDetail` vor `countryProfileHtml`, Fenster `#mZbArchiv`, CSS-Block *ZENTRALBANK-KARTE*.
+- **Sitzungen:** `rateSteps()` (jeder Beschluss inkl. Halten) + Kalender (`Central Bank Rate`-Muster, `isEvtPast` mit Uhrzeit); Kalender-Termin ±1 Tag neben Feed-Datum = dieselbe Sitzung. Gemessen 2026-10-27: alle 8 Banken mit 56–140 Entscheiden, nächster Termin im Kalender (Fed 28.10. 18:00, ECB 29.10. 13:15, BoJ 30.10., RBA 03.11., BoE 05.11., SNB 10.12.).
+- **Speicher:** Notizen = `research.notes` mit `cb {b,s,m}` (Begründung `docs/state-sync.md`); Banner-Quittung neues Feld `zbQuittung` in `snap()`/`applySnap()`/`loadState`/Standard/`neueFelderBehalten()`. Jede Aktion `pushU()` + `save()` in `try/catch` mit Meldung; Löschen über `trashResNote`.
+- **Archiv ohne Verschieben:** Karte = Notizen mit `m` ≥ letzte Sitzung (−2 Tage Toleranz Feed/Kalender), Archiv = ältere.
+- **Neuzeichnen beim Tippen:** Entwurf je Bank+Säule im Speicher der Sitzung, Fokus/Cursor nach `renderDetail` zurück (`zbNachRender`); Aktionen tauschen nur die Karte (`outerHTML`).
+- **Zeichnung:** erste Fassung zu blass (Stein `--bg3/--bg4` auf Karte `--bg2` kaum zu trennen, Flagge 26 px klein im Kreis) → Stein `--bg4/--bg5/--bg6` mit Licht von oben, Giebel mit Akroterien, Flagge füllt das Medaillon (`preserveAspectRatio slice`), Lorbeerkranz; erste Kranz-Rechnung lief falsch herum (Blätter nur unten, über Kreuz) → Bogen von unten bis 150°, Blattpaare. Midnight: Banner-Rot #B3202B (helles `--red` mit weißem Text zu schwach).
+- Fund nebenbei: Klasse `.zb-ohne` meldete `check/csskommentar.js` als ausgelaufenen deutschen Kommentar (Wortliste) → `.zb-nolink`.
+
+**Wächter:** `check/zentralbank.js` A–H (Karte auf 10 Assets, Speichern + Neuladen, Regel inverse, Banner + Quittung über Neuladen, Snapshot-Runde, Tippen beim Neuzeichnen, Papierkorb, Archiv per `page.clock` hinter die nächste Fed-Sitzung). Gegenproben `--gegenprobe-regel` (3 Befunde), `--gegenprobe-speichern` (rot). Erste Fassung der Gegenprobe *Regel* blieb grün — Schalter ging beim Neuladen verloren → per Init-Skript gesetzt.
+

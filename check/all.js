@@ -119,6 +119,7 @@ const PRUEFUNGEN = [
   { n: 'filterreset', s: 36, d: '✕ neben Asset-Dropdowns mit "alle"-Ansicht: nur bei Auswahl, direkt daneben, setzt zurueck', f: 'check/filterreset.js', args: [], browser: true },
   { n: 'designregeln', s: 461, d: 'Design-Audit: keine Emojis, eine Schrift, Diagramm-/Mindestschrift 11 px, 3 Hoehen, Trefferflaechen ohne Ueberdeckung, aktiv Navy, Rot nur bearish', f: 'check/designregeln.js', args: [], browser: true },
   // 2026-10-03: "es ruckelt ... Animationen nicht clean ... hakt" - zaehlt statt zu stoppen.
+  { n: 'zentralbank', s: 60, d: 'Zentralbank-Karte: auf jedem Asset, Notizen speichern + Neuladen, Asset-Regel (inverse), Banner + Quittung, Archiv nach neuer Sitzung', f: 'check/zentralbank.js', args: [], browser: true },
   { n: 'performance', s: 116, d: 'Endlos-Animationen nur transform/opacity, max. 400 gleichzeitig, nichts haengt nach, Leerlauf ohne Vermessung, ein Aufbau je Asset-Wechsel', f: 'check/performance.js', args: [], browser: true },
   { n: 'backtester', s: 34, d: 'Backtester: Sitzungen, Releases, Kursreaktion gegen die Rohdaten', f: 'check/backtester.js', args: [], browser: true },
   { n: 'erklaerung', s: 40, d: 'Erklaerungen hinter dem ⓘ, zentriert, nicht in der Karte', f: 'check/erklaerung.js', args: [], browser: true },

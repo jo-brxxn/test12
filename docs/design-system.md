@@ -1860,6 +1860,19 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - **Werte im Chartkopf aus derselben Rechnung wie die Tabelle** (`indZeilenWerte`) — nie neu formatieren.
 - Details: `docs/makro.md`.
 
+## Central bank (seit 2026-10-27, `js/zentralbank.js`)
+
+- **Jedes Asset**, volle Breite **direkt über dem Country profile**. Non-FX zeigt die verknüpfte Bank (`macroCcyFor`), ohne Verknüpfung nur den Hinweis auf die Asset-Einstellungen.
+- **Ein Gebäude statt einer Tabelle** (Nutzer: *„eine Art Bild … große Zentralbank“*): Giebel (SVG, gedehnt, Kanten `non-scaling-stroke`) mit Akroterien, im Tympanon die **Flagge im Medaillon mit Lorbeerkranz** (feste Pixel, nie gedehnt), Fries mit dem Namen, Zahnschnitt, drei ionische Säulen, drei Stufen mit *Last decision · Next*.
+- **Name in Gravur-Optik in der App-Schrift** (Rückfrage: Regel *eine Schrift* gilt): Großbuchstaben, Laufweite .34em, Licht- und Schattenkante per `text-shadow`, Zierlinien mit Raute links/rechts (Handy ohne).
+- **Säule = kleine Notes-Karte**: Kopf mit Akzentfarbe der Makro-Karte (`--a-infl`/`--a-lab`/`--a-grow`), Eingabe *＋ New note…* + Richtungswahl ▲ ◆ ▼ (28 px), darunter Notizen mit Bias-Rand wie *Pinned notes*. Antippen = bearbeiten, ▲◆▼ an der Notiz = Richtung reihum, × = Papierkorb (bei Maus erst beim Überfahren, bei Touch immer sichtbar).
+- **Farben in der Sicht des Assets**: Säule mit Asset-Regel *inverse* trägt den Chip *inverse* und zeigt die Richtung gedreht.
+- **Roter Banner** = Warnung/Erinnerung (Rot erlaubt): *„Fed decided · Datum · add your notes for this meeting“* + ×. Midnight mit dunklerem Rot (#B3202B) für weißen Text.
+- **Stein aus Tokens** (`--bg2…--bg6`, Midnight eigene Zuordnung, Skala dort umgekehrt) — keine festen Hellgrau-Werte, keine Textur hinter Text außer der feinen Kannelur.
+- Handy (≤ 700 px): Säulen untereinander, Ornamente und Eck-Akroterien weg.
+- **Archiv** oben rechts (*Archive n*): Fenster `#mZbArchiv`, links die Sitzungen (Datum + Notizen je Säule in Akzentfarbe), rechts die drei Säulen der gewählten Sitzung, nur lesen.
+- Geprüft von `check/zentralbank.js`.
+
 ## Country profile (seit 2026-10-25, `js/profil.js`)
 
 - **Nur Währungen**, eine Karte in voller Breite **direkt über der MACRO-Zeile**. Nicht-FX bekommt sie erst auf ausdrücklichen Wunsch.
