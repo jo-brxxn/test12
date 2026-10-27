@@ -4148,6 +4148,7 @@ jobs:
           # BTC-USD der Kurs. Echte Monats-Bars, 15 Jahre wie die anderen.
           declare -A PROXY=( [USD]=UUP [EUR]=FXE [GBP]=FXB [JPY]=FXY [CHF]=FXF [CAD]=FXC [AUD]=FXA [NZD]=NZDUSD%3DX [GOLD]=GLD [SILVER]=SLV [OIL]=USO [BTC]=BTC-USD [SP500]=SPY [NAS]=QQQ [DAX]=%5EGDAXI )
           rm -f seas_meta.txt
+          export SEAS_ALLE="${!PROXY[*]}"
           for ASSET in "${!PROXY[@]}"; do
             SYM="${PROXY[$ASSET]}"
             HCODE=$(curl -sL --max-time 30 -A "$UA" -b yscookies.txt -H "Accept: application/json" -w "%{http_code}" "https://query1.finance.yahoo.com/v8/finance/chart/${SYM}?range=20y&interval=1mo&crumb=${CRUMB}" -o "seas_${ASSET}.json" || echo "000")
@@ -4165,6 +4166,9 @@ jobs:
             const YEARS=15, MIN_YEARS=8;
             let meta=[];
             try{meta=fs.readFileSync("seas_meta.txt","utf8").trim().split("\n").filter(Boolean).map(l=>{const p=l.split(" ");return{id:p[0],sym:decodeURIComponent(p[1])};});}catch(e){}
+            // Assets der Proxy-Liste, deren Abruf scheiterte (stehen nicht in
+            // seas_meta.txt) - fuer "letzten Stand behalten" unten.
+            const fehlend=String(process.env.SEAS_ALLE||"").split(" ").filter(id=>id&&!meta.some(m=>m.id===id)).map(id=>({id}));
             const out={updated:new Date().toISOString(),assets:{}};
             const log=[];
             meta.forEach(m=>{
@@ -4192,17 +4196,28 @@ jobs:
               // zu werden), gebucket nach Kalendermonat.
               const byMonth={};
               let prevClose=null;
+              // ⚠ In BOERSEN-Zeit datieren (2026-09-25): NZDUSD=X kam mit
+              // 275 Monats-Bars, aber nur 11 Kalendermonaten - Yahoo stempelt
+              // Devisen-Monate auf Mitternacht London, im Sommer also 23:00
+              // UTC des Vormonats. In UTC gelesen rutschte ein Monat weg.
+              // ⚠ 2026-10-27: und zwar je Bar in der DAMALS gueltigen Zeit.
+              // Bis dahin wurde der HEUTIGE Versatz (meta.gmtoffset) auf alle
+              // 15 Jahre gelegt - das ging nur im Sommer gut. Seit dem Ende der
+              // Sommerzeit (25.10.) fielen die Sommermonate in den Vormonat:
+              // per Sonde gemessen NZDUSD=X, ^GDAXI und alle 28 FX-Paare mit
+              // Monaten von 1 und 30 Jahren statt 15-16 -> NZD und DAX flogen
+              // aus der Datei. Jetzt ueber die Zeitzone der Boerse (Intl).
+              const tz=(r.meta&&r.meta.exchangeTimezoneName)||"UTC";
+              let fmtMon;
+              try{fmtMon=new Intl.DateTimeFormat("en-US",{timeZone:tz,month:"numeric"});}catch(e){fmtMon=new Intl.DateTimeFormat("en-US",{timeZone:"UTC",month:"numeric"});}
+              const monatVon=t=>+fmtMon.formatToParts(new Date(t*1000)).find(p=>p.type==="month").value;
               for(let i=0;i<ts.length;i++){
                 const c=closes[i];
                 if(c==null||!isFinite(c)||c<=0)continue;
-                // ⚠ In BOERSEN-Zeit datieren (2026-09-25): NZDUSD=X kam mit
-                // 275 Monats-Bars, aber nur 11 Kalendermonaten - Yahoo stempelt
-                // Devisen-Monate auf Mitternacht London, im Sommer also 23:00
-                // UTC des Vormonats. In UTC gelesen rutschte ein Monat weg.
-                const d=new Date((ts[i]+((r.meta&&r.meta.gmtoffset)||0))*1000);
+                const d=new Date(ts[i]*1000);
                 if(prevClose!=null&&d>=cutoff){
                   const ret=(c/prevClose-1)*100;
-                  const mon=d.getUTCMonth()+1;
+                  const mon=monatVon(ts[i]);
                   (byMonth[mon]=byMonth[mon]||[]).push(ret);
                 }
                 prevClose=c;
@@ -4220,6 +4235,18 @@ jobs:
                 log.push(m.id+"("+m.sym+","+months[0][3]+"y)");
               }else log.push(m.id+":too-little-history("+months.length+"mo)");
             });
+            // Was DIESER Lauf nicht rechnen konnte (Abruf gescheitert, zu wenig
+            // Monate), behaelt seinen letzten Stand - vorher verschwand es still
+            // aus der Datei (NZD/DAX ab 25.10., siehe oben), und mit ihm die
+            // Saisonalitaets-Zeile im Score. 15-Jahres-Monatsmittel aendern
+            // sich von einem Tag auf den naechsten ohnehin kaum.
+            try{
+              const alt=JSON.parse(fs.readFileSync("seasonality_data.json","utf8"));
+              Object.keys((alt&&alt.assets)||{}).forEach(id=>{
+                if(out.assets[id]||!meta.concat(fehlend).some(m=>m.id===id))return;
+                out.assets[id]=alt.assets[id];log.push(id+":letzter-Stand");
+              });
+            }catch(e){}
             if(Object.keys(out.assets).length>=5){
               fs.writeFileSync("seasonality_data.json",JSON.stringify(out,null,1));
               console.log("seasonality_data.json: "+log.join(" | "));

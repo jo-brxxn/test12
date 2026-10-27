@@ -101,6 +101,7 @@ const PRUEFUNGEN = [
   { n: 'seasretail', s: 28, d: 'Saisonalitaet/Retail: Schwellen, Deckel, Monats-Markierung', f: 'check/seasretail.js', args: [], browser: true },
   { n: 'feedgroesse', s: 1, d: 'Live-Feeds: Groessendeckel, keine Einrueckung, eine Frist', f: 'check/feedgroesse.js', args: [], browser: false },
   { n: 'kalendervorschau', s: 1, d: '3-Monats-Kalender: Workflow-Schritt gegen nachgebaute Quellen, FXStreet-Namen, keine TV-Low-Termine, ins TV-Fenster gerueckte Releases', f: 'check/kalendervorschau.js', args: [], browser: false },
+  { n: 'saisonfeed', s: 1, d: 'Saisonalitaet im Workflow: Monat in Boersenzeit (Sommer-/Winterzeit je Bar), gescheiterter Abruf behaelt letzten Stand', f: 'check/saisonfeed.js', args: [], browser: false },
   { n: 'feedregeln', s: 1,  d: 'Indikator-Feed: eigener Release je Reihe (kein Tag mit zwei Titeln), revidierter Vorwert, keine umdatierten/fremden Historienpunkte, TE-Datum', f: 'check/feedregeln.js', args: [], browser: false },
   // csskomm + inlinest: beide 2026-09-19 aus einem Fehler derselben Sitzung
   // (ein CSS-Kommentar verschluckte Regeln, ein Inline-style hebelte eine

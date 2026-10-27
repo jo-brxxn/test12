@@ -21006,3 +21006,13 @@ die Folgeentwicklung vorhersagen?
 **Wächter `check/feedregeln.js`:** A (+14 Titelfälle), A2 (kein Tag mit zwei Titeln je Reihe, alle `cal_hist`-Releases), D (der echte Aggregationsblock mit künstlichen Daten: Vorwert revidiert, umdatierter Release, Stufen-Release, Control Group, NFP-Persistenz, fremde Revision nicht weitergetragen, TE-Datum gespeichert/erstmals gesehen, TE-Historie wächst, S&P nie in Ivey, TE-Reihe ohne Abruf bleibt). Gegen den alten Workflow: **15 Befunde**; ohne die Titel-Bedingung der Persistenz: D rot. `--gegenprobe` (alte Regeln + alte Aggregation) rot.
 
 **Offen beim Nutzer:** NZD Core CPI ohne Quelle; Stufen-Releases (Flash + Final) stehen weiter beide in der Historie (Trend-Fenster von 4 Punkten = 2 Monate bei EUR CPI).
+
+## 2026-10-27 — Saisonalitaet: NZD und DAX wieder da (Sommerzeit-Fehler im Workflow, kein VERSION-CHECK)
+
+**Nutzer:** *„Probier auch seasonality für nzd zu finden“*.
+
+**Reproduziert (Dateiverlauf + Sonde mit echten Yahoo-Monats-Bars):** NZD und DAX standen bis 24.10. in `seasonality_data.json`, seit **25.10. 01:13 UTC** nicht mehr (13 statt 15 Assets). Der 25.10. ist das Ende der Sommerzeit. Der Schritt *Fetch seasonality* legte den **heutigen** UTC-Versatz der Börse (`meta.gmtoffset`) auf alle 15 Jahre; Yahoo stempelt einen Monat auf Mitternacht Börsenzeit (London im Sommer 23:00 UTC, Berlin 22:00 UTC des Vormonats). Sonde: NZDUSD=X, ^GDAXI und alle 28 FX-Paare mit der alten Zuordnung **Monate mit 1 bzw. 30 Jahren**, in Börsen-Zeitzone **12 × 15–16**. Das Asset fiel durch die Mindestprüfung und verschwand still aus der Datei (die Datei wurde ohne Abgleich neu geschrieben) — samt der Saisonalitäts-Zeile im NZD-Score. US-ETFs (FXE, UUP …) wären am 01.11. (Ende der US-Sommerzeit) genauso gekippt.
+
+**Behoben (Wurzel):** Monat je Bar über `Intl.DateTimeFormat` in `meta.exchangeTimezoneName` (die damals gültige Sommer-/Winterzeit). Klasse „still verschwunden“: ein Asset der Proxy-Liste, das ein Lauf nicht rechnen kann, behält seinen letzten Stand; nicht mehr gelistete fallen weg.
+
+**Wächter `check/saisonfeed.js`** (statisch): echter Node-Block mit künstlichen Monats-Bars in London/Berlin/New York/Auckland/UTC-Zeit; 12 Monate je ≥ 8 Jahre, Muster im richtigen Monat (Juli +1 %, Januar −1 %), letzter Stand bei gescheitertem Abruf. Gegenprobe (alte Zuordnung) rot.
