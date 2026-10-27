@@ -137,17 +137,18 @@ function zbNotizZeile(n,dreht,lesen,i,anz){
     </div>`;
 }
 // Eine Saeule: Kapitell, Schaft (= kleine Pinned-notes-Karte), Basis.
-function zbSaeuleHtml(sym,ccy,s,notizen,lesen){
+function zbSaeuleHtml(sym,ccy,s,notizen,lesen,m){
   const dreht=zbDreht(sym,ccy,s.rub);
   const liste=zbSortiert(notizen);
   const zeilen=liste.map((n,i)=>zbNotizZeile(n,dreht,lesen,i,liste.length)).join('')
     ||`<div class="ab-nt-empty zb-leer">${lesen?'No notes.':'No notes for this meeting yet.'}</div>`;
   const neu=lesen?'':`<div class="ab-nt-add"><button type="button" class="finp ab-nt-neu" onclick="zbNeuFenster('${escJH(ccy)}','${s.k}')" title="Opens the note window — title, text, tags, bias and the related event">＋ New note…</button></div>`;
+  const zins=s.k==='allg'?zbZinsZeileHtml(sym,ccy,m,lesen):'';
   return`<div class="zb-s" style="--zb-a:var(${s.a})">
     <div class="zb-kap" aria-hidden="true"><span class="zb-vol l"></span><span class="zb-aba"></span><span class="zb-vol r"></span></div>
     <div class="zb-schaft">
       <div class="zb-s-hd"><span class="zb-s-ic">${icn(s.ic,13)}</span><span class="zb-s-t">${h(s.t)}</span>${dreht?`<span class="zb-s-inv" title="For ${h(sym.name||sym.id)} this pillar reads inverse: the colours are flipped against the ${h(ccy)} view">inverse</span>`:''}<span class="zb-s-n">${notizen.length}</span></div>
-      <div class="zb-inhalt">${neu}<div class="ab-nt-list zb-liste">${zeilen}</div></div>
+      <div class="zb-inhalt">${zins}${neu}<div class="ab-nt-list zb-liste">${zeilen}</div></div>
     </div>
     <div class="zb-fuss" aria-hidden="true"></div>
   </div>`;
@@ -202,7 +203,7 @@ function zentralbankKarteHtml(sym,nurKarte){
   const info=abInfoBtn('Central bank',[
     '<b>Four pillars</b> · <i>Inflation, Labour market, Economy, General</i> — your notes on what the bank said about each. <b>General</b> · decision, guidance, tone; reads like the <i>Interest Rates</i> card for linked assets.',
     '<b>Notes belong to the latest rate decision</b> · when the next decision has happened, the pillars start empty and the earlier notes are in the <b>Archive</b> under their meeting date.',
-    '<b>Decision</b> · under the name: the rate change of the latest meeting from the rate feed — tap to change it (−1.50 … +1.50); before the feed has it, pick one of five.',
+    '<b>Policy rate</b> · first line of <b>General</b>: the rate and its change at the latest meeting, from the rate feed — tap to change it (−1.50 … +1.50); before the feed has it, pick one of five.',
     '<b>Red base step</b> · the bank decided and this meeting has no note yet — it goes away with your first note or with ✕.',
     '<b>Colours</b> · ▲ <b style="color:'+BC.bull+'">bullish</b> · ◆ neutral · ▼ <b style="color:'+BC.bear+'">bearish</b>, for the asset you are on. Assets linked to a currency share its bank and its notes; a pillar that reads <i>inverse</i> for this asset shows the colours flipped.',
     '<b>Saved like every note</b> · synced across devices, deleted notes go to the trash for 30 days.'
@@ -237,10 +238,10 @@ function zentralbankKarteHtml(sym,nurKarte){
     <div class="ab-tile-hd">${ic}<span class="ab-tile-t">Central bank</span>${verknuepft}${archivBtn}${info}</div>
     <div class="zb-bau">
       ${zbGiebelHtml(ccy)}
-      <div class="zb-fries"><div class="zb-fries-z"><span class="zb-orn" aria-hidden="true"></span><span class="zb-name">${h(bank.name)}</span><span class="zb-orn r" aria-hidden="true"></span></div>${zbEntscheidHtml(sym,ccy,s.letzte?akt:null)}</div>
+      <div class="zb-fries"><div class="zb-fries-z"><span class="zb-orn" aria-hidden="true"></span><span class="zb-name">${h(bank.name)}</span><span class="zb-orn r" aria-hidden="true"></span></div></div>
       <div class="zb-zahn" aria-hidden="true"></div>
       <div class="zb-architrav" aria-hidden="true"></div>
-      <div class="zb-saeulen">${ZB_SAEULEN.map(x=>zbSaeuleHtml(sym,ccy,x,jetzt.filter(n=>n.cb.s===x.k),false)).join('')}</div>
+      <div class="zb-saeulen">${ZB_SAEULEN.map(x=>zbSaeuleHtml(sym,ccy,x,jetzt.filter(n=>n.cb.s===x.k),false,s.letzte?akt:null)).join('')}</div>
       <div class="zb-stufen">
         ${stufe}
         <div class="zb-st zb-st2" aria-hidden="true"></div>
@@ -252,7 +253,7 @@ function zentralbankKarteHtml(sym,nurKarte){
 }
 // Nur die Karte neu zeichnen (docs/performance.md 5: nachladende Aenderungen
 // tauschen nur ihre Karte).
-// ── Zinsentscheid unter dem Namen ─────────────────────────────────────────
+// ── Zinsentscheid (645 unter dem Namen, seit 647 erste Zeile von General) ──
 // Nutzer 2026-10-27: "Die erste Notiz bei generel soll immer fest sein
 // decision mit 5 Optionen -0.5 -0.25 hold 0.25 0.5 und das dann wenn es negativ
 // in bearish bias Farbe usw und das kann man dann so anklicken und dann steht
@@ -281,12 +282,36 @@ function zbEntscheidWert(ccy,m){
 }
 const zbEntText=w=>Math.abs(w)<1e-9?'Hold':(w>0?'+':'−')+Math.abs(w).toFixed(2);
 const zbEntBias=(w,dreht)=>zbSicht(Math.abs(w)<1e-9?'neu':w>0?'bull':'bear',dreht);
-function zbEntscheidHtml(sym,ccy,m){
+// Stand vor der Sitzung: letzter Feed-Eintrag, der mehr als die Toleranz
+// davor liegt. Der Satz nach der Sitzung = davor + Entscheid (Feed oder eigene
+// Wahl) - steht die Sitzung im Feed, ist das genau dessen Wert.
+function zbZinsVor(ccy,m){
+  let v=null;(rateSteps(ccy)||[]).forEach(p=>{if(p&&p[0]&&p[0]<m&&tageAbstand(p[0],m)>ZB_TOL_TAGE)v=p[1];});
+  return v;
+}
+const zbProz=v=>v==null||!isFinite(v)?'–':(+v).toFixed(2)+'%';
+// Seit 647 (Nutzer 2026-10-27: "in der Bank Karte sollst du den Leitzins und
+// die Veraenderung in Form eines einzigen Notiz bei generel ganz oben
+// hinschreiben"; Rueckfrage: die Decision aus dem Fries hierher verlegen):
+// feste erste Zeile der Saeule General, ueber "New note". Zeile 1 Leitzins,
+// Zeile 2 Veraenderung in Bias-Farbe + Datum; Tipp oeffnet das Auswahlfenster.
+// Noch nicht im Feed: bisheriger Satz und die fuenf Knoepfe.
+function zbZinsZeileHtml(sym,ccy,m,lesen){
   if(!m)return'';
-  const dreht=zbDreht(sym,ccy,'Interest Rates'),e=zbEntscheidWert(ccy,m);
-  const knopf=(w,an)=>`<button type="button" class="zb-ent-b${an?' on':''}" style="--nb:${biasCss(zbEntBias(w,dreht))}" onclick="zbEntscheidSetzen('${escJH(ccy)}','${m}',${w})">${zbEntText(w)}</button>`;
-  if(!e)return`<div class="zb-ent zb-ent-wahl" role="group" aria-label="Rate decision of ${h(fmtDayHdr(m))}"><span class="zb-ent-l">Decision</span>${ZB_ENT_KURZ.map(w=>knopf(w,false)).join('')}</div>`;
-  return`<div class="zb-ent"><button type="button" class="zb-ent-wert" id="zbEntBtn" style="--nb:${biasCss(zbEntBias(e.w,dreht))}" onclick="zbEntscheidAuf('${escJH(ccy)}','${m}')" aria-haspopup="dialog" title="${e.q==='feed'?'From the rate feed':'Set by you'} — tap to change"><span class="zb-ent-l">Decision</span><b>${zbEntText(e.w)}</b></button></div>`;
+  const dreht=zbDreht(sym,ccy,'Interest Rates'),e=zbEntscheidWert(ccy,m),vor=zbZinsVor(ccy,m);
+  const satz=e&&vor!=null?vor+e.w:vor;
+  const fed=ccy==='USD'?' — the Fed sets a range; the feed gives its upper bound':'';
+  const kopf=`<span class="zb-zins-z1"><span class="zb-zins-l">Policy rate</span><b title="${e?'After':'Before'} the decision of ${h(fmtDayHdr(m))}${fed}">${zbProz(satz)}</b></span>`;
+  if(!e){
+    if(lesen)return'';
+    return`<div class="zb-zins zb-zins-wahl"><span class="zb-zins-z1"><span class="zb-zins-l">Policy rate</span><b title="Before the decision of ${h(fmtDayHdr(m))}${fed}">${zbProz(vor)}</b></span>
+      <span class="zb-zins-z2">Decision ${h(fmtDayHdr(m))}</span>
+      <div class="zb-ent" role="group" aria-label="Rate decision of ${h(fmtDayHdr(m))}">${ZB_ENT_KURZ.map(w=>`<button type="button" class="zb-ent-b" style="--nb:${biasCss(zbEntBias(w,dreht))}" onclick="zbEntscheidSetzen('${escJH(ccy)}','${m}',${w})">${zbEntText(w)}</button>`).join('')}</div></div>`;
+  }
+  const farbe=biasCss(zbEntBias(e.w,dreht));
+  const zeile2=`<span class="zb-zins-z2"><b class="zb-zins-w">${zbEntText(e.w)}</b> · decision ${h(fmtDayHdr(m))}</span>`;
+  if(lesen)return`<div class="zb-zins zb-zins-lesen" style="--nb:${farbe}">${kopf}${zeile2}</div>`;
+  return`<div class="zb-zins" id="zbEntBtn" style="--nb:${farbe}" role="button" tabindex="0" aria-haspopup="dialog" onclick="zbEntscheidAuf('${escJH(ccy)}','${m}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();zbEntscheidAuf('${escJH(ccy)}','${m}');}" title="${e.q==='feed'?'From the rate feed':'Set by you'} — tap to change">${kopf}${zeile2}</div>`;
 }
 // Kleines Fenster unter dem Wert: alle Schritte -1.50 ... +1.50, darunter der
 // Feed-Wert und "Use feed value" bzw. "Clear".
@@ -401,8 +426,8 @@ function zbArchivZeichnen(){
   body.innerHTML=`<div class="zb-a">
     <div class="zb-a-liste" role="list">${liste}</div>
     <div class="zb-a-detail">
-      <div class="zb-a-kopf"><b>${h(bank.kurz)} decision</b>${(()=>{const e=zbEntscheidWert(ccy,_zbArchivTag);return e?` <b style="color:${biasCss(zbEntBias(e.w,zbDreht(sym,ccy,'Interest Rates')))}">${zbEntText(e.w)}</b>`:'';})()} · ${h(fmtDayHdr(_zbArchivTag))}${ccy!==sym.id?` · <i>colours for ${h(sym.name||sym.id)}</i>`:''}</div>
-      <div class="zb-saeulen zb-a-saeulen">${ZB_SAEULEN.map(x=>zbSaeuleHtml(sym,ccy,x,sel.filter(n=>n.cb.s===x.k),true)).join('')}</div>
+      <div class="zb-a-kopf"><b>${h(bank.kurz)} decision</b> · ${h(fmtDayHdr(_zbArchivTag))}${ccy!==sym.id?` · <i>colours for ${h(sym.name||sym.id)}</i>`:''}</div>
+      <div class="zb-saeulen zb-a-saeulen">${ZB_SAEULEN.map(x=>zbSaeuleHtml(sym,ccy,x,sel.filter(n=>n.cb.s===x.k),true,_zbArchivTag)).join('')}</div>
     </div>
   </div>`;
 }

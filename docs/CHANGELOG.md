@@ -20967,3 +20967,13 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter:** `check/seasretail.js` Abschnitt 6 und `check/positionen.js` C prüfen jetzt: eigene Währung vorn, Zahl = Feed bzw. 100 − Feed passend zum Namen. Gegenprobe mit dem Fehlerbild vom 14.09. (gedrehter Name, ungedrehte Zahl): beide rot (*USD/AUD: Zeile 36 %, zum Namen gehören 64 %*).
 
+## 2026-10-27 — VERSION-CHECK-647: Leitzins + Entscheid als feste erste Zeile in *General*
+
+**Nutzer:** *„in der Bank Karte sollst du den Leitzins und die Veränderung in Form eines einzigen Notiz bei generel ganz oben hinschreiben“* — Rückfrage (die Veränderung stand seit 645 schon unter dem Namen): *In die Notiz verlegen*.
+
+**Umgesetzt:** `zbZinsZeileHtml` ersetzt `zbEntscheidHtml`: erste Zeile der Säule *General* über *＋ New note…* — *POLICY RATE 2.75%* / *+0.25 · decision Wed, Sep 2, 26*, Bias-Rand und -Wert, Tipp → Auswahlfenster wie in 645; vor dem Feed Stand davor + fünf Knöpfe. Satz = Stand vor der Sitzung (`zbZinsVor`) + Entscheid, damit auch eine eigene Wahl den passenden Satz zeigt (USD 29.10.: 4.00 % → +0.25 gewählt → 4.25 %). Fries wieder einzeilig, Höhenausgleich `--zb-ex` entfernt (die Säulen bekommen die 35 px zurück). Archiv: Zeile lesend in General, Kopf ohne Wert.
+
+**Gemessen:** NZD 2.75 % +0.25 (blau), USD 4.00 % +0.25, GBP 3.75 % Hold (grau), GOLD 4.00 % +0.25 rot (gedreht); Zeile jeweils erste in General, nichts im Fries; Karte 574 / 562 px (1440 / 1180) wie zuvor; 820 px 655, 390 px 1093 (inhaltsbestimmt); 0 JS-Fehler.
+
+**Wächter `check/zentralbank.js` I/H** auf die Zeile umgestellt + Leitzins = Feed, Position. Gegenprobe: Zeile unter *New note* und Stand davor aus → I POSITION und I LEITZINS rot.
+

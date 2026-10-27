@@ -6134,9 +6134,6 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 .zb-hd-sub{margin-left:auto;font:italic 500 var(--fs-xs)/1.2 var(--ff-text);color:var(--t3)}
 .zb-hd-sub b{font-style:normal;font-weight:700;color:var(--t1)}
 .zb-hd-sub+.zb-arch{margin-left:0}
-/* Zinsentscheid unter dem Namen macht den Fries hoeher - die Notizflaeche
-   gibt es ab, die Karte bleibt gleich hoch (gemessen, siehe CHANGELOG 645) */
-.zb-bau:has(.zb-ent){--zb-ex:35px}
 /* Dach bis in die Titelzeile (Nutzer 2026-10-27, VERSION-CHECK-642: "mit dem
    Dach weiter hoch ... sodass die Spitze des Dachs auf der gleichen Hoehe wie
    der Kartentitel ist"): Kopfzeile fest 34 px und ueber dem Gebaeude, der
@@ -6163,7 +6160,7 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 .zb-banner-x{flex:none;width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:17px;line-height:1;cursor:pointer}
 @media (hover:hover){.zb-banner-x:hover{background:rgba(255,255,255,.3)}}
 /* Gebaeude: Stein in drei Toenen + Licht/Kante (Midnight siehe unten) */
-.zb-bau{--zb-ex:0px;--zb-stein:var(--bg4);--zb-stein2:var(--bg5);--zb-kante:var(--bg6);--zb-hell:var(--bg2);--zb-laub:#97A6BF;--zb-tief:rgba(20,27,46,.16);--zb-schatten:rgba(20,27,46,.10);
+.zb-bau{--zb-stein:var(--bg4);--zb-stein2:var(--bg5);--zb-kante:var(--bg6);--zb-hell:var(--bg2);--zb-laub:#97A6BF;--zb-tief:rgba(20,27,46,.16);--zb-schatten:rgba(20,27,46,.10);
   margin:0;padding:0}
 .zb-giebel{--zb-gh:clamp(78px,8vw,116px);position:relative;height:var(--zb-gh);margin:16px 0 0;pointer-events:none}
 .zb-giebel-svg{display:block;width:100%;height:100%;overflow:visible}
@@ -6195,17 +6192,25 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
   background:linear-gradient(var(--zb-hell),var(--zb-stein) 55%,var(--zb-stein2));
   border-top:3px double var(--zb-kante);border-bottom:1px solid var(--zb-kante);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 0 var(--zb-schatten)}
 .zb-fries-z{display:flex;align-items:center;justify-content:center;gap:16px;width:100%}
-/* Zinsentscheid: 5 Knoepfe, bis einer gilt; dann nur der Wert (Bias-Farbe in
-   der Sicht des Assets), Tipp oeffnet .zb-ent-pop mit allen Schritten */
+/* Leitzins + Entscheid als feste erste Zeile der Saeule General (seit 647):
+   Rand und Wert in Bias-Farbe (Sicht des Assets), Tipp oeffnet .zb-ent-pop;
+   noch nicht im Feed: fuenf Knoepfe in der Zeile */
+.zb-zins{display:flex;flex-direction:column;gap:4px;padding:7px 9px;border:1px solid var(--bd);border-left:3px solid var(--nb,var(--bd2));border-radius:var(--rss);
+  background:color-mix(in srgb,var(--nb,var(--bd2)) 7%,var(--card));box-shadow:0 1px 2px var(--zb-schatten);text-align:left}
+.zb-zins[role=button]{cursor:pointer}
+@media (hover:hover){.zb-zins[role=button]:hover{background:color-mix(in srgb,var(--nb) 13%,var(--card))}}
+.zb-zins-z1{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.zb-zins-l{font:800 var(--fs-2xs)/1.2 var(--ff-text);letter-spacing:.12em;text-transform:uppercase;color:var(--t2)}
+.zb-zins-z1 b{font:800 var(--fs-md)/1 var(--ff-num);color:var(--t0)}
+.zb-zins-z2{font:500 var(--fs-xs)/1.3 var(--ff-text);color:var(--t2)}
+.zb-zins-w{font:800 var(--fs-sm)/1 var(--ff-num);color:var(--nb)}
+.zb-zins .zb-ent{justify-content:flex-start;gap:5px}
+.zb-zins .zb-ent-b{min-width:0;padding:0 7px}
 .zb-ent{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
-.zb-ent-l{font:800 var(--fs-2xs)/1 var(--ff-text);letter-spacing:.14em;text-transform:uppercase;color:var(--t3)}
 .zb-ent-b{height:28px;min-width:52px;padding:0 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--nb) 45%,var(--bd));background:color-mix(in srgb,var(--nb) 8%,var(--card));
   color:var(--nb);font:700 var(--fs-sm)/1 var(--ff-num);cursor:pointer}
 .zb-ent-b.on{box-shadow:0 0 0 2px var(--ui-act)}
 @media (hover:hover){.zb-ent-b:hover{background:color-mix(in srgb,var(--nb) 16%,var(--card))}}
-.zb-ent-wert{height:28px;display:inline-flex;align-items:center;gap:9px;padding:0 13px;border-radius:999px;cursor:pointer;
-  border:1px solid color-mix(in srgb,var(--nb) 45%,var(--bd));background:color-mix(in srgb,var(--nb) 10%,var(--card))}
-.zb-ent-wert b{font:800 var(--fs-md)/1 var(--ff-num);color:var(--nb)}
 .zb-ent-pop{position:fixed;z-index:260;width:min(330px,calc(100vw - 16px));padding:12px;border-radius:var(--r);background:var(--bg2);border:1px solid var(--bd);box-shadow:var(--shadow-pop)}
 .zb-ent-pop-hd{font-size:var(--fs-sm);color:var(--t2);margin-bottom:10px}
 .zb-ent-pop-hd b{color:var(--t0)}
@@ -6288,7 +6293,7 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 /* Saeule = kleine Pinned-notes-Karte: dieselben .ab-nt-Zeilen und derselbe
    "＋ New note…"-Einstieg (Nutzer 2026-10-27: "genau so wie bei den quick
    Notes"), nur etwas kompakter */
-.zb-inhalt{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:calc(198px - var(--zb-kx,0px) - var(--zb-ex,0px))}
+.zb-inhalt{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:calc(198px - var(--zb-kx,0px))}
 .zb-schaft .ab-nt-add{margin-bottom:0}
 .zb-schaft .ab-nt-neu{height:30px;font-size:var(--fs-sm)}
 .zb-liste{overflow:visible}
@@ -7082,11 +7087,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-646 - Retail-Karte der Asset-Seite: eigene Waehrung immer vorn, Zahl mitgedreht (USD/NZD statt NZD/USD); Sentiment-Tab unveraendert."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-647 - Central bank: Leitzins + Veraenderung als feste erste Zeile der Saeule General (statt Decision unter dem Namen), Tipp oeffnet das Auswahlfenster."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-646</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-647</span>
     </span>
   </div>
   <div class="hdr-r">

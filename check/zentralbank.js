@@ -260,7 +260,11 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
     const tage = (a, b) => Math.abs(Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5;
     const i = st.map((e, j) => tage(e[0], d) <= 2 ? j : -1).filter(j => j >= 0); if (!i.length || i[0] < 1) return null;
     return Math.round((st[i[i.length - 1]][1] - st[i[0] - 1][1]) * 100) / 100; }, id);
-  const chip = q => q.evaluate(() => { const w = document.querySelector('#zbKarte .zb-ent-wert b'); return w ? { t: w.textContent, f: getComputedStyle(w).color } : null; });
+  // seit 647 steht der Entscheid als feste erste Zeile in General (.zb-zins)
+  const chip = q => q.evaluate(() => { const w = document.querySelector('#zbKarte .zb-zins .zb-zins-w'); return w ? { t: w.textContent, f: getComputedStyle(w).color } : null; });
+  const zeile = q => q.evaluate(() => { const z = document.querySelector('#zbKarte .zb-zins'), g = [...document.querySelectorAll('#zbKarte .zb-s')][3];
+    return { satz: z ? (z.querySelector('.zb-zins-z1 b') || {}).textContent : null, erste: !!z && !!g && g.querySelector('.zb-inhalt').firstElementChild === z, fries: !!document.querySelector('#zbKarte .zb-fries .zb-ent,#zbKarte .zb-fries .zb-zins') }; });
+  const satzFeed = id => pi.evaluate(async c => { const m = await import('./js/score.js'); const st = m.rateSteps(c) || []; const l = st[st.length - 1]; return l ? (+l[1]).toFixed(2) + '%' : null; }, id);
   const txt = w => Math.abs(w) < 1e-9 ? 'Hold' : (w > 0 ? '+' : '−') + Math.abs(w).toFixed(2);
   const fi = F.length;
   const [blau, rotF, grau] = [await farbe(pi, 'bull'), await farbe(pi, 'bear'), await farbe(pi, 'neu')];
@@ -272,6 +276,11 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
     if (!c) { rot('I WERT', `${id}: kein Entscheid unter dem Namen (Feed ${txt(w)})`); continue; }
     if (c.t !== txt(w)) rot('I WERT', `${id}: zeigt ${c.t}, Feed ${txt(w)}`);
     if (c.f !== sollFarbe(w, dreht)) rot('I FARBE', `${id}: ${c.t} in ${c.f}, erwartet ${sollFarbe(w, dreht)}${dreht ? ' (GOLD: Regel Interest Rates inverse)' : ''}`);
+    // "den Leitzins und die Veraenderung in Form eines einzigen Notiz bei generel ganz oben" (647)
+    const zl = await zeile(pi), sf = await satzFeed(ccy);
+    if (zl.satz !== sf) rot('I LEITZINS', `${id}: Zeile zeigt ${zl.satz}, Feed ${sf}`);
+    if (!zl.erste) rot('I POSITION', `${id}: Leitzins-Zeile nicht die erste in General`);
+    if (zl.fries) rot('I POSITION', `${id}: Entscheid steht noch im Fries`);
   }
   await pi.evaluate(() => gotoSym('EUR')); await pi.waitForTimeout(350);
   const wEur = await feed('EUR');
@@ -291,7 +300,7 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
   await pi.evaluate(() => { const b = [...document.querySelectorAll('#zbEntPop .btn')].find(x => /Use feed value/.test(x.textContent)); if (b) b.click(); }); await pi.waitForTimeout(400);
   if (((await chip(pi)) || {}).t !== txt(wEur)) rot('I FEED', `"Use feed value" -> ${JSON.stringify(await chip(pi))} statt ${txt(wEur)}`);
   await pi.close();
-  if (F.length === fi) gruen(`Entscheid = Feed (EUR ${txt(wEur)}), Farbe nach Bias/Regel (GOLD gedreht), Fenster 13 Schritte, ${ziel} haelt ueber Neuladen + im Snapshot, "Use feed value" zurueck`);
+  if (F.length === fi) gruen(`Leitzins + Entscheid = Feed als erste Zeile in General (EUR ${txt(wEur)}), Farbe nach Bias/Regel (GOLD gedreht), Fenster 13 Schritte, ${ziel} haelt ueber Neuladen + im Snapshot, "Use feed value" zurueck`);
 
   // ── H ── Uhr hinter die naechste USD-Sitzung
   console.log('H) Archiv nach der naechsten Sitzung');
@@ -310,10 +319,10 @@ const farbe = (p, b) => p.evaluate(b => { const d = document.createElement('div'
     if (k.archiv < 1) rot('H ARCHIV', `Archiv-Zaehler ${k.archiv}`);
     if (!k.banner) rot('H BANNER', 'kein Banner nach der neuen Sitzung');
     // Sitzung noch nicht im Feed -> fuenf Knoepfe zum Waehlen (seit 645)
-    const wahl = await q.evaluate(() => [...document.querySelectorAll('#zbKarte .zb-ent-wahl .zb-ent-b')].map(b => b.textContent));
+    const wahl = await q.evaluate(() => [...document.querySelectorAll('#zbKarte .zb-zins-wahl .zb-ent-b')].map(b => b.textContent));
     if (wahl.join(' ') !== '−0.50 −0.25 Hold +0.25 +0.50') rot('H ENTSCHEID', `vor dem Feed: Knoepfe "${wahl.join(' ')}" statt "−0.50 −0.25 Hold +0.25 +0.50"`);
-    else { await q.click('#zbKarte .zb-ent-wahl .zb-ent-b:nth-of-type(3)'); await q.waitForTimeout(400);
-      const t = await q.evaluate(() => { const w = document.querySelector('#zbKarte .zb-ent-wert b'); return w ? w.textContent : null; });
+    else { await q.click('#zbKarte .zb-zins-wahl .zb-ent-b:nth-of-type(3)'); await q.waitForTimeout(400);
+      const t = await q.evaluate(() => { const w = document.querySelector('#zbKarte .zb-zins .zb-zins-w'); return w ? w.textContent : null; });
       if (t !== 'Hold') rot('H ENTSCHEID', `nach Klick auf Hold steht "${t}"`); }
     await q.click('#zbKarte .zb-arch'); await q.waitForTimeout(300);
     const a = await q.evaluate(tx => { const b = document.getElementById('zbArchivBody'); const m = document.getElementById('mZbArchiv');
