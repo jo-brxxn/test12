@@ -19,45 +19,42 @@ jobs:
           while IFS='|' read -r key path; do
             [ -z "$key" ] && continue
             curl -sL -A "$UA" -m 25 "https://tradingeconomics.com/$path" -o "te_$key.html" || true
-            echo "$key: $(wc -c <"te_$key.html") bytes"
             sleep 1
           done <<'URLS'
           nzcore|new-zealand/core-inflation-rate
-          nzlci|new-zealand/labour-costs
           cadsvc|canada/services-pmi
           jpygdp|japan/gdp-growth
-          chfmfg|switzerland/manufacturing-pmi
+          eurmfg|euro-area/manufacturing-pmi
+          audcore|australia/core-inflation-rate
+          chfcore|switzerland/core-inflation-rate
+          jpyemp|japan/employed-persons
           URLS
           curl -sL -A "$UA" -m 25 "https://www.stats.govt.nz/information-releases/consumers-price-index-september-2026-quarter/" -o statsnz.html || true
-          curl -sL -A "$UA" -m 25 "https://www.rbnz.govt.nz/-/media/project/sites/rbnz/files/statistics/series/m/m1/hm1.xlsx" -o rbnz.html || true
-          echo "statsnz: $(wc -c <statsnz.html) bytes, rbnz: $(wc -c <rbnz.html) bytes"
       - name: Inspect
         run: |
           node -e '
             const fs=require("fs");
             const strip=h=>h.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/\s+/g," ");
+            const sq=s=>s.replace(/\s+/g," ");
             for(const f of fs.readdirSync(".").filter(f=>/^te_.*\.html$/.test(f)).sort()){
-              const h=fs.readFileSync(f,"utf8"),t=strip(h);
-              console.log("\n===== "+f+" ("+h.length+" B) title: "+((/<title>([^<]*)/i.exec(h)||[])[1]||"-"));
-              // Berichtssaetze: alles mit increased/decreased/rose/fell ... in <Monat|quarter> of <Jahr>
-              const S=/[^.]{0,200}\b(?:increased|decreased|rose|fell|grew|contracted|edged|was unchanged|remained|stood|expanded|declined|jumped|dropped|eased|accelerated|slowed)\b[^.]{0,200}\d{4}[^.]{0,40}\./gi;
-              let m,n=0;while((m=S.exec(t))&&n<4){n++;console.log("SATZ "+n+": "+m[0].trim().slice(0,330));}
-              // Jede Datumsangabe mit Umgebung (Text + rohes HTML)
-              const seen=new Set();
-              [["TXT",t],["HTML",h]].forEach(([tag,src])=>{
-                const re=/\b(?:[A-Z][a-z]{2,8}\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})\b/g;let d,k=0;
-                while((d=re.exec(src))&&k<40){
-                  const ctx=src.slice(Math.max(0,d.index-110),d.index+90).replace(/\s+/g," ");
-                  const key=d[0]+"|"+ctx.slice(60,140);if(seen.has(key))continue;seen.add(key);k++;
-                  console.log(tag+" "+d[0]+"  ::  "+ctx);
-                }
-              });
+              const h=fs.readFileSync(f,"utf8");
+              console.log("\n===== "+f);
+              const desc=/"description":\s*"([^"]{0,400})/.exec(h);console.log("DESC: "+(desc?desc[1]:"-"));
+              const md=/<meta[^>]+name="description"[^>]+content="([^"]{0,400})/i.exec(h);console.log("META: "+(md?md[1]:"-"));
+              // Kalenderzeilen roh
+              const rows=h.match(/<tr[^>]*data-category[\s\S]*?<\/tr>/gi)||[];
+              console.log("KALENDERZEILEN: "+rows.length);
+              rows.slice(0,4).forEach((r,i)=>console.log("ROW"+i+" RAW: "+sq(r).slice(0,900)));
+              rows.slice(0,6).forEach((r,i)=>console.log("ROW"+i+" TXT: "+strip(r)));
+              // Stream-Eintraege roh (600 Zeichen vor jedem Datum)
+              const re=/te-stream-date[^>]*>([^<]*)</g;let m,n=0;
+              while((m=re.exec(h))&&n<4){n++;console.log("STREAM"+n+" "+m[1]+" TXT: "+strip(h.slice(Math.max(0,m.index-900),m.index)).slice(-420));}
+              if(n){const r0=/te-stream-date/.exec(h);console.log("STREAM RAW: "+sq(h.slice(Math.max(0,r0.index-1500),r0.index+200)).slice(0,1700));}
             }
-            for(const f of ["statsnz.html","rbnz.html"]){
-              let h="";try{h=fs.readFileSync(f,"utf8");}catch(e){}
-              const t=strip(h);
-              console.log("\n===== "+f+" ("+h.length+" B) title: "+((/<title>([^<]*)/i.exec(h)||[])[1]||"-"));
-              console.log(t.slice(0,400));
-              const re=/[^.]{0,220}non-?tradab[^.]{0,220}\./gi;let m,n=0;while((m=re.exec(t))&&n<5){n++;console.log("NT "+n+": "+m[0].trim());}
-            }
+            let h="";try{h=fs.readFileSync("statsnz.html","utf8");}catch(e){}
+            const t=strip(h);
+            console.log("\n===== statsnz ("+h.length+" B)");
+            const re=/[^.]{0,260}(?:tradab|tradeab|non-trad|core|excluding food)[^.]{0,260}\./gi;let m,n=0;
+            while((m=re.exec(t))&&n<12){n++;console.log("NZ "+n+": "+m[0].trim());}
+            const k=t.search(/key facts/i);console.log("KEYFACTS: "+(k>=0?t.slice(k,k+1500):"-"));
           '
