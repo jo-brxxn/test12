@@ -90,6 +90,19 @@ if (rules && excore) {
       ['Labour Costs Index YoY', 'NZD', 'Avg Hourly Earnings', true],
       ['PPI Output QoQ', 'NZD', 'PPI', true],
       ['PPI Input QoQ', 'NZD', 'PPI', false],
+      // NZD-Treiber 2026-10-27 (Nutzer-Entscheid): ANZ-RM statt Westpac, neue Reihen
+      ['ANZ Roy Morgan Consumer Confidence', 'NZD', 'Consumer Confidence', true],
+      ['Westpac Consumer Confidence', 'NZD', 'Consumer Confidence', false],
+      ['Westpac Consumer Confidence Index', 'AUD', 'Consumer Confidence', true],
+      ['ANZ Business Confidence', 'NZD', 'Business Confidence', true],
+      ['ANZ Business Confidence Prel', 'NZD', 'Business Confidence', false],
+      ['Global Dairy Trade Price Index', 'NZD', 'GDT Price Index', true],
+      ['Terms of Trade QoQ', 'NZD', 'Terms of Trade', true],
+      ['Building Permits MoM', 'NZD', 'Building Permits', true],
+      ['Building Permits MoM Prel', 'USD', 'Building Permits', false],
+      ['Business Inflation Expectations', 'NZD', 'Inflation Expectations', true],
+      ['Michigan Inflation Expectations Prel', 'USD', 'Inflation Expectations', true],
+      ['Business Inflation Expectations', 'USD', 'Inflation Expectations', false],
     ];
     FALL.forEach(([t, c, ind, soll]) => {
       const ist = trifft(t, c, ind);
@@ -146,7 +159,8 @@ if (rules && excore) {
       // NZD BIP: Q1 0,8 % erstgemeldet, TV fuehrt beim Q2-Release 0,9 % als Vorwert
       ev('NZ', 'GDP Growth Rate QoQ', 41, '0.2', '0.1', '0.9'),
       // NZD Konsumklima: TV fuehrt den Release heute am Tag 42 (frueher: Tag 41)
-      ev('NZ', 'Westpac Consumer Confidence', 42, '89.5', null, '80.4', { unit: '' }),
+      // (2026-09 war es die Westpac-Reihe; seit 2026-10-27 ist NZDs Reihe ANZ-RM)
+      ev('NZ', 'ANZ Roy Morgan Consumer Confidence', 42, '89.5', null, '80.4', { unit: '' }),
       // EUR CPI: Flash und Final DESSELBEN Monats, Vorwert = Vormonat
       ev('EU', 'Inflation Rate YoY Flash', 25, '3.8', '3.7', '3.2'),
       ev('EU', 'Inflation Rate YoY Final', 11, '3.8', '3.8', '3.2'),
@@ -163,9 +177,9 @@ if (rules && excore) {
       // CAD Ivey (Services PMI der RULES)
       ev('CA', 'Ivey PMI s.a', 21, '58.2', '65.2', '64.3', { unit: '' }),
     ];
-    const hist0 = [ev('NZ', 'GDP Growth Rate QoQ', 132, '0.8', '0.9', '0.5'), ev('NZ', 'Westpac Consumer Confidence', 133, '80.4', null, '94.7', { unit: '' })];
+    const hist0 = [ev('NZ', 'GDP Growth Rate QoQ', 132, '0.8', '0.9', '0.5'), ev('NZ', 'ANZ Roy Morgan Consumer Confidence', 133, '80.4', null, '94.7', { unit: '' })];
     const prev = {
-      NZD: { 'Consumer Confidence': { actual: '89.5', previous: '80.4', revisedFrom: '89.5', date: tag(41), event: 'Westpac Consumer Confidence', source: 'tv', historyFull: [[tag(133), '80.4', null], [tag(42), '89.5', null], [tag(41), '89.5', null]] } },
+      NZD: { 'Consumer Confidence': { actual: '89.5', previous: '80.4', revisedFrom: '89.5', date: tag(41), event: 'ANZ Roy Morgan Consumer Confidence', source: 'tv', historyFull: [[tag(133), '80.4', null], [tag(42), '89.5', null], [tag(41), '89.5', null]] } },
       USD: { 'NFP / Employment Change': { actual: '29K', previous: '133K', revisedFrom: '162K', date: tag(20), event: 'Non Farm Payrolls', source: 'tv', historyFull: [] } },
       CHF: { 'Core CPI': { actual: '0.50%', previous: null, date: tag(25), event: 'Core CPI (Trading Economics)', source: 'tepage', ref: 'september 2026', historyFull: [[tag(55), '0.40%', null], [tag(25), '0.50%', null]] } },
       EUR: {
@@ -209,6 +223,39 @@ if (rules && excore) {
   }
 }
 
+// ── E) NZD Core CPI = Non-tradables aus der Stats-NZ-CSV (2026-10-27) ─────
+{
+  const i = y.indexOf('c[0]==="CPIQ.SE9NS6500"');
+  const a = y.lastIndexOf("node -e '\n", i), b = y.indexOf("\n          '\n", i);
+  let code = (i < 0 || a < 0 || b < 0) ? null : y.slice(a + 9, b);
+  if (!code) fail('NON-TRADABLES', 'Schritt mit Reihe CPIQ.SE9NS6500 nicht gefunden');
+  if (code && GEGENPROBE) code = code.split('CPIQ.SE9NS6500').join('CPIQ.SE9A');
+  if (code) {
+    const os = require('os'), cp = require('child_process');
+    const lauf = (mitCsv) => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'feedregeln-nt-'));
+      const IDX = { '2024.09': 1350, '2024.12': 1360, '2025.03': 1380, '2025.06': 1390, '2025.09': 1406, '2025.12': 1410, '2026.03': 1430, '2026.06': 1438, '2026.09': 1453 };
+      const kopf = '"Series_reference","Period","Data_value","STATUS","UNITS","Subject","Group","Series_title_1","Series_title_2"';
+      const z = (ref, q, v, t) => `"${ref}","${q}",${v},"FINAL","Index","CPI","x","${t}",NA`;
+      const csv = [kopf, ...Object.entries(IDX).map(([q, v]) => z('CPIQ.SE9A', q, v - 100, 'All groups')), ...Object.entries(IDX).map(([q, v]) => z('CPIQ.SE9NS6500', q, v, 'Non-Tradable All Groups'))].join('\n');
+      if (mitCsv) fs.writeFileSync(path.join(dir, 'nt_2026.09.csv'), csv);
+      const cpi = ['2025-10-16', '2026-01-22', '2026-04-20', '2026-07-20', '2026-10-21'].map(d => [d, '3%', null]);
+      fs.writeFileSync(path.join(dir, 'ind_data.json'), JSON.stringify({ NZD: { 'CPI (Headline)': { actual: '3.7%', historyFull: cpi } } }));
+      fs.writeFileSync(path.join(dir, 'nt_prev.json'), JSON.stringify({ NZD: { 'Core CPI': { actual: '3.4%', date: '2026-07-20', source: 'statsnz', historyFull: [] } } }));
+      fs.writeFileSync(path.join(dir, 'nt.js'), code);
+      cp.spawnSync(process.execPath, ['nt.js'], { cwd: dir, encoding: 'utf8' });
+      let o = null; try { o = JSON.parse(fs.readFileSync(path.join(dir, 'ind_data.json'), 'utf8')); } catch (e) {}
+      fs.rmSync(dir, { recursive: true, force: true });
+      return ((o || {}).NZD || {})['Core CPI'] || {};
+    };
+    const e = lauf(true);
+    const ist = [e.actual, e.previous, e.date, e.ref, (e.historyFull || []).length];
+    if (JSON.stringify(ist) !== JSON.stringify(['3.3%', '3.5%', '2026-10-21', '2026.09', 5])) fail('NON-TRADABLES', `ist ${JSON.stringify(ist)}, soll ["3.3%","3.5%","2026-10-21","2026.09",5] (1453/1406, 1438/1390, Termin = NZD-CPI-Release)`);
+    const leer = lauf(false);
+    if (leer.actual !== '3.4%') fail('NON-TRADABLES', `ohne Datei muss der letzte Stand bleiben (3.4%), ist ${leer.actual}`);
+  }
+}
+
 let keinRelease = null;
 if (kein) { try { keinRelease = new Function(kein + '\nreturn keinRelease;')(); } catch (e) { fail('BEREINIGUNG', 'nicht auswertbar: ' + e.message); } }
 if (keinRelease) {
@@ -239,7 +286,7 @@ if (keinRelease) {
 
 if (GEGENPROBE) {
   const ok = F.some(x => x.startsWith('FREMDER RELEASE')) && F.some(x => x.startsWith('SELBER TAG')) &&
-    F.some(x => x.startsWith('VORWERT REVIDIERT')) && F.some(x => x.startsWith('UMDATIERTER RELEASE'));
+    F.some(x => x.startsWith('VORWERT REVIDIERT')) && F.some(x => x.startsWith('UMDATIERTER RELEASE')) && F.some(x => x.startsWith('NON-TRADABLES'));
   console.log(ok ? 'feedregeln --gegenprobe: ok (alte Regeln: Benchmark-Revision, S&P-Flash, Control Group; alte Aggregation: Erstdruck als Vorwert, Doppelpunkt bleibt - alles gemeldet)' : 'feedregeln --gegenprobe: FEHLER - nicht gemeldet\n  ' + F.join('\n  '));
   process.exit(ok ? 0 : 1);
 }

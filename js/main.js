@@ -3356,7 +3356,7 @@ const IND_DISPLAY_NAMES={
   JPY:{'Central Bank Rate':'BoJ Policy Rate','NFP / Employment Change':'Employment Change','Avg Hourly Earnings':'Average Cash Earnings','JOLTS Job Openings':'Jobs/Applicants Ratio','Services Inflation':'Corporate Services Price Index','Consumer Confidence':'Consumer Confidence (Cabinet Office)'},
   CAD:{'Central Bank Rate':'BoC Overnight Rate','NFP / Employment Change':'Net Employment Change','Avg Hourly Earnings':'Avg Hourly Wages (Permanent)','Services PMI':'Ivey PMI','Consumer Confidence':'Conference Board Consumer Confidence'},
   AUD:{'Central Bank Rate':'RBA Cash Rate','NFP / Employment Change':'Employment Change','Avg Hourly Earnings':'Wage Price Index','Consumer Confidence':'Westpac Consumer Sentiment'},
-  NZD:{'Central Bank Rate':'RBNZ Official Cash Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Labour Cost Index','Consumer Confidence':'Westpac Consumer Sentiment'},
+  NZD:{'Central Bank Rate':'RBNZ Official Cash Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Labour Cost Index','Consumer Confidence':'ANZ-Roy Morgan Consumer Confidence','Core CPI':'Non-tradables CPI','Business Confidence':'ANZ Business Confidence','GDT Price Index':'Global Dairy Trade Price Index','Terms of Trade':'Terms of Trade (goods)','Building Permits':'Building Consents','Inflation Expectations':'Business Inflation Expectations (RBNZ, 2 years ahead)'},
 };
 const IND_RESEARCH_DATA={
   USD:{entries:[
@@ -3569,7 +3569,17 @@ const IND_RESEARCH_DATA={
     // Electronic-Card-Transactions-Reihe ist). Jetzt auf die passende
     // investing.com-Seite fuer genau diese m/m-Reihe verlinkt.
     {rubric:'Economic Growth',indicator:'Retail Sales',period:'M/M',applicable:true,actual:'-1.3% (Electronic Card Transactions, April 2026)',forecast:null,previous:null,releaseDate:'2026-05-19',interval:'monthly',source:'https://www.investing.com/economic-calendar/electronic-card-retail-sales-1058'},
-    {rubric:'Economic Growth',indicator:'Consumer Confidence',applicable:true,actual:'80.4 (Westpac-McDermott Miller)',forecast:null,previous:null,releaseDate:'2026-06-12',interval:'quarterly',source:'https://www.investing.com/economic-calendar/westpac-consumer-sentiment-357'},
+    // Seit 2026-10-27 ANZ-Roy Morgan (monatlich) statt Westpac (quartalsweise)
+    // - Nutzer-Entscheid nach Messung, siehe docs/score-model.md. Ohne eigenen
+    // Startwert: den Wert liefert der Feed; der Eintrag traegt nur Takt und
+    // Quellen-Link (der alte zeigte auf die Westpac-Seite).
+    {rubric:'Economic Growth',indicator:'Consumer Confidence',applicable:true,interval:'monthly',source:'https://www.roymorgan.com/'},
+    // Neue NZD-Treiber (Nutzer-Entscheid 2026-10-27) - Werte nur aus dem Feed.
+    {rubric:'Economic Growth',indicator:'Business Confidence',applicable:true,interval:'monthly',source:'https://www.anz.co.nz/'},
+    {rubric:'Economic Growth',indicator:'GDT Price Index',applicable:true,interval:'every 2 weeks',source:'https://www.globaldairytrade.info/'},
+    {rubric:'Economic Growth',indicator:'Terms of Trade',applicable:true,interval:'quarterly',source:'https://www.stats.govt.nz/'},
+    {rubric:'Economic Growth',indicator:'Building Permits',applicable:true,interval:'monthly',source:'https://www.stats.govt.nz/'},
+    {rubric:'Inflation',indicator:'Inflation Expectations',applicable:true,interval:'quarterly',source:'https://www.rbnz.govt.nz/'},
   ]},
 };
 // Rohstoffe/Krypto/Indizes (NONFX_IDS) haben kein eigenes Land/keine eigene
@@ -4041,6 +4051,11 @@ const IND_INFO_DEFAULTS={
   'Services PMI':'Purchasing Managers\' Index for services. Above 50 = expansion, below 50 = contraction. Services dominate most economies.',
   'Retail Sales':'Change in total retail spending vs. the prior period, in % (month-over-month for most currencies; Switzerland reports year-over-year, since no m/m series exists there). Gauges consumer demand; strong sales = currency-supportive.',
   'Consumer Confidence':'Survey of households\' optimism about the economy (index). Higher readings point to more spending and stronger growth.',
+  'Business Confidence':'Survey of firms\' outlook for the next 12 months (net balance or index). Rising confidence points to more hiring and investment.',
+  'GDT Price Index':'Global Dairy Trade auction — % change of the average dairy price vs. the previous auction (every 2 weeks). Dairy is New Zealand\'s largest export.',
+  'Terms of Trade':'Export prices relative to import prices, quarter-over-quarter in %. Rising terms of trade lift national income.',
+  'Building Permits':'New residential building consents, month-over-month change in %. A leading indicator for construction activity.',
+  'Inflation Expectations':'Expected inflation from a survey (US: households, 1 year ahead; New Zealand: businesses, 2 years ahead), in %. Higher expectations keep the central bank hawkish.',
   // COT Data
   'Net Bullish Positioning':'From the CFTC Commitments of Traders report: net long positions of speculators. Extreme longs can flag a crowded trade and reversal risk.',
   'Net Bearish Positioning':'Net short positions of speculators (CoT report). Extreme shorts can flag a crowded trade and squeeze risk.',
@@ -4199,12 +4214,21 @@ function cleanDeriveRules(sym){
 // siehe RUB_IND_REMOVE weiter unten fuer die aktive Bereinigung bereits
 // gespeicherter Profile. ZEW/Ifo/Inflation Expectations blieben unangetastet
 // (nicht Teil der Anfrage).
+// Seit 2026-10-27 je Reihe eine LISTE von Waehrungen: "Inflation
+// Expectations" gibt es jetzt fuer USD (Michigan) UND NZD (RBNZ-Umfrage
+// unter Unternehmen). Mit zwei getrennten Eintraegen haette der USD-Eintrag
+// die NZD-Zeile bei jedem Laden als Karteileiche entfernt und der NZD-
+// Eintrag sie neu angelegt (neue id, Bias/Notiz weg).
+// NZD-Treiber 2026-10-27 (Nutzer-Entscheid, Messwerte docs/score-model.md):
+// ANZ Business Confidence, Global Dairy Trade, Terms of Trade, Building
+// Permits, Business Inflation Expectations.
 const NEUE_UMFRAGEN_2026_08={
-  'Economic Growth':[['ZEW Economic Sentiment','EUR'],['Ifo Business Climate','EUR']],
-  'Inflation':[['Inflation Expectations','USD']]
+  'Economic Growth':[['ZEW Economic Sentiment',['EUR']],['Ifo Business Climate',['EUR']],
+    ['Business Confidence',['NZD']],['GDT Price Index',['NZD']],['Terms of Trade',['NZD']],['Building Permits',['NZD']]],
+  'Inflation':[['Inflation Expectations',['USD','NZD']]]
 };
 // Alle Namen flach - fuer die Bereinigung unten.
-const UMFRAGE_NAMEN_2026_08=Object.values(NEUE_UMFRAGEN_2026_08).flat().map(x=>x[0]);
+const UMFRAGE_NAMEN_2026_08=[...new Set(Object.values(NEUE_UMFRAGEN_2026_08).flat().map(x=>x[0]))];
 function addSurveyInds(rubrics,sym){
   // Non-FX spiegelt seine Makro-Karten von einer Waehrung - GOLD/BTC/SP500
   // haengen an USD, DAX/GER100 an EUR. Die Umfrage gehoert deshalb zur
@@ -4223,9 +4247,9 @@ function addSurveyInds(rubrics,sym){
   Object.keys(NEUE_UMFRAGEN_2026_08).forEach(rn=>{
     const rub=rubrics.find(r=>r&&r.name===rn);
     if(!rub||!Array.isArray(rub.indicators))return;
-    NEUE_UMFRAGEN_2026_08[rn].forEach(([nm,quelleCcy])=>{
+    NEUE_UMFRAGEN_2026_08[rn].forEach(([nm,quelleCcys])=>{
       const vorhanden=rub.indicators.findIndex(i=>stripPeriodSuffix(i.name).base===nm);
-      const gehoertHierher=(ccy===quelleCcy);
+      const gehoertHierher=[].concat(quelleCcys).includes(ccy);
       if(!gehoertHierher){
         // Karteileiche aus dem ersten Wurf wieder entfernen - aber NUR, wenn
         // sie unberuehrt ist. Hat jemand von Hand einen Bias gesetzt, eine
@@ -4242,6 +4266,10 @@ function addSurveyInds(rubrics,sym){
       }
       if(vorhanden>=0)return;
       const ni={id:uid(),name:nm,bias:'neu',imp:false,date:'',interval:'',points:[]};
+      // Offizieller Anzeigename gleich mit - applyIndResearch laeuft je Asset
+      // nur einmal und erreicht nachgetragene Zeilen nicht mehr.
+      const dn=ccy&&IND_DISPLAY_NAMES[ccy]&&IND_DISPLAY_NAMES[ccy][nm];
+      if(dn)ni.displayName=dn;
       // Inflationserwartung gehoert vor die Renditen, nicht ans Ende der
       // Karte - dort stehen die drei Bond-Zeilen als Block zusammen.
       if(nm==='Inflation Expectations'){
@@ -4251,6 +4279,8 @@ function addSurveyInds(rubrics,sym){
     });
   });
 }
+// Anzeigenamen, die durch einen Reihenwechsel ueberholt sind: {Waehrung:{Basisname:alter Name}}.
+const ANZEIGE_ERSETZT={NZD:{'Consumer Confidence':'Westpac Consumer Sentiment'}};
 function migrateRubInds(rubrics,sym){
   stripGeopoliticsRub(rubrics);
   // migrateRiskEnvRub ist entfallen - die Karte wird nicht mehr umgebaut,
@@ -4265,6 +4295,11 @@ function migrateRubInds(rubrics,sym){
   // einmal je Asset eingespielt, der korrigierte Eintrag erreicht bestehende
   // Staende also nur ueber diese Zeile.
   rubrics.forEach(rub=>(rub.indicators||[]).forEach(i=>{const r=i&&i.research;if(r&&typeof r.previous==='string'&&/^Non-tradables CPI ~/.test(r.previous))r.previous=null;}));
+  // NZD Konsumklima seit 2026-10-27 ANZ-Roy Morgan: der alte Anzeigename
+  // ("Westpac Consumer Sentiment") stammt aus dem einmaligen applyIndResearch
+  // und bliebe sonst fuer immer stehen.
+  {const lc=sym?effLinkCcy(sym):null;const ersetzt=ANZEIGE_ERSETZT[lc];
+   if(ersetzt)rubrics.forEach(rub=>(rub.indicators||[]).forEach(i=>{const b=stripPeriodSuffix(i.name).base;if(ersetzt[b]&&i.displayName===ersetzt[b])i.displayName=IND_DISPLAY_NAMES[lc][b];}));}
   rubrics.forEach(rub=>{
     if(!rub.indicators)return;
     const rm=RUB_IND_REMOVE[rub.name];

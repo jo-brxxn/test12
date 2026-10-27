@@ -1440,7 +1440,7 @@ jobs:
           # Lauf holt dann die Tiefen-Historie einmal komplett neu, und die
           # Bereinigung im Merge (gesehen[]) ersetzt bzw. entfernt die alten
           # Punkte bis 2013 zurueck.
-          export HIST_REGELN=2026-10-27
+          export HIST_REGELN=2026-10-27b
           CHUNKS_DONE=$(node -e '
             const T=+process.env.TARGET_CHUNKS||84;
             try{const d=JSON.parse(require("fs").readFileSync("ind_data.json","utf8"));console.log(d._histRegeln!==process.env.HIST_REGELN?5:Math.max(5,Math.min(T,+d._histChunksFetched||5)));}catch(e){console.log(5);}
@@ -1604,8 +1604,27 @@ jobs:
               // Inflationserwartung der Verbraucher - eigenes Fed-Argument,
               // gehoert in die Inflation-Karte, nicht zur Stimmungsumfrage.
               {ind:"Inflation Expectations",period:null,test:(t,c)=>c==="USD"&&/michigan/.test(t)&&/inflation expectation/.test(t)&&!/5|long/.test(t)},
-              // NZD: ausdruecklich die Westpac-Reihe (nicht ANZ-Roy Morgan).
-              {ind:"Consumer Confidence",period:null,test:(t,c)=>c==="NZD"&&/westpac/.test(t)&&/consumer/.test(t)},
+              // NZD: seit 2026-10-27 ANZ-Roy Morgan (monatlich) statt Westpac
+              // (quartalsweise) - Nutzer-Entscheid nach Messung (Korb-Rendite
+              // NZD 2016-2026: Westpac Release-Tag -9,6 bp, t -1,3, 39 Releases;
+              // ANZ-RM naechste 5 Tage +15,3 bp, t 2,1, 110 Releases).
+              // Andere Reihe -> HIST_REGELN gehoben, die Westpac-Punkte fallen
+              // beim Neuabruf aus der Historie.
+              {ind:"Consumer Confidence",period:null,test:(t,c)=>c==="NZD"&&/anz roy morgan consumer confidence/.test(t)},
+              // ── NZD-Treiber (Nutzer-Entscheid 2026-10-27) ─────────────────
+              // ANZ Business Confidence: gemessen Release-Tag +11,6 bp (t 2,2),
+              // 20 Tage +39 bp (t 2,5), 104 Releases. 2020-22 gab es zusaetzlich
+              // "Prel"/"Final" - Prel ist eine Vorabzahl DESSELBEN Monats.
+              {ind:"Business Confidence",period:null,test:(t,c)=>c==="NZD"&&/^anz business confidence( final)?$/.test(t)},
+              // Die folgenden vier hat der Nutzer AUSDRUECKLICH gegen die Messung
+              // in den Score genommen ("Alle in den Score"): GDT Release-Tag
+              // +6 bp (t 1,7, keine Nachwirkung), Terms of Trade t -0,9, Building
+              // Permits t 0,4, Business Inflation Expectations t -1,9 (falsches
+              // Vorzeichen). Siehe docs/score-model.md.
+              {ind:"GDT Price Index",period:null,test:(t,c)=>c==="NZD"&&/global dairy trade price index/.test(t)},
+              {ind:"Terms of Trade",period:"q/q",test:(t,c)=>c==="NZD"&&/terms of trade/.test(t)},
+              {ind:"Building Permits",period:"m/m",test:(t,c)=>c==="NZD"&&/building permits/.test(t)},
+              {ind:"Inflation Expectations",period:null,test:(t,c)=>c==="NZD"&&/business inflation expectations/.test(t)},
               // Uebrige Waehrungen: jeweils ihr landesuebliches Stimmungsmass
               // (EU-Kommission, GfK, SECO Climate, Cabinet Office, Westpac ...).
               {ind:"Consumer Confidence",period:null,test:(t,c)=>c!=="USD"&&c!=="NZD"&&/consumer confidence|consumer sentiment|consumer climate/.test(t)&&!/change|expectation/.test(t)},
@@ -2120,6 +2139,75 @@ jobs:
             const diagLines=Object.keys(diagSeen).sort().map(k=>k+(diagSeen[k].a?" [actual]":" [kein actual]"));
             console.log("ind_data TITLE DIAG ("+diagLines.length+" distinct):\n  "+diagLines.join("\n  "));
           '
+
+      # ── NZD CORE CPI = NON-TRADABLES-INFLATION (Stats NZ, offizielle CSV) ──
+      # Nutzer 2026-10-27: "Such besser du wirst bestimmt eine Quelle finden".
+      # Gemessen (Sonden 2026-10-27): RBNZ sperrt den Runner ("Your access ...
+      # has been restricted"), die Stats-NZ-Releaseseite rendert per JavaScript,
+      # TradingView fuehrt keine Kernrate, Trading Economics nennt 3,20 % ohne
+      # Messgroesse, die OECD (ohne Nahrung/Energie) hinkt ein Jahr hinterher.
+      # Im Quelltext der Releaseseite steht aber die Downloaddatei
+      # "...-tradeables-and-non-tradeables.csv" (SilverStripe-JSON) - frei, ohne
+      # Key, Pfad je Quartal vorhersagbar. Reihe CPIQ.SE9NS6500 "Non-Tradable
+      # All Groups" = Indexstand je Quartal; Vorjahresrate = Index / Index vor
+      # 4 Quartalen - genau so rechnet Stats NZ selbst (Q3 2026: 1453 / 1406 =
+      # +3,3 %, Q2 -> Q3 +1,0 %, wie in den Bankberichten). Releasetermin = der
+      # NZD-CPI-Termin aus TradingView (dieselbe Veroeffentlichung).
+      - name: Fetch NZD non-tradables CPI (Stats NZ CSV) -> ind_data.json
+        continue-on-error: true
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+          git show HEAD:ind_data.json > nt_prev.json 2>/dev/null || true
+          # die letzten drei Quartale, deren Ende mindestens 14 Tage her ist
+          node -e '
+            const M=["March","June","September","December"];
+            const d=new Date(Date.now()-14*864e5);let y=d.getUTCFullYear(),q=Math.floor(d.getUTCMonth()/3);
+            const out=[];for(let k=0;k<3;k++){q--;if(q<0){q=3;y--;}out.push(y+"."+String(q*3+3).padStart(2,"0")+" "+M[q]+"-"+y);}
+            console.log(out.join("\n"));
+          ' | while read -r Q MY; do
+            my=$(echo "$MY" | tr "A-Z" "a-z")
+            U="https://www.stats.govt.nz/assets/Uploads/Consumers-price-index/Consumers-price-index-${MY}-quarter/Download-data/consumers-price-index-${my}-quarter-tradeables-and-non-tradeables.csv"
+            HC=$(curl -sL -A "$UA" -m 30 -o "nt_${Q}.csv" -w "%{http_code}" "$U" || echo 000)
+            echo "[nt] $Q http=$HC $(wc -c < "nt_${Q}.csv" 2>/dev/null || echo 0) B"
+            [ "$HC" = "200" ] || rm -f "nt_${Q}.csv"
+          done
+          node -e '
+            const fs=require("fs");
+            let out;try{out=JSON.parse(fs.readFileSync("ind_data.json","utf8"));}catch(e){console.log("[nt] ind_data.json fehlt");process.exit(0);}
+            let alt={};try{alt=JSON.parse(fs.readFileSync("nt_prev.json","utf8"));}catch(e){}
+            const altEintrag=alt.NZD&&alt.NZD["Core CPI"]&&alt.NZD["Core CPI"].source==="statsnz"?alt.NZD["Core CPI"]:null;
+            const behalten=grund=>{console.log("[nt] "+grund+(altEintrag?" - letzter Stand bleibt ("+altEintrag.actual+", "+altEintrag.date+")":" - kein Vorstand"));
+              if(altEintrag){(out.NZD=out.NZD||{})["Core CPI"]=altEintrag;fs.writeFileSync("ind_data.json",JSON.stringify(out));}};
+            // neueste Datei, die ihr eigenes Quartal enthaelt
+            let idx=null,quelle=null;
+            for(const f of fs.readdirSync(".").filter(f=>/^nt_\d{4}\.\d{2}\.csv$/.test(f)).sort().reverse()){
+              const m={};
+              fs.readFileSync(f,"utf8").split(/\r?\n/).forEach(l=>{const c=l.split(",").map(x=>x.replace(/^"|"$/g,"").trim());
+                if(c[0]==="CPIQ.SE9NS6500"&&/^\d{4}\.\d{2}$/.test(c[1])&&+c[2]>0)m[c[1]]=+c[2];});
+              if(m[f.slice(3,10)]){idx=m;quelle=f;break;}
+            }
+            if(!idx){behalten("keine Datei mit Reihe CPIQ.SE9NS6500");process.exit(0);}
+            // Releasetermine: NZD-CPI-Termine (TV), je Quartal der erste Termin
+            // nach Quartalsende (hoechstens 75 Tage danach)
+            const cpi=((out.NZD||{})["CPI (Headline)"]||{}).historyFull||[];
+            const termin=q=>{const ende=new Date(Date.UTC(+q.slice(0,4),+q.slice(5,7),0)).toISOString().slice(0,10);
+              const bis=new Date(Date.parse(ende)+75*864e5).toISOString().slice(0,10);
+              const t=cpi.map(h=>String(h[0]).slice(0,10)).filter(d=>d>ende&&d<=bis).sort();return t[0]||null;};
+            const qs=Object.keys(idx).sort();
+            const punkte=[];
+            qs.forEach(q=>{const vj=(+q.slice(0,4)-1)+q.slice(4);if(!idx[vj])return;
+              const d=termin(q);if(!d)return;
+              punkte.push([d,(Math.round((idx[q]/idx[vj]-1)*1000)/10).toFixed(1)+"%",null,q]);});
+            if(!punkte.length){behalten("kein Quartal mit NZD-CPI-Termin");process.exit(0);}
+            const neu=punkte[punkte.length-1],vor=punkte[punkte.length-2];
+            const e={actual:neu[1],forecast:null,previous:vor?vor[1]:null,date:neu[0],event:"Non-tradables CPI YoY (Stats NZ)",
+              period:"y/y",source:"statsnz",ref:neu[3],
+              history:punkte.slice(-4).map(p=>[p[0],p[1]]),historyFull:punkte.map(p=>[p[0],p[1],null])};
+            (out.NZD=out.NZD||{})["Core CPI"]=e;
+            fs.writeFileSync("ind_data.json",JSON.stringify(out));
+            console.log("[nt] NZD Core CPI = "+e.actual+" (Vorquartal "+e.previous+", "+neu[3]+", Release "+e.date+", "+punkte.length+" Quartale, Quelle "+quelle+")");
+          '
+          rm -f nt_*.csv nt_prev.json
 
       # ── BOND-HISTORIE BACKFILL (offizielle Gratis-Quellen, ohne Key) ──
       # Fuellt die Zeitreihe fuer Waehrungen, deren Tageshistorie frei und ohne

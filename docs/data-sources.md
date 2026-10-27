@@ -171,8 +171,17 @@ vorigen) — auch gegen einen zeitgleichen Lauf mit altem Stand. Wächter:
 - **CAD Services PMI = Ivey** (TV, mit Prognose). Die TE-Seite ist S&P Global —
   nur Kalenderzeile (`TE_NUR_KALENDER`), nie die Ivey-Reihe.
 - **NZD:** LCI (*Labour Costs Index YoY*) und PPI (*PPI Output QoQ*) live über
-  TV. **Core CPI hat keine Quelle**: RBNZ sperrt den Runner, Stats NZ rendert
-  per JavaScript, TE nennt keine Messgröße.
+  TV. **Core CPI = Non-tradables CPI** aus der offiziellen Stats-NZ-Datei
+  `…/Download-data/consumers-price-index-<monat>-<jahr>-quarter-tradeables-and-non-tradeables.csv`
+  (Reihe `CPIQ.SE9NS6500`, Indexstand; Vorjahresrate = Index / Index vor
+  4 Quartalen, Termin = NZD-CPI-Release aus TV). Gefunden im Quelltext der
+  JS-gerenderten Releaseseite. Nicht nutzbar: RBNZ (sperrt den Runner), TE
+  (3,20 % ohne Messgröße), OECD „ohne Nahrung/Energie“ (ein Jahr Verzug).
+- **NZD seit Modell 29:** Konsumklima = *ANZ Roy Morgan Consumer Confidence*
+  (nicht mehr Westpac), neu *ANZ Business Confidence* (ohne Prel), *Global
+  Dairy Trade Price Index*, *Terms of Trade QoQ*, *Building Permits MoM*,
+  *Business Inflation Expectations* (Zeile „Inflation Expectations“, die bei
+  USD Michigan ist). Feed-RULES und `js/event-matchers.js` mit demselben Muster.
 
 ## ⚠️ PMI-FEED: TradingView liefert fuer S&P Global/HCOB/Jibun KEINE Actuals
 

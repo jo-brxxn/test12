@@ -91,6 +91,7 @@ const JR_MODELL_NOTIZ={
   26:'new row consumer confidence trend (3 months, Economic Growth): the only growth series that improves the level block in both halves of the backtest',
   27:'trend rows removed from the score (inflation, unemployment and consumer confidence trend over 3 months): the level block keeps inflation vs target, unemployment and wages vs normal',
   28:'rebuild after measuring 2016–2026 (currencies only): level block removed, COT counts against the speculators, 10Y trend replaced by the yield curve (10Y−2Y), 2Y trend + gap capped at ±1.25, jobs report at ±1, consumer confidence at ±0.5, PPI and claims half, PCE/ZEW/EUR GDP/EUR+GBP retail shown only, CAD oil weight 0.5',
+  29:'NZD drivers: ANZ Business Confidence, Global Dairy Trade, terms of trade, building consents and business inflation expectations added; consumer confidence is ANZ-Roy Morgan (monthly) instead of Westpac; core CPI is the non-tradables CPI from Stats NZ; labour cost index and PPI output now live',
 };
 
 // ── Zustand ────────────────────────────────────────────────────────────────

@@ -161,12 +161,13 @@ const IND_EVENT_MATCHERS={
   // FXStreet "UoM Consumer Sentiment") - 0 von 12 gemessenen Michigan-
   // Terminen lagen auf einem Release-Tag der Reihe. Die Next-Spalte zeigte
   // deshalb "2d" (Michigan am 09.10.) statt des CB-Termins.
-  // AUD/NZD: die Westpac-Reihe wie im Feed (nicht ANZ-Roy Morgan); AUD ohne
-  // die "Change"-Zeile, die TradingView zum selben Termin fuehrt (Prozent-
-  // aenderung statt Indexstand).
+  // AUD: die Westpac-Reihe wie im Feed; ohne die "Change"-Zeile, die
+  // TradingView zum selben Termin fuehrt (Prozentaenderung statt Indexstand).
+  // NZD: seit 2026-10-27 ANZ-Roy Morgan (monatlich) statt Westpac - wie im
+  // Feed (Nutzer-Entscheid nach Messung, docs/score-model.md).
   'Consumer Confidence':mkCcyIndMatcher(
     {EUR:/^consumer confidence(\s+flash)?$/,USD:/^(cb )?consumer confidence$|conference board/,
-     AUD:/^westpac consumer (confidence|sentiment)( index)?$/,NZD:/westpac/},
+     AUD:/^westpac consumer (confidence|sentiment)( index)?$/,NZD:/anz roy morgan consumer confidence/},
     [/consumer confidence/,/consumer sentiment/,/consumer climate/]
   ),
   // Umfragen (2026-08-20). ZEW fuehrt der Kalender doppelt - als Eurozone-
@@ -177,7 +178,13 @@ const IND_EVENT_MATCHERS={
   'Ifo Business Climate':(n,c)=>c==='EUR'&&/ifo business climate/.test((n||'').toLowerCase()),
   // Michigan (FF "UoM"), 1 Jahr - wie im Indikator-Feed. Nicht die Cleveland-
   // Fed-Schaetzung und nicht die NY-Fed-Umfrage (eigene Reihen, eigene Tage).
-  'Inflation Expectations':(n,c)=>c==='USD'&&/inflation expectation/.test((n||'').toLowerCase())&&/\buom\b|michigan/.test((n||'').toLowerCase())&&!/5|long/.test((n||'').toLowerCase()),
+  'Inflation Expectations':(n,c)=>c==='USD'?/inflation expectation/.test((n||'').toLowerCase())&&/\buom\b|michigan/.test((n||'').toLowerCase())&&!/5|long/.test((n||'').toLowerCase())
+    :c==='NZD'&&/business inflation expectations/.test((n||'').toLowerCase()),
+  // NZD-Treiber 2026-10-27 - dieselben Titel wie die RULES im Indikator-Feed.
+  'Business Confidence':(n,c)=>c==='NZD'&&/^anz business confidence( final)?$/.test((n||'').toLowerCase().trim()),
+  'GDT Price Index':(n,c)=>c==='NZD'&&/global dairy trade|\bgdt\b/.test((n||'').toLowerCase()),
+  'Terms of Trade':(n,c)=>c==='NZD'&&/terms of trade/.test((n||'').toLowerCase()),
+  'Building Permits':(n,c)=>c==='NZD'&&/building (permits|consents)/.test((n||'').toLowerCase()),
 };
 
 // Nationale Releases unter EUR ("German …", "French …"): die EUR-Indikatoren

@@ -8,6 +8,34 @@ Score - bei Widerspruch zu irgendeiner aelteren Herleitung in
 siehe eigenen Abschnitt weiter unten, sonst vergleicht die Stärke-Note zwei
 verschiedene Rechnungen.
 
+## ⚠️ Stand 2026-10-27 (SCORE_MODEL_VERSION 29): NZD-Treiber
+
+Nutzer-Entscheid nach Messung (NZD-Korb gegen die sieben anderen, `cal_hist`
+2016–2026, Release-Tag = Schluss D−1 bis D+1, Drift = D+1 bis D+6/D+21):
+
+| Zeile | Karte | Wertung | Gemessen | Entscheid |
+|---|---|---|---|---|
+| **Business Confidence** (ANZ, monatlich) | Economic Growth | Step ±0,5 | Release-Tag +11,6 bp (t 2,2), 20 T +39 bp (t 2,5), n 104 | aufgenommen |
+| **Consumer Confidence** = ANZ-Roy Morgan (monatlich) statt Westpac (quartalsweise) | Economic Growth | Step, Deckel ±0,5 wie bisher | ANZ-RM 5 T +15,3 bp (t 2,1), n 110; Westpac Release-Tag −9,6 bp (t −1,3), n 39 | ersetzt |
+| **Core CPI** = Non-tradables CPI (Stats NZ) | Inflation | Step (keine Prognose) | – (vorher ohne Live-Quelle) | live |
+| **GDT Price Index** (2-wöchentlich) | Economic Growth | Step ±0,5 | Release-Tag +6 bp (t 1,7), keine Nachwirkung | **gegen die Messung** aufgenommen |
+| **Terms of Trade** q/q | Economic Growth | Beat/Miss ±1 | t −0,9 | **gegen die Messung** aufgenommen |
+| **Building Permits** m/m (Consents) | Economic Growth | Step ±0,5 | t 0,4 | **gegen die Messung** aufgenommen |
+| **Inflation Expectations** (RBNZ Business, 2 J.) | Inflation | Step ±0,5 | t −1,9 (falsches Vorzeichen) | **gegen die Messung** aufgenommen |
+
+- ⚠ Die vier unteren Zeilen verletzen die Aufnahme-Regel („neue Zeile nur mit
+  Test“). Der Nutzer hat sie trotz Hinweis gewählt (*„Alle in den Score“*).
+  Sie zählen im Divisor mit und verdünnen damit die belegten Zeilen.
+- ⚠ GDT und die bestehende Zeile **Dairy (EMA20)** messen dasselbe Thema
+  (Milchpreis) und zählen derzeit beide voll.
+- Bei der Messung mitgefallen (nicht umgesetzt, nur Beleg): Reihen **ohne
+  Prognose** bewegen den Korb über die **Veränderung** zum Vorwert (27 Reihen,
+  8 Währungen: Release-Tag IC +0,048, t 2,2; 5 T t 2,1), **nicht über das
+  Niveau** gegen 50/100 (Drift t −0,6 bis +0,9) oder gegen das eigene Mittel
+  (≈ 0). Eine Rückkehr-zum-Mittel-Bereinigung verbessert nur den Release-Tag
+  (IC +0,070), nicht die Nachwirkung. NZD Beat/Miss mit Prognose: +19,7 bp am
+  Release-Tag (t 5,9).
+
 ## ⚠️ Stand 2026-10-25 (SCORE_MODEL_VERSION 28): Umbau nach Messung, nur die acht Waehrungen
 
 Nutzer: *„setz bitte alle deine Vorschläge um“* (nach der Recherche „was bewegt

@@ -21016,3 +21016,20 @@ die Folgeentwicklung vorhersagen?
 **Behoben (Wurzel):** Monat je Bar über `Intl.DateTimeFormat` in `meta.exchangeTimezoneName` (die damals gültige Sommer-/Winterzeit). Klasse „still verschwunden“: ein Asset der Proxy-Liste, das ein Lauf nicht rechnen kann, behält seinen letzten Stand; nicht mehr gelistete fallen weg.
 
 **Wächter `check/saisonfeed.js`** (statisch): echter Node-Block mit künstlichen Monats-Bars in London/Berlin/New York/Auckland/UTC-Zeit; 12 Monate je ≥ 8 Jahre, Muster im richtigen Monat (Juli +1 %, Januar −1 %), letzter Stand bei gescheitertem Abruf. Gegenprobe (alte Zuordnung) rot.
+
+## 2026-10-27 — VERSION-CHECK-648: NZD-Treiber, Core CPI aus Stats NZ (Score-Modell 29)
+
+**Nutzer (nach Vorschlag mit Messwerten):** ANZ Business Confidence *aufnehmen*; Konsumklima *ANZ-RM statt Westpac*; Core CPI *„Such besser du wirst bestimmt eine Quelle finden sonst sag wie ich den api key komplett kostenlos bekomme“*; GDT, Terms of Trade, Building Permits, Business Inflation Expectations *„Alle in den Score“* (gegen die Empfehlung — Hinweis stand in der Option).
+
+**Core CPI — Quelle gefunden (Sonden):** RBNZ sperrt den Runner, die Stats-NZ-Releaseseite rendert per JavaScript (63 Zeichen Text), TE 3,20 % ohne Messgröße (passt weder zu Non-tradables 3,3 % noch zu Trimmed Mean 3,0 % / Median 3,1 %), OECD „ohne Nahrung und Energie“ endet bei 2025-Q3. Im **SilverStripe-JSON** der Releaseseite steht aber `DocumentLink …/Download-data/consumers-price-index-september-2026-quarter-tradeables-and-non-tradeables.csv` — frei, ohne Key, Pfad je Quartal vorhersagbar (September/Juni/März 2026 geprüft). Reihe `CPIQ.SE9NS6500` *Non-Tradable All Groups*: Q3 1453, Q2 1438 → +1,0 % q/q, 1453/1406 → **3,3 % y/y** (wie Westpac/ANZ berichten). Neuer Workflow-Schritt *Fetch NZD non-tradables CPI (Stats NZ CSV)*; ohne Datei bleibt der letzte Stand.
+
+**Umgesetzt:**
+- Feed-RULES: NZD Konsumklima ANZ-RM; neu Business Confidence (ohne *Prel*), GDT Price Index, Terms of Trade q/q, Building Permits m/m, Inflation Expectations (Business). `HIST_REGELN` → `2026-10-27b` (Westpac-Punkte fallen beim Neuabruf aus der Historie).
+- App: `NEUE_UMFRAGEN_2026_08` je Reihe mit Währungsliste (Inflation Expectations USD **und** NZD — mit zwei Einträgen hätte der USD-Eintrag die NZD-Zeile bei jedem Laden entfernt und neu angelegt); nachgetragene Zeilen bekommen ihren Anzeigenamen; alter Name *Westpac Consumer Sentiment* wird bei Bestandsgeräten ersetzt (`ANZEIGE_ERSETZT`); Seeds ohne Werte (nur Takt + Quelle), Info-Texte, `js/event-matchers.js`.
+- `SCORE_MODEL_VERSION` 29 + `JR_MODELL_NOTIZ`; `docs/score-model.md` Abschnitt „Modell 29“.
+
+**Gemessen (App, nachgebauter Feed):** NZD-Score **5,47 → 3,34** (Konsumklima 97,6 nach 98,0 bearish statt Westpac bullish; Core CPI 3,3 % nach 3,4 % bearish; Business Confidence 51,9 nach 53,7 bearish; Terms of Trade −9 % vs. −2,2 % bearish; Inflationserwartungen 2,34 % nach 2,53 % bearish; GDT +2,5 % und Consents +5,6 % bullish). USD/EUR/AUD unverändert, keine NZD-Zeile bei anderen Währungen, USD behält Michigan. 0 JS-Fehler.
+
+**⚠ Hinweis an den Nutzer:** GDT und die bestehende Zeile *Dairy (EMA20)* zählen dasselbe Thema doppelt.
+
+**Wächter:** `check/feedregeln.js` A (+12 Titel), E (Stats-NZ-Schritt mit künstlicher CSV; Gegenprobe falsche Reihe rot). Gezielt grün: score, scorenachrechnung, regeln, niveau, modell28, kalender, journal, altgeraet (im Parallellauf einmal Navigations-Abbruch, einzeln 2× grün).
