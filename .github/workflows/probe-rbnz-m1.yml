@@ -1,0 +1,43 @@
+name: Probe RBNZ M1 (prices)
+
+# Einmal-Probe 2026-10-27: liefert die RBNZ-Preistabelle M1 die
+# Non-tradables-Inflation (NZD "Core CPI") und das Sectoral factor model?
+# Gibt Blattnamen, Kopfzeilen und die letzten Zeilen aus - die App liest
+# davon noch nichts. Aus der Entwicklungs-Sandbox ist rbnz.govt.nz gesperrt.
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download M1 candidates
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          i=0
+          for u in \
+            "https://www.rbnz.govt.nz/-/media/project/sites/rbnz/files/statistics/series/m/m1/hm1.xlsx" \
+            "https://www.rbnz.govt.nz/-/media/ReserveBank/Files/Statistics/tables/m1/hm1.xlsx"; do
+            i=$((i+1))
+            curl -sL -A "$UA" "$u" -o "m1_$i.xlsx" || true
+            echo "candidate $i: $(wc -c <"m1_$i.xlsx" 2>/dev/null) bytes, magic: $(head -c 4 "m1_$i.xlsx" 2>/dev/null | od -An -c | tr -s ' ')"
+          done
+      - name: Inspect
+        run: |
+          pip install --quiet openpyxl >/dev/null 2>&1
+          python3 - <<'PY'
+          import glob, openpyxl
+          for f in sorted(glob.glob("m1_*.xlsx")):
+              try:
+                  wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+              except Exception as e:
+                  print(f, "not readable:", e); continue
+              print("==", f, "sheets:", wb.sheetnames)
+              for ws in wb.worksheets:
+                  rows = list(ws.iter_rows(values_only=True))
+                  print("-- sheet", ws.title, "rows", len(rows))
+                  for r in rows[:7]:
+                      print("HEAD", [str(c)[:60] if c is not None else "" for c in r[:40]])
+                  for r in rows[-4:]:
+                      print("LAST", [str(c)[:20] if c is not None else "" for c in r[:40]])
+          PY
