@@ -20902,3 +20902,19 @@ die Folgeentwicklung vorhersagen?
 
 **Wächter `check/zentralbank.js`:** A2 (Knopfzeile darüber, volle Breite, Knopfinhalt mittig, Dachspitze ±2 px, Kopf ≥ 4 px über dem Dach, Architrav, Voluten), D (Erinnerung in den Stufen, Höhe mit/ohne ±1 px). Gegenprobe: Dach unter dem Kopf → DACHSPITZE 36 px rot; höhere rote Stufe → HOEHE 622/610 rot; Knopfzeile unter der Karte → KNOEPFE rot.
 
+## 2026-10-27 — VERSION-CHECK-643: Country profile als Fenster über einen fünften Knopf
+
+**Nutzer:** *„Und in der Zeile mit den Buttons mach da noch einen Button names country profile in die Zeile wenn man den klickt soll sich ein Fenster mit der Karte öffnen das heist entfern die Karte von normalen Bildschirm also mach sie unter der Bank Karte weg“*
+
+**Umgesetzt:**
+- `abQuickZeileHtml`: fünfter Knopf *Country profile* (Globus) nach *All notes*, nur bei den acht Währungen (Non-FX: kein Profil → kein Knopf, Regel 6).
+- `renderDetail`: `countryProfileHtml(c)` entfernt — die Karte steht nicht mehr auf der Seite (die Seite baut eine Karte weniger).
+- Neues Fenster `#mCountryProfile` (`cpFensterAuf()` in `js/profil.js`), Breite wie das Chart-Fenster (`min(1500px,96vw)`), Kopf *Land · Bank* + ⓘ, feste Knopfleiste *Done*; steht im DOM vor `#mCpChart`, damit das Chart-Fenster einer Linie darüber aufgeht. `cpNeuZeichnen` zeichnet nach dem Laden von `country_data.json` im Fenster neu.
+- *Go to Rate Probabilities →* im Profil entfällt (Knopf steht in der Zeile; aus dem Fenster heraus bliebe es offen).
+- Knopfzeile: Beschriftungen brechen um; `minmax(128px,1fr)`; 701–1000 px **3 + 2**, Handy 2 + 2 + 1.
+
+**Gemessen:** 1440 fünf Knöpfe à 258 px, 1180 à 206 px (eine Zeile, *Rate Probabilities* einzeilig), 820 vorher 5 × 134 px mit *Probabilities* über dem Rand → jetzt 3 × 228 + 2 × 346 px, 390 2 + 2 + 1 (306 px); Fenster 1382 × 864 (1440), 1133 × 784 (1180), 354 × 808 (390), Knopfleiste immer sichtbar, kein Quer-Scroll, 0 JS-Fehler.
+- Erster Fensterversuch mit Polsterung 0: Erweitern-Symbol der Mini-Charts (`right:-2px`) 2 px über dem Kartenrand (`check/profil.js` UEBER DEN KARTENRAND bei allen 8) → Polsterung `0 4px`.
+
+**Wächter `check/profil.js`** auf das Fenster umgestellt (Knopf → Fenster → Spalten/Badges/Daten/Linien, keine Karte auf der Seite, kein Knopf bei Non-FX, Chart-Fenster liegt darüber und lässt das Profil offen) + K (Knopfbeschriftungen bei 1440/1180/820/390 im Knopf). Gegenproben: Knopf bei JPY entfernt → rot; Linien-Klick aus → rot; ohne 3 + 2 → KNOPFZEILE 820 px rot.
+

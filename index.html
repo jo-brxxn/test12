@@ -2465,7 +2465,18 @@ body.res-return-active #resBackBar{display:flex}
    geworden waren. So stehen sie am PC in einer Zeile und brechen erst um,
    wenn ein Knopf unter 150px fiele. */
 .ab-qrow{grid-column:1 / -1}
-.ab-qzeile{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ab-qzeile{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px}
+/* fuenf Knoepfe seit 643 (Country profile): lange Namen brechen um statt
+   gekuerzt zu werden ("Rate probabilities ... schreib es untereinander") */
+.ab-qzeile .aql span{white-space:normal;overflow:visible;text-overflow:clip;text-align:center}
+@media (max-width:700px){.ab-qzeile .aql:last-child:nth-child(odd){grid-column:1 / -1}}
+/* 701-1000 px: fuenf Knoepfe in einer Reihe waeren ~134 px schmal und
+   "Probabilities" liefe ueber den Rand (gemessen bei 820 px) -> 3 + 2 */
+@media (min-width:701px) and (max-width:1000px){
+  .ab-qzeile.q5{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .ab-qzeile.q5 .aql{grid-column:span 2}
+  .ab-qzeile.q5 .aql:nth-child(n+4){grid-column:span 3}
+}
 .ab-qzeile .aql{min-height:46px;justify-content:center}
 /* Nutzer 2026-09-28: "Bring die Schrift bei den quicklinks auf die gleiche
    Groesse wie bei den Karten" - Kartentitel-Stufe 17px/700 (--fs-kt), Symbol
@@ -6286,8 +6297,12 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
    Titel 17 px (--fs-kt) > Spaltenkopf 11 px Versal > Text 12/13 px; Werte fett,
    Nebensachen kursiv, Richtung in Bias-Farbe (Nutzer: "viel mit einruecken
    oder kursiv oder fett ... und immer bias farben wo es passt"). */
-.cp-row{grid-column:1 / -1}
 .cp-card{padding:16px 18px 14px}
+/* im Fenster (seit 643): kein Kartenrahmen, die Modal-Polsterung reicht -
+   4 px seitlich bleiben, weil das Erweitern-Symbol der Mini-Charts 2 px
+   ueber deren Ecke steht (.cp-spk-i right:-2px) */
+.cp-card.cp-fenster{padding:0 4px;margin-bottom:12px}
+.cp-fkopf{margin-bottom:12px}
 .cp-hd{margin-bottom:6px}
 .ab-tile-t.cp-t{font:700 var(--fs-kt)/1.2 var(--ff-text);color:var(--t0)}
 .cp-hd-sub{font:600 var(--fs-base)/1.2 var(--ff-text);color:var(--t2);margin-left:auto;min-width:0;text-align:right}
@@ -7014,11 +7029,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-642 - Central bank: volle Breite, die vier Knoepfe wieder als Zeile darueber; Dachspitze auf Hoehe des Kartentitels, die gewonnene Hoehe geht an die Saeulen; Erinnerung nach dem Zinsentscheid als rote Stufe unten."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-643 - Country profile: fuenfter Knopf in der Schnellzugriffszeile oeffnet die Karte als Fenster, auf der Asset-Seite steht sie nicht mehr."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-642</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-643</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -7504,6 +7519,18 @@ window.fxLogoSvg=function(art){
 <!-- MODAL: History -->
 <!-- CHART-FENSTER DES COUNTRY PROFILE (Nutzer 2026-10-25: Linien anklickbar,
      Chart in normaler Groesse, Zeitraum, weitere Charts wie bei Data) -->
+<!-- COUNTRY PROFILE ALS FENSTER (Nutzer 2026-10-27, VERSION-CHECK-643: "in der
+     Zeile mit den Buttons mach da noch einen Button names country profile ...
+     wenn man den klickt soll sich ein Fenster mit der Karte oeffnen"),
+     js/profil.js cpFensterAuf(). Steht VOR #mCpChart: dessen Chart-Fenster
+     oeffnet sich aus diesem heraus und muss darueber liegen. -->
+<div class="ov" id="mCountryProfile" style="display:none">
+  <div class="modal cp-modal" style="max-width:min(1500px,96vw)">
+    <h3><span class="h-ic" data-ic="globe"></span>Country profile</h3>
+    <div id="cpFensterBody"></div>
+    <div class="m-btns"><button class="btn g" onclick="closeM('mCountryProfile')">Done</button></div>
+  </div>
+</div>
 <div class="ov" id="mCpChart" style="display:none">
   <div class="modal m-gross cpf-modal" style="max-width:min(1500px,96vw)">
     <h3 id="mCpChartTitle">Charts</h3>

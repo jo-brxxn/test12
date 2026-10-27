@@ -21,7 +21,6 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 // siehe Kopf von trades.js). Zirkulaerer Import wie bei makro.js.
 import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
-import {countryProfileHtml} from './profil.js';
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 import {makroKartenSchalterHtml,makroReihenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
@@ -11191,7 +11190,10 @@ function abQuickZeileHtml(c){
   }).join('');
   const aufNotes=curSub==='notes';
   const notizKnopf=`<button class="aql${aufNotes?' on':''}" onclick="setSub('${aufNotes?'specific':'notes'}')" title="${aufNotes?'Back to the data view':'All notes and folders of this asset'}">${icn('note',14)}<span>${aufNotes?'Close notes':'All notes'}</span></button>`;
-  return`<div class="ab-qzeile">${links}${notizKnopf}</div>`;
+  // Country profile nur bei den acht Waehrungen (wie die Karte selbst) -
+  // bei Non-FX gaebe es nichts zu oeffnen, der Knopf faellt weg.
+  const cpKnopf=FX.includes(c.id)?`<button class="aql" onclick="cpFensterAuf()" title="Country profile — central bank, economy and what moves ${escH(c.id)}, in a window">${icn('globe',14)}<span>Country profile</span></button>`:'';
+  return`<div class="ab-qzeile${cpKnopf?' q5':''}">${links}${notizKnopf}${cpKnopf}</div>`;
 }
 // Angepinnte Notizen. Bewusst NUR die angepinnten: die vollstaendige Liste
 // steht eine Taste weiter unter "All notes", und eine zweite vollstaendige
@@ -11327,10 +11329,10 @@ function renderAssetBoard(c){
            dadrueber und mach dafuer die central bank Karte maximal breit";
            639-641 standen die Knoepfe als Spalte daneben). */''}
       ${zentralbankKarteHtml(c)}
-      ${/* Country Profile (Nutzer 2026-10-25: "eine neue karte die sich von
-           ganz links nach ganz rechts erstreckt ueber macro ... erstmal nur
-           bei fx") - volle Breite zwischen Schnellzugriffen und MACRO. */''}
-      ${countryProfileHtml(c)}
+      ${/* Country Profile seit 643 nicht mehr auf der Seite, sondern als
+           Fenster ueber den Knopf in der Schnellzugriffszeile (Nutzer
+           2026-10-27: "mach da noch einen Button names country profile in
+           die Zeile ... entfern die Karte vom normalen Bildschirm"). */''}
       ${abReihenTitel('Macro',makroReihenSchalterHtml(c))}
       ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE
            breite Karte mit Reitern (Nutzer 2026-10-21, siehe Kopf von makro.js). */''}

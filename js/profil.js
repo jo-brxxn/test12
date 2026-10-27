@@ -153,7 +153,7 @@ function cpDatenHolen(){
 function cpNeuZeichnen(){
   const el=document.getElementById('cpKarte'),s=getSym();
   if(!el||!s||!FX.includes(s.id))return;
-  const t=document.createElement('template');t.innerHTML=countryProfileHtml(s,true);
+  const t=document.createElement('template');t.innerHTML=countryProfileHtml(s);
   const neu=t.content.firstElementChild;if(neu)el.replaceWith(neu);
 }
 
@@ -606,8 +606,20 @@ function cpfUmschalten(i){
 function cpfZu(){cpfPickerZu();closeM('mCpChart');}
 function cpfWeg(i){cpfListe.splice(i,1);cpfRender();}
 
-// ── Karte ────────────────────────────────────────────────────────────────
-function countryProfileHtml(sym,nurKarte){
+// ── Fenster ──────────────────────────────────────────────────────────────
+// Seit 643 (Nutzer 2026-10-27) steht das Country profile nicht mehr auf der
+// Asset-Seite, sondern oeffnet sich ueber den Knopf in der Schnellzugriffs-
+// zeile in #mCountryProfile. Inhalt wie bisher, Kopf wie im Chart-Fenster:
+// Unterzeile Land · Bank, rechts das ⓘ. Ohne "Go to Rate Probabilities" -
+// derselbe Knopf steht direkt in der Zeile darunter, und ein Sprung aus dem
+// Fenster heraus liesse es ueber der neuen Seite offen.
+function cpFensterAuf(){
+  const s=getSym();if(!s||!FX.includes(s.id)||!CP[s.id])return;
+  const b=document.getElementById('cpFensterBody');if(!b)return;
+  b.innerHTML=countryProfileHtml(s);
+  openM('mCountryProfile');
+}
+function countryProfileHtml(sym){
   if(!sym||!FX.includes(sym.id)||!CP[sym.id])return'';
   const c=CP[sym.id];
   if(!CP_DATA&&!cpFehler)cpDatenHolen();
@@ -619,15 +631,13 @@ function countryProfileHtml(sym,nurKarte){
     '<b>Every line opens as a full chart</b> — change the time range, add more charts of this asset, pick a span with the scissors.',
     '<b>Score:</b> the card itself adds nothing. <i>in score</i> = the score already counts it · <i>shown only</i> = it does not. Coloured values follow the bias colours (<b style="color:'+BC.bull+'">bullish</b> / <b style="color:'+BC.bear+'">bearish</b>).'
   ],'info-b ii-nach');
-  const karte=`<div class="ab-tile cp-card" id="cpKarte">
-    <div class="ab-tile-hd cp-hd"><span class="ab-tile-ic" aria-hidden="true">${icn('globe',18)||''}</span><span class="ab-tile-t cp-t">Country profile</span><span class="cp-hd-sub">${h(c.land)} · ${h(c.bank)}</span>${info}</div>
+  return`<div class="cp-card cp-fenster" id="cpKarte">
+    <div class="data-head cp-fkopf"><div class="data-row"><div class="data-tt"><div class="pg-sub">${h(c.land)} · ${h(c.bank)}</div></div>${info}</div></div>
     <div class="cp-grid">${cpSpalteBank(sym,c,d)}<div class="cp-sep" aria-hidden="true"></div>${cpSpalteWirtschaft(sym,c,d)}<div class="cp-sep" aria-hidden="true"></div>${cpSpalteAbh(sym,c,d)}</div>
     ${cpLaender(c,d)}
-    ${abGoToHtml('rate')}
   </div>`;
-  return nurKarte?karte:`<div class="ab-col cp-row">${karte}</div>`;
 }
 
 export {countryProfileHtml,CP};
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window,{cpfOeffnen,cpfSetRange,cpfSetRangeCustom,cpfPicker,cpfUmschalten,cpfWeg,cpfZu});
+Object.assign(window,{cpFensterAuf,cpfOeffnen,cpfSetRange,cpfSetRangeCustom,cpfPicker,cpfUmschalten,cpfWeg,cpfZu});

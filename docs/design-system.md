@@ -1877,14 +1877,15 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 
 ## Country profile (seit 2026-10-25, `js/profil.js`)
 
-- **Nur Währungen**, eine Karte in voller Breite **direkt über der MACRO-Zeile**. Nicht-FX bekommt sie erst auf ausdrücklichen Wunsch.
+- **Nur Währungen, als Fenster** (seit 643, Nutzer: *„in der Zeile mit den Buttons mach da noch einen Button names country profile … wenn man den klickt soll sich ein Fenster mit der Karte öffnen das heißt entfern die Karte vom normalen Bildschirm“*): fünfter Knopf *Country profile* in der Schnellzugriffszeile (nach *All notes*) öffnet `#mCountryProfile`; auf der Asset-Seite steht die Karte nicht mehr (bis 642: volle Breite über MACRO). Nicht-FX hat den Knopf nicht (nichts zu öffnen). Das Chart-Fenster `#mCpChart` öffnet sich darüber (steht im DOM danach) und lässt das Profil beim Schließen offen.
+- **Knopfzeile mit fünf Knöpfen:** Beschriftung bricht um statt gekürzt zu werden; 701–1000 px **3 + 2** (sonst ~134 px schmal, *Probabilities* lief über den Rand), Handy 2 + 2 + 1 (letzter volle Breite).
 - **Drei Spalten, feste Reihenfolge:** *Central bank* | *Economy* (BIP + Arbeitsmarkt) | *What moves it*. Dazwischen `.cp-sep` (Verlaufslinie), Spaltenkopf `.cp-kopf` = Navy-Großbuchstaben mit Unterstrich. ≤ 980 px untereinander.
 - **Euro:** Leiste *Member states* unter den Spalten (5 → 3 → 2 → 1 Spalte); Stärken `.cp-plus` blau, Schwächen `.cp-minus` rot.
 - **Unter jedem Thema die passenden Indikatoren** der Seite mit Wert + Score-Punkten aus `indZeilenWerte`/`indScore` — nie neu formatieren.
 - **Score-Kennzeichen** an Rohstoffen: *in score ×W* (= `ROHSTOFF_KORB`) oder *shown only*. Die Karte selbst zählt nie.
 - **Feste Fakten tragen Jahr/Quelle** (*„2026: 5.01%“*, *„(DFAT 2025)“*); laufende Werte nur aus Feeds, sonst `.cp-leer` *„No price feed yet …“*.
 - Tempo-Chip: *Fast mover* navy, *Slow mover/Very slow* amber, *Medium* grau.
-- Kopf: Titel · ⓘ ganz rechts (`.ii-nach`), Land · Bank davor rechtsbündig; am Handy Land · Bank in eigener Zeile. Fuß: *Go to Rate Probabilities →*.
+- Kopf (seit 643 im Fenster): Fenstertitel *Country profile*, darunter *Land · Bank* als `.pg-sub` mit ⓘ wie im Chart-Fenster; kein Kartenrahmen (Polsterung 0 4px — das Erweitern-Symbol der Mini-Charts steht 2 px über deren Ecke). Kein *Go to Rate Probabilities* mehr: derselbe Knopf steht in der Zeile, ein Sprung aus dem Fenster ließe es über der neuen Seite offen.
 - Feste Daten im Text mit zweistelligem Jahr: *Mar ’26*, *Jan 15, 15* (typografischer Apostroph).
 - **Kein History-Teil** (Nutzer 2026-10-25 entfernt).
 - **Jede Linie ist anklickbar** (`.cp-spk`, Symbol oben rechts immer sichtbar) → Fenster `#mCpChart` = **die Data-Seite im Fenster** (Nutzer 2026-10-26: *„so aussehen wie bei data auch von der Anordnung“*): Kopf mit Unterzeile + *Charts n/8* rechts, Zeitfilter + Schere darunter rechts, Auswahl als Popover (`.data-picker`, Chips je Gruppe, schließt bei 8), Raster `dataRaster` (1 = ganze Fläche, 2 untereinander, 2×2, 3×2, 4×2) füllt das Fenster, Panel-Kopf `.data-ph` mit Legende + As of. Namen nie gekürzt (schmale Panels lassen die Gruppe weg). Gezeichnet mit `indHistChart`/`rohstoffTrendChartHtml` — nie ein eigener Chart-Typ.

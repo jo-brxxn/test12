@@ -1,11 +1,15 @@
-// ── COUNTRY PROFILE: NUR BEI WAEHRUNGEN, UEBER MACRO, DREI SPALTEN ─────────
+// ── COUNTRY PROFILE: NUR BEI WAEHRUNGEN, ALS FENSTER, DREI SPALTEN ─────────
 //
-// Nutzer 2026-10-25: "eine neue karte die sich von ganz links nach ganz rechts
-// erstreckt ueber macro ... in drei spalten" + "nenn die neue karte country
-// profile und fueg sie erstmal nur bei fx ein" (docs/design-system.md
-// "Country profile"). Hier geprueft:
-//   A) Jede der acht Waehrungen hat die Karte, kein Nicht-FX-Asset.
-//   B) Sie steht direkt ueber der MACRO-Zeile und ist genau so breit wie sie.
+// Nutzer 2026-10-25: "eine neue karte ... in drei spalten" + "nenn die neue
+// karte country profile und fueg sie erstmal nur bei fx ein"; seit
+// 2026-10-27 (VERSION-CHECK-643): "in der Zeile mit den Buttons mach da noch
+// einen Button names country profile ... wenn man den klickt soll sich ein
+// Fenster mit der Karte oeffnen das heist entfern die Karte vom normalen
+// Bildschirm" (docs/design-system.md "Country profile"). Hier geprueft:
+//   A) Jede der acht Waehrungen hat den Knopf "Country profile" in der
+//      Schnellzugriffszeile, er oeffnet #mCountryProfile mit der Karte; kein
+//      Nicht-FX-Asset hat den Knopf.
+//   B) Auf der Asset-Seite selbst steht die Karte nicht mehr.
 //   C) Drei Spalten (Central bank | Economy | What moves it) - bei 1440 px
 //      nebeneinander, bei 390 px untereinander, nie breiter als die Karte.
 //   D) "in score xW" / "shown only" an jedem Rohstoff = ROHSTOFF_KORB (sonst
@@ -23,9 +27,11 @@
 //      ein Zeitfilter fuer alle Panels. Seit 2026-10-26 (Nutzer: "soll das so
 //      aussehen wie bei data auch von der Anordnung"): Raster wie Data (8 =
 //      4x2 ohne Scrollen, 1 = ganze Flaeche), Panel-Kopf .data-ph, Auswahl als
-//      Popover, das bei 8 schliesst, kein Name gekuerzt.
+//      Popover, das bei 8 schliesst, kein Name gekuerzt. Seit 643 oeffnet es
+//      sich ueber dem Country-profile-Fenster und laesst es beim Schliessen
+//      offen.
 //   node check/profil.js [--gegenprobe | --gegenprobe-fenster]
-//     --gegenprobe         Karte bei JPY entfernt          -> A rot
+//     --gegenprobe         Knopf bei JPY entfernt          -> A rot
 //     --gegenprobe-fenster Klick auf eine Linie ausgeschaltet -> G rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
@@ -48,20 +54,21 @@ async function seite(b, breite, ohneDaten) {
   return { p, perr, ctx };
 }
 
+const KNOPF = '#detail .ab-qrow .aql[onclick^="cpFensterAuf"]';
 async function messen(p, id) {
-  await p.evaluate(i => gotoSym(i), id);
+  await p.evaluate(i => { document.querySelectorAll('.ov').forEach(o => { if (o.id && o.style.display !== 'none') closeM(o.id); }); gotoSym(i); }, id);
   await p.waitForTimeout(900);
-  return p.evaluate(gp => {
-    if (gp) { const k = document.getElementById('cpKarte'); if (k && getSym().id === 'JPY') k.closest('.cp-row').remove(); }
-    const k = document.getElementById('cpKarte');
-    const makro = [...document.querySelectorAll('#detail .ab-rtitel')].find(e => /^Macro/i.test(e.textContent.trim()));
-    const o = { da: !!k, makro: !!makro };
-    if (!k) return o;
-    const r = k.getBoundingClientRect(), m = makro ? makro.getBoundingClientRect() : null;
-    o.karte = { x: Math.round(r.left), w: Math.round(r.width), unten: Math.round(r.bottom) };
-    if (m) o.mk = { x: Math.round(m.left), w: Math.round(m.width), oben: Math.round(m.top) };
-    // Zwischen Karte und MACRO-Titel darf keine andere Karte stehen.
-    o.direkt = !!makro && k.closest('.cp-row') && k.closest('.cp-row').nextElementSibling === makro;
+  const vorab = await p.evaluate(([gp, sel]) => {
+    if (gp && getSym().id === 'JPY') { const b = document.querySelector(sel); if (b) b.remove(); }
+    return { knopf: !!document.querySelector(sel), seite: [...document.querySelectorAll('#cpKarte,.cp-card')].filter(k => !k.closest('.ov')).length };
+  }, [GEGENPROBE, KNOPF]);
+  if (!vorab.knopf) return vorab;
+  await p.click(KNOPF); await p.waitForTimeout(700);
+  return p.evaluate(v => {
+    const m = document.getElementById('mCountryProfile'), k = document.getElementById('cpKarte');
+    const o = { ...v, offen: !!m && m.style.display !== 'none', da: !!k && !!k.closest('#mCountryProfile') };
+    if (!o.offen || !o.da) return o;
+    const r = k.getBoundingClientRect();
     o.spalten = [...k.querySelectorAll('.cp-grid > .cp-col')].map(s => { const b = s.getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top), r: Math.round(b.right), kopf: (s.querySelector('.cp-kopf') || {}).textContent || '' }; });
     o.breiter = [...k.querySelectorAll('*')].filter(e => { const b = e.getBoundingClientRect(); return b.width && (b.right > r.right + 1 || b.left < r.left - 1); }).slice(0, 3).map(e => e.className || e.tagName);
     o.roh = [...k.querySelectorAll('.cp-roh')].map(e => ({ n: (e.querySelector('.cp-roh-k b') || {}).textContent || '', badge: (e.querySelector('.cp-roh-s') || {}).textContent || '' }));
@@ -75,7 +82,7 @@ async function messen(p, id) {
     const tw = document.createTreeWalker(k, NodeFilter.SHOW_TEXT); o.datum = [];
     for (let n = tw.nextNode(); n; n = tw.nextNode()) if (re.test(n.nodeValue || '')) o.datum.push(n.nodeValue.trim().slice(0, 60));
     return o;
-  }, GEGENPROBE);
+  }, vorab);
 }
 
 (async () => {
@@ -86,11 +93,9 @@ async function messen(p, id) {
   if (!KORB) fail('TESTAUFBAU', 'ROHSTOFF_KORB nicht in der window-Bruecke');
   for (const id of FX) {
     const o = await messen(p, id);
-    if (!o.da) { fail('KARTE FEHLT', id); continue; }
-    if (!o.makro) { fail('MACRO-ZEILE FEHLT', id); continue; }
-    if (!o.direkt) fail('NICHT DIREKT UEBER MACRO', id);
-    if (o.karte.unten > o.mk.oben) fail('UEBERLAPPT MACRO', `${id}: Karte bis ${o.karte.unten}, Macro ab ${o.mk.oben}`);
-    if (Math.abs(o.karte.x - o.mk.x) > 2 || Math.abs(o.karte.w - o.mk.w) > 2) fail('NICHT VOLLE BREITE', `${id}: Karte x${o.karte.x} b${o.karte.w}, Macro-Zeile x${o.mk.x} b${o.mk.w}`);
+    if (o.seite) fail('NOCH AUF DER SEITE', `${id}: ${o.seite} Karte(n) ausserhalb eines Fensters`);
+    if (!o.knopf) { fail('KNOPF FEHLT', `${id}: kein "Country profile" in der Schnellzugriffszeile`); continue; }
+    if (!o.offen || !o.da) { fail('FENSTER FEHLT', `${id}: Knopf oeffnet kein Fenster mit der Karte`); continue; }
     const soll = ['Central bank', 'Economy', 'What moves it'];
     if (o.spalten.length !== 3 || soll.some((t, i) => !new RegExp(t, 'i').test(o.spalten[i].kopf))) fail('SPALTEN', `${id}: ${o.spalten.map(s => s.kopf.trim()).join(' | ') || 'keine'}`);
     else if (!(o.spalten[0].r <= o.spalten[1].x && o.spalten[1].r <= o.spalten[2].x && Math.abs(o.spalten[0].y - o.spalten[2].y) < 4)) fail('NICHT NEBENEINANDER (1440)', id);
@@ -107,14 +112,15 @@ async function messen(p, id) {
     });
   }
   for (const id of NICHT_FX) {
-    const da = await p.evaluate(i => { if (!syms.find(s => s.id === i)) return null; gotoSym(i); return true; }, id);
+    const da = await p.evaluate(i => { if (!syms.find(s => s.id === i)) return null; document.querySelectorAll('.ov').forEach(o => { if (o.id && o.style.display !== 'none') closeM(o.id); }); gotoSym(i); return true; }, id);
     if (da == null) continue;
     await p.waitForTimeout(700);
-    if (await p.$('#cpKarte')) fail('KARTE BEI NICHT-FX', id);
+    const r = await p.evaluate(sel => ({ knopf: !!document.querySelector(sel), karte: [...document.querySelectorAll('#cpKarte,.cp-card')].some(k => !k.closest('.ov')) }), KNOPF);
+    if (r.knopf) fail('KNOPF BEI NICHT-FX', id);
+    if (r.karte) fail('KARTE BEI NICHT-FX', id);
   }
-  // G) Chart-Fenster: echte Klicks
-  await p.evaluate(gp => { gotoSym('EUR'); if (gp) document.querySelectorAll('#cpKarte .cp-spk').forEach(e => e.removeAttribute('onclick')); }, GP_FENSTER);
-  await p.waitForTimeout(900);
+  // G) Chart-Fenster: echte Klicks aus dem Country-profile-Fenster heraus
+  await messen(p, 'EUR');
   if (GP_FENSTER) await p.evaluate(() => document.querySelectorAll('#cpKarte .cp-spk').forEach(e => e.removeAttribute('onclick')));
   const spk = await p.$('#cpKarte .cp-spk');
   if (!spk) fail('FENSTER', 'EUR: keine anklickbare Linie');
@@ -124,6 +130,9 @@ async function messen(p, id) {
       const m = document.getElementById('mCpChart'), body = document.getElementById('cpfBody');
       const o = { offen: !!m && m.style.display !== 'none' };
       if (!o.offen) return o;
+      // ueber dem Country-profile-Fenster, nicht darunter
+      const mr = m.querySelector('.modal').getBoundingClientRect(), oben = document.elementFromPoint(mr.left + mr.width / 2, mr.top + 20);
+      o.oben = !!oben && !!oben.closest('#mCpChart');
       const svg = body.querySelector('.cpf-pc svg'), bw = body.getBoundingClientRect().width;
       o.panels = body.querySelectorAll('.cpf-panel').length;
       o.breite = svg ? Math.round(svg.getBoundingClientRect().width / bw * 100) : 0;
@@ -134,6 +143,7 @@ async function messen(p, id) {
     });
     if (!f.offen) fail('FENSTER', 'Klick auf die Linie oeffnet kein Fenster');
     else {
+      if (!f.oben) fail('FENSTER', 'Chart-Fenster liegt unter dem Country-profile-Fenster');
       if (f.panels !== 1) fail('FENSTER', `${f.panels} Panels statt 1 nach dem Klick`);
       if (f.breite < 85) fail('FENSTER', `Chart nur ${f.breite} % der Fensterbreite - nicht "normale Groesse"`);
       if (f.hoehe < 400) fail('FENSTER', `ein Chart nur ${f.hoehe} px hoch - wie bei Data soll er die Flaeche fuellen`);
@@ -161,10 +171,24 @@ async function messen(p, id) {
       const r1 = await p.evaluate(() => (document.querySelector('#cpfBody .ind-hist-range-btn.on:not(.br-sch)') || {}).textContent);
       if (r1 !== '1Y') fail('FENSTER', `Zeitfilter reagiert nicht (steht auf ${r1})`);
       await p.evaluate(() => closeM('mCpChart'));
+      const cpOffen = await p.evaluate(() => document.getElementById('mCountryProfile').style.display !== 'none');
+      if (!cpOffen) fail('FENSTER', 'Schliessen des Chart-Fensters schliesst auch das Country profile');
     }
   }
   perr.forEach(x => fail('JS-FEHLER (1440)', x));
   await ctx.close();
+
+  // K) Schnellzugriffszeile mit fuenf Knoepfen: jede Beschriftung bleibt in
+  // ihrem Knopf (bei 820 px lief "Probabilities" ueber den Rand, bevor die
+  // Zeile dort 3 + 2 wurde).
+  for (const breite of [1440, 1180, 820, 390]) {
+    const k = await seite(b, breite, false);
+    await k.p.evaluate(() => gotoSym('EUR')); await k.p.waitForTimeout(800);
+    const raus = await k.p.evaluate(() => [...document.querySelectorAll('#detail .ab-qrow .aql')].flatMap(btn => { const r = btn.getBoundingClientRect();
+      return [...btn.children].filter(c => { const q = c.getBoundingClientRect(); return q.width && (q.right > r.right - 2 || q.left < r.left + 2 || c.scrollWidth > c.clientWidth + 1); }).map(() => btn.textContent.trim()); }));
+    raus.forEach(t => fail('KNOPFZEILE', `${breite} px: "${t}" passt nicht in seinen Knopf`));
+    await k.ctx.close();
+  }
 
   // C) Handy: Spalten untereinander, nichts ueber den Rand. E) ohne country_data.json.
   const h = await seite(b, 390, true);
@@ -180,5 +204,5 @@ async function messen(p, id) {
   if (GP_FENSTER) { const r = F.some(x => /^FENSTER/.test(x)); console.log(r ? `profil --gegenprobe-fenster: ok (rot wie erwartet, ${F.length} Befund(e))` : 'profil --gegenprobe-fenster: FEHLER - Waechter bleibt gruen'); process.exit(r ? 0 : 1); }
   if (GEGENPROBE) { if (F.length) { console.log(`profil --gegenprobe: ok (rot wie erwartet, ${F.length} Befund(e))`); process.exit(0); } console.log('profil --gegenprobe: FEHLER - Waechter bleibt gruen'); process.exit(1); }
   if (F.length) { console.log(`profil: ${F.length} Befund(e)`); F.forEach(f => console.log('  ' + f)); process.exit(1); }
-  console.log(`profil: ok (Country profile bei allen ${FX.length} Waehrungen direkt ueber Macro in voller Breite, drei Spalten, Rohstoff-Badges = ROHSTOFF_KORB, nicht bei Nicht-FX, kein History-Teil, jede Linie oeffnet das Chart-Fenster (volle Flaeche, Y-Achse, Zeitfilter + Schere, Auswahl bis 8, Raster wie Data 4x2, Namen ungekuerzt), Handy ohne country_data.json fehlerfrei)`);
+  console.log(`profil: ok (Country profile bei allen ${FX.length} Waehrungen als Fenster ueber den Knopf in der Schnellzugriffszeile, nicht mehr auf der Seite, drei Spalten, Rohstoff-Badges = ROHSTOFF_KORB, kein Knopf bei Nicht-FX, kein History-Teil, jede Linie oeffnet das Chart-Fenster darueber (volle Flaeche, Y-Achse, Zeitfilter + Schere, Auswahl bis 8, Raster wie Data 4x2, Namen ungekuerzt), Handy ohne country_data.json fehlerfrei)`);
 })().catch(e => { console.log('profil: ABBRUCH ' + e.message); process.exit(1); });
