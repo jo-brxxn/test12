@@ -245,12 +245,15 @@ function zbNeuZeichnen(){
 // Ein Neuzeichnen (auch das ganze Asset-Seite durch einen Feed) darf einen
 // gerade getippten Text nicht aus dem Feld werfen: Entwurf steht im Feld (aus
 // _zbEntwurf), Fokus und Cursor kommen zurueck.
+// ⚠ focus({preventScroll:true}): ein normales focus() scrollt das Feld ins
+// Bild - wurde die Seite woanders neu gezeichnet (Preis-Chart umgeschaltet),
+// sprang sie zur Karte (check/scrollhalt.js, GOLD 2399 -> 1142 px, 2026-10-27).
 function zbNachRender(){
-  if(_zbEdit){const e=document.getElementById('zbEd-'+_zbEdit);if(e&&document.activeElement!==e){e.focus();const l=e.value.length;try{e.setSelectionRange(l,l);}catch(x){}}return;}
+  if(_zbEdit){const e=document.getElementById('zbEd-'+_zbEdit);if(e&&document.activeElement!==e){e.focus({preventScroll:true});const l=e.value.length;try{e.setSelectionRange(l,l);}catch(x){}}return;}
   if(!_zbFokus)return;
   const el=document.getElementById('zbIn-'+_zbFokus.k);
   if(!el||document.activeElement===el)return;
-  el.focus();
+  el.focus({preventScroll:true});
   try{el.setSelectionRange(_zbFokus.a,_zbFokus.e);}catch(x){}
 }
 
