@@ -21051,3 +21051,43 @@ die Folgeentwicklung vorhersagen?
 **Folge:** die ±0,5-Saisonalitäts-Zeile der acht Währungen rechnet ab dem nächsten Feed-Lauf mit dem Korb statt dem ETF; USYIELD (und ETH, wo angelegt) bekommen eine Saisonalitäts-Zeile.
 
 **Nachtrag (Live-Kontrolle nach dem ersten Lauf):** in der NZD-Konsumklima-Historie blieb **ein** Westpac-Punkt stehen (20.09.2015, 106). Gemessen: er lag genau 4055 Tage zurück = Grenze der Abruf-Häppchen 65/66; der 1-Tag-Rand an **jedem** Fenster nahm Grenztage aus beiden heraus. Fix: angrenzende Fenster erst zusammenlegen, Rand nur an den Außenkanten; `HIST_REGELN` → `2026-10-27c` (einmal neu abrufen). Wächter `feedregeln` D: Punkt auf der Grenze `tv_wide`/`tv_hist_0` muss weg (vorheriger Stand: rot).
+
+## 2026-10-28 — VERSION-CHECK-650: Gelöschtes kommt nicht mehr zurück, voller Speicher lässt nichts zurückspringen
+
+**Nutzer:** *„Fast immer nach fast jeder Änderung die du machst ist es so das wenn man Sachen umschaltet oder löscht das sie wenige Sekunden später einfach wieder erscheinen oder zurückspringen zB wenn ich eine Notiz in der Bank Karte lösche kommt sie direkt wieder zurück … find die Lösung die auch das in der Zukunft vermeidet schau dir auch an wie das in der Vergangenheit immer passiert ist“*
+
+### Ursache 1 — Löschen ohne Lösch-Marker (reproduziert, zwei Geräte + zwei Tabs)
+
+- **Messung vorher** (`check/geloescht.js`, nachgestellte Cloud): Bank-Notiz auf A gelöscht → A pusht, findet die Cloud verändert (B hatte inzwischen hochgeladen), zieht → **Notiz auf A sofort wieder da**, A lädt sie selbst wieder hoch. Ebenso: Notiz im Fenster, Ordner samt Notiz, Wiederherstellen (Eintrag stand wieder im Papierkorb), endgültig Löschen, Undo eines Anlegens/Löschens — **13 Befunde** auf A, B, Cloud. Zwei Tabs ohne Cloud: dasselbe.
+- **Mechanismus:** `research.notes`/`researchFolders`/`research.trash` wurden bei jedem passiven Abgleich **vereinigt** (`applySnap` bei `'sync'`, Speichern gegen die Platte in `save()`, Zurückschreiben in `cloudPull`). Ohne Lösch-Marker bringt jede Kopie (Cloud, zweites Gerät, zweiter Tab, Platte) Gelöschtes zurück. In `cloudPull` lieferte `syncMerge3` sogar das richtige Ergebnis (lokal gelöscht bleibt weg) — die zweite Vereinigung in `applySnap(zusammen)` holte die Notiz aus dem Zwischenstand wieder. Der Kommentar an `mergeResearchNotes` nannte das seit 09-01 einen *„bewussten Kompromiss“*.
+- **Warum „nach fast jeder Änderung von dir“:** nach jeder Auslieferung lädt jedes offene Gerät neu (`appVeraltet`, Neuladen) und gleicht ab — jeder Abgleich mit einem Gerät, das die Notiz noch hat, bringt sie zurück.
+
+**Behoben (Wurzel):**
+- `research.geloescht` = `{'n:'|'f:'|'t:'<id>: ISO}`; **eine** Stelle hält fest: `geloeschtFesthalten()` in `snap()` vergleicht mit dem zuletzt bekannten Stand (fehlt → Marker; kommt mit Marker wieder → neuer `up`; geändert ohne `up` → neuer `up`). Neue Lösch-/Bearbeitungsfunktionen brauchen keine eigene Zeile.
+- Vereinigung nur noch über `researchVereinen()` (Marker beider Seiten, jüngster gewinnt; raus fällt, was nach seinem letzten `up` gelöscht wurde). `applySnap` als Hülle: vorher festhalten, während des Ersetzens nicht, nach `'sync'` neuer Vergleichsstand. Ordner jetzt ebenfalls „jüngere Fassung gewinnt“.
+- Sicherheitsnetz: verschwindet eine Notiz nur über den Vergleich (Undo eines Anlegens, Import), landet sie zusätzlich im Papierkorb.
+- Kosten gemessen: `snap()` 10,2 ms bei 501 eigenen Notizen, davon 1,0 ms Festhalten.
+
+### Ursache 2 — Abgleich-Basis passt auf dem iPad nicht mehr in den Speicher (reproduziert)
+
+- **Messung:** frisches Profil = **4,67 Mio. Zeichen** lokal, davon **3,23 Mio. die 5 automatischen Sicherungen** (je ein voller Stand, *Before cloud download* bei jedem Abgleich). iPad-Kontingent nachgestellt (5 MB ≈ 2,6 Mio. Zeichen, alter Wert zählt beim Überschreiben mit): `fxpro_sync_basis` (646 K) scheiterte bei **jedem** Abgleich und wurde gelöscht. Offene Eingabe + Neuladen (iOS verwirft Tab, Neuladen nach Auslieferung) → Upload **ohne** Abgleich → die Umstellung von Gerät B (`B-spaeter`) war in der Cloud und auf B weg (`Risk Sentiment`). Ohne Kontingent: beides blieb.
+- **Behoben:** `schreibeMitPlatz()` — Basis geht vor Sicherungen, COT- und Score-Verlaufs-Cache (nie das Score-Journal). Zurückschreiben nach dem Pull über `schreibeSnapshot` (Leiter + Leiste statt rohem `setItem`, das den Abgleich still mittendrin abbrach). `save()` setzt `fxpro_user_pending` nach erfolgreichem Schreiben erneut (die kleine Markierung scheiterte vorher bei vollem Speicher still → offene Eingabe galt nach Neuladen als erledigt).
+
+### Wie das in der Vergangenheit passiert ist (dieselbe Familie)
+
+| Datum | Symptom | Geflickte Schicht | Was offen blieb |
+|---|---|---|---|
+| 07-07, 07-26/27, 08-06 | Hide-Button, Farbe, Tab-Stapel, PIN springen zurück | `prefPending` je Feld | Kernzustand ungeschützt |
+| 09-01 | Notizen weg (zwei Tabs) | Vereinigung + `navigator.locks` | Löschen ausdrücklich nicht synchron („Kompromiss“) |
+| 09-30 (586) | Buttons springen zurück | Drei-Wege-Abgleich, Warteschlange | Vereinigung danach überstimmt den Abgleich |
+| 10-21 (619) | Charts → Table | alte App-Stände, Basis über Neuladen | Basis scheitert bei vollem Speicher still |
+| **10-28 (650)** | **Gelöschtes kommt zurück** | **Lösch-Marker an einer Stelle, Basis vor Sicherungen** | — |
+
+Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter prüfte **Löschen über zwei Geräte/Tabs** (`zurueck.js` lässt Lösch-/Papierkorb-/Notiz-Klicks bewusst aus, `notizen.js` prüft ein Gerät) oder ein **Speicher-Kontingent**.
+
+### Wächter
+- `check/geloescht.js` A (zwei Geräte, mehrere Abgleich-Runden, Soll auf A/B/Cloud), B (zwei Tabs), C (Stempel), D (statisch: `mergeResearch*` nur in `researchVereinen`). Vorher **13 Befunde**; `--gegenprobe` 9, `--gegenprobe-stempel` 2 — beide rot.
+- `check/speichervoll.js` (iPad-Kontingent): Basis auf der Platte, Score-Journal unangetastet, beide Umstellungen bleiben. `--gegenprobe` (rohes `setItem`) 4 Befunde rot.
+- Gezielt grün: `zurueck`, `altgeraet`, `notizen`, `zentralbank`, `trades`.
+
+**Offen (Vorschlag an den Nutzer, nicht umgesetzt):** (1) Automatische Sicherungen höchstens einmal je Stunde statt bei jedem Abgleich — die 5 Plätze rotieren heute binnen Minuten (kaum Schutz) und belegen 69 % des Speichers. (2) Der Abgleich legt selbst einen Undo-Punkt an: Undo direkt nach einem Hintergrund-Abgleich nimmt den Abgleich zurück, nicht die eigene letzte Aktion.

@@ -64,7 +64,9 @@ passenden Datei (oder `docs/CHANGELOG.md`) nachschlagen, nicht raten.
 1. **Persistenter State → Cross-Device-Sync, nie nur `localStorage`.** Jeder
    neue Zustand, den ein Nutzer ändern kann und der erhalten bleiben soll,
    MUSS geräteübergreifend synchronisiert werden. Muster + gebundene Felder:
-   `docs/state-sync.md`.
+   `docs/state-sync.md`. Wird eine Liste beim Abgleich **vereinigt** statt
+   ersetzt, braucht sie **Lösch-Marker** — sonst kommt Gelöschtes zurück
+   (2026-10-28, `research.geloescht`, `check/geloescht.js`).
 2. **Vor Code-/Design-Änderungen erst das OK des Nutzers einholen.** 95%
    sicher sein, dass die Anfrage vollständig verstanden ist — bei
    Design-/Geschmacksentscheidungen ausdrücklich eingeschlossen. Sonst per

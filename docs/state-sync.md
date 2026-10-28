@@ -163,6 +163,18 @@ Fix, zwei Ebenen:
 
 Details/Reproduktionsmethode: `docs/CHANGELOG.md`, Einträge vom 2026-09-01.
 
+### ⚠ Löschen über Geräte und Tabs: Lösch-Marker (seit 2026-10-28, VERSION-CHECK-650)
+
+*Anlass:* *„wenn ich eine Notiz in der Bank Karte lösche kommt sie direkt wieder zurück"*. Gemessen (`check/geloescht.js`): die Vereinigung oben hatte **keine Lösch-Marker** — der Kommentar nannte das einen „bewussten Kompromiss". Jede Kopie (Cloud, zweites Gerät, zweiter Tab, Platte) brachte Gelöschtes zurück; die zweite Vereinigung in `applySnap` überstimmte sogar das richtige Ergebnis von `syncMerge3`.
+
+- **`research.geloescht`** = `{'n:<Notiz>'|'f:<Ordner>'|'t:<Papierkorb-Eintrag>': ISO-Zeit}`, reist in `research` mit (`snap()`, Cloud).
+- **Festhalten an EINER Stelle:** `geloeschtFesthalten()` in `snap()` vergleicht mit dem zuletzt bekannten Stand. Fehlt etwas → Marker. Kommt etwas mit Marker wieder (Papierkorb, Undo, Import, Backup) → neuer Stempel `up`. Geändert ohne neuen `up` → neuer `up`. **Neue Lösch-/Bearbeitungsfunktionen brauchen keine eigene Zeile.**
+- **Vereinigen nur über `researchVereinen()`** (`applySnap` bei `'sync'`, `researchMitPlatte()` in `save()`/`cloudPull`). Marker beider Seiten, jüngster gewinnt; raus fällt, was nach seinem letzten `up` gelöscht wurde. Später anderswo bearbeitet → bleibt. Seed-Notizen ausgenommen (`seedNoteFlags`).
+- **Vergleichsstand:** nach einem passiven Abgleich (`'sync'`) neu gesetzt; nach Undo/Redo/Import/Backup bewusst nicht → deren Löschen/Wiederholen zählt als eigene Änderung.
+- **Notiz, die nur über den Vergleich verschwindet** (Undo eines Anlegens, Import) → zusätzlich in den Papierkorb (`grund:'auto'`).
+- Marker leben `GELOESCHT_TTL_MS` (1 Jahr).
+- **Regel:** wird eine neue Liste beim Abgleich *vereinigt* statt ersetzt, braucht sie Lösch-Marker — sonst kommt Gelöschtes zurück. Wächter `check/geloescht.js` D meldet jeden direkten `mergeResearch*`-Aufruf außerhalb von `researchVereinen()`.
+
 ## Drei-Wege-Abgleich, Warteschlange, Zähler (seit 2026-09-30) — nichts springt zurück
 
 Nutzer: *„wenn ich ein paar button drücke … kommt auf einmal ein Moment und dann
@@ -204,6 +216,7 @@ der Eingabe mit allem durch, was dort gespeichert wird.
 - **Zurücksetzen nie per `delete`** eines dort gelisteten Schlüssels — `null` bzw. `{}` schreiben, sonst wirkt das Zurücksetzen auf anderen Geräten nicht.
 - **`APP_VER`** (= VERSION-CHECK-Nummer) reist mit jedem Upload (`appVer`). Höhere Nummer in der Cloud bzw. in `fxpro_app_ver` → diese App lädt nicht hoch, lädt neu (mit offener Eingabe: Hinweis *Reload*).
 - **Basis überlebt Neuladen:** `fxpro_sync_basis` = {seen, Stand}; gilt nur, wenn `seen` = `fxpro_cloud_seen`.
+- **Basis geht vor Sicherungen (seit 2026-10-28):** `basisSetzen` schreibt über `schreibeMitPlatz()` — bei vollem Speicher weichen erst lokale Sicherungen, COT- und Score-Verlaufs-Cache (nie das Score-Journal). Gemessen mit iPad-Kontingent (~2,6 Mio. Zeichen): vorher scheiterte die Basis bei jedem Abgleich, nach Neuladen mit offener Eingabe lud die App blind hoch, die Umstellung des anderen Geräts sprang zurück. Das Zurückschreiben nach einem Pull läuft über `schreibeSnapshot` (Rettungs-Leiter + Leiste) statt rohem `setItem`; `save()` setzt `fxpro_user_pending` nach erfolgreichem Schreiben erneut. Wächter `check/speichervoll.js`.
 - **Gescheiterte Vorab-Prüfung (CHK) → kein Upload.** Vorher lud die App dann blind hoch.
 - Wächter: `check/altgeraet.js` (Gegenprobe `--gegenprobe`).
 

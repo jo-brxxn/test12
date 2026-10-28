@@ -4829,6 +4829,99 @@ function mergeResearchTrash(base,override){
   (override||[]).forEach(t=>{if(t&&t.id)map.set(t.id,t);});
   return Array.from(map.values());
 }
+// ══ LOESCH-MARKER (2026-10-28, VERSION-CHECK-650) ═══════════════════════
+// Nutzer: "wenn man Sachen umschaltet oder loescht das sie wenige Sekunden
+// spaeter einfach wieder erscheinen ... zB wenn ich eine Notiz in der Bank
+// Karte loesche kommt sie direkt wieder zurueck".
+// GEMESSEN (check/geloescht.js, zwei Geraete + zwei Tabs): Notizen, Ordner
+// und Papierkorb wurden bei JEDEM passiven Abgleich vereinigt (Cloud, anderer
+// Tab, Speichern gegen die Platte) - ohne Loesch-Marker. Jede Kopie irgendwo
+// brachte eine Loeschung zurueck; selbst das richtige Ergebnis des
+// Drei-Wege-Abgleichs (syncMerge3) ueberstimmte die zweite Vereinigung in
+// applySnap wieder. Bank-Notiz, Notiz, Ordner, Wiederherstellen, endgueltig
+// Loeschen, Undo: alles kam auf beiden Geraeten und in der Cloud zurueck.
+//
+// research.geloescht = {'n:<Notiz>'|'f:<Ordner>'|'t:<Papierkorb>': ISO-Zeit}
+// - FESTGEHALTEN AN EINER STELLE: geloeschtFesthalten() vergleicht mit dem
+//   zuletzt bekannten Stand; laeuft in snap(), also vor jedem Speichern,
+//   Hochladen und Undo-Punkt. Fehlt etwas -> Marker. Kommt etwas mit Marker
+//   wieder (Papierkorb, Undo, Import) -> neuer Stempel (up). Geaendert, ohne
+//   dass die Funktion up gesetzt hat (z. B. Reihenfolge) -> neuer Stempel.
+//   Eine NEUE Loesch- oder Bearbeitungsfunktion braucht deshalb keine Zeile.
+// - VEREINIGT wird nur ueber researchVereinen() (check/geloescht.js D):
+//   Marker beider Seiten (juengster gewinnt), danach faellt jeder Eintrag
+//   raus, dessen Loeschung juenger ist als seine letzte Aenderung. Wird eine
+//   Notiz anderswo NACH dem Loeschen bearbeitet, bleibt sie.
+// - Eine Notiz, die nur ueber den Vergleich verschwindet (Undo eines
+//   Anlegens, Import, Backup), landet zusaetzlich im Papierkorb - eine Notiz
+//   ist der einzige Inhalt, den niemand wiederherstellen kann.
+// - Marker leben GELOESCHT_TTL_MS; ein Geraet, das laenger offline war, kann
+//   danach Altes zurueckbringen.
+const GELOESCHT_TTL_MS=365*86400000;
+let _gelStand=null,_gelRuhe=false;
+// Spaeter als jetzt UND als iso - gegen abweichende Geraete-Uhren.
+function nachIso(iso){const t=Date.parse(iso||''),j=Date.now();return new Date(isFinite(t)&&t>=j?t+1:j).toISOString();}
+function gelStempel(x){return String(x&&(x.up||x.delAt)||'');}
+function geloeschtVereinen(a,b){
+  const out={},grenze=new Date(Date.now()-GELOESCHT_TTL_MS).toISOString();
+  [a,b].forEach(g=>{if(g&&typeof g==='object')Object.keys(g).forEach(k=>{const v=g[k];if(typeof v==='string'&&v>=grenze&&(!out[k]||v>out[k]))out[k]=v;});});
+  return out;
+}
+function ohneGeloeschte(liste,p,g){
+  if(!Array.isArray(liste))return[];
+  return liste.filter(x=>{if(!x||x.id==null||(p==='n:'&&x.seed))return true;const w=g[p+x.id];return !w||gelStempel(x)>w;});
+}
+function researchTeile(r,folders){return{notes:r&&Array.isArray(r.notes)?r.notes:[],folders:Array.isArray(folders)?folders:[],trash:r&&Array.isArray(r.trash)?r.trash:[],geloescht:r&&r.geloescht};}
+// a = fremder/aelterer Stand, b = Stand mit Vorrang bei gleichem Stempel.
+function researchVereinen(a,b){
+  const g=geloeschtVereinen(a.geloescht,b.geloescht);
+  return{geloescht:g,
+    notes:ohneGeloeschte(mergeResearchNotes(a.notes,b.notes),'n:',g),
+    folders:ohneGeloeschte(mergeResearchFolders(a.folders,b.folders),'f:',g),
+    trash:ohneGeloeschte(mergeResearchTrash(a.trash,b.trash),'t:',g)};
+}
+// Gespeicherten Stand (Platte) in den laufenden einmischen; der laufende
+// hat bei gleichem Stempel Vorrang.
+function researchMitPlatte(platte){
+  if(!platte)return;
+  geloeschtFesthalten();
+  const z=researchVereinen(researchTeile(platte.research,platte.researchFolders),researchTeile(research,researchFolders));
+  research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;
+  gelStandSetzen();
+}
+function gelListen(){
+  return[['n:',(research&&Array.isArray(research.notes)?research.notes:[]).filter(n=>n&&!n.seed)],
+    ['f:',Array.isArray(researchFolders)?researchFolders:[]],
+    ['t:',research&&Array.isArray(research.trash)?research.trash:[]]];
+}
+function geloeschtFesthalten(nurStand){
+  if(!research||(_gelRuhe&&!nurStand))return;
+  const alt=nurStand?null:_gelStand;
+  if(!research.geloescht||typeof research.geloescht!=='object'||Array.isArray(research.geloescht))research.geloescht={};
+  const g=research.geloescht,neu={};
+  gelListen().forEach(([p,l])=>{
+    const vorher=alt&&(alt[p]||new Map()),m=new Map();
+    l.forEach(x=>{
+      if(!x||x.id==null)return;
+      const id=String(x.id);let s=p==='t:'?'':JSON.stringify(x);
+      const a=vorher&&vorher.get(id);
+      if(vorher&&!a){if(g[p+id]&&gelStempel(x)<=g[p+id]){x.up=nachIso(g[p+id]);if(s)s=JSON.stringify(x);}}
+      else if(a&&s&&gelStempel(x)===a.up&&s!==a.s){x.up=nachIso(a.up);s=JSON.stringify(x);}
+      m.set(id,{s,up:gelStempel(x),x});
+    });
+    if(vorher)vorher.forEach((a,id)=>{
+      if(m.has(id))return;
+      const t=nachIso(a.up);if(!g[p+id]||g[p+id]<t)g[p+id]=t;
+      if(p==='n:'&&a.x&&!(research.trash||[]).some(e=>e&&e.data&&e.data.id===a.x.id)){
+        if(!Array.isArray(research.trash))research.trash=[];
+        research.trash.push({id:uid(),kind:'note',data:{...a.x},delAt:new Date().toISOString(),grund:'auto'});
+      }
+    });
+    neu[p]=m;
+  });
+  _gelStand=neu;
+}
+function gelStandSetzen(){geloeschtFesthalten(true);}
 // Asset-ID -> fester Research-Ordner, rein aus der Asset-Klasse abgeleitet
 // (ASSET_CLASS/customIds via assetCls) - KEIN zusaetzlicher State noetig:
 // ein neu ueber "+ Add Symbol" angelegtes Asset erscheint dadurch automatisch
@@ -5606,6 +5699,26 @@ function schreibeSnapshot(s){
   e.ohneLokaleKopie=localStorage.getItem(SK)==null;
   throw e;
 }
+// Dieselbe Leiter fuer die Abgleich-Basis (2026-10-28). GEMESSEN mit
+// nachgestelltem iPad-Kontingent (5 MB = ~2,6 Mio. Zeichen): die 5 lokalen
+// Sicherungen (je ein voller Stand, 646 K) fuellten den Speicher, die Basis
+// (646 K) scheiterte bei JEDEM Abgleich am Kontingent und wurde geloescht.
+// Nach einem Neuladen mit offener Eingabe lud die App dann OHNE Abgleich
+// hoch und ueberschrieb, was das andere Geraet inzwischen umgestellt hatte -
+// dort sprang es zurueck. Die Basis geht vor Sicherungen und Caches; das
+// Score-Journal (nicht wiederherstellbar) bleibt unangetastet.
+function schreibeMitPlatz(k,v){
+  try{localStorage.setItem(k,v);return true;}catch(e){if(!istQuotaFehler(e))return false;}
+  try{localStorage.removeItem(k);localStorage.setItem(k,v);return true;}catch(e){}
+  for(const[schluessel]of SNAP_ENTBEHRLICH){
+    if(schluessel==='fxpro_scorejournal')break;
+    let hatte=false;
+    try{hatte=localStorage.getItem(schluessel)!=null;localStorage.removeItem(schluessel);}catch(e){}
+    if(!hatte)continue;
+    try{localStorage.setItem(k,v);return true;}catch(e){}
+  }
+  return false;
+}
 function istQuotaFehler(e){
   return !!(e&&(e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'||/quota|exceeded/i.test(e.message||'')));
 }
@@ -5755,7 +5868,7 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,mkAnsicht:makroAnsichtWert(),mkTab:makroTabWert(),mkOpt:makroOptWert(),zbQuittung,zbEntscheid},SNAP_REPLACER);}
+function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,mkAnsicht:makroAnsichtWert(),mkTab:makroTabWert(),mkOpt:makroOptWert(),zbQuittung,zbEntscheid},SNAP_REPLACER);}
 // Banner-Quittungen der Zentralbank-Karte: nur Waehrung -> Datum, alles andere faellt raus.
 function zbEntscheidRein(v){
   const o={};
@@ -5946,7 +6059,19 @@ function reapplyLiveFeeds(){
    ()=>applyNiveauFeed(),
    ()=>applyTrendFeed()].forEach(fn=>{try{fn();}catch(e){}});
 }
-function applySnap(s){const d=sanitizeSnapIds(JSON.parse(s));
+// Huelle (2026-10-28): eigene, noch nicht festgehaltene Loeschungen VOR dem
+// Ersetzen als Marker sichern; waehrend des Ersetzens nichts festhalten
+// (sonst saehe ein Zwischenstand wie eine eigene Loeschung aus). Nach einem
+// passiven Abgleich ist der Ergebnis-Stand der neue Vergleichsstand; nach
+// Undo/Redo/Import/Backup bewusst NICHT - der naechste snap() haelt deren
+// Loeschungen und Wiederherstellungen als eigene Aenderung fest.
+function applySnap(s){
+  geloeschtFesthalten();
+  _gelRuhe=true;
+  try{applySnapRoh(s);}
+  finally{_gelRuhe=false;if(_flipCauseTag==='sync')gelStandSetzen();}
+}
+function applySnapRoh(s){const d=sanitizeSnapIds(JSON.parse(s));
   // Nutzer-Bugreport 2026-09-01 ("Notizen in mehreren Ordnern sind weg,
   // obwohl kein zweites Geraet benutzt wurde"): per Playwright reproduziert
   // (2 Tabs derselben App im selben Browser reichen bereits) - applySnap()
@@ -5962,7 +6087,7 @@ function applySnap(s){const d=sanitizeSnapIds(JSON.parse(s));
   // fuer Undo/Redo/Backup-Restore/Import bleibt es bewusst ein echter
   // Overwrite (dort IST das Ersetzen die gewollte Aktion).
   const _mergeSync=_flipCauseTag==='sync';
-  const _prevResNotes=research&&research.notes,_prevResFolders=researchFolders,_prevResTrash=research&&research.trash;
+  const _prevResNotes=research&&research.notes,_prevResFolders=researchFolders,_prevResTrash=research&&research.trash,_prevGel=research&&research.geloescht;
   syms=d.syms;ensureBuiltinSyms();
   // War bisher ein von migrateRubInds() abgeschriebenes Teilstueck (nur die
   // fuenf Sub-Funktionen, OHNE den RUB_IND_REMOVE/Rename/Dedup-Schlussteil) -
@@ -5972,7 +6097,7 @@ function applySnap(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){research.notes=mergeResearchNotes(_prevResNotes,research.notes);researchFolders=mergeResearchFolders(_prevResFolders,researchFolders);research.trash=mergeResearchTrash(_prevResTrash,research.trash);}researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);makroAnsichtSetzen(d.mkAnsicht);makroTabSetzen(d.mkTab);makroOptSetzen(d.mkOpt);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);makroAnsichtSetzen(d.mkAnsicht);makroTabSetzen(d.mkTab);makroOptSetzen(d.mkOpt);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6625,19 +6750,11 @@ function save(){
       // researchFolders zusaetzlich gegen den GERADE AUF DER PLATTE stehenden
       // Inhalt mergen (mergeResearchNotes/-Folders, dieselben Merge-Funktionen
       // wie in applySnap() bei adoptExternalState()/cloudPull()).
+      // Seit 2026-10-28 ueber researchMitPlatte() - mit Loesch-Markern;
+      // die reine Vereinigung brachte hier jede Loeschung eines anderen
+      // Tabs zurueck (check/geloescht.js B).
       if(Date.now()-_lastUserEditTs>=3000){
-        try{
-          const onDisk=JSON.parse(localStorage.getItem(SK)||'null');
-          if(onDisk&&onDisk.research&&Array.isArray(onDisk.research.notes)){
-            research.notes=mergeResearchNotes(onDisk.research.notes,research.notes);
-          }
-          if(onDisk&&Array.isArray(onDisk.researchFolders)){
-            researchFolders=mergeResearchFolders(onDisk.researchFolders,researchFolders);
-          }
-          if(onDisk&&onDisk.research&&Array.isArray(onDisk.research.trash)){
-            research.trash=mergeResearchTrash(onDisk.research.trash,research.trash);
-          }
-        }catch(e){}
+        try{researchMitPlatte(JSON.parse(localStorage.getItem(SK)||'null'));}catch(e){}
       }
       const s=snap();
       // fxpro_updated nur bumpen, wenn sich der Inhalt WIRKLICH geändert hat -
@@ -6651,6 +6768,12 @@ function save(){
       // dann so gut wie immer anschlägt, auch ganz ohne echten Edit.
       changed=s!==localStorage.getItem(SK);
       schreibeSnapshot(s);
+      // pushU() setzt die Markierung VOR dem Speichern - bei vollem Speicher
+      // scheiterte genau dieser kleine Schreibvorgang still; erst die Leiter
+      // in schreibeSnapshot schafft Platz. Ohne Markierung haelt die App eine
+      // offene Eingabe nach dem Neuladen fuer erledigt und zieht den
+      // Cloud-Stand drueber (gemessen 2026-10-28, iPad-Kontingent).
+      if(_userEditedSinceSync&&localStorage.getItem('fxpro_user_pending')!=='1'){try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}}
       if(changed)localStorage.setItem('fxpro_updated',new Date().toISOString());
       _lsUpdatedSeen=localStorage.getItem('fxpro_updated');
       const b=document.getElementById('saveBadge');if(b)b.textContent='✓ Saved '+new Date().toLocaleTimeString();
@@ -7087,7 +7210,9 @@ function appVeraltet(){
 // Abgleich hoch (ueberschrieb, was das andere Geraet inzwischen geaendert hatte).
 function basisSetzen(s,seen){
   _syncBasis=s;
-  try{if(s&&seen)localStorage.setItem('fxpro_sync_basis',JSON.stringify({seen,s}));else localStorage.removeItem('fxpro_sync_basis');}
+  // Ueber schreibeMitPlatz (siehe dort): bei vollem Speicher weichen erst
+  // Sicherungen und Caches, statt dass die Basis still verloren geht.
+  try{if(!(s&&seen&&schreibeMitPlatz('fxpro_sync_basis',JSON.stringify({seen,s}))))localStorage.removeItem('fxpro_sync_basis');}
   catch(e){try{localStorage.removeItem('fxpro_sync_basis');}catch(x){}}
 }
 function syncMerge3(basis,lokal,cloud){
@@ -7425,19 +7550,13 @@ async function cloudPullRoh(manual,forceOverwrite){
       // die Platte mergen, und den Schreibvorgang selbst per navigator.locks
       // ueber alle Tabs hinweg serialisieren (Fallback: direkt, wie bisher).
       const doCloudWrite=()=>{
-        try{
-          const onDisk=JSON.parse(localStorage.getItem(SK)||'null');
-          if(onDisk&&onDisk.research&&Array.isArray(onDisk.research.notes)){
-            research.notes=mergeResearchNotes(onDisk.research.notes,research.notes);
-          }
-          if(onDisk&&Array.isArray(onDisk.researchFolders)){
-            researchFolders=mergeResearchFolders(onDisk.researchFolders,researchFolders);
-          }
-          if(onDisk&&onDisk.research&&Array.isArray(onDisk.research.trash)){
-            research.trash=mergeResearchTrash(onDisk.research.trash,research.trash);
-          }
-        }catch(e){}
-        localStorage.setItem(SK,snap());localStorage.setItem('fxpro_updated',cloudUpdated);
+        try{researchMitPlatte(JSON.parse(localStorage.getItem(SK)||'null'));}catch(e){}
+        // Ueber die Rettungs-Leiter (2026-10-28): ein rohes setItem warf bei
+        // vollem Speicher still und brach den Abgleich mittendrin ab
+        // (Cloud-Stand im Speicher, alter auf der Platte, "gesehen" nicht
+        // gesetzt). Scheitert auch die Leiter, sagt es die Leiste.
+        try{schreibeSnapshot(snap());}catch(e){saveQuotaFail(e);throw e;}
+        localStorage.setItem('fxpro_updated',cloudUpdated);
       };
       if(window.navigator&&navigator.locks&&navigator.locks.request){
         try{await navigator.locks.request('fxpro_sync_lock',{mode:'exclusive'},async()=>{doCloudWrite();});}catch(e){doCloudWrite();}
@@ -17732,13 +17851,13 @@ function mergeScoreHist(base,override){
 // research.notes/researchFolders (Nutzer-Bugreport 2026-09-01, siehe
 // ausfuehrlicher Kommentar bei applySnap()). Notizen/Ordner haben eine
 // eindeutige id -> Vereinigung beider Seiten, bei einer Kollision (gleiche
-// id auf beiden Seiten) gewinnt bei Notizen die zuletzt bearbeitete (n.up),
-// bei Ordnern (kein Zeitstempel vorhanden) einfach "override". Wie bei
-// mergeScoreHist bewusst KEIN echtes Loeschen ueber Geraete/Tabs hinweg -
-// eine ueber delResNote()/researchDelFolder() geloeschte Notiz/Ordner kann
-// dadurch aus einem noch nicht synchronisierten zweiten Tab/Geraet
-// zurueckkehren. Das ist ein bewusster, bereits bei scoreHist akzeptierter
-// Kompromiss: unendlich besser als der zuvor gemeldete Totalverlust.
+// id auf beiden Seiten) gewinnt die zuletzt bearbeitete (up; bei gleichem
+// Stempel "override").
+// ⚠ NIE direkt aufrufen, nur ueber researchVereinen() (check/geloescht.js D).
+// Bis 2026-10-28 stand hier "bewusst KEIN echtes Loeschen ueber Geraete/Tabs
+// hinweg ... ein bewusster Kompromiss" - genau das war der Nutzer-Bug "eine
+// geloeschte Notiz in der Bank-Karte kommt direkt wieder zurueck". Geloescht
+// wird jetzt ueber die Loesch-Marker (research.geloescht, siehe dort).
 function mergeResearchNotes(base,override){
   const map=new Map();
   (base||[]).forEach(n=>{if(n&&n.id)map.set(n.id,n);});
@@ -17752,7 +17871,11 @@ function mergeResearchNotes(base,override){
 function mergeResearchFolders(base,override){
   const map=new Map();
   (base||[]).forEach(f=>{if(f&&f.id)map.set(f.id,f);});
-  (override||[]).forEach(f=>{if(f&&f.id)map.set(f.id,f);});
+  (override||[]).forEach(f=>{
+    if(!f||!f.id)return;
+    const ex=map.get(f.id);
+    if(!ex||String(f.up||'')>=String(ex.up||''))map.set(f.id,f);
+  });
   return Array.from(map.values());
 }
 function rubScoreByName(sym,name){const r=(sym&&sym.rubrics||[]).find(x=>x.name===name);return r?Math.round(rubScore(r)*10)/10:0;}
@@ -26974,7 +27097,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,
   DASH_COL_MIN_H,DASH_SHRINK_MIN_H,equalizeDashColumns,scrollCalsToNow,delWidget,renameWidget,confirmRename,addWidget,
-  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,mergeResearchNotes,mergeResearchFolders,rubScoreByName,trendAssets,
+  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
   recordScoreHist,RISK_ON_IDS,RISK_OFF_IDS,riskOnOffState,riskSentimentWidgetHtml,globeHudLonTxt,globeHudHtml,bMark,
   startScanBroadcast,scanFlyParticle,surpriseIndex,mxHeatColor,assetReturnMap,pearsonR,corrHeatColor,setCorrA,
   setCorrB,setCorrWin,logReturns,pearson,corrRegimeSeries,corrRegimeCardHtml,renderCorrCard,renderMatrix,TREND_COLORS,
