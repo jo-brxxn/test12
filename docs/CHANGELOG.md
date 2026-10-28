@@ -21091,3 +21091,8 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 - Gezielt grün: `zurueck`, `altgeraet`, `notizen`, `zentralbank`, `trades`.
 
 **Offen (Vorschlag an den Nutzer, nicht umgesetzt):** (1) Automatische Sicherungen höchstens einmal je Stunde statt bei jedem Abgleich — die 5 Plätze rotieren heute binnen Minuten (kaum Schutz) und belegen 69 % des Speichers. (2) Der Abgleich legt selbst einen Undo-Punkt an: Undo direkt nach einem Hintergrund-Abgleich nimmt den Abgleich zurück, nicht die eigene letzte Aktion.
+
+**Nachtrag (CI auf `main` war seit früheren Pushes rot, beim Prüfen dieses Laufs aufgefallen):**
+- `yachse` (seit 640): 7× „Chart ohne Y-Beschriftung“, 1026×94 auf jeder Asset-Seite = **Giebel der Central-bank-Karte** (`clamp(78px,8vw,116px)` = 94 px bei 1180 px, über der Chart-Schwelle 70 px). Ziermotiv mit `aria-hidden` → in die dokumentierte Ausnahme „Logos/Motive“ (`.zb-giebel-svg`). Gegenprobe weiter rot (63).
+- `historie` H3 (seit 648): Wächter rechnete die Event-Zahl mit dem **heutigen** Vergleichsfaktor, die App (dokumentiert) mit dem **des Tages**. Gemessen USD: 30.09. 0,818, heute 0,857 (Modell 29) → GDP 1,26 statt 1,32 erwartet. App richtig, Wächter korrigiert (Tagesfaktor aus `scoreHist` e[7]). Hand-Gegenprobe (App mit heutigem Faktor) rot.
+- `kartenlook` (seit der Central-bank-Karte): Karte ohne *Go to …*-Knopf — offen, Designentscheidung beim Nutzer (Vorschlag: *Go to Rate Probabilities*).

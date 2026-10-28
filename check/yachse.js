@@ -11,7 +11,9 @@
 //   A) jeder sichtbare Chart (SVG >= 140x70) traegt links oder rechts
 //      mindestens zwei Zahlen auf verschiedener Hoehe
 //      Ausgenommen mit Absicht: Sparklines (< 140x70, kein Platz), der
-//      Globus (Overview), Tacho-Anzeigen, Logos/Motive.
+//      Globus (Overview), Tacho-Anzeigen, Logos/Motive - darunter seit
+//      2026-10-28 der Giebel der Central-bank-Karte (.zb-giebel-svg, seit 640
+//      8vw = 94 px hoch und damit ueber der Chart-Schwelle; CI rot ab 640).
 //   B) Data, gleicher Indikator in 4 Panels: identische Y-Beschriftung
 //   node check/yachse.js [--gegenprobe]  (Y-Beschriftung ausgeblendet +
 //   gemeinsame Skala aus -> rot)
@@ -53,7 +55,7 @@ const ZIELE = ['regime', 'dash', 'mx', 'trends', 'cot', 'sent:retail', 'sent:put
       const vis = e => { const q = e.getBoundingClientRect(); if (!(q.width > 0 && q.height > 0)) return false; for (let x = e; x; x = x.parentElement) { const cs = getComputedStyle(x); if (cs.display === 'none' || cs.visibility === 'hidden') return false; } return true; };
       const zahl = t => /^[−\-+]?\$?[\d.,]+\s*(%|pp|w|k|K|M|B|bp)?$/.test(t.trim());
       const out = [];
-      [...document.querySelectorAll('svg')].filter(s => vis(s) && !s.closest('button,.k-ic,.logo,.ahead-motif,.lg-loop,.lg-frei,.globe-host,.sent-gauge,.gauge,.fxlogo')).forEach(s => {
+      [...document.querySelectorAll('svg')].filter(s => vis(s) && !s.closest('button,.k-ic,.logo,.ahead-motif,.lg-loop,.lg-frei,.globe-host,.sent-gauge,.gauge,.fxlogo,.zb-giebel-svg')).forEach(s => {
         const q = s.getBoundingClientRect(); if (q.width < 140 || q.height < 70) return;
         if (s.querySelector('text') && [...s.querySelectorAll('text')].length === 0) return;
         // .sz = Saisonalitaet als Monatszeilen (2026-10-11): Y = Monatsnamen, die

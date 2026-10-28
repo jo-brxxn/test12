@@ -556,7 +556,14 @@ const gruen = (m) => console.log('  ✓ ' + m);
         if (v === '–' || v === '') return;
         const ev = (byD[d] || []).find(x => nm.indexOf(x.name) === 0);
         if (!ev || ev.scWirkung == null || !ev.scWirkung) return;
-        out.push({ d, nm, gezeigt: parseFloat(v), roh: ev.scWirkung, erwartet: Math.round(ev.scWirkung * f * 100) / 100 });
+        // Faktor DIESES Tages (scoreHist e[7], wie die App), sonst der heutige.
+        // Bis 2026-10-28 stand hier immer der heutige: solange der Faktor
+        // konstant war, fiel das nicht auf; mit Modell 29 (USD 0,826 -> 0,857)
+        // lag der GDP-Tag 30.09. (Faktor 0,818) ueber der Toleranz - die App
+        // rechnete richtig, der Waechter nicht.
+        const e7 = ((scoreHist.USD || []).find(x => x[0] === d) || [])[7];
+        const fTag = e7 != null && isFinite(e7) && +e7 > 0 ? +e7 : f;
+        out.push({ d, nm, gezeigt: parseFloat(v), roh: ev.scWirkung, faktor: fTag, erwartet: Math.round(ev.scWirkung * fTag * 100) / 100 });
       });
     });
     return { faktor: f, zeilen: out };
@@ -565,7 +572,7 @@ const gruen = (m) => console.log('  ✓ ' + m);
   if (!h2.zeilen.length) rot('Keine bezifferte Event-Zeile gefunden - die Skalen-Pruefung laeuft ins Leere');
   else if (falscheSkala.length)
     rot(`${falscheSkala.length} Event-Zahl(en) stehen nicht auf der Vergleichsskala: `
-      + falscheSkala.slice(0, 3).map(z => `${z.nm} zeigt ${z.gezeigt}, erwartet ${z.erwartet} (roh ${z.roh} x ${h2.faktor})`).join('; ')
+      + falscheSkala.slice(0, 3).map(z => `${z.nm} zeigt ${z.gezeigt}, erwartet ${z.erwartet} (roh ${z.roh} x ${z.faktor})`).join('; ')
       + ' - Delta und Kartenzerlegung rechnen mit dem Faktor, die Event-Zahl muss das auch.');
   else gruen(`${h2.zeilen.length} Event-Zahl(en) auf derselben Skala wie Delta und Kartenzerlegung (Faktor ${h2.faktor})`);
 
