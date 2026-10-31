@@ -22,6 +22,8 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
+// TEMPORAER (2026-10-31): Filter-Vorschau a|b - nach der Nutzer-Entscheidung entfernen (siehe js/filterdemo.js).
+import {filterDemoStarten} from './filterdemo.js';
 import {makroKartenSchalterHtml,makroReihenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
@@ -26233,6 +26235,7 @@ function ladeOvAusblenden(){
 // Seitenwechsel des Nutzers.
 setTimeout(()=>{_wischBereit=true;},1200);
 maybeShowFirstRunHelp();
+try{filterDemoStarten();}catch(e){}   // TEMPORAER, siehe js/filterdemo.js
 updFFLastUpd();
 // Vor dem Pull: falls die letzte lokale Aenderung nie erfolgreich hochgeladen
 // wurde (fxpro_updated != fxpro_cloud_seen - z.B. weil die Seite direkt nach
