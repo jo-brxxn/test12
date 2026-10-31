@@ -21148,3 +21148,9 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Central-bank-Karte:** *Go to Rate Probabilities* unten rechts (Kategorie) — `kartenlook` grün (12 Karten mit Go-to). Karte dadurch 25 px höher (1180: 562 → 587).
 
 **Wächter:** `check/filterfest.js` E (15 Listen je Breite; `--gegenprobe-nativ` 30 Befunde rot), `check/ratelink.js` (Gegenprobe rot). Gezielt grün: filterreset, zurueck, eingaben, zentralbank, nav, retailwahl, runtime, cards, profil, namen, scrollhalt, preisvergleich, kartenlook.
+
+## 2026-10-31 — VERSION-CHECK-655: Chart-Leisten mit 10 px Zeilenabstand beim Umbruch
+
+**CI-Befund** (`designregeln` F, 820 px, Data): `ind-hist-range-btn ragt in ind-hist-range-btn`. Gemessen: seit dem 4. Modus-Knopf *Prices* (652) passt die Modus-Leiste mit der Zeitleiste bei 820 px nicht mehr in eine Zeile; die Zeitleiste bricht um, die Zeilen lagen 6 px auseinander, die Trefferflächen ragen je 5 px nach oben/unten → 4 px Überlappung. Wurzel im gemeinsamen `.chart-leiste`-Stil (Zeilenabstand 10 px, waagerecht unverändert) — gilt für jede Chart-Leiste, die umbricht. Danach 195 → 205 px, F weg; `einheit`, `zeitfilter` grün.
+
+**Außerdem:** `scorediff`/`summarydiff` waren im Lauf zu 654 rot, weil sie gegen den Vorgänger-Commit vergleichen — das war der unvollständige Commit `37722bf` (nur `js/filterdemo.js` gelöscht, Import noch drin → App lud nicht, `syms is not defined`). Kein Fehler im Code; Ursache war mein `git add`, der an dem schon gelöschten Pfad abbrach. Seither: nach `git add` immer `git status` prüfen.

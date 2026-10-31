@@ -2800,9 +2800,12 @@ body.res-return-active #resBackBar{display:flex}
    Forecast/Previous = Meta (2xs, t3). */
 /* Werkzeugzeile ueber jedem Chart (Dauerregel 2026-09-26): links Ansicht
    (Candles|Line, Varianten, Schalter), rechts buendig der Zeitfilter. */
-.chart-leiste{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 8px;min-width:0}
-.chart-leiste-l{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
-.chart-leiste-r{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px;margin-left:auto;min-width:0}
+/* Zeilenabstand beim Umbruch 10 px: die Trefferflaechen der Knoepfe ragen je
+   5 px nach oben/unten - bei 6 px ueberlappten sie (2026-10-31, Data bei 820 px
+   nach dem 4. Modus-Knopf "Prices", check/designregeln.js F). */
+.chart-leiste{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin:0 0 8px;min-width:0}
+.chart-leiste-l{display:flex;flex-wrap:wrap;align-items:center;gap:10px 6px;min-width:0}
+.chart-leiste-r{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px 6px;margin-left:auto;min-width:0}
 .chart-leiste-r .ab-rgs,.chart-leiste-r .ind-hist-toolbar,.chart-leiste-r .histp-range,.chart-leiste-r .pc-inchart-range{margin:0}
 .ctyp{flex-wrap:wrap}
 .ctyp{display:inline-flex;gap:4px}
@@ -7104,11 +7107,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-654 - Option a: jede Auswahlliste mit Gruppen oeffnet das 2-Spalten-Fenster (fest, Hoehe begrenzt); Correlation/News/Spread gruppiert; Central-bank-Karte mit Go to Rate Probabilities; Schnellzugriff Rate Probabilities oeffnet wieder direkt die Seite der Bank; Vorschau a|b entfernt; vorher 653: Hoehe wie iOS-Liste."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-655 - Chart-Leisten: 10 px Zeilenabstand beim Umbruch (Trefferflaechen ueberlappten bei 820 px in Data); vorher 654: Option a, Go to Rate Probabilities, Schnellzugriff oeffnet den Link der Bank."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-654</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-655</span>
     </span>
   </div>
   <div class="hdr-r">
