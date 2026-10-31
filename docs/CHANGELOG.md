@@ -21164,3 +21164,35 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Behoben:** ein Baustein `linkOeffnen(url)` — ohne `noopener` öffnen (Rückgabewert stimmt), danach `opener = null` (gleiche Sicherheit); bei echtem Blocker Titel *Link blocked* statt *No rate-expectations source*, mit Link. Fehlerklasse: auch *View FF* im Dashboard über denselben Baustein (vorher ohne Meldung bei Blocker).
 
 **Wächter:** `check/ratelink.js` mit echtem `window.open`: 8 Banken + GOLD öffnen den Tab ohne Meldung, `opener` getrennt, simulierter Blocker → *Link blocked*. `--gegenprobe-noopener` rot (falscher Alarm bei jeder Bank).
+
+## 2026-10-31 — VERSION-CHECK-657: Data · Compare all, Prices One chart | Side by side, Achsenbruch, Kerzen
+
+**Nutzer:** *„in data will ich alles nebeneinander öffnen lass also alle modi zum auswählen drinne aber ergänz einen der compare all oder so heist wo ich dann auf ein plus drücke und damit einen Filter öffne … im Filter gibt es nochmal Filter damit ich dort zb die Währung auswählen kann damit Platz gespart wird“* · Prices: *„die Option hin das man das auch in 2 Charts nebeneinander sehen kann einfach ein umschalter“* · *„einheitliche skala … an einer Stelle die Skalierung ändert und auf eine andere umspringt aber trotzdem logisch. Schau einfach wie andere dieses Problem lösen“* · *„in preischarts das ganze auch in Kerzen“*, Farben (Korrektur): *„einmal ein Chart mit Blue bias Farbe dann der andere mit schwarz bias Farbe die anderen Farben sind egal welche“*. Rückfragen: *Erst Asset, dann Charts* · *Achsenbruch mit Bändern*.
+
+**Gebaut:**
+- **Compare all** (5. Modus): *＋ Add* → Fenster: oben die **Gruppen** (aus der Asset-Klasse, wächst mit), darunter die **Assets der Gruppe**, darunter dessen Charts (*Price & yields*, alle Indikator-Rubriken; *FX pairs* nach Basiswährung; *Volatility*). Jeder Tipp = ein Panel, bis 8, dann schließt es. ✕ je Panel. Gruppe tippen = ihr erstes Asset.
+- **Prices:** *One chart | Side by side*; im einen Chart *Low → high* (0–100, wie bisher) | *Common*; *Candles | Line* (der globale Schalter).
+- **Common = Achsenbruch mit Bändern** (wie Broken Axis bei Highcharts/amCharts): Kurse nach Tief sortiert, überlappende/nahe Niveaus (Lücke ≤ größere Spanne) teilen ein Band mit **einer** echten Preisskala, sonst neues Band über einem Bruch (gestrichelte Linie + Zickzack auf der Achse). Höchstes Niveau oben.
+- **Kerzen** nach den Kerzen-Regeln (`tagesKerzen`). Ein Chart: Kurs 1 `--cndl-up` (blau), Kurs 2 `--cndl-dn` (schwarz), weitere `--tf3…6`; **steigt hohl, fällt gefüllt**. Nebeneinander: normale Kerzenfarben.
+
+**Beim Bauen gemessen und behoben:**
+- Asset-Zeile im Fenster: alle 26 Assets auf einmal = **218 von 450 px** → zwei Ebenen (Gruppe | Assets der Gruppe) = 118 px.
+- *Common* mit Kerzen: der Tag war auf alle 4 Kurse geteilt — Gold allein in seinem Band auf ¼ Breite. Jetzt teilen sich nur Kurse **im selben Band** den Tag.
+- **390 px: Auswahlfenster left −30** (Compare all **und das bestehende Prices-Fenster seit 652**): `pickerAnkern` richtete nur rechtsbündig zum Knopf aus, rechts davon steht noch das ⓘ. Jetzt nie näher als 8 px am linken Rand — gilt für jedes Chip-Fenster.
+- 390 px: Modus-Leiste mit 5 Knöpfen lief rechts aus dem Bild (*Com…*) → `.px-modes` bricht um (10 px Zeilenabstand wie 655); Panel-Titel *Price comparison…* gekürzt → bricht in schmalen Panels um; 5 Daten auf 206 px Achse übereinander → 2–5 je nach Breite.
+- Zwischenstand: ein Patch hatte `gwAuf`/`gwZu`/`gwSelectAn` mitersetzt — Brücke zeigte ins Leere, **die ganze App startete nicht** (`showTab` undefined); `node --check`, `syntax`, `structure` blieben grün. → neues Netz in `check/structure.js`.
+
+**Nachtrag (Nutzer):** *„die fx Paare im Filter müssen besser sortiert sein nach Alphabet oder so“* — gemessen: alle Filter zeigten die Marktreihenfolge (`FX_PAIRS`: EUR/USD, GBP/USD, USD/JPY …). Jetzt `FX_PAIRS_AZ` (A–Z) in Data Prices, Context-Chart-Auswahl, Compare all (Basiswährungen + Paare) und Trends (Paar-Modus). `FX_PAIRS` selbst bleibt (Set-ups/Score). Nicht angefasst: *Add pair*-Fenster (kein Filter, `ALL_PAIRS` inkl. Nicht-FX).
+
+**Nachtrag 2 (Nutzer, iPad-Screenshot 655, Data · Prices OIL + GOLD 1Y):** *„die Info Karte die man beim hovers sieht von der muss der Punkt auf beiden Preisen sein und die Linie durch die Karte muss sich nach oben durchziehen und der Preis des Assets das weiter oben steht in der Darstellung muss auch auf der Karte oben stehen wenn das nicht mehr so ist muss es tauschen“*.
+- **Reproduziert** (1366 px): Stelle mit GOLD oben (y 555) / OIL (y 654) → **ein** Punkt (654, OIL), Linie 654 → 696, Karte *OIL, GOLD*; Stelle mit OIL oben → ein Punkt, Karte *OIL, GOLD*.
+- **Ursache:** `chartHoverWrap` kannte je Stelle genau einen Punkt (`fy`) und zog die Linie vom Punkt zum Boden (Wunsch 2026-09-05 für Ein-Linien-Charts); der Preisvergleich gab immer den ersten Kurs, die Zeilen in Legendenreihenfolge.
+- **Behoben an der Wurzel:** optional `ys:[{fy,col}]` + `ly` → Punkt je Linie, Linie Plot-Oberkante → Boden, Karte über dem obersten Punkt; Aufrufer sortieren die Zeilen nach Lage. Danach: Punkte 555/654 bzw. 229/456, Linie 10 → 696, Karte *GOLD, OIL* bzw. *OIL, GOLD*.
+- **Fehlerklasse:** Trends (alle Assets, ein Punkt auf der ersten Linie; ohne Fokus Zeilen in id-Reihenfolge), Score vs Price (Punkt nur auf Score), `rateProbTimelineChart` (Punkt auf der ersten Linie — Funktion wird derzeit nirgends aufgerufen) → alle mit `ys`. Retail-Netto (Balken + Kurslinie) bewusst nicht: keine zwei Linien. Ein-Linien-Charts unverändert.
+- Beim Bauen: `.data-pt` bricht in schmalen Panels um — erst `min-width:0` (geerbt) ließ *USD* auf 36/40 px schrumpfen (`namen`, 360 px) → `min-width:min-content` (wegen `overflow:hidden` greift `auto` nicht).
+
+**Lokal rot, nicht von dieser Änderung** (gegen 656 im selben Datenstand identisch): `namen` — Schlagzeile *„The Great AI Rotation: Goldman Sachs …“* (Feed seit 3 Updates) auf dem Dashboard bei 360/375 px auf 29–44 px gequetscht, `.hl-side` (Thema *The Dark Side Of The Boom* + Zeit) nimmt 172 von 234 px; Treffer über „Gold“ in „Goldman“. `cards` — `.hdr-r` ragt bei 390 px auf 396 px (alle Tabs, auch 656, unabhängig von der Uhrzeit; CI mit anderen Schriften grün).
+
+**Nicht geändert (gesehen):** im Data-Panel-Kopf blendet `.data-ph .px-asof` die letzten 15 % **immer** per Maske aus (*Next 4d* blass), auch wenn alles passt — bestehendes Verhalten aller Data-Modi.
+
+**Wächter:** `check/preisvergleich.js` E–H (Achsenbruch mit echten Preisen, Kerzenfarben, Side by side, Compare all per echten Klicks + 390 px); Gegenproben `--gegenprobe-bruch`, `--gegenprobe-farben`, `--gegenprobe-anker`, `--gegenprobe-az` rot. `check/structure.js`: jeder Kurzname der window-Brücke ist im Modul deklariert, `--gegenprobe-bruecke` meldet `gwAuf`. Neu `check/hoverpunkte.js` (A–D), `--gegenprobe` rot (5 Befunde).

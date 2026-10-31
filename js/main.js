@@ -583,6 +583,10 @@ const ALL_PAIRS=[
 const SETUP_CAT='Possible Set-ups';
 const NODIR_CAT='No Direction';
 const FX_PAIRS=ALL_PAIRS.filter(p=>{const[b,q]=p.split('/');return FX.includes(b)&&FX.includes(q);});
+// Fuer Auswahllisten/Filter: A-Z (Nutzer 2026-10-31: "die fx Paare im Filter
+// muessen besser sortiert sein nach Alphabet"). FX_PAIRS selbst bleibt in
+// Marktreihenfolge - Set-ups und Score haengen daran.
+const FX_PAIRS_AZ=FX_PAIRS.slice().sort();
 
 const SB_CATS=[
   {l:'FX',ids:['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD']},
@@ -9381,6 +9385,7 @@ function setPxChartTyp(v){
 }
 function pxTypNeuZeichnen(){
   try{if(document.querySelector('#detail .ab-ptile,#detail .ab-ktile'))renderDetail();}catch(e){}
+  try{if(curPage==='data')renderDataTab();}catch(e){}
   try{const m=document.getElementById('mPrice');if(m&&m.style.display==='flex')renderPriceChart();}catch(e){}
 }
 // Symbolknoepfe statt Text (Nutzerwahl 2026-10-05 "Kompakt, max. 2 Zeilen"):
@@ -9847,7 +9852,7 @@ function kontextKatalog(fuerData){
   const KL=[['fx','Currencies (basket)'],['metal','Metals'],['energy','Energy'],['index','Indices'],['stock','Stocks'],['crypto','Crypto'],['other','Other prices']].concat(fuerData?[]:[['yield','Yield assets']]);
   KL.forEach(([kl,name])=>add(name,syms.filter(x=>assetCls(x.id)===kl).sort((a,b)=>a.id.localeCompare(b.id)).map(x=>({k:'p:'+x.id,t:x.id+(x.name&&x.name!==x.id?' · '+x.name:'')}))
     .concat(nurFeed.filter(k=>klasseVon(k)===kl).sort().map(k=>({k:'p:'+k,t:k})))));
-  add('FX pairs',FX_PAIRS.map(p=>({k:'pair:'+p,t:p})));
+  add('FX pairs',FX_PAIRS_AZ.map(p=>({k:'pair:'+p,t:p})));
   if(fuerData)renditen();
   add('Volatility',[{k:'vix',t:'VIX (S&P 500 volatility)'}]);
   return gruppen;
@@ -18877,9 +18882,11 @@ function scoreTrendChart(ids,dates,vi,base,colorOverride,fok){
     let lbl;try{const dt=new Date(d+'T00:00:00');lbl=(dt.getMonth()+1)+'/'+dt.getDate();}catch(e){lbl=d;}
     svg+=`<text x="${xOf(i).toFixed(1)}" y="${(topPad+chartH+18).toFixed(1)}" text-anchor="middle" style="font-size:var(--fs-2xs);fill:var(--t3)">${escH(lbl)}</text>`;
   });
-  // Fit-to-width (kein horizontales Wischen) + Hover-Tooltip: pro Datum ein
-  // Punkt; das Fenster listet ALLE Linien-Werte dieses Tages, der Punkt sitzt
-  // auf der ersten Linie mit Wert an diesem Tag.
+  // Fit-to-width (kein horizontales Wischen) + Hover-Tooltip: das Fenster
+  // listet ALLE Linien-Werte dieses Tages. Seit 2026-10-31 (Fehlerklasse aus
+  // dem Preisvergleich): ein Punkt auf JEDER Linie (mit Fokus: jeder farbigen),
+  // Zeilen nach Lage - hoeherer Wert = weiter oben, ohne Fokus vorher in
+  // Reihenfolge der ids.
   const fitSvg=svg.replace('<svg class="tr-svg"','<svg class="tr-svg" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto"')+`</svg>`;
   const hpts=dates.map((d,i)=>{
     let lbl;try{const dt=new Date(d+'T00:00:00');lbl=dt.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'2-digit'});}catch(e){lbl=d;}
@@ -18887,16 +18894,18 @@ function scoreTrendChart(ids,dates,vi,base,colorOverride,fok){
     // Mit Fokus: erst die farbigen Linien, dann die grauen, je nach Wert
     // absteigend; Name in Textfarbe hinter einem Farbpunkt (die Linienfarben
     // erreichen als Schrift keine 4,5:1).
-    const reihe=fok?ids.filter(id=>{const v=valOf[id][d];return v!=null&&isFinite(v);})
-      .sort((a,b)=>(!!fok.farbe[b]-!!fok.farbe[a])||(valOf[b][d]-valOf[a][d])):ids;
+    const mitWert=ids.filter(id=>{const v=valOf[id][d];return v!=null&&isFinite(v);});
+    const reihe=fok?mitWert.sort((a,b)=>(!!fok.farbe[b]-!!fok.farbe[a])||(valOf[b][d]-valOf[a][d])):mitWert.sort((a,b)=>valOf[b][d]-valOf[a][d]);
+    const ys=[];
     const rows=reihe.map(id=>{
       const v=valOf[id][d];const c=fok?(fok.farbe[id]||'var(--t3)'):useBiasColor?(BC[biasGroup(biasOf[id][d])]||colorOverride):(colorOverride||TREND_COLORS[id]||'#888');
       if(v!=null&&isFinite(v)&&!hasDot){dotY=yOf(v);dotCol=c;hasDot=true;}
       if(v==null||!isFinite(v))return'';
+      if(!fok||fok.farbe[id])ys.push({fy:yOf(v)/h,col:c});
       if(fok)return`<div style="display:flex;justify-content:space-between;gap:12px${fok.farbe[id]?'':';color:var(--t3)'}"><span><span class="tr-tip-dot" style="background:${c}"></span>${escH(id)}</span>${fok.farbe[id]?'<b>':'<span>'}${v>0?'+':''}${v}${fok.farbe[id]?'</b>':'</span>'}</div>`;
       return`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:${c}">${escH(id)}</span><b>${v>0?'+':''}${v}</b></div>`;
     }).filter(Boolean).join('');
-    return{fx:xOf(i)/w,fy:dotY/h,t:d,col:dotCol,tip:`<div class="chv-tip-d">${escH(lbl)}</div>${rows||'<span style="color:var(--t3)">no data</span>'}`};
+    return{fx:xOf(i)/w,fy:dotY/h,t:d,col:dotCol,ys,ly:topPad/h,tip:`<div class="chv-tip-d">${escH(lbl)}</div>${rows||'<span style="color:var(--t3)">no data</span>'}`};
   });
   if(!fok)return chartHoverWrap(fitSvg,hpts,`max-width:${w}px;margin:0 auto`,null,null,'setTrendsRange');
   const gid='trg'+(_trGeoSeq++),ys={};
@@ -19002,7 +19011,7 @@ function scoreVsPriceChart(dates,scoreMap,base,colorOverride,priceSeries,biasMap
   // "soll immer ganz oben liegen") - SVG-Zeichenreihenfolge = Stapel-
   // reihenfolge, spaeter gezeichnete Elemente liegen ueber frueheren.
   const PRICE_LINE_COL='var(--t0)';
-  let priceLineSvg='';
+  let priceLineSvg='';const priceY={};
   if(priceVals.length>=1){
     let pMin=Math.min(...priceVals),pMax=Math.max(...priceVals);
     if(pMin===pMax){pMin-=Math.abs(pMin)*0.02||1;pMax+=Math.abs(pMax)*0.02||1;}
@@ -19012,7 +19021,7 @@ function scoreVsPriceChart(dates,scoreMap,base,colorOverride,priceSeries,biasMap
       const y=yOfPrice(t);
       svg+=`<text x="${(w-rightPad+8).toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="start" style="font-size:var(--fs-2xs);fill:var(--t3)">${fmtPriceTick(t)}</text>`;
     });
-    const pricePts=[];dates.forEach((d,i)=>{const v=priceMap[d];if(v!=null&&isFinite(v))pricePts.push({x:xOf(i),y:yOfPrice(v)});});
+    const pricePts=[];dates.forEach((d,i)=>{const v=priceMap[d];if(v!=null&&isFinite(v)){const y=yOfPrice(v);pricePts.push({x:xOf(i),y});priceY[d]=y;}});
     if(pricePts.length>1){
       const ptsStr=pricePts.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
       priceLineSvg=`<polyline points="${ptsStr}" fill="none" stroke="${PRICE_LINE_COL}" stroke-width="1.75" stroke-dasharray="6,4" stroke-linejoin="round" stroke-linecap="round" opacity="0.85"/>`;
@@ -19037,14 +19046,18 @@ function scoreVsPriceChart(dates,scoreMap,base,colorOverride,priceSeries,biasMap
   });
   svg+=priceLineSvg;
   // Fit-to-width + Hover: das Fenster zeigt Score und (falls vorhanden) Kurs
-  // des jeweiligen Tages, der Punkt sitzt auf der Score-Linie.
+  // des jeweiligen Tages. Seit 2026-10-31: Punkt auf beiden Linien, die
+  // weiter oben liegende Linie steht oben in der Karte.
   const fitSvg=svg.replace('<svg class="tr-svg"','<svg class="tr-svg" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto"')+`</svg>`;
   const hpts=[];
   dates.forEach((d,i)=>{
     const sv=scoreMap[d];const pv=priceMap[d];
     if(sv==null||!isFinite(sv))return;
     let lbl;try{const dt=new Date(d+'T00:00:00');lbl=dt.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'2-digit'});}catch(e){lbl=d;}
-    hpts.push({fx:xOf(i)/w,fy:yOfScore(sv)/h,t:d,col,tip:`<div class="chv-tip-d">${escH(lbl)}</div><div style="display:flex;justify-content:space-between;gap:12px"><span style="color:${col}">Score</span><b>${sv>0?'+':''}${sv}</b></div>${pv!=null&&isFinite(pv)?`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:var(--t0)">Price</span><b>${fmtPriceTick(pv)}</b></div>`:''}`});
+    const zs=[{y:yOfScore(sv),col,html:`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:${col}">Score</span><b>${sv>0?'+':''}${sv}</b></div>`}];
+    if(pv!=null&&isFinite(pv)&&priceY[d]!=null)zs.push({y:priceY[d],col:PRICE_LINE_COL,html:`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:var(--t0)">Price</span><b>${fmtPriceTick(pv)}</b></div>`});
+    zs.sort((a,b)=>a.y-b.y);
+    hpts.push({fx:xOf(i)/w,fy:yOfScore(sv)/h,t:d,col,ys:zs.map(z=>({fy:z.y/h,col:z.col})),ly:topPad/h,tip:`<div class="chv-tip-d">${escH(lbl)}</div>${zs.map(z=>z.html).join('')}`});
   });
   return chartHoverWrap(fitSvg,hpts,`max-width:${w}px;margin:0 auto`,null,null,brKey||'setTrendsRange');
 }
@@ -19098,7 +19111,7 @@ function renderTrendsRoh(){
       const wl=ALL_PAIRS.filter(isWatched);
       const optHtml=p=>`<option value="${p}"${trendsPairSel===p?' selected':''}>${p}</option>`;
       const opts=(wl.length?`<optgroup label="Watchlist">${wl.map(optHtml).join('')}</optgroup>`:'')+
-                  `<optgroup label="FX Pairs">`+FX_PAIRS.map(optHtml).join('')+`</optgroup>`+
+                  `<optgroup label="FX Pairs">`+FX_PAIRS_AZ.map(optHtml).join('')+`</optgroup>`+
                   `<optgroup label="Other Assets">`+otherPairs.map(optHtml).join('')+`</optgroup>`;
       if(pairSel.innerHTML!==opts)pairSel.innerHTML=opts;
     }
@@ -20070,6 +20083,13 @@ const _chvReg={};let _chvSeq=0;
 // (docs/design-system.md) bleibt damit gueltig.
 const _chvPick={};
 // svg fuellt den Wrapper; pts: [{fx,fy,col,tip}] mit fx,fy in 0..1 der SVG-Box.
+// MEHRERE LINIEN (Nutzer 2026-10-31, Preisvergleich: "der Punkt auf beiden
+// Preisen ... die Linie durch die Karte muss sich nach oben durchziehen"):
+// optional ys:[{fy,col}] = je Linie ein Punkt, ly = Oberkante der Fuehrungs-
+// linie (0..1, Plot-Oberkante). Dann laeuft die Linie ueber die volle
+// Plot-Hoehe und die Karte steht ueber dem obersten Punkt. Die Zeilen der
+// Karte sortiert der Aufrufer nach Lage (oben im Chart = oben in der Karte).
+// Ohne ys bleibt es beim einen Punkt und der Linie vom Punkt zum Boden.
 function chartHoverWrap(svg,pts,wrapStyle,group,onPick,br){
   const id='chv'+(_chvSeq++);_chvReg[id]=pts||[];if(onPick)_chvPick[id]=onPick;
   // br: Schluessel fuer "Zeitspanne per Ziehen" (brushAnbinden), Punkte brauchen .t/.date
@@ -20098,7 +20118,8 @@ function attachChartHovers(root){
   (root||document).querySelectorAll('.chv[data-chv]').forEach(w=>{
     if(w._chvWired)return;w._chvWired=1;
     const line=w.querySelector('.chv-line'),dot=w.querySelector('.chv-dot'),tip=w.querySelector('.chv-tip');
-    const hide=()=>{if(line)line.style.display='none';if(dot)dot.style.display='none';if(tip)tip.style.display='none';
+    const extra=[];   // weitere Punkte fuer ys (je Linie einer)
+    const hide=()=>{if(line)line.style.display='none';if(dot)dot.style.display='none';if(tip)tip.style.display='none';extra.forEach(d=>{d.style.display='none';});
       const cb=_chvPick[w.dataset.chv];if(cb)try{cb(null);}catch(e){}};
     w._chvHide=hide;
     // Solange der Zeiger IM Diagramm ist, ist IMMER ein Datenpunkt gewaehlt
@@ -20125,13 +20146,22 @@ function attachChartHovers(root){
     };
     w._chvShowPt=best=>{
       const r=w.getBoundingClientRect();if(!r.width||!best){hide();return null;}
-      const px=best.fx*r.width,py=best.fy*r.height;
+      const ys=Array.isArray(best.ys)&&best.ys.length>1?best.ys:null;
+      const px=best.fx*r.width,py=(ys?Math.min(...ys.map(z=>z.fy)):best.fy)*r.height;
+      if(ys){
+        // je Linie ein Punkt; der erste .chv-dot ist der oberste
+        const sort=ys.slice().sort((a,b)=>a.fy-b.fy);
+        while(extra.length<sort.length-1){const d=document.createElement('div');d.className='chv-dot';d.style.display='none';w.appendChild(d);extra.push(d);}
+        extra.forEach((d,i)=>{const z=sort[i+1];if(!z){d.style.display='none';return;}d.style.left=px+'px';d.style.top=(z.fy*r.height)+'px';d.style.borderColor=z.col||'var(--t3)';d.style.display='';});
+        best=Object.assign({},best,{col:sort[0].col||best.col});
+        if(line){const bot=Math.max(0,r.height-22),ty=Math.min(bot,best.ly!=null?best.ly*r.height:4);line.style.left=px+'px';line.style.top=ty+'px';line.style.height=Math.max(0,bot-ty)+'px';line.style.display='';}
+      }else extra.forEach(d=>{d.style.display='none';});
       // Duenne graue Linie SENKRECHT vom Punkt bis zum Boden des Diagramms
       // ("dort zieht sich dann auch eine duenne graue Linie senkrecht zum
       // Boden hoch"). Vorher lief sie ueber die volle Chart-Hoehe, also auch
       // oberhalb des Punktes - dadurch war nicht ablesbar, WELCHER Punkt
       // gemeint ist. top+height gewinnen gegen das bottom aus dem CSS.
-      if(line){const bot=Math.max(0,r.height-22),ty=Math.min(py,bot);line.style.left=px+'px';line.style.top=ty+'px';line.style.height=Math.max(0,bot-ty)+'px';line.style.display='';}
+      if(line&&!ys){const bot=Math.max(0,r.height-22),ty=Math.min(py,bot);line.style.left=px+'px';line.style.top=ty+'px';line.style.height=Math.max(0,bot-ty)+'px';line.style.display='';}
       if(dot){dot.style.left=px+'px';dot.style.top=py+'px';dot.style.borderColor=best.col||'var(--t3)';dot.style.display='';}
       if(tip){tip.innerHTML=best.tip;tip.style.display='';const tw=tip.offsetWidth||120;tip.style.left=Math.max(tw/2+2,Math.min(r.width-tw/2-2,px))+'px';tip.style.top=Math.max(4,py)+'px';}
       const cb=_chvPick[w.dataset.chv];if(cb)try{cb(best);}catch(e){}
@@ -21699,7 +21729,7 @@ let dataVsAssets=['USD','EUR'];
 let dataVsList=['CPI (Headline)'];
 function setDataMode(m){
   const vorher=dataMode;
-  dataMode=(m==='inds'||m==='vs'||m==='preis')?m:'assets';
+  dataMode=(m==='inds'||m==='vs'||m==='preis'||m==='alle')?m:'assets';
   // Beim Wechsel den jeweils festen Teil sinnvoll vorbelegen, damit nie ein
   // leeres Raster dasteht: das erste gewaehlte Asset bzw. der gemeinsame
   // Indikator wandern in den neuen Modus mit.
@@ -21720,8 +21750,10 @@ function setDataMode(m){
   }else if(dataMode==='preis'){
     // Das gerade gezeigte Asset kommt als erste Linie mit.
     if(!dataPreisListe.length&&dataAssets[0])dataPreisListe=['p:'+dataAssets[0]];
+  }else if(dataMode==='alle'){
+    if(!dataAlle.length&&dataAssets[0])dataAlle=[{a:dataAssets[0],k:'p:'+dataAssets[0]}];
   }
-  closeDataAssetPicker();closeDataIndPicker();closeDataPreisPicker();
+  closeDataAssetPicker();closeDataIndPicker();closeDataPreisPicker();closeDataAllePicker();
   renderDataTab();
 }
 // Asset A bzw. B waehlen. Dasselbe Asset auf beiden Seiten vergleicht
@@ -21872,66 +21904,241 @@ function renderDataPreisPicker(){
 // Wochenende, FX nicht - jede Linie steht an ihren eigenen Tagen.
 function preisWert(v,einheit){return einheit==='%'?(+v).toFixed(2)+'%':fmtPriceTick(+v);}
 function preisSpanne(s){return s.einheit==='%'?(s.hi-s.lo).toFixed(2)+' pp':(s.lo>0?((s.hi/s.lo-1)*100).toFixed(1)+' %':'–');}
-function preisVergleichHtml(keys,W,H){
+// ── Zweite Runde (Nutzer 2026-10-31) ──
+// "in data will ich alles nebeneinander oeffnen ... ergaenz einen der compare
+// all oder so heisst" / Prices: "einfach ein umschalter" One chart | Side by
+// side / "einheitliche skala ... an einer Stelle die Skalierung aendert und
+// auf eine andere umspringt aber trotzdem logisch. Schau einfach wie andere
+// dieses Problem loesen" -> Achsenbruch mit Baendern (Nutzerwahl; wie die
+// "axis breaks" bei Highcharts/amCharts, Baender je Preisniveau mit eigener
+// Skala, echte Preise an der Achse) / Kerzen: in EINEM Chart Kurs 1 blau,
+// Kurs 2 schwarz (die Kerzenfarben --cndl-up/--cndl-dn, im dunklen Design
+// gedreht), weitere eigene Farben; steigt = hohl, faellt = gefuellt. In
+// Einzel-Charts die normalen Kerzenfarben. Kerzen nach den vier Kerzen-Regeln
+// (tagesKerzen: ein Tag, kein Wochenende ausser Krypto, Koerper Vortages-
+// schluss -> Schluss, Docht nur aus echtem Hoch/Tief).
+const PREIS_FARBEN=['var(--cndl-up)','var(--cndl-dn)','var(--tf3)','var(--tf4)','var(--tf5)','var(--tf6)'];
+let dataPreisAnsicht='eins',dataPreisSkala='band';
+function setDataPreisAnsicht(v){dataPreisAnsicht=v==='neben'?'neben':'eins';renderDataTab();}
+function setDataPreisSkala(v){dataPreisSkala=v==='bruch'?'bruch':'band';renderDataTab();}
+function dataZeitfenster(){
+  if(dataRange==='CUSTOM')return{von:dataCustomFrom||null,bis:dataCustomTo||null};
+  if(dataRange==='MAX')return{von:null,bis:null};
+  return{von:rangeCutoffStr(+dataRange),bis:null};
+}
+function preisNamen(){
+  const m=new Map();kontextKatalog(true).forEach(g=>g.l.forEach(x=>m.set(x.k,x.k.startsWith('p:')&&FX.includes(x.k.slice(2))?KORB_NAME[x.k.slice(2)]:x.t)));
+  return m;
+}
+function preisDaten(k,von,bis,typ){
+  const q=abKontextReihe(k,'USD');
+  const roh=(Array.isArray(q.reihe)?q.reihe:[]).filter(e=>e&&e[1]!=null&&isFinite(+e[1])).map(e=>[String(e[0]).slice(0,10)].concat(e.slice(1)));
+  // ein Schluss VOR dem Fenster, damit die erste Kerze ihren Vortagesschluss hat
+  let a=von?roh.findIndex(e=>e[0]>=von):0;if(a<0)a=roh.length;
+  const teil=roh.slice(Math.max(0,a-1)).filter(e=>!bis||e[0]<=bis);
+  const kz=tagesKerzen(teil,q.quelle).filter(x=>!von||x.d>=von);
+  let lo=Infinity,hi=-Infinity;
+  kz.forEach(x=>{const l=typ==='kerze'?x.l:x.c,h=typ==='kerze'?x.h:x.c;if(l<lo)lo=l;if(h>hi)hi=h;});
+  return{kz,lo,hi,einheit:q.einheit||''};
+}
+// skala: 'band' = jede Linie Tief..Hoch (0-100), 'bruch' = echte Preise mit
+// Achsenbruch (aehnliche Niveaus teilen ein Band), 'eigen' = echte Preise in
+// einem Band (Einzel-Chart). bias: Kerzen in den Kerzenfarben statt je Kurs.
+function preisChartHtml(keys,W,H,opt){
   // Unsichtbar neu gezeichnet (Data im Hintergrund): Flaeche 0 -> Mindestmass
   // statt negativer SVG-Breite (check/runtime.js, 2026-10-31: width -20).
   W=Math.max(200,Math.round(W)||0);H=Math.max(160,Math.round(H)||0);
-  const kat=new Map();kontextKatalog(true).forEach(g=>g.l.forEach(x=>kat.set(x.k,x.t)));
-  const von=dataRange==='CUSTOM'?(dataCustomFrom||null):dataRange==='MAX'?null:rangeCutoffStr(+dataRange);
-  const bis=dataRange==='CUSTOM'?(dataCustomTo||null):null;
-  const name=k=>k.startsWith('p:')&&FX.includes(k.slice(2))?KORB_NAME[k.slice(2)]:(kat.get(k)||k.replace(/^p:/,''));
-  const serien=keys.map((k,i)=>{
-    const q=abKontextReihe(k,'USD');
-    // Wochenend-Tage wie in jedem Kurs-Chart nur bei Krypto (ohneWochenende).
-    const we=kerzenWochenendeErlaubt(q.quelle);
-    const pts=(Array.isArray(q.reihe)?q.reihe:[]).map(e=>[String(e[0]).slice(0,10),+e[1]]).filter(e=>isFinite(e[1])&&(!von||e[0]>=von)&&(!bis||e[0]<=bis)&&(we||!istWochenende(e[0])));
-    let lo=Infinity,hi=-Infinity;pts.forEach(e=>{if(e[1]<lo)lo=e[1];if(e[1]>hi)hi=e[1];});
-    return{k,t:name(k),col:TR_FOKUS_FARBEN[i%TR_FOKUS_FARBEN.length],pts,lo,hi,einheit:q.einheit||''};
-  });
-  const mit=serien.filter(x=>x.pts.length>1);
-  const legende=`<div class="pv-lg">${serien.map(x=>`<span class="pv-i"><i class="pv-f" style="background:${x.col}"></i><b>${escH(x.t)}</b>${x.pts.length>1
+  const o=opt||{},typ=o.typ==='kerze'?'kerze':'linie',skala=o.skala||'band',bias=!!o.bias,mitLeg=o.legende!==false,namen=o.namen||preisNamen();
+  const {von,bis}=dataZeitfenster();
+  const serien=keys.map((k,i)=>Object.assign({k,t:namen.get(k)||k.replace(/^(p|pair):/,''),col:PREIS_FARBEN[i%PREIS_FARBEN.length]},preisDaten(k,von,bis,typ)));
+  const mit=serien.filter(x=>x.kz.length>1&&isFinite(x.lo));
+  const legende=mitLeg?`<div class="pv-lg">${serien.map(x=>`<span class="pv-i"><i class="pv-f" style="background:${x.col}"></i><b>${escH(x.t)}</b>${x.kz.length>1
     ?` <span class="pv-sp">${escH(preisWert(x.lo,x.einheit))} – ${escH(preisWert(x.hi,x.einheit))}</span> <em>range ${escH(preisSpanne(x))}</em>`
-    :' <em>no data in this period</em>'}<button class="pv-x" onclick="removeDataPreis('${escJH(x.k)}')" title="Remove ${escH(x.t)}" aria-label="Remove ${escH(x.t)}">✕</button></span>`).join('')}</div>`;
+    :' <em>no data in this period</em>'}<button class="pv-x" onclick="removeDataPreis('${escJH(x.k)}')" title="Remove ${escH(x.t)}" aria-label="Remove ${escH(x.t)}">✕</button></span>`).join('')}</div>`:'';
   if(!mit.length)return legende+`<div class="ind-hist-empty">No prices in this period — pick a longer range.</div>`;
-  const Hc=Math.max(120,H-34),L=44,R=12,T=10,B=24,pw=Math.max(40,W-L-R),ph=Math.max(60,Hc-T-B);
-  const ms=d=>Date.parse(d+'T00:00:00Z');
-  const t0=Math.min(...mit.map(x=>ms(x.pts[0][0]))),t1=Math.max(...mit.map(x=>ms(x.pts[x.pts.length-1][0])));
-  const xOf=d=>L+(t1>t0?(ms(d)-t0)/(t1-t0):0.5)*pw;
-  const yOf=(x,v)=>T+(1-(x.hi>x.lo?(v-x.lo)/(x.hi-x.lo):0.5))*ph;
+  // X = Handelstage (Vereinigung der Tage aller Kurse), nicht Kalendertage.
+  const tage=[...new Set(mit.flatMap(x=>x.kz.map(z=>z.d)))].sort(),ix=new Map(tage.map((d,i)=>[d,i]));
+  const ns=mit.length;
+  const Hc=Math.max(120,H-(mitLeg?34:0)),L=skala==='band'?36:60,R=10,T=10,B=24;
+  const pw=Math.max(40,W-L-R),ph=Math.max(60,Hc-T-B),slot=pw/tage.length;
   let svg=`<svg class="pv-svg" width="${W}" height="${Hc}" viewBox="0 0 ${W} ${Hc}">`;
-  [0,25,50,75,100].forEach(t=>{
-    const y=T+(1-t/100)*ph;
-    svg+=`<line x1="${L}" y1="${y.toFixed(1)}" x2="${(L+pw).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--t3)" stroke-width="${t%50?0.6:1}"${t%50?' stroke-dasharray="2,3"':''} opacity="${t%50?0.3:0.45}"/>`;
-    svg+=`<text x="${L-7}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:var(--fs-xs);fill:var(--t3)">${t}</text>`;
+  const raster=(y,stark)=>`<line x1="${L}" y1="${y.toFixed(1)}" x2="${(L+pw).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--t3)" stroke-width="${stark?1:0.6}"${stark?'':' stroke-dasharray="2,3"'} opacity="${stark?0.45:0.3}"/>`;
+  const zahl=(y,t)=>`<text x="${L-7}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:var(--fs-xs);fill:var(--t3)">${escH(t)}</text>`;
+  let yOf;
+  if(skala==='band'){
+    yOf=(x,v)=>T+(1-(x.hi>x.lo?(v-x.lo)/(x.hi-x.lo):0.5))*ph;
+    [0,25,50,75,100].forEach(t=>{const y=T+(1-t/100)*ph;svg+=raster(y,t%50===0)+zahl(y,String(t));});
+  }else{
+    // Baender bilden: nach Tief sortiert; ein Kurs kommt ins Band darunter,
+    // wenn die Luecke hoechstens so gross ist wie die groessere Spanne -
+    // sonst neues Band ueber einem Bruch. 'eigen' = alles in einem Band.
+    const baender=[];
+    [...mit].sort((a,b)=>a.lo-b.lo).forEach(x=>{
+      const b=baender[baender.length-1];
+      if(b&&(skala==='eigen'||x.lo<=b.hi+Math.max(b.hi-b.lo,x.hi-x.lo))){b.lo=Math.min(b.lo,x.lo);b.hi=Math.max(b.hi,x.hi);b.s.push(x);}
+      else baender.push({lo:x.lo,hi:x.hi,s:[x]});
+    });
+    baender.reverse();   // hoechstes Niveau oben
+    const lueke=16,nb=baender.length,bh=(ph-lueke*(nb-1))/nb;
+    baender.forEach((b,j)=>{
+      const pad=(b.hi-b.lo)*0.06||Math.abs(b.hi)*0.005||1;
+      b.u=b.lo-pad;b.o=b.hi+pad;b.top=T+j*(bh+lueke);b.h=bh;
+      b.s.forEach(x=>{x.band=b;});
+      const einh=b.s.every(x=>x.einheit==='%')?'%':'';
+      achsenTicks(b.u,b.o,bh>140?4:3).filter(v=>v>=b.u&&v<=b.o).forEach(v=>{const y=b.top+(1-(v-b.u)/(b.o-b.u))*bh;svg+=raster(y,false)+zahl(y,preisWert(v,einh));});
+      if(j<nb-1){
+        // Bruch: gestrichelte Linie quer, Zickzack auf der Achse
+        const yc=b.top+bh+lueke/2;
+        svg+=`<line class="pv-bruch" x1="${L}" y1="${yc.toFixed(1)}" x2="${(L+pw).toFixed(1)}" y2="${yc.toFixed(1)}" stroke="var(--t2)" stroke-width="1" stroke-dasharray="5,4" opacity=".55"/>`;
+        svg+=`<path class="pv-bruch-z" d="M${L-10},${(yc+3).toFixed(1)} l4,-6 l4,6 l4,-6" fill="none" stroke="var(--t2)" stroke-width="1.5"/>`;
+      }
+    });
+    yOf=(x,v)=>{const b=x.band;return b.top+(1-(v-b.u)/(b.o-b.u))*b.h;};
+  }
+  // Kerzen mehrerer Kurse, die UEBEREINANDER liegen (gleiches Band bzw. 0-100),
+  // teilen sich den Tag in Unterplaetze - sonst laegen sie aufeinander. Ein Kurs
+  // allein in seinem Band bekommt den ganzen Tag (gemessen 2026-10-31: Gold
+  // allein oben war auf 1/4 der Breite gequetscht).
+  mit.forEach((x,i)=>{
+    const nachbarn=skala==='band'?mit:mit.filter(y=>y.band===x.band);
+    x.platzN=typ==='kerze'?nachbarn.length:1;x.platzI=typ==='kerze'?nachbarn.indexOf(x):0;
   });
-  const tage=[...new Set(mit.flatMap(x=>x.pts.map(e=>e[0])))].sort();
-  [0,0.25,0.5,0.75,1].forEach((f,i)=>{
+  // Datumsachse: so viele Daten, wie nebeneinander passen (Handy 2, breit 5) -
+  // gemessen 2026-10-31: 5 Daten auf 206 px Plotbreite lagen uebereinander.
+  const nx=Math.max(2,Math.min(5,Math.floor(pw/110)+1));
+  [...Array(nx)].map((_,i)=>i/(nx-1)).forEach((f,i)=>{
     const d=tage[Math.min(tage.length-1,Math.round(f*(tage.length-1)))];
-    const an=i===0?'start':i===4?'end':'middle';
-    const lbl=fmtDayShort(d);
-    svg+=`<text x="${xOf(d).toFixed(1)}" y="${(T+ph+17).toFixed(1)}" text-anchor="${an}" style="font-size:var(--fs-xs);fill:var(--t3)">${escH(lbl)}</text>`;
+    svg+=`<text x="${(L+(ix.get(d)+0.5)*slot).toFixed(1)}" y="${(T+ph+17).toFixed(1)}" text-anchor="${i===0?'start':i===nx-1?'end':'middle'}" style="font-size:var(--fs-xs);fill:var(--t3)">${escH(fmtDayShort(d))}</text>`;
   });
-  mit.forEach(x=>{
-    svg+=`<polyline points="${x.pts.map(e=>xOf(e[0]).toFixed(1)+','+yOf(x,e[1]).toFixed(1)).join(' ')}" fill="none" stroke="${x.col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  // Mehrere Kurse als Kerzen: je Tag ein Unterplatz je Kurs, sonst laegen sie aufeinander.
+  const xMitte=(d,x)=>L+ix.get(d)*slot+(x.platzI+0.5)*slot/x.platzN;
+  const breiteVon=x=>Math.max(1,Math.min(14,slot/x.platzN*0.7));
+  mit.forEach((x,i)=>{
+    if(typ==='linie'){
+      svg+=`<polyline class="pv-linie" data-k="${escH(x.k)}" points="${x.kz.map(z=>xMitte(z.d,x).toFixed(1)+','+yOf(x,z.c).toFixed(1)).join(' ')}" fill="none" stroke="${x.col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      return;
+    }
+    let g=`<g class="pv-kz" data-k="${escH(x.k)}">`;const breite=breiteVon(x);
+    x.kz.forEach(z=>{
+      const cx=xMitte(z.d,x),auf=z.c>=z.o,yo=yOf(x,z.o),yc=yOf(x,z.c),oben=Math.min(yo,yc),unten=Math.max(yo,yc),hh=Math.max(1,unten-oben);
+      const farbe=bias?(auf?'var(--cndl-up)':'var(--cndl-dn)'):x.col;
+      if(z.ohlc){
+        const yh=yOf(x,z.h),yl=yOf(x,z.l);
+        if(yh<oben-0.3)g+=`<line x1="${cx.toFixed(1)}" y1="${yh.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${oben.toFixed(1)}" stroke="${farbe}" stroke-width="1"/>`;
+        if(yl>unten+0.3)g+=`<line x1="${cx.toFixed(1)}" y1="${(oben+hh).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${yl.toFixed(1)}" stroke="${farbe}" stroke-width="1"/>`;
+      }
+      // je Kurs eine Farbe: steigt = hohl, faellt = gefuellt
+      g+=`<rect class="${auf?'pv-auf':'pv-ab'}" x="${(cx-breite/2).toFixed(1)}" y="${oben.toFixed(1)}" width="${breite.toFixed(1)}" height="${hh.toFixed(1)}" fill="${bias||!auf?farbe:'none'}" stroke="${farbe}" stroke-width="${bias?0:1}"/>`;
+    });
+    svg+=g+'</g>';
   });
   svg+='</svg>';
-  // Hover: hoechstens ~400 Stuetzpunkte; je Linie der letzte Schluss bis zu diesem Tag.
-  const schritt=Math.max(1,Math.ceil(tage.length/400));
-  const zeiger=mit.map(()=>0);
-  const hpts=[];
+  // Hover: hoechstens ~400 Stuetzpunkte; je Kurs der letzte Schluss bis zu diesem Tag.
+  const schritt=Math.max(1,Math.ceil(tage.length/400)),zeiger=mit.map(()=>0),hpts=[];
   tage.forEach((d,j)=>{
-    mit.forEach((x,i)=>{while(zeiger[i]+1<x.pts.length&&x.pts[zeiger[i]+1][0]<=d)zeiger[i]++;});
+    mit.forEach((x,i)=>{while(zeiger[i]+1<x.kz.length&&x.kz[zeiger[i]+1].d<=d)zeiger[i]++;});
     if(j%schritt&&j!==tage.length-1)return;
-    let fy=null,col='var(--t3)';
-    const rows=mit.map((x,i)=>{
-      const e=x.pts[zeiger[i]];if(!e||e[0]>d)return'';
-      const y=yOf(x,e[1]);if(fy==null){fy=y;col=x.col;}
-      const pos=x.hi>x.lo?Math.round((e[1]-x.lo)/(x.hi-x.lo)*100):50;
-      return`<div style="display:flex;justify-content:space-between;gap:12px"><span><span class="tr-tip-dot" style="background:${x.col}"></span>${escH(x.t)}</span><span><b>${escH(preisWert(e[1],x.einheit))}</b> <span style="color:var(--t3)">${pos}</span></span></div>`;
-    }).join('');
-    hpts.push({fx:xOf(d)/W,fy:(fy==null?T+ph/2:fy)/Hc,t:d,col,tip:`<div class="chv-tip-d">${escH(fmtDayHdr(d))}</div>${rows||'<span style="color:var(--t3)">no data</span>'}`});
+    // Je Kurs ein Punkt; oben im Chart = oben in der Karte, kreuzen sich
+    // die Linien, tauschen die Zeilen (Nutzer 2026-10-31, gemessen: GOLD bei
+    // y 555 ueber OIL bei y 654, Karte zeigte trotzdem OIL zuerst, nur OIL
+    // hatte einen Punkt, die Linie endete an OIL).
+    const zeilen=[];
+    mit.forEach((x,i)=>{
+      const z=x.kz[zeiger[i]];if(!z||z.d>d)return;
+      const y=yOf(x,z.c);
+      const pos=skala==='band'&&x.hi>x.lo?` <span style="color:var(--t3)">${Math.round((z.c-x.lo)/(x.hi-x.lo)*100)}</span>`:'';
+      const hl=typ==='kerze'&&z.ohlc?` <span style="color:var(--t3)">H ${escH(preisWert(z.h,x.einheit))} · L ${escH(preisWert(z.l,x.einheit))}</span>`:'';
+      zeilen.push({y,col:x.col,html:`<div style="display:flex;justify-content:space-between;gap:12px"><span><span class="tr-tip-dot" style="background:${x.col}"></span>${escH(x.t)}</span><span><b>${escH(preisWert(z.c,x.einheit))}</b>${pos}${hl}</span></div>`});
+    });
+    zeilen.sort((a,b)=>a.y-b.y);
+    const oben=zeilen[0],rows=zeilen.map(z=>z.html).join('');
+    hpts.push({fx:(L+(j+0.5)*slot)/W,fy:(oben?oben.y:T+ph/2)/Hc,t:d,col:oben?oben.col:'var(--t3)',ys:zeilen.map(z=>({fy:z.y/Hc,col:z.col})),ly:T/Hc,tip:`<div class="chv-tip-d">${escH(fmtDayHdr(d))}</div>${rows||'<span style="color:var(--t3)">no data</span>'}`});
   });
   return legende+chartHoverWrap(svg,hpts,`width:${W}px`,'data',null,'setDataRange');
+}
+function preisVergleichHtml(keys,W,H){return preisChartHtml(keys,W,H,{typ:pxChartTyp==='candle'?'kerze':'linie',skala:dataPreisSkala});}
+// ── Compare all: beliebige Charts beliebiger Assets nebeneinander ──
+// Nutzerwahl: im Fenster erst das Asset (kompakte Zeile), darunter nur dessen
+// Charts - Price, 2Y/10Y, alle Indikatoren. Jeder Tipp = ein Panel, bis zu 8.
+let dataAlle=[],dataAlleAsset=null,dataAlleGruppe=null,_dataAlleOffen=false;
+// Gruppen aus der Asset-Klasse (wie kontextKatalog): ein neues Asset oder ein
+// neuer Kurs-Feed landet ohne Codeaenderung in seiner Gruppe.
+function dataAlleAssetGruppen(){
+  const nurFeed=Object.keys(PRICE_DATA_FEED||{}).filter(k=>!syms.some(x=>x.id===k)&&!FX.includes(k));
+  const klasseVon=k=>assetCls(k)||FEED_KLASSE[k]||'other';
+  const g=[{name:'Currencies',ids:FX.slice()}];
+  [['crypto','Crypto'],['metal','Metals'],['energy','Energy'],['index','Indices'],['stock','Stocks'],['yield','Yields'],['other','Other']].forEach(([kl,name])=>{
+    const ids=syms.filter(x=>!FX.includes(x.id)&&klasseVon(x.id)===kl).map(x=>x.id).concat(nurFeed.filter(k=>klasseVon(k)===kl));
+    if(ids.length)g.push({name,ids});
+  });
+  g.push({name:'FX pairs',ids:['PAIRS']});
+  if(SENTIMENT_DATA&&SENTIMENT_DATA.vix)g.push({name:'Volatility',ids:['VIX']});
+  return g;
+}
+function dataAlleItems(a){
+  const hat=k=>{const r=abKontextReihe(k,'USD').reihe;return Array.isArray(r)&&r.length>1;};
+  if(a==='PAIRS')return[...new Set(FX_PAIRS_AZ.map(p=>p.split('/')[0]))].map(bz=>({name:bz,l:FX_PAIRS_AZ.filter(p=>p.startsWith(bz+'/')).map(p=>({k:'pair:'+p,t:p}))}));
+  if(a==='VIX')return[{name:'Volatility',l:[{k:'vix',t:'VIX (S&P 500 volatility)'}]}];
+  const out=[],pr=[];
+  if(hat('p:'+a))pr.push({k:'p:'+a,t:FX.includes(a)?KORB_NAME[a]:'Price'});
+  const ccy=FX.includes(a)?a:(YIELD_CCY[a]||null);
+  if(ccy)[['b2','2Y yield'],['b10','10Y yield']].forEach(([t,l])=>{if(hat(t+':'+ccy))pr.push({k:t+':'+ccy,t:ccy+' '+l});});
+  if(pr.length)out.push({name:'Price & yields',l:pr});
+  const sym=syms.find(x=>x.id===a);
+  if(sym)dataIndGroupsOf(sym).forEach(g=>{if(g.items.length)out.push({name:g.name,l:g.items.map(it=>({k:'i:'+it.b,t:it.n}))});});
+  return out;
+}
+function _dataAlleOutside(e){const t=e.target;if(t&&t.closest&&t.closest('#dataAllePicker,#dataAlleBtn'))return;closeDataAllePicker();}
+function closeDataAllePicker(){
+  _dataAlleOffen=false;document.removeEventListener('pointerdown',_dataAlleOutside,true);
+  const el=document.getElementById('dataAllePicker');if(el)el.remove();
+  const b=document.getElementById('dataAlleBtn');if(b)b.classList.remove('on');
+}
+function openDataAllePicker(){
+  if(_dataAlleOffen){closeDataAllePicker();return;}
+  _dataAlleOffen=true;if(!dataAlleAsset)dataAlleAsset=(dataAlle[dataAlle.length-1]||{}).a||dataAssets[0]||'USD';
+  renderDataAllePicker();
+  setTimeout(()=>{if(_dataAlleOffen)document.addEventListener('pointerdown',_dataAlleOutside,true);},0);
+}
+function setDataAlleAsset(a){dataAlleAsset=a;renderDataAllePicker();}
+// Gruppe waehlen = ihr erstes Asset, wenn das aktuelle nicht darin liegt
+// (Energy -> OIL sofort, ein Tipp weniger).
+function setDataAlleGruppe(name){
+  const g=dataAlleAssetGruppen().find(x=>x.name===name);if(!g)return;
+  dataAlleGruppe=name;if(!g.ids.includes(dataAlleAsset))dataAlleAsset=g.ids[0];
+  renderDataAllePicker();
+}
+function toggleDataAlle(a,k){
+  const i=dataAlle.findIndex(x=>x.a===a&&x.k===k);
+  if(i>=0)dataAlle.splice(i,1);else if(dataAlle.length<DATA_MAX_PANELS)dataAlle.push({a,k});else return;
+  renderDataTab();
+  if(dataAlle.length>=DATA_MAX_PANELS)closeDataAllePicker();
+}
+function removeDataAlle(i){dataAlle.splice(i,1);renderDataTab();}
+function renderDataAllePicker(){
+  if(!_dataAlleOffen)return;
+  const btn=document.getElementById('dataAlleBtn');if(!btn){closeDataAllePicker();return;}
+  btn.classList.add('on');
+  let el=document.getElementById('dataAllePicker');
+  if(!el){el=document.createElement('div');el.id='dataAllePicker';el.className='data-picker';document.body.appendChild(el);}
+  const voll=dataAlle.length>=DATA_MAX_PANELS,a=dataAlleAsset;
+  const aName=a==='PAIRS'?'FX pairs':a;
+  // Zwei Ebenen statt aller Assets auf einmal (gemessen 2026-10-31: 26 Chips =
+  // 218 von 450 px): oben die Gruppen, darunter nur die Assets der Gruppe.
+  const gruppen=dataAlleAssetGruppen();
+  let gr=gruppen.find(g=>g.name===dataAlleGruppe&&g.ids.includes(a))||gruppen.find(g=>g.ids.includes(a))||gruppen[0];
+  dataAlleGruppe=gr.name;
+  const zeile=`<div class="dap-reihe" role="group" aria-label="Asset group">${gruppen.map(g=>`<button class="ind-hist-range-btn${g===gr?' on':''}" onclick="setDataAlleGruppe('${escJH(g.name)}')">${escH(g.name)}</button>`).join('')}</div>`
+    +(gr.ids.length>1||(gr.ids[0]!=='PAIRS'&&gr.ids[0]!=='VIX')?`<div class="dap-reihe" role="group" aria-label="Asset">${gr.ids.map(id=>`<button class="cmp-chip${id===a?' on':''}" onclick="setDataAlleAsset('${escJH(id)}')">${escH(id)}</button>`).join('')}</div>`:'');
+  const items=dataAlleItems(a).map(g=>`<div class="data-picker-grp"><span class="cmp-filter-lbl">${escH(g.name)}</span><div class="cmp-filter-grp">${g.l.map(x=>{
+    const an=dataAlle.some(y=>y.a===a&&y.k===x.k);
+    return`<button class="cmp-chip${an?' on':''}"${!an&&voll?' disabled':''} onclick="toggleDataAlle('${escJH(a)}','${escJH(x.k)}')" title="${escH(x.t)}">${escH(x.t)}</button>`;
+  }).join('')}</div></div>`).join('');
+  el.innerHTML=`<div class="data-picker-hd"><span>Add charts · <b>${escH(aName)}</b></span><b>${dataAlle.length}/${DATA_MAX_PANELS}</b></div>
+    <div class="dap-assets">${zeile}</div>
+    <div class="data-picker-body">${items||'<div class="cmp-filter-none">No charts for this asset.</div>'}</div>
+    <div class="data-picker-ft">group → asset above · every tap adds a panel · closes at ${DATA_MAX_PANELS} or when you tap outside</div>`;
+  pickerAnkern(el,btn);
 }
 // ══ JEDE AUSWAHLLISTE MIT GRUPPEN -> 2-SPALTEN-FENSTER (Option a) ══════
 // Nutzer 2026-10-31 nach der Vorschau a|b: "Ja a". Jede <select> mit
@@ -22018,7 +22225,11 @@ function pickerAnkern(el,btn){
   if(el.dataset.fest)return;
   const r=btn.getBoundingClientRect();
   el.style.top=Math.round(r.bottom+6)+'px';
-  el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+'px';
+  // Rechtsbuendig zum Knopf, aber nie links aus dem Bild (gemessen 2026-10-31,
+  // 390 px: Compare-all-Fenster left -30, weil rechts vom Knopf noch das
+  // Info-Symbol steht und das Fenster 374 px breit ist).
+  const breit=el.offsetWidth||0;
+  el.style.right=Math.max(8,Math.min(Math.round(window.innerWidth-r.right),Math.round(window.innerWidth-breit-8)))+'px';
   el.style.maxHeight=pickerHoehe(r.bottom+6)+'px';
   el.dataset.fest='1';
 }
@@ -22126,7 +22337,8 @@ function renderDataTabRoh(){
     <button class="ind-hist-range-btn${dataMode==='assets'?' on':''}" onclick="setDataMode('assets')" title="One indicator, up to ${N} assets side by side">By asset</button>
     <button class="ind-hist-range-btn${dataMode==='inds'?' on':''}" onclick="setDataMode('inds')" title="One asset, up to ${N} of its indicators side by side">By indicator</button>
     <button class="ind-hist-range-btn${dataMode==='vs'?' on':''}" onclick="setDataMode('vs')" title="Two assets, the same up to ${DATA_VS_MAX} indicators paired row by row">Asset vs asset</button>
-    <button class="ind-hist-range-btn${dataMode==='preis'?' on':''}" onclick="setDataMode('preis')" title="Up to ${DATA_PREIS_MAX} prices in one chart, each from its own low to its own high">Prices</button>
+    <button class="ind-hist-range-btn${dataMode==='preis'?' on':''}" onclick="setDataMode('preis')" title="Up to ${DATA_PREIS_MAX} prices in one chart or side by side">Prices</button>
+    <button class="ind-hist-range-btn${dataMode==='alle'?' on':''}" onclick="setDataMode('alle')" title="Any chart of any asset side by side - tap + Add">Compare all</button>
   </div>`;
   // Die Leiste steht im Kopf, die Datentiefe kennt man erst nach den Panels:
   // Platzhalter, am Ende ersetzt (fruehester Punkt ueber alle Panels).
@@ -22154,20 +22366,58 @@ function renderDataTabRoh(){
   // Dauerregel 2026-09-26: Filter (Asset-/Indikator-Auswahl) rechtsbuendig
   // in der Titelzeile; darunter die Werkzeugzeile - Ansicht (By asset / By
   // indicator) links, Zeitfilter rechts.
-  const kopf=(sub,filter,knopf,zeit)=>`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar,zeit)}</div></div>`;
+  const kopf=(sub,filter,knopf,zeit,links2)=>`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar+(links2||''),zeit)}</div></div>`;
   let head,body,n=0;
+  // Ein Preis-Panel (Side by side, Compare all): eigener Massstab, echte Preise.
+  const preisPanelHtml=(k,titel,sub,ctrls,namen)=>{
+    const r=abKontextReihe(k,'USD').reihe;
+    if(Array.isArray(r)&&r.length){const d0=String(r[0][0]).slice(0,10);if(!dataAb||d0<dataAb)dataAb=d0;}
+    const j=panelJobs.length;panelJobs.push({preisEinzeln:k,namen});
+    return`<div class="cot-card data-panel"><div class="data-ph"><span class="data-pt">${titel}<span class="px-panel-sub">${sub}</span></span><span class="px-panel-ctrls">${ctrls||''}</span>${abInfoBtn(titel.replace(/<[^>]*>/g,''),['<b>Real prices</b> on its own scale.','Candles: <b>body</b> previous close → close, <b>wick</b> only from a measured high/low.','Currencies = basket vs the other 7.'])}</div><div class="data-pc" data-k="${j}"></div></div>`;
+  };
+  const typSchalter=chartTypSchalterHtml();
   if(dataMode==='preis'){
-    // ── Bis zu 6 Kurse in EINEM Chart, je Linie Tief unten / Hoch oben ──
-    const kat=new Set();kontextKatalog(true).forEach(g=>g.l.forEach(x=>kat.add(x.k)));
-    dataPreisListe=dataPreisListe.filter(k=>kat.has(k)).slice(0,DATA_PREIS_MAX);
+    // ── Bis zu 6 Kurse: ein Chart (Low → high | Common) oder nebeneinander ──
+    const namen=preisNamen();
+    dataPreisListe=dataPreisListe.filter(k=>namen.has(k)).slice(0,DATA_PREIS_MAX);
     dataPreisListe.forEach(k=>{const r=abKontextReihe(k,'USD').reihe;if(Array.isArray(r)&&r.length){const d0=String(r[0][0]).slice(0,10);if(!dataAb||d0<dataAb)dataAb=d0;}});
     const knopf=`<button class="btn" id="dataPreisBtn" onclick="openDataPreisPicker()" title="Pick up to ${DATA_PREIS_MAX} prices at once — every tap is applied right away">${icn('filter',13)}<span style="margin-left:5px">Prices</span> <b style="font-family:var(--ff-num)">${dataPreisListe.length}/${DATA_PREIS_MAX}</b></button>`;
-    head=kopf(`Up to ${DATA_PREIS_MAX} prices in one chart · each line from its own low to its own high`,'',knopf,dataPreisListe.length?rangeBarHtml():'');
+    const neben=dataPreisAnsicht==='neben';
+    const seg=(werte,akt,fn,lbl)=>`<span class="px-modes" role="group" aria-label="${lbl}">${werte.map(([v,l,t])=>`<button class="ind-hist-range-btn${akt===v?' on':''}" onclick="${fn}('${v}')" title="${escH(t)}">${l}</button>`).join('')}</span>`;
+    const schalter=seg([['eins','One chart','All prices in one chart'],['neben','Side by side','Each price in its own chart']],dataPreisAnsicht,'setDataPreisAnsicht','Layout')
+      +(neben?'':seg([['band','Low → high','Each line from its own low (0) to its own high (100)'],['bruch','Common','Real prices - similar levels share a band, the axis breaks between levels']],dataPreisSkala,'setDataPreisSkala','Scale'))
+      +typSchalter;
+    head=kopf(`Up to ${DATA_PREIS_MAX} prices · one chart or side by side`,'',knopf,dataPreisListe.length?rangeBarHtml():'',schalter);
     if(!dataPreisListe.length)body=`<div class="cot-empty">Pick up to ${DATA_PREIS_MAX} prices above to compare their patterns.</div>`;
+    else if(neben){
+      n=dataPreisListe.length;
+      body=`<div class="data-grid">`+dataPreisListe.map(k=>preisPanelHtml(k,escH(namen.get(k)||k),'price',`<button class="px-panel-chip" onclick="removeDataPreis('${escJH(k)}')" title="Remove this price">✕</button>`,namen)).join('')+`</div>`;
+    }else{
+      n=1;const k=panelJobs.length;panelJobs.push({preis:true,namen});
+      const info=abInfoBtn('Price comparison',dataPreisSkala==='bruch'
+        ?['<b>Real prices.</b> Similar levels share a band with one scale.','<b>Axis break</b> (zigzag + dashed line) between levels — each band has its own scale.','<b>Hover:</b> the real price of every line on that day.']
+        :['<b>Each line</b> spans its own range: lowest close in the period = <b>0</b>, highest = <b>100</b>.','<b>Shape, not size:</b> a 0.5 % move and a 10 % move fill the chart alike — the legend shows the real range.','<b>Hover:</b> the real price of every line on that day.']);
+      body=`<div class="data-grid"><div class="cot-card data-panel"><div class="data-ph"><span class="data-pt">Price comparison<span class="px-panel-sub">${dataPreisSkala==='bruch'?'common scale · axis breaks':'low → high in period'}</span></span><span class="px-panel-ctrls"></span>${info}</div><div class="data-pc" data-k="${k}"></div></div></div>`;
+    }
+  }else if(dataMode==='alle'){
+    // ── Compare all: jedes Panel ein beliebiger Chart eines beliebigen Assets ──
+    const namen=preisNamen();
+    dataAlle=dataAlle.filter(x=>x&&x.k&&(x.k.startsWith('i:')?syms.some(y=>y.id===x.a):namen.has(x.k))).slice(0,N);
+    const knopf=`<button class="btn" id="dataAlleBtn" onclick="openDataAllePicker()" title="Add any chart of any asset — every tap adds a panel">＋<span style="margin-left:5px">Add</span> <b style="font-family:var(--ff-num)">${dataAlle.length}/${N}</b></button>`;
+    head=kopf(`Any chart of any asset · up to ${N} side by side · one time range`,'',knopf,dataAlle.length?rangeBarHtml():'',typSchalter);
+    if(!dataAlle.length)body=`<div class="cot-empty">Tap <b>＋ Add</b> — pick an asset, then any of its charts.</div>`;
     else{
-      n=1;const k=panelJobs.length;panelJobs.push({preis:true});
-      const info=abInfoBtn('Price comparison',['<b>Each line</b> spans its own range: lowest close in the period = <b>0</b>, highest = <b>100</b>.','<b>Shape, not size:</b> a 0.5 % move and a 10 % move fill the chart alike — the legend shows the real range.','<b>Hover:</b> the real price of every line on that day.','Currencies = basket vs the other 7 · pairs from the same closes · yields in %.']);
-      body=`<div class="data-grid"><div class="cot-card data-panel"><div class="data-ph"><span class="data-pt">Price comparison<span class="px-panel-sub">low → high in period</span></span><span class="px-panel-ctrls"></span>${info}</div><div class="data-pc" data-k="${k}"></div></div></div>`;
+      n=dataAlle.length;
+      body=`<div class="data-grid">`+dataAlle.map((x,i)=>{
+        const weg=`<button class="px-panel-chip" onclick="removeDataAlle(${i})" title="Remove this panel">✕</button>`;
+        if(x.k.startsWith('i:')){
+          const sym=syms.find(y=>y.id===x.a),base=x.k.slice(2);
+          const it=dataIndGroupsOf(sym).flatMap(g=>g.items).find(y=>y.b===base);
+          return panelHtml(sym,base,`${escH(sym.id)}<span class="px-panel-sub">${escH(it?it.n:base)}</span>`,weg);
+        }
+        const nm=namen.get(x.k)||x.k;
+        return preisPanelHtml(x.k,escH(x.a==='PAIRS'||x.a==='VIX'?nm:x.a),escH(x.a==='PAIRS'||x.a==='VIX'?'price':nm),weg,namen);
+      }).join('')+`</div>`;
     }
   }else if(dataMode==='vs'){
     // ── ZWEI Assets, dieselben bis zu DATA_VS_MAX Indikatoren paarweise ──
@@ -22246,7 +22496,7 @@ function renderDataTabRoh(){
   attachChartHovers(el);
   // Die Buttons wurden gerade neu gebaut - ein offenes Popup muss sich wieder
   // daran ausrichten und den neuen Stand zeigen. No-ops, solange zu.
-  renderDataAssetPicker();renderDataIndPicker();renderDataPreisPicker();
+  renderDataAssetPicker();renderDataIndPicker();renderDataPreisPicker();renderDataAllePicker();
 }
 // Raster setzen, Zellen messen, dann jeden Chart in seine Flaeche zeichnen.
 function dataRasterFuellen(el,n,jobs){
@@ -22273,7 +22523,7 @@ function dataRasterFuellen(el,n,jobs){
   // (opts.meta), dann die Vereinigung als opts.yRange mitgeben.
   const spannen={};
   jobs.forEach(job=>{
-    if(!job||job.preis)return;
+    if(!job||job.preis||job.preisEinzeln)return;
     const base=stripPeriodSuffix(job.ind.name).base,m={};
     try{indHistChart(job.ind,job.sym.id,{noToolbar:true,noLegend:true,range:dataRange,from:dataCustomFrom,to:dataCustomTo,W:400,H:200,meta:m});}catch(e){return;}
     if(m.vMin==null||!isFinite(m.vMin))return;
@@ -22282,10 +22532,13 @@ function dataRasterFuellen(el,n,jobs){
   });
   grid.querySelectorAll('.data-pc[data-k]').forEach(box=>{
     const job=jobs[+box.dataset.k];if(!job)return;
-    if(job.preis){
+    if(job.preis||job.preisEinzeln){
       const bs=getComputedStyle(box),px=k=>parseFloat(bs[k])||0;
       const w=box.clientWidth-px('paddingLeft')-px('paddingRight');
-      const zeichne=h=>{box.innerHTML=preisVergleichHtml(dataPreisListe,w,h);};
+      const typ=pxChartTyp==='candle'?'kerze':'linie';
+      const zeichne=h=>{box.innerHTML=job.preis
+        ?preisChartHtml(dataPreisListe,w,h,{typ,skala:dataPreisSkala,namen:job.namen})
+        :preisChartHtml([job.preisEinzeln],w,h,{typ,skala:'eigen',bias:true,legende:false,namen:job.namen});};
       const h0=box.clientHeight-px('paddingTop')-px('paddingBottom');
       zeichne(h0);
       const ueber=box.scrollHeight-box.clientHeight;
@@ -25156,16 +25409,19 @@ function rateProbTimelineChart(pts,distTimeline,todayIdx,pastCount){
       const lbl=p.realizedBucket===0?'Hold':(p.realizedBucket>0?'+':'')+p.realizedBucket+'bp';
       return{fx:xOf(i)/W,fy:yOf(100)/H,col,tip:`<div class="chv-tip-d">${escH(p.label)}</div><b style="color:${col}">✓ ${escH(lbl)}</b> (realized - from NY Fed EFFR)`};
     }
-    let dotY=null,dotCol='var(--t3)';
-    const rows=sortedLevels.map(lvl=>{
+    // Seit 2026-10-31 (Fehlerklasse aus dem Preisvergleich): ein Punkt auf
+    // jeder Linie, Zeilen nach Lage (hoehere Wahrscheinlichkeit = weiter oben).
+    const zs=[];
+    sortedLevels.forEach(lvl=>{
       const pct=distTimeline[i][lvl];
-      if(pct==null||pct<=1)return'';
+      if(pct==null||pct<=1)return;
       const col=rateProbLineColor(lvl);
-      if(dotY==null){dotY=yOf(pct);dotCol=col;}
       const lbl=lvl===0?'Hold':(lvl>0?'+':'')+lvl+'bp';
-      return`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:${col}">${escH(lbl)}</span><b>${pct.toFixed(1)}%</b></div>`;
-    }).filter(Boolean).join('');
-    return{fx:xOf(i)/W,fy:(dotY!=null?dotY:yOf(0))/H,col:dotCol,tip:`<div class="chv-tip-d">${escH(p.label)}</div>${rows||'<span style="color:var(--t3)">no data</span>'}`};
+      zs.push({y:yOf(pct),col,html:`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:${col}">${escH(lbl)}</span><b>${pct.toFixed(1)}%</b></div>`});
+    });
+    zs.sort((a,b)=>a.y-b.y);
+    const rows=zs.map(z=>z.html).join('');
+    return{fx:xOf(i)/W,fy:(zs.length?zs[0].y:yOf(0))/H,col:zs.length?zs[0].col:'var(--t3)',ys:zs.map(z=>({fy:z.y/H,col:z.col})),ly:padT/H,tip:`<div class="chv-tip-d">${escH(p.label)}</div>${rows||'<span style="color:var(--t3)">no data</span>'}`};
   });
   // Kollisions-Vermeidung fuer die Endpunkt-Labels (Nutzer-Grundsatz
   // 2026-07-20: "Es duerfen niemals Elemente ueberlappen sodass man etwas
@@ -27398,7 +27654,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,
   DASH_COL_MIN_H,DASH_SHRINK_MIN_H,equalizeDashColumns,scrollCalsToNow,delWidget,renameWidget,confirmRename,addWidget,
-  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,linkOeffnen,pickerAnkern,pickerHoehe,pickerHoeheRaum,gwAuf,gwZu,gwSelectAn,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
+  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,linkOeffnen,setDataPreisAnsicht,setDataPreisSkala,preisChartHtml,openDataAllePicker,closeDataAllePicker,setDataAlleAsset,toggleDataAlle,removeDataAlle,dataAlleItems,pickerAnkern,pickerHoehe,pickerHoeheRaum,setDataAlleGruppe,gwAuf,gwZu,gwSelectAn,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
   recordScoreHist,RISK_ON_IDS,RISK_OFF_IDS,riskOnOffState,riskSentimentWidgetHtml,globeHudLonTxt,globeHudHtml,bMark,
   startScanBroadcast,scanFlyParticle,surpriseIndex,mxHeatColor,assetReturnMap,pearsonR,corrHeatColor,setCorrA,
   setCorrB,setCorrWin,logReturns,pearson,corrRegimeSeries,corrRegimeCardHtml,renderCorrCard,renderMatrix,TREND_COLORS,
@@ -27526,6 +27782,7 @@ Object.defineProperty(window,'noteCats',{get:()=>noteCats,set:v=>{noteCats=v;},c
 Object.defineProperty(window,'research',{get:()=>research,set:v=>{research=v;},configurable:true});
 Object.defineProperty(window,'researchFolders',{get:()=>researchFolders,set:v=>{researchFolders=v;},configurable:true});
 Object.defineProperty(window,'dataPreisListe',{get:()=>dataPreisListe,set:v=>{dataPreisListe=v;},configurable:true});
+Object.defineProperty(window,'dataAlle',{get:()=>dataAlle,set:v=>{dataAlle=v;},configurable:true});
 Object.defineProperty(window,'researchAnalysis',{get:()=>researchAnalysis,set:v=>{researchAnalysis=v;},configurable:true});
 Object.defineProperty(window,'calEvts',{get:()=>calEvts,set:v=>{calEvts=v;},configurable:true});
 Object.defineProperty(window,'widgets',{get:()=>widgets,set:v=>{widgets=v;},configurable:true});

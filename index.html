@@ -2812,7 +2812,7 @@ body.res-return-active #resBackBar{display:flex}
 .px-src-z{display:flex;justify-content:flex-end;margin:6px 0 0}
 .px-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
 .px-toolbar-sp{flex:1 1 auto}
-.px-modes{display:flex;gap:4px}
+.px-modes{display:flex;flex-wrap:wrap;gap:10px 4px}
 .px-src{font:600 var(--fs-2xs)/1 var(--ff-num);color:var(--blue);text-decoration:none;white-space:nowrap}
 @media (hover:hover){.px-src:hover{text-decoration:underline}}
 .px-chart{background:var(--bg1);border:1px solid var(--bd);border-radius:12px;padding:8px 6px 2px}
@@ -2856,6 +2856,9 @@ select:has(optgroup):not([data-nativ]):not(:disabled){pointer-events:none}
 @media (max-width:480px){.data-picker .cmp-chip{white-space:normal;text-align:left}}
 .data-picker-ft{padding:8px 13px;border-top:1px solid var(--bd);font:400 var(--fs-2xs)/1.45 var(--ff-text);color:var(--t3)}
 .data-picker .cmp-chip:disabled{opacity:.35;cursor:not-allowed}
+/* Compare all (2026-10-31): erst das Asset (kompakte Zeile je Gruppe), darunter nur dessen Charts */
+.dap-assets{display:flex;flex-direction:column;gap:8px;padding:10px 13px;border-bottom:1px solid var(--bd)}
+.dap-reihe{display:flex;flex-wrap:wrap;gap:5px}
 /* ── INSIGHTS > DATA: bis zu 4 Panels (Nutzer-Wunsch 2026-09-05) ── */
 .data-ctrls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:0 14px 12px}
 .data-sub{font:500 var(--fs-xs)/1.4 var(--ff-text);color:var(--t3);margin-left:10px}
@@ -2949,7 +2952,7 @@ body.no-ui-anim .cd-heute{animation:none}
 .data-ph .px-panel-ctrls{margin-left:auto;flex:0 1 auto}
 .data-ph .px-panel-sel{max-width:150px;min-width:0}
 .data-lg{display:inline-flex;gap:8px;font:600 var(--fs-2xs)/1 var(--ff-text);flex:0 0 auto}
-@container (max-width:470px){.data-lg{display:none}}
+@container (max-width:470px){.data-lg{display:none}.data-pt{white-space:normal;max-width:none;flex:1 1 auto;min-width:min-content}}
 @container (max-width:330px){.data-ph .px-asof{display:none}}
 .data-indsel{font:600 var(--fs-sm)/1.2 var(--ff-text)!important;padding:6px 10px!important}
 .data-pc{flex:1 1 auto;min-height:0;padding:6px 10px 4px;overflow:hidden}
@@ -7107,11 +7110,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-656 - Rate Probabilities: keine falsche Blockiert-Meldung mehr nach dem Oeffnen (window.open ohne noopener + opener getrennt); vorher 655: Chart-Leisten 10 px Zeilenabstand."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-657 - Data: Compare all (beliebige Charts beliebiger Assets nebeneinander), Prices One chart | Side by side, Common = Achsenbruch mit echten Preisen, Kerzen (Kurs 1 blau, Kurs 2 schwarz, steigt hohl); Auswahlfenster nie links aus dem Bild; FX-Paare in Filtern A-Z; Hover bei mehreren Linien: Punkt auf jeder Linie, Karte nach Lage, Linie bis oben; vorher 656: keine falsche Blockiert-Meldung."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-656</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-657</span>
     </span>
   </div>
   <div class="hdr-r">

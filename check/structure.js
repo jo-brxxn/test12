@@ -295,12 +295,69 @@ const importFehlt=[];
     }
   });
 }
+// ── Window-Bruecke: jeder Kurzname ist in seiner Datei deklariert (2026-10-31) ──
+// Ein Name in Object.assign(window,{...}), den es im Modul nicht (mehr) gibt,
+// wirft beim Laden einen ReferenceError - das Modul bricht ab, KEIN Knopf der
+// App geht mehr (showTab undefined). Anlass: beim Data-Umbau hat ein Patch den
+// Bereich mit gwAuf/gwZu/gwSelectAn mitersetzt; node --check, syntax.js und
+// die uebrigen Netze hier blieben gruen. Gegenprobe: --gegenprobe-bruecke
+// benennt gwAuf in der Deklaration um.
+const brueckeFehlt=[];
+{
+  const ohneZK=t=>t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/[^\n]*/g,'');
+  let dateien=[];
+  try{dateien=fs.readdirSync(jsDir).filter(f=>f.endsWith('.js'));}catch(e){}
+  dateien.forEach(f=>{
+    let t=fs.readFileSync(path.join(jsDir,f),'utf8');
+    if(process.argv.includes('--gegenprobe-bruecke')&&f==='main.js')t=t.replace('function gwAuf(','function gwAufWeg(');
+    const roh=ohneZK(t);
+    // Bruecken-Bloecke herausnehmen: ihre Kommaliste "a,b,c" saehe sonst wie
+    // eine Deklaration "let x=1,b,c" aus und jeder Name gaelte als deklariert.
+    const zeilen=roh.split('\n'),bloecke=[];
+    for(let i=0;i<zeilen.length;i++){
+      if(!/Object\.assign\(\s*window\s*,\s*\{/.test(zeilen[i]))continue;
+      let k=i;for(;k<zeilen.length;k++){if(/\}\s*\)\s*;?\s*$/.test(zeilen[k]))break;}
+      bloecke.push([i,k]);
+    }
+    const ohneBruecke=zeilen.map((z,i)=>bloecke.some(([a,e])=>i>=a&&i<=e)?'':z).join('\n');
+    const dekl=new Set();
+    for(const m of ohneBruecke.matchAll(/\b(?:function\s*\*?\s*|class\s+)([A-Za-z_$][\w$]*)/g))dekl.add(m[1]);
+    for(const m of ohneBruecke.matchAll(/\b(?:let|const|var)\s+([A-Za-z_$][\w$]*)/g))dekl.add(m[1]);
+    // weitere Namen derselben Deklaration: let a=1,b=2 / const {a,b}=... / [a,b]=
+    for(const m of ohneBruecke.matchAll(/,\s*([A-Za-z_$][\w$]*)\s*(?==|,|;)/g))dekl.add(m[1]);
+    for(const m of ohneBruecke.matchAll(/\b(?:let|const|var)\s*[{[]([^}\]]*)[}\]]\s*=/g))m[1].split(',').forEach(x=>{const n=x.split(':').pop().split('=')[0].trim();if(n)dekl.add(n);});
+    for(const m of ohneBruecke.matchAll(/(?:^|\n)\s*import\s+([^;'"]*?)\s+from\s*['"]/g)){
+      const kl=/\{([^}]*)\}/.exec(m[1]);
+      if(kl)kl[1].split(',').forEach(x=>{const q=x.trim().split(/\s+as\s+/);const n=(q[1]||q[0]).trim();if(n)dekl.add(n);});
+      const vor=m[1].replace(/\{[^}]*\}/,'').replace(/,/g,' ').trim().replace(/^\*\s+as\s+/,'');
+      if(vor)dekl.add(vor);
+    }
+    const L=roh.split('\n');
+    for(let i=0;i<L.length;i++){
+      if(!/Object\.assign\(\s*window\s*,\s*\{/.test(L[i]))continue;
+      let block='';
+      for(let k=i;k<L.length;k++){block+='\n'+L[k];if(/\}\s*\)\s*;?\s*$/.test(L[k]))break;}
+      block=block.slice(block.indexOf('{')+1,block.lastIndexOf('}'));
+      // nur oberste Ebene: Kommata in (), [], {} gehoeren zu einem Wert
+      let tiefe=0,teil='';const teile=[];
+      for(const ch of block){if('([{'.includes(ch))tiefe++;else if(')]}'.includes(ch))tiefe--;if(ch===','&&!tiefe){teile.push(teil);teil='';}else teil+=ch;}
+      teile.push(teil);
+      teile.map(x=>x.trim()).filter(x=>/^[A-Za-z_$][\w$]*$/.test(x)).forEach(n=>{if(!dekl.has(n))brueckeFehlt.push(f+': '+n);});
+    }
+  });
+}
+if(process.argv.includes('--gegenprobe-bruecke')){
+  const ok=brueckeFehlt.some(x=>/\bgwAuf$/.test(x));
+  console.log(ok?'structure --gegenprobe-bruecke: ok (gemeldet: '+brueckeFehlt.join(', ')+')':'structure --gegenprobe-bruecke: FEHLER - Brueckenname ohne Deklaration bleibt unbemerkt');
+  process.exit(ok?0:1);
+}
 if(process.argv.includes('--gegenprobe')){
   const ok=importFehlt.some(x=>/gibtEsNicht/.test(x));
   console.log(ok?'structure --gegenprobe: ok (fehlender Export wird gemeldet: '+importFehlt.join(', ')+')':'structure --gegenprobe: FEHLER - fehlender Export bleibt unbemerkt');
   process.exit(ok?0:1);
 }
 const befunde=[];
+if(brueckeFehlt.length) befunde.push('Name in der window-Bruecke ohne Deklaration im Modul (ReferenceError beim Laden - das ganze Modul bricht ab, kein Knopf geht): '+brueckeFehlt.join(', '));
 if(importFehlt.length) befunde.push('Import ohne passenden Export (der Browser bricht das ganze Modul ab - weisse Seite): '+importFehlt.join(', '));
 if(morgenTreffer.length) befunde.push('sichtbarer Text sagt "Tomorrow" statt "1d" (Nutzer-Regel 2026-09-14, countdownHtml() benutzen): '+morgenTreffer.join(' | '));
 if(!hatBaustein) befunde.push('countdownHtml() fehlt oder setzt die Heute-Markierung nicht (span.cd-heute) - ohne sie faellt das auffaellige Ausrufezeichen weg');

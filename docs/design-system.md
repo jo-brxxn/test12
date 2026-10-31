@@ -1895,7 +1895,26 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - Vierter Modus *Prices*: bis zu **6 Kurse in einem Chart**, jede Linie im Zeitraum von ihrem **eigenen Tief (0) bis Hoch (100)** (Nutzer: *„der tiefste Kurs von cad genau so weit unten … wie der Kurs von Öl … auch für den Peek“*; Basis 100 abgelehnt: *„Gold 10 % … eurusd nur 0,5 … gar nicht vergleichbar“*).
 - ⚠ Die Form wird vergleichbar, die Größe nicht: Legende zeigt je Linie **Tief – Hoch und die echte Spanne** (% bzw. pp bei Renditen), der Hover die echten Kurse.
 - **Auswahl = ein Katalog** (`kontextKatalog`) für Data und die Context-Charts der Asset-Seite: Körbe, alle Assets mit Kurs, Kurs-Feeds ohne Asset (ETH), 28 FX-Paare (`preisPaarReihe`, aus denselben Schlüssen wie die Körbe, USD = 1), 2Y/10Y je Währung, VIX. Neues erscheint ohne Codeänderung. Wochenend-Tage nur bei Krypto.
-- Geprüft von `check/preisvergleich.js`.
+- **One chart | Side by side** (seit 657): nebeneinander je Kurs ein Panel mit eigener echter Preisskala.
+- **Skala im einen Chart: *Low → high* | *Common*.** *Common* = **Achsenbruch mit Bändern**: überlappende/nahe Niveaus (Lücke ≤ größere Spanne) teilen ein Band mit einer echten Preisskala, sonst neues Band über einem Bruch (gestrichelt + Zickzack). Höchstes Niveau oben, 16 px Lücke.
+- **Kerzen** (globaler *Candles | Line*-Schalter): ein Chart → Kurs 1 `--cndl-up`, Kurs 2 `--cndl-dn`, weitere `--tf3…6`; **steigt hohl, fällt gefüllt**; nur Kurse im selben Band teilen sich den Tag. Nebeneinander → normale Kerzenfarben.
+- Datumsachse: 2–5 Daten je nach Breite.
+- **FX-Paare in jedem Filter A–Z** (`FX_PAIRS_AZ`, Nutzer 2026-10-31) — Data, Context-Charts, Compare all, Trends. `FX_PAIRS` bleibt Marktreihenfolge (Set-ups/Score).
+
+## Hover bei mehreren Linien (seit 2026-10-31, 657)
+
+- Nutzer: *„der Punkt auf beiden Preisen … die Linie durch die Karte muss sich nach oben durchziehen … der Preis des Assets das weiter oben steht … auf der Karte oben … wenn das nicht mehr so ist muss es tauschen“*.
+- `chartHoverWrap`-Punkt mit `ys:[{fy,col}]` + `ly`: **ein Punkt auf jeder Linie**, Führungslinie über die **volle Plot-Höhe**, Karte über dem obersten Punkt.
+- **Zeilen der Karte = Lage im Chart** (oben = oben), tauschen beim Kreuzen. Trends mit Fokus: farbige Zeilen zuerst (Punkte nur auf farbigen Linien), je Gruppe nach Lage.
+- Gilt für Data · Prices, Trends (alle Assets), Score vs Price. **Ein-Linien-Charts unverändert**: ein Punkt, Linie vom Punkt zum Boden (Nutzer 2026-09-05).
+- Geprüft von `check/hoverpunkte.js`.
+
+## Data · Compare all (seit 2026-10-31, 657)
+
+- 5. Modus. *＋ Add* öffnet das Chip-Fenster: **Gruppen** (aus der Asset-Klasse — Neues erscheint von selbst) → **Assets der Gruppe** → dessen Charts (*Price & yields*, Indikator-Rubriken; *FX pairs* nach Basiswährung; *Volatility*). Jeder Tipp = ein Panel, bis 8, dann zu.
+- Preis-Panels wie *Side by side*, Indikator-Panels wie *By asset*; ein Zeitfilter für alle.
+- **Jedes Chip-Fenster** (`pickerAnkern`) steht rechtsbündig zum Knopf, aber nie näher als 8 px am linken Rand.
+- Geprüft von `check/preisvergleich.js` (E–H).
 
 ## Country profile (seit 2026-10-25, `js/profil.js`)
 
