@@ -2845,6 +2845,10 @@ body.res-return-active #resBackBar{display:flex}
 /* Gruppen in 2 Spalten statt einer langen Liste (Nutzer 2026-10-31: "mach das man nicht ewig scrollen muss sondern mach 2 Spalten nebeneinander") */
 .data-picker-body{padding:10px 13px;columns:2;column-gap:16px}
 .data-picker-grp{display:flex;flex-direction:column;gap:5px;break-inside:avoid;margin-bottom:10px}
+/* Option a (2026-10-31): jede Auswahlliste mit Gruppen oeffnet das 2-Spalten-Fenster (#gwPicker, js gwAuf).
+   Die Liste bleibt sichtbar und bedienbar per Tastatur, nur das Antippen geht ans Fenster. Ausnahme: data-nativ. */
+select:has(optgroup):not([data-nativ]):not(:disabled){pointer-events:none}
+.gw-kopf{display:flex;flex-wrap:wrap;gap:5px;padding:10px 13px 0}
 /* Handy: Spalten ~166 px - lange Namen brechen um statt ueberzulaufen (nie gekuerzt) */
 @media (max-width:480px){.data-picker .cmp-chip{white-space:normal;text-align:left}}
 .data-picker-ft{padding:8px 13px;border-top:1px solid var(--bd);font:400 var(--fs-2xs)/1.45 var(--ff-text);color:var(--t3)}
@@ -7100,11 +7104,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-653 - Auswahlfenster wie die iOS-Liste: hoechstens halbe Fensterhoehe, Rest scrollt im Fenster, Kopfzeile bleibt; vorher 652: Data Prices, alle Kursreihen in den Context-Charts, Filter springen nicht mehr."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-654 - Option a: jede Auswahlliste mit Gruppen oeffnet das 2-Spalten-Fenster (fest, Hoehe begrenzt); Correlation/News/Spread gruppiert; Central-bank-Karte mit Go to Rate Probabilities; Schnellzugriff Rate Probabilities oeffnet wieder direkt die Seite der Bank; Vorschau a|b entfernt; vorher 653: Hoehe wie iOS-Liste."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-653</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-654</span>
     </span>
   </div>
   <div class="hdr-r">

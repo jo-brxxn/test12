@@ -118,7 +118,8 @@ const PRUEFUNGEN = [
   { n: 'zurueck',   s: 88,  d: 'Nichts springt zurueck: Abgleich waehrend der Eingabe, jede Nutzer-Aenderung markiert, Push waehrend der Eingabe', f: 'check/zurueck.js', args: [], browser: true },
   // 2026-10-28: "wenn ich eine Notiz in der Bank Karte loesche kommt sie direkt wieder zurueck".
   // 2026-10-31: "lass ihn fest stehen ... 2 Spalten" und Preisvergleich in Data.
-  { n: 'filterfest', s: 70, d: 'Filter stehen beim Auswaehlen fest (Auswahllisten + Chip-Popups, 1180/390 px), Gruppen in 2 Spalten', f: 'check/filterfest.js', args: [], browser: true },
+  { n: 'filterfest', s: 150, d: 'Filter stehen beim Auswaehlen fest (Auswahllisten + Chip-Popups, 1180/390 px), Gruppen in 2 Spalten', f: 'check/filterfest.js', args: [], browser: true },
+  { n: 'ratelink', s: 25, d: 'Asset-Seite: Rate Probabilities oeffnet den Link der Bank (CHF Hinweis), Central-bank-Go-to fuehrt in die Kategorie', f: 'check/ratelink.js', args: [], browser: true },
   { n: 'preisvergleich', s: 30, d: 'Data Prices + Context-Charts: alles mit Kursdaten waehlbar und waechst mit, Tief unten/Hoch oben, echte Werte, Paare richtig', f: 'check/preisvergleich.js', args: [], browser: true },
   { n: 'geloescht', s: 75,  d: 'Geloeschtes bleibt geloescht: zwei Geraete, zwei Tabs, Undo, Wiederherstellen; Vereinigung nur mit Loesch-Markern', f: 'check/geloescht.js', args: [], browser: true },
   { n: 'speichervoll', s: 40, d: 'Voller Speicher (iPad 5 MB): Abgleich-Basis bleibt, Neuladen mit offener Eingabe ueberschreibt nichts', f: 'check/speichervoll.js', args: [], browser: true },

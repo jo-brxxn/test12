@@ -21134,3 +21134,17 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Wächter:** `check/filterfest.js` Stufe D; Gegenprobe `--gegenprobe-hoehe` (ohne Grenze 495–768 px, bis y=942 bei 844 px Fenster) rot.
 
 **Offen beim Nutzer:** a oder b (ob auch die Browser-Auswahllisten durch das neue Fenster ersetzt werden).
+
+## 2026-10-31 — VERSION-CHECK-654: Option a, Go to Rate Probabilities, Schnellzugriff öffnet wieder den Link der Bank
+
+**Nutzer:** *„Ja a und go to Rate probabilities und ich will das wenn man in Assets auf Rate probabilities klickt nicht mehr zu der Kategorie kommt sondern direkt den link der Bank damit öffnet“*.
+
+**Option a:** jede Auswahlliste mit Gruppen öffnet beim Antippen das 2-Spalten-Fenster (`gwAuf`, `#gwPicker`) — automatisch für jede `<select>` mit `<optgroup>`, Ausnahme `data-nativ`. Die Liste bleibt (Zustand, `onchange`, Tastatur), CSS nimmt ihr die Zeigerereignisse; die Wahl läuft über `value` + `change`, jeder Handler unverändert. Fenster: Kopf-Optionen oben, Gruppen in 2 Spalten, Höhe begrenzt, öffnet nach oben, wenn unten zu wenig Platz ist; zu bei Wahl, Daneben, Esc, Scrollen der Seite. Flache Asset-Listen gruppiert (Correlation A/B, News-Asset über `sbCatsOptgroups`, Carry-Spread nach Basiswährung); Assets außerhalb der festen Kategorien jetzt in *Other* statt still weg. Vorschau a | b (`js/filterdemo.js`) entfernt.
+- Beim Bauen gemessen und behoben: (1) der Klick nach dem Antippen wurde 450 ms lang geschluckt — auch der Klick auf einen Chip, die Wahl kam bei schnellem Tippen nie an → nur noch genau der eine Klick des Antippens; (2) ein Chip über einer anderen Liste öffnete deren Fenster → Antippen im Fenster zählt nie als Antippen einer Liste.
+- Gemessen (Maus 1180, Touch 1000×695): 12 Listen auf 10 Seiten + 3 Context-Chart-Plätze — Fenster mit 2 Spalten, gleiche Optionen, Wahl kommt an, Liste steht fest, 0 JS-Fehler.
+
+**Rate Probabilities (Asset-Seite):** **Rückschritt gefunden** — am 2026-09-06 gewünscht (*„Direkt auf die richte Internet Seite“*), beim Umbau zur Schnellzugriffszeile (2026-09-14) verloren: drei Funktionen bauten dieselben Knöpfe je für sich, die neue Zeile sprang über `assetQuickGo('rate')` in die Kategorie. Gemessen: USD/EUR/CHF/GOLD → Kategorie, kein Link. Jetzt ein Baustein `aqlKnopfHtml` → `openRateWatchFor`: USD CME FedWatch, EUR/GBP/JPY/CAD/AUD rateprobability.com, NZD centralbank.watch, GOLD (an USD) FedWatch, CHF Hinweisfenster; die Seite bleibt.
+
+**Central-bank-Karte:** *Go to Rate Probabilities* unten rechts (Kategorie) — `kartenlook` grün (12 Karten mit Go-to). Karte dadurch 25 px höher (1180: 562 → 587).
+
+**Wächter:** `check/filterfest.js` E (15 Listen je Breite; `--gegenprobe-nativ` 30 Befunde rot), `check/ratelink.js` (Gegenprobe rot). Gezielt grün: filterreset, zurueck, eingaben, zentralbank, nav, retailwahl, runtime, cards, profil, namen, scrollhalt, preisvergleich, kartenlook.

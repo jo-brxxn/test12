@@ -22,8 +22,6 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
-// TEMPORAER (2026-10-31): Filter-Vorschau a|b - nach der Nutzer-Entscheidung entfernen (siehe js/filterdemo.js).
-import {filterDemoStarten} from './filterdemo.js';
 import {makroKartenSchalterHtml,makroReihenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
@@ -626,7 +624,11 @@ function sbCatsOptgroups(ids,optHtml){
     if(!items.length)return'';
     return`<optgroup label="${escH(cat.l)}">${items.map(optHtml).join('')}</optgroup>`;
   }).join('');
-  return wlGroup+groups;
+  // Assets ausserhalb der festen Kategorien (z. B. selbst angelegte Aktien)
+  // fielen bisher still aus jedem Asset-Filter - jetzt eigene Gruppe.
+  const inCats=new Set(SB_CATS.flatMap(c=>c.ids));
+  const rest=[...avail].filter(id=>!inCats.has(id));
+  return wlGroup+groups+(rest.length?`<optgroup label="Other">${rest.map(optHtml).join('')}</optgroup>`:'');
 }
 // ✕ neben einem Asset-Dropdown, das eine "alle"-Ansicht hat (Nutzer
 // 2026-10-03: "bei den Filtern mit drop-down wo man dann das Asset ...
@@ -8283,10 +8285,7 @@ function assetQuickRowHtml(c){
   // Net Options Flow/Volatility Indicators) statt direkt zu navigieren -
   // "Volatility Indicators" darin nur, wenn die Karte dieses Asset auch
   // wirklich abdeckt (siehe feargreedEligible, geprueft in openSentPicker).
-  const links=ASSET_QUICK_LINKS.map(([tab,ic,lbl])=>{
-    if(tab==='sent')return`<button class="aql" onclick="openSentPicker({kind:'page'})" title="${escH(lbl)} — pick which view">${icn(ic,14)}<span>${escH(lbl)}</span></button>`;
-    return`<button class="aql" onclick="assetQuickGo('${tab}')" title="${escH(lbl)} — opens with this asset already selected">${icn(ic,14)}<span>${escH(lbl)}</span></button>`;
-  }).join('');
+  const links=ASSET_QUICK_LINKS.map(([tab,ic,lbl])=>aqlKnopfHtml(tab,ic,lbl,c.id)).join('');
   // ⚠ Die angepinnten Notizen standen hier bisher als eigene Karte. Seit das
   // Board eine vollstaendige Notizen-Karte hat, ist das eine Dopplung - und
   // zwar eine teure: gemessen 113px Hoehe fuer drei Titel, die zwei
@@ -11388,10 +11387,7 @@ function abNoteMove(id,assetId,richtung){
 // Sie liegt deshalb im SELBEN Raster wie die Karten darunter - nur so stehen
 // die Spaltenkanten wirklich uebereinander.
 function abQuickGridHtml(c){
-  const links=ASSET_QUICK_LINKS.map(([tab,ic,lbl])=>{
-    if(tab==='sent')return`<button class="aql" onclick="openSentPicker({kind:'page'})" title="${escH(lbl)} — pick which view">${icn(ic,14)}<span>${escH(lbl)}</span></button>`;
-    return`<button class="aql" onclick="assetQuickGo('${tab}')" title="${escH(lbl)} — opens with this asset already selected">${icn(ic,14)}<span>${escH(lbl)}</span></button>`;
-  }).join('');
+  const links=ASSET_QUICK_LINKS.map(([tab,ic,lbl])=>aqlKnopfHtml(tab,ic,lbl,c.id)).join('');
   const aufNotes=curSub==='notes';
   const notizKnopf=`<button class="aql${aufNotes?' on':''}" onclick="setSub('${aufNotes?'specific':'notes'}')" title="${aufNotes?'Back to the data view':'All notes and folders of this asset'}">${icn('note',14)}<span>${aufNotes?'Close notes':'All notes'}</span></button>`;
   // ⚠ ZWEI SCHRITTE AM 2026-09-14, in dieser Reihenfolge:
@@ -11412,10 +11408,7 @@ function abQuickGridHtml(c){
 // deshalb waren sie im Juli ueberhaupt erst zum 2x2-Raster geworden - eine
 // fest vierspaltige Zeile ergibt auf 390px vier Knoepfe zu 90px.
 function abQuickZeileHtml(c){
-  const links=ASSET_QUICK_LINKS.map(([tab,ic,lbl])=>{
-    if(tab==='sent')return`<button class="aql" onclick="openSentPicker({kind:'page'})" title="${escH(lbl)} — pick which view">${icn(ic,14)}<span>${escH(lbl)}</span></button>`;
-    return`<button class="aql" onclick="assetQuickGo('${tab}')" title="${escH(lbl)} — opens with this asset already selected">${icn(ic,14)}<span>${escH(lbl)}</span></button>`;
-  }).join('');
+  const links=ASSET_QUICK_LINKS.map(([tab,ic,lbl])=>aqlKnopfHtml(tab,ic,lbl,c.id)).join('');
   const aufNotes=curSub==='notes';
   const notizKnopf=`<button class="aql${aufNotes?' on':''}" onclick="setSub('${aufNotes?'specific':'notes'}')" title="${aufNotes?'Back to the data view':'All notes and folders of this asset'}">${icn('note',14)}<span>${aufNotes?'Close notes':'All notes'}</span></button>`;
   // Country profile nur bei den acht Waehrungen (wie die Karte selbst) -
@@ -15731,6 +15724,22 @@ function setBackPillTitle(t){const el=document.getElementById('resBackPill');if(
 //   Calendar    → Monatskarte, News → News-Abschnitt am Seitenfuss.
 // Ein Knopf, der dorthin fuehrt, wo man schon ist, kostet Platz und
 // Aufmerksamkeit und gibt nichts zurueck.
+// EIN Baustein fuer die Schnellzugriffe eines Assets (Zeile, Raster, alte
+// Zeile - vorher dreimal einzeln gebaut; beim Umbau 2026-09-14 ging dadurch
+// der Direkt-Link verloren). ⚠ Rate Probabilities oeffnet DIREKT die Seite
+// der Bank (Nutzer 2026-09-06 "Direkt auf die richte Internet Seite", erneut
+// 2026-10-31 "nicht mehr zu der Kategorie ... sondern direkt den link der
+// Bank") - gemessen vorher: USD/EUR/CHF/GOLD landeten in der Kategorie.
+// Der Go-to der Central-bank-Karte fuehrt dagegen bewusst in die Kategorie.
+// Geprueft von check/ratelink.js.
+function aqlKnopfHtml(tab,ic,lbl,assetId){
+  if(tab==='sent')return`<button class="aql" onclick="openSentPicker({kind:'page'})" title="${escH(lbl)} — pick which view">${icn(ic,14)}<span>${escH(lbl)}</span></button>`;
+  if(tab==='rate'){
+    const bank=RATE_WATCH_BANK[macroCcyFor(assetId)]||'central bank';
+    return`<button class="aql" onclick="openRateWatchFor('${escJH(assetId)}')" title="${escH(lbl)} — opens the rate-expectations page of the ${escH(bank)} directly">${icn(ic,14)}<span>${escH(lbl)}</span></button>`;
+  }
+  return`<button class="aql" onclick="assetQuickGo('${tab}')" title="${escH(lbl)} — opens with this asset already selected">${icn(ic,14)}<span>${escH(lbl)}</span></button>`;
+}
 const ASSET_QUICK_LINKS=[
   ['trends','trendUp','Trends'],['data','candles','Data'],['rate','percent','Rate Probabilities'],
 ];
@@ -18339,8 +18348,9 @@ function corrRegimeSeries(idA,idB,fenster){
 }
 function corrRegimeCardHtml(){
   const ids=syms.map(x=>x.id);
-  const sel=(cur,fn)=>`<select class="btn" onchange="${fn}(this.value)" style="cursor:pointer">${
-    ids.map(id=>`<option value="${escH(id)}"${id===cur?' selected':''}>${escH(COT_NAME[id]||id)}</option>`).join('')}</select>`;
+  // Gruppiert wie jeder Asset-Filter (Regel 2026-08-31) - dadurch auch das 2-Spalten-Fenster.
+  const sel=(cur,fn)=>`<select class="btn" onchange="${fn}(this.value)" title="Pick an asset" style="cursor:pointer">${
+    sbCatsOptgroups(ids,id=>`<option value="${escH(id)}"${id===cur?' selected':''}>${escH(COT_NAME[id]||id)}</option>`)}</select>`;
   const win=[20,30,60].map(w=>`<button class="hl-tab${corrWin===w?' on':''}" onclick="setCorrWin(${w})">${w}d</button>`).join('');
   // Filter rechtsbuendig in der Titelzeile, ⓘ als letztes (Dauerregel
   // 2026-09-26) - vorher standen die Auswahlfelder direkt hinter dem Titel
@@ -21910,6 +21920,75 @@ function preisVergleichHtml(keys,W,H){
   });
   return legende+chartHoverWrap(svg,hpts,`width:${W}px`,'data',null,'setDataRange');
 }
+// ══ JEDE AUSWAHLLISTE MIT GRUPPEN -> 2-SPALTEN-FENSTER (Option a) ══════
+// Nutzer 2026-10-31 nach der Vorschau a|b: "Ja a". Jede <select> mit
+// <optgroup> oeffnet beim Antippen dieses Fenster statt der Browser-/iOS-
+// Liste: Gruppen in 2 Spalten, Hoehe begrenzt (scrollt innen, wie die
+// iOS-Liste), steht fest. Die Liste selbst BLEIBT (Zustand, onchange,
+// Tastatur): CSS nimmt ihr nur die Zeigerereignisse, das Antippen landet am
+// Elternteil und wird hier ueber die Lage erkannt. Gewaehlt wird ueber
+// value + change-Ereignis - jeder bestehende onchange laeuft unveraendert.
+// Gilt automatisch fuer jede kuenftige Liste mit Gruppen; Ausnahme nur mit
+// data-nativ. Geprueft von check/filterfest.js (E).
+function gwSelectAn(x,y){
+  for(const s of document.querySelectorAll('select')){
+    if(s.disabled||s.hasAttribute('data-nativ')||!s.querySelector('optgroup'))continue;
+    const r=s.getBoundingClientRect();
+    if(r.width>0&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return s;
+  }
+  return null;
+}
+function gwZu(){
+  const el=document.getElementById('gwPicker');if(el)el.remove();
+  document.removeEventListener('pointerdown',gwDaneben,true);document.removeEventListener('keydown',gwTaste,true);document.removeEventListener('scroll',gwSeiteScrollt,true);
+}
+function gwDaneben(e){const t=e.target;if(t&&t.closest&&t.closest('#gwPicker'))return;gwZu();}
+function gwTaste(e){if(e.key==='Escape')gwZu();}
+function gwAuf(sel){
+  gwZu();
+  const el=document.createElement('div');el.id='gwPicker';el.className='data-picker gw-picker';el.setAttribute('role','listbox');
+  const chip=o=>`<button type="button" class="cmp-chip${o.selected?' on':''}" data-i="${o.index}"${o.disabled?' disabled':''} role="option" aria-selected="${o.selected}">${escH(o.textContent.trim())}</button>`;
+  const kopf=[...sel.children].filter(c=>c.tagName==='OPTION');
+  const gruppen=[...sel.querySelectorAll('optgroup')];
+  el.innerHTML=`<div class="data-picker-hd"><span>${escH(sel.getAttribute('title')||sel.getAttribute('aria-label')||'Choose')}</span></div>
+    ${kopf.length?`<div class="gw-kopf">${kopf.map(chip).join('')}</div>`:''}
+    <div class="data-picker-body">${gruppen.map(g=>`<div class="data-picker-grp"><span class="cmp-filter-lbl">${escH(g.label)}</span><div class="cmp-filter-grp">${[...g.querySelectorAll('option')].map(chip).join('')}</div></div>`).join('')}</div>`;
+  document.body.appendChild(el);
+  // Einmal ausrichten: unter der Liste, links buendig, im Fenster gehalten;
+  // ist unten zu wenig Platz und oben mehr, darueber.
+  const r=sel.getBoundingClientRect(),w=el.offsetWidth,unten=innerHeight-r.bottom-22,oben=r.top-22;
+  el.style.right='auto';el.style.left=Math.max(8,Math.min(Math.round(r.left),innerWidth-w-8))+'px';
+  if(unten<240&&oben>unten){el.style.top='auto';el.style.bottom=Math.round(innerHeight-r.top+6)+'px';el.style.maxHeight=pickerHoeheRaum(oben)+'px';}
+  else{el.style.top=Math.round(r.bottom+6)+'px';el.style.maxHeight=pickerHoeheRaum(unten)+'px';}
+  const an=el.querySelector('.cmp-chip.on');
+  if(an){const q=an.getBoundingClientRect(),e=el.getBoundingClientRect();if(q.bottom>e.bottom-8)el.scrollTop+=q.bottom-e.bottom+48;}
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('[data-i]');if(!b||b.disabled)return;
+    e.stopPropagation();
+    const o=sel.options[+b.dataset.i];gwZu();
+    if(o&&!o.selected){sel.value=o.value;sel.dispatchEvent(new Event('input',{bubbles:true}));sel.dispatchEvent(new Event('change',{bubbles:true}));}
+  });
+  setTimeout(()=>{document.addEventListener('pointerdown',gwDaneben,true);document.addEventListener('keydown',gwTaste,true);document.addEventListener('scroll',gwSeiteScrollt,true);},0);
+}
+// Scrollt die SEITE, wuerde das Fenster von seiner Liste wegwandern -> zu.
+// Scrollen IM Fenster (lange Listen) bleibt offen.
+function gwSeiteScrollt(e){const t=e.target;if(t&&t.closest&&t.closest('#gwPicker'))return;gwZu();}
+let _gwDown=null;
+// Antippen IN einem offenen Fenster (Chip ueber einer anderen Liste) ist nie
+// das Antippen einer Liste.
+const gwImFenster=e=>!!(e.target&&e.target.closest&&e.target.closest('.data-picker'));
+document.addEventListener('pointerdown',e=>{const s=gwImFenster(e)?null:gwSelectAn(e.clientX,e.clientY);_gwDown=s?{s,x:e.clientX,y:e.clientY}:null;},true);
+document.addEventListener('pointerup',e=>{
+  const d=_gwDown;_gwDown=null;if(!d||gwImFenster(e))return;
+  if(Math.abs(e.clientX-d.x)>10||Math.abs(e.clientY-d.y)>10)return;   // Wischen, kein Antippen
+  if(gwSelectAn(e.clientX,e.clientY)!==d.s)return;
+  // GENAU den einen click dieses Antippens am Elternteil schlucken - nicht
+  // den naechsten Klick auf einen Chip im Fenster (gemessen: die Wahl kam
+  // sonst bei schnellem Tippen nie an).
+  const weg=ev=>{document.removeEventListener('click',weg,true);if(gwImFenster(ev))return;ev.stopPropagation();ev.preventDefault();};
+  document.addEventListener('click',weg,true);setTimeout(()=>document.removeEventListener('click',weg,true),450);
+  gwAuf(d.s);
+},true);
 // Ein Chip-Popup wird EINMAL beim Oeffnen unter seinem Knopf ausgerichtet und
 // steht danach fest (Nutzer 2026-10-31: "lass ihn fest stehen"). Gemessen
 // vorher: Data "Assets" nach dem ersten Antippen 138 px nach links - der Knopf
@@ -21920,7 +21999,8 @@ function preisVergleichHtml(keys,W,H){
 // nach unten ging und das man da scrollen konnte um an die letzten Punkte zu
 // kommen das soll bei den neuen Filtern uebernommen werden"): hoechstens die
 // halbe Fensterhoehe (mind. 240 px), nie ueber den unteren Rand.
-function pickerHoehe(oben){return Math.max(160,Math.min(Math.round(window.innerHeight-oben-16),Math.max(240,Math.round(window.innerHeight*0.5))));}
+function pickerHoeheRaum(raum){return Math.max(160,Math.min(Math.round(raum),Math.max(240,Math.round(window.innerHeight*0.5))));}
+function pickerHoehe(oben){return pickerHoeheRaum(window.innerHeight-oben-16);}
 function pickerAnkern(el,btn){
   if(el.dataset.fest)return;
   const r=btn.getBoundingClientRect();
@@ -22681,7 +22761,7 @@ function renderNewsTabRoh(){
   const kopf=`<div class="news-tools">
     <input class="news-q" type="search" placeholder="Search headlines…" value="${escH(newsTabQuery)}"
       oninput="setNewsTabQuery(this.value)">
-    <select onchange="setNewsTabAsset(this.value)">${opt('ALL','All assets',newsTabAsset)}${assetIds.map(id=>opt(id,(COT_NAME[id]||id),newsTabAsset)).join('')}</select>${filterResetHtml("setNewsTabAsset('ALL')",'All assets',null,newsTabAsset==='ALL')}
+    <select onchange="setNewsTabAsset(this.value)" title="Filter by asset">${opt('ALL','All assets',newsTabAsset)}${sbCatsOptgroups(assetIds,id=>opt(id,(COT_NAME[id]||id),newsTabAsset))}</select>${filterResetHtml("setNewsTabAsset('ALL')",'All assets',null,newsTabAsset==='ALL')}
     <select onchange="setNewsTabSrc(this.value)">${opt('ALL','All sources',newsTabSrc)}${quellen.map(x=>opt(x,x,newsTabSrc)).join('')}</select>
   </div>
   ${chartLeisteHtml('',timeRangeBarHtml(newsTabRange,'setNewsTabRange',NEWS_RANGES)+timeRangeCustomHtml(newsTabRange,newsTabFrom,newsTabTo,'setNewsTabRange'))}`;
@@ -25955,8 +26035,10 @@ function spreadCardHtml(){
   const [b,q]=spreadPair.split('/');
   const serie=yieldSpreadSeries(b,q,spreadTenor);
   const paare=ALL_PAIRS.filter(p=>{const[x,y]=p.split('/');return FX.includes(x)&&FX.includes(y);});
-  const sel=`<select class="btn" onchange="setSpreadPair(this.value)" style="cursor:pointer">${
-    paare.map(p=>`<option value="${escH(p)}"${p===spreadPair?' selected':''}>${escH(p)}</option>`).join('')}</select>`;
+  // Nach Basiswaehrung gruppiert (Nutzer 2026-10-31: Gruppen in 2 Spalten statt langer Liste).
+  const basen=[...new Set(paare.map(p=>p.split('/')[0]))];
+  const sel=`<select class="btn" onchange="setSpreadPair(this.value)" title="Pick a pair" style="cursor:pointer">${
+    basen.map(bz=>`<optgroup label="${escH(bz)}">${paare.filter(p=>p.startsWith(bz+'/')).map(p=>`<option value="${escH(p)}"${p===spreadPair?' selected':''}>${escH(p)}</option>`).join('')}</optgroup>`).join('')}</select>`;
   const ten=['2Y','10Y'].map(t=>`<button class="hl-tab${spreadTenor===t?' on':''}" onclick="setSpreadTenor('${t}')">${t}</button>`).join('');
   const kopf=`<div class="cot-card-title">Rate differential vs price${iBtn('spread')}
       <span style="margin-left:auto;display:flex;gap:5px;align-items:center">${sel}${ten}</span></div>`;
@@ -26439,7 +26521,6 @@ function ladeOvAusblenden(){
 // Seitenwechsel des Nutzers.
 setTimeout(()=>{_wischBereit=true;},1200);
 maybeShowFirstRunHelp();
-try{filterDemoStarten();}catch(e){}   // TEMPORAER, siehe js/filterdemo.js
 updFFLastUpd();
 // Vor dem Pull: falls die letzte lokale Aenderung nie erfolgreich hochgeladen
 // wurde (fxpro_updated != fxpro_cloud_seen - z.B. weil die Seite direkt nach
@@ -27304,7 +27385,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,
   DASH_COL_MIN_H,DASH_SHRINK_MIN_H,equalizeDashColumns,scrollCalsToNow,delWidget,renameWidget,confirmRename,addWidget,
-  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,pickerAnkern,pickerHoehe,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
+  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,pickerAnkern,pickerHoehe,pickerHoeheRaum,gwAuf,gwZu,gwSelectAn,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
   recordScoreHist,RISK_ON_IDS,RISK_OFF_IDS,riskOnOffState,riskSentimentWidgetHtml,globeHudLonTxt,globeHudHtml,bMark,
   startScanBroadcast,scanFlyParticle,surpriseIndex,mxHeatColor,assetReturnMap,pearsonR,corrHeatColor,setCorrA,
   setCorrB,setCorrWin,logReturns,pearson,corrRegimeSeries,corrRegimeCardHtml,renderCorrCard,renderMatrix,TREND_COLORS,

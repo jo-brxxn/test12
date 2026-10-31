@@ -24,10 +24,15 @@
 //      scrollen ... um an die letzten Punkte zu kommen"): Popup hoechstens
 //      halbe Fensterhoehe (mind. 240 px), nie ueber den unteren Rand, der
 //      letzte Punkt per Scrollen IM Popup erreichbar, Kopfzeile bleibt oben
+//   E) OPTION a (Nutzer 2026-10-31 "Ja a"): JEDE Auswahlliste mit Gruppen auf
+//      allen Seiten + die Context-Charts oeffnet beim echten Antippen das
+//      2-Spalten-Fenster (gleiche Optionen wie die Liste), die Wahl kommt an,
+//      das Fenster ist danach zu, die Liste steht wo sie stand
 // Gegenproben (muessen ROT werden):
 //   --gegenprobe          ✕ ohne Platz + Popup bei jedem Antippen neu ausgerichtet -> A, B rot
 //   --gegenprobe-spalten  eine Spalte                                              -> C rot
 //   --gegenprobe-hoehe    Popup ohne Hoehengrenze                                  -> D rot
+//   --gegenprobe-nativ    Listen wieder als Browser-Liste                          -> E rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const fs = require('fs');
@@ -37,6 +42,8 @@ const { wartenBisDatenDa } = require('./warten.js');
 const GP = process.argv.includes('--gegenprobe');
 const GP_SP = process.argv.includes('--gegenprobe-spalten');
 const GP_H = process.argv.includes('--gegenprobe-hoehe');
+const GP_N = process.argv.includes('--gegenprobe-nativ');
+const MARKE_N = "if(s.disabled||s.hasAttribute('data-nativ')||!s.querySelector('optgroup'))continue;";
 const MARKE = 'if(el.dataset.fest)return;';
 const MAIN = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
 
@@ -45,14 +52,14 @@ const rot = m => { console.log('  ✗ ' + m); fehler++; };
 const gruen = m => console.log('  ✓ ' + m);
 
 (async () => {
-  if (GP && !MAIN.includes(MARKE)) { rot('Gegenprobe: Marke im Code nicht gefunden'); process.exit(1); }
+  if ((GP && !MAIN.includes(MARKE)) || (GP_N && !MAIN.includes(MARKE_N))) { rot('Gegenprobe: Marke im Code nicht gefunden'); process.exit(1); }
   const b = await chromium.launch();
   const perr = [];
   const HIER = new globalThis.URL(URL).origin;
   for (const vp of [{ width: 1180, height: 900 }, { width: 390, height: 844 }]) {
     const ctx = await b.newContext({ viewport: vp, serviceWorkers: 'block' });
     await ctx.route(u => u.origin !== HIER, r => ['fetch', 'xhr'].includes(r.request().resourceType()) ? r.abort() : r.fallback());
-    if (GP) await ctx.route(u => u.origin === HIER && /\/js\/main\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: MAIN.replace(MARKE, '') }));
+    if (GP || GP_N) await ctx.route(u => u.origin === HIER && /\/js\/main\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: GP ? MAIN.replace(MARKE, '') : MAIN.replace(MARKE_N, 'continue;') }));
     const p = await ctx.newPage();
     p.on('pageerror', e => perr.push(String(e)));
     await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) {} });
@@ -92,6 +99,43 @@ const gruen = m => console.log('  ✓ ' + m);
     }
     if (!geprueft) rot('keine Gruppen-Auswahlliste gefunden - Stufe A laeuft ins Leere');
     else if (!gesprungen) gruen(`${geprueft} Auswahllisten bleiben nach der Auswahl stehen`);
+
+    // ── E) Option a: echtes Antippen jeder Gruppen-Liste ──
+    console.log(`E) Gruppen-Listen oeffnen das 2-Spalten-Fenster (${vp.width} px)`);
+    let eN = 0, eFehl = 0;
+    const eZiele = ziele.concat(['kontext']);
+    for (const z of eZiele) {
+      const [t, s] = z.split(':');
+      await p.evaluate(([t, s]) => { if (t === 'kontext') { gotoSym('GOLD'); openKontextSettings('GOLD'); } else { try { closeM('mCardInfo'); } catch (e) {} showTab(t); if (s) setSentSub(s); } }, [t, s]); await p.waitForTimeout(600);
+      // Adressiert ueber die Reihenfolge der SICHTBAREN Gruppen-Listen - nach einer
+      // Wahl baut die Seite neu, eine Markierung am Element ginge verloren.
+      await p.evaluate(() => { window.__ffListe = () => [...document.querySelectorAll('select')].filter(x => x.getBoundingClientRect().width > 0 && x.querySelector('optgroup')); });
+      const liste = await p.evaluate(() => window.__ffListe().map((x, i) => i));
+      for (const i of liste) {
+        const a = await p.evaluate(i => { const x = (window.__ffListe()[i]); if (!x) return null; x.scrollIntoView({ block: 'center' }); const r = x.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, l: r.left, t: r.top, n: x.options.length, g: x.querySelectorAll('optgroup').length, v: x.value, oc: (x.getAttribute('onchange') || x.className).slice(0, 26) }; }, i);
+        if (!a) continue;
+        await p.waitForTimeout(120);
+        const a2 = await p.evaluate(i => { const x = (window.__ffListe()[i]); const r = x.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, i);
+        await p.mouse.click(a2.x, a2.y); await p.waitForTimeout(250);
+        eN++;
+        const f = await p.evaluate(() => { const e = document.getElementById('gwPicker'); if (!e) return null; const q = e.getBoundingClientRect(); const gr = [...e.querySelectorAll('.data-picker-grp')].map(g => Math.round(g.getBoundingClientRect().left)); const k = [...e.querySelectorAll('.cmp-chip')]; const w = k.filter(c => !c.classList.contains('on') && !c.disabled)[1] || k.filter(c => !c.classList.contains('on') && !c.disabled)[0]; let ziel = null; if (w) { w.scrollIntoView({ block: 'nearest' }); const r = w.getBoundingClientRect(); ziel = { x: r.left + r.width / 2, y: r.top + r.height / 2, t: w.textContent.trim() }; } return { n: k.length, sp: new Set(gr).size, g: gr.length, h: Math.round(q.height), unten: Math.round(q.bottom), ziel }; });
+        if (!f) { rot(`${z} ${a.oc}: Antippen oeffnet kein 2-Spalten-Fenster (Browser-Liste)`); eFehl++; continue; }
+        if (f.n !== a.n) { rot(`${z} ${a.oc}: Fenster zeigt ${f.n} statt ${a.n} Optionen`); eFehl++; }
+        if (vp.width >= 480 && f.g >= 2 && f.sp < 2) { rot(`${z} ${a.oc}: ${f.g} Gruppen in einer Spalte`); eFehl++; }
+        if (f.unten > vp.height) { rot(`${z} ${a.oc}: Fenster reicht ueber den Rand (${f.unten} px)`); eFehl++; }
+        if (!f.ziel) continue;
+        await p.mouse.click(f.ziel.x, f.ziel.y); await p.waitForTimeout(450);
+        const n = await p.evaluate(([i, oc]) => { const x = (window.__ffListe()[i]) || [...document.querySelectorAll('select')].find(y => (y.getAttribute('onchange') || y.className).slice(0, 26) === oc && y.getBoundingClientRect().width > 0); if (!x) return null; return { txt: x.options[x.selectedIndex] ? x.options[x.selectedIndex].textContent.trim() : '', offen: !!document.getElementById('gwPicker') }; }, [i, a.oc]);
+        if (!n || n.txt !== f.ziel.t) { rot(`${z} ${a.oc}: "${f.ziel.t}" gewaehlt, Liste zeigt "${n && n.txt}"`); eFehl++; }
+        else if (n.offen) { rot(`${z} ${a.oc}: Fenster nach der Wahl noch offen`); eFehl++; }
+        // Zuruecksetzen, damit die naechste Seite den Ausgangsstand hat
+        await p.evaluate(([i, v]) => { const x = (window.__ffListe()[i]); if (x && x.value !== v) { x.value = v; x.dispatchEvent(new Event('change', { bubbles: true })); } }, [i, a.v]);
+        await p.waitForTimeout(200);
+      }
+    }
+    await p.evaluate(() => { try { closeM('mCardInfo'); } catch (e) {} try { resetKontextSlots('GOLD'); closeM('mCardInfo'); } catch (e) {} });
+    if (!eN) rot('Stufe E: keine Gruppen-Liste gefunden');
+    else if (!eFehl) gruen(`${eN} Gruppen-Listen: Antippen -> 2-Spalten-Fenster, Wahl kommt an, Fenster zu`);
 
     // ── B/C) Chip-Popups ──
     console.log(`B/C) Chip-Popups (${vp.width} px)`);
@@ -149,7 +193,7 @@ const gruen = m => console.log('  ✓ ' + m);
   }
   await b.close();
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));
-  const gp = GP || GP_SP || GP_H;
+  const gp = GP || GP_SP || GP_H || GP_N;
   if (gp) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: Waechter bleibt gruen.'); process.exit(fehler ? 0 : 1); }
   console.log(fehler ? `\n✗ filterfest: ${fehler} Befund(e)` : '\n✓ filterfest: Filter stehen fest, Gruppen in 2 Spalten');
   process.exit(fehler ? 1 : 0);

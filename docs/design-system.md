@@ -1877,6 +1877,7 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - **Erinnerung = rote oberste Stufe** (seit 642, Rückfrage: *Rote Stufe unten* — über dem Gebäude ist kein Platz mehr): statt *Last decision · Next* steht *„Fed decided · Datum · add your notes for this meeting“* + × in Rot (Warnung/Erinnerung, Rot erlaubt), Stufe in beiden Zuständen 36 px → Karte mit und ohne Erinnerung gleich hoch. Kursivtext dort weiß (nicht `--t2`). Midnight mit dunklerem Rot (#B3202B) für weißen Text.
 - **Stein aus Tokens** (`--bg2…--bg6`, Midnight eigene Zuordnung, Skala dort umgekehrt) — keine festen Hellgrau-Werte, keine Textur hinter Text außer der feinen Kannelur.
 - Handy (≤ 700 px): Säulen untereinander, Ornamente und Eck-Akroterien weg.
+- **Go to Rate Probabilities** unten rechts (seit 2026-10-31, Regel „jede Karte ein Go-to“): führt in die Kategorie; die Karte ist dadurch 25 px höher. ⚠ Der Schnellzugriff *Rate Probabilities* in der Zeile darüber öffnet dagegen **direkt die Seite der Bank** (`aqlKnopfHtml` → `openRateWatchFor`; Nutzer 2026-09-06 und erneut 2026-10-31), CHF: Hinweisfenster. Geprüft von `check/ratelink.js`.
 - **Archiv** oben rechts (*Archive n*): Fenster `#mZbArchiv`, links die Sitzungen (Datum + Notizen je Säule in Akzentfarbe), rechts die vier Säulen der gewählten Sitzung, nur lesen.
 - Geprüft von `check/zentralbank.js`.
 
@@ -1885,7 +1886,8 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - **Nichts springt beim Auswählen** (Nutzer: *„lass ihn fest stehen“*): das ✕ zum Zurücksetzen steht immer im Markup, ohne Auswahl mit `hidden` (unsichtbar, Platz bleibt; `filterResetHtml(…,leer)`). Chip-Popups richten sich **einmal** beim Öffnen aus (`pickerAnkern`), nicht nach jedem Antippen.
 - **Chip-Popups (`.data-picker`): Gruppen in 2 Spalten**, 560 px breit; am Handy (≤ 480 px) brechen lange Namen um statt überzulaufen — nie gekürzt.
 - **Höhe wie die iOS-Liste** (Nutzer 2026-10-31: *„nicht ewig weit nach unten … scrollen … um an die letzten Punkte zu kommen“*): höchstens halbe Fensterhöhe (mind. 240 px, nie über den unteren Rand, `pickerHoehe`), der Rest scrollt im Fenster (`overscroll-behavior:contain`, die Seite dahinter bleibt stehen), Kopfzeile mit Zähler `sticky`.
-- Offen beim Nutzer: ob auch die Browser-Auswahllisten (COT, Retail, Seasonality …) durch ein 2-Spalten-Fenster ersetzt werden (Vorschau a | b, `js/filterdemo.js`).
+- **Option a (Nutzer 2026-10-31: *„Ja a“*): JEDE Auswahlliste mit Gruppen (`<select>` mit `<optgroup>`) öffnet beim Antippen das 2-Spalten-Fenster** (`#gwPicker`, `gwAuf`) statt der Browser-/iOS-Liste: gleiche Optionen, Kopf-Optionen (*All assets*) als eigene Zeile oben, fest, Höhe begrenzt, schließt bei Wahl, Daneben-Tippen, Esc oder Scrollen der Seite. Die Liste selbst bleibt (Zustand, `onchange`, Tastatur) — CSS nimmt ihr nur die Zeigerereignisse. Greift **automatisch** für jede neue Liste mit Gruppen; Ausnahme nur mit `data-nativ`.
+- **Asset-Listen immer gruppiert** (Regel 2026-08-31): auch Correlation A/B und News-Asset über `sbCatsOptgroups`; Assets außerhalb der festen Kategorien in *Other*. Carry-Spread-Paare nach Basiswährung. Kurze Listen (Kalender-Währung, Impact) und die News-Quellen bleiben normale Listen.
 - Geprüft von `check/filterfest.js`.
 
 ## Data · Prices (seit 2026-10-31)

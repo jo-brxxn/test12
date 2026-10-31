@@ -42,7 +42,7 @@
 import {BC,FX} from './constants.js';
 import {escH,escJH,icn,abInfoBtn,getSym,macroCcyFor,effDeriveRules,invertBias,biasCss,
   resNotes,pushU,save,todayStr,calEvts,evtMatchesSym,IND_EVENT_MATCHERS,curPage,
-  fmtDayHdr,assetIconHtml,openM,zbQuittung,zbEntscheid,syms,resZbNeu} from './main.js';
+  fmtDayHdr,assetIconHtml,openM,zbQuittung,zbEntscheid,syms,resZbNeu,abGoToHtml} from './main.js';
 import {rateSteps} from './score.js';
 import {isEvtPast,daysUntil} from './calendar.js';
 import {CP} from './profil.js';
@@ -234,6 +234,9 @@ function zentralbankKarteHtml(sym,nurKarte){
   // rechts, wo das Dach flach ist (links/mittig laege sie auf dem Dach).
   const verknuepft=ccy!==sym.id?`<span class="zb-hd-sub">linked via <b>${h(ccy)}</b></span>`:'';
   const archivBtn=`<button class="btn zb-arch" onclick="zbArchivAuf('${escJH(sym.id)}')" title="Notes of earlier meetings">${icn('folder',14)}<span>Archive</span><b>${archivTage.length}</b></button>`;
+  // Go to Rate Probabilities unten rechts (Nutzer 2026-10-31, Regel "jede Karte
+  // ein Go-to", check/kartenlook.js) - die Kategorie; der Schnellzugriff
+  // darueber oeffnet dagegen direkt die Seite der Bank (openRateWatchFor).
   const karte=`<div class="ab-tile zb-card" id="zbKarte" data-ccy="${h(ccy)}">
     <div class="ab-tile-hd">${ic}<span class="ab-tile-t">Central bank</span>${verknuepft}${archivBtn}${info}</div>
     <div class="zb-bau">
@@ -248,6 +251,7 @@ function zentralbankKarteHtml(sym,nurKarte){
         <div class="zb-st zb-st3" aria-hidden="true"></div>
       </div>
     </div>
+    ${abGoToHtml('rate')}
   </div>`;
   return nurKarte?karte:`<div class="ab-col zb-row">${karte}</div>`;
 }
