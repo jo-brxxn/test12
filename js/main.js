@@ -1088,22 +1088,35 @@ function rateWatchUrl(id){
 // Internet Seite kommen"). Gibt es fuer die Waehrung keine Seite (CHF/NZD),
 // oeffnet sich ein Fenster, das genau das sagt - statt eines Links ins Leere
 // oder eines Knopfes, der scheinbar nichts tut (CLAUDE.md Regel 6).
+// Externen Link in neuem Tab oeffnen; true = Tab ist auf.
+// ⚠ NICHT window.open(url,'_blank','noopener'): mit "noopener" liefert der
+// Browser laut Standard IMMER null, auch wenn der Tab aufgeht - die App hielt
+// das fuer einen Pop-up-Blocker und zeigte nach dem Zurueckkommen "The link
+// could not be opened" (Nutzer-Screenshot 2026-10-31, iPad; gemessen: Tab
+// rateprobability.com/ecb offen UND Meldung sichtbar). Jetzt ohne noopener
+// oeffnen - dann sagt der Rueckgabewert wirklich, ob der Tab aufging - und
+// die Verbindung danach trennen (opener = null, gleiche Sicherheit).
+// Kein Oeffnungspfad ohne sichtbare Meldung (CLAUDE.md Regel 6): blockt ein
+// Pop-up-Blocker, ist w null bzw. es wirft - der Aufrufer sagt es dann.
+function linkOeffnen(url){
+  let w=null;
+  try{w=window.open(url,'_blank');}catch(e){w=null;}
+  if(!w)return false;
+  try{w.opener=null;}catch(e){}
+  return true;
+}
 function openRateWatchFor(id){
   const url=rateWatchUrl(id);
   const c=macroCcyFor(id);
   if(!url){
     const t=document.getElementById('mRwNoneTxt');
+    const h=document.querySelector('#mRwNone h3');if(h)h.textContent='No rate-expectations source';
     if(t)t.innerHTML=`There is no rate-expectations page for <b>${escH(c)}</b>. rateprobability.com does not carry one for the ${escH(RATE_WATCH_BANK[c]||c)}, and the CME FedWatch Tool covers the Fed only.<br><br>Nothing is linked here rather than sending you to a page that has no data for ${escH(c)}. If you know a source, long-press the trend icon in this asset's Interest Rates card to store your own link — it is kept across your devices.`;
     openM('mRwNone');
     return;
   }
-  // ⚠ Kein Schreib-/Oeffnungspfad ohne sichtbare Meldung (CLAUDE.md Regel 6):
-  // blockt ein Pop-up-Blocker das Fenster, gibt window.open null zurueck ODER
-  // wirft - beides darf nicht still bleiben, sonst sieht der Knopf fuer den
-  // Nutzer exakt so aus, als sei er kaputt.
-  let w=null;
-  try{w=window.open(url,'_blank','noopener');}catch(e){w=null;}
-  if(!w){
+  if(!linkOeffnen(url)){
+    const h=document.querySelector('#mRwNone h3');if(h)h.textContent='Link blocked';
     const t=document.getElementById('mRwNoneTxt');
     if(t)t.innerHTML=`The link could not be opened — your browser most likely blocked the new tab.<br><br>Allow pop-ups for this app, or open it yourself:<br><a href="${safeUrl(url)}" target="_blank" rel="noopener">${escH(url)}</a>`;
     openM('mRwNone');
@@ -17618,7 +17631,7 @@ function renderDash(){
     const hdrHtml=`<div class="dw-hdr">
         <div class="dw-t"><span class="dw-t-txt">${escH(w.title||w.type)}</span>${abInfoBtn(w.title||w.type,(wt&&wt.sub?[escH(wt.sub)]:[]).concat(_dwErkl),'rinfo')}</div>
         ${w.type==='mini_calendar'?`<span class="dw-hdlink" onclick="showTab('cal')">View Calendar</span>`:''}
-        ${w.type==='notification'?`<span class="dw-hdlink" onclick="window.open('https://www.forexfactory.com/calendar','_blank','noopener')">View FF</span>`:''}
+        ${w.type==='notification'?`<span class="dw-hdlink" onclick="if(!linkOeffnen('https://www.forexfactory.com/calendar'))alert('The link was blocked — allow pop-ups for this app.')">View FF</span>`:''}
       </div>`;
     // .dw-body umschliesst den reinen Inhalt (alles ausser dem Kartenkopf) -
     // einheitlicher Ankerpunkt fuer JEDEN Widget-Typ, damit die letzte Karte
@@ -27385,7 +27398,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,
   DASH_COL_MIN_H,DASH_SHRINK_MIN_H,equalizeDashColumns,scrollCalsToNow,delWidget,renameWidget,confirmRename,addWidget,
-  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,pickerAnkern,pickerHoehe,pickerHoeheRaum,gwAuf,gwZu,gwSelectAn,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
+  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,linkOeffnen,pickerAnkern,pickerHoehe,pickerHoeheRaum,gwAuf,gwZu,gwSelectAn,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
   recordScoreHist,RISK_ON_IDS,RISK_OFF_IDS,riskOnOffState,riskSentimentWidgetHtml,globeHudLonTxt,globeHudHtml,bMark,
   startScanBroadcast,scanFlyParticle,surpriseIndex,mxHeatColor,assetReturnMap,pearsonR,corrHeatColor,setCorrA,
   setCorrB,setCorrWin,logReturns,pearson,corrRegimeSeries,corrRegimeCardHtml,renderCorrCard,renderMatrix,TREND_COLORS,

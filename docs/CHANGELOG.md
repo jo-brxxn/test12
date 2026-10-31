@@ -21154,3 +21154,13 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **CI-Befund** (`designregeln` F, 820 px, Data): `ind-hist-range-btn ragt in ind-hist-range-btn`. Gemessen: seit dem 4. Modus-Knopf *Prices* (652) passt die Modus-Leiste mit der Zeitleiste bei 820 px nicht mehr in eine Zeile; die Zeitleiste bricht um, die Zeilen lagen 6 px auseinander, die Trefferflächen ragen je 5 px nach oben/unten → 4 px Überlappung. Wurzel im gemeinsamen `.chart-leiste`-Stil (Zeilenabstand 10 px, waagerecht unverändert) — gilt für jede Chart-Leiste, die umbricht. Danach 195 → 205 px, F weg; `einheit`, `zeitfilter` grün.
 
 **Außerdem:** `scorediff`/`summarydiff` waren im Lauf zu 654 rot, weil sie gegen den Vorgänger-Commit vergleichen — das war der unvollständige Commit `37722bf` (nur `js/filterdemo.js` gelöscht, Import noch drin → App lud nicht, `syms is not defined`). Kein Fehler im Code; Ursache war mein `git add`, der an dem schon gelöschten Pfad abbrach. Seither: nach `git add` immer `git status` prüfen.
+
+## 2026-10-31 — VERSION-CHECK-656: keine falsche „Link blocked“-Meldung nach Rate Probabilities
+
+**Nutzer** (Screenshot iPad): *„es öffnet sich direkt nach dem Button der Browser mit richtiger Seite alles gut. Wenn ich ihn schließe kommt diese Meldung die ist unnötig es funktioniert ja“* — Meldung *No rate-expectations source · The link could not be opened — your browser most likely blocked the new tab*.
+
+**Reproduziert** (echtes `window.open`, keine Attrappe): Tab `rateprobability.com/ecb` offen **und** Meldung sichtbar. `window.open(url,'_blank','noopener')` liefert laut Standard **immer `null`** — die App hielt jeden geöffneten Tab für blockiert. Der Wächter `ratelink` hatte `window.open` durch eine Attrappe ersetzt und konnte das nicht sehen.
+
+**Behoben:** ein Baustein `linkOeffnen(url)` — ohne `noopener` öffnen (Rückgabewert stimmt), danach `opener = null` (gleiche Sicherheit); bei echtem Blocker Titel *Link blocked* statt *No rate-expectations source*, mit Link. Fehlerklasse: auch *View FF* im Dashboard über denselben Baustein (vorher ohne Meldung bei Blocker).
+
+**Wächter:** `check/ratelink.js` mit echtem `window.open`: 8 Banken + GOLD öffnen den Tab ohne Meldung, `opener` getrennt, simulierter Blocker → *Link blocked*. `--gegenprobe-noopener` rot (falscher Alarm bei jeder Bank).
