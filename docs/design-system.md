@@ -1880,6 +1880,20 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - **Archiv** oben rechts (*Archive n*): Fenster `#mZbArchiv`, links die Sitzungen (Datum + Notizen je Säule in Akzentfarbe), rechts die vier Säulen der gewählten Sitzung, nur lesen.
 - Geprüft von `check/zentralbank.js`.
 
+## Filter: stehen fest, Gruppen in 2 Spalten (seit 2026-10-31)
+
+- **Nichts springt beim Auswählen** (Nutzer: *„lass ihn fest stehen“*): das ✕ zum Zurücksetzen steht immer im Markup, ohne Auswahl mit `hidden` (unsichtbar, Platz bleibt; `filterResetHtml(…,leer)`). Chip-Popups richten sich **einmal** beim Öffnen aus (`pickerAnkern`), nicht nach jedem Antippen.
+- **Chip-Popups (`.data-picker`): Gruppen in 2 Spalten**, 560 px breit; am Handy (≤ 480 px) brechen lange Namen um statt überzulaufen — nie gekürzt.
+- Offen beim Nutzer: ob auch die Browser-Auswahllisten (COT, Retail, Seasonality …) durch ein 2-Spalten-Fenster ersetzt werden (Vorschau a | b, `js/filterdemo.js`).
+- Geprüft von `check/filterfest.js`.
+
+## Data · Prices (seit 2026-10-31)
+
+- Vierter Modus *Prices*: bis zu **6 Kurse in einem Chart**, jede Linie im Zeitraum von ihrem **eigenen Tief (0) bis Hoch (100)** (Nutzer: *„der tiefste Kurs von cad genau so weit unten … wie der Kurs von Öl … auch für den Peek“*; Basis 100 abgelehnt: *„Gold 10 % … eurusd nur 0,5 … gar nicht vergleichbar“*).
+- ⚠ Die Form wird vergleichbar, die Größe nicht: Legende zeigt je Linie **Tief – Hoch und die echte Spanne** (% bzw. pp bei Renditen), der Hover die echten Kurse.
+- **Auswahl = ein Katalog** (`kontextKatalog`) für Data und die Context-Charts der Asset-Seite: Körbe, alle Assets mit Kurs, Kurs-Feeds ohne Asset (ETH), 28 FX-Paare (`preisPaarReihe`, aus denselben Schlüssen wie die Körbe, USD = 1), 2Y/10Y je Währung, VIX. Neues erscheint ohne Codeänderung. Wochenend-Tage nur bei Krypto.
+- Geprüft von `check/preisvergleich.js`.
+
 ## Country profile (seit 2026-10-25, `js/profil.js`)
 
 - **Nur Währungen, als Fenster** (seit 643, Nutzer: *„in der Zeile mit den Buttons mach da noch einen Button names country profile … wenn man den klickt soll sich ein Fenster mit der Karte öffnen das heißt entfern die Karte vom normalen Bildschirm“*): fünfter Knopf *Country profile* in der Schnellzugriffszeile (nach *All notes*) öffnet `#mCountryProfile`; auf der Asset-Seite steht die Karte nicht mehr (bis 642: volle Breite über MACRO). Nicht-FX hat den Knopf nicht (nichts zu öffnen). Das Chart-Fenster `#mCpChart` öffnet sich darüber (steht im DOM danach) und lässt das Profil beim Schließen offen.

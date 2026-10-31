@@ -21104,3 +21104,21 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Gemessen (Springen):** Asset-Filter auf COT, Retail, Put/Call, Net flow, Fear & Greed rutschen nach einer Auswahl **47 px** nach links (1180 px; Handy 12–43 px) — das ✕ erscheint rechts daneben, die Leiste ist rechtsbündig. Data-Popup *Add asset*: nach dem ersten Antippen **138 px** nach links (686 → 548), weil es sich nach jedem Antippen neu am wandernden Knopf ausrichtet.
 
 **Vorschau (`js/filterdemo.js`, temporär):** beim Öffnen ein Fenster mit **a** (jeder Gruppen-Filter = eigenes Auswahlfenster, 2 Spalten) und **b** (nur Chip-Popups 2 Spalten, Auswahllisten bleiben Browser-Listen), je mit Asset-Filter und Data-Preisauswahl (alle Preisreihen: 8 Körbe, 8 Non-FX inkl. ETH, 8 Renditen + VIX, 28 Paare). Gemessen: Knopf, Popup und Liste stehen beim Auswählen fest (1280/390 px, 0 JS-Fehler). Nicht in automatisierten Läufen (`navigator.webdriver`), erzwingbar mit `?filterdemo`. **Nach der Entscheidung entfernen** (Datei, Import, Aufruf).
+
+## 2026-10-31 — VERSION-CHECK-652: Data · Prices, alle Kursreihen in den Context-Charts, Filter springen nicht mehr
+
+**Nutzer:** siehe 651 — Preisvergleich in Data, *„alles wovon es Preisdaten gibt … soll auch da hinzukommen … auch … in Assets ganz unten bei den Charts“*, Darstellung je Linie eigenes Tief/Hoch, Renditen + VIX als eigene Gruppe, Filter *„fest stehen“*, Gruppen in 2 Spalten.
+
+**Umgesetzt:**
+- **Data · Prices** (vierter Modus): bis zu 6 Kurse in einem Chart, jede Linie im Zeitraum von ihrem Tief (0) bis Hoch (100); Legende mit echtem Tief–Hoch und Spanne (% / pp), Hover mit echten Kursen, Zeitachse nach Datum, Wochenend-Tage nur bei Krypto (wie jeder Kurs-Chart).
+- **Ein Katalog** für Data und Context-Charts (`kontextKatalog`): Körbe, Assets, Kurs-Feeds ohne Asset (ETH), **28 FX-Paare** (`preisPaarReihe`: Basis in USD / Quote in USD aus denselben Schlüssen wie die Körbe), 2Y/10Y je Währung, VIX — gebaut aus syms und Feeds, nichts zu pflegen.
+- **Filter fest:** ✕ immer im Markup (`hidden` = unsichtbar, Platz bleibt); Chip-Popups einmal ausgerichtet (`pickerAnkern`, auch Country profile). **2 Spalten** in allen `.data-picker`.
+
+**Gemessen:**
+- Springen danach: 0 px auf allen 8 Gruppen-Auswahllisten (1180/390), Data Assets/Indicators/Country profile fest (vorher −138 / −191 px). Data-Assets-Popup 465 → 323 px hoch.
+- Prices 3M (CAD-Korb, Öl, EUR/USD, US 10Y, VIX): alle Linien exakt 10 → 584 px (oben → unten); Spannen 2,1 % / 40,5 % / 5,0 % / 0,68 pp / 40,7 %. Paare: EUR/USD = EUR-Feed, USD/JPY = 1/JPY, EUR/JPY = EUR/USD × USD/JPY (1e-5).
+- Context-Picker GOLD: 28 Paare + ETH wählbar, Kacheln zeichnen (EUR/USD, ETH).
+
+**Beim Prüfen gefunden:** Öl und US 10Y tragen im Feed eine Zeile mit Datum **Samstag** (31.10.: 104,12 / 4,93 %), die jeder Kurs-Chart der App (`ohneWochenende`) ausblendet — Prices folgt derselben Regel. `runtime`: Chart bei unsichtbarem Neuzeichnen mit Breite −20 → Mindestmaß. `hierarchie` im Parallellauf (8 Browser) einmal rot (Titel y=79 während des Seiten-Wischs), allein 2× grün.
+
+**Wächter:** `check/filterfest.js` (vorher rot: −47/−138/−191 px; Gegenproben rot), `check/preisvergleich.js` (Gegenproben gemeinsame Skala, fehlende Paare rot), `check/yachse.js` + Data · Prices.

@@ -636,15 +636,21 @@ function sbCatsOptgroups(ids,optHtml){
 // Baustein fuer alle sechs Stellen: Trends, Calendar, News, Sentiment, COT,
 // Put/Call. Statische Kopfleisten (Trends, Calendar) tragen den Knopf mit
 // hidden-Attribut und schalten ihn beim Zeichnen (filterResetSync).
-function filterResetHtml(onclick,allLabel,id){
+// ⚠ Das ✕ steht IMMER im Markup, ohne Auswahl mit hidden (CSS: unsichtbar,
+// Platz bleibt). Nutzer 2026-10-31: "wenn ich im Filter was auswaehle das dann
+// er teilweise Position wechselt ... lass ihn fest stehen". Gemessen: COT,
+// Retail, Put/Call, Net flow, Fear & Greed rutschten nach einer Auswahl 47 px
+// nach links (Handy 12-43 px) - das ✕ kam erst dann dazu, die Leiste ist
+// rechtsbuendig. check/filterfest.js.
+function filterResetHtml(onclick,allLabel,id,leer){
   const t=escH('Reset filter — back to '+String(allLabel).replace(/<[^>]*>/g,''));
-  return`<button class="btn flt-x"${id?` id="${id}"`:''} onclick="${onclick}" title="${t}" aria-label="${t}">✕</button>`;
+  return`<button class="btn flt-x"${id?` id="${id}"`:''}${leer?' hidden aria-hidden="true" tabindex="-1"':''} onclick="${onclick}" title="${t}" aria-label="${t}">✕</button>`;
 }
 function filterResetSync(id,aktiv){const x=document.getElementById(id);if(x)x.hidden=!aktiv;}
 function assetFilterSelect(ids,selected,onChange,allLabel,titleAttr,labelFn){
   const optHtml=id=>`<option value="${escH(id)}"${selected===id?' selected':''}>${labelFn?labelFn(id):escH(COT_NAME[id]||id)}</option>`;
   const head=allLabel?`<option value=""${selected?'':' selected'}>${allLabel}</option>`:'';
-  const x=allLabel&&selected?filterResetHtml(`${onChange}('')`,allLabel):'';
+  const x=allLabel?filterResetHtml(`${onChange}('')`,allLabel,null,!selected):'';
   return`<div class="cot-filterbar"><select class="btn" onchange="${onChange}(this.value)" title="${escH(titleAttr)}" style="cursor:pointer">${head}${sbCatsOptgroups(ids,optHtml)}</select>${x}</div>`;
 }
 // ── Mehrfach-Waehrungsfilter (Chips + All/FX/Non-FX/Yields), ERGAENZEND zum
@@ -9319,6 +9325,24 @@ function korbReihe(id,lang){
   _korbMemo.set(schl,{pd:PRICE_DATA_FEED,ph:lang?PRICE_HIST:null,r});
   return r;
 }
+// FX-Paar als Kursreihe (Nutzer 2026-10-31, Preisvergleich "alles wovon es
+// Preisdaten gibt"): Wert der Basis in USD / Wert der Quote in USD, aus
+// denselben Schlusskursen wie die Koerbe (USD = 1, also nie DXY). Nur Tage,
+// an denen beide einen Schluss haben, ohne Wochenende.
+const _paarMemo=new Map();
+function preisPaarReihe(paar){
+  const [b,q]=String(paar).split('/');
+  if(!FX.includes(b)||!FX.includes(q)||b===q)return null;
+  const m=_paarMemo.get(paar);
+  if(m&&m.pd===PRICE_DATA_FEED&&m.ph===PRICE_HIST)return m.r;
+  const inUsd=c=>{if(c==='USD')return null;const mp=new Map();(preisReiheLang(c)||[]).forEach(e=>{const v=e&&+e[1];if(v>0&&isFinite(v))mp.set(String(e[0]).slice(0,10),v);});return mp;};
+  const B=inUsd(b),Q=inUsd(q);
+  const tage=[...(B||Q).keys()].filter(d=>(!B||B.has(d))&&(!Q||Q.has(d))&&!istWochenende(d)).sort();
+  const r=tage.map(d=>[d,+((B?B.get(d):1)/(Q?Q.get(d):1)).toPrecision(7)]);
+  const out=r.length>1?r:null;
+  _paarMemo.set(paar,{pd:PRICE_DATA_FEED,ph:PRICE_HIST,r:out});
+  return out;
+}
 // Die Reihe, die eine KURS-ANZEIGE fuer ein Asset zeigt: Waehrung = Korb,
 // alles andere der eigene Kurs (inkl. Archiv, s. preisReiheLang).
 function preisReiheAnzeige(id){return FX.includes(id)?korbReihe(id,true):preisReiheLang(id);}
@@ -9753,6 +9777,8 @@ function abKontextReihe(art,assetId){
     case 'ccy':   {const q=YIELD_CCY[assetId]||'USD';return{reihe:preisReiheAnzeige(q),einheit:'',quelle:q,feed:'price'};}
     case 'vix':   {const D=SENTIMENT_DATA;const v=D&&D.vix;return{reihe:v&&Array.isArray(v.series)?v.series:null,einheit:'',quelle:'VIX',feed:'sentiment'};}
     default:{
+      const pm=String(art).match(/^pair:([A-Z]{3})\/([A-Z]{3})$/);
+      if(pm)return{reihe:preisPaarReihe(pm[1]+'/'+pm[2]),einheit:'',quelle:pm[1],feed:'price'};
       const m=String(art).match(/^(p|b2|b10):(.+)$/);
       if(m&&m[1]==='p'){const id=m[2];return{reihe:FX.includes(id)?preisReiheAnzeige(id):preisReiheLang(id),einheit:'',quelle:id,feed:'price'};}
       if(m)return{reihe:zu2(bondSeriesOhlc(m[2],m[1]==='b2'?'2Y Bond Yield':'10Y Bond Yield')),einheit:'%',quelle:m[2],feed:'bond'};
@@ -9775,21 +9801,42 @@ let kontextSlots=(()=>{try{const v=JSON.parse(localStorage.getItem('fxpro_kontex
 function setKontextSlotsVal(v){kontextSlots=(v&&typeof v==='object'&&!Array.isArray(v))?v:{};}
 function kontextDef(art){
   if(KONTEXT_ART[art])return KONTEXT_ART[art];
+  const pm=String(art).match(/^pair:([A-Z]{3}\/[A-Z]{3})$/);
+  if(pm)return{titel:pm[1],art:'chart',ziel:null};
   const m=String(art).match(/^(p|b2|b10):(.+)$/);if(!m)return null;
-  if(m[1]==='p'){const sy=syms.find(x=>x.id===m[2]);return{titel:sy?(sy.name&&sy.name!==sy.id?sy.id+' · '+sy.name:sy.id):m[2],art:'chart',ziel:m[2]};}
+  // Kurs-Feed ohne eigenes Asset (z. B. ETH): kein Sprung zu einer Asset-Seite.
+  if(m[1]==='p'){const sy=syms.find(x=>x.id===m[2]);return{titel:sy?(sy.name&&sy.name!==sy.id?sy.id+' · '+sy.name:sy.id):m[2],art:'chart',ziel:sy?m[2]:null};}
   const tz=Object.keys(YIELD_CCY).find(k=>YIELD_CCY[k]===m[2]);
   return{titel:m[2]+(m[1]==='b2'?' 2Y Yield':' 10Y Yield'),art:'chart',ziel:tz||null};
 }
 // Alle Charts, die gerade Daten haben - gruppiert und sortiert.
-function kontextKatalog(){
+// ⚠ EIN Katalog fuer die Context-Charts der Asset-Seite UND den Preisvergleich
+// in Data (Nutzer 2026-10-31: "ich will dort alles haben wovon es Preisdaten
+// gibt und wenn was irgendwann hinzukommt soll es auch da hinzukommen und das
+// gilt auch fuer in Assets ganz unten bei den Charts"). Er wird aus syms, den
+// Kurs-Feeds (Eintraege ohne eigenes Asset, z. B. ETH), den Renditen je
+// Waehrung, VIX und den 28 FX-Paaren gebaut - nichts davon ist eine Liste,
+// die jemand pflegen muss. Gezeigt wird nur, was gerade Daten hat.
+// fuerData: Reihenfolge Preise zuerst, ohne "Yield assets" (= 10Y ihres
+// Landes, stuende doppelt).
+const FEED_KLASSE={ETH:'crypto'};
+function kontextKatalog(fuerData){
   const hat=r=>Array.isArray(r)&&r.length>1;
   const gruppen=[];
   const add=(name,liste)=>{const l=liste.filter(x=>x&&hat(abKontextReihe(x.k,'USD').reihe));if(l.length)gruppen.push({name,l});};
   const ccys=[...new Set(FX.concat(Object.values(YIELD_CCY)))];
-  add('Bond yields — 2Y',ccys.map(c=>({k:'b2:'+c,t:c+' 2Y'})));
-  add('Bond yields — 10Y',ccys.map(c=>({k:'b10:'+c,t:c+' 10Y'})));
-  const KL=[['fx','Currencies (basket)'],['metal','Metals'],['energy','Energy'],['index','Indices'],['stock','Stocks'],['crypto','Crypto'],['yield','Yield assets']];
-  KL.forEach(([kl,name])=>add(name,syms.filter(x=>assetCls(x.id)===kl).sort((a,b)=>a.id.localeCompare(b.id)).map(x=>({k:'p:'+x.id,t:x.id+(x.name&&x.name!==x.id?' · '+x.name:'')}))));
+  const renditen=()=>{
+    add('Bond yields — 2Y',ccys.map(c=>({k:'b2:'+c,t:c+' 2Y'})));
+    add('Bond yields — 10Y',ccys.map(c=>({k:'b10:'+c,t:c+' 10Y'})));
+  };
+  if(!fuerData)renditen();
+  const nurFeed=Object.keys(PRICE_DATA_FEED||{}).filter(k=>!syms.some(x=>x.id===k)&&!FX.includes(k));
+  const klasseVon=k=>assetCls(k)||FEED_KLASSE[k]||'other';
+  const KL=[['fx','Currencies (basket)'],['metal','Metals'],['energy','Energy'],['index','Indices'],['stock','Stocks'],['crypto','Crypto'],['other','Other prices']].concat(fuerData?[]:[['yield','Yield assets']]);
+  KL.forEach(([kl,name])=>add(name,syms.filter(x=>assetCls(x.id)===kl).sort((a,b)=>a.id.localeCompare(b.id)).map(x=>({k:'p:'+x.id,t:x.id+(x.name&&x.name!==x.id?' · '+x.name:'')}))
+    .concat(nurFeed.filter(k=>klasseVon(k)===kl).sort().map(k=>({k:'p:'+k,t:k})))));
+  add('FX pairs',FX_PAIRS.map(p=>({k:'pair:'+p,t:p})));
+  if(fuerData)renditen();
   add('Volatility',[{k:'vix',t:'VIX (S&P 500 volatility)'}]);
   return gruppen;
 }
@@ -21605,7 +21652,13 @@ function relinkDataInd(id){delete dataIndOverride[id];renderDataTab();}
 //
 // Beide nutzen dieselben Panels, dieselbe Zeitraum-Leiste und denselben
 // gemeinsamen Chart-Cursor.
-let dataMode='assets';                  // 'assets' | 'inds' | 'vs'
+let dataMode='assets';                  // 'assets' | 'inds' | 'vs' | 'preis'
+// Vierte Leserichtung "Prices" (Nutzer 2026-10-31): bis zu 6 Kursreihen in
+// EINEM Chart, jede im gewaehlten Zeitraum von ihrem eigenen Tief (unten) bis
+// zu ihrem eigenen Hoch (oben). Schluessel wie in den Context-Charts
+// (p:/pair:/b2:/b10:/vix, siehe kontextKatalog).
+const DATA_PREIS_MAX=6;
+let dataPreisListe=[];
 let dataIndList=['CPI (Headline)'];     // bis zu 8 Indikatoren im Modus 'inds'
 // ── Dritte Leserichtung: Asset vs asset (Nutzer-Wunsch 2026-10-26) ──
 // "Mach die Funktion bei data das man nicht nur in einem Asset Indikatoren
@@ -21623,7 +21676,7 @@ let dataVsAssets=['USD','EUR'];
 let dataVsList=['CPI (Headline)'];
 function setDataMode(m){
   const vorher=dataMode;
-  dataMode=(m==='inds'||m==='vs')?m:'assets';
+  dataMode=(m==='inds'||m==='vs'||m==='preis')?m:'assets';
   // Beim Wechsel den jeweils festen Teil sinnvoll vorbelegen, damit nie ein
   // leeres Raster dasteht: das erste gewaehlte Asset bzw. der gemeinsame
   // Indikator wandern in den neuen Modus mit.
@@ -21641,8 +21694,11 @@ function setDataMode(m){
     if(vorher==='inds'&&dataIndList.length)dataVsList=dataIndList.slice(0,DATA_VS_MAX);
     else if(vorher==='assets'&&dataIndBase&&!dataVsList.includes(dataIndBase))dataVsList=[dataIndBase,...dataVsList].slice(0,DATA_VS_MAX);
     if(!dataVsList.length)dataVsList=['CPI (Headline)'];
+  }else if(dataMode==='preis'){
+    // Das gerade gezeigte Asset kommt als erste Linie mit.
+    if(!dataPreisListe.length&&dataAssets[0])dataPreisListe=['p:'+dataAssets[0]];
   }
-  closeDataAssetPicker();closeDataIndPicker();
+  closeDataAssetPicker();closeDataIndPicker();closeDataPreisPicker();
   renderDataTab();
 }
 // Asset A bzw. B waehlen. Dasselbe Asset auf beiden Seiten vergleicht
@@ -21738,14 +21794,135 @@ function renderDataIndPicker(){
   el.innerHTML=`<div class="data-picker-hd"><span>Pick up to ${max} indicators</span><b>${l.length}/${max}</b></div>
     <div class="data-picker-body">${body}</div>
     <div class="data-picker-ft">${wer} · every tap is applied right away · closes at ${max} or when you tap outside</div>`;
-  const r=btn.getBoundingClientRect();
-  el.style.top=Math.round(r.bottom+6)+'px';
-  el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+'px';
-  el.style.maxHeight=Math.max(160,Math.round(window.innerHeight-r.bottom-24))+'px';
+  pickerAnkern(el,btn);
 }
 // Watchlist-Quicklinks springen mit GENAU EINEM Asset hierher - das ersetzt
 // die ganze Panel-Auswahl, sonst landet man auf einem Raster, in dem das
 // angeklickte Asset irgendwo dazwischen steht.
+// ── Auswahl fuer "Prices": dieselbe Chip-Mechanik wie Assets/Indicators ──
+let _dataPreisPickerOpen=false;
+function _dataPreisOutside(e){const t=e.target;if(t&&t.closest&&t.closest('#dataPreisPicker,#dataPreisBtn'))return;closeDataPreisPicker();}
+function closeDataPreisPicker(){
+  _dataPreisPickerOpen=false;
+  document.removeEventListener('pointerdown',_dataPreisOutside,true);
+  const el=document.getElementById('dataPreisPicker');if(el)el.remove();
+  const b=document.getElementById('dataPreisBtn');if(b)b.classList.remove('on');
+}
+function openDataPreisPicker(){
+  if(_dataPreisPickerOpen){closeDataPreisPicker();return;}
+  _dataPreisPickerOpen=true;renderDataPreisPicker();
+  setTimeout(()=>{if(_dataPreisPickerOpen)document.addEventListener('pointerdown',_dataPreisOutside,true);},0);
+}
+function toggleDataPreis(k){
+  const i=dataPreisListe.indexOf(k);
+  if(i>=0)dataPreisListe.splice(i,1);else if(dataPreisListe.length<DATA_PREIS_MAX)dataPreisListe.push(k);else return;
+  renderDataTab();
+  if(dataPreisListe.length>=DATA_PREIS_MAX)closeDataPreisPicker();
+}
+function removeDataPreis(k){const i=dataPreisListe.indexOf(k);if(i>=0)dataPreisListe.splice(i,1);renderDataTab();}
+function renderDataPreisPicker(){
+  if(!_dataPreisPickerOpen)return;
+  const btn=document.getElementById('dataPreisBtn');if(!btn){closeDataPreisPicker();return;}
+  btn.classList.add('on');
+  let el=document.getElementById('dataPreisPicker');
+  if(!el){el=document.createElement('div');el.id='dataPreisPicker';el.className='data-picker';document.body.appendChild(el);}
+  const voll=dataPreisListe.length>=DATA_PREIS_MAX;
+  el.innerHTML=`<div class="data-picker-hd"><span>Pick up to ${DATA_PREIS_MAX} prices</span><b>${dataPreisListe.length}/${DATA_PREIS_MAX}</b></div>
+    <div class="data-picker-body">${kontextKatalog(true).map(g=>`<div class="data-picker-grp"><span class="cmp-filter-lbl">${escH(g.name)}</span><div class="cmp-filter-grp">${g.l.map(x=>{
+      const an=dataPreisListe.includes(x.k);
+      return`<button class="cmp-chip${an?' on':''}"${!an&&voll?' disabled':''} onclick="toggleDataPreis('${escJH(x.k)}')" title="${escH(x.t)}">${escH(x.k.startsWith('p:')?x.k.slice(2):x.t)}</button>`;
+    }).join('')}</div></div>`).join('')}</div>
+    <div class="data-picker-ft">every tap applies at once · closes at ${DATA_PREIS_MAX} or when you tap outside</div>`;
+  pickerAnkern(el,btn);
+}
+// ── Preisvergleich: jede Linie im Zeitraum von ihrem Tief (0) bis Hoch (100) ──
+// Nutzer 2026-10-31: "wenn die Spanne 3 Monate ist und ich ... cad und Oel mir
+// anschaue um Muster zu finden soll es ... so sein das in den 3 Monaten der
+// tiefste Kurs von cad genau so weit unten im Chart steht wie der Kurs von Oel
+// und umgekehrt und das gilt auch fuer den Peek. Weil wenn man es auf 100
+// Basiswert hat und sich Gold 10% bewegt aber zb eurusd nur 0,5 ist das ja gar
+// nicht vergleichbar".
+// ⚠ Dadurch wird die FORM vergleichbar, die GROESSE nicht mehr: 0,5 % und 10 %
+// fuellen den Chart gleich. Deshalb steht die echte Spanne (Tief - Hoch, in %
+// bzw. Prozentpunkten bei Renditen) in der Legende, und der Hover zeigt die
+// echten Kurse. Zeitachse nach Datum (nicht nach Index): Krypto handelt am
+// Wochenende, FX nicht - jede Linie steht an ihren eigenen Tagen.
+function preisWert(v,einheit){return einheit==='%'?(+v).toFixed(2)+'%':fmtPriceTick(+v);}
+function preisSpanne(s){return s.einheit==='%'?(s.hi-s.lo).toFixed(2)+' pp':(s.lo>0?((s.hi/s.lo-1)*100).toFixed(1)+' %':'–');}
+function preisVergleichHtml(keys,W,H){
+  // Unsichtbar neu gezeichnet (Data im Hintergrund): Flaeche 0 -> Mindestmass
+  // statt negativer SVG-Breite (check/runtime.js, 2026-10-31: width -20).
+  W=Math.max(200,Math.round(W)||0);H=Math.max(160,Math.round(H)||0);
+  const kat=new Map();kontextKatalog(true).forEach(g=>g.l.forEach(x=>kat.set(x.k,x.t)));
+  const von=dataRange==='CUSTOM'?(dataCustomFrom||null):dataRange==='MAX'?null:rangeCutoffStr(+dataRange);
+  const bis=dataRange==='CUSTOM'?(dataCustomTo||null):null;
+  const name=k=>k.startsWith('p:')&&FX.includes(k.slice(2))?KORB_NAME[k.slice(2)]:(kat.get(k)||k.replace(/^p:/,''));
+  const serien=keys.map((k,i)=>{
+    const q=abKontextReihe(k,'USD');
+    // Wochenend-Tage wie in jedem Kurs-Chart nur bei Krypto (ohneWochenende).
+    const we=kerzenWochenendeErlaubt(q.quelle);
+    const pts=(Array.isArray(q.reihe)?q.reihe:[]).map(e=>[String(e[0]).slice(0,10),+e[1]]).filter(e=>isFinite(e[1])&&(!von||e[0]>=von)&&(!bis||e[0]<=bis)&&(we||!istWochenende(e[0])));
+    let lo=Infinity,hi=-Infinity;pts.forEach(e=>{if(e[1]<lo)lo=e[1];if(e[1]>hi)hi=e[1];});
+    return{k,t:name(k),col:TR_FOKUS_FARBEN[i%TR_FOKUS_FARBEN.length],pts,lo,hi,einheit:q.einheit||''};
+  });
+  const mit=serien.filter(x=>x.pts.length>1);
+  const legende=`<div class="pv-lg">${serien.map(x=>`<span class="pv-i"><i class="pv-f" style="background:${x.col}"></i><b>${escH(x.t)}</b>${x.pts.length>1
+    ?` <span class="pv-sp">${escH(preisWert(x.lo,x.einheit))} – ${escH(preisWert(x.hi,x.einheit))}</span> <em>range ${escH(preisSpanne(x))}</em>`
+    :' <em>no data in this period</em>'}<button class="pv-x" onclick="removeDataPreis('${escJH(x.k)}')" title="Remove ${escH(x.t)}" aria-label="Remove ${escH(x.t)}">✕</button></span>`).join('')}</div>`;
+  if(!mit.length)return legende+`<div class="ind-hist-empty">No prices in this period — pick a longer range.</div>`;
+  const Hc=Math.max(120,H-34),L=44,R=12,T=10,B=24,pw=Math.max(40,W-L-R),ph=Math.max(60,Hc-T-B);
+  const ms=d=>Date.parse(d+'T00:00:00Z');
+  const t0=Math.min(...mit.map(x=>ms(x.pts[0][0]))),t1=Math.max(...mit.map(x=>ms(x.pts[x.pts.length-1][0])));
+  const xOf=d=>L+(t1>t0?(ms(d)-t0)/(t1-t0):0.5)*pw;
+  const yOf=(x,v)=>T+(1-(x.hi>x.lo?(v-x.lo)/(x.hi-x.lo):0.5))*ph;
+  let svg=`<svg class="pv-svg" width="${W}" height="${Hc}" viewBox="0 0 ${W} ${Hc}">`;
+  [0,25,50,75,100].forEach(t=>{
+    const y=T+(1-t/100)*ph;
+    svg+=`<line x1="${L}" y1="${y.toFixed(1)}" x2="${(L+pw).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--t3)" stroke-width="${t%50?0.6:1}"${t%50?' stroke-dasharray="2,3"':''} opacity="${t%50?0.3:0.45}"/>`;
+    svg+=`<text x="${L-7}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:var(--fs-xs);fill:var(--t3)">${t}</text>`;
+  });
+  const tage=[...new Set(mit.flatMap(x=>x.pts.map(e=>e[0])))].sort();
+  [0,0.25,0.5,0.75,1].forEach((f,i)=>{
+    const d=tage[Math.min(tage.length-1,Math.round(f*(tage.length-1)))];
+    const an=i===0?'start':i===4?'end':'middle';
+    const lbl=fmtDayShort(d);
+    svg+=`<text x="${xOf(d).toFixed(1)}" y="${(T+ph+17).toFixed(1)}" text-anchor="${an}" style="font-size:var(--fs-xs);fill:var(--t3)">${escH(lbl)}</text>`;
+  });
+  mit.forEach(x=>{
+    svg+=`<polyline points="${x.pts.map(e=>xOf(e[0]).toFixed(1)+','+yOf(x,e[1]).toFixed(1)).join(' ')}" fill="none" stroke="${x.col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  });
+  svg+='</svg>';
+  // Hover: hoechstens ~400 Stuetzpunkte; je Linie der letzte Schluss bis zu diesem Tag.
+  const schritt=Math.max(1,Math.ceil(tage.length/400));
+  const zeiger=mit.map(()=>0);
+  const hpts=[];
+  tage.forEach((d,j)=>{
+    mit.forEach((x,i)=>{while(zeiger[i]+1<x.pts.length&&x.pts[zeiger[i]+1][0]<=d)zeiger[i]++;});
+    if(j%schritt&&j!==tage.length-1)return;
+    let fy=null,col='var(--t3)';
+    const rows=mit.map((x,i)=>{
+      const e=x.pts[zeiger[i]];if(!e||e[0]>d)return'';
+      const y=yOf(x,e[1]);if(fy==null){fy=y;col=x.col;}
+      const pos=x.hi>x.lo?Math.round((e[1]-x.lo)/(x.hi-x.lo)*100):50;
+      return`<div style="display:flex;justify-content:space-between;gap:12px"><span><span class="tr-tip-dot" style="background:${x.col}"></span>${escH(x.t)}</span><span><b>${escH(preisWert(e[1],x.einheit))}</b> <span style="color:var(--t3)">${pos}</span></span></div>`;
+    }).join('');
+    hpts.push({fx:xOf(d)/W,fy:(fy==null?T+ph/2:fy)/Hc,t:d,col,tip:`<div class="chv-tip-d">${escH(fmtDayHdr(d))}</div>${rows||'<span style="color:var(--t3)">no data</span>'}`});
+  });
+  return legende+chartHoverWrap(svg,hpts,`width:${W}px`,'data',null,'setDataRange');
+}
+// Ein Chip-Popup wird EINMAL beim Oeffnen unter seinem Knopf ausgerichtet und
+// steht danach fest (Nutzer 2026-10-31: "lass ihn fest stehen"). Gemessen
+// vorher: Data "Assets" nach dem ersten Antippen 138 px nach links - der Knopf
+// wandert mit seiner Zaehlung, das Popup wurde nach JEDEM Antippen neu daran
+// ausgerichtet. Gilt fuer alle .data-picker (Data, Country profile).
+function pickerAnkern(el,btn){
+  if(el.dataset.fest)return;
+  const r=btn.getBoundingClientRect();
+  el.style.top=Math.round(r.bottom+6)+'px';
+  el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+'px';
+  el.style.maxHeight=Math.max(160,Math.round(window.innerHeight-r.bottom-24))+'px';
+  el.dataset.fest='1';
+}
 function setDataAsset(v){if(dataMode==='vs')dataMode='assets';dataAssets=v?[v]:[];dataIndBase='';renderDataTab();}
 function addDataAsset(v){
   if(v&&!dataAssets.includes(v)&&dataAssets.length<DATA_MAX_PANELS)dataAssets.push(v);
@@ -21815,10 +21992,7 @@ function renderDataAssetPicker(){
   el.innerHTML=`<div class="data-picker-hd"><span>Pick up to ${DATA_MAX_PANELS} assets</span><b>${dataAssets.length}/${DATA_MAX_PANELS}</b></div>
     <div class="data-picker-body">${body}</div>
     <div class="data-picker-ft">Every tap is applied right away · closes at 4 or when you tap outside</div>`;
-  const r=btn.getBoundingClientRect();
-  el.style.top=Math.round(r.bottom+6)+'px';
-  el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+'px';
-  el.style.maxHeight=Math.max(160,Math.round(window.innerHeight-r.bottom-24))+'px';
+  pickerAnkern(el,btn);
 }
 function setDataInd(v){dataIndBase=v||'';dataIndOverride={};renderDataTab();}
 // Scrollstand halten - WebKit kuerzt ihn beim innerHTML-Austausch (siehe
@@ -21853,6 +22027,7 @@ function renderDataTabRoh(){
     <button class="ind-hist-range-btn${dataMode==='assets'?' on':''}" onclick="setDataMode('assets')" title="One indicator, up to ${N} assets side by side">By asset</button>
     <button class="ind-hist-range-btn${dataMode==='inds'?' on':''}" onclick="setDataMode('inds')" title="One asset, up to ${N} of its indicators side by side">By indicator</button>
     <button class="ind-hist-range-btn${dataMode==='vs'?' on':''}" onclick="setDataMode('vs')" title="Two assets, the same up to ${DATA_VS_MAX} indicators paired row by row">Asset vs asset</button>
+    <button class="ind-hist-range-btn${dataMode==='preis'?' on':''}" onclick="setDataMode('preis')" title="Up to ${DATA_PREIS_MAX} prices in one chart, each from its own low to its own high">Prices</button>
   </div>`;
   // Die Leiste steht im Kopf, die Datentiefe kennt man erst nach den Panels:
   // Platzhalter, am Ende ersetzt (fruehester Punkt ueber alle Panels).
@@ -21880,9 +22055,22 @@ function renderDataTabRoh(){
   // Dauerregel 2026-09-26: Filter (Asset-/Indikator-Auswahl) rechtsbuendig
   // in der Titelzeile; darunter die Werkzeugzeile - Ansicht (By asset / By
   // indicator) links, Zeitfilter rechts.
-  const kopf=(sub,filter,knopf,zeit)=>`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each. The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar,zeit)}</div></div>`;
+  const kopf=(sub,filter,knopf,zeit)=>`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar,zeit)}</div></div>`;
   let head,body,n=0;
-  if(dataMode==='vs'){
+  if(dataMode==='preis'){
+    // ── Bis zu 6 Kurse in EINEM Chart, je Linie Tief unten / Hoch oben ──
+    const kat=new Set();kontextKatalog(true).forEach(g=>g.l.forEach(x=>kat.add(x.k)));
+    dataPreisListe=dataPreisListe.filter(k=>kat.has(k)).slice(0,DATA_PREIS_MAX);
+    dataPreisListe.forEach(k=>{const r=abKontextReihe(k,'USD').reihe;if(Array.isArray(r)&&r.length){const d0=String(r[0][0]).slice(0,10);if(!dataAb||d0<dataAb)dataAb=d0;}});
+    const knopf=`<button class="btn" id="dataPreisBtn" onclick="openDataPreisPicker()" title="Pick up to ${DATA_PREIS_MAX} prices at once — every tap is applied right away">${icn('filter',13)}<span style="margin-left:5px">Prices</span> <b style="font-family:var(--ff-num)">${dataPreisListe.length}/${DATA_PREIS_MAX}</b></button>`;
+    head=kopf(`Up to ${DATA_PREIS_MAX} prices in one chart · each line from its own low to its own high`,'',knopf,dataPreisListe.length?rangeBarHtml():'');
+    if(!dataPreisListe.length)body=`<div class="cot-empty">Pick up to ${DATA_PREIS_MAX} prices above to compare their patterns.</div>`;
+    else{
+      n=1;const k=panelJobs.length;panelJobs.push({preis:true});
+      const info=abInfoBtn('Price comparison',['<b>Each line</b> spans its own range: lowest close in the period = <b>0</b>, highest = <b>100</b>.','<b>Shape, not size:</b> a 0.5 % move and a 10 % move fill the chart alike — the legend shows the real range.','<b>Hover:</b> the real price of every line on that day.','Currencies = basket vs the other 7 · pairs from the same closes · yields in %.']);
+      body=`<div class="data-grid"><div class="cot-card data-panel"><div class="data-ph"><span class="data-pt">Price comparison<span class="px-panel-sub">low → high in period</span></span><span class="px-panel-ctrls"></span>${info}</div><div class="data-pc" data-k="${k}"></div></div></div>`;
+    }
+  }else if(dataMode==='vs'){
     // ── ZWEI Assets, dieselben bis zu DATA_VS_MAX Indikatoren paarweise ──
     // Reihenfolge der Panels: je Indikator A, dann B -> im 2-Spalten-Raster
     // steht jede Zeile fuer einen Indikator (schmal: A ueber B).
@@ -21959,7 +22147,7 @@ function renderDataTabRoh(){
   attachChartHovers(el);
   // Die Buttons wurden gerade neu gebaut - ein offenes Popup muss sich wieder
   // daran ausrichten und den neuen Stand zeigen. No-ops, solange zu.
-  renderDataAssetPicker();renderDataIndPicker();
+  renderDataAssetPicker();renderDataIndPicker();renderDataPreisPicker();
 }
 // Raster setzen, Zellen messen, dann jeden Chart in seine Flaeche zeichnen.
 function dataRasterFuellen(el,n,jobs){
@@ -21986,7 +22174,7 @@ function dataRasterFuellen(el,n,jobs){
   // (opts.meta), dann die Vereinigung als opts.yRange mitgeben.
   const spannen={};
   jobs.forEach(job=>{
-    if(!job)return;
+    if(!job||job.preis)return;
     const base=stripPeriodSuffix(job.ind.name).base,m={};
     try{indHistChart(job.ind,job.sym.id,{noToolbar:true,noLegend:true,range:dataRange,from:dataCustomFrom,to:dataCustomTo,W:400,H:200,meta:m});}catch(e){return;}
     if(m.vMin==null||!isFinite(m.vMin))return;
@@ -21995,6 +22183,16 @@ function dataRasterFuellen(el,n,jobs){
   });
   grid.querySelectorAll('.data-pc[data-k]').forEach(box=>{
     const job=jobs[+box.dataset.k];if(!job)return;
+    if(job.preis){
+      const bs=getComputedStyle(box),px=k=>parseFloat(bs[k])||0;
+      const w=box.clientWidth-px('paddingLeft')-px('paddingRight');
+      const zeichne=h=>{box.innerHTML=preisVergleichHtml(dataPreisListe,w,h);};
+      const h0=box.clientHeight-px('paddingTop')-px('paddingBottom');
+      zeichne(h0);
+      const ueber=box.scrollHeight-box.clientHeight;
+      if(ueber>0)zeichne(h0-ueber);
+      return;
+    }
     const sp=spannen[stripPeriodSuffix(job.ind.name).base];
     // window.__dataEigeneSkala: nur fuer die Gegenprobe von check/yachse.js
     const yRange=sp&&sp.n>1&&!window.__dataEigeneSkala?{min:sp.min,max:sp.max}:null;
@@ -22477,7 +22675,7 @@ function renderNewsTabRoh(){
   const kopf=`<div class="news-tools">
     <input class="news-q" type="search" placeholder="Search headlines…" value="${escH(newsTabQuery)}"
       oninput="setNewsTabQuery(this.value)">
-    <select onchange="setNewsTabAsset(this.value)">${opt('ALL','All assets',newsTabAsset)}${assetIds.map(id=>opt(id,(COT_NAME[id]||id),newsTabAsset)).join('')}</select>${newsTabAsset!=='ALL'?filterResetHtml("setNewsTabAsset('ALL')",'All assets'):''}
+    <select onchange="setNewsTabAsset(this.value)">${opt('ALL','All assets',newsTabAsset)}${assetIds.map(id=>opt(id,(COT_NAME[id]||id),newsTabAsset)).join('')}</select>${filterResetHtml("setNewsTabAsset('ALL')",'All assets',null,newsTabAsset==='ALL')}
     <select onchange="setNewsTabSrc(this.value)">${opt('ALL','All sources',newsTabSrc)}${quellen.map(x=>opt(x,x,newsTabSrc)).join('')}</select>
   </div>
   ${chartLeisteHtml('',timeRangeBarHtml(newsTabRange,'setNewsTabRange',NEWS_RANGES)+timeRangeCustomHtml(newsTabRange,newsTabFrom,newsTabTo,'setNewsTabRange'))}`;
@@ -22704,7 +22902,7 @@ function sentFilterBar(){
   const nonFxGroups=SB_CATS.filter(c=>c.l!=='FX').map(cat=>
     grp(cat.l,nonFx.filter(s=>cat.ids.includes(SENT_NONFX_PRICE_ID[s])))).join('');
   const opts=`<option value=""${sentSym?'':' selected'}>All symbols</option>${grp('Watchlist',wl)}${grp('FX Pairs',fxPairs)}${nonFxGroups}`;
-  return`<div class="cot-filterbar"><select class="btn" onchange="setSentSym(this.value)" title="Filter by symbol" style="cursor:pointer">${opts}</select>${sentSym?filterResetHtml("setSentSym('')",'All symbols'):''}</div>`;
+  return`<div class="cot-filterbar"><select class="btn" onchange="setSentSym(this.value)" title="Filter by symbol" style="cursor:pointer">${opts}</select>${filterResetHtml("setSentSym('')",'All symbols',null,!sentSym)}</div>`;
 }
 // Asset-Filter fuer Put/Call Ratio + Net Options Flow: '' = markt-weite OCC-
 // Summe (alle US-Optionsboersen), sonst der ETF-Proxy des gewaehlten Assets
@@ -27100,7 +27298,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,
   DASH_COL_MIN_H,DASH_SHRINK_MIN_H,equalizeDashColumns,scrollCalsToNow,delWidget,renameWidget,confirmRename,addWidget,
-  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
+  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,pickerAnkern,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
   recordScoreHist,RISK_ON_IDS,RISK_OFF_IDS,riskOnOffState,riskSentimentWidgetHtml,globeHudLonTxt,globeHudHtml,bMark,
   startScanBroadcast,scanFlyParticle,surpriseIndex,mxHeatColor,assetReturnMap,pearsonR,corrHeatColor,setCorrA,
   setCorrB,setCorrWin,logReturns,pearson,corrRegimeSeries,corrRegimeCardHtml,renderCorrCard,renderMatrix,TREND_COLORS,
@@ -27227,6 +27425,7 @@ Object.defineProperty(window,'pairs',{get:()=>pairs,set:v=>{pairs=v;},configurab
 Object.defineProperty(window,'noteCats',{get:()=>noteCats,set:v=>{noteCats=v;},configurable:true});
 Object.defineProperty(window,'research',{get:()=>research,set:v=>{research=v;},configurable:true});
 Object.defineProperty(window,'researchFolders',{get:()=>researchFolders,set:v=>{researchFolders=v;},configurable:true});
+Object.defineProperty(window,'dataPreisListe',{get:()=>dataPreisListe,set:v=>{dataPreisListe=v;},configurable:true});
 Object.defineProperty(window,'researchAnalysis',{get:()=>researchAnalysis,set:v=>{researchAnalysis=v;},configurable:true});
 Object.defineProperty(window,'calEvts',{get:()=>calEvts,set:v=>{calEvts=v;},configurable:true});
 Object.defineProperty(window,'widgets',{get:()=>widgets,set:v=>{widgets=v;},configurable:true});

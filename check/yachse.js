@@ -25,7 +25,7 @@ const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 const ZIELE = ['regime', 'dash', 'mx', 'trends', 'cot', 'sent:retail', 'sent:putcall', 'sent:netflow', 'sent:fg',
   'aaii:spread', 'aaii:shares', 'aaii:bars', 'aaii:stack', 'aaii:dist', 'aaii:price', 'seas', 'data', 'rate', 'carry',
-  'A:EUR', 'A:GOLD', 'A:US10Y', 'PX:EUR', 'HIST:EUR', 'IND:EUR', 'SEASIND:EUR'];
+  'A:EUR', 'A:GOLD', 'A:US10Y', 'PX:EUR', 'HIST:EUR', 'IND:EUR', 'SEASIND:EUR', 'PREIS:data'];
 
 (async () => {
   const b = await chromium.launch();
@@ -47,6 +47,8 @@ const ZIELE = ['regime', 'dash', 'mx', 'trends', 'cot', 'sent:retail', 'sent:put
       else if (a === 'HIST') { gotoSym(v); openHistModal(v); }
       else if (a === 'IND') { gotoSym(v); const s = syms.find(x => x.id === v); let ind = null; s.rubrics.forEach(r => (r.indicators || []).forEach(i => { if (!ind && /CPI/.test(i.name) && indChartSeries(i, v).pts.length > 5) ind = i; })); probe(indHistChart(ind, v)); }
       else if (a === 'SEASIND') { gotoSym(v); probe(seasProfilHtml(v)); }
+      // Data · Prices (2026-10-31): Linien je eigene Spanne, Achse 0-100
+      else if (a === 'PREIS') { showTab('data'); setDataMode('preis'); dataPreisListe.length = 0; ['p:CAD', 'p:OIL', 'pair:EUR/USD'].forEach(k => dataPreisListe.push(k)); renderDataTab(); }
       else if (a === 'aaii') { showTab('sent'); setSentSub('aaii'); setAaiiView(v); }
       else { showTab(a); if (v) setSentSub(v); if (a === 'data') { dataAssets.length = 0; ['USD', 'EUR', 'JPY', 'CHF'].forEach(x => dataAssets.push(x)); dataIndBase = 'CPI (Headline)'; renderDataTab(); } }
     }, z);

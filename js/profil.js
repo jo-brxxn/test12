@@ -521,10 +521,7 @@ function cpfPickerZeichnen(sym,kat){
     <div class="data-picker-body">${gr.map(g=>`<div class="data-picker-grp"><span class="cmp-filter-lbl">${h(g.n)}</span><div class="cmp-filter-grp">${g.it.map(([e,i])=>{const an=cpfListe.includes(e.k);
       return`<button class="cmp-chip cpf-pick-i${an?' on':''}"${!an&&voll?' disabled':''} onclick="cpfUmschalten(${i})" aria-pressed="${an}" title="${h(e.n)}">${h(e.n)}</button>`;}).join('')}</div></div>`).join('')}</div>
     <div class="data-picker-ft">All of ${h(sym.name||sym.id)} · every tap is applied right away · closes at ${CPF_MAX} or when you tap outside</div>`;
-  const r=btn.getBoundingClientRect();
-  el.style.top=Math.round(r.bottom+6)+'px';
-  el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+'px';
-  el.style.maxHeight=Math.max(160,Math.round(window.innerHeight-r.bottom-24))+'px';
+  pickerAnkern(el,btn);   // einmal ausrichten, danach fest (js/main.js)
 }
 // Kopf je Panel wie Data: Name + Gruppe · Legende · As of/Next · ✕ · ⓘ
 function cpfLegende(e,sym){
