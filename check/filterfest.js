@@ -20,9 +20,14 @@
 //   B) Chip-Popups (Data Assets, Data Indicators, Country profile): nach drei
 //      Antippen dieselbe Lage
 //   C) Chip-Popups ab 480 px: die Gruppen stehen in 2 Spalten
+//   D) WIE DIE iOS-LISTE (Nutzer 2026-10-31: "nicht ewig weit nach unten ...
+//      scrollen ... um an die letzten Punkte zu kommen"): Popup hoechstens
+//      halbe Fensterhoehe (mind. 240 px), nie ueber den unteren Rand, der
+//      letzte Punkt per Scrollen IM Popup erreichbar, Kopfzeile bleibt oben
 // Gegenproben (muessen ROT werden):
 //   --gegenprobe          ✕ ohne Platz + Popup bei jedem Antippen neu ausgerichtet -> A, B rot
 //   --gegenprobe-spalten  eine Spalte                                              -> C rot
+//   --gegenprobe-hoehe    Popup ohne Hoehengrenze                                  -> D rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const fs = require('fs');
@@ -31,6 +36,7 @@ const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 const GP = process.argv.includes('--gegenprobe');
 const GP_SP = process.argv.includes('--gegenprobe-spalten');
+const GP_H = process.argv.includes('--gegenprobe-hoehe');
 const MARKE = 'if(el.dataset.fest)return;';
 const MAIN = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
 
@@ -54,6 +60,7 @@ const gruen = m => console.log('  ✓ ' + m);
     await p.evaluate(() => ['introOv', 'lockScreen', 'fdOv'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }));
     if (GP) await p.addStyleTag({ content: '.flt-x[hidden]{display:none!important}' });
     if (GP_SP) await p.addStyleTag({ content: '.data-picker-body{columns:1!important}' });
+    if (GP_H) await p.addStyleTag({ content: '.data-picker{max-height:none!important;overflow:visible!important}' });
 
     // ── A) Gruppen-Auswahllisten ──
     console.log(`A) Auswahllisten stehen fest (${vp.width} px)`);
@@ -107,13 +114,30 @@ const gruen = m => console.log('  ✓ ' + m);
         for (const k of klicks) { if (!document.getElementById(id)) break; try { (new Function(k))(); } catch (e) {} await warte(250); }
         const n = box();
         const e = document.getElementById(id);
+        // D) Hoehe begrenzt, innen scrollbar bis zum letzten Punkt, Kopf bleibt
+        let hoehe = null;
+        if (e) {
+          const q = e.getBoundingClientRect(), grenze = Math.max(240, Math.round(innerHeight * 0.5));
+          e.scrollTop = e.scrollHeight;
+          const chips = [...e.querySelectorAll('.cmp-chip')], l = chips.length ? chips[chips.length - 1].getBoundingClientRect() : null;
+          const hd = e.querySelector('.data-picker-hd'), hq = hd ? hd.getBoundingClientRect() : null;
+          hoehe = { h: Math.round(q.height), grenze, unten: Math.round(q.bottom), vh: innerHeight, letzter: !!l && l.bottom <= q.bottom + 1 && l.top >= q.top - 1, kopf: !!hq && Math.abs(hq.top - q.top) < 2 };
+          e.scrollTop = 0;
+        }
         const grp = e ? [...e.querySelectorAll('.data-picker-grp')].map(g => Math.round(g.getBoundingClientRect().left)) : [];
-        return { a, n, spalten: new Set(grp).size, gruppen: grp.length, breite: e ? Math.round(e.getBoundingClientRect().width) : 0 };
+        return { a, n, hoehe, spalten: new Set(grp).size, gruppen: grp.length, breite: e ? Math.round(e.getBoundingClientRect().width) : 0 };
       }, [pu.auf.toString().replace(/^\(\)\s*=>\s*\{|\}$/g, ''), pu.id, pu.tippen]);
       if (r.fehler) { rot(`${pu.name}: ${r.fehler}`); continue; }
       if (!r.n) gruen(`${pu.name}: nach dem Antippen geschlossen (voll) - Lage vorher geprueft`);
       else if (Math.abs(r.n.x - r.a.x) >= 2 || Math.abs(r.n.y - r.a.y) >= 2) rot(`${pu.name}: Popup nach drei Antippen um ${r.n.x - r.a.x}/${r.n.y - r.a.y} px versetzt`);
       else gruen(`${pu.name}: steht fest`);
+      if (r.hoehe) {
+        const d = r.hoehe;
+        if (d.h > d.grenze + 1 || d.unten > d.vh) rot(`${pu.name}: Popup ${d.h} px hoch, bis y=${d.unten} (Grenze ${d.grenze} px, Fenster ${d.vh} px)`);
+        else if (!d.letzter) rot(`${pu.name}: letzter Punkt per Scrollen im Popup nicht erreichbar`);
+        else if (!d.kopf) rot(`${pu.name}: Kopfzeile scrollt mit weg`);
+        else gruen(`${pu.name}: ${d.h} px (Grenze ${d.grenze}), scrollt innen bis zum letzten Punkt, Kopf bleibt`);
+      }
       if (vp.width >= 480 && r.gruppen >= 2) {
         if (r.spalten < 2) rot(`${pu.name}: ${r.gruppen} Gruppen in einer Spalte (Breite ${r.breite} px) - soll 2 Spalten`);
         else gruen(`${pu.name}: ${r.gruppen} Gruppen in 2 Spalten`);
@@ -125,7 +149,7 @@ const gruen = m => console.log('  ✓ ' + m);
   }
   await b.close();
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));
-  const gp = GP || GP_SP;
+  const gp = GP || GP_SP || GP_H;
   if (gp) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: Waechter bleibt gruen.'); process.exit(fehler ? 0 : 1); }
   console.log(fehler ? `\n✗ filterfest: ${fehler} Befund(e)` : '\n✓ filterfest: Filter stehen fest, Gruppen in 2 Spalten');
   process.exit(fehler ? 1 : 0);

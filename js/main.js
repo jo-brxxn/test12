@@ -21915,12 +21915,18 @@ function preisVergleichHtml(keys,W,H){
 // vorher: Data "Assets" nach dem ersten Antippen 138 px nach links - der Knopf
 // wandert mit seiner Zaehlung, das Popup wurde nach JEDEM Antippen neu daran
 // ausgerichtet. Gilt fuer alle .data-picker (Data, Country profile).
+// Hoehe wie die iOS-Auswahlliste begrenzt, der Rest scrollt IM Fenster
+// (Nutzer 2026-10-31: "beim iOS Filter war das gute das der nicht ewig weit
+// nach unten ging und das man da scrollen konnte um an die letzten Punkte zu
+// kommen das soll bei den neuen Filtern uebernommen werden"): hoechstens die
+// halbe Fensterhoehe (mind. 240 px), nie ueber den unteren Rand.
+function pickerHoehe(oben){return Math.max(160,Math.min(Math.round(window.innerHeight-oben-16),Math.max(240,Math.round(window.innerHeight*0.5))));}
 function pickerAnkern(el,btn){
   if(el.dataset.fest)return;
   const r=btn.getBoundingClientRect();
   el.style.top=Math.round(r.bottom+6)+'px';
   el.style.right=Math.max(8,Math.round(window.innerWidth-r.right))+'px';
-  el.style.maxHeight=Math.max(160,Math.round(window.innerHeight-r.bottom-24))+'px';
+  el.style.maxHeight=pickerHoehe(r.bottom+6)+'px';
   el.dataset.fest='1';
 }
 function setDataAsset(v){if(dataMode==='vs')dataMode='assets';dataAssets=v?[v]:[];dataIndBase='';renderDataTab();}
@@ -27298,7 +27304,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,
   DASH_COL_MIN_H,DASH_SHRINK_MIN_H,equalizeDashColumns,scrollCalsToNow,delWidget,renameWidget,confirmRename,addWidget,
-  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,pickerAnkern,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
+  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,pickerAnkern,pickerHoehe,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
   recordScoreHist,RISK_ON_IDS,RISK_OFF_IDS,riskOnOffState,riskSentimentWidgetHtml,globeHudLonTxt,globeHudHtml,bMark,
   startScanBroadcast,scanFlyParticle,surpriseIndex,mxHeatColor,assetReturnMap,pearsonR,corrHeatColor,setCorrA,
   setCorrB,setCorrWin,logReturns,pearson,corrRegimeSeries,corrRegimeCardHtml,renderCorrCard,renderMatrix,TREND_COLORS,

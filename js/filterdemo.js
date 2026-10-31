@@ -35,8 +35,9 @@ const FD_CSS = `
 .fd-x{visibility:hidden}
 .fd-x.an{visibility:visible}
 .fd-chips{display:flex;flex-wrap:wrap;gap:5px}
-.fd-pop{position:absolute;z-index:2;width:min(560px,calc(100% - 16px));max-height:min(70vh,560px);overflow-y:auto;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow-pop)}
+.fd-pop{position:absolute;z-index:2;width:min(560px,calc(100% - 16px));max-height:max(240px,50vh);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow-pop)}
 .fd-pop .data-picker-body{display:block;columns:2;column-gap:16px}
+.fd-pop .data-picker-hd{position:sticky;top:0;z-index:1;background:var(--bg2)}
 .fd-pop .data-picker-grp{break-inside:avoid;margin-bottom:10px}
 .fd-pop .cmp-chip:disabled{opacity:.35;cursor:not-allowed}
 .fd-pop .fd-alle{margin:10px 13px 0}

@@ -21122,3 +21122,15 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Beim Prüfen gefunden:** Öl und US 10Y tragen im Feed eine Zeile mit Datum **Samstag** (31.10.: 104,12 / 4,93 %), die jeder Kurs-Chart der App (`ohneWochenende`) ausblendet — Prices folgt derselben Regel. `runtime`: Chart bei unsichtbarem Neuzeichnen mit Breite −20 → Mindestmaß. `hierarchie` im Parallellauf (8 Browser) einmal rot (Titel y=79 während des Seiten-Wischs), allein 2× grün.
 
 **Wächter:** `check/filterfest.js` (vorher rot: −47/−138/−191 px; Gegenproben rot), `check/preisvergleich.js` (Gegenproben gemeinsame Skala, fehlende Paare rot), `check/yachse.js` + Data · Prices.
+
+## 2026-10-31 — VERSION-CHECK-653: Auswahlfenster mit begrenzter Höhe wie die iOS-Liste
+
+**Nutzer** (Screenshots der Vorschau a | b vom iPad): *„Die beiden Filter finde ich gut aber beim iOS Filter war das gute das der nicht ewig weit nach unten ging und das man da scrollen konnte um an die letzten Punkte zu kommen das soll bei den neuen Filtern übernommen werden“*.
+
+**Vorher gemessen:** Chip-Popups wuchsen bis 24 px über den unteren Rand (`innerHeight − Knopf − 24`), in der Vorschau bis 70 vh — auf dem iPad-Querformat (1000×695) praktisch bis zum Bildschirmende.
+
+**Jetzt:** höchstens halbe Fensterhöhe (mind. 240 px, nie über den Rand, `pickerHoehe`), Rest scrollt im Fenster, `overscroll-behavior:contain`, Kopfzeile mit Zähler bleibt oben (`sticky`) — Data (Assets/Indicators/Prices), Country profile und die Vorschau. Gemessen 1000×695: 348 px statt bis zum Rand, letzter Chip per Scrollen erreichbar; 820×1180: 590 px.
+
+**Wächter:** `check/filterfest.js` Stufe D; Gegenprobe `--gegenprobe-hoehe` (ohne Grenze 495–768 px, bis y=942 bei 844 px Fenster) rot.
+
+**Offen beim Nutzer:** a oder b (ob auch die Browser-Auswahllisten durch das neue Fenster ersetzt werden).

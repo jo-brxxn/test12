@@ -1884,6 +1884,7 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 
 - **Nichts springt beim Auswählen** (Nutzer: *„lass ihn fest stehen“*): das ✕ zum Zurücksetzen steht immer im Markup, ohne Auswahl mit `hidden` (unsichtbar, Platz bleibt; `filterResetHtml(…,leer)`). Chip-Popups richten sich **einmal** beim Öffnen aus (`pickerAnkern`), nicht nach jedem Antippen.
 - **Chip-Popups (`.data-picker`): Gruppen in 2 Spalten**, 560 px breit; am Handy (≤ 480 px) brechen lange Namen um statt überzulaufen — nie gekürzt.
+- **Höhe wie die iOS-Liste** (Nutzer 2026-10-31: *„nicht ewig weit nach unten … scrollen … um an die letzten Punkte zu kommen“*): höchstens halbe Fensterhöhe (mind. 240 px, nie über den unteren Rand, `pickerHoehe`), der Rest scrollt im Fenster (`overscroll-behavior:contain`, die Seite dahinter bleibt stehen), Kopfzeile mit Zähler `sticky`.
 - Offen beim Nutzer: ob auch die Browser-Auswahllisten (COT, Retail, Seasonality …) durch ein 2-Spalten-Fenster ersetzt werden (Vorschau a | b, `js/filterdemo.js`).
 - Geprüft von `check/filterfest.js`.
 
