@@ -21196,3 +21196,9 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Nicht geändert (gesehen):** im Data-Panel-Kopf blendet `.data-ph .px-asof` die letzten 15 % **immer** per Maske aus (*Next 4d* blass), auch wenn alles passt — bestehendes Verhalten aller Data-Modi.
 
 **Wächter:** `check/preisvergleich.js` E–H (Achsenbruch mit echten Preisen, Kerzenfarben, Side by side, Compare all per echten Klicks + 390 px); Gegenproben `--gegenprobe-bruch`, `--gegenprobe-farben`, `--gegenprobe-anker`, `--gegenprobe-az` rot. `check/structure.js`: jeder Kurzname der window-Brücke ist im Modul deklariert, `--gegenprobe-bruecke` meldet `gwAuf`. Neu `check/hoverpunkte.js` (A–D), `--gegenprobe` rot (5 Befunde).
+
+## 2026-11-01 — Wächter `performance` D: Archiv-Fall auch am Monatsersten
+
+**CI-Lauf 660 (657) rot:** `performance` D *„Kalender-Archiv kam im Prüf-Fenster nicht an“*. Lokal reproduziert (1. Nov.). **Ursache (im Wächter, nicht in der App):** die Monatskarte fragt das Archiv nur für vergangene Tage des gezeigten Monats an (`abCalNachTag`: `ab` nur, wenn der Monatsanfang vor heute liegt) — am 1. gibt es keine, also kein Abruf. Der Wächter verlangte den Abruf aber immer → an jedem Monatsersten rot.
+**Behoben:** am 1. zusätzlich der Fall *Asset → Vormonat* (`abCalShift(-1)`, derselbe Knopf wie in der Karte) — Archiv (`meta.json`, `2026.json`) kommt im Fenster, genau 1 Aufbau; danach zurück. `--gegenprobe-doppelt` weiter rot (2 Befunde).
+**Außerdem in 659 (656) rot:** `namen` (Schlagzeile, siehe 657) — in 660 grün, die Meldung steht nicht mehr auf dem Dashboard.

@@ -174,16 +174,25 @@ function statisch() {
     await new Promise(r => setTimeout(r, 2500));
     mo.disconnect();
     return n;
-  }, [code, GP_DOPPELT && wie !== 'Asset -> Asset']);
-  for (const [wie, vorher, code] of [
+  }, [code, GP_DOPPELT && wie !== 'Asset -> Asset' && /'\w+'/.test(code)]);
+  // Am 1. eines Monats hat die Monatskarte keine vergangenen Tage - dann
+  // fragt sie das Archiv gar nicht an (abCalNachTag: ab nur, wenn der
+  // Monatsanfang vor heute liegt). CI-Lauf 660 (2026-11-01) war deshalb rot,
+  // ohne Fehler in der App. An dem Tag kommt das Archiv ueber den Vormonat
+  // (derselbe Knopf wie in der Karte), ebenfalls mit genau einem Aufbau.
+  const ersterTag = await p.evaluate(() => new Date().getDate() === 1);
+  const faelle = [
     ['Dashboard -> Asset (gotoSym, erstes Asset)', "showTab('dash')", "gotoSym('USD')"],
     ['Dashboard -> Asset (Panel)', "showTab('dash')", "sbClick('GBP')"],
     ['Asset -> Asset', "gotoSym('USD')", "sbClick('EUR')"],
-  ]) {
+  ];
+  if (ersterTag) faelle.push(['Asset -> Vormonat (1. des Monats, Archiv)', "gotoSym('USD')", 'abCalShift(-1)']);
+  for (const [wie, vorher, code] of faelle) {
     await p.evaluate(v => (0, eval)(v), vorher); await p.waitForTimeout(900);
     const n = await aufbauten(wie, code);
     if (n !== 1) rot(`${wie}: Asset-Seite ${n}x aufgebaut (soll 1)`); else gruen(`${wie}: 1 Aufbau`);
   }
+  if (ersterTag) await p.evaluate(() => abCalShift(1));
   if (!archiv.length) rot('Kalender-Archiv kam im Pruef-Fenster nicht an - der Archiv-Fall war nicht abgedeckt');
   else gruen(`Archiv (${[...new Set(archiv)].join(', ')}) kam im Fenster an, ohne zweiten Aufbau`);
 
