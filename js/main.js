@@ -17830,6 +17830,9 @@ import {
   globeHitTest,globeOnPointerDown,globeOnPointerMove,globeOnPointerUp,startGlobes,resetGlobeLon,
 } from './globe.js';
 import {qcZerlegen} from './quickcapture.js';
+// Leichtes Federn am Scroll-Ende (Nutzer 2026-11-01), siehe js/federn.js
+import {federnAn} from './federn.js';
+try{federnAn();}catch(e){}
 
 // mvWidget() ist jetzt zonen-bewusst - siehe Definition oben bei
 // dashZoneOf()/ZONE_OF_TYPE (direkt vor renderDash()).
@@ -20154,14 +20157,15 @@ function attachChartHovers(root){
         while(extra.length<sort.length-1){const d=document.createElement('div');d.className='chv-dot';d.style.display='none';w.appendChild(d);extra.push(d);}
         extra.forEach((d,i)=>{const z=sort[i+1];if(!z){d.style.display='none';return;}d.style.left=px+'px';d.style.top=(z.fy*r.height)+'px';d.style.borderColor=z.col||'var(--t3)';d.style.display='';});
         best=Object.assign({},best,{col:sort[0].col||best.col});
-        if(line){const bot=Math.max(0,r.height-22),ty=Math.min(bot,best.ly!=null?best.ly*r.height:4);line.style.left=px+'px';line.style.top=ty+'px';line.style.height=Math.max(0,bot-ty)+'px';line.style.display='';}
       }else extra.forEach(d=>{d.style.display='none';});
-      // Duenne graue Linie SENKRECHT vom Punkt bis zum Boden des Diagramms
-      // ("dort zieht sich dann auch eine duenne graue Linie senkrecht zum
-      // Boden hoch"). Vorher lief sie ueber die volle Chart-Hoehe, also auch
-      // oberhalb des Punktes - dadurch war nicht ablesbar, WELCHER Punkt
-      // gemeint ist. top+height gewinnen gegen das bottom aus dem CSS.
-      if(line&&!ys){const bot=Math.max(0,r.height-22),ty=Math.min(py,bot);line.style.left=px+'px';line.style.top=ty+'px';line.style.height=Math.max(0,bot-ty)+'px';line.style.display='';}
+      // Duenne graue Linie DURCHGEHEND von ganz oben bis zum Boden, auch bei
+      // einer einzigen Linie (Nutzer 2026-11-01: "die Linie im Chart wenn man
+      // drueber hover mit der Info Karte durchgehend von ganz oben nach
+      // unten"). Ersetzt den Wunsch vom 2026-09-05 (Linie nur vom Punkt zum
+      // Boden) - welcher Punkt gemeint ist, zeigt der Punkt selbst. Oben = ly
+      // (Plot-Oberkante) wenn der Chart sie angibt, sonst 4 px. top+height
+      // gewinnen gegen das bottom aus dem CSS.
+      if(line){const bot=Math.max(0,r.height-22),ty=Math.min(bot,best.ly!=null?best.ly*r.height:4);line.style.left=px+'px';line.style.top=ty+'px';line.style.height=Math.max(0,bot-ty)+'px';line.style.display='';}
       if(dot){dot.style.left=px+'px';dot.style.top=py+'px';dot.style.borderColor=best.col||'var(--t3)';dot.style.display='';}
       if(tip){tip.innerHTML=best.tip;tip.style.display='';const tw=tip.offsetWidth||120;tip.style.left=Math.max(tw/2+2,Math.min(r.width-tw/2-2,px))+'px';tip.style.top=Math.max(4,py)+'px';}
       const cb=_chvPick[w.dataset.chv];if(cb)try{cb(best);}catch(e){}

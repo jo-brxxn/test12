@@ -21202,3 +21202,16 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **CI-Lauf 660 (657) rot:** `performance` D *„Kalender-Archiv kam im Prüf-Fenster nicht an“*. Lokal reproduziert (1. Nov.). **Ursache (im Wächter, nicht in der App):** die Monatskarte fragt das Archiv nur für vergangene Tage des gezeigten Monats an (`abCalNachTag`: `ab` nur, wenn der Monatsanfang vor heute liegt) — am 1. gibt es keine, also kein Abruf. Der Wächter verlangte den Abruf aber immer → an jedem Monatsersten rot.
 **Behoben:** am 1. zusätzlich der Fall *Asset → Vormonat* (`abCalShift(-1)`, derselbe Knopf wie in der Karte) — Archiv (`meta.json`, `2026.json`) kommt im Fenster, genau 1 Aufbau; danach zurück. `--gegenprobe-doppelt` weiter rot (2 Befunde).
 **Außerdem in 659 (656) rot:** `namen` (Schlagzeile, siehe 657) — in 660 grün, die Meldung steht nicht mehr auf dem Dashboard.
+
+## 2026-11-01 — VERSION-CHECK-658: leichtes Federn am Scroll-Ende überall
+
+**Nutzer:** *„Im Filter und generell wenn man scrollt dann bounct das ja am Ende immer so zurück das finde ich gut mach das überall wo man scrollen kann“*. Rückfragen: Widerspruch zu „feste Tabellen“ (2026-09-25, kein Gummiband) und History-Karte (2026-09-23) → *„Senkrecht und seitlich aber in Tabellen nur ganz wenig und generell nur ganz wenig das es nicht so verspielt aussieht“*; iOS-Federn ist nicht dosierbar → Wahl *Eigenes leichtes Federn*.
+
+**Vorher:** natives Federn nur in `.pc`/`.detail` (Seite, `auto`) und im Chip-Fenster (`contain`) — volle iOS-Stärke; alle übrigen Bereiche `none`.
+**Jetzt:** natives Federn überall `none`; `js/federn.js` verschiebt am Rand die sichtbaren Kinder per `translate` — gemessen (CDP-Touch, 200 px gezogen): Seite **12 px** (Deckel 14), Dashboard-Liste **±6,8 px** (Deckel 8, Seite bleibt stehen), Heatmap seitlich bei 390 px **5,1 px** (Deckel 6); Kick beim Auslaufen **8 px**, per Mausrad keiner; nach dem Loslassen 0.
+**Wächter:** `check/federn.js` (A–E), Gegenproben `--gegenprobe` (4 rot), `--gegenprobe-nativ`, `--gegenprobe-stark` rot. `tabellenfest.js`/README angepasst (keine `.pc`-Ausnahme mehr nötig).
+
+**Nachtrag (Nutzer):** *„Mach die Linie im Chart wenn man drüber hover mit der Info Karte durchgehend von ganz oben nach unten und mach die Infokarte leicht transparent das man das dahinter sieht“*.
+- Vorher (gemessen, Trends · EUR Score): Linie ab dem Punkt (y 105) bis 232 — Wunsch vom 2026-09-05. Jetzt in jedem Chart von der Plot-Oberkante (`ly`, sonst 4 px) bis zum Boden: 18 → 232.
+- `.chv-tip`: Fläche `color-mix(var(--bg5) 80 %, transparent)`, Schrift voll deckend, kein Weichzeichner (hell + dunkel angesehen: Linien schwach sichtbar, Text klar).
+- Wächter `check/hoverpunkte.js` D umgestellt + E neu; `--gegenprobe-linie` (5 rot), `--gegenprobe-karte` (1 rot).

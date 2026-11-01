@@ -1127,14 +1127,22 @@ Stand 2026-09-24 bis 2026-09-25 unter der Positioning-Reihe; auf Nutzer-Wunsch
 entfernt. Trend zählt jetzt als Score-Treiber in der Price-Karte (EMA20 4h/1d).
 `check/regeln.js` meldet rot, falls `.ab-mom` wieder auftaucht.
 
-## Feste Tabellen (Dauerregel seit 2026-09-25)
+## Leichtes Federn am Scroll-Ende (Dauerregel seit 2026-11-01)
+
+- Nutzer: *„… bounct das ja am Ende immer so zurück das finde ich gut mach das überall wo man scrollen kann“* → *„Senkrecht und seitlich aber in Tabellen nur ganz wenig und generell nur ganz wenig das es nicht so verspielt aussieht“*.
+- **Natives iOS-Gummiband überall aus** (nicht dosierbar) — `*{overscroll-behavior:none}` gilt jetzt auch für `.pc`/`.detail` und Chip-Fenster; nie `auto`/`contain`.
+- **Eigenes Federn `js/federn.js`:** Seite **14 px**, Listen/Tabellen/Fenster **8 px**, seitlich **6 px**; beim Ziehen über den Rand (abnehmender Zuwachs) und als kurzer Kick, wenn ein Wisch an den Rand ausläuft. **Nur Touch** — Mausrad federt nicht.
+- Bewegt nur die sichtbaren Kinder des Scrollbereichs per CSS `translate` (addiert sich zu `transform`, Grafikebene). Keine Weitergabe an die Seite.
+- Wächter: `check/federn.js`.
+
+## Feste Tabellen (Dauerregel seit 2026-09-25, Federn seit 2026-11-01 siehe oben)
 
 Jeder innere Scrollbereich (Kalender, Listen, Tabellen, Fenster) scrollt nur
-bis zu seinen Rändern — kein Gummiband, keine Weitergabe an die Seite
+bis zu seinen Rändern — kein natives Gummiband (das leichte Federn kommt aus `js/federn.js`), keine Weitergabe an die Seite
 (Nutzer: *„alle losen Tabellen fest … also schon scrollen aber nur zu den
 Grenzen nach oben und unten"*). Umgesetzt an der Wurzel:
-`*{overscroll-behavior:none}` im Kopf von `index.html`; Ausnahme nur die
-Seiten-Scroller `.pc`/`.detail`. Kein `overscroll-behavior:contain` benutzen
+`*{overscroll-behavior:none}` im Kopf von `index.html`; seit 2026-11-01 ohne
+Ausnahme (auch `.pc`/`.detail`). Kein `overscroll-behavior:contain` benutzen
 (contain lässt das Element selbst weiter federn). Wächter:
 `check/tabellenfest.js`.
 
@@ -1906,7 +1914,8 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - Nutzer: *„der Punkt auf beiden Preisen … die Linie durch die Karte muss sich nach oben durchziehen … der Preis des Assets das weiter oben steht … auf der Karte oben … wenn das nicht mehr so ist muss es tauschen“*.
 - `chartHoverWrap`-Punkt mit `ys:[{fy,col}]` + `ly`: **ein Punkt auf jeder Linie**, Führungslinie über die **volle Plot-Höhe**, Karte über dem obersten Punkt.
 - **Zeilen der Karte = Lage im Chart** (oben = oben), tauschen beim Kreuzen. Trends mit Fokus: farbige Zeilen zuerst (Punkte nur auf farbigen Linien), je Gruppe nach Lage.
-- Gilt für Data · Prices, Trends (alle Assets), Score vs Price. **Ein-Linien-Charts unverändert**: ein Punkt, Linie vom Punkt zum Boden (Nutzer 2026-09-05).
+- Gilt für Data · Prices, Trends (alle Assets), Score vs Price.
+- **Seit 658 in JEDEM Chart:** Führungslinie durchgehend von ganz oben bis zum Boden, auch bei einer Linie (Nutzer 2026-11-01: *„durchgehend von ganz oben nach unten“*; ersetzt 2026-09-05 „nur vom Punkt zum Boden“). **Infokarte leicht transparent:** Fläche 80 % deckend, Schrift voll, kein Weichzeichner.
 - Geprüft von `check/hoverpunkte.js`.
 
 ## Data · Compare all (seit 2026-10-31, 657)

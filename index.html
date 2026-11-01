@@ -87,12 +87,13 @@ html{height:100%;overflow:hidden;overscroll-behavior:none}
 /* FESTE TABELLEN (Nutzer-Regel 2026-09-25, Dauerregel: "alle losen Tabellen
    fest ... also schon scrollen aber nur zu den Grenzen nach oben und unten").
    Jeder innere Scrollbereich (Kalender, Listen, Tabellen, Fenster) scrollt
-   nur bis zu seinen Raendern: kein Gummiband, keine Weitergabe an die Seite.
+   nur bis zu seinen Raendern: keine Weitergabe an die Seite.
    An der Wurzel fuer ALLE Elemente statt pro Tabelle - neue Listen erben es.
-   Ausnahme nur die Seiten-Scroller selbst (.pc, .detail).
-   Waechter: check/tabellenfest.js. */
+   Seit 2026-11-01 auch die Seiten-Scroller (.pc, .detail): das native
+   iOS-Gummiband (Staerke nicht einstellbar) ist ueberall aus, statt dessen
+   federt js/federn.js leicht (Nutzer: "nur ganz wenig das es nicht so
+   verspielt aussieht"). Waechter: check/tabellenfest.js, check/federn.js. */
 *{overscroll-behavior:none}
-.pc,.detail{overscroll-behavior-y:auto}
 body{font-family:var(--ff-text);background-image:linear-gradient(180deg,rgba(27,39,70,.035),transparent 260px);background-size:cover;background-position:center center;background-repeat:no-repeat;background-color:var(--bg0);background-blend-mode:normal;color:var(--t0);height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none;position:fixed;inset:0;display:flex;flex-direction:column;font-weight:400;line-height:1.4;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums}
 /* Frueherer Nutzer-Wunsch war "ueberall Arial" - umgesetzt als globales
    !important. Das hat allerdings ALLE 200 Monospace-Deklarationen der App
@@ -2842,7 +2843,7 @@ body.res-return-active #resBackBar{display:flex}
 .ind-hist-legend.mit-cmp .ind-cmp-btn{margin-left:auto;padding:3px 9px;gap:4px;min-height:0}
 .ind-hist-legend.mit-cmp .ind-cmp-btn span{font:700 var(--fs-2xs)/1.2 var(--ff-text)}
 /* Mehrfach-Asset-Auswahl im Data-Tab: Popup unter dem "Assets"-Button */
-.data-picker{position:fixed;z-index:9500;width:min(560px,calc(100vw - 16px));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow-pop)}
+.data-picker{position:fixed;z-index:9500;width:min(560px,calc(100vw - 16px));overflow-y:auto;overscroll-behavior:none;-webkit-overflow-scrolling:touch;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow-pop)}
 .data-picker-hd{position:sticky;top:0;z-index:1;background:var(--bg2);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;border-bottom:1px solid var(--bd);font:700 var(--fs-sm)/1.3 var(--ff-text);color:var(--t1)}
 .data-picker-hd b{font-family:var(--ff-num);color:var(--blue)}
 /* Gruppen in 2 Spalten statt einer langen Liste (Nutzer 2026-10-31: "mach das man nicht ewig scrollen muss sondern mach 2 Spalten nebeneinander") */
@@ -3041,9 +3042,10 @@ body.no-ui-anim .cd-heute{animation:none}
    Wrapper erlaubt vertikales Seiten-Scrollen, verhindert aber horizontales
    Wischen/Verschieben des Diagramms (Nutzer-Wunsch 2026-07-11). */
 .chv{position:relative;touch-action:pan-y}
-.chv-line{position:absolute;top:4px;bottom:22px;width:1px;background:var(--t3);opacity:.55;pointer-events:none}/* top/height setzt attachChartHovers: die Linie laeuft vom gewaehlten Punkt senkrecht bis zum Boden des Diagramms, nicht ueber die volle Hoehe */
+.chv-line{position:absolute;top:4px;bottom:22px;width:1px;background:var(--t3);opacity:.55;pointer-events:none}/* top/height setzt attachChartHovers: seit 2026-11-01 durchgehend von der Plot-Oberkante bis zum Boden */
 .chv-dot{position:absolute;width:7px;height:7px;border-radius:50%;border:1.5px solid #fff;background:transparent;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.45)}
-.chv-tip{position:absolute;z-index:6;background:var(--bg5);border:1px solid var(--bd2);border-radius:var(--rs);padding:6px 9px;font-family:var(--ff-num);font-size:var(--fs-xs);line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.4);pointer-events:none;white-space:nowrap;transform:translate(-50%,calc(-100% - 10px))}
+/* Infokarte leicht transparent (Nutzer 2026-11-01: "leicht transparent das man das dahinter sieht"): Flaeche 80 % deckend, Schrift voll - kein Weichzeichner, sonst saehe man dahinter nichts */
+.chv-tip{position:absolute;z-index:6;background:color-mix(in srgb,var(--bg5) 80%,transparent);border:1px solid var(--bd2);border-radius:var(--rs);padding:6px 9px;font-family:var(--ff-num);font-size:var(--fs-xs);line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.4);pointer-events:none;white-space:nowrap;transform:translate(-50%,calc(-100% - 10px))}
 .chv-tip b{color:var(--t0)}.chv-tip .chv-tip-d{color:var(--t3);font-size:var(--fs-2xs);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px}
 .cot-tip-date{font-weight:700;color:var(--t1);margin-bottom:4px;font-size:var(--fs-2xs);letter-spacing:.3px;text-transform:uppercase}
 .cot-tip-row{display:flex;align-items:center;justify-content:space-between;gap:10px;line-height:1.5}
@@ -6485,7 +6487,7 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
    .data-panel/.data-picker der Data-Seite; nur Hoehe und Scrollen sind eigen. */
 .m-gross>#cpfBody{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
 #cpfBody .data-head{flex:none}
-#cpfBody .cpf-grid{flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:contain;align-content:start}
+#cpfBody .cpf-grid{flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:none;align-content:start}
 /* Namen nie gekuerzt: der Titel darf bis an die Knoepfe, schmale Panels lassen
    zuerst die Gruppe weg (Legende/As of verschwinden wie bei Data). Gemessen
    bei 8 Charts (328 px): "Netherlands 10Y vs Bund" wurde mit "…" gekuerzt. */
@@ -7110,11 +7112,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-657 - Data: Compare all (beliebige Charts beliebiger Assets nebeneinander), Prices One chart | Side by side, Common = Achsenbruch mit echten Preisen, Kerzen (Kurs 1 blau, Kurs 2 schwarz, steigt hohl); Auswahlfenster nie links aus dem Bild; FX-Paare in Filtern A-Z; Hover bei mehreren Linien: Punkt auf jeder Linie, Karte nach Lage, Linie bis oben; vorher 656: keine falsche Blockiert-Meldung."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-658 - Leichtes Federn am Scroll-Ende ueberall (eigene Umsetzung js/federn.js: Seite 14 px, Listen 8 px, seitlich 6 px, natives iOS-Federn aus); Hover-Linie in jedem Chart durchgehend von oben bis unten, Infokarte leicht transparent; vorher 657: Data Compare all, Prices nebeneinander, Achsenbruch, Kerzen, Hover-Punkte."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-657</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-658</span>
     </span>
   </div>
   <div class="hdr-r">

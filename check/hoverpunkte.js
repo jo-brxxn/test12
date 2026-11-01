@@ -21,9 +21,15 @@
 //   B) Trends (alle Assets, Fokus): ein Punkt je farbiger Zeile, die farbigen
 //      Zeilen in der Reihenfolge der Punkte (von oben nach unten).
 //   C) Trends · EUR, Score vs Price: zwei Punkte, Zeilen nach Lage.
-//   D) Ein-Linien-Chart (Trends · EUR, Score): bleibt bei EINEM Punkt und der
-//      Linie vom Punkt zum Boden (Nutzer-Wunsch 2026-09-05).
-// Gegenprobe --gegenprobe: chartHoverWrap ignoriert ys (alter Stand) -> rot
+//   D) Ein-Linien-Chart (Trends · EUR, Score): EIN Punkt, die Linie laeuft
+//      trotzdem durchgehend von oben bis unten (Nutzer 2026-11-01: "die Linie
+//      im Chart ... durchgehend von ganz oben nach unten" - ersetzt den Wunsch
+//      vom 2026-09-05, Linie nur vom Punkt zum Boden).
+//   E) Infokarte leicht transparent (Nutzer 2026-11-01: "leicht transparent
+//      das man das dahinter sieht"): Flaeche 60-90 % deckend, Schrift voll.
+// Gegenproben: --gegenprobe (chartHoverWrap ignoriert ys) -> A/B/C rot,
+//   --gegenprobe-linie (Linie wieder ab dem Punkt) -> D rot,
+//   --gegenprobe-karte (Karte wieder voll deckend) -> E rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const fs = require('fs');
@@ -31,6 +37,9 @@ const path = require('path');
 const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 const GP = process.argv.includes('--gegenprobe');
+const GP_L = process.argv.includes('--gegenprobe-linie');
+const GP_K = process.argv.includes('--gegenprobe-karte');
+const M_LINIE = 'ty=Math.min(bot,best.ly!=null?best.ly*r.height:4)';
 const MAIN = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
 const MARKE = 'const ys=Array.isArray(best.ys)&&best.ys.length>1?best.ys:null;';
 
@@ -39,15 +48,16 @@ const rot = m => { console.log('  ✗ ' + m); fehler++; };
 const gruen = m => console.log('  ✓ ' + m);
 
 (async () => {
-  if (GP && !MAIN.includes(MARKE)) { rot('Gegenprobe: Marke im Code nicht gefunden'); process.exit(1); }
+  if ((GP && !MAIN.includes(MARKE)) || (GP_L && !MAIN.includes(M_LINIE))) { rot('Gegenprobe: Marke im Code nicht gefunden'); process.exit(1); }
   const b = await chromium.launch();
   const HIER = new globalThis.URL(URL).origin;
   const ctx = await b.newContext({ viewport: { width: 1366, height: 1024 }, serviceWorkers: 'block' });
   await ctx.route(u => u.origin !== HIER, r => ['fetch', 'xhr'].includes(r.request().resourceType()) ? r.abort() : r.fallback());
-  if (GP) await ctx.route(u => u.origin === HIER && /\/js\/main\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: MAIN.replace(MARKE, 'const ys=null;') }));
+  if (GP || GP_L) await ctx.route(u => u.origin === HIER && /\/js\/main\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: GP ? MAIN.replace(MARKE, 'const ys=null;') : MAIN.replace(M_LINIE, 'ty=Math.min(py,bot)') }));
   const p = await ctx.newPage();
   const perr = []; p.on('pageerror', e => perr.push(String(e)));
   await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) {} });
+  if (GP_K) await p.addInitScript(() => document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '.chv-tip{background:var(--bg5)!important}'; document.head.appendChild(s); }));
   await p.goto(URL); await wartenBisDatenDa(p);
   await p.evaluate(() => ['introOv', 'lockScreen', 'fdOv'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }));
 
@@ -130,17 +140,27 @@ const gruen = m => console.log('  ✓ ' + m);
     } else if (r.zeilen.length === 1) {
       sahEins = true;
       const d = r.dots[0];
-      if (r.dots.length !== 1 || !r.linie || Math.abs(r.linie[0] - d.y) > 2) rot(`D: Ein-Linien-Chart: ${r.dots.length} Punkte, Linie ${JSON.stringify(r.linie)} statt ab dem Punkt`);
-      else gruen(`D: Ein-Linien-Chart: ein Punkt, Linie vom Punkt (${Math.round(d.y)}) zum Boden`);
+      if (r.dots.length !== 1 || !r.linie || r.linie[0] > 24 || r.linie[1] < r.h - 30) rot(`D: Ein-Linien-Chart: ${r.dots.length} Punkte, Linie ${JSON.stringify(r.linie && r.linie.map(Math.round))} statt von oben (≤ 24) bis unten`);
+      else gruen(`D: Ein-Linien-Chart: ein Punkt (${Math.round(d.y)}), Linie durchgehend ${Math.round(r.linie[0])}…${Math.round(r.linie[1])}`);
     }
     await p.mouse.move(2, 2);
   }
   if (!sahZwei) rot('C: kein Score-vs-Price-Chart gefunden');
   if (!sahEins) rot('D: kein Ein-Linien-Chart gefunden');
 
+  // ── E) Infokarte leicht transparent ──
+  console.log('E) Infokarte leicht transparent, Schrift voll');
+  const wE = p.locator('#trendsBody .chv').first(); const bxE = await wE.boundingBox();
+  await p.mouse.move(bxE.x + bxE.width * 0.5, bxE.y + bxE.height * 0.5); await p.waitForTimeout(200);
+  const k = await wE.evaluate(w => { const t = w.querySelector('.chv-tip'), cs = getComputedStyle(t); const a = c => { const m = String(c).match(/rgba?\(([^)]+)\)/) || String(c).match(/color\(srgb ([^)]+)\)/); if (!m) return 1; const v = m[1].split(/[ ,\/]+/).filter(Boolean); return v.length > 3 ? parseFloat(v[3]) : 1; }; const b = t.querySelector('b'); return { bg: cs.backgroundColor, ab: a(cs.backgroundColor), at: a(getComputedStyle(b || t).color) }; });
+  await p.mouse.move(2, 2);
+  if (!(k.ab >= 0.6 && k.ab <= 0.9)) rot(`E: Kartenflaeche ${k.bg} (Deckkraft ${k.ab}, soll 0,6-0,9)`);
+  else if (k.at < 0.99) rot(`E: Schrift der Karte nicht voll deckend (${k.at})`);
+  else gruen(`E: Kartenflaeche ${Math.round(k.ab * 100)} % deckend, Schrift voll`);
+
   await b.close();
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));
-  if (GP) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: Waechter bleibt gruen.'); process.exit(fehler ? 0 : 1); }
-  console.log(fehler ? `\n✗ hoverpunkte: ${fehler} Befund(e)` : '\n✓ hoverpunkte: Punkt auf jeder Linie, Karte nach Lage, Linie bis oben; Ein-Linien-Charts unveraendert');
+  if (GP || GP_L || GP_K) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: Waechter bleibt gruen.'); process.exit(fehler ? 0 : 1); }
+  console.log(fehler ? `\n✗ hoverpunkte: ${fehler} Befund(e)` : '\n✓ hoverpunkte: Punkt auf jeder Linie, Karte nach Lage, Linie durchgehend von oben bis unten, Karte leicht transparent');
   process.exit(fehler ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });
