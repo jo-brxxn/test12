@@ -21215,3 +21215,14 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 - Vorher (gemessen, Trends · EUR Score): Linie ab dem Punkt (y 105) bis 232 — Wunsch vom 2026-09-05. Jetzt in jedem Chart von der Plot-Oberkante (`ly`, sonst 4 px) bis zum Boden: 18 → 232.
 - `.chv-tip`: Fläche `color-mix(var(--bg5) 80 %, transparent)`, Schrift voll deckend, kein Weichzeichner (hell + dunkel angesehen: Linien schwach sichtbar, Text klar).
 - Wächter `check/hoverpunkte.js` D umgestellt + E neu; `--gegenprobe-linie` (5 rot), `--gegenprobe-karte` (1 rot).
+
+## 2026-11-01 — VERSION-CHECK-659: Vorschau „Data-Kontrollmenü“ (4 Entwürfe, temporär)
+
+**Nutzer** (iPad-Screenshot 657, Leiste eingekreist): *„das sind die ganzen Einstellungen bau mal ein richtiges kontrollmenü entwirf dafür mal ein Design weil aktuell weis man nicht ob die Knöpfe zusammengehören oder getrennt ich will mehr Übersicht entwirf mal paar Designs und das nächste Mal wenn ich die App öffne sag ich dir welches du bauen sollst“*.
+**Befund am Screenshot:** Ansicht (5), Layout (2), Diagrammart (2) in einer Zeile, gleicher Knopfstil, kein Abstand/Etikett zwischen den Gruppen; Skala erscheint nur bei *One chart* und schiebt alles weiter; Zeitfilter bricht in eine zweite Zeile.
+**Vorschau** beim App-Start (`js/kontrolldemo.js`, einmal je Sitzung, nicht unter `navigator.webdriver`, erzwingen mit `?kontrolldemo`), je eine bedienbare Attrappe:
+- **A Gruppen mit Etikett** — jede Gruppe ein Segment mit Überschrift (View · Layout · Scale · Chart · Time range).
+- **B Reiter + Werkzeugleiste** — Ansicht als Reiter, Zeitraum rechts daneben, darunter eine Leiste nur mit den Einstellungen der Ansicht.
+- **C Reiter + Display-Menü** — ein Knopf *Display* mit Zusammenfassung, öffnet ein Menü mit Kacheln (Layout · Scale · Chart).
+- **D Seitenleiste** — Kontrollspalte links (230 px), Charts rechts.
+**Offen:** Wahl des Nutzers; danach Datei, Import und Aufruf in `js/main.js` entfernen.

@@ -17833,6 +17833,10 @@ import {qcZerlegen} from './quickcapture.js';
 // Leichtes Federn am Scroll-Ende (Nutzer 2026-11-01), siehe js/federn.js
 import {federnAn} from './federn.js';
 try{federnAn();}catch(e){}
+// TEMPORAER (2026-11-01): vier Entwuerfe fuer das Data-Kontrollmenue beim App-Start -
+// nach der Nutzer-Entscheidung entfernen (siehe js/kontrolldemo.js).
+import {kontrollDemoStarten} from './kontrolldemo.js';
+try{kontrollDemoStarten();}catch(e){}
 
 // mvWidget() ist jetzt zonen-bewusst - siehe Definition oben bei
 // dashZoneOf()/ZONE_OF_TYPE (direkt vor renderDash()).
