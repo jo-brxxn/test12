@@ -1903,7 +1903,7 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - Vierter Modus *Prices*: bis zu **6 Kurse in einem Chart**, jede Linie im Zeitraum von ihrem **eigenen Tief (0) bis Hoch (100)** (Nutzer: *„der tiefste Kurs von cad genau so weit unten … wie der Kurs von Öl … auch für den Peek“*; Basis 100 abgelehnt: *„Gold 10 % … eurusd nur 0,5 … gar nicht vergleichbar“*).
 - ⚠ Die Form wird vergleichbar, die Größe nicht: Legende zeigt je Linie **Tief – Hoch und die echte Spanne** (% bzw. pp bei Renditen), der Hover die echten Kurse.
 - **Auswahl = ein Katalog** (`kontextKatalog`) für Data und die Context-Charts der Asset-Seite: Körbe, alle Assets mit Kurs, Kurs-Feeds ohne Asset (ETH), 28 FX-Paare (`preisPaarReihe`, aus denselben Schlüssen wie die Körbe, USD = 1), 2Y/10Y je Währung, VIX. Neues erscheint ohne Codeänderung. Wochenend-Tage nur bei Krypto.
-- **One chart | Side by side** (seit 657): nebeneinander je Kurs ein Panel mit eigener echter Preisskala.
+- **One chart | Side by side** (seit 657, seit 660 im Display-Menü): nebeneinander je Kurs ein Panel mit eigener echter Preisskala.
 - **Skala im einen Chart: *Low → high* | *Common*.** *Common* = **Achsenbruch mit Bändern**: überlappende/nahe Niveaus (Lücke ≤ größere Spanne) teilen ein Band mit einer echten Preisskala, sonst neues Band über einem Bruch (gestrichelt + Zickzack). Höchstes Niveau oben, 16 px Lücke.
 - **Kerzen** (globaler *Candles | Line*-Schalter): ein Chart → Kurs 1 `--cndl-up`, Kurs 2 `--cndl-dn`, weitere `--tf3…6`; **steigt hohl, fällt gefüllt**; nur Kurse im selben Band teilen sich den Tag. Nebeneinander → normale Kerzenfarben.
 - Datumsachse: 2–5 Daten je nach Breite.
@@ -1917,6 +1917,14 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - Gilt für Data · Prices, Trends (alle Assets), Score vs Price.
 - **Seit 658 in JEDEM Chart:** Führungslinie durchgehend von ganz oben bis zum Boden, auch bei einer Linie (Nutzer 2026-11-01: *„durchgehend von ganz oben nach unten“*; ersetzt 2026-09-05 „nur vom Punkt zum Boden“). **Infokarte leicht transparent:** Fläche 80 % deckend, Schrift voll, kein Weichzeichner.
 - Geprüft von `check/hoverpunkte.js`.
+
+## Data · Kontrollmenü (seit 2026-11-01, 660 — Option C)
+
+- Nutzer: *„weil aktuell weis man nicht ob die Knöpfe zusammengehören oder getrennt ich will mehr Übersicht“* → Wahl **Option C** aus vier Entwürfen.
+- **Ansicht = Reiter** (`.data-tab`, 34 px, aktiv = Navy-Strich unten): By asset · By indicator · Asset vs asset · Prices · Compare all — links in der Werkzeugzeile; **Zeitfilter rechts** (Dauerregel 2026-09-26 bleibt).
+- **Ein Knopf „Display“** (`#dataDispBtn`, 34 px) mit der aktuellen Wahl als Zusammenfassung (*„Side by side · Line“*) — nur in Ansichten mit Einstellungen (Prices: Layout · Scale · Chart; Compare all: Chart).
+- **Menü** (`#dataDispMenu`): linksbündig unter dem Knopf, Kacheln mit kurzer Erklärung; Scale bei *Side by side* gesperrt (*„only in one chart“*); jeder Tipp wirkt sofort, Menü bleibt offen; Tipp daneben / Esc schließt.
+- Keine Pillen-Leisten und kein loser Candles|Line-Schalter mehr im Data-Kopf. Geprüft von `check/datamenu.js`.
 
 ## Data · Compare all (seit 2026-10-31, 657)
 

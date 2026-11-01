@@ -21226,3 +21226,11 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 - **C Reiter + Display-Menü** — ein Knopf *Display* mit Zusammenfassung, öffnet ein Menü mit Kacheln (Layout · Scale · Chart).
 - **D Seitenleiste** — Kontrollspalte links (230 px), Charts rechts.
 **Offen:** Wahl des Nutzers; danach Datei, Import und Aufruf in `js/main.js` entfernen.
+
+## 2026-11-01 — VERSION-CHECK-660: Data-Kontrollmenü (Option C), Vorschau entfernt
+
+**Nutzer:** *„Ich will Option c und guck wo man dieses Design noch alles in der App umsetzen kann“*.
+**Gebaut (Data):** Ansicht als Reiter, ein Knopf *Display* mit Zusammenfassung, Menü mit Kacheln (Layout · Scale · Chart). Kopf in Ansichten ohne Einstellungen unverändert eine Werkzeugzeile; gemessen Prices bei 1180 px **89 px** (eine Zeile), bei 1000 px 127 px (Zeitfilter bricht wie vorher um). `pickerAnkern(el,btn,true)` richtet linksbündig aus (Knopf steht links). Der offene Knopf bekommt eine eigene Klasse `offen` (Navy-Rand) statt `.btn.on` — dieses färbt die Schrift blau.
+**Entfernt:** `js/kontrolldemo.js` samt Import (Vorschau 659).
+**Wächter:** `check/datamenu.js` (A–C, 1180 + 390 px), Gegenproben `--gegenprobe-zusammenfassung` (4 rot), `--gegenprobe-anker` (rot: Menü 357…777 statt ab 550). `dataMode`/`dataPreisAnsicht` lesbar auf `window`.
+**Bestandsaufnahme für weitere Stellen (1000 px):** Trends-Kopf **51 Bedienknöpfe in 4 Gruppen / 5 Zeilen** (Asset-Auswahl, Pair, „Show several at once“ + All/FX/Non-FX/Yields, Zeitfilter, Fokus + 24 Legenden-Chips); Asset-Seite Price-Karte Candles · Line · EMA 1D · EMA 4H + Zeitfilter in 2 Zeilen; Sentiment: 5 Unterseiten als Pillen + dieselbe „Show several at once“-Leiste (gemeinsamer Baustein `sentFilterBar`). News: nur Zeitfilter — kein Fall.

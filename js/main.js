@@ -17833,10 +17833,6 @@ import {qcZerlegen} from './quickcapture.js';
 // Leichtes Federn am Scroll-Ende (Nutzer 2026-11-01), siehe js/federn.js
 import {federnAn} from './federn.js';
 try{federnAn();}catch(e){}
-// TEMPORAER (2026-11-01): vier Entwuerfe fuer das Data-Kontrollmenue beim App-Start -
-// nach der Nutzer-Entscheidung entfernen (siehe js/kontrolldemo.js).
-import {kontrollDemoStarten} from './kontrolldemo.js';
-try{kontrollDemoStarten();}catch(e){}
 
 // mvWidget() ist jetzt zonen-bewusst - siehe Definition oben bei
 // dashZoneOf()/ZONE_OF_TYPE (direkt vor renderDash()).
@@ -21761,7 +21757,7 @@ function setDataMode(m){
   }else if(dataMode==='alle'){
     if(!dataAlle.length&&dataAssets[0])dataAlle=[{a:dataAssets[0],k:'p:'+dataAssets[0]}];
   }
-  closeDataAssetPicker();closeDataIndPicker();closeDataPreisPicker();closeDataAllePicker();
+  closeDataAssetPicker();closeDataIndPicker();closeDataPreisPicker();closeDataAllePicker();closeDataDispMenu();
   renderDataTab();
 }
 // Asset A bzw. B waehlen. Dasselbe Asset auf beiden Seiten vergleicht
@@ -22069,6 +22065,56 @@ function preisVergleichHtml(keys,W,H){return preisChartHtml(keys,W,H,{typ:pxChar
 // Nutzerwahl: im Fenster erst das Asset (kompakte Zeile), darunter nur dessen
 // Charts - Price, 2Y/10Y, alle Indikatoren. Jeder Tipp = ein Panel, bis zu 8.
 let dataAlle=[],dataAlleAsset=null,dataAlleGruppe=null,_dataAlleOffen=false;
+// ── Display-Menue (Kontrollmenue Option C, Nutzer 2026-11-01) ──
+// Nutzer: "bau mal ein richtiges kontrollmenue ... ich will mehr Uebersicht",
+// Wahl Option C: Ansicht als Reiter, EIN Knopf "Display" mit der aktuellen
+// Wahl als Zusammenfassung; er oeffnet ein Menue mit Kacheln (Layout ·
+// Scale · Chart), jede mit kurzer Erklaerung. Jeder Tipp wirkt sofort, das
+// Menue bleibt offen; Tipp daneben oder Esc schliesst. Nur in Ansichten mit
+// Einstellungen (Prices: Layout, Scale, Chart; Compare all: Chart).
+let _dataDispOffen=false;
+function dataDispTeile(){
+  const t=[];
+  if(dataMode==='preis'){t.push(dataPreisAnsicht==='neben'?'Side by side':'One chart');if(dataPreisAnsicht!=='neben')t.push(dataPreisSkala==='bruch'?'Common':'Low → high');}
+  if(dataMode==='preis'||dataMode==='alle')t.push(pxChartTyp==='candle'?'Candles':'Line');
+  return t;
+}
+function dataDispKnopfHtml(){
+  const t=dataDispTeile();if(!t.length)return'';
+  return`<button class="btn data-disp${_dataDispOffen?' offen':''}" id="dataDispBtn" onclick="openDataDispMenu()" aria-haspopup="true" aria-expanded="${_dataDispOffen}" title="Display settings">${icn('gear',14)}<span>Display</span><em>${escH(t.join(' · '))}</em><span class="data-disp-pf" aria-hidden="true">▾</span></button>`;
+}
+function _dataDispOutside(e){const t=e.target;if(t&&t.closest&&t.closest('#dataDispMenu,#dataDispBtn'))return;closeDataDispMenu();}
+function _dataDispTaste(e){if(e.key==='Escape')closeDataDispMenu();}
+function closeDataDispMenu(){
+  _dataDispOffen=false;document.removeEventListener('pointerdown',_dataDispOutside,true);document.removeEventListener('keydown',_dataDispTaste);
+  const el=document.getElementById('dataDispMenu');if(el)el.remove();
+  const b=document.getElementById('dataDispBtn');if(b){b.classList.remove('offen');b.setAttribute('aria-expanded','false');}
+}
+function openDataDispMenu(){
+  if(_dataDispOffen){closeDataDispMenu();return;}
+  _dataDispOffen=true;renderDataDispMenu();
+  setTimeout(()=>{if(_dataDispOffen){document.addEventListener('pointerdown',_dataDispOutside,true);document.addEventListener('keydown',_dataDispTaste);}},0);
+}
+function renderDataDispMenu(){
+  if(!_dataDispOffen)return;
+  const btn=document.getElementById('dataDispBtn');if(!btn){closeDataDispMenu();return;}
+  btn.classList.add('offen');btn.setAttribute('aria-expanded','true');
+  let el=document.getElementById('dataDispMenu');
+  if(!el){el=document.createElement('div');el.id='dataDispMenu';el.className='data-picker data-disp-menu';el.setAttribute('role','dialog');el.setAttribute('aria-label','Display settings');document.body.appendChild(el);}
+  const kachel=(fn,v,on,titel,sub,vorne,aus)=>`<button class="dd-kachel${on?' on':''}" onclick="${fn}('${v}')"${aus?' disabled':''} aria-pressed="${on}">${vorne||''}<span><b>${titel}</b><small>${sub}</small></span></button>`;
+  const mini=n=>`<span class="dd-mini" style="grid-template-columns:repeat(${n},1fr)">${'<i></i>'.repeat(n)}</span>`;
+  const sek=(lbl,inhalt)=>`<div class="dd-sek"><span class="cmp-filter-lbl">${lbl}</span><div class="dd-kacheln">${inhalt}</div></div>`;
+  let h='';
+  if(dataMode==='preis'){
+    const neben=dataPreisAnsicht==='neben';
+    h+=sek('Layout',kachel('setDataPreisAnsicht','eins',!neben,'One chart','all prices in one chart',mini(1))+kachel('setDataPreisAnsicht','neben',neben,'Side by side','one chart per price',mini(2)));
+    h+=sek('Scale'+(neben?' · only in one chart':''),kachel('setDataPreisSkala','band',dataPreisSkala!=='bruch','Low → high','each line 0–100','',neben)+kachel('setDataPreisSkala','bruch',dataPreisSkala==='bruch','Common','real prices, axis breaks','',neben));
+  }
+  if(dataMode==='preis'||dataMode==='alle')h+=sek('Chart',kachel('setPxChartTyp','candle',pxChartTyp==='candle','Candles','one per trading day',icn('candles',16))+kachel('setPxChartTyp','line',pxChartTyp!=='candle','Line','daily closes',icn('line',16)));
+  if(!h){closeDataDispMenu();return;}
+  el.innerHTML=h;
+  pickerAnkern(el,btn,true);
+}
 // Gruppen aus der Asset-Klasse (wie kontextKatalog): ein neues Asset oder ein
 // neuer Kurs-Feed landet ohne Codeaenderung in seiner Gruppe.
 function dataAlleAssetGruppen(){
@@ -22229,10 +22275,12 @@ document.addEventListener('pointerup',e=>{
 // halbe Fensterhoehe (mind. 240 px), nie ueber den unteren Rand.
 function pickerHoeheRaum(raum){return Math.max(160,Math.min(Math.round(raum),Math.max(240,Math.round(window.innerHeight*0.5))));}
 function pickerHoehe(oben){return pickerHoeheRaum(window.innerHeight-oben-16);}
-function pickerAnkern(el,btn){
+function pickerAnkern(el,btn,links){
   if(el.dataset.fest)return;
   const r=btn.getBoundingClientRect();
   el.style.top=Math.round(r.bottom+6)+'px';
+  // links=true: linksbuendig unter dem Knopf (Knopf steht links, z. B. Display)
+  if(links){const breit=el.offsetWidth||0;el.style.right='auto';el.style.left=Math.max(8,Math.min(Math.round(r.left),Math.round(window.innerWidth-breit-8)))+'px';el.style.maxHeight=pickerHoehe(r.bottom+6)+'px';el.dataset.fest='1';return;}
   // Rechtsbuendig zum Knopf, aber nie links aus dem Bild (gemessen 2026-10-31,
   // 390 px: Compare-all-Fenster left -30, weil rechts vom Knopf noch das
   // Info-Symbol steht und das Fenster 374 px breit ist).
@@ -22341,13 +22389,15 @@ function renderDataTabRoh(){
   Object.keys(dataIndOverride).forEach(k=>{if(!dataAssets.includes(k))delete dataIndOverride[k];});
   if(dataMode==='inds'&&dataAssets.length>1)dataAssets=[dataAssets[0]];
   const N=DATA_MAX_PANELS;
-  const modeBar=`<div class="px-modes">
-    <button class="ind-hist-range-btn${dataMode==='assets'?' on':''}" onclick="setDataMode('assets')" title="One indicator, up to ${N} assets side by side">By asset</button>
-    <button class="ind-hist-range-btn${dataMode==='inds'?' on':''}" onclick="setDataMode('inds')" title="One asset, up to ${N} of its indicators side by side">By indicator</button>
-    <button class="ind-hist-range-btn${dataMode==='vs'?' on':''}" onclick="setDataMode('vs')" title="Two assets, the same up to ${DATA_VS_MAX} indicators paired row by row">Asset vs asset</button>
-    <button class="ind-hist-range-btn${dataMode==='preis'?' on':''}" onclick="setDataMode('preis')" title="Up to ${DATA_PREIS_MAX} prices in one chart or side by side">Prices</button>
-    <button class="ind-hist-range-btn${dataMode==='alle'?' on':''}" onclick="setDataMode('alle')" title="Any chart of any asset side by side - tap + Add">Compare all</button>
-  </div>`;
+  // Ansicht als Reiter (Kontrollmenue Option C, Nutzer 2026-11-01: "weil
+  // aktuell weis man nicht ob die Knoepfe zusammengehoeren oder getrennt").
+  const modeBar=`<div class="data-tabs" role="tablist" aria-label="View">${[
+    ['assets','By asset',`One indicator, up to ${N} assets side by side`],
+    ['inds','By indicator',`One asset, up to ${N} of its indicators side by side`],
+    ['vs','Asset vs asset',`Two assets, the same up to ${DATA_VS_MAX} indicators paired row by row`],
+    ['preis','Prices',`Up to ${DATA_PREIS_MAX} prices in one chart or side by side`],
+    ['alle','Compare all','Any chart of any asset side by side - tap + Add'],
+  ].map(([m,l,t])=>`<button class="data-tab${dataMode===m?' on':''}" role="tab" aria-selected="${dataMode===m}" onclick="setDataMode('${m}')" title="${escH(t)}">${l}</button>`).join('')}</div>`;
   // Die Leiste steht im Kopf, die Datentiefe kennt man erst nach den Panels:
   // Platzhalter, am Ende ersetzt (fruehester Punkt ueber alle Panels).
   let dataAb=null;
@@ -22383,7 +22433,6 @@ function renderDataTabRoh(){
     const j=panelJobs.length;panelJobs.push({preisEinzeln:k,namen});
     return`<div class="cot-card data-panel"><div class="data-ph"><span class="data-pt">${titel}<span class="px-panel-sub">${sub}</span></span><span class="px-panel-ctrls">${ctrls||''}</span>${abInfoBtn(titel.replace(/<[^>]*>/g,''),['<b>Real prices</b> on its own scale.','Candles: <b>body</b> previous close → close, <b>wick</b> only from a measured high/low.','Currencies = basket vs the other 7.'])}</div><div class="data-pc" data-k="${j}"></div></div>`;
   };
-  const typSchalter=chartTypSchalterHtml();
   if(dataMode==='preis'){
     // ── Bis zu 6 Kurse: ein Chart (Low → high | Common) oder nebeneinander ──
     const namen=preisNamen();
@@ -22391,11 +22440,7 @@ function renderDataTabRoh(){
     dataPreisListe.forEach(k=>{const r=abKontextReihe(k,'USD').reihe;if(Array.isArray(r)&&r.length){const d0=String(r[0][0]).slice(0,10);if(!dataAb||d0<dataAb)dataAb=d0;}});
     const knopf=`<button class="btn" id="dataPreisBtn" onclick="openDataPreisPicker()" title="Pick up to ${DATA_PREIS_MAX} prices at once — every tap is applied right away">${icn('filter',13)}<span style="margin-left:5px">Prices</span> <b style="font-family:var(--ff-num)">${dataPreisListe.length}/${DATA_PREIS_MAX}</b></button>`;
     const neben=dataPreisAnsicht==='neben';
-    const seg=(werte,akt,fn,lbl)=>`<span class="px-modes" role="group" aria-label="${lbl}">${werte.map(([v,l,t])=>`<button class="ind-hist-range-btn${akt===v?' on':''}" onclick="${fn}('${v}')" title="${escH(t)}">${l}</button>`).join('')}</span>`;
-    const schalter=seg([['eins','One chart','All prices in one chart'],['neben','Side by side','Each price in its own chart']],dataPreisAnsicht,'setDataPreisAnsicht','Layout')
-      +(neben?'':seg([['band','Low → high','Each line from its own low (0) to its own high (100)'],['bruch','Common','Real prices - similar levels share a band, the axis breaks between levels']],dataPreisSkala,'setDataPreisSkala','Scale'))
-      +typSchalter;
-    head=kopf(`Up to ${DATA_PREIS_MAX} prices · one chart or side by side`,'',knopf,dataPreisListe.length?rangeBarHtml():'',schalter);
+    head=kopf(`Up to ${DATA_PREIS_MAX} prices · one chart or side by side`,'',knopf,dataPreisListe.length?rangeBarHtml():'',dataDispKnopfHtml());
     if(!dataPreisListe.length)body=`<div class="cot-empty">Pick up to ${DATA_PREIS_MAX} prices above to compare their patterns.</div>`;
     else if(neben){
       n=dataPreisListe.length;
@@ -22412,7 +22457,7 @@ function renderDataTabRoh(){
     const namen=preisNamen();
     dataAlle=dataAlle.filter(x=>x&&x.k&&(x.k.startsWith('i:')?syms.some(y=>y.id===x.a):namen.has(x.k))).slice(0,N);
     const knopf=`<button class="btn" id="dataAlleBtn" onclick="openDataAllePicker()" title="Add any chart of any asset — every tap adds a panel">＋<span style="margin-left:5px">Add</span> <b style="font-family:var(--ff-num)">${dataAlle.length}/${N}</b></button>`;
-    head=kopf(`Any chart of any asset · up to ${N} side by side · one time range`,'',knopf,dataAlle.length?rangeBarHtml():'',typSchalter);
+    head=kopf(`Any chart of any asset · up to ${N} side by side · one time range`,'',knopf,dataAlle.length?rangeBarHtml():'',dataDispKnopfHtml());
     if(!dataAlle.length)body=`<div class="cot-empty">Tap <b>＋ Add</b> — pick an asset, then any of its charts.</div>`;
     else{
       n=dataAlle.length;
@@ -22504,7 +22549,7 @@ function renderDataTabRoh(){
   attachChartHovers(el);
   // Die Buttons wurden gerade neu gebaut - ein offenes Popup muss sich wieder
   // daran ausrichten und den neuen Stand zeigen. No-ops, solange zu.
-  renderDataAssetPicker();renderDataIndPicker();renderDataPreisPicker();renderDataAllePicker();
+  renderDataAssetPicker();renderDataIndPicker();renderDataPreisPicker();renderDataAllePicker();renderDataDispMenu();
 }
 // Raster setzen, Zellen messen, dann jeden Chart in seine Flaeche zeichnen.
 function dataRasterFuellen(el,n,jobs){
@@ -27662,7 +27707,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,
   DASH_COL_MIN_H,DASH_SHRINK_MIN_H,equalizeDashColumns,scrollCalsToNow,delWidget,renameWidget,confirmRename,addWidget,
-  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,linkOeffnen,setDataPreisAnsicht,setDataPreisSkala,preisChartHtml,openDataAllePicker,closeDataAllePicker,setDataAlleAsset,toggleDataAlle,removeDataAlle,dataAlleItems,pickerAnkern,pickerHoehe,pickerHoeheRaum,setDataAlleGruppe,gwAuf,gwZu,gwSelectAn,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
+  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,linkOeffnen,setDataPreisAnsicht,setDataPreisSkala,preisChartHtml,openDataAllePicker,closeDataAllePicker,setDataAlleAsset,toggleDataAlle,removeDataAlle,dataAlleItems,pickerAnkern,pickerHoehe,pickerHoeheRaum,setDataAlleGruppe,openDataDispMenu,closeDataDispMenu,gwAuf,gwZu,gwSelectAn,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
   recordScoreHist,RISK_ON_IDS,RISK_OFF_IDS,riskOnOffState,riskSentimentWidgetHtml,globeHudLonTxt,globeHudHtml,bMark,
   startScanBroadcast,scanFlyParticle,surpriseIndex,mxHeatColor,assetReturnMap,pearsonR,corrHeatColor,setCorrA,
   setCorrB,setCorrWin,logReturns,pearson,corrRegimeSeries,corrRegimeCardHtml,renderCorrCard,renderMatrix,TREND_COLORS,
@@ -27791,6 +27836,8 @@ Object.defineProperty(window,'research',{get:()=>research,set:v=>{research=v;},c
 Object.defineProperty(window,'researchFolders',{get:()=>researchFolders,set:v=>{researchFolders=v;},configurable:true});
 Object.defineProperty(window,'dataPreisListe',{get:()=>dataPreisListe,set:v=>{dataPreisListe=v;},configurable:true});
 Object.defineProperty(window,'dataAlle',{get:()=>dataAlle,set:v=>{dataAlle=v;},configurable:true});
+Object.defineProperty(window,'dataMode',{get:()=>dataMode,configurable:true});
+Object.defineProperty(window,'dataPreisAnsicht',{get:()=>dataPreisAnsicht,configurable:true});
 Object.defineProperty(window,'researchAnalysis',{get:()=>researchAnalysis,set:v=>{researchAnalysis=v;},configurable:true});
 Object.defineProperty(window,'calEvts',{get:()=>calEvts,set:v=>{calEvts=v;},configurable:true});
 Object.defineProperty(window,'widgets',{get:()=>widgets,set:v=>{widgets=v;},configurable:true});

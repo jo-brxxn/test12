@@ -2860,6 +2860,26 @@ select:has(optgroup):not([data-nativ]):not(:disabled){pointer-events:none}
 /* Compare all (2026-10-31): erst das Asset (kompakte Zeile je Gruppe), darunter nur dessen Charts */
 .dap-assets{display:flex;flex-direction:column;gap:8px;padding:10px 13px;border-bottom:1px solid var(--bd)}
 .dap-reihe{display:flex;flex-wrap:wrap;gap:5px}
+/* Data-Kontrollmenue (Option C, Nutzer 2026-11-01: "ich will mehr Uebersicht"):
+   Ansicht als Reiter, ein Knopf "Display" mit der aktuellen Wahl, Menue mit Kacheln */
+.data-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:2px}
+.data-tab{height:34px;padding:0 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--t2);font:700 var(--fs-sm)/1 var(--ff-text);cursor:pointer;white-space:nowrap}
+.data-tab.on{color:var(--t0);border-bottom-color:var(--ui-act)}
+@media (hover:hover){.data-tab:not(.on):hover{color:var(--t0)}}
+.data-disp{height:34px;display:inline-flex;align-items:center;gap:7px;padding:0 11px;margin-left:6px}
+.data-disp em{font-style:normal;font-weight:500;color:var(--t2)}
+.data-disp.offen{border-color:var(--ui-act);box-shadow:inset 0 0 0 1px var(--ui-act)}
+.data-disp-menu{width:min(420px,calc(100vw - 16px))}
+.dd-sek{padding:10px 14px}
+.dd-sek+.dd-sek{border-top:1px solid var(--bd)}
+.dd-kacheln{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.dd-kachel{min-height:40px;display:flex;align-items:center;gap:9px;padding:6px 10px;border:1px solid var(--bd2);border-radius:9px;background:var(--bg1);color:var(--t1);cursor:pointer;text-align:left;font:600 var(--fs-xs)/1.25 var(--ff-text)}
+.dd-kachel b{display:block;font-weight:700;color:var(--t0)}
+.dd-kachel small{display:block;font-weight:500;color:var(--t2);font-size:var(--fs-2xs)}
+.dd-kachel.on{border-color:var(--ui-act);background:rgba(var(--ui-act-rgb),.10)}
+.dd-kachel:disabled{opacity:.4;cursor:not-allowed}
+.dd-mini{flex:0 0 auto;width:26px;height:18px;display:grid;gap:2px}
+.dd-mini i{display:block;border-radius:2px;background:var(--t3)}
 /* ── INSIGHTS > DATA: bis zu 4 Panels (Nutzer-Wunsch 2026-09-05) ── */
 .data-ctrls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:0 14px 12px}
 .data-sub{font:500 var(--fs-xs)/1.4 var(--ff-text);color:var(--t3);margin-left:10px}
@@ -7112,11 +7132,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-659 - Vorschau beim App-Start: vier Entwuerfe fuer das Data-Kontrollmenue (A Gruppen mit Etikett, B Reiter + Werkzeugleiste, C Display-Menue, D Seitenleiste), temporaer; vorher 658: leichtes Federn, Hover-Linie durchgehend, Infokarte transparent."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-660 - Data-Kontrollmenue Option C: Ansicht als Reiter, ein Knopf Display mit Zusammenfassung und Menue (Layout, Scale, Chart); Vorschau entfernt; vorher 659: Vorschau der vier Entwuerfe."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-659</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-660</span>
     </span>
   </div>
   <div class="hdr-r">
