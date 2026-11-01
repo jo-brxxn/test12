@@ -12,6 +12,12 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Abruf-Skript im Probelauf (rechnet, schreibt nichts)
+        run: node tools/geldmenge.mjs --probe
       - name: Zentralbanken und Trading Economics abfragen
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
