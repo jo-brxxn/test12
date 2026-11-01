@@ -1,0 +1,47 @@
+# Welche Quellen liefern die Geldmenge fuer JPY, CHF, AUD, CAD, NZD (Nutzer
+# 2026-11-01: "Ergaenz noch ueberall den Indikator m3 money supply bei
+# inflation" - per Rueckfrage "Quellen der Zentralbanken anbinden")? Aus der
+# Claude-Umgebung sind die Seiten der Zentralbanken gesperrt - deshalb misst
+# dieser Lauf auf dem GitHub-Laeufer. Schreibt NICHTS in die Daten, nur von Hand.
+name: Probe money supply sources
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Zentralbanken und Trading Economics abfragen
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+          probe(){ # $1 Name, $2 URL, $3 grep-Muster
+            CODE=$(curl -sL -A "$UA" --max-time 40 -o p.out -w "%{http_code} %{content_type} %{size_download}" "$2" || echo "000")
+            echo "=== $1 :: $CODE :: $2"
+            if file p.out | grep -qi "zip\|excel\|microsoft"; then echo "(binaer: $(file -b p.out))"; python3 - <<'PY' || true
+          import zipfile,re
+          try:
+              z=zipfile.ZipFile('p.out');names=z.namelist();print('xlsx-Teile',len(names),names[:6])
+              ss=z.read('xl/sharedStrings.xml').decode('utf8','ignore') if 'xl/sharedStrings.xml' in names else ''
+              print('Texte mit M3:',re.findall(r'<t[^>]*>([^<]*M3[^<]*)</t>',ss)[:8])
+          except Exception as e: print('kein zip',e)
+          PY
+            else
+              head -c 600 p.out | tr '\r' ' ' ; echo
+              echo "--- Zeilen mit '$3':"; grep -i -m 12 -E "$3" p.out | cut -c1-260 || true
+              echo "--- letzte Zeilen:"; tail -n 4 p.out | cut -c1-260
+            fi
+            echo
+          }
+          probe "SNB M-Aggregate CSV" "https://data.snb.ch/api/cube/snbmonagg/data/csv/en" "M3|Date"
+          probe "SNB Cube-Liste" "https://data.snb.ch/api/cube/snbmonagg/dimensions/en" "M3"
+          probe "RBA D1 Wachstum CSV" "https://www.rba.gov.au/statistics/tables/csv/d1-data.csv" "M3|Title|Series ID"
+          probe "RBA D3 Aggregate CSV" "https://www.rba.gov.au/statistics/tables/csv/d3-data.csv" "M3|Title|Series ID"
+          probe "BoC Valet Gruppenliste" "https://www.bankofcanada.ca/valet/lists/groups/json" "monet|aggreg"
+          probe "BoC Valet Serienliste (M3/M2++)" "https://www.bankofcanada.ca/valet/lists/series/json" "M3|M2\\+\\+|monetary"
+          probe "RBNZ C50 xlsx" "https://www.rbnz.govt.nz/-/media/project/sites/rbnz/files/statistics/series/c/c50/hc50.xlsx" "M3"
+          probe "BoJ Money Stock HTML" "https://www.stat-search.boj.or.jp/ssi/mtshtml/md02_m_1_en.html" "M3|M2"
+          probe "BoJ Money Stock Seite" "https://www.boj.or.jp/en/statistics/money/ms/index.htm" "M3|ms[0-9]+|pdf|csv"
+          for p in japan/money-supply-m3 switzerland/money-supply-m3 australia/money-supply-m3 canada/money-supply-m3 new-zealand/money-supply-m3 united-states/money-supply-m2; do
+            probe "TE $p" "https://tradingeconomics.com/$p" "TEChartsMeta|\"value\"|Actual|Previous|was reported"
+          done
