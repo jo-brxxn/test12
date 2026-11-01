@@ -21243,6 +21243,13 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Beim Bauen:** (1) `const trendsMultiBar='':''` — `node --check` meldete nichts (prüft nicht als ES-Modul), `check/syntax.js` schon (exit 1) → ab jetzt nach jeder Änderung `syntax.js`; (2) `KM_MENUES` vor der Deklaration benutzt (TDZ, App lud nicht) → Deklaration nach oben; (3) die neue Brücken-Prüfung in `structure.js` meldete die entfernten Namen sofort; (4) COT zeigte einen Display-Knopf auch ohne Menü-Inhalt → nur noch mit Inhalt (Gegenprobe deckte es auf).
 **Wächter:** `check/kontrollmenue.js` (A–D), Gegenprobe rot (2). `datamenu.js` auf den Baustein umgestellt.
 
+## 2026-11-01 — VERSION-CHECK-668: PRICE-Streifen aus der Price-Karte entfernt
+
+**Nutzer:** *„Entfern die Preis Daten ganz unten in der Preiskarte“* — der Streifen PRICE 1D · 1W · 1M · YTD (`assetPerfStripHtml`, seit dem Rückbau 2026-09-14 unten in der Karte). Funktion, Brücken-Eintrag und die ⓘ-Zeile dazu sind weg; dieselben Zahlen stehen in der Performance-Karte (`perfReturn`). Trend-Score-Zeile und *Go to Trends* bleiben.
+**Wächter:** `check/kartenlook.js` verlangte den Streifen in der Karte → meldet ihn jetzt, wenn er auf der Asset-Seite wieder auftaucht.
+**CI 674 (667) rot — beide aus dem Layout von 666 (schmalere Karten), im gezielten Lauf von 666 nicht dabei:** `namen` — „＋ New pinned note on Gold…“ bei 820 px (Karte 224 px, breite iPad-Schrift) mit „…“ gekürzt (188/241 px) → Text bricht um statt zu kürzen; `einheit` Z — History-Zeitknöpfe brechen bei 1180 px (Karte 344 px) um, zweite Zeile links (46 px vom Rand) → umgebrochene Zeilen rechtsbündig; dabei `designregeln` F: deren nach unten vergrößerte Trefferfläche (−9 px) lag auf der zweiten Reihe → in der History-Karte −1 px. Lehre: bei jeder Breitenänderung der Asset-Karten `namen`, `einheit` und `designregeln` mitlaufen lassen.
+**Zu 667 nachgetragen:** Der Feed-Lauf 1406 lieferte alle acht Reihen live — USD 5,0 % (18 Jahresraten), EUR 3,5 % gegen 3,4 % (144 Releases), GBP 0,1 % gegen 0,3 % (41), CHF 3,9 % (SNB, 237 Monate), JPY 1,2 % (BoJ, 237), CAD 6,3 % (BoC M2++, 236), AUD 6,1 % (RBA, 237), NZD −0,8 % m/m (TE, erster Wert).
+
 ## 2026-11-01 — VERSION-CHECK-667: Money Supply bei allen acht Währungen, Score-Modell 31
 
 **Nutzer:** *„Ergänz noch überall den Indikator m3 money supply bei inflation“*. Rückfragen: *„EUR, GBP, USD – im Score“* (gegen die Messung: EUR t 0,93, GBP t −0,19) und *„Quellen der Zentralbanken anbinden“*.

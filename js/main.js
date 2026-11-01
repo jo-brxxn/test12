@@ -11677,42 +11677,10 @@ function renderSpecTab(c){
   return`${renderAssetBoard(c)}
   ${newsAssetSectionHtml(c)}`;
 }
-// Kursperformance des Assets ueber die vier Standardfenster. Die Assets-Seite
-// zeigte bisher NUR den Score - was der Kurs tatsaechlich gemacht hat, musste
-// man sich auf dem Dashboard suchen.
-// Nutzt bewusst perfReturn(), exakt dieselbe Rechnung wie die
-// Performance-Ranking-Karte, damit dieselbe Zahl nicht an zwei Stellen
-// unterschiedlich herauskommen kann. perfReturn liefert null, wenn die
-// Preisreihe fehlt oder kuerzer als das Fenster ist - dann steht hier "–"
-// und NICHT etwa ein hochgerechneter Wert (Projekt-Grundsatz: nie schaetzen).
-function assetPerfStripHtml(c){
-  const feedWeg=typeof DATA_LIVE_OK!=='undefined'&&DATA_LIVE_OK.price===false;
-  if(YIELD_CCY[c.id]){
-    const zellen=PERF_WINDOWS.map(([lbl,days])=>{
-      const r=renditeAenderung(c.id,days);
-      const val=r?`${r.bp>0?'+':''}${Math.round(r.bp)} bp`:'–';
-      const col=!r?'var(--t3)':r.bp>0.5?'var(--green)':r.bp<-0.5?'var(--red)':'var(--t2)';
-      return`<div class="aperf-c" title="${escH(r?`${lbl}: ${r.from} → ${r.to} (1 bp = 0.01 percentage points)`:`No yield history covering ${lbl} yet`)}"><div class="aperf-l">${escH(lbl)}</div><div class="aperf-v" style="color:${col}">${escH(val)}</div></div>`;
-    }).join('');
-    return`<div class="aperf"><span class="aperf-t">YIELD</span>${zellen}</div>`;
-  }
-  const cells=PERF_WINDOWS.map(([lbl,days])=>{
-    const r=perfReturn(c.id,days);
-    const val=r?`${r.pct>0?'+':''}${r.pct.toFixed(2)}%`:'–';
-    const col=!r?'var(--t3)':r.pct>0.001?'var(--green)':r.pct<-0.001?'var(--red)':'var(--t2)';
-    // ⚠ Ein Strich hat zwei voellig verschiedene Bedeutungen, und bis zum
-    // 2026-09-14 nannte der Hinweis immer die zweite: entweder ist der
-    // Preis-Feed in dieser Sitzung nicht angekommen, oder die Historie ist
-    // kuerzer als das Fenster. Im gemeldeten Fall (Bildschirmfoto vom iPad)
-    // war es das Erste - vier Striche mit der Erklaerung "no price history
-    // covering 1D yet", obwohl drei Jahre Historie in der Datei stehen.
-    const tip=r?`${lbl}: ${r.from} → ${r.to}`
-      :feedWeg?`Live data unavailable: Prices — the feed did not load in this session, so there is nothing to compare ${lbl} against.`
-      :`No price history covering ${lbl} yet`;
-    return`<div class="aperf-c" title="${escH(tip)}"><div class="aperf-l">${escH(lbl)}</div><div class="aperf-v" style="color:${col}">${escH(val)}</div></div>`;
-  }).join('');
-  return`<div class="aperf"><span class="aperf-t">PRICE</span>${cells}</div>`;
-}
+// ⚠ Der PRICE-Streifen (1D/1W/1M/YTD unten in der Price-Karte,
+// assetPerfStripHtml) ist am 2026-11-01 auf Nutzer-Wunsch entfernt ("Entfern
+// die Preis Daten ganz unten in der Preiskarte"). Dieselben Zahlen stehen in
+// der Performance-Karte (perfReturn) - nichts davon war nur hier.
 
 // ── Die Preis-Karte: Chart des Assets + die vier Fenster darunter ────────
 // Nutzer 2026-09-14: "ich will da wo man taegliche und woechentliche
@@ -11827,8 +11795,7 @@ function assetPreisKarteHtml(c){
     })():`<span class="ab-tile-s" style="color:${biasCss(ch.pct>0.15?'bull':ch.pct<-0.15?'bear':'neu')}">${ch.pct>0?'+':''}${ch.pct.toFixed(2)}%</span>`}${abInfoBtn('Price',[
       FX.includes(c.id)?`For a currency this is the <b>${escH(KORB_NAME[c.id])}</b>: ${escH(c.id)} against the other seven majors with equal weight, built from the daily closes of the seven pairs — not the rate against the US dollar.`:'Daily price of this asset over the chosen range.',
       '<b>Candles | Line</b> switches every price chart; the time range applies to every chart on this page. A wick is only drawn where the source delivers a real high and low.',
-      '<b>1D EMA20</b> and <b>4H EMA'+TREND_EMA_H+'</b> with their neutral band (±'+TREND_NEUTRAL_ATR+' × ATR14) are the trend driver. Shading marks where price sits outside the band — blue above, red below. The trend score adds up to ±'+TREND_PKT+' (1D) and ±'+TREND_PKT_H+' (4H) to the asset\'s score.',
-      'The strip below shows the change over 1D, 1W, 1M and year to date.'])}
+      '<b>1D EMA20</b> and <b>4H EMA'+TREND_EMA_H+'</b> with their neutral band (±'+TREND_NEUTRAL_ATR+' × ATR14) are the trend driver. Shading marks where price sits outside the band — blue above, red below. The trend score adds up to ±'+TREND_PKT+' (1D) and ±'+TREND_PKT_H+' (4H) to the asset\'s score.'])}
     </div>
     ${FX.includes(c.id)?`<div class="ab-tile-sub ab-korb" title="${escH(KORB_NAME[c.id]+': '+c.id+' against the other seven major currencies, equal weight (geometric mean). Not the rate against the US dollar - a dollar move alone does not move it. Closes only, so the candles have no wicks.')}">${escH(KORB_NAME[c.id])}</div>`:''}
     ${chartLeisteHtml((vergleich?kmKnopfHtml('abPreis',pkVglTeile(),'',true):YIELD_CCY[c.id]?kmKnopfHtml('abPreisRendite',[pxTypTeil()],'',true):kmKnopfHtml('abPreis',[pxTypTeil(),abTrendTeil()],'',true))
@@ -11854,7 +11821,6 @@ function assetPreisKarteHtml(c){
       <div class="pk-main"><div class="ab-pk-chart">${ch.html}</div>${fuss}</div>
     </div>
     ${YIELD_CCY[c.id]?'':abTrendScoreZeile(c)}
-    ${assetPerfStripHtml(c)}
     ${abGoToHtml('trends')}
   </div>`;
 }
@@ -16910,8 +16876,9 @@ function symSourceLabel(c){
 // ausdrueckliche Ansage wieder abgeraeumt worden: "mach die leiste oben
 // wieder weg und mach das wie vorher". Mit ihr sind assetKopfHtml(),
 // assetKopfKennzahlen(), assetKopfRendite() und assetKopfWarumLeer()
-// gegangen; 1D/1W/1M/YTD stehen wieder unten in der Preis-Karte
-// (assetPerfStripHtml, von assetPreisKarteHtml gezeichnet).
+// gegangen; 1D/1W/1M/YTD standen danach unten in der Preis-Karte - seit
+// 2026-11-01 auch dort nicht mehr (Nutzer: "Entfern die Preis Daten ganz unten
+// in der Preiskarte"); sie stehen in der Performance-Karte.
 // GEBLIEBEN sind die Reihen-Ueberschriften ueber den Kartenreihen
 // (abReihenTitel) - die waren ausdruecklich nicht gemeint.
 // Gezeichnet wird wieder detailMetaHtml(): die schmale Zeile mit
@@ -27825,7 +27792,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   sbPressStart,sbPressEnd,sbClick,sbCatPressStart,sbCatPressEnd,miniSparklineSvg,indSparklineSvg,renderSidebar,
   setSbEdit,renderDetail,masonryCols,masonryHTML,ovCols,renderOverviewCard,goToRubCard,assetQuickRowHtml,
   ASSET_PIN_SHOW,assetPinnedNotes,archiveResNote,resNoteIstAlt,resNoteToTrash,setResStufe,togResPin,assetNotesCardHtml,setAssetNoteFid,assetNotesFoldersHtml,renderSpecTab,
-  assetPerfStripHtml,renderRub,IND_PAIR_GROUPS,indPairGroupPositions,renderIndsTable,renderIndRow,toggleIndDetailRow,
+  renderRub,IND_PAIR_GROUPS,indPairGroupPositions,renderIndsTable,renderIndRow,toggleIndDetailRow,
   updateSidebarSelection,selSym,gotoSym,setSub,getRub,getInd,syncMacroRub,pullMacroFromCcy,rubAutoDerived,setRubBias,
   openBiasPicker,biasPickerChoose,closeBiasPicker,biasPickerOutside,togRubImp,togRubCollapse,delRub,mvRub,addRub,
   openInfoM,saveInfoM,setIndBias,syncIndOrderGlobal,syncMacroIndAddRemove,delInd,mvInd,addInd,cloneRubsFromUSD,

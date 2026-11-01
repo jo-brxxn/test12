@@ -234,12 +234,13 @@ const MIN_SCHATTEN_LAGEN = 3;
         `${id} bei ${w}px: es fehlt ${fehlt.join(', ')} in der .dmeta-Zeile (da: ${r.knoepfe.join(', ')}).`);
       if (r.dmeta && r.knoepfe.some(k => /price chart/i.test(k))) fail('PRICE CHART IST ZURUECK',
         `${id} bei ${w}px: der Knopf "Price chart" steht wieder in der .dmeta-Zeile (Nutzer 2026-11-01: entfernt).`);
-      // ⚠ Der Streifen ist beim 518er Umbau nach oben gewandert und beim
-      // Rueckbau wieder heruntergekommen. Genau solche Wanderungen fallen
-      // sonst niemandem auf - die Zahlen sind ja irgendwo.
-      if (r.ptile && !r.streifenInKarte) fail('PRICE-STREIFEN NICHT IN DER PREIS-KARTE',
-        `${id} bei ${w}px: 1D/1W/1M/YTD stehen ${r.streifenIrgendwo ? 'irgendwo anders auf der Seite' : 'gar nicht da'}, nicht unten in der Preis-Karte. Dorthin gehoeren sie seit dem Rueckbau vom 2026-09-14.`);
-      if (r.streifenInKarte) mitStreifen++; else ohneStreifen++;
+      // ⚠ Der Streifen ist beim 518er Umbau nach oben gewandert, beim Rueckbau
+      // wieder heruntergekommen und am 2026-11-01 ganz entfernt (Nutzer:
+      // "Entfern die Preis Daten ganz unten in der Preiskarte"). Er darf auf
+      // der Asset-Seite nirgends wieder auftauchen.
+      if (r.streifenIrgendwo) fail('PRICE-STREIFEN IST ZURUECK',
+        `${id} bei ${w}px: 1D/1W/1M/YTD stehen wieder ${r.streifenInKarte ? 'unten in der Preis-Karte' : 'auf der Asset-Seite'} - seit 2026-11-01 entfernt.`);
+      if (r.ptile) mitStreifen++; else ohneStreifen++;
       if (r.ueberlauf) fail('SEITE LAEUFT UEBER',
         `${id} bei ${w}px: die Asset-Seite scrollt waagerecht.`);
       // ⚠ Nutzer: "nicht zu viel gliedern das da nicht so viel Platz
@@ -356,5 +357,5 @@ const MIN_SCHATTEN_LAGEN = 3;
     + `Schattenkante ${(global._schatten || 0).toFixed(2)}:1, `
     + `${Object.values(schatten)[0].lagen} gestapelte Schattenlagen, EINE Kartenflaeche fuer alle Karten; `
     + `${(global._goto||{}).karten||0} Karten mit Go-to (unten rechts, Ziel gueltig, Klick navigiert mit Zurueck-Pille); `
-    + `Asset-Seite auf ${kopfGeprueft} Kombinationen geprueft - keine Kopfleiste, ${mitStreifen} mit PRICE-Streifen in der Preis-Karte, ${ohneStreifen} ohne Preis-Karte)`);
+    + `Asset-Seite auf ${kopfGeprueft} Kombinationen geprueft - keine Kopfleiste, ${mitStreifen} Preis-Karten ohne PRICE-Streifen, ${ohneStreifen} ohne Preis-Karte)`);
 })().catch(e => { console.error('KARTEN-LOOK-WAECHTER abgestuerzt:', e && e.message || e); process.exit(1); });
