@@ -1731,11 +1731,13 @@ wieder weg: *„die Balken so schmal … macht das wie vorher überall also nur
 das"*), 80 % Deckkraft bleibt; die Wertzahl darüber steht ab Spalte × 0,56
 ≥ 22 px.
 
-**O — Kompakte Werkzeugzeile (Runde 2).** Candles|Line sind zwei
-Symbolknöpfe (`candles`/`line`, Name im `aria-label` und Tooltip —
-`check/einheit.js` prüft die aria-labels), überall gleich. Die
-EMA-Schalter heißen „EMA 1D“/„EMA 4H“ und stehen links in der
-Werkzeugzeile (Regel 2026-09-26). Zeitfilter der Asset-Seite: 7 px Polster,
+**O — Kompakte Werkzeugzeile (Runde 2; seit 662 Kontrollmenü).** Candles|Line
+und die EMA-Schalter („EMA 1D“/„EMA 4H“) stehen seit 2026-11-01 im
+**Display-Menü** (Nutzer: *„Überall dieses Design und Aufbau“*, ersetzt die
+Symbolknöpfe aus 591): links in der Werkzeugzeile ein Display-Knopf mit
+Zusammenfassung (*„Candles · EMA 1D + 4H“*), in Karten 28 px (`.km-klein`),
+unter 560 px Kartenbreite ohne das Wort „Display“. `check/einheit.js` prüft,
+dass die Zusammenfassung mit der Diagrammart beginnt. Zeitfilter der Asset-Seite: 7 px Polster,
 4 px Abstand, brechen nur als Ganzes um (`flex-wrap:nowrap`) — höchstens 2
 Zeilen über dem Chart, ab 1180 px eine, nie ein einzelnes „MAX“. Ein
 Kartenzusatz wie „USD Basket“ ist ein Untertitel unter der Kopfzeile
@@ -1923,7 +1925,7 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - Nutzer: *„Ich will Option c und guck wo man dieses Design noch alles in der App umsetzen kann“* → *„Überall dieses Design und Aufbau“*.
 - **Ein Baustein** (`js/main.js`): `kmReiterHtml` (Reiter), `kmKnopfHtml` (Display-Knopf mit Zusammenfassung), `KM_MENUES[schlüssel]` (Abschnitte mit Kacheln = Einzelwahl, Chips = Mehrfachwahl), `kmZeigeAbschnitt` (das frühere „Show several at once“). Neue Seiten bauen nur noch damit.
 - **Zuordnung überall gleich:** Unteransichten → Reiter links · Darstellung/was zeigen → ein Display-Knopf · Zeitraum rechts · Asset-Auswahl rechts in der Titelzeile.
-- **Umgesetzt:** Data (Ansichten; Layout/Scale/Chart), Trends (Assets | Pair statt Pair-Knopf; Show), COT (Show; Einzelansicht Price on/Bars only statt „vs Price“), Sentiment (5 Unterseiten als Reiter; Retail Show). Ein Display-Knopf erscheint nur, wenn sein Menü etwas zu zeigen hat.
+- **Umgesetzt:** Data (Ansichten; Layout/Scale/Chart), Trends (Assets | Pair statt Pair-Knopf; Show), COT (Show; Einzelansicht Price on/Bars only statt „vs Price“), Sentiment (5 Unterseiten als Reiter; Retail Show), Asset-Seite (662: Price-Karte Chart + Trend lines, Context-Karte und Preis-Fenster Chart). Ein Display-Knopf erscheint nur, wenn sein Menü etwas zu zeigen hat. In Karten 28 px (`kmKnopfHtml(…, true)`, `.km-klein`).
 - Geprüft von `check/kontrollmenue.js` + `check/datamenu.js`.
 
 ## Data · Kontrollmenü (seit 2026-11-01, 660 — Option C)

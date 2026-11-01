@@ -9927,7 +9927,7 @@ function abKontextHtml(c){
   const regler=abRegler(c.id,'Show % of daily candles in every chart');
   return`<div class="ab-ktile">
     <div class="ab-tile-hd">${abTileIcon('Context')}<span class="ab-tile-t">Context</span>${rate}<button class="ab-gear" onclick="event.stopPropagation();openKontextSettings('${escJH(c.id)}')" title="Choose the charts of slot 1, 2 and 3" aria-label="Context chart settings">${icn('gear',15)}</button>${abInfoBtn('Context',['The markets that move this asset most, on the same time axis as its price: bond yields of the relevant currency, the dollar or equity indices, depending on the asset.','The word next to each title says whether that move is <b>bullish or bearish for this asset</b> — for some pairs a rise is bearish (e.g. rising yields for gold). Policy rate = the current central-bank rate.','Candles or a line and the time range work exactly as in the Price card.'])}</div>
-    ${chartLeisteHtml(chartTypSchalterHtml(),`<span class="ab-rgs">${regler}</span>`)}
+    ${chartLeisteHtml(kmKnopfHtml('abKontext',[pxTypTeil()],'',true),`<span class="ab-rgs">${regler}</span>`)}
     <div class="ab-kgrid">${kacheln}</div>
   </div>`;
 }
@@ -11652,6 +11652,14 @@ function assetPerfStripHtml(c){
 let abTrendLinien=(()=>{try{const v=localStorage.getItem('fxpro_ab_trendlines');return v==null?'d,h':v;}catch(e){return'd,h';}})();
 function setAbTrendLinienVal(v){abTrendLinien=String(v==null?'':v).split(',').filter(x=>x==='d'||x==='h').join(',');}
 setAbTrendLinienVal(abTrendLinien);
+// Kontrollmenue (Option C, Nutzer 2026-11-01 "Ueberall dieses Design"): Candles|Line
+// und die EMA-Linien stehen im Display-Menue statt als lose Knoepfe ueber dem Chart.
+function abTrendTeil(){const a=abTrendLinien.split(',').filter(Boolean);return a.length===2?'EMA 1D + 4H':a[0]==='d'?'EMA 1D':a[0]==='h'?'EMA 4H':'no EMA';}
+function pxTypTeil(){return pxChartTyp==='candle'?'Candles':'Line';}
+KM_MENUES.abPreis=()=>{const a=abTrendLinien.split(',');return[kmTypAbschnitt(),{lbl:'Trend lines',kacheln:[{fn:'toggleAbTrendLinie',arg:'d',on:a.includes('d'),titel:'EMA 1D',sub:'EMA20 + neutral band'},{fn:'toggleAbTrendLinie',arg:'h',on:a.includes('h'),titel:'EMA 4H',sub:'EMA'+TREND_EMA_H+' + neutral band'}]}];};
+KM_MENUES.abPreisRendite=()=>[kmTypAbschnitt()];
+KM_MENUES.abKontext=()=>[kmTypAbschnitt()];
+KM_MENUES.pxFenster=()=>[kmTypAbschnitt()];
 function toggleAbTrendLinie(k){
   try{
     const a=new Set(abTrendLinien.split(',').filter(Boolean));
@@ -11721,7 +11729,7 @@ function assetPreisKarteHtml(c){
       'The strip below shows the change over 1D, 1W, 1M and year to date.'])}
     </div>
     ${FX.includes(c.id)?`<div class="ab-tile-sub ab-korb" title="${escH(KORB_NAME[c.id]+': '+c.id+' against the other seven major currencies, equal weight (geometric mean). Not the rate against the US dollar - a dollar move alone does not move it. Closes only, so the candles have no wicks.')}">${escH(KORB_NAME[c.id])}</div>`:''}
-    ${chartLeisteHtml(chartTypSchalterHtml()+(YIELD_CCY[c.id]?'':`<span class="tr-sws">${schalter}</span>`),`<span class="ab-rgs">${regler}</span>`)}`;
+    ${chartLeisteHtml(YIELD_CCY[c.id]?kmKnopfHtml('abPreisRendite',[pxTypTeil()],'',true):kmKnopfHtml('abPreis',[pxTypTeil(),abTrendTeil()],'',true),`<span class="ab-rgs">${regler}</span>`)}`;
   // Kerzen-Zaehler ("N daily candles · M with a measured high/low") am
   // 2026-10-06 auf Nutzer-Wunsch entfernt ("die Anzeige beim Preis wie viele
   // Kerzen angezeigt werden weg") - hier und in den Kontext-Charts. Bleibt nur
@@ -21538,7 +21546,7 @@ function renderPriceChart(){
   const pxAb=preisAnfang(id);
   // Werkzeugleiste steht IMMER - auch im Leerfall, sonst sieht die Karte
   // aus, als waere sie kaputt statt "fuer dieses Asset gibt es keine Reihe".
-  const modeBar=chartTypSchalterHtml();
+  const modeBar=kmKnopfHtml('pxFenster',[pxTypTeil()],'',true);
   const rangeBar=`<div class="ind-hist-toolbar" style="margin:0">${timeRangeBarHtml(priceRange,'setPriceRange',null,pxAb)}${timeRangeCustomHtml(priceRange,priceCustomFrom,priceCustomTo,'setPriceRange',pxAb)}</div>`;
   const src=feed&&feed.source?`<a class="px-src" href="${safeUrl(feed.source)}" target="_blank" rel="noopener">Source ↗</a>`:'';
   // Quelle steht unter dem Chart-Rahmen rechts (nicht mehr in der Leiste:
@@ -22084,10 +22092,11 @@ let dataAlle=[],dataAlleAsset=null,dataAlleGruppe=null,_dataAlleOffen=false;
 function kmReiterHtml(liste,akt,fn,label){
   return`<div class="km-tabs" role="tablist" aria-label="${escH(label||'View')}">${liste.map(([v,l,t])=>`<button class="km-tab${akt===v?' on':''}" role="tab" aria-selected="${akt===v}" onclick="${fn}('${escJH(v)}')"${t?` title="${escH(t)}"`:''}>${escH(l)}</button>`).join('')}</div>`;
 }
-function kmKnopfHtml(key,teile,titel){
+// klein: 28-px-Variante fuer Karten-Werkzeugzeilen (dort ist alles 28 px hoch)
+function kmKnopfHtml(key,teile,titel,klein){
   if(!teile||!teile.length)return'';
   const offen=_kmOffen===key;
-  return`<button class="btn km-disp${offen?' offen':''}" data-km="${escH(key)}" onclick="kmAuf('${escJH(key)}')" aria-haspopup="true" aria-expanded="${offen}" title="${escH(titel||'Display settings')}">${icn('gear',14)}<span>Display</span><em>${escH(teile.join(' · '))}</em><span class="km-pf" aria-hidden="true">▾</span></button>`;
+  return`<button class="${klein?'km-klein':'btn'} km-disp${offen?' offen':''}" data-km="${escH(key)}" onclick="kmAuf('${escJH(key)}')" aria-haspopup="true" aria-expanded="${offen}" title="${escH(titel||'Display settings')}">${icn('gear',14)}<span class="km-lbl">Display</span><em>${escH(teile.join(' · '))}</em><span class="km-pf" aria-hidden="true">▾</span></button>`;
 }
 function _kmDaneben(e){const t=e.target;if(t&&t.closest&&t.closest('#kmMenu,[data-km]'))return;kmZu();}
 function _kmTaste(e){if(e.key==='Escape')kmZu();}

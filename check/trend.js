@@ -100,18 +100,22 @@ function soll1d(p, id, heute) {
   // C) Price-Karte
   await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(id => { const e = document.getElementById(id); if (e) e.remove(); }); gotoSym('EUR'); });
   await p.waitForTimeout(1200);
-  const zaehl = () => p.evaluate(() => ({ sw: document.querySelectorAll('#detail .ab-ptile .tr-sw').length, d: document.querySelectorAll('#detail .ab-ptile .tr-ema.tr-d').length, band: document.querySelectorAll('#detail .ab-ptile .tr-band-d').length, zeile: !!document.querySelector('#detail .ab-ptile .tr-line'), sch: document.querySelectorAll('#detail .ab-ptile .tr-schatten').length }));
+  // Seit 662 (Kontrollmenue): die Schalter EMA 1D / EMA 4H sind Kacheln im Display-Menue der Price-Karte.
+  const menueAuf = async () => { if (!(await p.evaluate(() => !!document.getElementById('kmMenu')))) { await p.click('#detail .ab-ptile [data-km="abPreis"]'); await p.waitForTimeout(250); } };
+  await menueAuf();
+  const zaehl = () => p.evaluate(() => ({ sw: [...document.querySelectorAll('#kmMenu .km-kachel b')].filter(b => /^EMA (1D|4H)$/.test(b.textContent)).length, d: document.querySelectorAll('#detail .ab-ptile .tr-ema.tr-d').length, band: document.querySelectorAll('#detail .ab-ptile .tr-band-d').length, zeile: !!document.querySelector('#detail .ab-ptile .tr-line'), sch: document.querySelectorAll('#detail .ab-ptile .tr-schatten').length }));
   const c0 = await zaehl();
   if (c0.sw !== 2) fail('SCHALTER', `${c0.sw} statt 2 (1D/4H)`);
   if (c0.d !== 1 || c0.band !== 1) fail('1D-LINIE', JSON.stringify(c0));
   if (!c0.zeile) fail('SCORE-ZEILE', 'Trend score fehlt in der Price-Karte');
   if (!c0.sch) fail('SCHATTIERUNG', 'keine Flaeche zwischen Kurs und EMA');
-  await p.click('#detail .ab-ptile .tr-sw-d'); await p.waitForTimeout(500);
+  await p.locator('#kmMenu .km-kachel', { hasText: 'EMA 1D' }).click(); await p.waitForTimeout(500);
   const c1 = await zaehl();
   const gespeichert = await p.evaluate(() => localStorage.getItem('fxpro_ab_trendlines'));
   if (c1.d !== 0) fail('SCHALTER 1D', 'Linie bleibt nach dem Ausschalten');
   if (gespeichert !== 'h') fail('SCHALTER GESPEICHERT', `localStorage=${gespeichert}`);
-  await p.click('#detail .ab-ptile .tr-sw-d'); await p.waitForTimeout(500);
+  await menueAuf(); await p.locator('#kmMenu .km-kachel', { hasText: 'EMA 1D' }).click(); await p.waitForTimeout(500);
+  await p.evaluate(() => { try { kmZu(); } catch (e) {} });
   if ((await zaehl()).d !== 1) fail('SCHALTER 1D', 'Linie kommt nicht zurueck');
   // F) Farbton der Schattierung + 1D-Linie
   if (GEGENPROBE) await p.evaluate(() => { const g = document.querySelector('#detail .ab-ptile .tr-schatten-g'); if (g) g.setAttribute('opacity', '.08');

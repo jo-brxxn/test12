@@ -2870,6 +2870,12 @@ select:has(optgroup):not([data-nativ]):not(:disabled){pointer-events:none}
 .km-disp{height:34px;display:inline-flex;align-items:center;gap:7px;padding:0 11px;margin-left:6px}
 .km-disp em{font-style:normal;font-weight:500;color:var(--t2)}
 .km-disp.offen{border-color:var(--ui-act);box-shadow:inset 0 0 0 1px var(--ui-act)}
+/* Schmale Karten (Price/Context, < 560 px; gemessen 1180: Spalte 523, Knopf 256 + Zeitfilter 263 > 489): Wort "Display" faellt weg, Zahnrad + Zusammenfassung bleiben - sonst 2 Bedienzeilen (designregeln K) */
+@container (max-width:560px){.km-disp .km-lbl{display:none}}
+/* Karten-Werkzeugzeilen: alles 28 px - Display-Knopf in derselben Hoehe (eigene Klasse statt .btn, .btn ist 34 px) */
+.km-klein{border:1px solid var(--bd2);border-radius:var(--rs);background:var(--bg3);color:var(--t2);font:600 var(--fs-xs)/1 var(--ff-text);cursor:pointer}
+.km-disp.km-klein{height:28px;padding:0 9px;gap:6px;margin-left:0}
+@media (hover:hover){.km-klein:hover{color:var(--t0);border-color:var(--bd3,var(--bd2))}}
 .km-menu{width:min(420px,calc(100vw - 16px))}
 .km-sek{padding:10px 14px}
 .km-sek+.km-sek{border-top:1px solid var(--bd)}
@@ -7136,11 +7142,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-661 - Kontrollmenue ueberall: gemeinsamer Baustein; Trends (Reiter Assets/Pair, Show-Menue), COT (Show, Price on/Bars only), Sentiment (Reiter, Retail Show); vorher 660: Data-Kontrollmenue."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-662 - Kontrollmenue auf der Asset-Seite: Price-Karte (Candles/Line + EMA 1D/4H), Context-Karte und Preis-Fenster im Display-Menue; vorher 661: Trends, COT, Sentiment."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-661</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-662</span>
     </span>
   </div>
   <div class="hdr-r">

@@ -19,6 +19,9 @@
 //   C) SENTIMENT: 5 Reiter (keine .stabs-Pillen mehr), genau einer aktiv;
 //      Retail: Display -> Kachel FX -> "FX"; Fear & Greed ohne Display
 //   D) Nirgends mehr eine "Show several at once"-Leiste (.cmp-filter)
+//   E) ASSET-SEITE (662): Price-Karte mit Display "Candles · EMA 1D + 4H",
+//      Menue Chart | Trend lines; Kachel EMA 4H -> "Candles · EMA 1D";
+//      Context-Karte folgt der Diagrammart; keine losen Candles|Line-Knoepfe
 // Gegenprobe --gegenprobe: kein "Show"-Abschnitt (kmZeigeAbschnitt liefert
 //   nichts) -> A/B rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
@@ -126,9 +129,26 @@ const gruen = m => console.log('  ✓ ' + m);
   await p.evaluate(() => { showTab('sent'); setSentSub('retail'); }); await p.waitForTimeout(500); alt += await alteLeiste();
   if (alt) rot(`D: noch ${alt} "Show several at once"-Leiste(n)`); else gruen('D: keine "Show several at once"-Leiste mehr (Trends, COT, Retail)');
 
+  // ── E) Asset-Seite ──
+  console.log('E) Asset-Seite: Price- und Context-Karte');
+  await p.evaluate(() => { setPxChartTyp('candle'); setAbTrendLinienVal('d,h'); gotoSym('USD'); }); await p.waitForTimeout(1300);
+  const e0 = { preis: await disp('abPreis'), ktx: await disp('abKontext'), lose: await p.evaluate(() => document.querySelectorAll('#detail .ctyp .ctyp-ic').length) };
+  if (e0.preis !== 'Candles · EMA 1D + 4H' || e0.ktx !== 'Candles' || e0.lose) rot(`E: Start ${JSON.stringify(e0)}`);
+  else {
+    await p.locator('#detail [data-km="abPreis"]').click(); await p.waitForTimeout(250);
+    const m = await menue();
+    await p.locator('#kmMenu .km-kachel', { hasText: 'EMA 4H' }).click(); await p.waitForTimeout(700);
+    const e1 = await disp('abPreis');
+    await p.locator('#kmMenu .km-kachel', { hasText: /^Line/ }).first().click(); await p.waitForTimeout(700);
+    const e2 = { preis: await disp('abPreis'), ktx: await disp('abKontext') };
+    await p.keyboard.press('Escape'); await p.evaluate(() => { setPxChartTyp('candle'); setAbTrendLinienVal('d,h'); });
+    if (!m || m.lbl.join('|') !== 'Chart|Trend lines' || e1 !== 'Candles · EMA 1D' || e2.preis !== 'Line · EMA 1D' || e2.ktx !== 'Line') rot(`E: Menue ${JSON.stringify(m && m.lbl)}, nach EMA 4H "${e1}", nach Line ${JSON.stringify(e2)}`);
+    else gruen('E: Price "Candles · EMA 1D + 4H" -> Menue Chart|Trend lines -> "Candles · EMA 1D" -> "Line · EMA 1D", Context folgt');
+  }
+
   await b.close();
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));
   if (GP) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: Waechter bleibt gruen.'); process.exit(fehler ? 0 : 1); }
-  console.log(fehler ? `\n✗ kontrollmenue: ${fehler} Befund(e)` : '\n✓ kontrollmenue: Trends, COT, Sentiment mit Reitern und Display-Menue, keine alten Leisten');
+  console.log(fehler ? `\n✗ kontrollmenue: ${fehler} Befund(e)` : '\n✓ kontrollmenue: Trends, COT, Sentiment, Asset-Seite mit Reitern und Display-Menue, keine alten Leisten');
   process.exit(fehler ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

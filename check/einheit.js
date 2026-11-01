@@ -31,7 +31,7 @@ const ZIELE = ['over', 'regime', 'news', 'dash', 'cur', 'mx', 'trends', 'cot', '
   const perr = []; p.on('pageerror', e => perr.push(String(e)));
   await p.goto(URL); await wartenBisDatenDa(p);
   await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(id => { const e = document.getElementById(id); if (e) e.remove(); }); });
-  if (GEGENPROBE) await p.addStyleTag({ content: ':is(.cot-card-title,.mx-card-title,.dw-hdr,.ab-tile-hd)>.ii-nach.ii-nach{margin-left:auto!important} .chart-leiste-r{margin-left:0!important} .ctyp{display:none!important}' });
+  if (GEGENPROBE) await p.addStyleTag({ content: ':is(.cot-card-title,.mx-card-title,.dw-hdr,.ab-tile-hd)>.ii-nach.ii-nach{margin-left:auto!important} .chart-leiste-r{margin-left:0!important} .km-disp{display:none!important}' });
   let geprueft = { z: 0, f: 0, c: 0, i: 0 };
   for (const ziel of ZIELE) {
     await p.evaluate(z => {
@@ -89,11 +89,13 @@ const ZIELE = ['over', 'regime', 'news', 'dash', 'cur', 'mx', 'trends', 'cot', '
       // C) Preis-Charts: Candles|Line in der Werkzeugzeile
       [...document.querySelectorAll('.ab-ptile,.ab-ktile,#mPrice')].filter(vis).forEach(k => {
         if (!k.querySelector('svg.ab-chart,#pxChart svg')) return; out.n.c++;
-        const c = k.querySelector('.chart-leiste .chart-leiste-l .ctyp');
-        if (!c || !vis(c)) out.c.push(`${name(k)}: kein Candles|Line-Umschalter links in der Werkzeugzeile`);
-        // Seit VERSION-CHECK-591 Symbolknoepfe (Nutzerwahl "Kompakt, max. 2
-        // Zeilen") - der Name steht im aria-label, Text waere Fehlerfall.
-        else if ([...c.querySelectorAll('button')].map(x => x.getAttribute('aria-label') || x.textContent.trim()).join('|') !== 'Candles|Line') out.c.push(`${name(k)}: Umschalter "${[...c.querySelectorAll('button')].map(x => x.getAttribute('aria-label') || x.textContent.trim()).join('|')}"`);
+        // Seit 662 (Kontrollmenue Option C, Nutzer 2026-11-01 "Ueberall dieses
+        // Design"): Candles|Line steht im Display-Menue - links in der
+        // Werkzeugzeile steht der Display-Knopf, seine Zusammenfassung beginnt
+        // mit der Diagrammart.
+        const c = k.querySelector('.chart-leiste .chart-leiste-l .km-disp[data-km]');
+        if (!c || !vis(c)) out.c.push(`${name(k)}: kein Display-Knopf (Candles|Line) links in der Werkzeugzeile`);
+        else if (!/^(Candles|Line)\b/.test(((c.querySelector('em') || {}).textContent || '').trim())) out.c.push(`${name(k)}: Display-Knopf ohne Diagrammart ("${(c.querySelector('em') || {}).textContent}")`);
       });
       // I) ⓘ hinter rechtsbuendigem Element
       [...document.querySelectorAll('.ii-nach')].filter(vis).forEach(i => { out.n.i++; const m = parseFloat(getComputedStyle(i).marginLeft); if (m > 8) out.i.push(`${name(i.closest(KARTE))}: ⓘ margin-left ${Math.round(m)}px (auto statt 6)`); });

@@ -21242,3 +21242,11 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Gebaut:** ein Baustein `kmReiterHtml`/`kmKnopfHtml`/`KM_MENUES` (Menü zeichnet sich nach jedem Tipp selbst neu, Seiten tun nichts dafür); Data darauf umgestellt. Trends: Reiter Assets | Pair (Pair-Knopf im Kopf entfernt, Asset-Liste in der Paar-Ansicht ausgeblendet), Show-Menü. COT: Show-Menü; Einzelansicht Price on/Bars only. Sentiment: Reiter, Retail Show-Menü. `multiAssetFilterBarHtml`/`sentMultiFilterBarHtml` entfernt (tot).
 **Beim Bauen:** (1) `const trendsMultiBar='':''` — `node --check` meldete nichts (prüft nicht als ES-Modul), `check/syntax.js` schon (exit 1) → ab jetzt nach jeder Änderung `syntax.js`; (2) `KM_MENUES` vor der Deklaration benutzt (TDZ, App lud nicht) → Deklaration nach oben; (3) die neue Brücken-Prüfung in `structure.js` meldete die entfernten Namen sofort; (4) COT zeigte einen Display-Knopf auch ohne Menü-Inhalt → nur noch mit Inhalt (Gegenprobe deckte es auf).
 **Wächter:** `check/kontrollmenue.js` (A–D), Gegenprobe rot (2). `datamenu.js` auf den Baustein umgestellt.
+
+## 2026-11-01 — VERSION-CHECK-662: Kontrollmenü auf der Asset-Seite (Price, Context, Preis-Fenster)
+
+**Teil von** *„Überall dieses Design und Aufbau“* (ersetzt die Symbolknöpfe Candles|Line aus 591 — mit der Antwort ausdrücklich so gewählt).
+**Gebaut:** Price-Karte: Display-Knopf *„Candles · EMA 1D + 4H“* → Menü Chart (Candles/Line) + Trend lines (EMA 1D, EMA 4H); Rendite-Assets nur Chart. Context-Karte und Preis-Fenster: Display mit Chart.
+**Gemessen und behoben:** (1) Knopf 256 + Zeitfilter 263 px > 489 px Werkzeugzeile (1180, Spalte 523) → unter 560 px Kartenbreite ohne das Wort „Display“ (203 px); (2) 34-px-Knopf neben 28-px-Zeitknöpfen zählt als zweite Zeile und steht schief → Karten-Variante 28 px (`.km-klein`, ohne `.btn` — `.btn` ist laut Höhenraster 34 px). Danach Price-Karte bei 1180 px **eine** Bedienzeile (designregeln K war lokal rot), bei 1000 px zwei (erlaubt).
+**Nicht umgestellt (gesehen):** Calendar-Karte *Month | Past* und Sentiment *AAII*-Ansichten — Ansicht-Umschalter in einer Karte (benutzen `.ctyp` nur als Optik); als Vorschlag offen.
+**Wächter:** `check/einheit.js` C prüft jetzt den Display-Knopf (Gegenprobe rot, 70 Befunde); `check/kontrollmenue.js` E.
