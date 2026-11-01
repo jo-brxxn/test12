@@ -812,7 +812,7 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
    mit Release-Pfeilen (HTML-Ebene ueber dem gestreckten SVG). */
 .ab-cards>.ab-orow.ab-prow{grid-template-columns:minmax(0,1fr)}
 .ab-cards>.ab-orow.ab-orow3{grid-template-columns:repeat(3,minmax(0,1fr))}
-@media(max-width:1180px){.ab-cards>.ab-orow.ab-orow3{grid-template-columns:repeat(2,minmax(0,1fr))}.ab-orow3>.ab-col:nth-child(3){grid-column:1/-1}}
+/* Nutzer 2026-11-01: "Pinned Notes Kalender und history immer in eine Zeile nebeneinander mach es einfach kleiner außer ... am Handy" - drei Spalten bis 641 px, darunter eine. */
 @media(max-width:640px){.ab-cards>.ab-orow.ab-orow3{grid-template-columns:minmax(0,1fr)}}
 .ab-ptile.pk{container-type:inline-size;position:relative}
 .pk-body{display:grid;grid-template-columns:268px minmax(0,1fr);gap:12px;align-items:stretch;margin-top:2px}
@@ -1129,6 +1129,10 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
 .ab-chart{width:100%;height:100%;display:block}
 .ab-xax,.ab-yax{display:flex;font:600 var(--fs-2xs)/1 var(--ff-num);color:var(--t3)}
 .ab-xax{justify-content:space-between;margin-top:4px}
+/* Kopfraum der Price-Karte (Release-Pfeile): die Beschriftung beginnt beim echten
+   Hoch, nicht am oberen Rand des Bildes (check/korb.js ACHSE). */
+.ab-yax.ab-yax-k{display:grid;justify-content:stretch;align-items:stretch}
+.ab-yax-in{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;min-height:0}
 .ab-yax{flex-direction:column;justify-content:space-between;align-items:flex-end;
   flex:0 0 auto;padding-bottom:13px}
 .ab-k-go{cursor:pointer}
@@ -4536,6 +4540,38 @@ body.dense-mode .cot-card,body.dense-mode .rub-card{margin-bottom:10px}
 .tr-modelnote{color:var(--t3);font-size:var(--fs-xs);line-height:1.5;padding:9px 11px;margin:0 0 10px;background:var(--bg2);border:1px solid var(--bd);border-left:3px solid var(--amber);border-radius:var(--rs)}
 .histp-eff{font-size:var(--fs-2xs);font-weight:800;padding:1px 6px;border-radius:20px;border:1px solid;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
 @media(max-width:560px){.histp-val{display:none}.histp-name{white-space:normal}}
+/* Pinned · History · Calendar immer in EINER Reihe (Nutzer 2026-11-01: "mach es
+   einfach kleiner") - bei 820 px sind das 224 px je Karte. Gemessen: Calendar 36 px
+   zu breit (Tageszahl min 2,2em), History-Prognose 59 px, Wochensumme 41 px. Bei
+   schmaler Karte (<= 300 px): Spalten duerfen schrumpfen, Kreis um die Tageszahl enger (Zahl bleibt 15 px),
+   Prognose-Zeile wie am Handy weg, Wochensumme bricht um. */
+.abc-grid{grid-template-columns:repeat(7,minmax(0,1fr))}
+@container (max-width:300px){
+  /* Tageszahl bleibt 15 px (check/kalender.js), nur der Kreis darum wird enger */
+  .ab-col .abc-cal .abc-n{min-width:1.6em;height:1.6em}   /* .ab-col: schlaegt die spaetere 2,2em-Regel */
+  /* Zeitknoepfe brechen in zwei Reihen um - die nach unten vergroesserte
+     Trefferflaeche (-9 px) laege sonst auf der zweiten Reihe (designregeln F) */
+  .ab-htile .histp-rbtn::after{inset:-1px}
+  .abc-cal .abc-nav{width:28px;height:28px}
+  .abc-cal .abc-navs{gap:4px}
+  .abc-cal .abc-w{font-size:var(--fs-2xs)}
+  .ab-htile .histp-val .histp-fc{display:none}
+  .ab-htile .hw-hd{flex-wrap:wrap;gap:2px 8px}
+  .ab-htile .hw-hd-n{white-space:normal}
+  .ab-htile .histp-agetag{white-space:normal}
+}
+/* sehr schmal (iPad mini hochkant ~193 px je Karte): Tageszeilen ohne Mindestbreite,
+   Kalenderkopf ohne Symbol, Monatsname kleiner */
+@container (max-width:240px){
+  .ab-htile .hw-cols,.ab-htile .hw-day{grid-template-columns:minmax(0,1fr) 46px 38px;gap:4px;padding-left:8px;padding-right:8px}
+  .abc-cal .abc-hd{gap:4px}
+  .abc-cal .abc-hd>.ab-ticon,.abc-cal .abc-hd>svg:first-child{display:none}
+  .abc-cal .abc-mon{font-size:var(--fs-sm)}
+  .abc-cal .abc-foot.abc-range{flex-wrap:wrap;gap:2px 6px}
+  .ab-htile .histp-name{white-space:normal}
+  .ab-htile .histp-agetag{margin-left:0}
+  .ab-htile .cax-mid{display:none}   /* drei Daten passen nicht auf 224 px (gemessen: ueberlappt) */
+}
 @keyframes pulse-badge{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
 /* ── POSSIBLE SET-UPS 3-COLUMN LAYOUT ── */
 /* auto-fit statt fester 3 Spalten: die Spaltenzahl richtet sich jetzt nach
@@ -7218,11 +7254,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-665 - Asset-Seite: Price-Karte volle Breite (Option B mit Pfeilen): Release-Pfeile in Bias-Farbe ueber den Kerzen, Spalte Next up bzw. Releases des Tages, Markers aus/an, eigene Pfeile per Popover, Vergleich bis 2 Kurse als Linien; darunter Pinned notes, History, Calendar; Knopf Price chart weg, Vorschau entfernt; vorher 664: Oil Inventories + MPC Vote Split."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-666 - Asset-Seite: Pinned notes, History, Calendar immer in einer Zeile (nur Handy untereinander), schmale Karten passen sich an; Achse der Price-Karte zeigt wieder das echte Hoch (Kopfraum fuer die Pfeile nur im Bild); vorher 665: Price-Karte B."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-665</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-666</span>
     </span>
   </div>
   <div class="hdr-r">

@@ -6,8 +6,9 @@
 //   CHF  SNB-API CSV, Wuerfel snbmonagg: GM3 "VV" = Vorjahresrate, dazu das
 //        echte Veroeffentlichungsdatum (PublishingDate)
 //   AUD  RBA-Tabelle D1, Reihe DGFAM312 = M3, Wachstum ueber 12 Monate
-//   CAD  Bank of Canada Valet, Gruppe ATABLE_MONETARY_AGGREGATES, M3-Bestand
-//        -> Vorjahresrate = Bestand / Bestand 12 Monate vorher
+//   CAD  Bank of Canada Valet: die Bank fuehrt KEIN M3 als Reihe (Sonde 2026-11-01:
+//        Gruppe ATABLE_MONETARY_AGGREGATES nur M1+, M1++, M2++). Ihre Leitgroesse
+//        fuer die breite Geldmenge ist M2++ -> M2PP_12MTH (Vorjahresrate)
 //   JPY  BoJ stat-search, Tabelle md02_m_1_en.html: M3, Vorjahresrate der
 //        Durchschnittsbestaende
 //   NZD  RBNZ sperrt den Runner (403, Cloudflare - wie beim Core CPI 2026-10-27)
@@ -59,22 +60,23 @@ const QUELLEN = {
     const sp = id ? id.indexOf('DGFAM312') : -1;
     if (sp < 0) throw new Error('RBA D1: Reihe DGFAM312 fehlt');
     const pubZ = zeilen.find(z => /^publication date$/i.test(z[0]));
-    const datum = s => { const m = String(s || '').match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/); return m ? m[3] + '-' + String(MON[m[2].toLowerCase()]).padStart(2, '0') + '-' + m[1].padStart(2, '0') : null; };
+    // Datenzeilen "30/09/2026" (TT/MM/JJJJ), Publication date "30-Oct-2026" (Sonde 2026-11-01)
+    const datum = s => {
+      s = String(s || '').trim();
+      let m = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+      if (m) return m[3] + '-' + String(MON[m[2].toLowerCase()]).padStart(2, '0') + '-' + m[1].padStart(2, '0');
+      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      return m ? m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0') : null;
+    };
     const pts = [];
     zeilen.forEach(z => { const d = datum(z[0]); if (d && z[sp] !== '' && isFinite(+z[sp])) pts.push([d.slice(0, 7), +z[sp]]); });
     return { quelle: 'rba', event: 'M3 Money Supply YoY (RBA D1)', art: 'y/y', pts, pub: pubZ ? datum(pubZ[sp] || pubZ[1]) : null };
   },
   async CAD() {
-    const t = JSON.parse(await hol('https://www.bankofcanada.ca/valet/observations/group/ATABLE_MONETARY_AGGREGATES/json?start_date=2012-01-01'));
-    const det = t.seriesDetail || {};
-    const kand = Object.keys(det).filter(k => /\bM3\b/.test((det[k].label || '') + ' ' + (det[k].description || '')));
-    // Brutto-M3 bevorzugt (die Kennzahl, die die Bank of Canada als "M3" fuehrt)
-    const code = kand.find(k => /gross/i.test(det[k].label || '')) || kand.find(k => /^M3\b/.test(det[k].label || '')) || kand[0];
-    if (!code) throw new Error('BoC: keine M3-Reihe in ATABLE_MONETARY_AGGREGATES (' + Object.keys(det).length + ' Reihen)');
-    const stand = {};
-    (t.observations || []).forEach(o => { const v = o[code] && o[code].v; if (o.d && v != null && v !== '' && isFinite(+v)) stand[o.d.slice(0, 7)] = +v; });
-    const pts = Object.keys(stand).sort().filter(ym => stand[vorJahr(ym)] > 0).map(ym => [ym, (stand[ym] / stand[vorJahr(ym)] - 1) * 100]);
-    return { quelle: 'boc', event: 'M3 Money Supply YoY (Bank of Canada, ' + (det[code].label || code) + ')', art: 'y/y', pts, code };
+    const t = JSON.parse(await hol('https://www.bankofcanada.ca/valet/observations/M2PP_12MTH/json?start_date=2007-01-01'));
+    const pts = [];
+    (t.observations || []).forEach(o => { const v = o.M2PP_12MTH && o.M2PP_12MTH.v; if (o.d && v != null && v !== '' && isFinite(+v)) pts.push([o.d.slice(0, 7), +v]); });
+    return { quelle: 'boc', event: 'M2++ Money Supply YoY (Bank of Canada)', art: 'y/y', pts };
   },
   async JPY() {
     const t = await hol('https://www.stat-search.boj.or.jp/ssi/mtshtml/md02_m_1_en.html');

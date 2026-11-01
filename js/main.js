@@ -9697,7 +9697,11 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
   const ov=opt&&opt.trend?abTrendOverlayDaten(assetId,k,opt.trend):[];
   let hi=Math.max(...k.map(x=>x.h)),lo=Math.min(...k.map(x=>x.l));
   ov.forEach(o=>o.pkte.forEach(p=>{hi=Math.max(hi,p.ema+p.band);lo=Math.min(lo,p.ema-p.band);}));
-  // Kopfraum fuer die Release-Pfeile der Price-Karte (opt.kopf = Anteil)
+  // Kopfraum fuer die Release-Pfeile der Price-Karte (opt.kopf = Anteil).
+  // ⚠ Nur im BILD: die Achse beschriftet weiter Hoch/Mitte/Tief der echten
+  // Kurse an ihrer Hoehe (CI 671, check/korb.js: oberer Achsenwert 137,58
+  // statt Korb-Hoch 136,935 - der Kopfraum stand als Kurs an der Achse).
+  const hiDaten=hi;
   if(opt&&opt.kopf>0)hi+=((hi-lo)||Math.abs(hi)*0.01||1)*opt.kopf;
   const sp=(hi-lo)||1;
   const y=v=>3+(1-(v-lo)/sp)*(H-6);
@@ -9790,7 +9794,9 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
   const kNach={};k.forEach(c=>{kNach[c.d]=c;});
   const pct=k[0].o?((k[k.length-1].c-k[0].o)/Math.abs(k[0].o)*100):0;
   const svg=`<svg class="ab-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${sv}</svg>`;
-  const skala=[hi,(hi+lo)/2,lo].map(v=>`<span>${zahl(v)}${escH(einheit||'')}</span>`).join('');
+  const skala=[hiDaten,(hiDaten+lo)/2,lo].map(v=>`<span>${zahl(v)}${escH(einheit||'')}</span>`).join('');
+  // Anteil der Plot-Hoehe ueber dem echten Hoch (y() bildet auf 3..97 von 100 ab)
+  const kopfAnteil=hi>hiDaten?(y(hiDaten)-3)/94:0;
   // Die Achse beschriftet die HANDELSTAGE des Fensters - dieselbe Liste, aus
   // der auch die Kerzen ihre Position bekommen. Damit steht unter allen
   // Charts derselbe Zeitraum, und die genannten Tage sind auch wirklich Tage
@@ -9807,7 +9813,7 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
     // das Archiv wirklich gezeichnet wurde.
     html:`<div class="ab-plot" data-kerzen="${k.length}">
       <div class="ab-plot-main${opt&&opt.lage?' pk-chart':''}">${chartHoverWrap(svg+(opt&&opt.lage?opt.lage({tage,breite:opt.breite||600,x:i=>(i*fach+fach/2)/W,y:d=>{const c=kNach[d];return c?y(alsLinie?c.c:c.h)/H:null;}}):''),pts,'height:100%',null,null,'ab')}<div class="ab-xax">${achsTxt}</div></div>
-      <div class="ab-yax">${skala}</div>
+      ${kopfAnteil>0?`<div class="ab-yax ab-yax-k" style="grid-template-rows:${kopfAnteil.toFixed(4)}fr ${(1-kopfAnteil).toFixed(4)}fr"><i></i><div class="ab-yax-in">${skala}</div></div>`:`<div class="ab-yax">${skala}</div>`}
     </div>`};
 }
 
