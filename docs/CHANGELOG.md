@@ -21234,3 +21234,11 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Entfernt:** `js/kontrolldemo.js` samt Import (Vorschau 659).
 **Wächter:** `check/datamenu.js` (A–C, 1180 + 390 px), Gegenproben `--gegenprobe-zusammenfassung` (4 rot), `--gegenprobe-anker` (rot: Menü 357…777 statt ab 550). `dataMode`/`dataPreisAnsicht` lesbar auf `window`.
 **Bestandsaufnahme für weitere Stellen (1000 px):** Trends-Kopf **51 Bedienknöpfe in 4 Gruppen / 5 Zeilen** (Asset-Auswahl, Pair, „Show several at once“ + All/FX/Non-FX/Yields, Zeitfilter, Fokus + 24 Legenden-Chips); Asset-Seite Price-Karte Candles · Line · EMA 1D · EMA 4H + Zeitfilter in 2 Zeilen; Sentiment: 5 Unterseiten als Pillen + dieselbe „Show several at once“-Leiste (gemeinsamer Baustein `sentFilterBar`). News: nur Zeitfilter — kein Fall.
+
+## 2026-11-01 — VERSION-CHECK-661: Kontrollmenü überall (gemeinsamer Baustein, Trends, COT, Sentiment)
+
+**Nutzer:** *„Überall dieses Design und Aufbau“* (auf die Frage, wo Option C noch hin soll).
+**Bestandsaufnahme (1000 px):** Trends-Kopf 51 Bedienknöpfe / 5 Zeilen; „Show several at once“ als gemeinsamer Baustein auf Trends, COT, Retail; Sentiment 5 Unterseiten als Pillen; COT „vs Price“ als lose Pille.
+**Gebaut:** ein Baustein `kmReiterHtml`/`kmKnopfHtml`/`KM_MENUES` (Menü zeichnet sich nach jedem Tipp selbst neu, Seiten tun nichts dafür); Data darauf umgestellt. Trends: Reiter Assets | Pair (Pair-Knopf im Kopf entfernt, Asset-Liste in der Paar-Ansicht ausgeblendet), Show-Menü. COT: Show-Menü; Einzelansicht Price on/Bars only. Sentiment: Reiter, Retail Show-Menü. `multiAssetFilterBarHtml`/`sentMultiFilterBarHtml` entfernt (tot).
+**Beim Bauen:** (1) `const trendsMultiBar='':''` — `node --check` meldete nichts (prüft nicht als ES-Modul), `check/syntax.js` schon (exit 1) → ab jetzt nach jeder Änderung `syntax.js`; (2) `KM_MENUES` vor der Deklaration benutzt (TDZ, App lud nicht) → Deklaration nach oben; (3) die neue Brücken-Prüfung in `structure.js` meldete die entfernten Namen sofort; (4) COT zeigte einen Display-Knopf auch ohne Menü-Inhalt → nur noch mit Inhalt (Gegenprobe deckte es auf).
+**Wächter:** `check/kontrollmenue.js` (A–D), Gegenprobe rot (2). `datamenu.js` auf den Baustein umgestellt.

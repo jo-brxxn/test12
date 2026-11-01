@@ -1918,6 +1918,14 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - **Seit 658 in JEDEM Chart:** Führungslinie durchgehend von ganz oben bis zum Boden, auch bei einer Linie (Nutzer 2026-11-01: *„durchgehend von ganz oben nach unten“*; ersetzt 2026-09-05 „nur vom Punkt zum Boden“). **Infokarte leicht transparent:** Fläche 80 % deckend, Schrift voll, kein Weichzeichner.
 - Geprüft von `check/hoverpunkte.js`.
 
+## Kontrollmenü überall (Dauerregel seit 2026-11-01, 661)
+
+- Nutzer: *„Ich will Option c und guck wo man dieses Design noch alles in der App umsetzen kann“* → *„Überall dieses Design und Aufbau“*.
+- **Ein Baustein** (`js/main.js`): `kmReiterHtml` (Reiter), `kmKnopfHtml` (Display-Knopf mit Zusammenfassung), `KM_MENUES[schlüssel]` (Abschnitte mit Kacheln = Einzelwahl, Chips = Mehrfachwahl), `kmZeigeAbschnitt` (das frühere „Show several at once“). Neue Seiten bauen nur noch damit.
+- **Zuordnung überall gleich:** Unteransichten → Reiter links · Darstellung/was zeigen → ein Display-Knopf · Zeitraum rechts · Asset-Auswahl rechts in der Titelzeile.
+- **Umgesetzt:** Data (Ansichten; Layout/Scale/Chart), Trends (Assets | Pair statt Pair-Knopf; Show), COT (Show; Einzelansicht Price on/Bars only statt „vs Price“), Sentiment (5 Unterseiten als Reiter; Retail Show). Ein Display-Knopf erscheint nur, wenn sein Menü etwas zu zeigen hat.
+- Geprüft von `check/kontrollmenue.js` + `check/datamenu.js`.
+
 ## Data · Kontrollmenü (seit 2026-11-01, 660 — Option C)
 
 - Nutzer: *„weil aktuell weis man nicht ob die Knöpfe zusammengehören oder getrennt ich will mehr Übersicht“* → Wahl **Option C** aus vier Entwürfen.

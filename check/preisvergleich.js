@@ -128,8 +128,9 @@ const gruen = m => console.log('  ✓ ' + m);
     closeDataPreisPicker();
     const items = dataAlleItems('PAIRS');
     const basen = items.map(g => g.name), paare = items.flatMap(g => g.l.map(x => x.t));
-    // die Paar-Liste wird erst im Paar-Modus (Knopf "Pair") befuellt
-    showTab('trends'); await warte(300); document.getElementById('trendsPairBtn').click(); await warte(400);
+    // die Paar-Liste wird erst im Paar-Modus (Reiter "Pair") befuellt
+    // seit 661 Reiter "Pair" statt Pair-Knopf im Kopf (Kontrollmenue)
+    showTab('trends'); await warte(300); [...document.querySelectorAll('#trendsBody .km-tab')].find(x => x.textContent === 'Pair').click(); await warte(400);
     const og = document.querySelector('#trendsPairSel optgroup[label="FX Pairs"]');
     const trends = og ? [...og.querySelectorAll('option')].map(o => o.value) : [];
     setTrendsFilter('ALL');

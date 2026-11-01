@@ -587,6 +587,10 @@ const FX_PAIRS=ALL_PAIRS.filter(p=>{const[b,q]=p.split('/');return FX.includes(b
 // muessen besser sortiert sein nach Alphabet"). FX_PAIRS selbst bleibt in
 // Marktreihenfolge - Set-ups und Score haengen daran.
 const FX_PAIRS_AZ=FX_PAIRS.slice().sort();
+// Kontrollmenue (Option C): Menue-Bauer je Seite + offenes Menue - frueh deklariert, weil Seiten
+// an verschiedenen Stellen der Datei ihren Eintrag beim Laden setzen. Baustein: kmReiterHtml/kmKnopfHtml.
+const KM_MENUES={};   // schluessel -> ()=>[{lbl,hinweis,kacheln:[{fn,arg,on,titel,sub,vorne,aus}],chips:[{fn,arg,on,txt}]}]
+let _kmOffen=null;
 
 const SB_CATS=[
   {l:'FX',ids:['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD']},
@@ -676,24 +680,6 @@ function assetFilterSelect(ids,selected,onChange,allLabel,titleAttr,labelFn){
 // trendsFilter sind ebenfalls reiner, nicht gespeicherter Browse-Zustand -
 // anders als der PERSISTIERTE Set-ups-Filter, der eine Nutzer-Praeferenz ist,
 // keine momentane Ansicht).
-function multiAssetFilterBarHtml(avail,ccyFilter,scope,toggleFn,scopeFn,clearFn){
-  const availSet=new Set(avail);
-  const chip=c=>`<button class="cmp-chip${ccyFilter.includes(c)?' on':''}" onclick="${toggleFn}('${c}')">${c}</button>`;
-  const ccyChips=FX.filter(c=>availSet.has(c)).map(chip).join('');
-  if(!ccyChips)return'';
-  const hasNonFx=avail.some(id=>!FX.includes(id)&&assetCls(id)!=='yield');
-  const hasYield=avail.some(id=>assetCls(id)==='yield');
-  const active=ccyFilter.length>0||!!scope;
-  return`<div class="cmp-filter" style="margin:8px 0">
-    <div class="cmp-filter-grp"><span class="cmp-filter-lbl">Show several at once</span>${ccyChips}</div>
-    <div class="cmp-filter-grp">
-      <button class="cmp-quick${active?'':' on'}" onclick="${clearFn}()" title="Clear this filter">All</button>
-      <button class="cmp-quick${scope==='fx'?' on':''}" onclick="${scopeFn}('fx')">FX</button>
-      ${hasNonFx?`<button class="cmp-quick${scope==='nonfx'?' on':''}" onclick="${scopeFn}('nonfx')">Non-FX</button>`:''}
-      ${hasYield?`<button class="cmp-quick${scope==='yields'?' on':''}" onclick="${scopeFn}('yields')">Yields</button>`:''}
-    </div>
-  </div>`;
-}
 // Wendet den obigen Mehrfachfilter auf eine Liste an - `idOf` liest die
 // Asset-ID aus einem Listeneintrag (unterschiedliche Form je Seite: COT/
 // Retail-Sentiment-Zeilen haben ihre ID direkt, Trends-IDs sind selbst
@@ -18691,6 +18677,17 @@ function setTrendsScope(s){trendsScope=trendsScope===s?'':s;trendsCcyFilter=[];r
 function clearTrendsCcyFilter(){trendsCcyFilter=[];trendsScope='';renderTrends();}
 function setTrendsFilter(v){trendsFilter=v||'ALL';renderTrends();}
 function toggleTrendsPairMode(){setTrendsFilter(trendsFilter==='PAIR'?'ALL':'PAIR');}
+// Kontrollmenue (Option C, 2026-11-01): Ansicht Assets | Pair als Reiter (der
+// Pair-Knopf im Kopf ist dafuer weg), "Show several at once" als Display-Menue.
+function setTrendsAnsicht(v){if(v==='PAIR'){if(trendsFilter!=='PAIR')setTrendsFilter('PAIR');}else if(trendsFilter==='PAIR')setTrendsFilter('ALL');}
+function trendsListe(){return trendsFilter==='ALL'||trendsFilter==='FX';}
+function trendsAvail(){const a=trendAssets();return trendsFilter==='FX'?a.filter(id=>FX.includes(id)):a;}
+function trendsZeile(zeit){
+  const reiter=kmReiterHtml([['ASSETS','Assets','All assets, FX only or one asset (filter top right)'],['PAIR','Pair','A custom pair: score of the base minus the quote']],trendsFilter==='PAIR'?'PAIR':'ASSETS','setTrendsAnsicht','View');
+  const knopf=trendsListe()&&KM_MENUES.trends().length?kmKnopfHtml('trends',[kmZeigeTeil(trendsCcyFilter,trendsScope)]):'';
+  return chartLeisteHtml(reiter+knopf,zeit||'');
+}
+KM_MENUES.trends=()=>{if(curPage!=='trends'||!trendsListe())return[];const a=kmZeigeAbschnitt(trendsAvail(),trendsCcyFilter,trendsScope,'toggleTrendsCcy','setTrendsScope','clearTrendsCcyFilter');return a?[a]:[];};
 function setTrendsPair(v){trendsPairSel=v;renderTrends();}
 // ── Fokus statt Knaeuel (Design-Audit Runde 2, Nutzer 2026-10-05) ───────
 // 23 Linien in einem Chart waren nicht lesbar. Farbig sind nur die Fokus-
@@ -19098,6 +19095,7 @@ function renderTrendsRoh(){
     if(sel.innerHTML!==opts)sel.innerHTML=opts;
     sel.value=trendsFilter==='PAIR'?'ALL':trendsFilter;
   }
+  if(sel)sel.style.display=trendsFilter==='PAIR'?'none':'';
   filterResetSync('trendsCcyX',trendsFilter!=='ALL'&&trendsFilter!=='PAIR');
   const pairBtn=document.getElementById('trendsPairBtn');
   if(pairBtn)pairBtn.classList.toggle('active',trendsFilter==='PAIR');
@@ -19132,7 +19130,7 @@ function renderTrendsRoh(){
   let totalIds=trendsFilter==='ALL'?assets:trendsFilter==='FX'?assets.filter(id=>FX.includes(id)):[trendsFilter];
   if(trendsListMode)totalIds=applyMultiAssetFilter(totalIds,id=>id,trendsCcyFilter,trendsScope);
   const macroIds=trendsListMode?totalIds.filter(id=>FX.includes(id)):(FX.includes(trendsFilter)?[trendsFilter]:[]);
-  const trendsMultiBar=trendsListMode?multiAssetFilterBarHtml(trendsFilter==='FX'?assets.filter(id=>FX.includes(id)):assets,trendsCcyFilter,trendsScope,'toggleTrendsCcy','setTrendsScope','clearTrendsCcyFilter'):'';
+  const trendsMultiBar='';
   // Once filtered down to a single asset, color the line by its current bias
   // instead of the fixed per-currency identity color (only makes sense for
   // one line at a time - with "All assets"/"FX only" the colors need to stay
@@ -19142,8 +19140,8 @@ function renderTrendsRoh(){
   const dset=new Set();
   totalIds.forEach(id=>(scoreHist[id]||[]).forEach(e=>dset.add(e[0])));
   const allDates=[...dset].sort();
-  if(!allDates.length){el.innerHTML=trendsMultiBar+'<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">No history data yet for the current selection. The score is now saved daily &ndash; the line grows by one point with every new day. Check back tomorrow, or adjust the filter above.</div>';return;}
-  const rangeBar=trendsMultiBar+`<div class="ind-hist-toolbar">${timeRangeBarHtml(trendsRange,'setTrendsRange',null,allDates[0])}${timeRangeCustomHtml(trendsRange,trendsCustomFrom,trendsCustomTo,'setTrendsRange',allDates[0])}</div>`;
+  if(!allDates.length){el.innerHTML=trendsZeile('')+'<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">No history data yet for the current selection. The score is now saved daily &ndash; the line grows by one point with every new day. Check back tomorrow, or adjust the filter above.</div>';return;}
+  const rangeBar=trendsZeile(`<div class="ind-hist-toolbar">${timeRangeBarHtml(trendsRange,'setTrendsRange',null,allDates[0])}${timeRangeCustomHtml(trendsRange,trendsCustomFrom,trendsCustomTo,'setTrendsRange',allDates[0])}</div>`);
   const dates=filterDatesByRange(allDates,trendsRange,trendsCustomFrom,trendsCustomTo);
   if(!dates.length){el.innerHTML=rangeBar+'<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">No data in the selected time range.</div>';attachChartHovers(el);return;}
   // Hinweis, wenn im gewaehlten Zeitraum Punkte aus einem FRUEHEREN
@@ -19199,19 +19197,19 @@ function renderTrendsPair(el){
   const pairKey=trendsPairSel;
   const parts=pairKey.split('/');
   const base=PAIR_CODE_TO_ID[parts[0]]||parts[0],quote=PAIR_CODE_TO_ID[parts[1]]||parts[1];
-  if(base===quote){el.innerHTML='<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">Please choose a pair with two different assets.</div>';return;}
+  if(base===quote){el.innerHTML=trendsZeile('')+'<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">Please choose a pair with two different assets.</div>';return;}
   // Der Paar-Score ist ueberall in der App Basis minus Kurswaehrung PLUS
   // Carry (pairScore()). Die Trends-Linie liess den Carry frueher weg und
   // zeigte deshalb eine andere Zahl als Set-ups, Watchlist und Score-Fenster
   // (Nutzer-Bugreport 2026-08-23). Der Carry wird je Tag mit dem Leitzins
   // berechnet, der AN DEM TAG galt - nicht mit dem heutigen.
   const{diffArr,ohneCarry,mitCarry}=pairScoreTagesReihe(base,quote);
-  if(!diffArr.length){el.innerHTML=`<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">No shared history data for ${escH(pairKey)} yet &ndash; once both assets have a score snapshot on the same day, the pair line will grow daily from then on.</div>`;return;}
+  if(!diffArr.length){el.innerHTML=trendsZeile('')+`<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">No shared history data for ${escH(pairKey)} yet &ndash; once both assets have a score snapshot on the same day, the pair line will grow daily from then on.</div>`;return;}
   trendsEphemeral={};trendsEphemeral[pairKey]=diffArr;
   // Color the pair's line by its current overall bias (same bull/bear/neutral
   // colors used everywhere else in the app), not a fixed identity color.
   const colorOverride=BC[scoreBias(pairScore(pairKey))];
-  const rangeBar=`<div class="ind-hist-toolbar">${timeRangeBarHtml(trendsRange,'setTrendsRange',null,diffArr[0][0])}${timeRangeCustomHtml(trendsRange,trendsCustomFrom,trendsCustomTo,'setTrendsRange',diffArr[0][0])}</div>`;
+  const rangeBar=trendsZeile(`<div class="ind-hist-toolbar">${timeRangeBarHtml(trendsRange,'setTrendsRange',null,diffArr[0][0])}${timeRangeCustomHtml(trendsRange,trendsCustomFrom,trendsCustomTo,'setTrendsRange',diffArr[0][0])}</div>`);
   const dates=filterDatesByRange(diffArr.map(e=>e[0]),trendsRange,trendsCustomFrom,trendsCustomTo);
   if(!dates.length){el.innerHTML=rangeBar+'<div style="padding:16px;color:var(--t3);font-size:var(--fs-base);line-height:1.6">No data in the selected time range.</div>';attachChartHovers(el);return;}
   let html=rangeBar;
@@ -19667,6 +19665,10 @@ function setCotHistRangeCustom(a,b){cotHistFrom=a||null;cotHistTo=b||null;render
 // vs Price: Nutzer-Praeferenz -> Vier-Ecken-Sync (docs/state-sync.md).
 let cotVsPrice=(()=>{try{return localStorage.getItem('fxpro_cot_vs_price')==='1';}catch(e){return false;}})();
 function setCotVsPriceVal(v){cotVsPrice=!!v;}
+let _cotAvail=[];
+KM_MENUES.cot=()=>{if(curPage!=='cot'||cotFilter)return[];const a=kmZeigeAbschnitt(_cotAvail,cotCcyFilter,cotScope,'toggleCotCcy','setCotScope','clearCotCcyFilter');return a?[a]:[];};
+KM_MENUES.cotHist=()=>curPage==='cot'&&cotFilter?[{lbl:'Price',kacheln:[{fn:'setCotVsPreis',arg:'aus',on:!cotVsPrice,titel:'Bars only',sub:'positioning only'},{fn:'setCotVsPreis',arg:'an',on:cotVsPrice,titel:'Price on',sub:'close on each report day'}]}]:[];
+function setCotVsPreis(v){if((v==='an')!==cotVsPrice)toggleCotVsPrice();}
 function toggleCotVsPrice(){
   try{
     cotVsPrice=!cotVsPrice;
@@ -21757,7 +21759,7 @@ function setDataMode(m){
   }else if(dataMode==='alle'){
     if(!dataAlle.length&&dataAssets[0])dataAlle=[{a:dataAssets[0],k:'p:'+dataAssets[0]}];
   }
-  closeDataAssetPicker();closeDataIndPicker();closeDataPreisPicker();closeDataAllePicker();closeDataDispMenu();
+  closeDataAssetPicker();closeDataIndPicker();closeDataPreisPicker();closeDataAllePicker();kmZu();
   renderDataTab();
 }
 // Asset A bzw. B waehlen. Dasselbe Asset auf beiden Seiten vergleicht
@@ -22065,56 +22067,95 @@ function preisVergleichHtml(keys,W,H){return preisChartHtml(keys,W,H,{typ:pxChar
 // Nutzerwahl: im Fenster erst das Asset (kompakte Zeile), darunter nur dessen
 // Charts - Price, 2Y/10Y, alle Indikatoren. Jeder Tipp = ein Panel, bis zu 8.
 let dataAlle=[],dataAlleAsset=null,dataAlleGruppe=null,_dataAlleOffen=false;
-// ── Display-Menue (Kontrollmenue Option C, Nutzer 2026-11-01) ──
-// Nutzer: "bau mal ein richtiges kontrollmenue ... ich will mehr Uebersicht",
-// Wahl Option C: Ansicht als Reiter, EIN Knopf "Display" mit der aktuellen
-// Wahl als Zusammenfassung; er oeffnet ein Menue mit Kacheln (Layout ·
-// Scale · Chart), jede mit kurzer Erklaerung. Jeder Tipp wirkt sofort, das
-// Menue bleibt offen; Tipp daneben oder Esc schliesst. Nur in Ansichten mit
-// Einstellungen (Prices: Layout, Scale, Chart; Compare all: Chart).
-let _dataDispOffen=false;
+// ══ KONTROLLMENUE (Option C) - EIN Baustein fuer jede Seite ═════════════════
+// Nutzer 2026-11-01: "bau mal ein richtiges kontrollmenue ... ich will mehr
+// Uebersicht" (Wahl Option C) und "Ueberall dieses Design und Aufbau".
+// Zuordnung, gleich auf jeder Seite:
+//   - Unteransichten          -> Reiter (kmReiterHtml), links in der Werkzeugzeile
+//   - Darstellung / was zeigen -> EIN Knopf "Display" mit der aktuellen Wahl als
+//                                Zusammenfassung (kmKnopfHtml); er oeffnet ein
+//                                Menue mit Kacheln (Einzelwahl) und Chips
+//                                (Mehrfachwahl), gebaut von KM_MENUES[schluessel]
+//   - Zeitraum rechts, Asset-Auswahl rechts in der Titelzeile (Dauerregel 2026-09-26)
+// Jeder Tipp wirkt sofort, das Menue bleibt offen und zeichnet sich danach
+// selbst neu (kmNach) - die Seite muss dafuer nichts tun. Tipp daneben oder
+// Esc schliesst. Geprueft von check/datamenu.js (Data) und check/kontrollmenue.js.
+// (KM_MENUES und _kmOffen stehen oben bei FX_PAIRS_AZ - Seiten weiter vorn im Code tragen ihre Menues schon beim Laden ein)
+function kmReiterHtml(liste,akt,fn,label){
+  return`<div class="km-tabs" role="tablist" aria-label="${escH(label||'View')}">${liste.map(([v,l,t])=>`<button class="km-tab${akt===v?' on':''}" role="tab" aria-selected="${akt===v}" onclick="${fn}('${escJH(v)}')"${t?` title="${escH(t)}"`:''}>${escH(l)}</button>`).join('')}</div>`;
+}
+function kmKnopfHtml(key,teile,titel){
+  if(!teile||!teile.length)return'';
+  const offen=_kmOffen===key;
+  return`<button class="btn km-disp${offen?' offen':''}" data-km="${escH(key)}" onclick="kmAuf('${escJH(key)}')" aria-haspopup="true" aria-expanded="${offen}" title="${escH(titel||'Display settings')}">${icn('gear',14)}<span>Display</span><em>${escH(teile.join(' · '))}</em><span class="km-pf" aria-hidden="true">▾</span></button>`;
+}
+function _kmDaneben(e){const t=e.target;if(t&&t.closest&&t.closest('#kmMenu,[data-km]'))return;kmZu();}
+function _kmTaste(e){if(e.key==='Escape')kmZu();}
+function kmZu(){
+  _kmOffen=null;document.removeEventListener('pointerdown',_kmDaneben,true);document.removeEventListener('keydown',_kmTaste);
+  const el=document.getElementById('kmMenu');if(el)el.remove();
+  document.querySelectorAll('.km-disp.offen').forEach(b=>{b.classList.remove('offen');b.setAttribute('aria-expanded','false');});
+}
+function kmAuf(key){
+  if(_kmOffen===key){kmZu();return;}
+  kmZu();_kmOffen=key;kmZeichnen();
+  setTimeout(()=>{if(_kmOffen){document.addEventListener('pointerdown',_kmDaneben,true);document.addEventListener('keydown',_kmTaste);}},0);
+}
+function kmNach(){setTimeout(kmZeichnen,0);}
+function kmZeichnen(){
+  if(!_kmOffen)return;
+  const btn=[...document.querySelectorAll('[data-km]')].find(b=>b.dataset.km===_kmOffen&&b.offsetParent);
+  const bau=KM_MENUES[_kmOffen],sek=btn&&bau?bau():[];
+  if(!btn||!sek.length){kmZu();return;}
+  btn.classList.add('offen');btn.setAttribute('aria-expanded','true');
+  let el=document.getElementById('kmMenu');
+  if(!el){el=document.createElement('div');el.id='kmMenu';el.className='data-picker km-menu';el.setAttribute('role','dialog');el.setAttribute('aria-label','Display settings');document.body.appendChild(el);}
+  const auf=(fn,arg)=>`${fn}(${arg==null?'':`'${escJH(arg)}'`});kmNach()`;
+  el.innerHTML=sek.map(x=>`<div class="km-sek"><span class="cmp-filter-lbl">${escH(x.lbl)}${x.hinweis?` · ${escH(x.hinweis)}`:''}</span>`
+    +(x.kacheln&&x.kacheln.length?`<div class="km-kacheln">${x.kacheln.map(k=>`<button class="km-kachel${k.on?' on':''}" onclick="${auf(k.fn,k.arg)}"${k.aus?' disabled':''} aria-pressed="${!!k.on}">${k.vorne||''}<span><b>${escH(k.titel)}</b>${k.sub?`<small>${escH(k.sub)}</small>`:''}</span></button>`).join('')}</div>`:'')
+    +(x.chips&&x.chips.length?`<div class="km-chips">${x.chips.map(c=>`<button class="cmp-chip${c.on?' on':''}" onclick="${auf(c.fn,c.arg)}" aria-pressed="${!!c.on}">${escH(c.txt)}</button>`).join('')}</div>`:'')
+    +`</div>`).join('');
+  // Ankern: einmal; neu nur, wenn der Knopf sich bewegt hat (Neuaufbau der Seite)
+  const r=btn.getBoundingClientRect(),stand=Math.round(r.left)+','+Math.round(r.bottom);
+  if(el.dataset.stand!==stand){delete el.dataset.fest;el.dataset.stand=stand;}
+  pickerAnkern(el,btn,true);
+}
+const kmMini=n=>`<span class="km-mini" style="grid-template-columns:repeat(${n},1fr)">${'<i></i>'.repeat(n)}</span>`;
+// "Show"-Abschnitt aus dem frueheren "Show several at once" (multiAssetFilterBarHtml):
+// Gruppen als Kacheln (Einzelwahl), Waehrungen als Chips (Mehrfachwahl).
+function kmZeigeAbschnitt(avail,ccyFilter,scope,toggleFn,scopeFn,clearFn){
+  const availSet=new Set(avail),ccys=FX.filter(c=>availSet.has(c));
+  if(!ccys.length)return null;
+  const hasNonFx=avail.some(id=>!FX.includes(id)&&assetCls(id)!=='yield'),hasYield=avail.some(id=>assetCls(id)==='yield');
+  const alle=!ccyFilter.length&&!scope;
+  const k=[{fn:clearFn,arg:null,on:alle,titel:'All',sub:'every asset'},{fn:scopeFn,arg:'fx',on:scope==='fx',titel:'FX',sub:'currencies only'}];
+  if(hasNonFx)k.push({fn:scopeFn,arg:'nonfx',on:scope==='nonfx',titel:'Non-FX',sub:'indices, metals, energy, crypto'});
+  if(hasYield)k.push({fn:scopeFn,arg:'yields',on:scope==='yields',titel:'Yields',sub:'bond yields'});
+  return{lbl:'Show',kacheln:k,chips:ccys.map(c=>({fn:toggleFn,arg:c,on:ccyFilter.includes(c),txt:c}))};
+}
+function kmZeigeTeil(ccyFilter,scope){
+  if(ccyFilter.length)return ccyFilter.join(', ');
+  return scope==='fx'?'FX':scope==='nonfx'?'Non-FX':scope==='yields'?'Yields':'All';
+}
+// ── Data ──
 function dataDispTeile(){
   const t=[];
   if(dataMode==='preis'){t.push(dataPreisAnsicht==='neben'?'Side by side':'One chart');if(dataPreisAnsicht!=='neben')t.push(dataPreisSkala==='bruch'?'Common':'Low → high');}
   if(dataMode==='preis'||dataMode==='alle')t.push(pxChartTyp==='candle'?'Candles':'Line');
   return t;
 }
-function dataDispKnopfHtml(){
-  const t=dataDispTeile();if(!t.length)return'';
-  return`<button class="btn data-disp${_dataDispOffen?' offen':''}" id="dataDispBtn" onclick="openDataDispMenu()" aria-haspopup="true" aria-expanded="${_dataDispOffen}" title="Display settings">${icn('gear',14)}<span>Display</span><em>${escH(t.join(' · '))}</em><span class="data-disp-pf" aria-hidden="true">▾</span></button>`;
-}
-function _dataDispOutside(e){const t=e.target;if(t&&t.closest&&t.closest('#dataDispMenu,#dataDispBtn'))return;closeDataDispMenu();}
-function _dataDispTaste(e){if(e.key==='Escape')closeDataDispMenu();}
-function closeDataDispMenu(){
-  _dataDispOffen=false;document.removeEventListener('pointerdown',_dataDispOutside,true);document.removeEventListener('keydown',_dataDispTaste);
-  const el=document.getElementById('dataDispMenu');if(el)el.remove();
-  const b=document.getElementById('dataDispBtn');if(b){b.classList.remove('offen');b.setAttribute('aria-expanded','false');}
-}
-function openDataDispMenu(){
-  if(_dataDispOffen){closeDataDispMenu();return;}
-  _dataDispOffen=true;renderDataDispMenu();
-  setTimeout(()=>{if(_dataDispOffen){document.addEventListener('pointerdown',_dataDispOutside,true);document.addEventListener('keydown',_dataDispTaste);}},0);
-}
-function renderDataDispMenu(){
-  if(!_dataDispOffen)return;
-  const btn=document.getElementById('dataDispBtn');if(!btn){closeDataDispMenu();return;}
-  btn.classList.add('offen');btn.setAttribute('aria-expanded','true');
-  let el=document.getElementById('dataDispMenu');
-  if(!el){el=document.createElement('div');el.id='dataDispMenu';el.className='data-picker data-disp-menu';el.setAttribute('role','dialog');el.setAttribute('aria-label','Display settings');document.body.appendChild(el);}
-  const kachel=(fn,v,on,titel,sub,vorne,aus)=>`<button class="dd-kachel${on?' on':''}" onclick="${fn}('${v}')"${aus?' disabled':''} aria-pressed="${on}">${vorne||''}<span><b>${titel}</b><small>${sub}</small></span></button>`;
-  const mini=n=>`<span class="dd-mini" style="grid-template-columns:repeat(${n},1fr)">${'<i></i>'.repeat(n)}</span>`;
-  const sek=(lbl,inhalt)=>`<div class="dd-sek"><span class="cmp-filter-lbl">${lbl}</span><div class="dd-kacheln">${inhalt}</div></div>`;
-  let h='';
+function dataDispKnopfHtml(){return kmKnopfHtml('data',dataDispTeile());}
+KM_MENUES.data=()=>{
+  const sek=[];
   if(dataMode==='preis'){
     const neben=dataPreisAnsicht==='neben';
-    h+=sek('Layout',kachel('setDataPreisAnsicht','eins',!neben,'One chart','all prices in one chart',mini(1))+kachel('setDataPreisAnsicht','neben',neben,'Side by side','one chart per price',mini(2)));
-    h+=sek('Scale'+(neben?' · only in one chart':''),kachel('setDataPreisSkala','band',dataPreisSkala!=='bruch','Low → high','each line 0–100','',neben)+kachel('setDataPreisSkala','bruch',dataPreisSkala==='bruch','Common','real prices, axis breaks','',neben));
+    sek.push({lbl:'Layout',kacheln:[{fn:'setDataPreisAnsicht',arg:'eins',on:!neben,titel:'One chart',sub:'all prices in one chart',vorne:kmMini(1)},{fn:'setDataPreisAnsicht',arg:'neben',on:neben,titel:'Side by side',sub:'one chart per price',vorne:kmMini(2)}]});
+    sek.push({lbl:'Scale',hinweis:neben?'only in one chart':'',kacheln:[{fn:'setDataPreisSkala',arg:'band',on:dataPreisSkala!=='bruch',titel:'Low → high',sub:'each line 0–100',aus:neben},{fn:'setDataPreisSkala',arg:'bruch',on:dataPreisSkala==='bruch',titel:'Common',sub:'real prices, axis breaks',aus:neben}]});
   }
-  if(dataMode==='preis'||dataMode==='alle')h+=sek('Chart',kachel('setPxChartTyp','candle',pxChartTyp==='candle','Candles','one per trading day',icn('candles',16))+kachel('setPxChartTyp','line',pxChartTyp!=='candle','Line','daily closes',icn('line',16)));
-  if(!h){closeDataDispMenu();return;}
-  el.innerHTML=h;
-  pickerAnkern(el,btn,true);
-}
+  if(dataMode==='preis'||dataMode==='alle')sek.push(kmTypAbschnitt());
+  return sek;
+};
+function kmTypAbschnitt(){return{lbl:'Chart',kacheln:[{fn:'setPxChartTyp',arg:'candle',on:pxChartTyp==='candle',titel:'Candles',sub:'one per trading day',vorne:icn('candles',16)},{fn:'setPxChartTyp',arg:'line',on:pxChartTyp!=='candle',titel:'Line',sub:'daily closes',vorne:icn('line',16)}]};}
 // Gruppen aus der Asset-Klasse (wie kontextKatalog): ein neues Asset oder ein
 // neuer Kurs-Feed landet ohne Codeaenderung in seiner Gruppe.
 function dataAlleAssetGruppen(){
@@ -22391,13 +22432,13 @@ function renderDataTabRoh(){
   const N=DATA_MAX_PANELS;
   // Ansicht als Reiter (Kontrollmenue Option C, Nutzer 2026-11-01: "weil
   // aktuell weis man nicht ob die Knoepfe zusammengehoeren oder getrennt").
-  const modeBar=`<div class="data-tabs" role="tablist" aria-label="View">${[
+  const modeBar=kmReiterHtml([
     ['assets','By asset',`One indicator, up to ${N} assets side by side`],
     ['inds','By indicator',`One asset, up to ${N} of its indicators side by side`],
     ['vs','Asset vs asset',`Two assets, the same up to ${DATA_VS_MAX} indicators paired row by row`],
     ['preis','Prices',`Up to ${DATA_PREIS_MAX} prices in one chart or side by side`],
     ['alle','Compare all','Any chart of any asset side by side - tap + Add'],
-  ].map(([m,l,t])=>`<button class="data-tab${dataMode===m?' on':''}" role="tab" aria-selected="${dataMode===m}" onclick="setDataMode('${m}')" title="${escH(t)}">${l}</button>`).join('')}</div>`;
+  ],dataMode,'setDataMode','View');
   // Die Leiste steht im Kopf, die Datentiefe kennt man erst nach den Panels:
   // Platzhalter, am Ende ersetzt (fruehester Punkt ueber alle Panels).
   let dataAb=null;
@@ -22549,7 +22590,7 @@ function renderDataTabRoh(){
   attachChartHovers(el);
   // Die Buttons wurden gerade neu gebaut - ein offenes Popup muss sich wieder
   // daran ausrichten und den neuen Stand zeigen. No-ops, solange zu.
-  renderDataAssetPicker();renderDataIndPicker();renderDataPreisPicker();renderDataAllePicker();renderDataDispMenu();
+  renderDataAssetPicker();renderDataIndPicker();renderDataPreisPicker();renderDataAllePicker();kmZeichnen();
 }
 // Raster setzen, Zellen messen, dann jeden Chart in seine Flaeche zeichnen.
 function dataRasterFuellen(el,n,jobs){
@@ -22722,23 +22763,16 @@ let sentCcyFilter=[],sentScope='';
 function toggleSentCcy(c){const i=sentCcyFilter.indexOf(c);if(i>=0)sentCcyFilter.splice(i,1);else{sentCcyFilter.push(c);sentScope='';}renderSentiment();}
 function setSentScope(s){sentScope=sentScope===s?'':s;sentCcyFilter=[];renderSentiment();}
 function clearSentCcyFilter(){sentCcyFilter=[];sentScope='';renderSentiment();}
-function sentMultiFilterBarHtml(ids){
-  const ccysPresent=new Set();
-  ids.forEach(s=>{if(SENT_NONFX_SYMS.has(s))return;if(s&&s.length===6){ccysPresent.add(s.slice(0,3));ccysPresent.add(s.slice(3));}});
-  const chip=c=>`<button class="cmp-chip${sentCcyFilter.includes(c)?' on':''}" onclick="toggleSentCcy('${c}')">${c}</button>`;
-  const ccyChips=FX.filter(c=>ccysPresent.has(c)).map(chip).join('');
-  if(!ccyChips)return'';
-  const hasNonFx=ids.some(s=>SENT_NONFX_SYMS.has(s));
-  const active=sentCcyFilter.length>0||!!sentScope;
-  return`<div class="cmp-filter" style="margin:2px 0 10px">
-    <div class="cmp-filter-grp"><span class="cmp-filter-lbl">Show several at once</span>${ccyChips}</div>
-    <div class="cmp-filter-grp">
-      <button class="cmp-quick${active?'':' on'}" onclick="clearSentCcyFilter()" title="Clear this filter">All</button>
-      <button class="cmp-quick${sentScope==='fx'?' on':''}" onclick="setSentScope('fx')">FX</button>
-      ${hasNonFx?`<button class="cmp-quick${sentScope==='nonfx'?' on':''}" onclick="setSentScope('nonfx')">Non-FX</button>`:''}
-    </div>
-  </div>`;
-}
+let _sentIds=[];
+KM_MENUES.sent=()=>{
+  if(curPage!=='sent'||sentSub!=='retail'||sentSym)return[];
+  const da=new Set();_sentIds.forEach(x=>{if(SENT_NONFX_SYMS.has(x))return;if(x&&x.length===6){da.add(x.slice(0,3));da.add(x.slice(3));}});
+  const ccys=FX.filter(c=>da.has(c));if(!ccys.length)return[];
+  const alle=!sentCcyFilter.length&&!sentScope;
+  const k=[{fn:'clearSentCcyFilter',arg:null,on:alle,titel:'All',sub:'every symbol'},{fn:'setSentScope',arg:'fx',on:sentScope==='fx',titel:'FX',sub:'currency pairs only'}];
+  if(_sentIds.some(x=>SENT_NONFX_SYMS.has(x)))k.push({fn:'setSentScope',arg:'nonfx',on:sentScope==='nonfx',titel:'Non-FX',sub:'indices, metals, energy'});
+  return[{lbl:'Show',kacheln:k,chips:ccys.map(c=>({fn:'toggleSentCcy',arg:c,on:sentCcyFilter.includes(c),txt:c}))}];
+};
 function sentItemMatchesMulti(sym){
   const isNonFxSym=SENT_NONFX_SYMS.has(sym);
   if(sentScope==='fx')return!isNonFxSym;
@@ -23347,7 +23381,8 @@ function renderSentimentRoh(){
   // Symbole statt Emojis (Nutzer 2026-09-23 "ueberall verschiedene" Icons;
   // Emojis rendern je Plattform anders - Regel seit 2026-07-16).
   const tabs=[['retail','users','Retail Sentiment'],['putcall','scale','Put-Call Ratio'],['netflow','shuffle','Call/Put Balance'],['feargreed','smile','Fear & Greed'],['aaii','clipboard','AAII Survey']];
-  const nav=`<div class="stabs" style="margin-bottom:6px;flex-wrap:wrap">${tabs.map(([k,ic,l])=>`<button class="st${sentSub===k?' on':''}" onclick="setSentSub('${k}')">${icn(ic,15)} ${escH(l)}</button>`).join('')}</div>`;
+  // Unterseiten als Reiter (Kontrollmenue Option C, Nutzer 2026-11-01: "Ueberall dieses Design und Aufbau")
+  const nav=`<div class="sent-nav">${kmReiterHtml(tabs.map(([k,ic,l])=>[k,l]),sentSub,'setSentSub','Sentiment')}</div>`;
   let body;
   if(!D)body=ladeLogoHtml('Loading sentiment data…');   // Warte-Platzhalter = animiertes Logo (Nutzer-Regel 2026-09-25)
   else if(sentSub==='putcall')body=renderPutCallChart(D);
@@ -23393,7 +23428,9 @@ function renderRetailBars(D){
   if(!list.length){
     return`<div class="cot-card">${hdr}<div style="padding:14px;color:var(--t3);font-size:var(--fs-sm);line-height:1.6">No retail-positioning data yet. The hourly job fetches the broker long/short split from Myfxbook; if the source blocks datacenter IPs (like CNN does) this stays empty and fills in automatically on any run that gets through. Tap the <b>i</b> to learn what this shows.</div></div>`;
   }
-  const multiBar=sentMultiFilterBarHtml(list.map(r=>r.sym));
+  // "Show several at once" als Display-Menue (Kontrollmenue Option C, 2026-11-01)
+  _sentIds=list.map(r=>r.sym);
+  const multiBar=KM_MENUES.sent().length?`<div class="cot-km">${chartLeisteHtml(kmKnopfHtml('sent',[sentCcyFilter.length?sentCcyFilter.join(', '):sentScope==='fx'?'FX':sentScope==='nonfx'?'Non-FX':'All']),'')}</div>`:'';
   if(sentCcyFilter.length||sentScope)list=list.filter(r=>sentItemMatchesMulti(r.sym));
   if(!list.length){
     return`<div class="cot-card">${hdr}<div style="padding:12px 14px">${multiBar}<div style="color:var(--t3);font-size:var(--fs-sm);padding:8px 0">No symbols match this filter. Adjust or clear it above.</div></div></div>`;
@@ -24656,7 +24693,9 @@ function renderCotRoh(){
   // bleibt deshalb als eigene Zeile darunter.
   const singleFilter=assetFilterSelect(avail,cotFilter,'pickCotFilter','All assets','Filter by a single asset',null);
   const ctrl=`<div class="cot-ctrl">${cdBox}<div class="cot-ctrl-r">${singleFilter}${ctrlRTail}</div></div>`;
-  const multiFilter=cotFilter?'':multiAssetFilterBarHtml(avail,cotCcyFilter,cotScope,'toggleCotCcy','setCotScope','clearCotCcyFilter');
+  // Kontrollmenue (Option C, 2026-11-01): "Show several at once" als Display-Menue.
+  _cotAvail=avail;
+  const multiFilter=cotFilter||!KM_MENUES.cot().length?'':`<div class="cot-km">${chartLeisteHtml(kmKnopfHtml('cot',[kmZeigeTeil(cotCcyFilter,cotScope)]),'')}</div>`;
   const rows=cotFilter?allRows.filter(r=>r.id===cotFilter):applyMultiAssetFilter(allRows,r=>r.id,cotCcyFilter,cotScope);
   if(!rows.length){el.innerHTML=ctrl+multiFilter+`<div class="cot-empty">No COT values found for the current selection.</div>`;cotStartCountdown();return;}
   // Ab 80% auf einer Seite gilt die Positionierung als "crowded": extrem
@@ -24708,7 +24747,7 @@ function renderCotRoh(){
     const availWidth=(el.clientWidth||el.parentElement&&el.parentElement.clientWidth||window.innerWidth)-4;
     const chartMeta={};
     const chartSvg=cotHistChart(histArr,availWidth,chartMeta,{preis:preisJeBalken});
-    const vsBtn=pxReihe?`<button class="ind-hist-range-btn${cotVsPrice?' on':''}" onclick="toggleCotVsPrice()" title="Overlay the price on the report days of the bars (Tuesday close, in the direction of the futures contract: ${escH(cotFilter==='USD'?'US Dollar Index':cotFilter+' in USD')})">vs Price</button>`:'';
+    const vsBtn=pxReihe?kmKnopfHtml('cotHist',[cotVsPrice?'Price on':'Bars only'],'Display settings - price overlay'):'';
     const zeitBar=`<div class="ind-hist-toolbar">${timeRangeBarHtml(cotHistRange,'setCotHistRange',TIME_RANGES,cotAb)}${timeRangeCustomHtml(cotHistRange,cotHistFrom,cotHistTo,'setCotHistRange',cotAb)}</div>`;
     const ladeHinweis=!COT_HIST&&!cotHistFehler?ladeLogoHtml('Loading the 10-year report history…'):'';
     cotChartMeta=chartSvg?{...chartMeta,history:histArr}:null;
@@ -27614,7 +27653,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   openRecoverM,recoverNotiz,recoverAlle,notizenAusSicherungen,
   AI_GLYPH_FRAME,_gPunkte,_gSterne,AI_GLYPHS,AI_GLYPH_BOND_BADGE,AI_GLYPH_INDEX,assetGlyphHtml,aiDefsSvg,AI_WELLE_L,AI_WELLE_T,AI_WELLE_A,aiWellenPfad,aiFilm,aiFilmTabellen,AI_FLAG_WHITE,WISCH_MS,wischFlaggeHtml,flaggenBandHtml,
   AI_FLAG_IDS,aiEnsureDefs,assetIconHtml,SK,DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,
-  DATA_SRC_LABEL,ALL_PAIRS,SETUP_CAT,NODIR_CAT,FX_PAIRS,SB_CATS,assetFilterSelect,multiAssetFilterBarHtml,
+  DATA_SRC_LABEL,ALL_PAIRS,SETUP_CAT,NODIR_CAT,FX_PAIRS,SB_CATS,assetFilterSelect,
   applyMultiAssetFilter,uid,escH,safeUrl,ICONS,icn,ar,mvArr,NONFX_IDS,assetCls,isNonFx,macroSyncIds,isCrypto,
   ASSET_SYNC_FIELDS,symSyncGroup,SYNC_EXCLUDE_RUBS,syncAssetGroup,PAIR_CODE_TO_ID,nonFxLegAssetId,nonFxWatchIconHtml,
   RATE_WATCH,rateWatchUrl,rwPressStart,rwPressEnd,rwClick,openRateWatchEdit,saveRateWatch,resetRateWatch,indLinkKey,
@@ -27707,7 +27746,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,
   DASH_COL_MIN_H,DASH_SHRINK_MIN_H,equalizeDashColumns,scrollCalsToNow,delWidget,renameWidget,confirmRename,addWidget,
-  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,linkOeffnen,setDataPreisAnsicht,setDataPreisSkala,preisChartHtml,openDataAllePicker,closeDataAllePicker,setDataAlleAsset,toggleDataAlle,removeDataAlle,dataAlleItems,pickerAnkern,pickerHoehe,pickerHoeheRaum,setDataAlleGruppe,openDataDispMenu,closeDataDispMenu,gwAuf,gwZu,gwSelectAn,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
+  SCOREHIST_KEY,loadScoreHist,mergeScoreHist,linkOeffnen,setDataPreisAnsicht,setDataPreisSkala,preisChartHtml,openDataAllePicker,closeDataAllePicker,setDataAlleAsset,toggleDataAlle,removeDataAlle,dataAlleItems,pickerAnkern,pickerHoehe,pickerHoeheRaum,setDataAlleGruppe,setTrendsAnsicht,setCotVsPreis,kmAuf,kmZu,kmNach,kmZeichnen,KM_MENUES,gwAuf,gwZu,gwSelectAn,openDataPreisPicker,closeDataPreisPicker,toggleDataPreis,removeDataPreis,preisPaarReihe,preisWert,preisVergleichHtml,rangeCutoffStr,mergeResearchNotes,mergeResearchFolders,researchVereinen,geloeschtFesthalten,ohneGeloeschte,rubScoreByName,trendAssets,
   recordScoreHist,RISK_ON_IDS,RISK_OFF_IDS,riskOnOffState,riskSentimentWidgetHtml,globeHudLonTxt,globeHudHtml,bMark,
   startScanBroadcast,scanFlyParticle,surpriseIndex,mxHeatColor,assetReturnMap,pearsonR,corrHeatColor,setCorrA,
   setCorrB,setCorrWin,logReturns,pearson,corrRegimeSeries,corrRegimeCardHtml,renderCorrCard,renderMatrix,TREND_COLORS,
@@ -27741,7 +27780,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   renderDataIndPicker,toggleDataListInd,removeDataListInd,
   DATA_MAX_PANELS,setDataAsset,addDataAsset,removeDataAsset,toggleDataAsset,openDataAssetPicker,closeDataAssetPicker,
   renderDataAssetPicker,indCompareGo,setDataInd,renderDataTab,sentReadBadge,SENT_INFO,openSentInfoM,iBtn,toggleSentCcy,setSentScope,
-  clearSentCcyFilter,sentMultiFilterBarHtml,sentItemMatchesMulti,setNewsRange,toggleNewsWatch,toggleNewsExpand,
+  clearSentCcyFilter,sentItemMatchesMulti,setNewsRange,toggleNewsWatch,toggleNewsExpand,
   setNewsAsset,toggleNewsTopic,toggleNewsSrc,NEWS_TOP_N,NEWS_MAX_N,newsLevel,newsWatchAssets,saveNewsSeen,
   markNewsSeen,newsIsNew,newsPool,newsTopicWord,schluesselWortTreffer,newsPressureHtml,newsAttentionHtml,newsRowHtml,
   newsDayLabel,newsForAsset,symBiasFlipDays,newsAssetSectionHtml,
