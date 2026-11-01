@@ -18,6 +18,17 @@ jobs:
           node-version: 22
       - name: Abruf-Skript im Probelauf (rechnet, schreibt nichts)
         run: node tools/geldmenge.mjs --probe
+      - name: Nachmessen AUD-Datumsformat und CAD-Reihen
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+          curl -sL -A "$UA" -m 40 https://www.rba.gov.au/statistics/tables/csv/d1-data.csv -o d1.csv
+          echo "--- RBA D1 Zeilen 1-14 (Spalte 1 + DGFAM312):"; node -e 'const l=require("fs").readFileSync("d1.csv","utf8").split(/\r?\n/);const id=l.find(x=>x.startsWith("Series ID")).split(",");const i=id.indexOf("DGFAM312");console.log("Spalte",i);l.slice(0,14).concat(l.filter(x=>x.trim()).slice(-3)).forEach(x=>{const c=x.split(",");console.log(JSON.stringify(c[0]),"|",JSON.stringify(c[i]));});'
+          curl -sL -A "$UA" -m 40 "https://www.bankofcanada.ca/valet/groups/ATABLE_MONETARY_AGGREGATES/json" -o g.json; echo "--- BoC Gruppe:"; head -c 1500 g.json; echo
+          curl -sL -A "$UA" -m 60 "https://www.bankofcanada.ca/valet/lists/series/json" -o s.json
+          echo "--- BoC Reihen mit M3/M2++/monetary aggregate im Namen:"; node -e 'const s=JSON.parse(require("fs").readFileSync("s.json","utf8")).series;Object.keys(s).filter(k=>/\bM3\b|M2\+\+|monetary aggregate|gross M3/i.test((s[k].label||"")+" "+(s[k].description||""))).slice(0,40).forEach(k=>console.log(k,"|",s[k].label,"|",(s[k].description||"").slice(0,80)));'
+          echo "--- StatCan Tabelle 10-10-0116 (Monetary aggregates) Metadaten:"
+          curl -sL -A "$UA" -m 40 -X POST -H "Content-Type: application/json" -d '[{"productId":10100116}]' https://www150.statcan.gc.ca/t1/wds/rest/getCubeMetadata -o sc.json; head -c 1200 sc.json; echo
+          node -e 'try{const d=JSON.parse(require("fs").readFileSync("sc.json","utf8"));const o=d[0].object;(o.dimension||[]).forEach(di=>{console.log("Dim",di.dimensionNameEn);(di.member||[]).filter(m=>/M3|M2\+\+/.test(m.memberNameEn)).forEach(m=>console.log("  ",m.memberId,m.memberNameEn));});}catch(e){console.log("keine Metadaten",e.message);}'
       - name: Zentralbanken und Trading Economics abfragen
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
