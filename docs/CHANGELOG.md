@@ -21243,6 +21243,18 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Beim Bauen:** (1) `const trendsMultiBar='':''` — `node --check` meldete nichts (prüft nicht als ES-Modul), `check/syntax.js` schon (exit 1) → ab jetzt nach jeder Änderung `syntax.js`; (2) `KM_MENUES` vor der Deklaration benutzt (TDZ, App lud nicht) → Deklaration nach oben; (3) die neue Brücken-Prüfung in `structure.js` meldete die entfernten Namen sofort; (4) COT zeigte einen Display-Knopf auch ohne Menü-Inhalt → nur noch mit Inhalt (Gegenprobe deckte es auf).
 **Wächter:** `check/kontrollmenue.js` (A–D), Gegenprobe rot (2). `datamenu.js` auf den Baustein umgestellt.
 
+## 2026-11-01 — VERSION-CHECK-663: Entwürfe neue Price-Karte (Vorschau, temporär) + Federn stärker
+
+**Nutzer** (mit TradingView-Screenshot, roter Pfeil über einer Kerze): *„Entfern den Button preischart … Karte Price die volle Breite … Kalender Karte rechts neben die history Karte … Im Chart sollen die stellen markiert sein wo neue Fundamentale Daten herausgekommen sind … Pfeil … Farbe … Klickt man auf den Pfeil soll links … eine kleine Spalte sein wo die nächsten zukunftsevents stehen … dann … die Ereignisse … die an dem Tag waren … ins nichts klickt … wieder zukunftsevents … actual - forecast … previous … selber so Pfeile hinzufügen … Fenster wo man sagt was und ob … gut oder schlecht oder neutral … führ das erstmal grafisch aus und gib mir ein paar Optionen“*.
+**Vorschau** `js/preisdemo.js` beim App-Start (einmal je Sitzung, nie unter `navigator.webdriver`, `?preisdemo` erzwingt), bedienbar, **echte Daten** (Kerzen `tagesKerzen(preisReiheAnzeige)`, Releases `priceEventsByDay` mit Kalender-Farbe, Next up `getSymEventsAll` High impact), Asset-Umschalter EUR/GBP/USD/OIL/GOLD:
+- **A** Seitenliste + Zeiger-Pfeile (wie Screenshot), Zahl = Releases am Tag, Fenster für eigene Pfeile;
+- **B** Karten je Release + Stecknadeln + Tagesband mit Tages-/5-Tage-Bewegung, Popover an der Kerze;
+- **C** Inspektor (Tagesbewegung, ▲▼◆-Zählung, Gruppen) + Richtungssymbole + Spur *Daily move* (> 2σ kräftig, Ring = große Bewegung ohne Release) + Formular in der Spalte.
+**Gemessen:** USD 3M = 39 Release-Tage auf 66 Handelstage; bei 390 px 4,4 px je Kerze → Pfeile überlappen → Regel in allen Optionen: Woche statt Tag, sobald eine Kerze < 9 px (Handy schon 3M, iPad ab 6M).
+**Seitenaufbau** (für alle Optionen gleich, noch nicht umgesetzt): Price volle Breite; darunter Pinned notes · History · Calendar; Knopf *Price chart* weg. Bewusst erst mit der gewählten Option — das Preis-Fenster zeigt bis dahin als einzige Stelle die Releases je Tag.
+**Federn** (*„mach den bischen stärker“*): Deckel 14/8/6 → **20/12/9 px** (Seite/Listen/seitlich). `check/federn.js` liest die Deckel jetzt aus `FEDER_MAX` und hält „leicht“ über eine Obergrenze 24/14/10 fest; Gegenprobe (innen 40 px) rot.
+⚠ Vorschau nach der Wahl komplett entfernen (Datei, Import, Aufruf in `js/main.js`).
+
 ## 2026-11-01 — VERSION-CHECK-662: Kontrollmenü auf der Asset-Seite (Price, Context, Preis-Fenster)
 
 **Teil von** *„Überall dieses Design und Aufbau“* (ersetzt die Symbolknöpfe Candles|Line aus 591 — mit der Antwort ausdrücklich so gewählt).

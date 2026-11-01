@@ -10,19 +10,22 @@
 //   A) NATIV AUS: jeder sichtbare Scrollbereich (auch .pc/.detail und die
 //      Chip-Fenster) hat overscroll-behavior none in beiden Achsen - sonst
 //      kaeme das volle iOS-Gummiband zum leichten dazu
-//   B) SEITE: am Anfang 200 px nach unten ziehen -> Inhalt 1..14 px versetzt,
+// Die Deckel liest der Waechter aus FEDER_MAX in js/federn.js (seit 663, als
+// das Federn auf Wunsch staerker wurde); "leicht" sichert die Obergrenze
+// LEICHT_MAX - ein Deckel darueber ist rot, auch wenn er in der Datei steht.
+//   B) SEITE: am Anfang 200 px nach unten ziehen -> Inhalt 1..Deckel px versetzt,
 //      nach dem Loslassen wieder 0
 //   C) LISTE: Dashboard-Liste oben (ziehen nach unten) und unten (nach oben)
-//      -> 1..8 px, die Seite dahinter bewegt sich NICHT (keine Weitergabe),
+//      -> 1..Deckel px, die Seite dahinter bewegt sich NICHT (keine Weitergabe),
 //      danach wieder 0
 //   D) SEITLICH (390 px): breiter Bereich am linken Rand nach rechts gezogen
-//      -> 1..6 px, danach 0
+//      -> 1..Deckel px, danach 0
 //   E) AUSLAUFEN: kurz nach einer Beruehrung schnell an den Rand gescrollt ->
-//      kurzer Kick (Animation mit hoechstens 8 px); per Mausrad (ohne
+//      kurzer Kick (Animation hoechstens Deckel innen); per Mausrad (ohne
 //      Beruehrung) -> kein Kick
 // Gegenproben: --gegenprobe (federnAn wird nicht gestartet) -> B/C/D/E rot,
 //   --gegenprobe-nativ (Seite wieder overscroll-behavior auto) -> A rot,
-//   --gegenprobe-stark (Deckel innen 30 px) -> C rot
+//   --gegenprobe-stark (Deckel innen 40 px) -> C rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const fs = require('fs');
@@ -35,7 +38,12 @@ const GP_S = process.argv.includes('--gegenprobe-stark');
 const MAIN = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
 const FED = fs.readFileSync(path.join(__dirname, '..', 'js', 'federn.js'), 'utf8');
 const M_AN = 'try{federnAn();}catch(e){}';
-const M_MAX = 'export const FEDER_MAX = { seite: 14, innen: 8, x: 6 };';
+const M_MAX_RE = /export const FEDER_MAX = \{ seite: (\d+), innen: (\d+), x: (\d+) \};/;
+const M_MAX = (FED.match(M_MAX_RE) || [''])[0];
+const [, D_S, D_I, D_X] = (FED.match(M_MAX_RE) || [0, 0, 0, 0]).map(Number);
+// Obergrenze fuer "leicht" (Nutzer: "generell nur ganz wenig das es nicht so
+// verspielt aussieht"; 663: "bischen staerker" -> 20/12/9).
+const LEICHT_MAX = { seite: 24, innen: 14, x: 10 };
 
 let fehler = 0;
 const rot = m => { console.log('  ✗ ' + m); fehler++; };
@@ -43,14 +51,16 @@ const gruen = m => console.log('  ✓ ' + m);
 const px = s => { const m = String(s || '').trim().split(/\s+/).map(parseFloat); return m.length ? m : [0]; };
 
 (async () => {
-  if ((GP && !MAIN.includes(M_AN)) || (GP_S && !FED.includes(M_MAX))) { rot('Gegenprobe: Marke im Code nicht gefunden'); process.exit(1); }
+  if ((GP && !MAIN.includes(M_AN)) || (GP_S && !M_MAX)) { rot('Gegenprobe: Marke im Code nicht gefunden'); process.exit(1); }
+  if (!M_MAX) { rot('FEDER_MAX in js/federn.js nicht gefunden'); process.exit(1); }
+  if (D_S > LEICHT_MAX.seite || D_I > LEICHT_MAX.innen || D_X > LEICHT_MAX.x) rot(`Deckel ${D_S}/${D_I}/${D_X} ueber der Obergrenze fuer leichtes Federn (${LEICHT_MAX.seite}/${LEICHT_MAX.innen}/${LEICHT_MAX.x})`);
   const b = await chromium.launch();
   const HIER = new globalThis.URL(URL).origin;
   async function seite(w, h) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, hasTouch: true, serviceWorkers: 'block' });
     await ctx.route(u => u.origin !== HIER, r => ['fetch', 'xhr'].includes(r.request().resourceType()) ? r.abort() : r.fallback());
     if (GP) await ctx.route(u => u.origin === HIER && /\/js\/main\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: MAIN.replace(M_AN, '') }));
-    if (GP_S) await ctx.route(u => u.origin === HIER && /\/js\/federn\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: FED.replace(M_MAX, 'export const FEDER_MAX = { seite: 14, innen: 30, x: 6 };') }));
+    if (GP_S) await ctx.route(u => u.origin === HIER && /\/js\/federn\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: FED.replace(M_MAX, `export const FEDER_MAX = { seite: ${D_S}, innen: 40, x: ${D_X} };`) }));
     const p = await ctx.newPage();
     p.perr = []; p.on('pageerror', e => p.perr.push(String(e)));
     await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) {} });
@@ -96,9 +106,9 @@ const px = s => { const m = String(s || '').trim().split(/\s+/).map(parseFloat);
   if (!st) rot('B: keine scrollbare Seite');
   else {
     const r = await zieh(p, st.x, st.y, 0, 200, versatz);
-    if (!(r.w.y > 0.9 && r.w.y <= 14.01)) rot(`B: Seite beim Ziehen ${r.w.y} px (soll 1..14)`);
+    if (!(r.w.y > 0.9 && r.w.y <= D_S + 0.01)) rot(`B: Seite beim Ziehen ${r.w.y} px (soll 1..${D_S})`);
     else if (Math.abs(r.n.y) > 0.01) rot(`B: Seite nach dem Loslassen noch ${r.n.y} px versetzt`);
-    else gruen(`B: Seite federt ${r.w.y} px (Deckel 14), danach 0`);
+    else gruen(`B: Seite federt ${r.w.y} px (Deckel ${D_S}), danach 0`);
   }
 
   // ── C) Liste ──
@@ -111,12 +121,12 @@ const px = s => { const m = String(s || '').trim().split(/\s+/).map(parseFloat);
     const seiteNach = await p.evaluate(() => { const pc = [...document.querySelectorAll('.pc')].find(x => x.offsetParent); return pc.scrollTop + '|' + [...pc.children].map(k => k.style.translate).join(''); });
     await p.evaluate(() => { const e = document.querySelector('[data-fe-test]'); e.scrollTop = e.scrollHeight; });
     const r2 = await zieh(p, li.x, li.yU, 0, -200, versatz);
-    const ok = v => Math.abs(v) > 0.9 && Math.abs(v) <= 8.01;
-    if (!ok(r1.w.y) || r1.w.y < 0) rot(`C: .${li.cls} oben ${r1.w.y} px (soll +1..8)`);
-    else if (!ok(r2.w.y) || r2.w.y > 0) rot(`C: .${li.cls} unten ${r2.w.y} px (soll -1..-8)`);
+    const ok = v => Math.abs(v) > 0.9 && Math.abs(v) <= D_I + 0.01;
+    if (!ok(r1.w.y) || r1.w.y < 0) rot(`C: .${li.cls} oben ${r1.w.y} px (soll +1..${D_I})`);
+    else if (!ok(r2.w.y) || r2.w.y > 0) rot(`C: .${li.cls} unten ${r2.w.y} px (soll -1..-${D_I})`);
     else if (Math.abs(r1.n.y) > 0.01 || Math.abs(r2.n.y) > 0.01) rot(`C: .${li.cls} nach dem Loslassen nicht zurueck (${r1.n.y}/${r2.n.y})`);
     else if (seiteVor !== seiteNach) rot(`C: die Seite hat sich mitbewegt (${seiteVor} -> ${seiteNach})`);
-    else gruen(`C: .${li.cls} federt oben ${r1.w.y} / unten ${r2.w.y} px (Deckel 8), Seite steht, danach 0`);
+    else gruen(`C: .${li.cls} federt oben ${r1.w.y} / unten ${r2.w.y} px (Deckel ${D_I}), Seite steht, danach 0`);
   }
 
   // ── E) Auslaufen ──
@@ -129,7 +139,7 @@ const px = s => { const m = String(s || '').trim().split(/\s+/).map(parseFloat);
     const mitT = await kickTest(true);
     await p.waitForTimeout(2700);
     const ohneT = await kickTest(false);
-    if (!mitT.n || mitT.amp < 1 || mitT.amp > 8.01) rot(`E: nach Beruehrung ${mitT.n} Animationen, Ausschlag ${mitT.amp} px (soll 1..8)`);
+    if (!mitT.n || mitT.amp < 1 || mitT.amp > D_I + 0.01) rot(`E: nach Beruehrung ${mitT.n} Animationen, Ausschlag ${mitT.amp} px (soll 1..${D_I})`);
     else if (ohneT.n) rot(`E: per Mausrad (ohne Beruehrung) trotzdem ${ohneT.n} Animationen`);
     else gruen(`E: Kick ${mitT.amp} px nach Beruehrung, keiner per Mausrad`);
   }
@@ -147,9 +157,9 @@ const px = s => { const m = String(s || '').trim().split(/\s+/).map(parseFloat);
   if (!gefunden) rot('D: kein seitlich scrollbarer Bereich bei 390 px gefunden');
   else {
     const r = await zieh(q, gefunden.x, gefunden.y, 200, 0, versatz);
-    if (!(r.w.x > 0.9 && r.w.x <= 6.01)) rot(`D: ${gefunden.tab} .${gefunden.cls} seitlich ${r.w.x} px (soll 1..6)`);
+    if (!(r.w.x > 0.9 && r.w.x <= D_X + 0.01)) rot(`D: ${gefunden.tab} .${gefunden.cls} seitlich ${r.w.x} px (soll 1..${D_X})`);
     else if (Math.abs(r.n.x) > 0.01) rot(`D: seitlich nach dem Loslassen noch ${r.n.x} px`);
-    else gruen(`D: ${gefunden.tab} .${gefunden.cls} federt seitlich ${r.w.x} px (Deckel 6), danach 0`);
+    else gruen(`D: ${gefunden.tab} .${gefunden.cls} federt seitlich ${r.w.x} px (Deckel ${D_X}), danach 0`);
   }
   perr.push(...q.perr);
 
@@ -157,6 +167,6 @@ const px = s => { const m = String(s || '').trim().split(/\s+/).map(parseFloat);
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));
   const gp = GP || GP_N || GP_S;
   if (gp) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: Waechter bleibt gruen.'); process.exit(fehler ? 0 : 1); }
-  console.log(fehler ? `\n✗ federn: ${fehler} Befund(e)` : '\n✓ federn: natives Federn aus, leichtes Federn an Seite (14), Listen (8), seitlich (6), Kick nur nach Beruehrung');
+  console.log(fehler ? `\n✗ federn: ${fehler} Befund(e)` : `\n✓ federn: natives Federn aus, leichtes Federn an Seite (${D_S}), Listen (${D_I}), seitlich (${D_X}), Kick nur nach Beruehrung`);
   process.exit(fehler ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

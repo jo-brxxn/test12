@@ -17827,6 +17827,11 @@ import {qcZerlegen} from './quickcapture.js';
 // Leichtes Federn am Scroll-Ende (Nutzer 2026-11-01), siehe js/federn.js
 import {federnAn} from './federn.js';
 try{federnAn();}catch(e){}
+// TEMPORAER (2026-11-01): drei Entwuerfe fuer die neue Price-Karte der
+// Asset-Seite beim App-Start - nach der Nutzer-Entscheidung entfernen (siehe
+// js/preisdemo.js).
+import {preisDemoStarten} from './preisdemo.js';
+try{preisDemoStarten();}catch(e){}
 
 // mvWidget() ist jetzt zonen-bewusst - siehe Definition oben bei
 // dashZoneOf()/ZONE_OF_TYPE (direkt vor renderDash()).

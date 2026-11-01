@@ -15,14 +15,16 @@
 //   - beim Ziehen ueber den Rand (Finger) - Auslenkung mit abnehmendem Zuwachs,
 //     gedeckelt;
 //   - beim Auslaufen eines Wischs, der an den Rand stoesst (kurzer Kick).
-// Deckel: Seite (.pc/.detail) 14 px, Listen/Tabellen/Fenster 8 px, seitlich
-// 6 px. Nur Touch - Mausrad/Trackpad am PC federn nicht.
+// Deckel: Seite (.pc/.detail) 20 px, Listen/Tabellen/Fenster 12 px, seitlich
+// 9 px (bis 662: 14/8/6 - Nutzer 2026-11-01: "diesen bounce beim scrollen
+// mach den bischen staerker", also ~1,4x). Nur Touch - Mausrad/Trackpad am
+// PC federn nicht.
 // Bewegt wird die CSS-Eigenschaft `translate` (nicht `transform`): sie
 // addiert sich zu einem vorhandenen transform, ueberschreibt es nicht, und
 // laeuft wie transform auf der Grafikebene (docs/performance.md).
 // Geprueft von check/federn.js.
 
-export const FEDER_MAX = { seite: 14, innen: 8, x: 6 };
+export const FEDER_MAX = { seite: 20, innen: 12, x: 9 };
 const WEICH = 90;          // px Zug bis ~63 % des Deckels
 const ZURUECK = 'translate .28s cubic-bezier(.2,.8,.3,1)';
 
