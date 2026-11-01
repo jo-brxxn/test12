@@ -73,7 +73,9 @@ const init = () => { try { localStorage.setItem('fxpro_help_seen', '1'); localSt
  const cycle=i=>{const g=gaps(i),t=txtDays(i);if(g.length>=3){g.sort((a,b)=>a-b);const med=g[Math.floor(g.length/2)];return t?Math.max(med,t*0.6):med}return t||30};
  const guess=i=>!txtDays(i)&&gaps(i).length<3;
  const stale=i=>{const r=i.research;if(!r||!r.date)return false;if(r.bond||r.cot||r.sent)return false;if(DATA_LIVE_OK.ind===false)return false;if(guess(i))return false;const c=cycle(i);const age=(new Date(today)-new Date(String(r.date).slice(0,10)))/864e5;if(!(age>=0))return false;return age/c>2};
- const half=(i,rub)=>{const bn=strip(i.name);if(BOND.has(i.name))return true;if(bn==='Net Bullish Positioning'||bn==='Net Bearish Positioning')return true;if(i.name==='Seasonality'||i.name==='Retail Positioning')return true;
+ // Modell 30 (2026-11-01): Oil Inventories (nur OIL) halbes Gewicht, MPC Vote Split 0.
+ const ZERO=new Set(['MPC Vote Split']);
+ const half=(i,rub)=>{const bn=strip(i.name);if(BOND.has(i.name))return true;if(bn==='Oil Inventories')return true;if(bn==='Net Bullish Positioning'||bn==='Net Bearish Positioning')return true;if(i.name==='Seasonality'||i.name==='Retail Positioning')return true;
    if(bn==='WoW Change in Net Position (%)'){const v=parseFloat(String((i.research||{}).actual??'').replace(',','.'));if(isFinite(v)&&Math.abs(v)<3)return true}
    if(SENT.has(bn))return true;if(i.name==='Risk Correlation')return true;
    for(const g of CORE){if(!g.includes(bn))continue;if((rub.indicators||[]).some(o=>o!==i&&strip(o.name)!==bn&&g.includes(strip(o.name))))return true}return false};
@@ -94,7 +96,7 @@ const init = () => { try { localStorage.setItem('fxpro_help_seen', '1'); localSt
  const m28a=(bn,sid)=>FX.includes(sid)&&(M28A._.includes(bn)||(M28A[sid]||[]).includes(bn));
  const M28M={'PPI':0.5,'Core PPI':0.5,'Unemployment Claims':0.5};
  const M28D=[[['2Y Bond Yield','2Y Yield Gap (20d)'],1.25],[['NFP / Employment Change','Unemployment Rate'],1],[['Consumer Confidence'],0.5]];
- const indM28=(i,rub,sid)=>{const bn=strip(i.name);if(m28a(bn,sid))return 0;const r=indRoh(i,rub,sid);
+ const indM28=(i,rub,sid)=>{const bn=strip(i.name);if(ZERO.has(bn)||m28a(bn,sid))return 0;const r=indRoh(i,rub,sid);
    const isPkt=typeof i.pkt==='number'&&isFinite(i.pkt);return FX.includes(sid)&&M28M[bn]!=null&&!isPkt&&!stale(i)?r*M28M[bn]:r};
  const indMine=(i,rub,sid)=>{const bn=strip(i.name);let v=indM28(i,rub,sid);
    if(FX.includes(sid)&&v){const g=M28D.find(x=>x[0].includes(bn));if(g){const s=(rub.indicators||[]).filter(o=>g[0].includes(strip(o.name))).reduce((a,o)=>a+indM28(o,rub,sid),0);
@@ -103,7 +105,7 @@ const init = () => { try { localStorage.setItem('fxpro_help_seen', '1'); localSt
  const F=[];let nInd=0;const symMine={},trk={};
  syms.forEach(s=>{let sum=0,n=0;(s.rubrics||[]).forEach(rub=>{let rs=0;(rub.indicators||[]).forEach(i=>{nInd++;const mine=indMine(i,rub,s.id),app=SC.indScore(i,rub);
      if(Math.abs(mine-app)>0.005)F.push(`IND ${s.id}/${rub.name}/${i.name}: mine ${mine} app ${app} bias ${i.bias} pkt ${i.pkt} stale ${stale(i)}`);
-     rs+=mine;if(!stale(i)&&!m28a(strip(i.name),s.id))n++});
+     rs+=mine;if(!ZERO.has(strip(i.name))&&!stale(i)&&!m28a(strip(i.name),s.id))n++});
    rs=rnd2(rs);const ra=SC.rubScore(rub);if(Math.abs(rs-ra)>0.005)F.push(`RUB ${s.id}/${rub.name}: mine ${rs} app ${ra}`);sum+=rs});
    symMine[s.id]=rnd2(sum);trk[s.id]=n;const sa=SC.symScore(s);if(Math.abs(symMine[s.id]-sa)>0.005)F.push(`SYM ${s.id}: mine ${symMine[s.id]} app ${sa}`);
    if(SC.symTrackedCount(s)!==n)F.push(`TRK ${s.id}: mine ${n} app ${SC.symTrackedCount(s)}`)});

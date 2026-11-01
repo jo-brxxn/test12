@@ -183,6 +183,14 @@ vorigen) — auch gegen einen zeitgleichen Lauf mit altem Stand. Wächter:
   *Business Inflation Expectations* (Zeile „Inflation Expectations“, die bei
   USD Michigan ist). Feed-RULES und `js/event-matchers.js` mit demselben Muster.
 
+- **Seit Modell 30 (2026-11-01):** *Oil Inventories* = TV *EIA Crude Oil
+  Stocks Change* im USD-Feed (nur EIA-Gesamtbestände; nicht API, Cushing,
+  Imports), Zeile nur bei OIL. *MPC Vote Split* (GBP) = die drei TV-Reihen
+  *BoE MPC Vote Hike/Cut/Unchanged* je Sitzung im Workflow zusammengelegt
+  (`mpcVoteSplit`), Wert `Hike-Cut-Hold` wie FF; fehlt eine der drei Zahlen,
+  gibt es keinen Wert. `HIST_REGELN=2026-11-01` holt die Tiefen-Historie
+  einmal neu.
+
 ## ⚠️ PMI-FEED: TradingView liefert fuer S&P Global/HCOB/Jibun KEINE Actuals
 
 Belegt am 2026-08-08 durch die Titel-Diagnose im Workflow (`ind_data TITLE

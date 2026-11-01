@@ -1440,7 +1440,9 @@ jobs:
           # Lauf holt dann die Tiefen-Historie einmal komplett neu, und die
           # Bereinigung im Merge (gesehen[]) ersetzt bzw. entfernt die alten
           # Punkte bis 2013 zurueck.
-          export HIST_REGELN=2026-10-27c
+          # 2026-11-01: Oil Inventories (OIL) + MPC Vote Split (GBP) neu -
+          # einmal die volle Tiefen-Historie holen.
+          export HIST_REGELN=2026-11-01
           CHUNKS_DONE=$(node -e '
             const T=+process.env.TARGET_CHUNKS||84;
             try{const d=JSON.parse(require("fs").readFileSync("ind_data.json","utf8"));console.log(d._histRegeln!==process.env.HIST_REGELN?5:Math.max(5,Math.min(T,+d._histChunksFetched||5)));}catch(e){console.log(5);}
@@ -1628,6 +1630,20 @@ jobs:
               // Uebrige Waehrungen: jeweils ihr landesuebliches Stimmungsmass
               // (EU-Kommission, GfK, SECO Climate, Cabinet Office, Westpac ...).
               {ind:"Consumer Confidence",period:null,test:(t,c)=>c!=="USD"&&c!=="NZD"&&/consumer confidence|consumer sentiment|consumer climate/.test(t)&&!/change|expectation/.test(t)},
+              // ── Nutzer 2026-11-01 ─────────────────────────────────────
+              // OIL: "fueg bei Oel den Indikator oil inventories hinzu bei
+              // economy" - die woechentliche EIA-Reihe (Mittwoch). NUR die
+              // EIA-Gesamtbestaende: API (Dienstag, Verband), Cushing (ein
+              // Lager) und Imports sind eigene Reihen an eigenen Tagen. Liegt
+              // im USD-Feed, weil OIL seine Makro-Daten von USD bezieht; die
+              // Zeile gibt es nur bei OIL (js/main.js ASSET_EIGENE_IND).
+              {ind:"Oil Inventories",period:null,test:(t,c)=>c==="USD"&&/^eia crude oil stocks change$/.test(t)},
+              // GBP: "die stimmverteilung die auch immer veroeffentlicht wird" -
+              // TradingView fuehrt sie als DREI Reihen (Vote Hike/Unchanged/Cut).
+              // Sie werden unten je Sitzung zu EINEM Ereignis "BoE MPC Vote
+              // Split" zusammengelegt (mpcVoteSplit) - diese Regel trifft nur
+              // das zusammengelegte, nie eine der drei Einzelreihen.
+              {ind:"MPC Vote Split",period:null,test:(t,c)=>c==="GBP"&&t==="boe mpc vote split"},
             ];
             const readEvts=f=>{
               let tv;
@@ -1681,6 +1697,38 @@ jobs:
               return(_gesehen=m.map(([alt,jung])=>[tagVor(alt-1),jung===0?tagVor(-1):tagVor(jung+1)]));
             };
             const evts=[...(recent||[]),...(wide||[]),...histEvts];
+            // ── MPC Vote Split (GBP, Nutzer 2026-11-01) ───────────────────
+            // Die drei Stimmen-Reihen einer Sitzung werden ein Ereignis. Wert =
+            // die Verteilung in der Forex-Factory-Folge Hike-Cut-Hold, genau wie
+            // der Kalender ("MPC Official Bank Rate Votes 7-0-2"). Die App liest
+            // daraus die hawkishen Netto-Stimmen Hike minus Cut (parseNumLike,
+            // js/calendar.js) - mehr als erwartet = bullish GBP.
+            // ⚠ Gemessen 2026-11-01: "+7 (7-0-2)" zeigte die Zelle als "+7"
+            // (Klammer = Anmerkung), "+7 · 7-0-2" passte nicht in die Spalte.
+            // Fehlt eine der drei Zahlen, gibt es fuer diesen Teil KEINEN Wert
+            // (nie aus zwei Reihen hochrechnen, Regel 4).
+            (function mpcVoteSplit(){
+              const RE=/^boe mpc vote (hike|unchanged|cut)$/,tage={};
+              evts.forEach(ev=>{
+                if(!ev||ev.country!=="GB")return;
+                const m=norm(ev.title||ev.indicator||"").match(RE);if(!m)return;
+                const d=new Date(ev.date);if(isNaN(d))return;
+                const k=d.toISOString().slice(0,10);
+                (tage[k]=tage[k]||{date:ev.date})[m[1]]=ev;
+              });
+              const wert=(o,f)=>{
+                const z=["hike","cut","unchanged"].map(x=>o[x]?o[x][f]:null);
+                if(z.some(v=>v==null||v===""||!isFinite(+v)))return null;
+                const [h,c,u]=z.map(Number);
+                return h+"-"+c+"-"+u;
+              };
+              let n=0;
+              Object.keys(tage).forEach(k=>{
+                const o=tage[k],a=wert(o,"actual");if(a==null)return;
+                evts.push({country:"GB",title:"BoE MPC Vote Split",date:o.date,actual:a,forecast:wert(o,"forecast"),previous:wert(o,"previous")});n++;
+              });
+              console.log("ind_data: MPC vote split from "+n+" meeting(s)");
+            })();
             console.log("ind_data: "+(wide?wide.length:0)+" TV events in 95d window, "+(recent?recent.length:0)+" in 45d window, hist windows: "+histN.join("/"));
             // Pro (ccy|ind) ALLE Events mit Actual sammeln (nicht nur das
             // spaeteste) - das vorletzte Event liefert den verlaesslichsten

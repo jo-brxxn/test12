@@ -185,6 +185,15 @@ const IND_EVENT_MATCHERS={
   'GDT Price Index':(n,c)=>c==='NZD'&&/global dairy trade|\bgdt\b/.test((n||'').toLowerCase()),
   'Terms of Trade':(n,c)=>c==='NZD'&&/terms of trade/.test((n||'').toLowerCase()),
   'Building Permits':(n,c)=>c==='NZD'&&/building (permits|consents)/.test((n||'').toLowerCase()),
+  // Nutzer 2026-11-01. OIL: woechentliche EIA-Bestaende (FF "Crude Oil
+  // Inventories", TV "EIA Crude Oil Stocks Change" - dieselbe Zahl am selben
+  // Mittwoch); NICHT API (Dienstag), Cushing, Imports.
+  'Oil Inventories':(n,c)=>c==='USD'&&/^(eia )?crude oil (inventories|stocks change)$/.test((n||'').toLowerCase().trim()),
+  // GBP: MPC-Stimmen. Im Kalender stehen die drei TV-Reihen und die FF-Zeile
+  // "MPC Official Bank Rate Votes" - alle am Sitzungstag. Das Muster dient NUR
+  // dem Termin (nurTermin unten): der Wert der Zeile ist die Netto-Zahl aus dem
+  // Indikator-Feed; "7-0-2" oder eine Einzelreihe als Wert waere falsch.
+  'MPC Vote Split':(n,c)=>c==='GBP'&&/mpc official bank rate votes|boe mpc vote (hike|unchanged|cut)/.test((n||'').toLowerCase()),
 };
 
 // Nationale Releases unter EUR ("German …", "French …"): die EUR-Indikatoren
@@ -206,6 +215,9 @@ function nurEurozone(base,m){
   return (name,ccy)=>!(ccy==='EUR'&&EU_LAND_RE.test(name||''))&&m(name,ccy);
 }
 Object.keys(IND_EVENT_MATCHERS).forEach(k=>{IND_EVENT_MATCHERS[k]=nurEurozone(k,IND_EVENT_MATCHERS[k]);});
+// Nur fuer den naechsten Termin, nie fuer den Wert (findIndEventHistory).
+// Erst NACH nurEurozone setzen - der Wrapper ist eine neue Funktion.
+IND_EVENT_MATCHERS['MPC Vote Split'].nurTermin=true;
 
 // Recherche-Daten → Kalender (applyResearchToCal in js/main.js) nutzt
 // dieselben Muster, mit drei bewusst breiteren Ueberschreibungen.

@@ -8,6 +8,19 @@ Score - bei Widerspruch zu irgendeiner aelteren Herleitung in
 siehe eigenen Abschnitt weiter unten, sonst vergleicht die Stärke-Note zwei
 verschiedene Rechnungen.
 
+## ⚠️ Stand 2026-11-01 (SCORE_MODEL_VERSION 30): Oil Inventories, MPC Vote Split
+
+Nutzer: *„füg bei Öl den Indikator oil inventories hinzu bei economy und bei gbp die stimmverteilung“*. Gemessen 2016–2026 (`cal_hist` + Kursarchiv, Schluss D−1 bis D):
+
+| Zeile | Asset / Karte | Wertung | Gemessen | Entscheid |
+|---|---|---|---|---|
+| **Oil Inventories** = EIA Crude Oil Stocks Change (wöchentlich, Mi) | **nur OIL** / Economic Growth | Beat/Miss, **halbes Gewicht**, Abbau (unter Prognose) = bullish | n 519, Release-Tag **+32,7 bp** in Signalrichtung (t **2,29**), bis D+5 +42 bp (t 1,23) | aufgenommen (halb) |
+| **MPC Vote Split** (Hike-Cut-Hold, FF-Folge) | GBP (+ GBYIELD gespiegelt) / Inflation, unter BoE Bank Rate | **0** (`SCORE_ZERO`) | 25 Überraschungen in 71 Sitzungen, GBPUSD Release-Tag −5,1 bp (t −0,35), D+5 +6,9 bp (t 0,24) | nur Anzeige |
+
+- **Asset-eigene Zeile** (`ASSET_EIGENE_IND` in `js/main.js`): steht in der von USD gespiegelten Karte, wird aber NICHT gespiegelt — Bias rechnet `applyIndDataFeed` wie bei FX, `resetNonFxIndBias` lässt ihn stehen. Zählt im Divisor von OIL mit.
+- **MPC-Wert** `"7-0-2"`: `parseNumLike` liest Hike minus Cut (Netto-Stimmen) — gilt auch für die FF-Kalenderzeile *MPC Official Bank Rate Votes*. Kalender-Muster nur für den Termin (`nurTermin`).
+- Geprüft von `check/mpcoel.js`.
+
 ## ⚠️ Stand 2026-10-27 (SCORE_MODEL_VERSION 29): NZD-Treiber
 
 Nutzer-Entscheid nach Messung (NZD-Korb gegen die sieben anderen, `cal_hist`

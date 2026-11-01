@@ -33,7 +33,7 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
   applyRevisionToValHist,applyTrendModel,checkPriceAlerts,fmtDayHdr,indBiasInputSig,indBiasPinned,
   invalidateRateStepCache,isNonFx,macroCcyFor,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,
-  resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,todayStr,trackIndValues,widgets,feedEntryFor,kanonIndName,
+  resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,todayStr,trackIndValues,widgets,feedEntryFor,kanonIndName,istAssetEigen,
   IND_AUTO_RUBS,IND_EVENT_MATCHERS,calEvts,cloudAutoSync,evtMatchesSym,getSym,markLsUpdatedSeen,
   markPrefEdit,parsePolicyRate,periodLabel,rateInfo,recomputeAuto,scoreHist,selId,setSuppressBiasFlipAlerts,
   MACRO_DERIVE_RUBS,calCcyFilter,calHighOnly,calOpenDays,compactView,effDeriveRules,escJH,eventAlerts,
@@ -2568,7 +2568,9 @@ function macroCcyFor(id){
 function findIndEventHistory(symId,indName,n){
   const{base,period}=stripPeriodSuffix(indName);
   const matcher=IND_EVENT_MATCHERS[base];
-  if(!matcher)return[];
+  // nurTermin: das Muster findet nur den Sitzungstag, der Wert kommt allein
+  // aus dem Indikator-Feed (MPC Vote Split, js/event-matchers.js).
+  if(!matcher||matcher.nurTermin)return[];
   const ccy=macroCcyFor(symId);
   if(!ccy)return[]; // "keine Verbindung" -> keine automatischen Events
   const pool=calEvts.filter(ev=>{
@@ -3343,6 +3345,8 @@ function resetNonFxIndBias(sym){
     const derived=rubAutoDerived(sym,rub);
     rub.indicators.forEach(ind=>{
       if(ind.autoEvId!==undefined)delete ind.autoEvId;
+      // Asset-eigene Zeile (Oil Inventories): Bias aus dem Feed, nie zuruecksetzen.
+      if(istAssetEigen(sym.id,ind.name))return;
       if(derived&&ind.bias!=='neu')ind.bias='neu';
       // Revisions-Bias zaehlt nur auf FX-Waehrungen (applyIndDataFeed setzt
       // ihn dort); auf Non-FX-Spiegelkarten darf er nie in den Score laufen.
@@ -3362,6 +3366,8 @@ function resetNonFxIndBias(sym){
 // Ableitung) bleibt unverändert - nur der angezeigte Name wird ersetzt.
 // Schlüssel = interner Basisname, Wert = Anzeigename.
 const IND_DISPLAY_NAMES={
+  // Asset-eigene Zeilen (ASSET_EIGENE_IND) stehen unter der Asset-Id.
+  OIL:{'Oil Inventories':'EIA Crude Oil Inventories'},
   USD:{'Central Bank Rate':'Fed Funds Rate','Unemployment Claims':'Initial Jobless Claims','NFP / Employment Change':'Nonfarm Payrolls (NFP)','Consumer Confidence':'CB Consumer Confidence'},
   EUR:{'Central Bank Rate':'ECB Deposit Facility Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Negotiated Wage Growth','JOLTS Job Openings':'Job Vacancy Rate'},
   GBP:{'Central Bank Rate':'BoE Bank Rate','Unemployment Claims':'Claimant Count Change','NFP / Employment Change':'Employment Change (3M)','Avg Hourly Earnings':'Average Earnings Index (+Bonus)','Consumer Confidence':'GfK Consumer Confidence'},
@@ -4068,6 +4074,8 @@ const IND_INFO_DEFAULTS={
   'GDT Price Index':'Global Dairy Trade auction — % change of the average dairy price vs. the previous auction (every 2 weeks). Dairy is New Zealand\'s largest export.',
   'Terms of Trade':'Export prices relative to import prices, quarter-over-quarter in %. Rising terms of trade lift national income.',
   'Building Permits':'New residential building consents, month-over-month change in %. A leading indicator for construction activity.',
+  'Oil Inventories':'Weekly change of US commercial crude oil stocks (EIA, Wednesday), in million barrels. A draw (below forecast) is bullish for oil, a build is bearish. Counts half.',
+  'MPC Vote Split':'Bank of England MPC votes as hike-cut-hold (same order as the calendar); colour = more or fewer hawkish votes (hike minus cut) than forecast. Shown only: 2017–2026 the pound did not move with a vote surprise on the day (25 surprises, t −0.35).',
   'Inflation Expectations':'Expected inflation from a survey (US: households, 1 year ahead; New Zealand: businesses, 2 years ahead), in %. Higher expectations keep the central bank hawkish.',
   // COT Data
   'Net Bullish Positioning':'From the CFTC Commitments of Traders report: net long positions of speculators. Extreme longs can flag a crowded trade and reversal risk.',
@@ -4238,7 +4246,10 @@ function cleanDeriveRules(sym){
 const NEUE_UMFRAGEN_2026_08={
   'Economic Growth':[['ZEW Economic Sentiment',['EUR']],['Ifo Business Climate',['EUR']],
     ['Business Confidence',['NZD']],['GDT Price Index',['NZD']],['Terms of Trade',['NZD']],['Building Permits',['NZD']]],
-  'Inflation':[['Inflation Expectations',['USD','NZD']]]
+  'Inflation':[['Inflation Expectations',['USD','NZD']],
+    // Nutzer 2026-11-01: "bei gbp die stimmverteilung" - per Rueckfrage
+    // Indikator neben dem Leitzins; nach der Messung nur Anzeige (SCORE_ZERO).
+    ['MPC Vote Split',['GBP']]]
 };
 // Alle Namen flach - fuer die Bereinigung unten.
 const UMFRAGE_NAMEN_2026_08=[...new Set(Object.values(NEUE_UMFRAGEN_2026_08).flat().map(x=>x[0]))];
@@ -4288,7 +4299,39 @@ function addSurveyInds(rubrics,sym){
       if(nm==='Inflation Expectations'){
         const i=rub.indicators.findIndex(x=>/Bond Yield|Spread/.test(x.name));
         i>=0?rub.indicators.splice(i,0,ni):rub.indicators.push(ni);
+      }else if(nm==='MPC Vote Split'){
+        // direkt unter den Leitzins - beides kommt aus derselben Sitzung
+        const i=rub.indicators.findIndex(x=>stripPeriodSuffix(x.name).base==='Central Bank Rate');
+        rub.indicators.splice(i>=0?i+1:0,0,ni);
       }else rub.indicators.push(ni);
+    });
+  });
+}
+// ── Zeilen, die nur EIN Asset hat (2026-11-01) ───────────────────────
+// Nutzer: "fueg bei Oel den Indikator oil inventories hinzu bei economy".
+// Non-FX-Assets spiegeln ihre Makro-Karten von der verknuepften Waehrung
+// (deriveMacroBiasAll) - eine Oel-Zeile gehoert aber nicht zum Dollar. Diese
+// Zeilen haengen am ASSET, stehen in der gespiegelten Karte mit, werden aber
+// NICHT gespiegelt: ihren Bias rechnet applyIndDataFeed (js/data-feeds.js)
+// aus dem Feed der verknuepften Waehrung, resetNonFxIndBias laesst ihn stehen.
+// Score: halbes Gewicht (Nutzer-Wahl, js/score.js ASSET_EIGEN_HALB).
+const ASSET_EIGENE_IND={OIL:{'Economic Growth':['Oil Inventories']}};
+function istAssetEigen(symId,name){
+  const b=stripPeriodSuffix(name||'').base,m=ASSET_EIGENE_IND[symId];
+  return !!m&&Object.values(m).some(l=>l.includes(b));
+}
+function addAssetEigeneInds(rubrics,sym){
+  const m=sym&&ASSET_EIGENE_IND[sym.id];
+  if(!m)return;
+  Object.keys(m).forEach(rn=>{
+    const rub=rubrics.find(r=>r&&r.name===rn);
+    if(!rub||!Array.isArray(rub.indicators))return;
+    m[rn].forEach(nm=>{
+      if(rub.indicators.some(i=>stripPeriodSuffix(i.name).base===nm))return;
+      const ni={id:uid(),name:nm,bias:'neu',imp:false,date:'',interval:'',points:[]};
+      const dn=IND_DISPLAY_NAMES[sym.id]&&IND_DISPLAY_NAMES[sym.id][nm];
+      if(dn)ni.displayName=dn;
+      rub.indicators.push(ni);
     });
   });
 }
@@ -4301,6 +4344,7 @@ function migrateRubInds(rubrics,sym){
   moveYieldIndsToInflation(rubrics);
   moveRateIndToInflation(rubrics);
   addSurveyInds(rubrics,sym);
+  addAssetEigeneInds(rubrics,sym);
   cleanDeriveRules(sym);
   // Bestandsgeraete (2026-09-25): NZD Core CPI trug als Vorwert den Satz
   // "Non-tradables CPI ~3.4% y/y (Q4 2025)" - ein "~"-Wert ist geschaetzt

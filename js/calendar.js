@@ -142,7 +142,10 @@ function fmtStamp(ts){try{const d=new Date(ts);if(!isFinite(d.getTime()))return 
 // dadurch trotz identischer Daten das GEGENTEIL des korrekten Live-Scores
 // aus (Nutzer-Bugreport 2026-07-21: Score-Modal zeigte "Claimant Count
 // Change" korrekt bullish, History-Karte fuer denselben Tag/Release bearish).
-const LOWER_IS_BETTER_RE=/unemployment|jobless|claim|deficit/i;
+// Oelbestaende (2026-11-01): ein Abbau (Wert unter der Prognose) ist bullish
+// fuer Oel - nur die Rohoel-BESTAENDE, nicht Business/Wholesale Inventories
+// (dort heissen hoehere Lager mehr Wachstum).
+const LOWER_IS_BETTER_RE=/unemployment|jobless|claim|deficit|crude oil (stock|inventor)|oil inventor/i;
 // Merker (2026-10-24, Pruefdurchgang Performance): beim Start 381.000 Aufrufe
 // fuer wenige tausend verschiedene Texte (Score-Kette, Chart-Historien) -
 // gemessen 295 ms bei 4x gedrosselter CPU. Reine Funktion des Textes, also
@@ -161,6 +164,13 @@ function parseNumLike(s){
 }
 function parseNumLikeRoh(s){
   const str=s.trim();
+  // MPC-Stimmen der Bank of England (2026-11-01): "7-0-2" = Hike-Cut-Hold in
+  // der Forex-Factory-Folge. Wert = hawkishe Netto-Stimmen Hike minus Cut -
+  // sonst laese die Regel unten nur die Hike-Stimmen (7) und eine Sitzung
+  // mit mehr Senkungs-Stimmen als erwartet bliebe neutral. Nur drei EINSTELLIGE
+  // Zahlen (9 Mitglieder) - ein Datum wie 2026-10-28 faellt nie darunter.
+  const v3=str.match(/^(\d)-(\d)-(\d)$/);
+  if(v3)return Number(v3[1])-Number(v3[2]);
   const m=str.match(/-?\d[\d.,]*/);
   if(!m)return null;
   let v=parseFloat(m[0].replace(/,/g,''));

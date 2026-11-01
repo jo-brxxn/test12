@@ -76,8 +76,12 @@ function indGroupPartners(ind,rub){
 // COT-Netto, CB Tone, oder Teil eines Core-Paares)? Gemeinsame Pruefung fuer
 // indBaseWeight UND indTrendAdjMag, damit die Bonus-Halbierung ueberall
 // konsistent denselben Kreis von Indikatoren trifft.
+// Asset-eigene Zeilen mit halbem Gewicht (Nutzer-Wahl 2026-11-01: Oil
+// Inventories "zaehlt halb" - woechentlich und stark schwankend, wie PPI).
+const ASSET_EIGEN_HALB=new Set(['Oil Inventories']);
 function indIsHalfWeight(ind,rub){
   if(BOND_HALF_PT.has(ind.name))return true;
+  if(ASSET_EIGEN_HALB.has(stripPeriodSuffix(ind.name).base))return true;
   if(COT_NET_HALF.has(stripPeriodSuffix(ind.name).base))return true;
   if(SEAS_RETAIL_HALF.has(ind.name))return true;
   if(cotWowIsSmall(ind))return true;
@@ -187,7 +191,12 @@ const SEAS_RETAIL_HALF=new Set(['Seasonality','Retail Positioning']);
 // ein (auch nicht mit ★-Stern).
 // ⚠ Leer, seit der 2Y/10Y Spread am 2026-09-13 ganz entfernt wurde. Die
 // Menge bleibt: sie ist der Ort fuer 'wird angezeigt, zaehlt aber 0'.
-const SCORE_ZERO=new Set([]);
+// MPC Vote Split (GBP, 2026-11-01): Nutzer-Entscheid nach Messung - 25
+// Stimmen-Ueberraschungen in 71 Sitzungen (cal_hist 2017-2026), GBPUSD am
+// Release-Tag -5,1 bp in Signalrichtung (t -0,35), bis D+5 +6,9 bp (t 0,24):
+// kein messbarer Effekt -> "Nur Anzeige". Hier statt in M28_NUR_ANZEIGE,
+// weil die Zeile auch auf GBYIELD (an GBP gespiegelt) 0 zaehlen muss.
+const SCORE_ZERO=new Set(['MPC Vote Split']);
 // Rubriken OHNE Trend-Anteil (Nutzer-Entscheid 2026-07-05): in der Interest-
 // Rates-Rubrik zaehlt KEIN Trend-Bonus in den Score und es erscheint kein
 // Trend-Chip - weder fuer die Bond-Renditen (25-Tage-Vergleich) noch fuer
@@ -1905,7 +1914,10 @@ function symScoreCmp(sym){
 // Confidence (gemessen +11,6 bp Release-Tag, t 2,2), Konsumklima ANZ-RM statt
 // Westpac; GDT, Terms of Trade, Building Permits, Business Inflation
 // Expectations AUSDRUECKLICH gegen die Messung aufgenommen (docs/score-model.md).
-const SCORE_MODEL_VERSION=29;
+// 29 -> 30 (2026-11-01, Nutzer-Entscheid): OIL Oil Inventories (EIA, woechentlich,
+// halbes Gewicht, Abbau = bullish; gemessen 519 Releases, Release-Tag +32,7 bp
+// in Signalrichtung, t 2,29). GBP MPC Vote Split nur Anzeige (SCORE_ZERO).
+const SCORE_MODEL_VERSION=30;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.

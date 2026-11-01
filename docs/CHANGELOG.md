@@ -21243,6 +21243,19 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Beim Bauen:** (1) `const trendsMultiBar='':''` — `node --check` meldete nichts (prüft nicht als ES-Modul), `check/syntax.js` schon (exit 1) → ab jetzt nach jeder Änderung `syntax.js`; (2) `KM_MENUES` vor der Deklaration benutzt (TDZ, App lud nicht) → Deklaration nach oben; (3) die neue Brücken-Prüfung in `structure.js` meldete die entfernten Namen sofort; (4) COT zeigte einen Display-Knopf auch ohne Menü-Inhalt → nur noch mit Inhalt (Gegenprobe deckte es auf).
 **Wächter:** `check/kontrollmenue.js` (A–D), Gegenprobe rot (2). `datamenu.js` auf den Baustein umgestellt.
 
+## 2026-11-01 — VERSION-CHECK-664: Oil Inventories (OIL) + MPC Vote Split (GBP), Score-Modell 30
+
+**Nutzer:** *„füg bei Öl den Indikator oil inventories hinzu bei economy und bei gbp die stimmverteilung die auch immer veröffentlicht wird“*. Rückfragen: Oil *„Zählt halb“*; MPC zuerst *„Indikator + Score“*, nach der Messung *„Nur Anzeige“*.
+**Quellen:** TradingView (Feed-Workflow), beide mit Archiv in `cal_hist`: *EIA Crude Oil Stocks Change* (USD, Mi, 524 Releases seit 2016); *BoE MPC Vote Hike/Cut/Unchanged* (74 Sitzungen seit 2017, 2017 mit 8 Mitgliedern).
+**Gemessen** (Schluss D−1 bis D): Oil n 519, **+32,7 bp** in Signalrichtung, t 2,29 → halb im Score. MPC 25 Überraschungen in 71 Sitzungen, GBPUSD −5,1 bp, t −0,35 → nur Anzeige (`SCORE_ZERO`, gilt auch für GBYIELD). ⚠ Meine erste Empfehlung „+ Score“ war ungemessen — gegen die Aufnahme-Regel in `docs/score-model.md`; nachgeholt vor dem Push.
+**Gebaut:**
+- Workflow: Regeln *Oil Inventories* (nur EIA-Gesamtbestände) und *MPC Vote Split*; `mpcVoteSplit()` legt die drei Reihen je Sitzung zu `Hike-Cut-Hold` zusammen (FF-Folge, wie der Kalender *MPC Official Bank Rate Votes 7-0-2*); `HIST_REGELN=2026-11-01` holt die Tiefen-Historie einmal neu.
+- App: `ASSET_EIGENE_IND` — Zeile nur bei OIL in der von USD gespiegelten Karte, Bias aus dem Feed (`applyIndDataFeed`), von `resetNonFxIndBias` verschont; `LOWER_IS_BETTER_RE` + Rohöl-Bestände (Abbau = gut); halbes Gewicht `ASSET_EIGEN_HALB`; MPC-Zeile unter BoE Bank Rate, Kalender-Muster nur Termin (`nurTermin`).
+- `parseNumLike("7-0-2")` = 7 (Hike − Cut), nur drei einstellige Zahlen.
+**Gemessen, Darstellung:** `+7 (7-0-2)` zeigte die Zelle als „+7“ (Klammer = Anmerkung), `+7 · 7-0-2` lief mit „…“ aus der 409-px-Karte → Wert ist jetzt `7-0-2` wie im Kalender.
+**Bis der Workflow gelaufen ist,** stehen die beiden Zeilen ohne Wert (lokal mit `cal_hist`-Daten geprüft: OIL −1,892M gegen 0M → bullish +0,2; GBP 3-0-6 = Prognose).
+**Wächter:** `check/mpcoel.js` (statisch), Gegenprobe rot (2 Befunde).
+
 ## 2026-11-01 — VERSION-CHECK-663: Entwürfe neue Price-Karte (Vorschau, temporär) + Federn stärker
 
 **Nutzer** (mit TradingView-Screenshot, roter Pfeil über einer Kerze): *„Entfern den Button preischart … Karte Price die volle Breite … Kalender Karte rechts neben die history Karte … Im Chart sollen die stellen markiert sein wo neue Fundamentale Daten herausgekommen sind … Pfeil … Farbe … Klickt man auf den Pfeil soll links … eine kleine Spalte sein wo die nächsten zukunftsevents stehen … dann … die Ereignisse … die an dem Tag waren … ins nichts klickt … wieder zukunftsevents … actual - forecast … previous … selber so Pfeile hinzufügen … Fenster wo man sagt was und ob … gut oder schlecht oder neutral … führ das erstmal grafisch aus und gib mir ein paar Optionen“*.

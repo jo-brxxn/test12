@@ -10,7 +10,7 @@
 // das allgemeine Muster) - dieses Modul exportiert deshalb weiter unten
 // die Namen, die main.js zurueck braucht.
 import {BC,FX} from './constants.js';
-import {DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,feedEntryFor,kanonIndName,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,applyRevisionToValHist,applyTrendModel,checkPriceAlerts,curPage,escH,fmtDayHdr,indBiasInputSig,indBiasPinned,invalidateRateStepCache,isNonFx,macroCcyFor,openM,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,syms,todayStr,trackIndValues,widgets} from './main.js';
+import {DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,feedEntryFor,kanonIndName,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,applyRevisionToValHist,applyTrendModel,checkPriceAlerts,curPage,escH,fmtDayHdr,indBiasInputSig,indBiasPinned,invalidateRateStepCache,isNonFx,macroCcyFor,openM,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,syms,todayStr,trackIndValues,widgets,istAssetEigen} from './main.js';
 
 // ── INDIKATOR-WERTE AUS ECHTER API-QUELLE (ind_data.json) ──
 // ind_data.json wird stündlich per GitHub Action aus TradingViews
@@ -49,11 +49,15 @@ function applyIndDataFeed(){
   syms.forEach(c=>{
     const feed=IND_DATA_FEED[macroCcyFor(c.id)];
     if(!feed)return;
-    const fx=!isNonFx(c.id);
+    const fxAsset=!isNonFx(c.id);
     (c.rubrics||[]).forEach(rub=>{
       if(!rub.indicators)return;
       rub.indicators.forEach(ind=>{
         const base=stripPeriodSuffix(ind.name).base;
+        // Asset-eigene Zeile eines Non-FX-Assets (Oil Inventories bei OIL,
+        // 2026-11-01): wird nicht von der Waehrung gespiegelt, also rechnet
+        // sie ihren Bias selbst - genau wie eine FX-Zeile.
+        const fx=fxAsset||istAssetEigen(c.id,ind.name);
         // ⚠ Nicht mehr feed[base] direkt: ein gespeicherter Name, der den
         // Zeitraum in der anderen Schreibweise traegt ("GDP Growth q/q" statt
         // "GDP Growth QoQ"), fand die Reihe sonst nie - ohne jede Meldung.
