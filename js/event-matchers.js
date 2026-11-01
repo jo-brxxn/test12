@@ -194,6 +194,13 @@ const IND_EVENT_MATCHERS={
   // dem Termin (nurTermin unten): der Wert der Zeile ist die Netto-Zahl aus dem
   // Indikator-Feed; "7-0-2" oder eine Einzelreihe als Wert waere falsch.
   'MPC Vote Split':(n,c)=>c==='GBP'&&/mpc official bank rate votes|boe mpc vote (hike|unchanged|cut)/.test((n||'').toLowerCase()),
+  // Geldmenge (Nutzer 2026-11-01) - je Waehrung die Groesse, die ihre Zentralbank
+  // fuehrt (EUR/CHF/JPY/AUD/NZD M3, GBP M4, USD M2, CAD M2++). Nur fuer den
+  // Termin (nurTermin unten): der Wert kommt aus dem Feed - bei USD ist die
+  // Kalenderzeile der BESTAND, die Zeile zeigt die Jahresrate.
+  'Money Supply':(n,c)=>{const t=(n||'').toLowerCase();
+    return c==='GBP'?/\bm4 money supply/.test(t):c==='USD'?/^(m2 )?money supply/.test(t):c==='CAD'?/m2\+\+|money supply/.test(t)
+      :c==='JPY'?/\bm[23] money (stock|supply)/.test(t):/\bm3 money supply/.test(t);},
 };
 
 // Nationale Releases unter EUR ("German …", "French …"): die EUR-Indikatoren
@@ -218,6 +225,7 @@ Object.keys(IND_EVENT_MATCHERS).forEach(k=>{IND_EVENT_MATCHERS[k]=nurEurozone(k,
 // Nur fuer den naechsten Termin, nie fuer den Wert (findIndEventHistory).
 // Erst NACH nurEurozone setzen - der Wrapper ist eine neue Funktion.
 IND_EVENT_MATCHERS['MPC Vote Split'].nurTermin=true;
+IND_EVENT_MATCHERS['Money Supply'].nurTermin=true;
 
 // Recherche-Daten → Kalender (applyResearchToCal in js/main.js) nutzt
 // dieselben Muster, mit drei bewusst breiteren Ueberschreibungen.

@@ -104,6 +104,7 @@ const PRUEFUNGEN = [
   { n: 'saisonfeed', s: 1, d: 'Saisonalitaet im Workflow: Monat in Boersenzeit (Sommer-/Winterzeit je Bar), gescheiterter Abruf behaelt letzten Stand', f: 'check/saisonfeed.js', args: [], browser: false },
   { n: 'feedregeln', s: 1,  d: 'Indikator-Feed: eigener Release je Reihe (kein Tag mit zwei Titeln), revidierter Vorwert, keine umdatierten/fremden Historienpunkte, TE-Datum', f: 'check/feedregeln.js', args: [], browser: false },
   { n: 'mpcoel',     s: 1,  d: 'Oil Inventories (OIL, halb, eigener Bias) + MPC Vote Split (GBP, Hike-Cut-Hold, Netto-Stimmen): echter Workflow- und App-Code an cal_hist', f: 'check/mpcoel.js', args: [], browser: false },
+  { n: 'geldmenge',  s: 1,  d: 'Money Supply x8: Regeln EUR M3/GBP M4/USD-Jahresrate (nachgerechnet an cal_hist), Zentralbank-Schritt JPY/CHF/AUD/CAD/NZD, App-Zeile, Pfeil am Release', f: 'check/geldmenge.js', args: [], browser: false },
   // csskomm + inlinest: beide 2026-09-19 aus einem Fehler derselben Sitzung
   // (ein CSS-Kommentar verschluckte Regeln, ein Inline-style hebelte eine
   // Zustandsregel aus). Statisch, deshalb im schnellen Teil.

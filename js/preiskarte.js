@@ -75,12 +75,18 @@ function pkReleases(id){
     // Werte wie im Kalender: die Feed-Historie als Text ("194K", "3-0-6");
     // nur ohne Feed die Zahlen der Chart-Historie.
     const f=feed?feedEntryFor(feed,ind.name):null;
-    const roh=f&&Array.isArray(f.historyFull)&&f.historyFull.length?f.historyFull.map(h=>[String(h[0]).slice(0,10),h[1]==null?'':String(h[1]),h[2]==null?'':String(h[2])])
+    // datumArt "ref" (Geldmenge der Zentralbanken, tools/geldmenge.mjs): die
+    // Historie traegt das Monatsende des Bezugsmonats, nicht den Release - dort
+    // stuende der Pfeil am falschen Tag. Nur der juengste Wert hat ein echtes
+    // Release-Datum.
+    const nurJuengster=!!(f&&f.datumArt==='ref'&&f.date&&f.actual!=null);
+    const roh=nurJuengster?[[String(f.date).slice(0,10),String(f.actual),f.forecast==null?'':String(f.forecast)]]
+      :f&&Array.isArray(f.historyFull)&&f.historyFull.length?f.historyFull.map(h=>[String(h[0]).slice(0,10),h[1]==null?'':String(h[1]),h[2]==null?'':String(h[2])])
       :(ind.chartHist||[]).map(p=>[String(p[0]).slice(0,10),p[1]==null?'':fmtIndVal(p[1],''),p[2]==null?'':fmtIndVal(p[2],'')]);
     roh.forEach((h,i)=>{
       if(!h[0]||h[1]===''||gesehen.has(h[0]))return;
       gesehen.add(h[0]);
-      const ev={name:ind.name,actual:h[1],forecast:h[2],previous:i>0?roh[i-1][1]:''};
+      const ev={name:ind.name,actual:h[1],forecast:h[2],previous:i>0?roh[i-1][1]:(nurJuengster&&f.previous!=null?String(f.previous):'')};
       add(h[0],{n:nm,a:h[1],f:h[2],p:ev.previous,col:actualColor(ev,id)});
     });
     // Heute schon im Kalender, im Feed noch nicht (der Feed laeuft stuendlich).

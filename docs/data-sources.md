@@ -191,6 +191,8 @@ vorigen) — auch gegen einen zeitgleichen Lauf mit altem Stand. Wächter:
   gibt es keinen Wert. `HIST_REGELN=2026-11-01` holt die Tiefen-Historie
   einmal neu.
 
+- **Seit Modell 31 (2026-11-01): Money Supply** — EUR/GBP aus TV-RULES, USD als Jahresrate aus dem TV-M2-Bestand (`usM2Jahresrate`, nur mit Vorjahresbestand 11–13 Monate zuvor); JPY/CHF/AUD/CAD/NZD aus `tools/geldmenge.mjs` (Workflow-Schritt *Fetch money supply*, Sonden `probe-money-sources.yml`): SNB-CSV, RBA-D1-CSV (Datum TT/MM/JJJJ, Publication date), BoC Valet `M2PP_12MTH`, BoJ-HTML (M3-Vorjahresspalte), NZD über TE-Seitenbeschreibung (RBNZ 403). Fällt eine Quelle aus, bleibt ihr letzter Stand.
+
 ## ⚠️ PMI-FEED: TradingView liefert fuer S&P Global/HCOB/Jibun KEINE Actuals
 
 Belegt am 2026-08-08 durch die Titel-Diagnose im Workflow (`ind_data TITLE

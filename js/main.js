@@ -3368,16 +3368,17 @@ function resetNonFxIndBias(sym){
 // Ableitung) bleibt unverändert - nur der angezeigte Name wird ersetzt.
 // Schlüssel = interner Basisname, Wert = Anzeigename.
 const IND_DISPLAY_NAMES={
+  // 'Money Supply' (2026-11-01) steht je Waehrung in deren Zeile unten.
   // Asset-eigene Zeilen (ASSET_EIGENE_IND) stehen unter der Asset-Id.
   OIL:{'Oil Inventories':'EIA Crude Oil Inventories'},
-  USD:{'Central Bank Rate':'Fed Funds Rate','Unemployment Claims':'Initial Jobless Claims','NFP / Employment Change':'Nonfarm Payrolls (NFP)','Consumer Confidence':'CB Consumer Confidence'},
-  EUR:{'Central Bank Rate':'ECB Deposit Facility Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Negotiated Wage Growth','JOLTS Job Openings':'Job Vacancy Rate'},
-  GBP:{'Central Bank Rate':'BoE Bank Rate','Unemployment Claims':'Claimant Count Change','NFP / Employment Change':'Employment Change (3M)','Avg Hourly Earnings':'Average Earnings Index (+Bonus)','Consumer Confidence':'GfK Consumer Confidence'},
-  CHF:{'Central Bank Rate':'SNB Policy Rate','NFP / Employment Change':'Employment Level','Avg Hourly Earnings':'Wage Index','Consumer Confidence':'SECO Consumer Climate'},
-  JPY:{'Central Bank Rate':'BoJ Policy Rate','NFP / Employment Change':'Employment Change','Avg Hourly Earnings':'Average Cash Earnings','JOLTS Job Openings':'Jobs/Applicants Ratio','Services Inflation':'Corporate Services Price Index','Consumer Confidence':'Consumer Confidence (Cabinet Office)'},
-  CAD:{'Central Bank Rate':'BoC Overnight Rate','NFP / Employment Change':'Net Employment Change','Avg Hourly Earnings':'Avg Hourly Wages (Permanent)','Services PMI':'Ivey PMI','Consumer Confidence':'Conference Board Consumer Confidence'},
-  AUD:{'Central Bank Rate':'RBA Cash Rate','NFP / Employment Change':'Employment Change','Avg Hourly Earnings':'Wage Price Index','Consumer Confidence':'Westpac Consumer Sentiment'},
-  NZD:{'Central Bank Rate':'RBNZ Official Cash Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Labour Cost Index','Consumer Confidence':'ANZ-Roy Morgan Consumer Confidence','Core CPI':'Non-tradables CPI','Business Confidence':'ANZ Business Confidence','GDT Price Index':'Global Dairy Trade Price Index','Terms of Trade':'Terms of Trade (goods)','Building Permits':'Building Consents','Inflation Expectations':'Business Inflation Expectations (RBNZ, 2 years ahead)'},
+  USD:{'Money Supply':'M2 Money Supply y/y','Central Bank Rate':'Fed Funds Rate','Unemployment Claims':'Initial Jobless Claims','NFP / Employment Change':'Nonfarm Payrolls (NFP)','Consumer Confidence':'CB Consumer Confidence'},
+  EUR:{'Money Supply':'M3 Money Supply y/y','Central Bank Rate':'ECB Deposit Facility Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Negotiated Wage Growth','JOLTS Job Openings':'Job Vacancy Rate'},
+  GBP:{'Money Supply':'M4 Money Supply m/m','Central Bank Rate':'BoE Bank Rate','Unemployment Claims':'Claimant Count Change','NFP / Employment Change':'Employment Change (3M)','Avg Hourly Earnings':'Average Earnings Index (+Bonus)','Consumer Confidence':'GfK Consumer Confidence'},
+  CHF:{'Money Supply':'M3 Money Supply y/y','Central Bank Rate':'SNB Policy Rate','NFP / Employment Change':'Employment Level','Avg Hourly Earnings':'Wage Index','Consumer Confidence':'SECO Consumer Climate'},
+  JPY:{'Money Supply':'M3 Money Stock y/y','Central Bank Rate':'BoJ Policy Rate','NFP / Employment Change':'Employment Change','Avg Hourly Earnings':'Average Cash Earnings','JOLTS Job Openings':'Jobs/Applicants Ratio','Services Inflation':'Corporate Services Price Index','Consumer Confidence':'Consumer Confidence (Cabinet Office)'},
+  CAD:{'Money Supply':'M2++ Money Supply y/y','Central Bank Rate':'BoC Overnight Rate','NFP / Employment Change':'Net Employment Change','Avg Hourly Earnings':'Avg Hourly Wages (Permanent)','Services PMI':'Ivey PMI','Consumer Confidence':'Conference Board Consumer Confidence'},
+  AUD:{'Money Supply':'M3 Money Supply y/y','Central Bank Rate':'RBA Cash Rate','NFP / Employment Change':'Employment Change','Avg Hourly Earnings':'Wage Price Index','Consumer Confidence':'Westpac Consumer Sentiment'},
+  NZD:{'Money Supply':'M3 Money Supply m/m','Central Bank Rate':'RBNZ Official Cash Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Labour Cost Index','Consumer Confidence':'ANZ-Roy Morgan Consumer Confidence','Core CPI':'Non-tradables CPI','Business Confidence':'ANZ Business Confidence','GDT Price Index':'Global Dairy Trade Price Index','Terms of Trade':'Terms of Trade (goods)','Building Permits':'Building Consents','Inflation Expectations':'Business Inflation Expectations (RBNZ, 2 years ahead)'},
 };
 const IND_RESEARCH_DATA={
   USD:{entries:[
@@ -4076,6 +4077,7 @@ const IND_INFO_DEFAULTS={
   'GDT Price Index':'Global Dairy Trade auction — % change of the average dairy price vs. the previous auction (every 2 weeks). Dairy is New Zealand\'s largest export.',
   'Terms of Trade':'Export prices relative to import prices, quarter-over-quarter in %. Rising terms of trade lift national income.',
   'Building Permits':'New residential building consents, month-over-month change in %. A leading indicator for construction activity.',
+  'Money Supply':'Growth of the broad money supply of the central bank (EUR/CHF/JPY/AUD/NZD M3, GBP M4, USD M2, CAD M2++), in %. Faster growth than expected or than last time counts as bullish (more inflation pressure, more hawkish).',
   'Oil Inventories':'Weekly change of US commercial crude oil stocks (EIA, Wednesday), in million barrels. A draw (below forecast) is bullish for oil, a build is bearish. Counts half.',
   'MPC Vote Split':'Bank of England MPC votes as hike-cut-hold (same order as the calendar); colour = more or fewer hawkish votes (hike minus cut) than forecast. Shown only: 2017–2026 the pound did not move with a vote surprise on the day (25 surprises, t −0.35).',
   'Inflation Expectations':'Expected inflation from a survey (US: households, 1 year ahead; New Zealand: businesses, 2 years ahead), in %. Higher expectations keep the central bank hawkish.',
@@ -4251,7 +4253,11 @@ const NEUE_UMFRAGEN_2026_08={
   'Inflation':[['Inflation Expectations',['USD','NZD']],
     // Nutzer 2026-11-01: "bei gbp die stimmverteilung" - per Rueckfrage
     // Indikator neben dem Leitzins; nach der Messung nur Anzeige (SCORE_ZERO).
-    ['MPC Vote Split',['GBP']]]
+    ['MPC Vote Split',['GBP']],
+    // Nutzer 2026-11-01: "Ergaenz noch ueberall den Indikator m3 money supply
+    // bei inflation" - je Waehrung die Groesse ihrer Zentralbank (Anzeigename),
+    // EUR/GBP/USD aus TradingView, die uebrigen aus tools/geldmenge.mjs.
+    ['Money Supply',['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD']]]
 };
 // Alle Namen flach - fuer die Bereinigung unten.
 const UMFRAGE_NAMEN_2026_08=[...new Set(Object.values(NEUE_UMFRAGEN_2026_08).flat().map(x=>x[0]))];
@@ -4298,7 +4304,7 @@ function addSurveyInds(rubrics,sym){
       if(dn)ni.displayName=dn;
       // Inflationserwartung gehoert vor die Renditen, nicht ans Ende der
       // Karte - dort stehen die drei Bond-Zeilen als Block zusammen.
-      if(nm==='Inflation Expectations'){
+      if(nm==='Inflation Expectations'||nm==='Money Supply'){
         const i=rub.indicators.findIndex(x=>/Bond Yield|Spread/.test(x.name));
         i>=0?rub.indicators.splice(i,0,ni):rub.indicators.push(ni);
       }else if(nm==='MPC Vote Split'){

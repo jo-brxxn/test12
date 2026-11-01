@@ -8,6 +8,26 @@ Score - bei Widerspruch zu irgendeiner aelteren Herleitung in
 siehe eigenen Abschnitt weiter unten, sonst vergleicht die Stärke-Note zwei
 verschiedene Rechnungen.
 
+## ⚠️ Stand 2026-11-01 (SCORE_MODEL_VERSION 31): Money Supply bei allen acht Währungen
+
+Nutzer: *„Ergänz noch überall den Indikator m3 money supply bei inflation“*; per Rückfrage **im Score** (gegen die Messung) und für die Währungen ohne TradingView-Reihe **Quellen der Zentralbanken**.
+
+| Währung | Reihe (Anzeige) | Quelle | Wertung | Gemessen |
+|---|---|---|---|---|
+| EUR | M3 Money Supply y/y | TV (EZB) | Beat/Miss ±1 | Release-Tag +4,0 bp, t 0,93 (n 106) |
+| GBP | M4 Money Supply m/m | TV (BoE) | Beat/Miss ±1 | −1,3 bp, t −0,19 (n 34) |
+| USD | M2 Money Supply y/y | TV-Bestand → Jahresrate im Workflow (`usM2Jahresrate`) | Step ±0,5 | – (keine Prognose) |
+| CHF | M3 Money Supply y/y | SNB-API `snbmonagg` (GM3, VV) | Step ±0,5 | – |
+| JPY | M3 Money Stock y/y | BoJ stat-search `md02_m_1_en` | Step ±0,5 | – |
+| AUD | M3 Money Supply y/y | RBA D1 `DGFAM312` | Step ±0,5 | – |
+| CAD | M2++ Money Supply y/y | BoC Valet `M2PP_12MTH` (die BoC führt kein M3) | Step ±0,5 | – |
+| NZD | M3 Money Supply m/m | Trading Economics (RBNZ sperrt den Runner, 403) | Step ±0,5 | – |
+
+- ⚠ **Gegen die Aufnahme-Regel** („neue Zeile nur mit Test“): kein belegter Effekt; vom Nutzer trotz Hinweis gewählt. Zählt im Divisor.
+- Höheres Wachstum = bullish (mehr Inflationsdruck → hawkish).
+- Zentralbank-Reihen: Historie mit Monatsende des Bezugsmonats (`datumArt:'ref'`), Release = SNB/RBA-Veröffentlichungsdatum bzw. erster Lauf, der den Monat sah. Kein Kalendertermin (TV führt Geldmengen als Low) → NEXT „–“.
+- Geprüft von `check/geldmenge.js`.
+
 ## ⚠️ Stand 2026-11-01 (SCORE_MODEL_VERSION 30): Oil Inventories, MPC Vote Split
 
 Nutzer: *„füg bei Öl den Indikator oil inventories hinzu bei economy und bei gbp die stimmverteilung“*. Gemessen 2016–2026 (`cal_hist` + Kursarchiv, Schluss D−1 bis D):

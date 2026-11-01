@@ -21243,6 +21243,15 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Beim Bauen:** (1) `const trendsMultiBar='':''` — `node --check` meldete nichts (prüft nicht als ES-Modul), `check/syntax.js` schon (exit 1) → ab jetzt nach jeder Änderung `syntax.js`; (2) `KM_MENUES` vor der Deklaration benutzt (TDZ, App lud nicht) → Deklaration nach oben; (3) die neue Brücken-Prüfung in `structure.js` meldete die entfernten Namen sofort; (4) COT zeigte einen Display-Knopf auch ohne Menü-Inhalt → nur noch mit Inhalt (Gegenprobe deckte es auf).
 **Wächter:** `check/kontrollmenue.js` (A–D), Gegenprobe rot (2). `datamenu.js` auf den Baustein umgestellt.
 
+## 2026-11-01 — VERSION-CHECK-667: Money Supply bei allen acht Währungen, Score-Modell 31
+
+**Nutzer:** *„Ergänz noch überall den Indikator m3 money supply bei inflation“*. Rückfragen: *„EUR, GBP, USD – im Score“* (gegen die Messung: EUR t 0,93, GBP t −0,19) und *„Quellen der Zentralbanken anbinden“*.
+**Kritik vorab (im Chat):** M3 gibt es nicht überall — Fed seit 2006 ohne M3, BoE führt M4, BoC M2++; TradingView hat nur EUR/GBP/USD (USD nur als Bestand ohne Prognose → Vergleich mit dem Vorwert wäre fast immer „höher“).
+**Sonden** (`probe-money-sources.yml`, 4 Läufe; die Sandbox sperrt alle Zentralbanken): SNB-API ✓ (Sept 3,9 %, Release 21.10.), RBA D1 ✓ nach Datumsformat-Korrektur (6,1 %, Release 30.10.), BoC ohne M3-Reihe → M2++-Jahresrate ✓ (6,3 %), BoJ-Tabelle ✓ (1,2 %), RBNZ 403 (Cloudflare) → Trading Economics ✓ (−0,8 % m/m, Historie wächst je Lauf).
+**Gebaut:** Workflow-RULES EUR/GBP, `usM2Jahresrate` (USD), Schritt *Fetch money supply* (`tools/geldmenge.mjs`, `continue-on-error`, Vorstand), `HIST_REGELN=2026-11-01b`; App-Zeile vor den Renditen ×8 + Spiegel-Assets, Kalender-Muster nur Termin, Price-Karte: bei `datumArt:'ref'` nur der jüngste Pfeil (am Release, nicht am Monatsende).
+**Lokal geprüft** (Feed simuliert aus `cal_hist` + Sondenwerten): alle acht Zeilen, EUR bull (3,5 % gegen 3,4 %), GBP bear (0,1 % gegen 0,3 %), Step-Zeilen halb, JPY/NZD neutral (Vorwert gleich / fehlt), CHF-Pfeil nur am 21.10.
+**Wächter:** `check/geldmenge.js` (Gegenprobe rot, 2 Befunde).
+
 ## 2026-11-01 — VERSION-CHECK-666: drei Karten immer in einer Zeile, Achse der Price-Karte
 
 **Nutzer:** *„Pinned Notes Kalender und history immer in eine Zeile nebeneinander mach es einfach kleiner außer … am Handy“*. Vorher (665) ≤ 1180 px: 2 + Calendar darunter.
