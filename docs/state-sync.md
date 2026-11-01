@@ -35,7 +35,7 @@ Auto" = null ankommt), `setupCcyFilter`/`setupFxOnly`
 (Set-ups-Waehrungsfilter/FX-Quick-Filter), `calHighOnly`/`calCcyFilter`
 (Kalender-Filter), `abTrendLinien` (EMA20-Linien 1D/4H im Price-Chart,
 `'d,h'`, seit 2026-09-25), `pxChartTyp` (Candles | Line fuer ALLE
-Preis-Charts, `'candle'`/`'line'`, seit 2026-09-26), `cotVsPrice` (Kurslinie im
+Preis-Charts, `'candle'`/`'line'`, seit 2026-09-26), `pkMarkenAn` (Release-Pfeile der Price-Karte an/aus, `fxpro_pk_marken`, seit 2026-11-01), `cotVsPrice` (Kurslinie im
 COT-Verlauf an/aus, seit 2026-09-27), `telegramEnabled`,
 `newsSeenTs`, `zbQuittung` (seit 2026-10-27, läuft über `snap()`/`applySnap()` + `neueFelderBehalten()`: je Bank-Währung das Datum der Sitzung, deren roter Banner auf der Zentralbank-Karte weggeklickt wurde, `{USD:'2026-10-28'}`, bereinigt über `zbQuittungRein()`), `zbEntscheid` (seit 2026-10-27, VERSION-CHECK-645, gleicher Weg: je Bank-Währung und Sitzung der von Hand gewählte Zinsentscheid in Prozentpunkten, `{USD:{'2026-09-16':0.25}}`, überschreibt den Feed-Wert; gleich dem Feed = kein Eintrag; bereinigt über `zbEntscheidRein()`), `kontextSlots` (seit 2026-10-11: je Asset die drei Kontext-Charts, `{EUR:[null,'p:GOLD',null]}`, `fxpro_kontext_slots`), `denseMode` (seit 2026-10-11 dreiwertig: `'auto'`/`true`/`false`, gespeichert `auto`/`1`/`0`, `normDense()` nimmt alte Booleans an), `fxTheme` (seit 2026-10-24 nur `''` = Terminal Pro oder `'midnight'`; Altwerte über `normFxTheme()` migriert — dieselbe Liste in der Frueh-Weiche im `<head>`), ~~`appBg`~~ (Hintergrund-Wahl, entfernt 2026-10-24 — wird weder gesendet noch gelesen), `assetAnimEnabled` (und die drei weiteren
 Animations-Schalter aus demselben Vier-Schalter-Satz), `dashboards`/
@@ -46,6 +46,7 @@ Fundgeschichte einzelner Felder ggf. in `docs/CHANGELOG.md` nachschlagen.
 **Bewusst NICHT synchronisiert (nur Sitzung):** `abCalSicht` (Kalender-Karte
 Month | Past) und `calpRange` (Zeitfilter der Past-Liste) - die Karte startet
 immer im Monat, die Liste immer bei 2W, wie `cotHistRange`. Ebenso die **gezogenen Zeitspannen** (`abZoom`, `histZoom`, `mkZoom`, CUSTOM per Ziehen, seit 2026-10-20: ein Blick bis zum × oder Neuladen), das **Chart-Fenster des Country profile** (`cpfListe`, `cpfRange`, seit 2026-10-25: Ansicht bis zum Neuladen) und
+die **Price-Karte** (gewählter Tag, Hinzufügen-Modus, Vergleichs-Kurse je Asset und ihre Skala, seit 2026-11-01 — wie die Auswahl in Data) und
 `trendsFokus` (eigene Linienwahl im Trends-Fokus, seit 592): per Rueckfrage
 festgelegt "die Auswahl gilt bis zum Neuladen, wie andere Ansichtswahlen" -
 nach dem Neuladen wieder die 3 staerksten + 3 schwaechsten. Wird daraus je
@@ -113,6 +114,8 @@ vier Stellen: `cloudPush`/`exportData` (`data.tradeJournal`), `cloudPull`/
 - ⚠ Muster für jedes künftige Log-Feld dieser Art: ein Pull, der vereinigt, MUSS hochladen, wenn das Ergebnis mehr enthält als die Cloud — sonst bleibt der Rest nur lokal.
 
 ## Zentralbank-Notizen (seit 2026-10-27): KEINE eigene Speicherform
+
+**Gleiches Muster seit 2026-11-01: eigene Pfeile der Price-Karte** (`js/preiskarte.js`) = Notizen mit `pm = {a: Asset, d: Tag}`, Titel = Text, `bias`, `tags:['chart']`, ohne `asset`/`fids`. Löschen wie `resNoteToTrash` (Papierkorb + aus der Liste; Marker setzt `snap()`).
 
 Die Notizen der Zentralbank-Karte (`js/zentralbank.js`) sind ganz normale
 Einträge in `research.notes` mit einem Feld `cb = {b: Bank-Währung, s: 'infl'|'arb'|'wirt'|'allg', m: Sitzungsdatum}` (`'allg'` = General, seit 644; eine ältere App-Version blendet solche Notizen nur aus, der Abgleich nach `id` behält sie)

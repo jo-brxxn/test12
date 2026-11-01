@@ -1131,7 +1131,7 @@ entfernt. Trend zählt jetzt als Score-Treiber in der Price-Karte (EMA20 4h/1d).
 
 - Nutzer: *„… bounct das ja am Ende immer so zurück das finde ich gut mach das überall wo man scrollen kann“* → *„Senkrecht und seitlich aber in Tabellen nur ganz wenig und generell nur ganz wenig das es nicht so verspielt aussieht“*.
 - **Natives iOS-Gummiband überall aus** (nicht dosierbar) — `*{overscroll-behavior:none}` gilt jetzt auch für `.pc`/`.detail` und Chip-Fenster; nie `auto`/`contain`.
-- **Eigenes Federn `js/federn.js`:** Seite **14 px**, Listen/Tabellen/Fenster **8 px**, seitlich **6 px**; beim Ziehen über den Rand (abnehmender Zuwachs) und als kurzer Kick, wenn ein Wisch an den Rand ausläuft. **Nur Touch** — Mausrad federt nicht.
+- **Eigenes Federn `js/federn.js`:** Seite **20 px**, Listen/Tabellen/Fenster **12 px**, seitlich **9 px** (seit 663, *„bischen stärker“*; vorher 14/8/6; Obergrenze für „leicht“ 24/14/10 im Wächter); beim Ziehen über den Rand (abnehmender Zuwachs) und als kurzer Kick, wenn ein Wisch an den Rand ausläuft. **Nur Touch** — Mausrad federt nicht.
 - Bewegt nur die sichtbaren Kinder des Scrollbereichs per CSS `translate` (addiert sich zu `transform`, Grafikebene). Keine Weitergabe an die Seite.
 - Wächter: `check/federn.js`.
 
@@ -1919,6 +1919,18 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - Gilt für Data · Prices, Trends (alle Assets), Score vs Price.
 - **Seit 658 in JEDEM Chart:** Führungslinie durchgehend von ganz oben bis zum Boden, auch bei einer Linie (Nutzer 2026-11-01: *„durchgehend von ganz oben nach unten“*; ersetzt 2026-09-05 „nur vom Punkt zum Boden“). **Infokarte leicht transparent:** Fläche 80 % deckend, Schrift voll, kein Weichzeichner.
 - Geprüft von `check/hoverpunkte.js`.
+
+## Asset-Seite · Price-Karte (Dauerregel seit 2026-11-01, 665 — Option B mit Pfeilen)
+
+Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen Button die Markierungen aus dem Chart auszublenden und mach es so wie bei data bei compare all … bis zu 2 Assets … dann Linien, sonst … Kerze“*.
+
+- **Aufbau:** Price allein in der ersten Reihe (volle Breite), darunter **Pinned notes · History · Calendar** (≤ 1180 px: 2 + Calendar über beide, ≤ 640 px: eine Spalte). Kein Knopf *Price chart* mehr in der Kopfleiste.
+- **In der Karte:** links Spalte **268 px** (Handy/Karte < 720 px: unter dem Chart), rechts der Chart. Spalte = **Next up** (dieselben Termine wie die Kalender-Karte, Countdown über `countdownHtml`) oder nach Tipp auf einen Pfeil **der Tag**: Day · Next 5D · ▲▼◆, je Release eine Karte (Actual groß in Bias-Farbe, Forecast, Previous, Farbkante), eigene Pfeile mit *Mine*, unten *＋ Mark this day*. **Tipp ins Leere / ✕ / Esc → Next up.** Wechsel gleitet seitlich (rein von rechts, zurück von links).
+- **Pfeile:** zeigen von oben auf die Kerze (bzw. Linie), **ein Pfeil je Tag** (je **Woche**, sobald eine Kerze < 9 px ist), Farbe = Mehrheit der Releases (Actual gegen Forecast, wie der Kalender), Zahl = Anzahl. Nur **getrackte Indikatoren** des Assets (Zeilen mit Kalender-Muster). Gewählt: Pfeil 1,3×, Rest blass, Band über dem Tag. HTML-Ebene über dem Chart (das SVG ist gestreckt).
+- **Werkzeugzeile:** Display · **＋ Compare** · **Markers** (aus = keine Pfeile, Einstellung synchronisiert) · **＋ Mark** (nur mit Pfeilen) · Zeitraum.
+- **Eigener Pfeil:** ＋ Mark → Tag antippen (Geist-Pfeil folgt) → **Popover an der Kerze**: Text + drei Pfeile Bullish/Neutral/Bearish → Save. Hohl gezeichnet, fällt einmal ins Bild.
+- **Vergleich:** Gruppen-Fenster wie Data · Compare all, nur Kurse (Preis, 2Y/10Y, FX-Paare, VIX), **höchstens 2**; dann alle als **Linien** in einem Chart (Display: Scale Low → high | Common, Chart und EMA gesperrt), Pfeile auf der Linie des Assets; ohne Vergleich wieder Kerzen.
+- Geprüft von `check/preiskarte.js`.
 
 ## Kontrollmenü überall (Dauerregel seit 2026-11-01, 661)
 

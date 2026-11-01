@@ -124,6 +124,7 @@ const PRUEFUNGEN = [
   { n: 'hoverpunkte', s: 25, d: 'Hover bei mehreren Linien: Punkt auf jeder Linie, Karte nach Lage, Linie bis oben; Ein-Linien-Charts unveraendert', f: 'check/hoverpunkte.js', args: [], browser: true },
   { n: 'federn', s: 30, d: 'Leichtes Federn: natives iOS-Federn aus, Seite 14 / Listen 8 / seitlich 6 px, Kick nur nach Beruehrung', f: 'check/federn.js', args: [], browser: true },
   { n: 'datamenu', s: 25, d: 'Data-Kontrollmenue (Option C): Reiter, Display-Knopf mit Zusammenfassung, Menue unter dem Knopf, wirkt sofort', f: 'check/datamenu.js', args: [], browser: true },
+  { n: 'preiskarte', s: 40, d: 'Price-Karte: volle Breite + Pinned/History/Calendar, Release-Pfeile, Spalte Next up/Tag, Markers aus, eigene Pfeile (Notiz pm), Vergleich bis 2 Kurse als Linien, Handy', f: 'check/preiskarte.js', args: [], browser: true },
   { n: 'kontrollmenue', s: 30, d: 'Kontrollmenue (Option C) auf Trends, COT, Sentiment: Reiter, Display-Menue statt Show-Leiste, keine Pillen', f: 'check/kontrollmenue.js', args: [], browser: true },
   { n: 'preisvergleich', s: 30, d: 'Data Prices + Compare all + Context-Charts: alles waehlbar und waechst mit, Tief unten/Hoch oben, Achsenbruch mit echten Preisen, Kerzenfarben, Side by side, Fenster im Bild', f: 'check/preisvergleich.js', args: [], browser: true },
   { n: 'geloescht', s: 75,  d: 'Geloeschtes bleibt geloescht: zwei Geraete, zwei Tabs, Undo, Wiederherstellen; Vereinigung nur mit Loesch-Markern', f: 'check/geloescht.js', args: [], browser: true },

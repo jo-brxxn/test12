@@ -806,6 +806,82 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
 .ab-pk-chart{flex:1 1 auto;display:flex;min-height:118px}
 .ab-pk-chart .ab-plot{min-height:0}
 .ab-pk-chart .ab-plot-main .chv{min-height:92px}
+/* ── Price-Karte B (Nutzer 2026-11-01, js/preiskarte.js) ─────────────────
+   Price volle Breite, darunter Pinned notes · History · Calendar. In der Karte
+   links die Spalte (Next up | Releases des gewaehlten Tages), rechts der Chart
+   mit Release-Pfeilen (HTML-Ebene ueber dem gestreckten SVG). */
+.ab-cards>.ab-orow.ab-prow{grid-template-columns:minmax(0,1fr)}
+.ab-cards>.ab-orow.ab-orow3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1180px){.ab-cards>.ab-orow.ab-orow3{grid-template-columns:repeat(2,minmax(0,1fr))}.ab-orow3>.ab-col:nth-child(3){grid-column:1/-1}}
+@media(max-width:640px){.ab-cards>.ab-orow.ab-orow3{grid-template-columns:minmax(0,1fr)}}
+.ab-ptile.pk{container-type:inline-size;position:relative}
+.pk-body{display:grid;grid-template-columns:268px minmax(0,1fr);gap:12px;align-items:stretch;margin-top:2px}
+.pk-main{min-width:0;display:flex;flex-direction:column}
+.ab-ptile.pk .ab-pk-chart{flex:0 0 auto;height:clamp(260px,36vh,380px)}
+.pk-col{display:flex;flex-direction:column;min-height:0;height:clamp(260px,36vh,380px);border:1px solid var(--bd);border-radius:var(--rs);background:var(--bg2);overflow:hidden}
+@container (max-width:720px){.pk-body{grid-template-columns:minmax(0,1fr)}.pk-col{order:2;height:auto;max-height:440px}}
+.pk-col-hd{display:flex;align-items:center;gap:8px;min-height:42px;padding:6px 8px 6px 12px;border-bottom:1px solid var(--bd);flex:0 0 auto}
+.pk-col-t{font:800 var(--fs-sm)/1.2 var(--ff-text);color:var(--t0)}
+.pk-pill{height:20px;min-width:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;border-radius:10px;background:var(--bg3);border:1px solid var(--bd2);font:800 var(--fs-2xs)/1 var(--ff-num);color:var(--t1)}
+.pk-x{margin-left:auto;width:28px;height:28px;border-radius:8px;border:1px solid var(--bd2);background:var(--card);color:var(--t1);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font:700 13px/1 var(--ff-text)}
+.pk-list{flex:1 1 auto;min-height:0;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:6px}
+.pk-ev{flex:0 0 auto;border:1px solid var(--bd);border-left:4px solid var(--c,var(--bd2));border-radius:9px;background:var(--card);padding:7px 9px}
+.pk-ev-o{display:flex;align-items:baseline;gap:8px}
+.pk-ev-n{flex:1 1 auto;min-width:0;font:700 var(--fs-xs)/1.3 var(--ff-text);color:var(--t0)}
+.pk-ev-a{flex:0 0 auto;font:800 var(--fs-md)/1 var(--ff-num);color:var(--c,var(--t1))}
+.pk-ev-u{display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:4px;font-size:var(--fs-2xs);color:var(--t2)}
+.pk-ev-u b{font:800 var(--fs-2xs)/1.2 var(--ff-num);color:var(--t1)}
+.pk-stat{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;border-bottom:1px solid var(--bd);flex:0 0 auto}
+.pk-stat span{height:24px;display:inline-flex;align-items:center;gap:4px;padding:0 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--bd2);font:700 var(--fs-2xs)/1 var(--ff-text);color:var(--t2)}
+.pk-stat b{font:800 var(--fs-2xs)/1 var(--ff-num)}
+.pk-mine{flex:0 0 auto;display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;font:800 var(--fs-2xs)/1 var(--ff-text);letter-spacing:.3px;text-transform:uppercase;color:var(--ui-act-fg);background:var(--ui-act)}
+.pk-del{flex:0 0 auto;width:28px;height:28px;margin:-6px -6px -6px 0;border:0;background:transparent;color:var(--t2);cursor:pointer;font:700 13px/1 var(--ff-text)}
+.pk-neu{flex:0 0 auto;height:34px;border:1px dashed var(--bd2);border-radius:9px;background:transparent;color:var(--t1);font:700 var(--fs-xs)/1 var(--ff-text);cursor:pointer}
+.pk-leer{padding:12px 8px;color:var(--t2);font-size:var(--fs-xs)}
+.pk-knopf{height:28px;display:inline-flex;align-items:center;gap:5px;padding:0 9px;white-space:nowrap}
+.pk-knopf em{font-style:normal;font-weight:800;color:var(--t1)}
+.pk-knopf.an{border-color:var(--ui-act);color:var(--t0)}
+.ab-ptile.pk .pk-knopf.on{background:var(--ui-act);border-color:var(--ui-act);color:var(--ui-act-fg)}
+.ab-ptile.pk .pk-knopf.on em{color:var(--ui-act-fg)}
+.pk-mk-btn .pk-pfeil{width:10px;height:12px}
+.pk-mk-btn .pk-pfeil path{fill:currentColor}
+.pk-mk-btn:not(.an) .pk-pfeil path{fill:none;stroke:currentColor;stroke-width:1.4}
+/* Pfeil-Ebene */
+.pk-chart .chv{position:relative}
+.pk-vgl{width:100%;height:100%;min-height:240px}
+.pk-lage{position:absolute;inset:0;pointer-events:none;z-index:2}
+.pk-pf{position:absolute;translate:-50% -100%;margin-top:-3px;display:flex;flex-direction:column;align-items:center;gap:1px;width:var(--pk-w,22px);padding:2px 0 0;border:0;background:transparent;cursor:pointer;pointer-events:auto;transform-origin:50% 100%;transition:opacity .2s,scale .26s cubic-bezier(.3,1.6,.5,1);-webkit-tap-highlight-color:transparent}
+.pk-pfeil{display:block;width:12px;height:15px}
+.pk-pf .pk-pfeil{width:min(12px,var(--pk-w,22px));height:auto}
+.pk-pf-i{display:block;color:var(--c)}
+.pk-pf-i .pk-pfeil path{fill:currentColor}
+.pk-pf-i.pk-eig .pk-pfeil path{fill:var(--card);stroke:currentColor;stroke-width:1.6}
+.pk-n{font:800 var(--fs-2xs)/1 var(--ff-num);color:var(--t1);font-style:normal}
+.pk-lage.sel .pk-pf:not(.on){opacity:.3}
+.pk-pf.on{scale:1.3}
+@media(hover:hover){.pk-pf:hover{scale:1.15}.pk-pf.on:hover{scale:1.3}}
+.pk-band{position:absolute;top:0;bottom:0;left:0;width:0;background:rgba(var(--ui-act-rgb),.08);border-radius:6px;opacity:0;transition:opacity .22s,left .22s,width .22s}
+.pk-lage.sel .pk-band{opacity:1}
+.pk-tipp{position:absolute;left:8px;top:6px;display:none;align-items:center;height:26px;padding:0 10px;border-radius:13px;background:var(--ui-act);color:var(--ui-act-fg);font:700 var(--fs-xs)/1 var(--ff-text);animation:pkPuls 1.6s ease-in-out infinite}
+@keyframes pkPuls{0%,100%{opacity:1}50%{opacity:.72}}
+.ab-ptile.pk-add .pk-tipp{display:inline-flex}
+.ab-ptile.pk-add .pk-chart{cursor:crosshair}
+.pk-geist{position:absolute;translate:-50% -100%;margin-top:-3px;color:var(--t1);opacity:.6;pointer-events:none}
+.pk-geist .pk-pfeil path{fill:none;stroke:currentColor;stroke-width:1.4;stroke-dasharray:2 2}
+/* Popover fuer einen eigenen Pfeil, an der Kerze */
+.pk-pop{position:absolute;z-index:6;width:300px;max-width:calc(100% - 16px);box-sizing:border-box;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:var(--shadow-pop);padding:10px;animation:pkPop .24s cubic-bezier(.3,1.4,.5,1);transform-origin:var(--ox,50%) 100%}
+@keyframes pkPop{from{scale:.94;opacity:0}to{scale:1;opacity:1}}
+.pk-pop::after{content:'';position:absolute;bottom:-7px;left:var(--ox,50%);width:12px;height:12px;margin-left:-6px;background:var(--card);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);rotate:45deg}
+.pk-pop.unten::after{display:none}
+.pk-pop-t{font:800 var(--fs-xs)/1.2 var(--ff-text);color:var(--t0);margin-bottom:8px}
+.pk-in{height:34px;width:100%;box-sizing:border-box;border:1px solid var(--bd2);border-radius:8px;background:var(--bg2);color:var(--t0);padding:0 10px;font:600 var(--fs-sm)/1 var(--ff-text)}
+.pk-pop-r{display:flex;align-items:center;gap:6px;margin-top:8px}
+.pk-rund{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:2px solid transparent;background:var(--bg3);color:var(--c);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:border-color .18s,scale .2s}
+.pk-rund .pk-pfeil path{fill:currentColor}
+.pk-rund.on{border-color:var(--c);scale:1.08}
+.pk-pop-r .pk-ab{margin-left:auto}
+.pk-pop-r .btn{height:34px}
+.pk-ok{background:var(--ui-act);border-color:var(--ui-act);color:var(--ui-act-fg)}
 .ab-pk-s{margin-top:5px;text-align:right}
 /* Der Streifen mit 1D/1W/1M/YTD sitzt jetzt IN der Karte - also ohne eigenen
    Rahmen und ohne eigenen Schatten, sonst steht ein Kasten im Kasten. */
@@ -7142,11 +7218,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-664 - Neue Indikatoren: OIL Oil Inventories (EIA, woechentlich, halbes Gewicht, Abbau = bullish) unter Economic Growth; GBP MPC Vote Split (Hike-Cut-Hold) unter BoE Bank Rate, nur Anzeige nach Messung; Score-Modell 30; vorher 663: Entwuerfe neue Price-Karte, Federn staerker."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-665 - Asset-Seite: Price-Karte volle Breite (Option B mit Pfeilen): Release-Pfeile in Bias-Farbe ueber den Kerzen, Spalte Next up bzw. Releases des Tages, Markers aus/an, eigene Pfeile per Popover, Vergleich bis 2 Kurse als Linien; darunter Pinned notes, History, Calendar; Knopf Price chart weg, Vorschau entfernt; vorher 664: Oil Inventories + MPC Vote Split."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-664</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-665</span>
     </span>
   </div>
   <div class="hdr-r">

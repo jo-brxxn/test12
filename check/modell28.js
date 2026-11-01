@@ -54,7 +54,8 @@ function kurveSoll(c, gestern) {
           if (fx && i.name === 'Yield Curve (10Y-2Y)') o.kurve[s.id] = i.pkt;
           if (fx && bn === '10Y Bond Yield' && t.total !== 0) o.zehn.push(s.id + ' ' + t.total);
           if (!fx && bn === '10Y Bond Yield' && t.total !== 0) o.nonfx10++;
-          if (!indIsStale(i) && !(fx && (NA._.includes(bn) || (NA[s.id] || []).includes(bn)))) n++;
+          // Modell 30: MPC Vote Split zaehlt 0 (SCORE_ZERO) und steht nicht im Divisor
+          if (bn !== 'MPC Vote Split' && !indIsStale(i) && !(fx && (NA._.includes(bn) || (NA[s.id] || []).includes(bn)))) n++;
           if (fx) [['rates', ['2Y Bond Yield', '2Y Yield Gap (20d)'], 1.25], ['jobs', ['NFP / Employment Change', 'Unemployment Rate'], 1], ['conf', ['Consumer Confidence'], 0.5]]
             .forEach(([id, namen, max]) => { if (namen.includes(bn)) { blk[id] = blk[id] || { max, s: 0 }; blk[id].s += indScore(i, r); } });
         });

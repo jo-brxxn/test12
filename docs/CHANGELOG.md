@@ -21243,6 +21243,21 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Beim Bauen:** (1) `const trendsMultiBar='':''` — `node --check` meldete nichts (prüft nicht als ES-Modul), `check/syntax.js` schon (exit 1) → ab jetzt nach jeder Änderung `syntax.js`; (2) `KM_MENUES` vor der Deklaration benutzt (TDZ, App lud nicht) → Deklaration nach oben; (3) die neue Brücken-Prüfung in `structure.js` meldete die entfernten Namen sofort; (4) COT zeigte einen Display-Knopf auch ohne Menü-Inhalt → nur noch mit Inhalt (Gegenprobe deckte es auf).
 **Wächter:** `check/kontrollmenue.js` (A–D), Gegenprobe rot (2). `datamenu.js` auf den Baustein umgestellt.
 
+## 2026-11-01 — VERSION-CHECK-665: Price-Karte B mit Pfeilen, neuer Seitenaufbau
+
+**Nutzer** (Wahl aus den Entwürfen 663): *„Ich will Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen Button die Markierungen aus dem Chart auszublenden und mach es so wie bei data bei compare all das man einen großen Filter hat und bis zu 2 Assets in den Chart hinzufügen kann wenn das passiert soll der Chart automatisch zu Linien werden sonst bei nur einem Asset als Kerze“* (+ aus 663: Price volle Breite, Kalender neben History, Knopf *Price chart* weg).
+**Gebaut** (`js/preiskarte.js`, neu):
+- Aufbau: Price allein in Reihe 1, darunter Pinned notes · History · Calendar; Knopf *Price chart* weg (das Fenster selbst bleibt im Code, ist aber nicht mehr erreichbar — `check/einheit.js`, `yachse.js`, `uebergang.js`, `zeitspanne.js` rufen es direkt auf).
+- Release-Pfeile: getrackte Indikatoren (Zeilen mit Kalender-Muster), Werte aus der Feed-Historie (Text wie im Kalender), Farbe `actualColor`; je Tag ein Pfeil (< 9 px je Kerze: je Woche), Zahl = Releases. HTML-Ebene, weil der Kerzenchart per `preserveAspectRatio="none"` gestreckt ist. Kopfraum 16 % (`abKerzenBlock opt.kopf`).
+- Spalte Next up ↔ Tag (Karten, Day / Next 5D / ▲▼◆), Tipp ins Leere / ✕ / Esc zurück, seitliche Animation.
+- Markers aus/an (`pkMarkenAn`, Vier-Ecken-Sync), ＋ Mark → Popover an der Kerze; eigene Pfeile = Notizen mit `pm` (Abgleich, Lösch-Marker, Papierkorb wie die Bank-Notizen).
+- Vergleich: Gruppen-Fenster (Data · Compare all, nur Kurse), max. 2 → `preisChartHtml` als Linien in echter Breite (neue Optionen `fenster/weg/fest/zoom/kopf/lage`), Display: Scale wählbar, Chart + EMA gesperrt.
+- Vorschau `js/preisdemo.js` entfernt.
+**Gemessen und behoben beim Bauen:** (1) erster Fenstertag ohne Kerze (braucht Vortagesschluss) → Pfeil schwebte bei y 0,5 mitten im Chart → solche Tage ohne Pfeil; (2) Vergleichsfenster rechtsbündig → links 120 px aus dem Bild → linksbündig am Knopf; (3) `trashResNote` allein entfernt nichts → Löschen wie `resNoteToTrash`; (4) „Tomorrow“ als Text verletzt die Countdown-Regel (`check/structure.js`) → `countdownHtml`; (5) ein Neuaufbau (Feed) schloss das offene Popover → kommt mit dem Getippten wieder.
+**Wächter:** `check/preiskarte.js` (A–G, Gegenproben `--gegenprobe-leer`, `--gegenprobe-linien` rot).
+**Weitere Funde vor dem Push (gezielter Lauf, 22 Wächter):** `designregeln` F — Pfeil-Knöpfe an Nachbartagen überdeckten sich (1180 px ≈ 12 px je Tag, Knopf 22 px) → Knopfbreite = Tagesabstand − 1 px (max. 22), nach dem Aufbau mit der echten Breite nachgezogen; `kartenlook` erwartete noch 4 Kopf-Knöpfe inkl. *Price chart* → erwartet jetzt History · Backtester · Data quality und meldet einen zurückgekehrten *Price chart* (Gegenprobe gegen 664: 30× rot). `layout`/`cards` „396 > 390“ auf allen Tabs: am Stand 664 identisch (16 Befunde) — lokale Umgebung, in der CI grün, nicht von diesem Umbau.
+**CI 664 rot (modell28 DIVISOR GBP 22 ≠ 23, GBYIELD 19 ≠ 20):** der Wächter rechnet den Divisor unabhängig nach und kannte die neue 0-Zeile *MPC Vote Split* nicht — dieselbe Klasse wie `scorenachrechnung` (lokal schon vor dem Push nachgezogen). Gesucht: nur diese beiden Wächter rechnen den Divisor selbst; beide kennen jetzt Modell 30.
+
 ## 2026-11-01 — VERSION-CHECK-664: Oil Inventories (OIL) + MPC Vote Split (GBP), Score-Modell 30
 
 **Nutzer:** *„füg bei Öl den Indikator oil inventories hinzu bei economy und bei gbp die stimmverteilung die auch immer veröffentlicht wird“*. Rückfragen: Oil *„Zählt halb“*; MPC zuerst *„Indikator + Score“*, nach der Messung *„Nur Anzeige“*.

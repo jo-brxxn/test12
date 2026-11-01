@@ -34,6 +34,8 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   applyRevisionToValHist,applyTrendModel,checkPriceAlerts,fmtDayHdr,indBiasInputSig,indBiasPinned,
   invalidateRateStepCache,isNonFx,macroCcyFor,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,
   resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,todayStr,trackIndValues,widgets,feedEntryFor,kanonIndName,istAssetEigen,
+  // Was js/preiskarte.js (Price-Karte, zirkulaerer Import) von hier liest.
+  abCalNachTag,dataAlleAssetGruppen,dataAlleItems,pickerAnkern,preisChartHtml,abFenster,pkMarkenAn,pkMarkenUmschalten,
   IND_AUTO_RUBS,IND_EVENT_MATCHERS,calEvts,cloudAutoSync,evtMatchesSym,getSym,markLsUpdatedSeen,
   markPrefEdit,parsePolicyRate,periodLabel,rateInfo,recomputeAuto,scoreHist,selId,setSuppressBiasFlipAlerts,
   MACRO_DERIVE_RUBS,calCcyFilter,calHighOnly,calOpenDays,compactView,effDeriveRules,escJH,eventAlerts,
@@ -6920,14 +6922,14 @@ function saveSoon(){
 function exportData(){
   const data=JSON.parse(snap());
   data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.scoreMode=scoreMode;
-  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
+  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
   a.download='fx-analyst-'+todayStr()+'.json';a.click();
 }
 function importData(input){
   const f=input.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=normFxTheme(_imp.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
+  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=normFxTheme(_imp.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.pkMarkenAn!==undefined){setPkMarkenAnVal(_imp.pkMarkenAn);try{localStorage.setItem('fxpro_pk_marken',pkMarkenAn?'1':'0');}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
   r.readAsText(f);input.value='';
 }
 
@@ -7375,7 +7377,7 @@ async function cloudPushRoh(manual){
     // zuruecksetzen - siehe cloudPull-Kommentar).
     const z0=_userEditZaehler;
     const gesendet=snap();
-    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
+    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
     if(APP_VER)data.appVer=APP_VER;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
@@ -7592,6 +7594,7 @@ async function cloudPullRoh(manual,forceOverwrite){
         if(cd.abChartRange!==undefined){setAbChartRangeVal(cd.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}
         if(cd.abTrendLinien!==undefined){setAbTrendLinienVal(cd.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}
         if(cd.kontextSlots!==undefined){setKontextSlotsVal(cd.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}
+        if(cd.pkMarkenAn!==undefined&&!!cd.pkMarkenAn!==pkMarkenAn){setPkMarkenAnVal(cd.pkMarkenAn);try{localStorage.setItem('fxpro_pk_marken',pkMarkenAn?'1':'0');}catch(e){}if(curPage==='cur')renderDetail();}
         if(cd.cotVsPrice!==undefined&&!!cd.cotVsPrice!==cotVsPrice){setCotVsPriceVal(cd.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}if(curPage==='cot')renderCot();}
         if(cd.pxChartTyp!==undefined&&cd.pxChartTyp!==pxChartTyp){setPxChartTypVal(cd.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}pxTypNeuZeichnen();}
         if(cd.regimeCcy!==undefined){setRegimeCcyVal(cd.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}if(curPage==='regime')renderRegime();}
@@ -8130,7 +8133,9 @@ function renderDetail(){
   // AskUserQuestion bestaetigt) hier in der Kopfzeilen-Leiste erreichbar -
   // Klick schaltet zwischen Macro/Notes um wie zuvor die Buttons.
   const dmetaControls=`<div class="dmeta-controls">
-    <div class="dmeta-ctrl"><button class="dmeta-hist-btn" onclick="openPriceChart('${c.id}')" title="Price chart: daily closes as a line, step line or candles, with the releases of each day as cards underneath">Price chart</button></div>
+    ${/* Knopf "Price chart" am 2026-11-01 entfernt (Nutzer: "Entfern den Button
+         preischart oben in der Leiste") - seine Aufgabe (Releases je Tag) hat
+         die Price-Karte uebernommen (js/preiskarte.js). */''}
     <div class="dmeta-ctrl"><button class="dmeta-hist-btn" onclick="openHistModal('${c.id}')" title="History (${HIST_DAYS}D): last ${HIST_DAYS} days, colored by event outcome vs. forecast">History</button></div>
     <div class="dmeta-ctrl"><button class="dmeta-hist-btn" onclick="openBacktester('${c.id}')" title="Backtester: every rate hike and cut on file, and the inflation, labour and growth readings the central bank had in front of it — three releases each, so the trend into the decision is visible">Backtester</button></div>
     <div class="dmeta-ctrl"><button class="dmeta-hist-btn" onclick="openDataQuality('${c.id}')" title="Data quality &amp; weighting: spread, median surprise, half-life and measured market impact of every indicator of this asset">Data quality</button></div>
@@ -9404,6 +9409,19 @@ const AB_RANGES=[['3M',90],['6M',182],['1Y',365],['3Y',1095],['6Y',2190],['10Y',
 const CHART_TYPEN=[['candle','Candles'],['line','Line']];
 let pxChartTyp=(()=>{try{return localStorage.getItem('fxpro_px_typ')==='line'?'line':'candle';}catch(e){return'candle';}})();
 function setPxChartTypVal(v){pxChartTyp=v==='line'?'line':'candle';}
+// Release-Pfeile der Price-Karte ein/aus (Nutzer 2026-11-01: "mach einen
+// Button die Markierungen aus dem Chart auszublenden"). Einstellung ->
+// Vier-Ecken-Sync wie pxChartTyp (docs/state-sync.md). Standard: an.
+let pkMarkenAn=(()=>{try{return localStorage.getItem('fxpro_pk_marken')!=='0';}catch(e){return true;}})();
+function setPkMarkenAnVal(v){pkMarkenAn=!(v===false||v===0||v==='0');}
+// Wirft bei einem Speicherfehler - der Aufrufer (pkMarkenSchalter) meldet ihn.
+function pkMarkenUmschalten(){
+  pkMarkenAn=!pkMarkenAn;
+  localStorage.setItem('fxpro_pk_marken',pkMarkenAn?'1':'0');
+  localStorage.setItem('fxpro_updated',new Date().toISOString());
+  markLsUpdatedSeen();markPrefEdit();cloudAutoSync();
+  renderDetail();
+}
 function setPxChartTyp(v){
   try{
     setPxChartTypVal(v);
@@ -9679,6 +9697,8 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
   const ov=opt&&opt.trend?abTrendOverlayDaten(assetId,k,opt.trend):[];
   let hi=Math.max(...k.map(x=>x.h)),lo=Math.min(...k.map(x=>x.l));
   ov.forEach(o=>o.pkte.forEach(p=>{hi=Math.max(hi,p.ema+p.band);lo=Math.min(lo,p.ema-p.band);}));
+  // Kopfraum fuer die Release-Pfeile der Price-Karte (opt.kopf = Anteil)
+  if(opt&&opt.kopf>0)hi+=((hi-lo)||Math.abs(hi)*0.01||1)*opt.kopf;
   const sp=(hi-lo)||1;
   const y=v=>3+(1-(v-lo)/sp)*(H-6);
   // Handelstag-Raster. Jeder Tag bekommt ein gleich breites Fach, die Kerze
@@ -9767,6 +9787,7 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:${col}">Change</span><b style="color:${col}">${diff>0?'+':''}${zahl(diff)}</b></div>`});
   });
   sv+=ovLinien;
+  const kNach={};k.forEach(c=>{kNach[c.d]=c;});
   const pct=k[0].o?((k[k.length-1].c-k[0].o)/Math.abs(k[0].o)*100):0;
   const svg=`<svg class="ab-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${sv}</svg>`;
   const skala=[hi,(hi+lo)/2,lo].map(v=>`<span>${zahl(v)}${escH(einheit||'')}</span>`).join('');
@@ -9785,7 +9806,7 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
     // dem Chart (Nutzer-Wunsch), check/archiv.js misst daran aber weiter, ob
     // das Archiv wirklich gezeichnet wurde.
     html:`<div class="ab-plot" data-kerzen="${k.length}">
-      <div class="ab-plot-main">${chartHoverWrap(svg,pts,'height:100%',null,null,'ab')}<div class="ab-xax">${achsTxt}</div></div>
+      <div class="ab-plot-main${opt&&opt.lage?' pk-chart':''}">${chartHoverWrap(svg+(opt&&opt.lage?opt.lage({tage,breite:opt.breite||600,x:i=>(i*fach+fach/2)/W,y:d=>{const c=kNach[d];return c?y(alsLinie?c.c:c.h)/H:null;}}):''),pts,'height:100%',null,null,'ab')}<div class="ab-xax">${achsTxt}</div></div>
       <div class="ab-yax">${skala}</div>
     </div>`};
 }
@@ -11579,13 +11600,19 @@ function renderAssetBoard(c){
            weiter DREI - deshalb ein eigenes Raster statt einer vierten
            Spalte im gemeinsamen. Eine vierte Spalte im gemeinsamen Raster
            haette die drei Makro-Karten mit verschoben. */''}
-      <div class="ab-orow">
+      <div class="ab-orow ab-prow">
         ${/* ⚠ Reihenfolge 2026-09-18 auf Nutzer-Wunsch: „Tausch quicknotes und
              Kalender also die Plätze" - Calendar steht jetzt vor Pinned notes. */''}
-        <div class="ab-col">${abQuickGridHtml(c)}</div>
-        <div class="ab-col">${assetMonthCalHtml(c)}</div>
+        ${/* ⚠ 2026-11-01 (Nutzer): "die Karte Price die volle Breite ... und die
+             Kalender Karte rechts neben die history Karte ... sodass dann da
+             die 3 Karten nebeneinander sind" - Price allein in der ersten
+             Reihe (ab-prow), darunter Pinned notes · History · Calendar. */''}
+        <div class="ab-col ab-pcol">${abQuickGridHtml(c)}</div>
+      </div>
+      <div class="ab-orow ab-orow3">
         <div class="ab-col">${abPinnedHtml(c)}</div>
         <div class="ab-col">${abHistorieKarteHtml(c)}</div>
+        <div class="ab-col">${assetMonthCalHtml(c)}</div>
       </div>
       ${/* ⚠ Eigene Reihe ueber alle drei Spalten (Nutzer 2026-09-14: "Mach
            die 4 quicklinks als Zeile unter die 3 oberen Karten"). Sie steht
@@ -11700,7 +11727,18 @@ setAbTrendLinienVal(abTrendLinien);
 // und die EMA-Linien stehen im Display-Menue statt als lose Knoepfe ueber dem Chart.
 function abTrendTeil(){const a=abTrendLinien.split(',').filter(Boolean);return a.length===2?'EMA 1D + 4H':a[0]==='d'?'EMA 1D':a[0]==='h'?'EMA 4H':'no EMA';}
 function pxTypTeil(){return pxChartTyp==='candle'?'Candles':'Line';}
-KM_MENUES.abPreis=()=>{const a=abTrendLinien.split(',');return[kmTypAbschnitt(),{lbl:'Trend lines',kacheln:[{fn:'toggleAbTrendLinie',arg:'d',on:a.includes('d'),titel:'EMA 1D',sub:'EMA20 + neutral band'},{fn:'toggleAbTrendLinie',arg:'h',on:a.includes('h'),titel:'EMA 4H',sub:'EMA'+TREND_EMA_H+' + neutral band'}]}];};
+// Im Vergleich (js/preiskarte.js) zeichnet die Karte Linien in einer Skala:
+// Scale waehlbar, Chart und Trend lines gesperrt (EMA in Kurs-Einheiten passt
+// nicht auf eine 0-100-Skala) - wie Data · Prices "One chart".
+function pkVglTeile(){return['Lines',pkVglSkalaWert()==='bruch'?'Common':'Low → high'];}
+KM_MENUES.abPreis=()=>{
+  const a=abTrendLinien.split(','),c=getSym(),v=!!(c&&pkVergleichAktiv(c.id));
+  const trend={lbl:'Trend lines',hinweis:v?'only without comparison':'',kacheln:[{fn:'toggleAbTrendLinie',arg:'d',on:!v&&a.includes('d'),titel:'EMA 1D',sub:'EMA20 + neutral band',aus:v},{fn:'toggleAbTrendLinie',arg:'h',on:!v&&a.includes('h'),titel:'EMA 4H',sub:'EMA'+TREND_EMA_H+' + neutral band',aus:v}]};
+  if(!v)return[kmTypAbschnitt(),trend];
+  const typ=kmTypAbschnitt();
+  return[{lbl:'Scale',kacheln:[{fn:'pkVglSkalaSetzen',arg:'band',on:pkVglSkalaWert()!=='bruch',titel:'Low → high',sub:'each line 0–100'},{fn:'pkVglSkalaSetzen',arg:'bruch',on:pkVglSkalaWert()==='bruch',titel:'Common',sub:'real prices, axis breaks'}]},
+    Object.assign({},typ,{hinweis:'lines while comparing',kacheln:typ.kacheln.map(k=>Object.assign({},k,{on:k.arg==='line',aus:true}))}),trend];
+};
 KM_MENUES.abPreisRendite=()=>[kmTypAbschnitt()];
 KM_MENUES.abKontext=()=>[kmTypAbschnitt()];
 KM_MENUES.pxFenster=()=>[kmTypAbschnitt()];
@@ -11748,7 +11786,15 @@ function assetPreisKarteHtml(c){
   if(warten)ladePreisArchiv();
   const reihe=preisReiheAnzeige(c.id);
   const linien=abTrendLinien.split(',').filter(Boolean);
-  const ch=warten?{leer:true,html:ladeLogoHtml('Loading long price history…')}:abKerzenBlock(reihe,FX.includes(c.id)?KORB_NAME[c.id]:YIELD_CCY[c.id]?(c.full||c.name||c.id):(c.name||c.id),YIELD_CCY[c.id]?'%':'',c.id,null,YIELD_CCY[c.id]?'bond':'price',{trend:linien});
+  // Vergleich (js/preiskarte.js): bis zu 2 Kurse dazu -> alle als Linien in
+  // EINEM Chart (preisChartHtml, gezeichnet in echter Breite nach dem Aufbau);
+  // sonst Kerzen bzw. die gewaehlte Darstellung mit Release-Pfeilen.
+  const vergleich=pkVergleichAktiv(c.id);
+  const det=document.getElementById('detail'),dw=det?det.clientWidth:1000;
+  const breite=Math.max(200,dw>760?dw-268-14-90:dw-70);
+  const kb=warten?{leer:true,html:ladeLogoHtml('Loading long price history…')}:abKerzenBlock(reihe,FX.includes(c.id)?KORB_NAME[c.id]:YIELD_CCY[c.id]?(c.full||c.name||c.id):(c.name||c.id),YIELD_CCY[c.id]?'%':'',c.id,null,YIELD_CCY[c.id]?'bond':'price',
+    vergleich?{trend:[]}:{trend:linien,lage:api=>pkLageHtml(c.id,api),kopf:pkMarkenAn?0.16:0,breite});
+  const ch=vergleich&&!kb.leer?Object.assign({},kb,{html:`<div class="pk-vgl pk-chart" data-pk-vgl="1"></div>`}):kb;
   const w=trendWerte(c.id);
   // Kurz "EMA 1D"/"EMA 4H" (Nutzerwahl 2026-10-05 "Kompakt, max. 2 Zeilen"):
   // "1D EMA20"/"4H EMA38" kosteten 198 px der Werkzeugzeile. Die Perioden
@@ -11773,7 +11819,11 @@ function assetPreisKarteHtml(c){
       'The strip below shows the change over 1D, 1W, 1M and year to date.'])}
     </div>
     ${FX.includes(c.id)?`<div class="ab-tile-sub ab-korb" title="${escH(KORB_NAME[c.id]+': '+c.id+' against the other seven major currencies, equal weight (geometric mean). Not the rate against the US dollar - a dollar move alone does not move it. Closes only, so the candles have no wicks.')}">${escH(KORB_NAME[c.id])}</div>`:''}
-    ${chartLeisteHtml(YIELD_CCY[c.id]?kmKnopfHtml('abPreisRendite',[pxTypTeil()],'',true):kmKnopfHtml('abPreis',[pxTypTeil(),abTrendTeil()],'',true),`<span class="ab-rgs">${regler}</span>`)}`;
+    ${chartLeisteHtml((vergleich?kmKnopfHtml('abPreis',pkVglTeile(),'',true):YIELD_CCY[c.id]?kmKnopfHtml('abPreisRendite',[pxTypTeil()],'',true):kmKnopfHtml('abPreis',[pxTypTeil(),abTrendTeil()],'',true))
+      +`<button type="button" id="pkVglBtn" class="km-klein pk-knopf${vergleich?' an':''}" onclick="pkVglAuf()" aria-haspopup="true" title="Add up to 2 prices to this chart - it switches to lines">${vergleich?`Compare <em>${pkVglListe(c.id).length}/2</em>`:'＋ Compare'}</button>`
+      +`<button type="button" class="km-klein pk-knopf pk-mk-btn${pkMarkenAn?' an':''}" onclick="pkMarkenSchalter()" aria-pressed="${pkMarkenAn}" title="${pkMarkenAn?'Hide':'Show'} the release arrows in the chart">${PFEIL}<span>Markers</span></button>`
+      +(pkMarkenAn?`<button type="button" class="km-klein pk-knopf pk-add-btn${pkAddAktiv()?' on':''}" onclick="pkAddUmschalten()" aria-pressed="${pkAddAktiv()}" title="Add your own arrow: tap a day in the chart">${pkAddAktiv()?'✕ Cancel':'＋ Mark'}</button>`:''),
+      `<span class="ab-rgs">${regler}</span>`)}`;
   // Kerzen-Zaehler ("N daily candles · M with a measured high/low") am
   // 2026-10-06 auf Nutzer-Wunsch entfernt ("die Anzeige beim Preis wie viele
   // Kerzen angezeigt werden weg") - hier und in den Kontext-Charts. Bleibt nur
@@ -11783,10 +11833,14 @@ function assetPreisKarteHtml(c){
   // der Kopfleiste. Die Leiste ist am selben Tag auf Nutzer-Wunsch wieder
   // abgeschafft worden ("mach die leiste oben wieder weg und mach das wie
   // vorher") - also steht der Streifen wieder hier, wo er herkam.
-  return`<div class="ab-ptile">
+  // Spalte NACH dem Chart bauen: sie liest die Pfeil-Ebene, die er anlegt.
+  setTimeout(pkNachAufbau,0);
+  return`<div class="ab-ptile pk${pkAddAktiv()?' pk-add':''}">
     ${kopf}
-    <div class="ab-pk-chart">${ch.html}</div>
-    ${fuss}
+    <div class="pk-body">
+      <div class="pk-col">${pkSpalteHtml(c.id)}</div>
+      <div class="pk-main"><div class="ab-pk-chart">${ch.html}</div>${fuss}</div>
+    </div>
     ${YIELD_CCY[c.id]?'':abTrendScoreZeile(c)}
     ${assetPerfStripHtml(c)}
     ${abGoToHtml('trends')}
@@ -17871,11 +17925,8 @@ import {qcZerlegen} from './quickcapture.js';
 // Leichtes Federn am Scroll-Ende (Nutzer 2026-11-01), siehe js/federn.js
 import {federnAn} from './federn.js';
 try{federnAn();}catch(e){}
-// TEMPORAER (2026-11-01): drei Entwuerfe fuer die neue Price-Karte der
-// Asset-Seite beim App-Start - nach der Nutzer-Entscheidung entfernen (siehe
-// js/preisdemo.js).
-import {preisDemoStarten} from './preisdemo.js';
-try{preisDemoStarten();}catch(e){}
+// Price-Karte: Release-Pfeile, Spalte, eigene Pfeile, Vergleich (Wahl B, 2026-11-01)
+import {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkAddAktiv,PFEIL} from './preiskarte.js';
 
 // mvWidget() ist jetzt zonen-bewusst - siehe Definition oben bei
 // dashZoneOf()/ZONE_OF_TYPE (direkt vor renderDash()).
@@ -22011,18 +22062,21 @@ function preisChartHtml(keys,W,H,opt){
   // Unsichtbar neu gezeichnet (Data im Hintergrund): Flaeche 0 -> Mindestmass
   // statt negativer SVG-Breite (check/runtime.js, 2026-10-31: width -20).
   W=Math.max(200,Math.round(W)||0);H=Math.max(160,Math.round(H)||0);
+  // fenster/weg/fest/zoom/kopf/lage: fuer die Price-Karte der Asset-Seite
+  // (js/preiskarte.js, Vergleich): eigenes Zeitfenster, eigene Entfernen-
+  // Funktion, der Kurs des Assets selbst ohne ✕, Kopfraum + Pfeil-Ebene.
   const o=opt||{},typ=o.typ==='kerze'?'kerze':'linie',skala=o.skala||'band',bias=!!o.bias,mitLeg=o.legende!==false,namen=o.namen||preisNamen();
-  const {von,bis}=dataZeitfenster();
+  const {von,bis}=o.fenster||dataZeitfenster(),weg=o.weg||'removeDataPreis',fest=new Set(o.fest||[]);
   const serien=keys.map((k,i)=>Object.assign({k,t:namen.get(k)||k.replace(/^(p|pair):/,''),col:PREIS_FARBEN[i%PREIS_FARBEN.length]},preisDaten(k,von,bis,typ)));
   const mit=serien.filter(x=>x.kz.length>1&&isFinite(x.lo));
   const legende=mitLeg?`<div class="pv-lg">${serien.map(x=>`<span class="pv-i"><i class="pv-f" style="background:${x.col}"></i><b>${escH(x.t)}</b>${x.kz.length>1
     ?` <span class="pv-sp">${escH(preisWert(x.lo,x.einheit))} – ${escH(preisWert(x.hi,x.einheit))}</span> <em>range ${escH(preisSpanne(x))}</em>`
-    :' <em>no data in this period</em>'}<button class="pv-x" onclick="removeDataPreis('${escJH(x.k)}')" title="Remove ${escH(x.t)}" aria-label="Remove ${escH(x.t)}">✕</button></span>`).join('')}</div>`:'';
+    :' <em>no data in this period</em>'}${fest.has(x.k)?'':`<button class="pv-x" onclick="${weg}('${escJH(x.k)}')" title="Remove ${escH(x.t)}" aria-label="Remove ${escH(x.t)}">✕</button>`}</span>`).join('')}</div>`:'';
   if(!mit.length)return legende+`<div class="ind-hist-empty">No prices in this period — pick a longer range.</div>`;
   // X = Handelstage (Vereinigung der Tage aller Kurse), nicht Kalendertage.
   const tage=[...new Set(mit.flatMap(x=>x.kz.map(z=>z.d)))].sort(),ix=new Map(tage.map((d,i)=>[d,i]));
   const ns=mit.length;
-  const Hc=Math.max(120,H-(mitLeg?34:0)),L=skala==='band'?36:60,R=10,T=10,B=24;
+  const Hc=Math.max(120,H-(mitLeg?34:0)),L=skala==='band'?36:60,R=10,T=Math.max(10,+o.kopf||10),B=24;
   const pw=Math.max(40,W-L-R),ph=Math.max(60,Hc-T-B),slot=pw/tage.length;
   let svg=`<svg class="pv-svg" width="${W}" height="${Hc}" viewBox="0 0 ${W} ${Hc}">`;
   const raster=(y,stark)=>`<line x1="${L}" y1="${y.toFixed(1)}" x2="${(L+pw).toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--t3)" stroke-width="${stark?1:0.6}"${stark?'':' stroke-dasharray="2,3"'} opacity="${stark?0.45:0.3}"/>`;
@@ -22096,6 +22150,12 @@ function preisChartHtml(keys,W,H,opt){
     svg+=g+'</g>';
   });
   svg+='</svg>';
+  // Pfeil-Ebene der Price-Karte: auf der Linie des ERSTEN Kurses (das Asset).
+  if(o.lage&&mit[0]){
+    const x0=mit[0],kz=new Map(x0.kz.map(z=>[z.d,z.c]));let zl=null;
+    const zuletzt={};tage.forEach(d=>{if(kz.has(d))zl=kz.get(d);zuletzt[d]=zl;});
+    svg+=o.lage({tage,breite:pw,x:i=>(L+(i+0.5)*slot)/W,y:d=>zuletzt[d]==null?null:yOf(x0,zuletzt[d])/Hc});
+  }
   // Hover: hoechstens ~400 Stuetzpunkte; je Kurs der letzte Schluss bis zu diesem Tag.
   const schritt=Math.max(1,Math.ceil(tage.length/400)),zeiger=mit.map(()=>0),hpts=[];
   tage.forEach((d,j)=>{
@@ -22117,7 +22177,7 @@ function preisChartHtml(keys,W,H,opt){
     const oben=zeilen[0],rows=zeilen.map(z=>z.html).join('');
     hpts.push({fx:(L+(j+0.5)*slot)/W,fy:(oben?oben.y:T+ph/2)/Hc,t:d,col:oben?oben.col:'var(--t3)',ys:zeilen.map(z=>({fy:z.y/Hc,col:z.col})),ly:T/Hc,tip:`<div class="chv-tip-d">${escH(fmtDayHdr(d))}</div>${rows||'<span style="color:var(--t3)">no data</span>'}`});
   });
-  return legende+chartHoverWrap(svg,hpts,`width:${W}px`,'data',null,'setDataRange');
+  return legende+chartHoverWrap(svg,hpts,`width:${W}px`,o.zoom?null:'data',null,o.zoom||'setDataRange');
 }
 function preisVergleichHtml(keys,W,H){return preisChartHtml(keys,W,H,{typ:pxChartTyp==='candle'?'kerze':'linie',skala:dataPreisSkala});}
 // ── Compare all: beliebige Charts beliebiger Assets nebeneinander ──

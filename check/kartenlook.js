@@ -203,7 +203,7 @@ const MIN_SCHATTEN_LAGEN = 3;
         const ptile = d.querySelector('.ab-ptile');
         return {
           dmeta: !!d.querySelector('.dmeta'),
-          knoepfe: d.querySelectorAll('.dmeta .dmeta-hist-btn').length,
+          knoepfe: [...d.querySelectorAll('.dmeta .dmeta-hist-btn')].map(b => b.textContent.trim()),
           // Seit 2026-09-22 gibt es wieder eine .ahead - als KARTE aus dem
           // Nutzerbild (Titel + Next event + Tabs). Abgelehnt war 2026-09-14
           // die Leiste MIT KENNZAHLEN (.ahk-*, 1D/1W/1M/YTD oben). Genau die
@@ -225,9 +225,15 @@ const MIN_SCHATTEN_LAGEN = 3;
       if (!r.titelInKopf) fail('ASSET-TITEL FEHLT IM KOPF',
         `${id} bei ${w}px: die Kopfkarte (.ahead) traegt keinen .atitle. Beim Rueckbau 2026-09-14 waere der Titel schon einmal fast verschwunden.`);
       if (!r.dmeta) fail('META-ZEILE FEHLT',
-        `${id} bei ${w}px: keine .dmeta-Zeile. Das ist die Zeile mit "Next event" und der Knopfleiste - ohne sie sind Price chart, History, Backtester und Data quality gar nicht erreichbar.`);
-      if (r.dmeta && r.knoepfe < 4) fail('KNOEPFE FEHLEN IN DER META-ZEILE',
-        `${id} bei ${w}px: nur ${r.knoepfe} von 4 Knoepfen (Price chart, History, Backtester, Data quality) in der .dmeta-Zeile.`);
+        `${id} bei ${w}px: keine .dmeta-Zeile. Das ist die Zeile mit "Next event" und der Knopfleiste - ohne sie sind History, Backtester und Data quality gar nicht erreichbar.`);
+      // Seit 665 drei Knoepfe: "Price chart" ist auf Nutzer-Wunsch weg (2026-11-01,
+      // "Entfern den Button preischart"), die Price-Karte hat seine Aufgabe.
+      const KNOEPFE = ['History', 'Backtester', 'Data quality'];
+      const fehlt = r.dmeta ? KNOEPFE.filter(k => !r.knoepfe.includes(k)) : [];
+      if (fehlt.length) fail('KNOEPFE FEHLEN IN DER META-ZEILE',
+        `${id} bei ${w}px: es fehlt ${fehlt.join(', ')} in der .dmeta-Zeile (da: ${r.knoepfe.join(', ')}).`);
+      if (r.dmeta && r.knoepfe.some(k => /price chart/i.test(k))) fail('PRICE CHART IST ZURUECK',
+        `${id} bei ${w}px: der Knopf "Price chart" steht wieder in der .dmeta-Zeile (Nutzer 2026-11-01: entfernt).`);
       // ⚠ Der Streifen ist beim 518er Umbau nach oben gewandert und beim
       // Rueckbau wieder heruntergekommen. Genau solche Wanderungen fallen
       // sonst niemandem auf - die Zahlen sind ja irgendwo.
