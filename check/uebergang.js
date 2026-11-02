@@ -162,9 +162,10 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
   if (offen) fail('WISCH ENDET NICHT', `${offen} Wisch-Ebene(n) ${dauer + 300} ms spaeter noch da`);
   const rest = await p.evaluate(() => ({ alt: document.querySelectorAll('.wisch-alt').length, dps: document.querySelectorAll('#detail>.dp').length, inert: document.querySelectorAll('#pageArea [inert]').length }));
   if (rest.alt || rest.dps !== 1 || rest.inert) fail('ALTE SEITE BLEIBT', `nach dem Wisch: ${rest.alt} .wisch-alt, ${rest.dps} .dp in #detail, ${rest.inert} inert-Reste`);
-  await p.evaluate(() => { const m = document.getElementById('mHist'); if (m) m.style.display = 'none'; openPriceChart(getSym().id); });
+  // Fenster-Beispiel: History (das alte "Price chart"-Fenster ist seit 669 entfernt)
+  await p.evaluate(() => { const m = document.getElementById('mHist'); if (m) m.style.display = 'none'; openHistModal(getSym().id); });
   const beiFenster = await p.evaluate(() => document.querySelectorAll('.wisch').length);
-  if (beiFenster) fail('WISCH BEI FENSTER', 'das Oeffnen von "Price chart" (ein Fenster, kein Seitenwechsel) loest den Wisch aus');
+  if (beiFenster) fail('WISCH BEI FENSTER', 'das Oeffnen von "History" (ein Fenster, kein Seitenwechsel) loest den Wisch aus');
   await p.evaluate(() => document.querySelectorAll('.ov').forEach(o => o.style.display = 'none'));
   // 4) Seitenwechsel ohne Asset wischt ebenfalls, mit Szene
   await p.evaluate(() => showTab('dash')); await p.waitForTimeout(120);

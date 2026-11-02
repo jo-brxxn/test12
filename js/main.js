@@ -9440,7 +9440,6 @@ function setPxChartTyp(v){
 function pxTypNeuZeichnen(){
   try{if(document.querySelector('#detail .ab-ptile,#detail .ab-ktile'))renderDetail();}catch(e){}
   try{if(curPage==='data')renderDataTab();}catch(e){}
-  try{const m=document.getElementById('mPrice');if(m&&m.style.display==='flex')renderPriceChart();}catch(e){}
 }
 // Symbolknoepfe statt Text (Nutzerwahl 2026-10-05 "Kompakt, max. 2 Zeilen"):
 // "Candles"/"Line" kosteten 126 px der Werkzeugzeile, die Symbole ~60 px.
@@ -11721,7 +11720,6 @@ KM_MENUES.abPreis=()=>{
 };
 KM_MENUES.abPreisRendite=()=>[kmTypAbschnitt()];
 KM_MENUES.abKontext=()=>[kmTypAbschnitt()];
-KM_MENUES.pxFenster=()=>[kmTypAbschnitt()];
 function toggleAbTrendLinie(k){
   try{
     const a=new Set(abTrendLinien.split(',').filter(Boolean));
@@ -21501,251 +21499,10 @@ function btReasonCell(ccy,date,ph){
       onchange="setBtReason('${escJH(ccy)}','${escJH(date)}',this.value)">${escH(txt)}</textarea>${quelle}
   </td>`;
 }
-// Step entfaellt 2026-09-26 ("Candles | Line ueberall"); der Typ ist der
-// gemeinsame pxChartTyp aller Preis-Charts.
-let priceChartAsset=null;
-let priceRange=6,priceCustomFrom=null,priceCustomTo=null;
-function setPriceRange(v){priceRange=(v==='MAX'||v==='CUSTOM')?v:+v;renderPriceChart();}
-// ⚠ MUSS existieren: timeRangeCustomHtml baut den Handlernamen als String
-// zusammen ("<setFnName>Custom") - siehe die Warnung bei setIndHistRangeCustom.
-function setPriceRangeCustom(from,to){priceCustomFrom=from||null;priceCustomTo=to||null;renderPriceChart();}
-function openPriceChart(id){
-  priceChartAsset=id||((getSym()||{}).id||'');
-  openM('mPrice');
-  renderPriceChart();
-}
-// Fenster der Zeitreihe nach dem aktuellen Zeitfilter - identische Logik wie
-// im Indikator-Verlaufschart, damit beide Filterleisten gleich reagieren.
-function priceWindow(pts){
-  if(priceRange==='MAX')return pts;
-  if(priceRange==='CUSTOM')return pts.filter(p=>(!priceCustomFrom||p[0]>=priceCustomFrom)&&(!priceCustomTo||p[0]<=priceCustomTo));
-  const cut=new Date();cut.setMonth(cut.getMonth()-priceRange);
-  let cs='';try{cs=isoLokal(cut);}catch(e){}
-  const out=pts.filter(p=>p[0]>=cs);
-  return out.length>=2?out:pts.slice(-Math.min(pts.length,30));
-}
-// Was ist an einem Tag passiert? Zwei echte Quellen, keine dritte:
-//   1) calEvts - der Kalender-Feed, aber nur CAL_PAST_DAYS Tage rueckwaerts.
-//   2) die Release-Historie der Indikatoren (ind.chartHist, bis zu 3 Jahre) -
-//      dieselben Zahlen, die auch der Indikator-Verlaufschart zeichnet.
-// Erst beides zusammen deckt die Chart-Zeitraeume ab. Die Farbe kommt in
-// BEIDEN Faellen aus actualColor(), also exakt der Kalender-Logik
-// ("wie die herausgekommen sind ... Wie im Kalender").
-function priceEventsByDay(symId){
-  const map={};
-  const key=n=>String(n||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  const add=(date,o)=>{
-    const list=map[date]||(map[date]=[]);
-    if(list.some(x=>key(x.base)===key(o.base)))return;
-    list.push(o);
-  };
-  (calEvts||[]).forEach(ev=>{
-    if(!ev||!ev.date||ev.actual==null||ev.actual==='')return;
-    if(!evtMatchesSym(ev,symId))return;
-    add(ev.date,{base:stripPeriodSuffix(ev.name||'').base,name:ev.name||'',
-      actual:ev.actual,forecast:ev.forecast,previous:ev.previous,
-      col:actualColor(ev,symId),high:evtImpact(ev)==='high'});
-  });
-  const sym=syms.find(s=>s.id===symId);
-  ((sym&&sym.rubrics)||[]).forEach(r=>(r.indicators||[]).forEach(ind=>{
-    const hist=Array.isArray(ind.chartHist)?ind.chartHist:[];
-    if(hist.length<1)return;
-    const fmt=v=>fmtIndVal(v,'');
-    const nm=indName(ind);
-    hist.forEach((p,i)=>{
-      if(!p||!p[0])return;
-      const evLike={name:ind.name,actual:fmt(p[1]),forecast:fmt(p[2]),previous:i>0?fmt(hist[i-1][1]):''};
-      if(evLike.actual==='')return;
-      add(p[0],{base:stripPeriodSuffix(ind.name).base,name:nm,
-        actual:evLike.actual,forecast:evLike.forecast,previous:evLike.previous,
-        col:actualColor(evLike,symId),high:false});
-    });
-  }));
-  return map;
-}
-// Zeichnet die Verbindungslinien zwischen Chart-Tag und Event-Kaertchen neu.
-// Muss nach jedem Rendern UND bei jedem Scrollen der Kartenleiste laufen,
-// weil sich dabei nur die Karten bewegen, nicht der Chart.
-function drawPriceConnectors(){
-  const band=document.getElementById('pxLink');
-  const strip=document.getElementById('pxCards');
-  const chart=document.getElementById('pxChart');
-  if(!band||!strip||!chart)return;
-  const br=band.getBoundingClientRect(),cr=chart.getBoundingClientRect(),sr=strip.getBoundingClientRect();
-  if(!br.width)return;
-  const H=br.height||26;
-  let d='';
-  [...strip.querySelectorAll('.px-card')].forEach(card=>{
-    const fx=parseFloat(card.dataset.fx);
-    if(!isFinite(fx))return;
-    const kr=card.getBoundingClientRect();
-    // Karten ausserhalb des sichtbaren Leisten-Ausschnitts bekommen keine
-    // Linie - sonst laeuft sie quer durch die halbe Leiste ins Nichts.
-    if(kr.right<sr.left+2||kr.left>sr.right-2){card.classList.remove('px-card-linked');return;}
-    card.classList.add('px-card-linked');
-    const x1=cr.left-br.left+fx*cr.width;
-    const x2=Math.max(sr.left,Math.min(sr.right,kr.left+kr.width/2))-br.left;
-    d+=`M${x1.toFixed(1)} 0 C${x1.toFixed(1)} ${(H*0.55).toFixed(1)} ${x2.toFixed(1)} ${(H*0.45).toFixed(1)} ${x2.toFixed(1)} ${H}`;
-  });
-  band.innerHTML=`<svg width="100%" height="100%" style="display:block;overflow:visible"><path d="${d}" fill="none" stroke="var(--bd2)" stroke-width="1" opacity=".85"/></svg>`;
-}
-// Hebt die Karte(n) des gerade unter dem Cursor liegenden Tages hervor.
-function markPriceCards(date){
-  const strip=document.getElementById('pxCards');if(!strip)return;
-  let first=null;
-  [...strip.querySelectorAll('.px-card')].forEach(c=>{
-    const on=!!date&&c.dataset.date===date;
-    c.classList.toggle('on',on);
-    if(on&&!first)first=c;
-  });
-  // Ohne dieses Nachziehen markiert man eine Karte, die gerade gar nicht im
-  // Ausschnitt steht - man sieht die Markierung also nie.
-  if(first){
-    const sr=strip.getBoundingClientRect(),kr=first.getBoundingClientRect();
-    if(kr.left<sr.left||kr.right>sr.right)strip.scrollLeft+=kr.left-sr.left-24;
-  }
-}
-function renderPriceChart(){
-  const el=document.getElementById('pxBody');if(!el)return;
-  const id=priceChartAsset;
-  const sym=syms.find(s=>s.id===id);
-  const ttl=document.getElementById('mPriceTitle');
-  if(ttl)ttl.textContent=(sym?(sym.name||id):id)+(FX.includes(id)?' — '+KORB_NAME[id]+' (vs the other 7, equal weight)':' — price');
-  const feed=(typeof PRICE_DATA_FEED!=='undefined'&&PRICE_DATA_FEED)?PRICE_DATA_FEED[id]:null;
-  // ⚠ Wochenende raus, bevor IRGENDETWAS gezeichnet wird - nicht erst im
-  // Kerzen-Zweig. Sonst haette dieselbe Seite je nach Modus verschiedene
-  // Tage: Kerzen ohne Samstag, Linie mit. Und die Ereignis-Kaertchen
-  // darunter haengen am selben Index wie der Chart. Krypto behaelt seine
-  // sieben Tage (siehe kerzenWochenendeErlaubt).
-  // Lange Historie bei Bedarf (price_hist.json) - Tage aus der Monatsstufe.
-  const pxTage=priceRange==='MAX'?null:priceRange==='CUSTOM'?null:Math.round(priceRange*30.44);
-  const pxWarten=preisArchivNoetig(id,pxTage,priceRange==='CUSTOM'?(priceCustomFrom||preisArchivAb(id)):null);
-  if(pxWarten)ladePreisArchiv();
-  const all=ohneWochenende(preisReiheAnzeige(id),id);
-  const pxAb=preisAnfang(id);
-  // Werkzeugleiste steht IMMER - auch im Leerfall, sonst sieht die Karte
-  // aus, als waere sie kaputt statt "fuer dieses Asset gibt es keine Reihe".
-  const modeBar=kmKnopfHtml('pxFenster',[pxTypTeil()],'',true);
-  const rangeBar=`<div class="ind-hist-toolbar" style="margin:0">${timeRangeBarHtml(priceRange,'setPriceRange',null,pxAb)}${timeRangeCustomHtml(priceRange,priceCustomFrom,priceCustomTo,'setPriceRange',pxAb)}</div>`;
-  const src=feed&&feed.source?`<a class="px-src" href="${safeUrl(feed.source)}" target="_blank" rel="noopener">Source ↗</a>`:'';
-  // Quelle steht unter dem Chart-Rahmen rechts (nicht mehr in der Leiste:
-  // rechts in der Leiste ist der Platz des Zeitfilters).
-  const bar=chartLeisteHtml(modeBar,rangeBar);
-  const srcZeile=src?`<div class="px-src-z">${src}</div>`:'';
-  if(pxWarten){el.innerHTML=bar+ladeLogoHtml('Loading long price history…');return;}
-  if(!all||all.length<2){
-    el.innerHTML=bar+`<div class="px-empty">No price series for ${escH(sym?(sym.name||id):id)}. price_data.json covers the eight FX currencies plus Gold, Silver, Oil, BTC, DAX, S&amp;P 500 and Nasdaq — nothing is estimated for the rest.</div>`;
-    return;
-  }
-  const use=priceWindow(all);
-  const n=use.length;
-  // padR 66: Y-Beschriftung rechts wie in der Price-Karte (Dauerregel 2026-09-26)
-  const W=1000,H=330,padL=12,padR=66,padT=26,padB=30;
-  const vals=use.map(p=>p[1]);
-  let vMin=Math.min(...vals),vMax=Math.max(...vals);
-  const pad=(vMax-vMin)*0.08||Math.abs(vMax||1)*0.01||1;
-  vMin-=pad;vMax+=pad;
-  if(vMin===vMax){vMin-=1;vMax+=1;}
-  const yOf=v=>padT+(1-(v-vMin)/(vMax-vMin))*(H-padT-padB);
-  const xOf=i=>padL+(i+0.5)/n*(W-padL-padR);
-  // Kerzenbreite folgt automatisch der Punktzahl im gewaehlten Zeitraum
-  // ("dann verändert sich auch automatisch die Größe der Kerzen").
-  const bw=Math.max(1,(W-padL-padR)/n*0.62);
-  // Bezugswert des ersten Punktes: der letzte Schluss VOR dem Fenster, sonst
-  // haette der erste Balken keine Richtung. Ist keiner da (Fenster beginnt am
-  // Anfang der Reihe), bleibt er farblich neutral statt geraten.
-  const firstIdx=all.indexOf(use[0]);
-  const prevOf=i=>i>0?use[i-1][1]:(firstIdx>0?all[firstIdx-1][1]:null);
-  // Kerzenfarbe = Richtung des TAGES (Nutzer 2026-09-13: Blau steigend,
-  // Schwarz fallend), nicht die Bias-Farbe des Assets.
-  const dirCol=(v,p)=>p==null?'var(--t3)':(v>=p?'var(--cndl-up)':'var(--cndl-dn)');
-  let body='';
-  if(pxChartTyp==='candle'){
-    // ⚠ EINE Kerzen-Rechnung fuer die ganze App: tagesKerzen(). Hier stand
-    // eine zweite, die dasselbe noch einmal ausrechnete - gemessen kam sie
-    // auf dieselben 114 Dochte von 128 Kerzen, also kein sichtbarer
-    // Unterschied. Trotzdem weg: zwei Rechnungen fuer dieselbe Kerze laufen
-    // irgendwann auseinander, und die naechste Regel (Wochenende, Klemmung
-    // des Dochts) haette man an zwei Stellen nachziehen muessen.
-    const idx={};use.forEach((p,i)=>{idx[p[0]]=i;});
-    const vorher=firstIdx>0?[all[firstIdx-1]]:[];
-    tagesKerzen(vorher.concat(use),id).forEach(c=>{
-      const i=idx[c.d];if(i==null)return;
-      const yo=yOf(c.o),yc=yOf(c.c);
-      const top=Math.min(yo,yc),h=Math.max(1.2,Math.abs(yc-yo));
-      const col=c.c>=c.o?'var(--cndl-up)':'var(--cndl-dn)';
-      if(c.ohlc&&(c.h>Math.max(c.o,c.c)||c.l<Math.min(c.o,c.c))){
-        body+=`<line x1="${xOf(i).toFixed(1)}" y1="${yOf(c.h).toFixed(1)}" x2="${xOf(i).toFixed(1)}" y2="${yOf(c.l).toFixed(1)}" stroke="${col}" stroke-width="1.2"/>`;
-      }
-      body+=`<rect x="${(xOf(i)-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(2,bw/4).toFixed(1)}" fill="${col}"/>`;
-    });
-  }else{
-    let d='';
-    use.forEach((p,i)=>{
-      const x=xOf(i).toFixed(1),y=yOf(p[1]).toFixed(1);
-      if(!i)d+='M'+x+' '+y;
-      else d+=' L'+x+' '+y;
-    });
-    // Dieselbe schlichte Linie wie in der Price-Karte (ohne Flaeche) - ein
-    // Umschalter, eine Darstellung (2026-09-26).
-    body=`<path class="px-linie" d="${d}" fill="none" stroke="var(--blue)" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/>`;
-  }
-  // Tage MIT Ereignis bekommen eine leise Markierung auf der Grundlinie -
-  // erst dadurch sieht man im Chart, wohin die Kaertchen unten gehoeren.
-  const evMap=priceEventsByDay(id);
-  const evDays=use.map((p,i)=>({i,date:p[0],evs:evMap[p[0]]||[]})).filter(d=>d.evs.length);
-  const ticks=evDays.map(d=>`<rect x="${(xOf(d.i)-1).toFixed(1)}" y="${(H-padB).toFixed(1)}" width="2" height="5" rx="1" fill="var(--bd2)"/>`).join('');
-  let spanDays=9999;
-  try{spanDays=Math.abs(new Date(use[n-1][0])-new Date(use[0][0]))/86400000;}catch(e){}
-  const fmtLbl=d=>{try{return new Date(d+'T00:00:00').toLocaleDateString('en',spanDays<=400?{day:'numeric',month:'short',year:'2-digit'}:{month:'short',year:'2-digit'});}catch(e){return d;}};
-  const every=Math.max(1,Math.ceil(n/(spanDays<=400?8:10)));
-  let xlab='';
-  use.forEach((p,i)=>{
-    const isLast=i===n-1;
-    if(i%every!==0&&!isLast)return;
-    if(isLast&&i%every!==0&&(i%every)<every*0.6)return;
-    xlab+=`<text x="${xOf(i).toFixed(1)}" y="${H-10}" text-anchor="middle" style="font-size:var(--fs-2xs);fill:var(--t3)">${escH(fmtLbl(p[0]))}</text>`;
-  });
-  const pxZahl=v=>Math.abs(v)>=1000?v.toFixed(0):Math.abs(v)>=100?v.toFixed(2):Math.abs(v)>=1?v.toFixed(3):v.toFixed(4);
-  const yAchse=achsenTicks(vMin,vMax,5).map(v=>{const yy=yOf(v);return`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-padR}" y2="${yy.toFixed(1)}" stroke="var(--bd)" stroke-width="1" stroke-dasharray="2 3" opacity=".75"/><text class="y-lbl" x="${W-padR+8}" y="${(yy+3.5).toFixed(1)}" text-anchor="start" style="font-size:var(--fs-2xs);fill:var(--t3)">${pxZahl(v)}</text>`;}).join('');
-  const svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-width:100%">
-    ${yAchse}
-    <line x1="${padL}" y1="${(H-padB).toFixed(1)}" x2="${W-padR}" y2="${(H-padB).toFixed(1)}" stroke="var(--bd)" stroke-width="1"/>
-    ${body}${ticks}${xlab}
-  </svg>`;
-  const hpts=use.map((p,i)=>{
-    const pv=prevOf(i);
-    const pct=pv?((p[1]/pv-1)*100):null;
-    const col=pct==null?'var(--t3)':(pct>=0?BC.bull:BC.bear);
-    const nEv=(evMap[p[0]]||[]).length;
-    return{fx:xOf(i)/W,fy:yOf(p[1])/H,col,date:p[0],
-      tip:`<div class="chv-tip-d">${escH(fmtDayHdr(p[0]))}</div>`
-        +`<b style="color:${col};font-size:14px">${pct==null?'–':(pct>0?'+':'')+pct.toFixed(2)+'%'}</b>`
-        +`<div class="px-tip-px">${escH(fmtPriceTick(p[1]))}</div>`
-        +(nEv?`<div class="px-tip-ev">${nEv} release${nEv===1?'':'s'} that day</div>`:'')};
-  });
-  const cards=evDays.map(d=>{
-    const rows=d.evs.slice(0,4).map(e=>`<div class="px-card-row">
-        <span class="px-card-nm" title="${escH(e.name)}">${escH(e.name)}</span>
-        <span class="px-card-a ${escH(e.col||'')}">${escH(e.actual)}</span>
-      </div>${(e.forecast||e.previous)?`<div class="px-card-fp">${e.forecast?'F '+escH(e.forecast):''}${e.forecast&&e.previous?' · ':''}${e.previous?'P '+escH(e.previous):''}</div>`:''}`).join('');
-    const more=d.evs.length>4?`<div class="px-card-more">+${d.evs.length-4} more</div>`:'';
-    return`<div class="px-card" data-date="${escH(d.date)}" data-fx="${(xOf(d.i)/W).toFixed(4)}">
-      <div class="px-card-d">${escH(fmtDayHdr(d.date))}</div>${rows}${more}</div>`;
-  }).join('');
-  const strip=evDays.length
-    ?`<div class="px-link" id="pxLink"></div><div class="px-cards" id="pxCards">${cards}</div>`
-    :`<div class="px-empty" style="margin-top:12px">No releases on record for this asset inside the selected range.</div>`;
-  el.innerHTML=bar
-    +`<div class="px-chart" id="pxChart">${chartHoverWrap(svg,hpts,null,null,pt=>markPriceCards(pt&&pt.date),'setPriceRange')}</div>`
-    +srcZeile+strip;
-  attachChartHovers(el);
-  const sc=document.getElementById('pxCards');
-  if(sc&&!sc._pxWired){sc._pxWired=1;sc.addEventListener('scroll',()=>{
-    if(sc._pxRaf)return;sc._pxRaf=requestAnimationFrame(()=>{sc._pxRaf=0;drawPriceConnectors();});
-  },{passive:true});}
-  requestAnimationFrame(drawPriceConnectors);
-}
+// Altes Preis-Fenster (#mPrice, openPriceChart/renderPriceChart, seit
+// 2026-09-05) entfernt 2026-11-02 (Nutzer: "ja entfern") - seit 663 ohne
+// Einstieg; Release-Pfeile und Tagesspalte leben in der Price-Karte
+// (js/preiskarte.js).
 // ── Insights-Tab "Data" ────────────────────────────────────────────
 // Nutzer-Wunsch 2026-09-05 (woertlich): "bei insights bei data will ich das
 // man dort sich mehrere Assets gleichzeitig auswaehlen kann. Es soll den
@@ -23253,9 +23010,11 @@ function renderNewsTabRoh(){
     :newsTabRange==='CUSTOM'?'selected range'
     :newsTabRange==='D1'?'today'
     :'last '+String(newsTabRange).slice(1)+' days';
+  // Zeilen in .hl-list wie auf dem Dashboard: die Liste ist der Container,
+  // nach dem schmale Ansichten Quelle/Zeit unter den Titel setzen (2026-11-02).
   el.innerHTML=kopf+`<div class="cot-card" style="margin-top:10px">
     <div class="cot-card-title"><span>${l.length} headline${l.length===1?'':'s'} &middot; ${escH(zeitraum)}</span>${iBtn('news')}</div>
-    ${rows}
+    <div class="hl-list">${rows}</div>
     ${rest>0?`<button class="hl-expand" onclick="newsTabMore()">Show ${Math.min(rest,60)} more</button>`:''}
   </div>`;
 }
@@ -27682,7 +27441,6 @@ brushCustom('setIndHistRange',()=>indHistRange,{
 });
 brushCustom('setDataRange',()=>dataRange);
 brushCustom('setTrendsRange',()=>trendsRange);
-brushCustom('setPriceRange',()=>priceRange);
 brushCustom('setPairOvRange',()=>pairOvRange);
 // History-Karte und -Fenster: eigene Spanne, nur bis zum × oder einer Stufe.
 brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeichnen();},reset(){histZoom=null;histNeuZeichnen();},
@@ -27871,8 +27629,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   btReasonKey,btReasonText,btReasonIsSeed,setBtReason,btReasonCell,
   BT_AREAS,BT_LOOKBACK,BT_REAKT,btMeetings,btReleases,btKursReaktion,btSpark,btCellHtml,btReaktZelle,
   btZinspfadChart,btJump,btRender,setBtCcy,setBtCmp,setBtFilter,toggleBtHolds,setBtJahr,openBacktester,
-  CHART_TYPEN,setPxChartTyp,toggleCotVsPrice,setCotHistRange,setCotHistRangeCustom,openPriceChart,setPriceRange,setPriceRangeCustom,priceEventsByDay,renderPriceChart,
-  drawPriceConnectors,markPriceCards,priceWindow,
+  CHART_TYPEN,setPxChartTyp,toggleCotVsPrice,setCotHistRange,setCotHistRangeCustom,
   dataIndFor,setDataIndFor,relinkDataInd,setDataMode,setDataVsAsset,setDataVsA,setDataVsB,dataIndGroupsOf,openDataIndPicker,closeDataIndPicker,
   renderDataIndPicker,toggleDataListInd,removeDataListInd,
   DATA_MAX_PANELS,setDataAsset,addDataAsset,removeDataAsset,toggleDataAsset,openDataAssetPicker,closeDataAssetPicker,

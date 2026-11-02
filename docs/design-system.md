@@ -1840,6 +1840,16 @@ Paarnamen brechen nur am ↔. ⚠ Lokal sieht man es nicht: das iPad rendert mit
 SF Pro, breiter als die Test-Ersatzschrift. Geprüft: `check/namen.js` mit einer
 breiteren Ersatzschrift (DejaVu Sans) bei 1180/820/1366/390 px.
 
+## Schlagzeilen-Zeile: schmal = Quelle/Zeit UNTER dem Titel (Dauerregel seit 2026-11-02, 669)
+
+Nutzer-Wahl Option A (CI 675: Titel **29/231 px** bei 360 px). Jede
+Schlagzeilen-Liste ist ein benannter Container `hl` (`.hl-list` auf Dashboard
+und News, `.news-card-body` auf der Asset-Seite). Bis **420 px** Listenbreite:
+eine Spalte, Meta-Zeile (Asset-Chips, „+n“, NEW, Quelle, Zeit) links unter dem
+Titel; breiter: Seitenspalte rechts wie bisher. Neue Schlagzeilen-Listen
+gehören in einen dieser Container. Geprüft: `check/schlagzeilen.js` (Titel ≥
+halbe Zeile, 360–1366 px, Grenzfall-Zeile unabhängig vom Nachrichtenstand).
+
 ## Set-ups: Δ-Plakette = 2Y-Renditedifferenz (seit 2026-10-07)
 
 Die Plakette zeigt die 2-jährige Rendite der Basis minus der Kurswährung —
@@ -1938,7 +1948,7 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 - Nutzer: *„Ich will Option c und guck wo man dieses Design noch alles in der App umsetzen kann“* → *„Überall dieses Design und Aufbau“*.
 - **Ein Baustein** (`js/main.js`): `kmReiterHtml` (Reiter), `kmKnopfHtml` (Display-Knopf mit Zusammenfassung), `KM_MENUES[schlüssel]` (Abschnitte mit Kacheln = Einzelwahl, Chips = Mehrfachwahl), `kmZeigeAbschnitt` (das frühere „Show several at once“). Neue Seiten bauen nur noch damit.
 - **Zuordnung überall gleich:** Unteransichten → Reiter links · Darstellung/was zeigen → ein Display-Knopf · Zeitraum rechts · Asset-Auswahl rechts in der Titelzeile.
-- **Umgesetzt:** Data (Ansichten; Layout/Scale/Chart), Trends (Assets | Pair statt Pair-Knopf; Show), COT (Show; Einzelansicht Price on/Bars only statt „vs Price“), Sentiment (5 Unterseiten als Reiter; Retail Show), Asset-Seite (662: Price-Karte Chart + Trend lines, Context-Karte und Preis-Fenster Chart). Ein Display-Knopf erscheint nur, wenn sein Menü etwas zu zeigen hat. In Karten 28 px (`kmKnopfHtml(…, true)`, `.km-klein`).
+- **Umgesetzt:** Data (Ansichten; Layout/Scale/Chart), Trends (Assets | Pair statt Pair-Knopf; Show), COT (Show; Einzelansicht Price on/Bars only statt „vs Price“), Sentiment (5 Unterseiten als Reiter; Retail Show), Asset-Seite (662: Price-Karte Chart + Trend lines, Context-Karte; das Preis-Fenster ist seit 669 entfernt). Ein Display-Knopf erscheint nur, wenn sein Menü etwas zu zeigen hat. In Karten 28 px (`kmKnopfHtml(…, true)`, `.km-klein`).
 - Geprüft von `check/kontrollmenue.js` + `check/datamenu.js`.
 
 ## Data · Kontrollmenü (seit 2026-11-01, 660 — Option C)

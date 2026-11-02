@@ -6,7 +6,7 @@
 // gleich sein die Beschriftung damit man besser sehen kann im Verhaeltnis wo
 // was steht". Gemessen vorher: ohne Y-Beschriftung waren der Indikator-Chart
 // (aufgeklappt + Data), Saisonalitaet (Seite + Indikator-Profil), Preis-
-// Fenster, AAII Spread/100%/Verteilung und der Retail-Verlauf der Asset-Seite.
+// Fenster (seit 669 entfernt), AAII Spread/100%/Verteilung und der Retail-Verlauf der Asset-Seite.
 // Geprueft:
 //   A) jeder sichtbare Chart (SVG >= 140x70) traegt links oder rechts
 //      mindestens zwei Zahlen auf verschiedener Hoehe
@@ -25,7 +25,7 @@ const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 const ZIELE = ['regime', 'dash', 'mx', 'trends', 'cot', 'sent:retail', 'sent:putcall', 'sent:netflow', 'sent:fg',
   'aaii:spread', 'aaii:shares', 'aaii:bars', 'aaii:stack', 'aaii:dist', 'aaii:price', 'seas', 'data', 'rate', 'carry',
-  'A:EUR', 'A:GOLD', 'A:US10Y', 'PX:EUR', 'HIST:EUR', 'IND:EUR', 'SEASIND:EUR', 'PREIS:data'];
+  'A:EUR', 'A:GOLD', 'A:US10Y', 'HIST:EUR', 'IND:EUR', 'SEASIND:EUR', 'PREIS:data'];
 
 (async () => {
   const b = await chromium.launch();
@@ -38,12 +38,11 @@ const ZIELE = ['regime', 'dash', 'mx', 'trends', 'cot', 'sent:retail', 'sent:put
   let n = 0;
   for (const z of ZIELE) {
     await p.evaluate(z => {
-      try { closeM('mPrice'); closeM('mHist'); } catch (e) {}
+      try { closeM('mHist'); } catch (e) {}
       const w = document.getElementById('yaxTest'); if (w) w.remove();
       const [a, v] = z.split(':');
       const probe = html => { const d = document.createElement('div'); d.id = 'yaxTest'; d.style.cssText = 'width:560px;position:relative'; d.innerHTML = html; document.getElementById('detail').prepend(d); };
       if (a === 'A') gotoSym(v);
-      else if (a === 'PX') { gotoSym(v); openPriceChart(v); }
       else if (a === 'HIST') { gotoSym(v); openHistModal(v); }
       else if (a === 'IND') { gotoSym(v); const s = syms.find(x => x.id === v); let ind = null; s.rubrics.forEach(r => (r.indicators || []).forEach(i => { if (!ind && /CPI/.test(i.name) && indChartSeries(i, v).pts.length > 5) ind = i; })); probe(indHistChart(ind, v)); }
       else if (a === 'SEASIND') { gotoSym(v); probe(seasProfilHtml(v)); }
@@ -63,7 +62,7 @@ const ZIELE = ['regime', 'dash', 'mx', 'trends', 'cot', 'sent:retail', 'sent:put
         // .sz = Saisonalitaet als Monatszeilen (2026-10-11): Y = Monatsnamen, die
         // Zahlen (avg / this yr) stehen je Zeile rechts in .sz-zahlen - Geschwister
         // der Spur, deshalb ab dem ganzen Block suchen.
-        const box = s.closest('.sz,.ab-plot,.ab-rtv,.ab-k,.ind-hist-wrap,.histl,.bt-pfad,.cax,.px-chart') || s.parentElement.parentElement || s.parentElement;
+        const box = s.closest('.sz,.ab-plot,.ab-rtv,.ab-k,.ind-hist-wrap,.histl,.bt-pfad,.cax') || s.parentElement.parentElement || s.parentElement;
         const suche = box.parentElement || box;
         const kand = [...suche.querySelectorAll('text,span,div')].filter(e => vis(e) && e.children.length === 0 && zahl(e.textContent));
         const rand = kand.filter(e => { const r = e.getBoundingClientRect(); if (r.top < q.top - 6 || r.bottom > q.bottom + 6) return false; return r.right <= q.left + Math.max(60, q.width * .1) || r.left >= q.right - Math.max(70, q.width * .1); });

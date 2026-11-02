@@ -6,8 +6,8 @@
 // die Schere geklickt hat sonst nicht" + "wenn man das benutzt muss das in
 // allen Charts zu sehen sein" (Wahl: alle Charts der Ansicht).
 //
-// Je Chart-Art (Asset-Price, History, Indikator, Trends, Data, Price-Tab,
-// Paar-Uebersicht, Makro, Chart-Fenster des Country profile):
+// Je Chart-Art (Asset-Price, History, Indikator, Trends, Data, Paar-Uebersicht
+// - das alte Price-Fenster ist seit 669 entfernt -, Makro, Chart-Fenster des Country profile):
 //   O) OHNE Schere von 30 % auf 70 % ziehen -> KEIN Chip, nichts geaendert.
 //   A) Schere antippen, ziehen -> Chip "Von – Bis ×", B) WENIGER Punkte,
 //   C) × -> Chip weg, Punktzahl wie vorher.
@@ -33,7 +33,6 @@ const FAELLE = [
   ['Indikator', 'gotoSym("EUR");(()=>{const b=[...document.querySelectorAll("#detail [onclick*=toggleIndDetailRow]")][0];if(b)b.click()})()', '#detail [data-br="setIndHistRange"]'],
   ['Trends', 'showTab("trends")', '#pgTrends [data-br="setTrendsRange"]'],
   ['Data', 'showTab("data")', '#pgData [data-br="setDataRange"]'],
-  ['Price-Tab', 'openPriceChart("EUR")', '[data-br="setPriceRange"]'],
   ['Paar', 'gotoPairOverview("EUR/USD")', '[data-br="setPairOvRange"]'],
   ['Makro', 'gotoSym("USD");if(!makroGross())makroSicht("charts")', '#detail .mk-chart[data-br]'],
   ['Chart-Fenster', 'gotoSym("EUR");setTimeout(()=>cpfOeffnen("niv:Unemployment Rate"),900)', '#cpfBody [data-br="cpfSetRange"]'],

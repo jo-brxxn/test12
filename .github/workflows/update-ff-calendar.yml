@@ -5747,8 +5747,11 @@ jobs:
           }
           // Verlagsnamen kuerzen: "ABC News - Breaking News, Latest News and Videos"
           // -> "ABC News". Feeds haengen ihren kompletten Seitentitel an.
+          // Google News nennt vereinzelt die ADRESSE als Verlag ("https://www.indiagazette.com",
+          // 1 von 764 Meldungen am 2026-11-01) -> nur die Domain ("indiagazette.com").
           function kurzVerlag(n){
-            let s=String(n||"").split(/\s+[-|–]\s+/)[0].replace(/\s*\(.*?\)\s*$/,"").trim();
+            const adr=String(n||"").trim().match(/^https?:\/\/(?:www\.)?([^\/\s?#]+)/i);
+            let s=(adr?adr[1]:String(n||"")).split(/\s+[-|–]\s+/)[0].replace(/\s*\(.*?\)\s*$/,"").trim();
             if(s.length>26)s=s.slice(0,25).trim()+"…";
             return s;
           }

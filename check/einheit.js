@@ -13,7 +13,8 @@
 //      Candles | Line.
 //   I) Ein ⓘ hinter einem rechtsbuendigen Element hat nur 6 px Abstand (sonst
 //      teilen sich zwei auto-Raender die Zeile und der Filter steht mittig).
-// Geprueft auf allen Seiten, drei Asset-Seiten und im Preis-Fenster.
+// Geprueft auf allen Seiten und drei Asset-Seiten (das alte Preis-Fenster
+// ist seit 669 entfernt, Nutzer 2026-11-02).
 //   node check/einheit.js [--gegenprobe]  (Filter mittig + Zeitfilter links
 //   + Umschalter weg -> rot)
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
@@ -22,7 +23,7 @@ const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
-const ZIELE = ['over', 'regime', 'news', 'dash', 'cur', 'mx', 'trends', 'cot', 'sent:retail', 'sent:putcall', 'sent:netflow', 'sent:fg', 'sent:aaii', 'seas', 'data', 'rate', 'carry', 'pairs', 'watch', 'cal', 'notes', 'A:EUR', 'A:GOLD', 'A:US10Y', 'PX:EUR'];
+const ZIELE = ['over', 'regime', 'news', 'dash', 'cur', 'mx', 'trends', 'cot', 'sent:retail', 'sent:putcall', 'sent:netflow', 'sent:fg', 'sent:aaii', 'seas', 'data', 'rate', 'carry', 'pairs', 'watch', 'cal', 'notes', 'A:EUR', 'A:GOLD', 'A:US10Y'];
 
 (async () => {
   const b = await chromium.launch();
@@ -35,10 +36,8 @@ const ZIELE = ['over', 'regime', 'news', 'dash', 'cur', 'mx', 'trends', 'cot', '
   let geprueft = { z: 0, f: 0, c: 0, i: 0 };
   for (const ziel of ZIELE) {
     await p.evaluate(z => {
-      try { closeM('mPrice'); } catch (e) {}
       const [a, v] = z.split(':');
       if (a === 'A') gotoSym(v);
-      else if (a === 'PX') { gotoSym(v); openPriceChart(v); }
       else { showTab(a); if (v) setSentSub(v); }
       if (a === 'data') { dataAssets.length = 0; ['USD', 'EUR'].forEach(x => dataAssets.push(x)); if (!dataIndBase) dataIndBase = 'CPI (Headline)'; renderDataTab(); }
     }, ziel);
@@ -87,8 +86,8 @@ const ZIELE = ['over', 'regime', 'news', 'dash', 'cur', 'mx', 'trends', 'cot', '
         if (luecke - knoepfe > 24) out.f.push(`${name(k)}: Filter ${Math.round(luecke - knoepfe)}px vor dem rechten Rand (nicht rechtsbuendig)`);
       });
       // C) Preis-Charts: Candles|Line in der Werkzeugzeile
-      [...document.querySelectorAll('.ab-ptile,.ab-ktile,#mPrice')].filter(vis).forEach(k => {
-        if (!k.querySelector('svg.ab-chart,#pxChart svg')) return; out.n.c++;
+      [...document.querySelectorAll('.ab-ptile,.ab-ktile')].filter(vis).forEach(k => {
+        if (!k.querySelector('svg.ab-chart')) return; out.n.c++;
         // Seit 662 (Kontrollmenue Option C, Nutzer 2026-11-01 "Ueberall dieses
         // Design"): Candles|Line steht im Display-Menue - links in der
         // Werkzeugzeile steht der Display-Knopf, seine Zusammenfassung beginnt
