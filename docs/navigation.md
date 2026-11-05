@@ -1532,3 +1532,52 @@ Ein Asset ist im Asset-Panel nur markiert, solange man auf SEINER Seite ist.
 `syncNavActive()` gleicht die Markierung bei jedem Seitenwechsel ab
 (`updateSidebarSelection`) — `showTab` zeichnet die Leiste nicht neu.
 Geprüft in `check/nav.js`.
+
+
+## ⚠ DASHBOARD-NEUAUFBAU 2026-11-05 (VERSION-CHECK-670) — gilt ab jetzt
+
+Nutzer: *„komplett weg von dieser Karten-Optik ... ganz oben je nach Tageszeit
+guten Morgen, Trader ... offene Positionen, Bias Scores der einzelnen Assets,
+Mini-Kalender welche Events heute sind, größte Mover, Watchlist, Performance
+Ranking, kleine Notification-Karte ... schön anordnen, Design deutlich
+verbessern, direkt zu den Kategorien kommen bzw. mehr Infos sehen."*
+Per Rückfrage festgelegt:
+- **Sektionen ohne Kartenrahmen** (Haarlinie oben statt Kasten); nur
+  Notifications sind ein hervorgehobener Block.
+- **Bias Scores = alle Assets, nach Klasse gruppiert** (Currencies, Metals,
+  Energy, Indices, Stocks, Crypto, Yields), je Gruppe nach `symScoreCmp`.
+- **Today = heute, High + Medium**, vergangene mit Ist-Wert (Beat/Miss-Farbe),
+  der nächste Termin mit Navy-Marke, Liste springt auf ihn.
+- **Umfang nur Dashboard**; das Dashboard ist die Designvorlage für spätere
+  Tabs (jeweils mit eigenem OK).
+
+**Aufbau** (`renderDash()` + `dash*Html()` in `js/main.js`, Positionen
+`tjDashHtml()` in `js/trades.js`, CSS-Block „DASHBOARD (Neuaufbau
+2026-11-05)" in `index.html`):
+- Kopf: `Good morning` 5–12 · `Good afternoon` 12–18 · `Good evening` 18–5
+  (Gerätezeit; „Mittag" und „Nachmittag" sind englisch beide *afternoon*),
+  Datum + Uhr + offene Handelssitzungen, drei Sprung-Chips (Positionen,
+  Termine heute, Meldungen). Uhr/Gruß laufen per 30-s-Takt im Text mit, ohne
+  Neuaufbau.
+- ≥1160 px: **Hauptspalte** (Open positions · Bias scores · Biggest movers |
+  Watchlist · Performance) + **rechte Leiste** (Notifications · Today) als
+  zwei unabhängige Flex-Spalten. **Merksatz:** gekoppelte Rasterreihen mit
+  einer langen Meldungs-Spalte erzeugten entweder ein Loch unter dem Kasten
+  oder Leerraum im gestreckten Kasten — erst die Entkopplung löst beides.
+- <1160 px lösen sich die Spalten per `display:contents` auf; Reihenfolge
+  über `grid-template-areas` mit `grid-area` an JEDER Sektion (Selektor
+  `.db-grid #id`, nicht `>` — die Sektionen stecken in den Spalten-Hüllen).
+- Jede Zeile führt weiter: Asset → Asset-Seite, Score-Zahl → Score-Fenster,
+  Paar → Paar-Übersicht, Termin → Kalender, Position → Journal, Close →
+  Abschluss-Fenster, Kopf-Link je Sektion zum passenden Tab.
+- Performance zeigt Leaders | Laggards (je 6), „Show all" klappt die volle
+  Rangliste auf (Sitzungs-Ansicht, kein gespeicherter Zustand).
+- Bias-Gruppen fließen nebeneinander (`--n` = Kachelzahl als Flex-Gewicht),
+  Kacheln mind. 100 px — **Namen nie gekürzt/umbrochen** (erster Versuch mit
+  Seitenlabel-Spalte brach „Nasdaq" in „Nasda q").
+- Weggefallen vom Dashboard (alle mit eigenem Tab): Majors-Schiene, Risk
+  Sentiment, Correlation Check, Currency Strength, Carry, Volatility
+  Leaders, Headlines, Market Sentiment, Surprise Index. `widgets[]` bleibt
+  gespeichert und unangetastet (kein Bearbeitungsmodus, Regel 2026-10-07).
+- Wächter: `check/dashboard.js` (Sektionen, Bias-Kacheln = `symScoreCmp`,
+  volle Namen, Überlappung, Gegenprobe).

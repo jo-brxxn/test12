@@ -19,7 +19,7 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 // 2026-10-20, siehe Kopf von makro.js). Zirkulaerer Import wie bei journal.js.
 // Trading Journal: eigene Trades im Monatskalender (Nutzer-Wunsch 2026-10-24,
 // siehe Kopf von trades.js). Zirkulaerer Import wie bei makro.js.
-import {trades,mergeTrades,tjUebernehmen,renderJournal,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
+import {trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenAnzahl,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 import {makroKartenSchalterHtml,makroReihenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
@@ -827,6 +827,8 @@ const ICONS={
 // Titel -> Symbol. Die ERSTE passende Regel gewinnt; spezifische Begriffe
 // stehen deshalb vor allgemeinen ("rate probabilit" vor "rate").
 const KARTEN_ICONS=[
+  // Dashboard-Sektionen (Neuaufbau 2026-11-05)
+  [/^open positions?$/,'target'],[/^notifications?$/,'bell'],[/^bias scores?$/,'gauge'],[/^today$/,'calendar'],[/^biggest movers$/,'chartUp'],
   [/^price$/,'bars'],[/history/,'clock'],[/pinned|notes?$|archive/,'note'],[/context/,'globe'],[/calendar|event/,'calendar'],
   [/inflation/,'barsUp'],[/labou?r|employment|jobs/,'briefcase'],[/growth|gdp/,'chartUp'],
   [/rate probabilit|rate expectation|interest|policy rate|central bank/,'percent'],
@@ -17354,431 +17356,222 @@ function esiCardHtml(){
   return`<div class="perf-list">${body}</div>`;
 }
 
+// ══ DASHBOARD (Neuaufbau 2026-11-05) ═══════════════════════════════════════
+// Nutzer 2026-11-05: "komplett weg von dieser Karten-Optik ... ganz oben je
+// nach Tageszeit guten Morgen, Trader ... dann die offenen Positionen, die
+// Bias Scores der einzelnen Assets, ein Mini-Kalender welche Events heute
+// sind, die groessten Mover, die Watchlist, das Performance Ranking und eine
+// kleine Notification-Karte. Schoen anordnen, Design deutlich verbessern,
+// direkt zu den Kategorien kommen bzw. mehr Infos sehen."
+// Per Rueckfrage festgelegt: Sektionen OHNE Kartenrahmen (Trennlinien statt
+// Kaesten, nur Notifications als hervorgehobener Block), Bias Scores ueber
+// ALLE Assets nach Klasse gruppiert, Kalender = heute High + Medium, Umbau
+// nur auf dem Dashboard. Feste Anordnung, kein Bearbeitungsmodus
+// (Nutzer-Regel 2026-10-07); das gespeicherte widgets[] bleibt unangetastet.
+// Jede Sektion behaelt die Klassen .dw/.dw-hdr/.dw-t-txt, damit die
+// bestehenden Waechter (Ueberlappung, Kartentitel, Hierarchie) weiter greifen.
+// Begruessung nach Geraetezeit: "Mittag" und "Nachmittag" sind im Englischen
+// beide "afternoon".
+function dashGruss(d){
+  const h=(d||new Date()).getHours();
+  return h>=5&&h<12?'Good morning':h>=12&&h<18?'Good afternoon':'Good evening';
+}
+// Grosse Handelssitzungen (feste Uhrzeiten in UTC, ohne Sommerzeit-Feinheit
+// der einzelnen Boersen - nur als grobe Orientierung im Kopf).
+const DASH_SESSIONS=[['Sydney',21,6],['Tokyo',0,9],['London',7,16],['New York',12,21]];
+function dashSessions(d){
+  const now=d||new Date(),h=now.getUTCHours()+now.getUTCMinutes()/60,wd=now.getUTCDay();
+  if(wd===6||(wd===0&&h<21)||(wd===5&&h>=21))return[];
+  return DASH_SESSIONS.filter(([,a,b])=>a<b?(h>=a&&h<b):(h>=a||h<b)).map(s=>s[0]);
+}
+function dashKopfHtml(z){
+  const now=new Date();
+  const datum=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  const uhr=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const ses=dashSessions(now);
+  const chip=(n,lbl,ziel,warn)=>`<button class="db-chip${warn?' warn':''}" onclick="dashZu('${ziel}')"><b>${n}</b> ${lbl}</button>`;
+  return`<div class="db-kopf">
+    <div class="db-kopf-l">
+      <div class="pg-titel db-gruss" id="dashGruss">${dashGruss(now)}, Trader</div>
+      <div class="pg-sub db-sub"><span id="dashUhr">${escH(datum)} · ${escH(uhr)}</span>${ses.length?` · <span class="db-ses"><span class="db-live"></span><b>${escH(ses.join(' + '))}</b> open</span>`:' · <i>Markets closed</i>'}</div>
+    </div>
+    <div class="db-chips">
+      ${chip(z.pos,z.pos===1?'open position':'open positions','dbPos')}
+      ${chip(z.ev,z.ev===1?'event today':'events today','dbHeute')}
+      ${chip(z.nf,z.nf===1?'notification':'notifications','dbNotif',z.nf>0)}
+    </div>
+  </div>`;
+}
+function dashZu(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}
+// Sektionskopf: Titel (Kartentitel-Stufe 17/700) + Zaehler + "View all".
+function dashSek(id,typ,titel,inhalt,o){
+  o=o||{};
+  return`<section class="dw db-sek dw-${typ}" id="${id}">
+    <div class="dw-hdr db-hdr">
+      <div class="dw-t"><span class="dw-t-txt">${escH(titel)}</span>${o.anz!=null?`<span class="db-anz">${o.anz}</span>`:''}${abInfoBtn(titel,o.erkl||[],'rinfo')}</div>
+      ${o.extra||''}
+      ${o.link?`<button class="db-link" onclick="${o.link[1]}">${escH(o.link[0])}${icn('chevronRight',13)}</button>`:''}
+    </div>
+    <div class="dw-body">${inhalt}</div>
+  </section>`;
+}
+// Bias Scores: alle Assets, nach Klasse gruppiert, je Gruppe nach Score.
+const DASH_KLASSEN=[['fx','Currencies'],['metal','Metals'],['energy','Energy'],['index','Indices'],['stock','Stocks'],['crypto','Crypto'],['yield','Yields']];
+function dashBiasHtml(){
+  const sc=s=>symScoreCmp(s);
+  const gruppen=DASH_KLASSEN.map(([k,lbl])=>{
+    const l=syms.filter(s=>assetCls(s.id)===k).sort((a,b)=>sc(b)-sc(a));
+    return l.length?{lbl,l}:null;
+  }).filter(Boolean);
+  if(!gruppen.length)return`<div class="dw-empty">No assets yet.</div>`;
+  const mx=Math.max(1,...syms.map(s=>Math.abs(sc(s))));
+  const kachel=s=>{
+    const v=sc(s),col=biasCss(s.bias);
+    return`<button class="db-bias" data-id="${escH(s.id)}" onclick="gotoSym('${escJH(s.id)}')" title="${escH(s.name)} · ${BL[s.bias]} — open the asset">
+      <span class="db-bias-n">${assetIconHtml(s.id,14)}<span>${escH(s.name)}</span></span>
+      <span class="db-bias-v" role="button" onclick="event.stopPropagation();openScoreInfoSym('${escJH(s.id)}')" style="color:${col}" title="Score — tap for the breakdown">${v>0?'+':''}${v}</span>
+      <span class="db-bias-bar"><span style="width:${Math.max(4,Math.round(Math.abs(v)/mx*100))}%;background:${BC[s.bias]}"></span></span>
+    </button>`;
+  };
+  return`<div class="db-bias-wrap">${gruppen.map(g=>`<div class="db-bias-gr" style="--n:${Math.min(g.l.length,8)}"><div class="db-gr-lbl">${escH(g.lbl)}</div><div class="db-bias-grid">${g.l.map(kachel).join('')}</div></div>`).join('')}</div>`;
+}
+// Heute: High + Medium, chronologisch; vergangene mit Ist-Wert in Beat/Miss-Farbe.
+function dashHeuteListe(){
+  const t=todayStr();
+  return calEvts.filter(ev=>ev.date===t&&['high','medium'].includes(evtImpact(ev)))
+    .sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+}
+function dashHeuteHtml(l){
+  if(!l.length)return`<div class="db-leer"><i>No high or medium impact events today</i></div>`;
+  const naechst=l.find(ev=>!isEvtPast(ev));
+  return`<div class="db-ev-list">${l.map(ev=>{
+    const imp=evtImpact(ev),vorbei=isEvtPast(ev);
+    const ac=actualColor(ev);
+    const wert=ev.actual?`<b class="db-ev-act ${ac}">${escH(ev.actual)}</b>`:`<span class="db-ev-fc">${ev.forecast?'<i>Fc</i> '+escH(ev.forecast):'–'}</span>`;
+    return`<div class="db-row db-ev${vorbei?' vorbei':''}${ev===naechst?' next':''}" role="button" tabindex="0" onclick="showTab('cal')" title="${escH(ev.name)} — open the calendar">
+      <span class="db-ev-t">${escH(ev.time||'—')}</span>
+      <span class="db-ev-imp ${imp==='high'?'ih':'im'}" title="${imp==='high'?'High':'Medium'} impact"></span>
+      <span class="db-ev-c">${escH(ev.currencies||'')}</span>
+      <span class="db-ev-n">${escH(ev.name)}</span>
+      ${wert}
+    </div>`;}).join('')}</div>`;
+}
+function dashMoverHtml(){
+  const{gainers,losers}=computeFxMovers(4);
+  if(!gainers.length&&!losers.length)return`<div class="db-leer"><i>No price history yet</i></div>`;
+  const zeile=m=>`<div class="db-row db-mv" role="button" tabindex="0" onclick="gotoPairOverview('${escJH(m.name)}')" title="${escH(m.name)} vs. ${m.prevDate?escH(fmtDayHdr(m.prevDate)):'previous close'} — open the pair">
+      <span class="wl-icons">${assetIconHtml(m.base,14)}<span class="wl-flag-sep">|</span>${assetIconHtml(m.quote,14)}</span>
+      <span class="db-mv-n">${escH(m.name)}</span>
+      <span class="db-mv-p">${fmtPriceTick(m.price)}</span>
+      <b class="db-mv-d" style="color:${biasCss(m.changePct>0?'bull':'bear')}">${m.changePct>0?'+':'−'}${Math.abs(m.changePct).toFixed(2)}%</b>
+    </div>`;
+  const upd=priceDataLastFetch?new Date(priceDataLastFetch).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):null;
+  return`<div class="db-gr-lbl">Gainers</div>${gainers.length?gainers.map(zeile).join(''):'<div class="db-leer"><i>None right now</i></div>'}
+    <div class="db-gr-lbl">Losers</div>${losers.length?losers.map(zeile).join(''):'<div class="db-leer"><i>None right now</i></div>'}
+    <div class="db-fuss"><i>${upd?'Updated '+escH(upd):'Not updated yet'} · every 10 min</i></div>`;
+}
+function dashWatchHtml(){
+  const wp=pairs.filter(p=>{const c=pairCats.find(x=>x.id===p.catId);return c&&c.name==='Watchlist';});
+  const chg=info=>info&&info.changePct!=null?`<span class="wl-chg" style="color:${biasCss(info.bias)}">${info.changePct>0?'+':''}${info.changePct.toFixed(2)}%</span>`:`<span class="wl-chg" style="color:var(--t3)">–</span>`;
+  const fxZeile=(name,sc,oc,klick)=>{const[a,b]=name.split('/');return`<div class="db-row wl-row wl-click" role="button" tabindex="0" onclick="${klick}" title="Open the full overview for this pair">
+      <span class="wl-icons">${assetIconHtml(a,14)}<span class="wl-flag-sep">|</span>${assetIconHtml(b,14)}</span>
+      <span class="wl-name">${escH(name)}</span>${chg(tickerInfoForItem('pair',name))}${rowScore(sc,'Pair score',null,oc)}</div>`;};
+  if(!wp.length){
+    const sugg=(typeof FX_PAIRS!=='undefined'?FX_PAIRS:[]).map(n=>({n,sc:pairScore(n)})).filter(x=>isFinite(x.sc))
+      .sort((a,b)=>Math.abs(b.sc)-Math.abs(a.sc)).slice(0,5);
+    return`<div class="db-gr-lbl">Empty — strongest pairs now, tap to add</div>`+
+      sugg.map(s=>fxZeile(s.n,s.sc,`openScoreInfoPair('${escJH(s.n)}')`,`toggleWatch('${escJH(s.n)}')`)).join('');
+  }
+  const fx=wp.filter(p=>isPureFxPair(p.name)).sort((a,b)=>pairScore(b.name)-pairScore(a.name));
+  const nfSc=p=>{const s=syms.find(x=>x.id===nonFxLegAssetId(p.name));return s?symScoreCmp(s):pairScore(p.name);};
+  const nf=wp.filter(p=>!isPureFxPair(p.name)).sort((a,b)=>nfSc(b)-nfSc(a));
+  const nfZeile=p=>{
+    const id=nonFxLegAssetId(p.name),s=syms.find(x=>x.id===id);
+    return`<div class="db-row wl-row wl-click" role="button" tabindex="0" onclick="gotoPairOverview('${escJH(p.name)}')" title="Open the full overview">
+      <span class="wl-icons">${nonFxWatchIconHtml(id)}</span><span class="wl-name">${escH(s?s.name:p.name)}</span>
+      ${chg(s?assetTickerInfo(id):tickerInfoForItem('pair',p.name))}${rowScore(nfSc(p),s?'Symbol score':'Pair score',null,s?`openScoreInfoSym('${id}')`:`openScoreInfoPair('${escJH(p.name)}')`)}</div>`;
+  };
+  return'<div class="wl-table">'+fx.map(p=>fxZeile(p.name,pairScore(p.name),`openScoreInfoPair('${escJH(p.name)}')`,`gotoPairOverview('${escJH(p.name)}')`)).join('')+
+    (fx.length&&nf.length?'<div class="wl-sep"></div>':'')+nf.map(nfZeile).join('')+'</div>'+
+    `<button class="db-add" onclick="openAddPair('Watchlist')">${icn('plus',13)} Add pair</button>`;
+}
+// Performance: Spitze und Schluss nebeneinander, "Show all" klappt die volle
+// Rangliste auf (nur Ansicht dieser Sitzung, kein gespeicherter Zustand).
+let dashPerfAlle=false;
+function dashPerfUmschalten(){dashPerfAlle=!dashPerfAlle;renderDash();}
+function dashPerfHtml(){
+  const win=PERF_WINDOWS.find(w=>w[0]===perfWindow)||PERF_WINDOWS[1];
+  const rows=syms.map(s=>{const r=perfReturn(s.id,win[1]);return r?{id:s.id,name:s.name,pct:r.pct,from:r.from}:null;})
+    .filter(Boolean).sort((a,b)=>b.pct-a.pct);
+  if(!rows.length)return`<div class="db-leer"><i>Not enough price history yet</i></div>`;
+  const mx=Math.max(...rows.map(r=>Math.abs(r.pct)))||1;
+  const zeile=(r,i)=>{const col=r.pct>0?BC.bull:r.pct<0?BC.bear:'var(--t3)';return`<div class="db-row perf-row" role="button" tabindex="0" onclick="gotoSym('${escJH(r.id)}')" title="${escH(r.name)} · since ${escH(r.from)}">
+      <span class="perf-rank">${i+1}</span><span class="perf-name">${escH(r.name)}</span>
+      <span class="perf-barwrap"><span class="perf-bar" style="width:${(Math.abs(r.pct)/mx*100).toFixed(1)}%;background:${col}"></span></span>
+      <span class="perf-pct" style="color:${col}">${r.pct>0?'+':''}${r.pct.toFixed(2)}%</span></div>`;};
+  const N=6;
+  if(dashPerfAlle||rows.length<=2*N){
+    const h=Math.ceil(rows.length/2);
+    return`<div class="db-perf-cols"><div>${rows.slice(0,h).map((r,i)=>zeile(r,i)).join('')}</div><div>${rows.slice(h).map((r,i)=>zeile(r,i+h)).join('')}</div></div>`;
+  }
+  return`<div class="db-perf-cols"><div><div class="db-gr-lbl">Leaders</div>${rows.slice(0,N).map((r,i)=>zeile(r,i)).join('')}</div>
+    <div><div class="db-gr-lbl">Laggards</div>${rows.slice(-N).map((r,i)=>zeile(r,rows.length-N+i)).join('')}</div></div>`;
+}
+function dashNotifListe(){
+  return[cloudNotConnectedNoticeHtml(),dataFeedStaleNotifyHtml(),staleNotifyHtml(),awaitingNotifyHtml(),cotNotifyHtml()].filter(Boolean);
+}
 function renderDash(){
   beginRenderPass();
   updateAuroraColors();
   const el=document.getElementById('dashWidgets');if(!el)return;
-  // Scroll-Position sichern: el.innerHTML unten ersetzt ALLE Widgets komplett
-  // (auch das gerade angeklickte, z.B. der Risk-Environment-Regler). Zwei
-  // Ursachen fuer den gemeldeten Sprung nach oben/unten (Nutzer-Bugreport
-  // 2026-07-17): (1) der Body ist NICHT der Scroll-Container - #pgDash (Klasse
-  // .pc) scrollt, window.scrollY/scrollTo greifen dort ins Leere, also den
-  // ECHTEN Container sichern; (2) iOS Safari scrollt teils von selbst, wenn
-  // ein fokussiertes/gerade angetipptes Element synchron aus dem DOM entfernt
-  // wird (genau das macht innerHTML= mit dem eben geklickten Regler-Button) -
-  // davor blur() vermeidet diesen Trigger. Betrifft besonders den Risk-
-  // Sentiment-Regler - deshalb die Sicherung HIER drin, nicht nur beim
-  // Aufrufer, damit auch ein spaeterer zweiter renderDash()-Aufruf abgedeckt ist.
+  // Scroll-Position sichern: #pgDash ist der Scroll-Container, innerHTML
+  // ersetzt alles (Nutzer-Bugreport 2026-07-17, iOS springt sonst).
   const _dashScroll=document.getElementById('pgDash');
   const _scrollY=_dashScroll?_dashScroll.scrollTop:0;
   if(document.activeElement&&el.contains(document.activeElement))document.activeElement.blur();
-  const sorted=[...widgets].sort((a,b)=>(a.order||0)-(b.order||0));
-  // FLIP-Vormessung fuer die Currency-Strength-Rangliste (.rank-row[data-flip]):
-  // el.innerHTML unten ersetzt alle Zeilen komplett, ein neu einsortiertes
-  // Symbol wuerde sonst kommentarlos an seine neue Position springen statt
-  // sichtbar dorthin zu gleiten (siehe flipRankRows()).
-  const _rankFlipBefore={};
-  el.querySelectorAll('.rank-row[data-flip]').forEach(r=>{_rankFlipBefore[r.getAttribute('data-flip')]=r.getBoundingClientRect();});
-  // Radial-Layout (Nutzer-Wunsch 2026-07-27): Widgets werden nicht mehr in
-  // EINEN 12-Spalten-Grid gemappt, sondern nach ZONE_OF_TYPE in 5 Zonen
-  // einsortiert (oben/links/zentrum/rechts/unten) - siehe dash-zone-*-CSS
-  // und dashZoneOf() oben. (Die zonen-relativen Rauf/Runter-Knoepfe gingen
-  // 2026-10-07 mit dem Bearbeitungsmodus; mvWidget() verschiebt weiterhin
-  // nur innerhalb der eigenen Zone.)
-  const zones={left:[],center:[],right:[],right2:[],bottom:[]};
-  sorted.forEach((w)=>{
-    let content='';_dwErkl=[];
-    const zone=dashZoneOf(w.type);
-    if(w.type==='vol_leaders'){
-      // 20-Tage realisierte Volatilitaet (annualisiert) - dieselbe Formel wie
-      // die Matrix-Tab-Diagonale (renderCorrCard), hier als eigenstaendiges
-      // Ranking statt Teil der Korrelationsmatrix. Rein aus price_data.json
-      // abgeleitet, kein neuer Feed noetig.
-      const volRanked=trendAssets().map(id=>{
-        const m=assetReturnMap(id);if(!m)return null;
-        const vals=Object.keys(m).sort().slice(-20).map(d=>m[d]);
-        if(vals.length<5)return null;
-        const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
-        const va=vals.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(vals.length-1);
-        return{id,vol:Math.sqrt(va)*Math.sqrt(252)*100};
-      }).filter(Boolean).sort((a,b)=>b.vol-a.vol).slice(0,10);
-      const volMx=Math.max(1,...volRanked.map(v=>v.vol));
-      content=volRanked.length?`<div class="rank-list">`+volRanked.map((v,i)=>`<div class="rank-row" onclick="gotoSym('${v.id}')">
-        <span class="rank-pos">${i+1}</span><span class="rank-name">${escH(v.id)}</span>
-        <div class="rank-track"><div class="rank-bar" style="width:${Math.round(v.vol/volMx*100)}%;background:var(--blue)"></div></div>
-        <span class="rank-sc" style="color:var(--t1)" title="20-day realized volatility, annualized">${v.vol.toFixed(0)}%</span>
-      </div>`).join('')+`</div>`:`<div class="dw-empty">Not enough price history yet.</div>`;
-    }else if(w.type==='sentiment_snapshot'){
-      // Rohe Sentiment-Kennzahlen (nicht der Risk-on/off-Score der Risk-
-      // Sentiment-Karte - das ist bewusst ein anderer Blick auf dieselben
-      // Rohdaten: hier VIX/Crypto-F&G/Put-Call als eigene Zahlen statt zu
-      // einem Gesamt-Score verrechnet). sentEval() ist dieselbe Klassifika-
-      // tion, die auch der Insights-Sentiment-Tab nutzt.
-      const D=SENTIMENT_DATA;
-      if(!D){content=`<div class="dw-empty">No sentiment data yet.</div>`;}
-      else{
-        const vxEv=sentEval('vix',D.vix);
-        const cfEv=sentEval('cryptoFng',D.cryptoFng);
-        // ⚠ Nimmt bewusst NICHT mehr den rohen letzten Serienwert: sentEval()
-        // liest die Reihe seit 2026-09-15 selbst, glaettet sie und ordnet sie
-        // an den Perzentil-Schwellen ein - sonst stuende hier wieder eine
-        // andere Zahl als im Chart (der alte Zustand, 39.8% Abweichung).
-        const pcLast=D.putCall&&D.putCall.series&&D.putCall.series.length?D.putCall.series[D.putCall.series.length-1]:null;
-        const pcEv=pcLast&&isFinite(+pcLast[1])?sentEval('putCall',{value:+pcLast[1]}):null;
-        const snapRow=(label,ev,tip)=>`<div class="risk-asset-row" onclick="showTab('sent')" title="${escH(tip)}">
-          <span class="risk-asset-name">${escH(label)}</span>
-          <span class="risk-asset-sc" style="color:${ev?BC[ev.bias]:'var(--t3)'}">${ev?escH(ev.actual):'–'}</span>
-        </div>`;
-        content=snapRow('VIX',vxEv,'CBOE Volatility Index — contrarian: high = fear (bullish), low = complacency (bearish)')+
-          snapRow('Crypto F&G',cfEv,'Crypto Fear & Greed Index — contrarian read, applies to BTC')+
-          snapRow('Put/Call',pcEv,`Market-wide OCC put/call ratio, ${PC_SMOOTH}-day average — contrarian. Extremes are the outer ${Math.round(PC_PCTL_LO*100)}% of its own ${PC_WINDOW}-day history, not a fixed level`)+
-          `<div class="mw-footer" onclick="showTab('sent')"><span>Go to Sentiment</span></div>`;
-      }
-    }else if(w.type==='fx_bias'){
-      const fxSorted=syms.filter(s=>FX.includes(s.id)).sort((a,b)=>symScoreCmp(b)-symScoreCmp(a));
-      const symRow=s=>`<div class="sym-row ${glowClass(s.bias)}${isWatched(watchPairNameForAsset(s.id))?' row-marked':''}" onclick="gotoSym('${s.id}')">
-          <div class="sym-name">${escH(s.name)}</div>
-          <span class="evt-flag-slot"></span>
-          ${(isNonFx(s.id)&&tickerChipHtml(assetTickerInfo(s.id)))||'<span></span>'}
-          ${rowScore(symScoreCmp(s),'Symbol-Score',BC[s.bias],`openScoreInfoSym('${s.id}')`)}
-          <span class="bbadge" style="background:${BC[s.bias]}18;color:${biasCss(s.bias)}">${BL[s.bias]}</span>
-          <button class="dw-mark${isWatched(watchPairNameForAsset(s.id))?' on':''}" onclick="event.stopPropagation();togSymMark('${s.id}')" title="Add to / remove from the watchlist">★</button>
-        </div>`;
-      // Nur noch die FX-Majors ("FX Bias") - die anderen Assets stehen bereits
-      // in der Asset-Heatmap-Karte, daher hier nicht mehr doppelt (Nutzer-
-      // Wunsch 2026-07-11). Eine einzige, volle Spalte; Subgrid haelt weiterhin
-      // Name/Chip/Score/Badge/Stern exakt untereinander.
-      content=`<div class="ba-col-rows">${fxSorted.length?fxSorted.map(symRow).join(''):`<div class="dw-empty" style="font-size:var(--fs-xs);padding:6px 0">–</div>`}</div>`;
-    }else if(w.type==='perf_ranking'){
-      content=perfRankingHtml();
-    }else if(w.type==='carry_ranking'){
-      content=carryRankingHtml();
-    }else if(w.type==='corr_warn'){
-      content=corrWarnHtml();
-    }else if(w.type==='surprise_index'){
-      content=esiCardHtml();
-    }else if(w.type==='watchlist'){
-      // Nutzer-Wunsch 2026-08-06 (Foto-Referenz): komplett neu als reine
-      // Tabelle - kein Kartenkopf (siehe hdrHtml oben), zwei Bloecke (FX/
-      // Non-FX) getrennt durch genau EINEN dezenten Strich (.wl-sep), sonst
-      // keine weiteren Linien/Rahmen zwischen den Zeilen. Flaggen-Spalte:
-      // FX-Paare zeigen beide Laender-Flaggen (FX_FLAG, bereits im Asset-
-      // Header/Research-Terminal wiederverwendet) getrennt durch "|"; Non-FX-
-      // Assets bekommen bewusst KEIN Emoji ("keine billigen Emojis"),
-      // sondern dasselbe SVG-Icon wie ihr Research-Ordner.
-      const wp=pairs.filter(p=>{const c=pairCats.find(x=>x.id===p.catId);return c&&c.name==='Watchlist';});
-      const wlChg=info=>{
-        if(!info||info.changePct==null)return`<span class="wl-chg" style="color:var(--t3)">–</span>`;
-        return`<span class="wl-chg" style="color:${biasCss(info.bias)}">${info.changePct>0?'+':''}${info.changePct.toFixed(2)}%</span>`;
-      };
-      const fxRow=p=>{
-        const parts=p.name.split('/');
-        return`<div class="wl-row wl-click" onclick="gotoPairOverview('${escJH(p.name)}')" title="Open the full overview for this pair">
-          <span class="wl-icons">${assetIconHtml(parts[0],14)}<span class="wl-flag-sep">|</span>${assetIconHtml(parts[1],14)}</span>
-          <span class="wl-name">${escH(p.name)}</span>
-          ${wlChg(tickerInfoForItem('pair',p.name))}
-          ${rowScore(pairScore(p.name),'Paar-Score',null,`openScoreInfoPair('${escJH(p.name)}')`)}
-        </div>`;
-      };
-      // Non-FX-"Paare" in der Watchlist (z.B. "XAU/USD") zeigen sich als das
-      // eigentliche Asset (eigener Name/Score/Bias) statt der rohen Paar-
-      // Notation - fehlt das Asset ausnahmsweise (z.B. geloescht, Paar aber
-      // noch in der Watchlist), faellt die Zeile ehrlich auf die Paar-Daten
-      // zurueck statt zu crashen.
-      const nonFxRow=p=>{
-        const assetId=nonFxLegAssetId(p.name);
-        const sym=syms.find(s=>s.id===assetId);
-        const nm=sym?sym.name:p.name;
-        const score=sym?symScoreCmp(sym):pairScore(p.name);
-        const chg=sym?assetTickerInfo(assetId):tickerInfoForItem('pair',p.name);
-        const oc=sym?`openScoreInfoSym('${assetId}')`:`openScoreInfoPair('${escJH(p.name)}')`;
-        return`<div class="wl-row wl-click" onclick="gotoPairOverview('${escJH(p.name)}')" title="Open the full overview for this pair">
-          <span class="wl-icons">${nonFxWatchIconHtml(assetId)}</span>
-          <span class="wl-name">${escH(nm)}</span>
-          ${wlChg(chg)}
-          ${rowScore(score,sym?'Symbol-Score':'Paar-Score',null,oc)}
-        </div>`;
-      };
-      // Nach Score absteigend (Nutzer-Wunsch 2026-08-12) - dieselbe Groesse,
-      // die die jeweilige Zeile auch anzeigt (rowScore oben), damit Sortierung
-      // und Anzeige nie auseinanderlaufen: FX-Paare nach pairScore, Non-FX
-      // nach dem Symbol-Score (falls das Asset noch existiert, sonst Paar-
-      // Score als Fallback - exakt wie nonFxRow() selbst es herleitet).
-      const fxItems=wp.filter(p=>isPureFxPair(p.name)).sort((a,b)=>pairScore(b.name)-pairScore(a.name));
-      const nonFxSortScore=p=>{const sym=syms.find(s=>s.id===nonFxLegAssetId(p.name));return sym?symScoreCmp(sym):pairScore(p.name);};
-      const nonFxItems=wp.filter(p=>!isPureFxPair(p.name)).sort((a,b)=>nonFxSortScore(b)-nonFxSortScore(a));
-      const addRow=`<div class="wl-row wl-add" onclick="openAddPair('Watchlist')" title="Add pair to Watchlist"><span class="wl-icons">+</span><span class="wl-name">Add pair</span></div>`;
-      // Leere Watchlist zeigte bisher nur einen Platzhaltersatz und liess die
-      // Karte fast leer (Nutzer-Wunsch 2026-08-14: "keine weissen Luecken").
-      // Stattdessen die aktuell staerksten Paare als Vorschlag - echte, aus
-      // pairScore gerechnete Daten, ein Klick setzt sie auf die Watchlist.
-      // Dieselben Zeilen-Bausteine wie die gefuellte Liste, damit die Karte
-      // im leeren und gefuellten Zustand gleich aussieht.
-      let wlBody;
-      if(wp.length===0){
-        const sugg=(typeof FX_PAIRS!=='undefined'?FX_PAIRS:[]).map(n=>({name:n,sc:pairScore(n)}))
-          .filter(x=>isFinite(x.sc)).sort((a,b)=>Math.abs(b.sc)-Math.abs(a.sc)).slice(0,5);
-        wlBody=sugg.length?`<div class="dw-note" style="margin:0 0 7px">Nothing on your watchlist yet — the strongest pairs right now:</div>
-          <div class="wl-table">${sugg.map(s=>{
-            const parts=s.name.split('/');
-            return`<div class="wl-row wl-click" onclick="toggleWatch('${escJH(s.name)}')" title="Add ${escH(s.name)} to the watchlist">
-              <span class="wl-icons">${assetIconHtml(parts[0],14)}<span class="wl-flag-sep">|</span>${assetIconHtml(parts[1],14)}</span>
-              <span class="wl-name">${escH(s.name)}</span>
-              ${wlChg(tickerInfoForItem('pair',s.name))}
-              ${rowScore(s.sc,'Paar-Score',null,`openScoreInfoPair('${escJH(s.name)}')`)}
-              <span class="dw-del" style="opacity:.5" title="Add to watchlist">+</span>
-            </div>`;}).join('')}</div>`
-          :`<div class="dw-empty">No pairs in Watchlist yet.</div>`;
-      }else{
-        wlBody=`<div class="wl-table">${fxItems.map(fxRow).join('')}${(fxItems.length&&nonFxItems.length)?'<div class="wl-sep"></div>':''}${nonFxItems.map(nonFxRow).join('')}</div>`;
-      }
-      content=wlBody+addRow;
-    }else if(w.type==='headlines'){
-      // Wirtschafts-Schlagzeilen aus RSS-Feeds (frei, ohne Schluessel):
-      // Notenbanken direkt (Fed/EZB/BoE), etablierte Wirtschaftsmedien und
-      // eine gezielte Suche nach Aussagen einzelner Haeuser (JPMorgan,
-      // Goldman Sachs, Morgan Stanley ...). Der frueher genutzte
-      // Marketaux-Zugang brauchte einen API-Key, den es nie gab - die Karte
-      // blieb dadurch dauerhaft leer.
-      //
-      // Drei Zeitfenster (Tag/Woche/Monat), innerhalb des Fensters nach
-      // WICHTIGKEIT sortiert. Die Wichtigkeit ist keine freie Bewertung,
-      // sondern eine nachlesbare Rechnung im Workflow: wie viele UNABHAENGIGE
-      // Haeuser dieselbe Meldung bringen, plus gedeckelte Treffer auf einer
-      // festen Themenliste und auf den hier gelisteten Maerkten; echte
-      // Notenbank-Beschluesse hoch, deren Verwaltungsmeldungen runter.
-      content=newsCardHtml();
-    }else if(w.type==='pairs_editor'){
-      // Shows all pairs across all categories with add/remove/move-category
-      const addBtn=`<button class="btn g dw-add" onclick="openAddPair()">＋ Add Pair</button>`;
-      const allP=pairs.slice();
-      content=addBtn+(allP.length===0?`<div class="dw-empty">No pairs yet.</div>`:
-      allP.map(p=>{
-        const cat=pairCats.find(c=>c.id===p.catId);
-        return`<div class="sym-row ${glowClass(p.bias)}" style="flex-wrap:wrap;gap:5px">
-          <div class="sym-name dw-pname">${escH(p.name)}</div>
-          ${tickerChipHtml(tickerInfoForItem('pair',p.name))}
-          ${rowScore(pairScore(p.name),'Paar-Score',null,`openScoreInfoPair('${escJH(p.name)}')`)}
-          <span class="dw-meta">${escH(cat?.name||'—')}</span>
-          <span class="bbadge" style="background:${BC[p.bias]}18;color:${biasCss(p.bias)}" title="Automatically from the pair score">${p.bias==='bull'?'▲ BULL':p.bias==='bear'?'▼ BEAR':'◆ NEUT'}</span>
-          <select class="dw-sel" onchange="movePair('${p.id}',this.value);renderDash()">
-            ${pairCats.map(c=>`<option value="${c.id}"${p.catId===c.id?' selected':''}>${escH(c.name)}</option>`).join('')}
-          </select>
-          <button onclick="delPair('${p.id}');renderDash()" class="dw-del" style="opacity:.5" title="Remove">×</button>
-        </div>`;}).join(''));
-    }else if(w.type==='quick_notes'){
-      content=`<textarea class="nbox" style="min-height:70px" placeholder="Quick notes..." oninput="widgets.find(x=>x.id==='${w.id}').content=this.value;saveSoon()" onchange="markUserEditTs();widgets.find(x=>x.id==='${w.id}').content=this.value;save()">${escH(w.content||'')}</textarea>`;
-    }else if(w.type==='ccy_ranking'){
-      // Frei waehlbare Assets statt fest FX-Majors (Nutzer-Wunsch 2026-07-27,
-      // Konfig ueber das Zahnrad/openCcyCfgM) - max. CCY_MAX_ASSETS, per
-      // Fallback weiterhin die 8 FX-Majors fuer Dashboards ohne eigene Wahl.
-      // Ranking auf der fairen Vergleichsbasis (symScoreCmp): Waehrungen
-      // mit mehr getrackten Indikatoren (USD) dominieren sonst strukturell.
-      const wantIds=(w.ccyAssets&&w.ccyAssets.length?w.ccyAssets:FX).slice(0,CCY_MAX_ASSETS);
-      const ranked=wantIds.map(id=>syms.find(s=>s.id===id)).filter(Boolean).map(s=>({s,sc:symScoreCmp(s)})).sort((a,b)=>b.sc-a.sc);
-      const mx=Math.max(1,...ranked.map(r=>Math.abs(r.sc)));
-      // Gestrichelte Trennlinie am Uebergang positiv->negativ (Nutzer-Wunsch):
-      // nur EINMAL, an der Stelle wo der sortierte Score erstmals <0 wird -
-      // 0 zaehlt bewusst noch als nicht-negativ (kein Strich vor einem
-      // neutralen 0-Score).
-      const negIdx=ranked.findIndex(r=>r.sc<0);
-      content=`<div class="rank-list">`+ranked.map((r,i)=>(negIdx>0&&i===negIdx?`<div class="rank-sep"></div>`:'')+`<div class="rank-row" data-flip="${r.s.id}" onclick="gotoSym('${r.s.id}')">
-        <span class="rank-pos">${i+1}</span><span class="rank-name">${escH(r.s.id)}</span>
-        <div class="rank-track rank-div"><span class="rank-null"></span><div class="rank-bar${r.sc<0?' neg':''}" style="${r.sc<0?'right':'left'}:50%;width:${(Math.abs(r.sc)/mx*50).toFixed(1)}%;background:${BC[r.s.bias]}"></div></div>
-        <span class="rank-sc" role="button" onclick="event.stopPropagation();openScoreInfoSym('${r.s.id}')" style="cursor:pointer;color:${biasCss(r.s.bias)}" title="Score - tap for the breakdown">${r.sc>0?'+':''}${Math.round(r.sc*10)/10}</span>
-      </div>`).join('')+`</div>`;
-    }else if(w.type==='risk_sentiment'){
-      content=riskSentimentWidgetHtml();
-    }else if(w.type==='movers_fx'){
-      // Preisbasierte Bewegung (nicht Score!): die groessten FX-Gewinner UND
-      // -Verlierer seit dem letzten verfuegbaren Vortageswert, in getrennten
-      // Bloecken statt einer nach |Betrag| gemischten Rangliste - so draengt
-      // ein einzelner grosser Gewinner nicht alle Verlierer aus der Karte.
-      // Aus price_data.json (stuendlich per GitHub Action, im Browser alle
-      // 10 Min. neu abgefragt - siehe autoFetchPriceData). Farbe folgt direkt
-      // dem Vorzeichen: positiv = bullish, negativ = bearish.
-      const{gainers,losers}=computeFxMovers();
-      const updTxt=priceDataLastFetch?('Updated '+new Date(priceDataLastFetch).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})):'Not updated yet';
-      const moverRow=m=>{
-        const col=BC[m.bias];
-        return`<div class="mover-row" style="cursor:default" title="${escH(m.name)} vs. ${m.prevDate?fmtDayHdr(m.prevDate):'previous close'}">
-          <span class="mover-name">${escH(m.name)}</span>
-          <span class="mover-vals">${fmtPriceTick(m.price)}</span>
-          <span class="mover-delta" style="color:${col}">${m.changePct>0?'▲ +':'▼ '}${Math.abs(m.changePct).toFixed(2)}%</span>
-        </div>`;
-      };
-      // Die Zeilen liegen in einer eigenen Huelle (.mv-list), damit die
-      // Deckelung langer Karten (.dw-cap) nur sie scrollen laesst und die
-      // Aktualisierungs-Zeile darueber stehen bleibt.
-      content=`<div class="movers-upd">${icn('clock',12)} ${updTxt} · refreshes every 10 min</div>`+((gainers.length||losers.length)?
-        `<div class="mv-list"><div class="mover-group-hdr">${icn('trendUp',13)} Gainers</div>${gainers.length?gainers.map(moverRow).join(''):'<div class="dw-empty">None right now.</div>'}`+
-        `<div class="mover-group-hdr">${icn('trendDown',13)} Losers</div>${losers.length?losers.map(moverRow).join(''):'<div class="dw-empty">None right now.</div>'}</div>`
-        :`<div class="dw-empty">No price history yet - fills in once price_data.json has at least 2 days of data for these pairs.</div>`);
-    }else if(w.type==='asset_heatmap'){
-      // Sortiert nach symScoreCmp statt roh, damit die Reihenfolge zum
-      // angezeigten Wert jeder Kachel passt (die schon symScoreCmp zeigt).
-      const assets=syms.filter(s=>isNonFx(s.id)).sort((a,b)=>symScoreCmp(b)-symScoreCmp(a));
-      content=assets.length?`<div class="heat-grid">`+assets.map(s=>`<div class="heat-tile" style="border-color:color-mix(in srgb,${biasCss(biasGroup(s.bias))} 40%,transparent);background:${BC[biasGroup(s.bias)]}1c" onclick="gotoSym('${s.id}')">
-        <div class="heat-name">${escH(s.name)}</div>
-        <div class="heat-sc" role="button" onclick="event.stopPropagation();openScoreInfoSym('${s.id}')" style="cursor:pointer;color:${biasCss(s.bias)}" title="Score - tap for the breakdown">${symScoreCmp(s)>0?'+':''}${symScoreCmp(s)}</div>
-        <div class="heat-bias" style="color:${biasCss(s.bias)}">${BL[s.bias]}</div>
-      </div>`).join('')+`</div>`:`<div class="dw-empty">No non-FX assets.</div>`;
-    }else if(w.type==='mini_calendar'){
-      // Kompakte eigene Zeilen statt der grossen calTableHtml()-Tabelle
-      // (Referenz-Foto, Nutzer-Wunsch 2026-07-25) - bewusst IMMER nur
-      // High-Impact/kommende Events, unabhaengig vom globalen calHighOnly-
-      // Toggle (der bleibt fuer den Kalender-Tab selbst zustaendig). Gleiche
-      // Datenquelle (calEvts/evtImpact/isEvtPast) wie ueberall sonst.
-      const mc=[...calEvts].filter(ev=>evtImpact(ev)==='high'&&!isEvtPast(ev))
-        .sort((a,b)=>a.date===b.date?(a.time||'').localeCompare(b.time||''):a.date.localeCompare(b.date))
-        .slice(0,8);
-      const dayName=d=>{try{return new Date(d+'T00:00:00').toLocaleDateString('en',{weekday:'short'});}catch(e){return'';}};
-      const dayNum=d=>{try{return new Date(d+'T00:00:00').getDate();}catch(e){return'';}};
-      const rows=mc.map(ev=>`<div class="hie-row" onclick="showTab('cal')">
-        <div class="hie-date"><span class="hie-day">${dayNum(ev.date)}</span><span class="hie-wd">${escH(dayName(ev.date))}</span></div>
-        <span class="hie-ccy">${escH(ev.currencies||'')}</span>
-        <span class="hie-name" title="${escH(ev.name)}">${escH(ev.name)}</span>
-        <span class="hie-imp">HIGH</span>
-        <span class="hie-time">${escH(ev.time||'—')}</span>
-      </div>`).join('');
-      content=(mc.length===0?`<div class="dw-empty">No upcoming high-impact events.</div>`:`<div class="hie-list">${rows}</div>`)+
-        `<div class="mw-footer" onclick="showTab('cal')"><span>Go to Calendar</span></div>`;
-    }else if(w.type==='notification'){
-      // Sammelt die frueher als eigene schwebende Banner ueber dem Grid
-      // gezeigten Popups (COT/Risk-Env-Erinnerung, Nutzer-Wunsch 2026-07-25:
-      // "mach die Pop ups wie zB cot in die notifications rein"). Der
-      // "View FF"-Link im Kartenkopf (hdrHtml weiter unten) fuehrt direkt
-      // zum Forex-Factory-Kalender.
-      const popups=cloudNotConnectedNoticeHtml()+dataFeedStaleNotifyHtml()+staleNotifyHtml()+awaitingNotifyHtml()+cotNotifyHtml();
-      // ⚠ Nutzer-Wunsch 2026-08-20: die Karte darf NICHT beliebig lang werden.
-      // Wie viele Meldungen anstehen, haengt allein davon ab, was gerade los
-      // ist (veraltete Indikatoren, ausstehende Werte, COT-Erinnerung) - auf
-      // einem Geraet mit vielen offenen Punkten wuchs sie ueber die gesamte
-      // Spaltenhoehe. Alles liegt deshalb in .nb-list und wird ueber .dw-cap
-      // auf mittlere Hoehe gedeckelt; der Rest bleibt durch Scrollen
-      // erreichbar, es faellt nichts weg.
-      content=popups?`<div class="nb-list">${popups}</div>`
-        :`<div class="dw-empty" style="padding:6px 2px;line-height:1.7">No new notifications right now.</div>`;
-    }else if(w.type==='live_data'){
-      // Nur echte, bereits vorhandene Zeitstempel (Nutzer-Wunsch 2026-07-25:
-      // kein erfundenes "Real-Time"/Latenz-Versprechen - der Client fetcht nie
-      // direkt gegen Forex Factory/CFTC/FRED/TradingView, sondern nur die
-      // eigenen JSON-Dateien, die der stuendliche GitHub-Action-Workflow
-      // schreibt). priceDataLastFetch/fxpro_ff_last sind Client-Fetch-
-      // Zeitpunkte, COT_DATA.updated/SENTIMENT_DATA.updated sind die echten
-      // Generierungs-Zeitstempel aus den JSON-Dateien selbst.
-      const pTxt=priceDataLastFetch?new Date(priceDataLastFetch).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'–';
-      const ffLast=localStorage.getItem('fxpro_ff_last');
-      const cTxt=ffLast?new Date(ffLast).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'–';
-      const cotTxt=(COT_DATA&&COT_DATA.updated)?new Date(COT_DATA.updated).toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'}):'–';
-      const sentTxt=(SENTIMENT_DATA&&SENTIMENT_DATA.updated)?new Date(SENTIMENT_DATA.updated).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'–';
-      content=`<div class="live-data-wrap">
-        <div class="live-data-top">
-          <span class="live-dot"></span>
-          <span class="live-data-lbl">LIVE</span>
-          <span class="live-clock" id="liveClockTxt">--:--:--</span>
-        </div>
-        <div class="live-data-sub">Auto-refresh · background updates, no manual reload needed</div>
-        <div class="live-src-list">
-          <div class="live-src-row"><span>Prices</span><span>${pTxt}</span></div>
-          <div class="live-src-row"><span>Calendar</span><span>${cTxt}</span></div>
-          <div class="live-src-row"><span>COT Data</span><span>${cotTxt}</span></div>
-          <div class="live-src-row"><span>Sentiment</span><span>${sentTxt}</span></div>
-        </div>
-      </div>`;
-      requestAnimationFrame(startLiveClock);
-    }
-    const wt=W_TYPES.find(t=>t.type===w.type);
-    // Kartenkopf wie im Referenz-Foto (Nutzer-Wunsch 2026-07-25, nachgeschaerft
-    // 2026-07-25 "Keine Ueberschrift einfach so"): nur ein kleiner
-    // Kleinbuchstaben-Titel + ein kleines rundes i-Icon direkt daneben
-    // (reuse .rinfo statt eigenem Chrome-Block), das den Erklaertext per
-    // alert() zeigt - fuehlt sich dadurch wie Teil des Karteninhalts an statt
-    // wie eine eigene Toolbar-Leiste. Steuerbuttons bleiben bewusst sichtbar
-    // (nur blasser) statt hover-only: auf Touch gaebe es sonst keinen Weg,
-    // sie zu erreichen.
-    // Die Motivationskarte ist bewusst chrome-los (reine Deko, kein
-    // Datentitel noetig). Die Watchlist war zwischenzeitlich (2026-08-06)
-    // ebenfalls kartenkopflos, hat ihre Ueberschrift auf Nutzer-Wunsch
-    // 2026-08-07 aber wieder - die Tabellen-Optik der Zeilen bleibt davon
-    // unberuehrt.
-    const hdrHtml=`<div class="dw-hdr">
-        <div class="dw-t"><span class="dw-t-txt">${escH(w.title||w.type)}</span>${abInfoBtn(w.title||w.type,(wt&&wt.sub?[escH(wt.sub)]:[]).concat(_dwErkl),'rinfo')}</div>
-        ${w.type==='mini_calendar'?`<span class="dw-hdlink" onclick="showTab('cal')">View Calendar</span>`:''}
-        ${w.type==='notification'?`<span class="dw-hdlink" onclick="if(!linkOeffnen('https://www.forexfactory.com/calendar'))alert('The link was blocked — allow pop-ups for this app.')">View FF</span>`:''}
-      </div>`;
-    // .dw-body umschliesst den reinen Inhalt (alles ausser dem Kartenkopf) -
-    // einheitlicher Ankerpunkt fuer JEDEN Widget-Typ, damit die letzte Karte
-    // einer Zone ihren Inhalt in den Restplatz hinein zentrieren kann (siehe
-    // .dash-zone-left/right>.dw:last-child>.dw-body, Nutzer-Wunsch 2026-07-27
-    // "Inhalt der Karten soll voll sein") - ohne dass der Kopf mitzentriert
-    // wird, da er ausserhalb von .dw-body bleibt.
-    const cardHtml=`<div class="dw dw-${w.type}${w.type==='fx_bias'?' dw-biasassets':w.type==='watchlist'?' dw-watchlist':w.type==='quick_notes'?' dw-quicknotes':''}" data-widget-id="${w.id}">
-      ${hdrHtml}
-      <div class="dw-body">${content}</div>
-    </div>`;
-    zones[zone].push(cardHtml);
-  });
-  // Nutzer-Wunsch 2026-08-14: "alle Karten sollen gleich weit unten enden,
-  // aber mit Inhalt und ohne weisse Luecken". Die LETZTE Karte jeder Seiten-
-  // spalte bekommt dafuer .dw-shrink und gibt Hoehe ab
-  // (Grid steht auf align-items:stretch). Damit dabei kein Leerraum in der
-  // Karte entsteht, scrollt ihre LISTE im Restplatz (siehe .dw-shrink-CSS) -
-  // und die betroffenen Listen wurden vorher entdrosselt (Kalender 3->8
-  // Events, Volatilitaet 6->10 Assets, Carry 5+5->6+6 Paare), sodass sie
-  // mehr Zeilen HABEN als hineinpassen. Genau das war der Einwand bei den
-  // frueheren Stretch-Versuchen (2026-07-27/2026-08-08): dort wurde eine
-  // Karte mit unveraendert wenig Inhalt aufgeblasen, der Inhalt "schwebte".
-  // Welche Karten schrumpfen duerfen (Nutzer-Korrektur 2026-08-14, dritte
-  // Runde): NICHT nur eine je Spalte. Traegt eine einzige Karte den ganzen
-  // Fehlbetrag, bleibt von ihrer Liste fast nichts uebrig (gemessen: 1 von 5
-  // Zeilen). Stattdessen bekommen ALLE listenlastigen Karten der Spalte
-  // `dw-shrink` - Flexbox verteilt den Fehlbetrag dann proportional zu ihrer
-  // Groesse, jede verliert nur einen kleinen Teil und behaelt genug Zeilen.
-  // Karten ohne echte Liste (Gauge, Kopfzahlen, Schlagzeilen) bleiben aussen
-  // vor, damit dort nichts abgeschnitten wird.
-  const DASH_SHRINKABLE=['perf_ranking','carry_ranking','vol_leaders','mini_calendar',
-                         'surprise_index','watchlist','corr_warn','ccy_ranking'];
-  ['left','center','right','right2'].forEach(z=>{
-    zones[z]=zones[z].map(h=>{
-      const m=h.match(/class="dw dw-([a-z_0-9]+)/);
-      return (m&&DASH_SHRINKABLE.includes(m[1]))
-        ? h.replace('class="dw dw-','class="dw dw-shrink dw-') : h;
-    });
-  });
-  // ⚠ Nutzer-Wunsch 2026-08-20: "Karten die extrem lang sind lass sie mittel
-  // lang und mach das man den Rest durch scrollen sieht". Betroffen sind die
-  // Karten, deren Laenge NICHT feststeht, sondern davon abhaengt, was gerade
-  // anliegt - Benachrichtigungen (jede veraltete Reihe, jeder ausstehende
-  // Wert, jedes eingetroffene Event ist eine Zeile) und Schlagzeilen. Sie
-  // bekommen .dw-cap; die Hoehe je Typ steht als --dw-cap in der CSS, damit
-  // hier keine Pixelwerte in den Markup-String gebaut werden. Gedeckelt wird
-  // nur die LISTE - Filter, Umschalter und Fusszeilen bleiben stehen, und es
-  // faellt keine Zeile weg, sie ist nur durch Scrollen erreichbar.
-  const DASH_CAPPED=['notification','headlines','mini_calendar','movers_fx'];
-  ['left','center','right','right2','bottom'].forEach(z=>{
-    zones[z]=zones[z].map(h=>{
-      const m=h.match(/class="dw (?:dw-shrink )?dw-([a-z_0-9]+)/);
-      return (m&&DASH_CAPPED.includes(m[1]))
-        ? h.replace('class="dw ','class="dw dw-cap ') : h;
-    });
-  });
-  // Zonen zusammensetzen - Majors-Sidebar (frueher ein eigenstaendiges
-  // <aside>) ist jetzt schlicht das erste Element der 'left'-Zone.
-  el.innerHTML=`
-    <div class="dash-zone-left"><div class="dw dash-majors-card">${dashMajorsHtml()}</div>${zones.left.join('')}</div>
-    <div class="dash-zone-center">${zones.center.join('')}</div>
-    <div class="dash-zone-right">${zones.right.join('')}</div>
-    <div class="dash-zone-right2">${zones.right2.join('')}</div>
-    <div class="dash-zone-bottom">${zones.bottom.join('')}</div>
-  `;
+  const heute=dashHeuteListe(),notifs=dashNotifListe(),nPos=tjOffenAnzahl();
+  const win=PERF_WINDOWS.find(w=>w[0]===perfWindow)||PERF_WINDOWS[1];
+  const perfBar=`<div class="perf-winbar db-perf-win">${PERF_WINDOWS.map(w=>`<button class="perf-win${w[0]===perfWindow?' on':''}" onclick="setPerfWindow('${w[0]}')">${w[0]}</button>`).join('')}</div>`;
+  el.innerHTML=dashKopfHtml({pos:nPos,ev:heute.length,nf:notifs.length})+`<div class="db-grid">
+   <div class="db-main">
+    ${dashSek('dbPos','positions','Open positions',tjDashHtml(),{anz:nPos||null,link:['Journal',"showTab('journal')"],
+      erkl:['Your open trades from the journal.','Status in R and price distance since entry — no money amount (needs the value per point).','Tap a row for the journal, Close to log the exit.']})}
+    ${dashSek('dbBias','bias_scores','Bias scores',dashBiasHtml(),{link:['All assets',"showTab('cur')"],
+      erkl:['Every asset by class, strongest score first.','Tap a tile for the asset, the number for the score breakdown.']})}
+    <div class="db-duo">
+    ${dashSek('dbMover','movers_fx','Biggest movers',dashMoverHtml(),{link:['Trends',"showTab('trends')"],
+      erkl:['FX pairs with the largest move since the previous close.','Tap a pair for its overview.']})}
+    ${dashSek('dbWatch','watchlist','Watchlist',dashWatchHtml(),{link:['Watchlist',"showTab('watch')"],
+      erkl:['Your tracked pairs, by score.','Tap a pair for its overview, the score for the breakdown.']})}
+    </div>
+    ${dashSek('dbPerf','perf_ranking','Performance',dashPerfHtml(),{extra:perfBar,link:[dashPerfAlle?'Show less':'Show all','dashPerfUmschalten()'],
+      erkl:['Actual price performance over '+win[0]+' — compare it with the score to spot where the market disagrees.']})}
+   </div>
+   <div class="db-rail">
+    ${dashSek('dbNotif','notification','Notifications',notifs.length?`<div class="nb-list">${notifs.join('')}</div>`:`<div class="db-leer"><i>All clear — nothing needs your attention</i></div>`,{anz:notifs.length||null,
+      erkl:['Data issues and new reports that need your attention.','Tap an entry to jump to it.']})}
+    ${dashSek('dbHeute','mini_calendar','Today',dashHeuteHtml(heute),{anz:heute.length||null,link:['Calendar',"showTab('cal')"],
+      erkl:['High and medium impact releases today, your local time.','Released: actual in beat / miss colour. Upcoming: forecast.']})}
+   </div>
+  </div>`;
   if(_dashScroll)_dashScroll.scrollTop=_scrollY;
-  equalizeDashColumns();
-  requestAnimationFrame(scrollCalsToNow);
-  startGlobes();
-  attachChartHovers(el);
-  gaugeNeedleAnim(el);
-  flipRankRows(el,_rankFlipBefore);
+  // Terminliste auf den naechsten Termin stellen (vergangene stehen darueber).
+  const _evL=el.querySelector('.db-ev-list'),_evN=_evL&&_evL.querySelector('.db-ev.next');
+  if(_evN)_evL.scrollTop=Math.max(0,_evN.offsetTop-_evL.offsetTop-68);
+  dashUhrStarten();
+}
+// Begruessung + Uhr laufen mit, ohne das ganze Dashboard neu aufzubauen
+// (eine Seite = ein Aufbau, docs/performance.md).
+let _dashUhrT=null;
+function dashUhrStarten(){
+  if(_dashUhrT)return;
+  _dashUhrT=setInterval(()=>{
+    if(curPage!=='dash'||document.hidden)return;
+    const g=document.getElementById('dashGruss'),u=document.getElementById('dashUhr');if(!g||!u)return;
+    const now=new Date();
+    const t=dashGruss(now)+', Trader';if(g.textContent!==t)g.textContent=t;
+    u.textContent=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+' · '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  },30000);
 }
 // ══ SPALTEN AUF EINE LINIE - OHNE LEERRAUM ═══════════════════════════════
 // Nutzer-Korrektur 2026-08-14 (per Foto, zweite Runde): der erste Versuch hat
@@ -27596,7 +27389,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   resRemovePlace,resFillPlaceFolderSelect,resFillNoteModal,saveResNote,delResNote,W_TYPES,staleNotifyHtml,
   awaitingNotifyHtml,dataFeedStaleNotifyHtml,cotNotifyHtml,cloudNotConnectedNoticeHtml,renderCotNotify,
   AURORA_NEU,updateAuroraColors,startLiveClock,startHdrLiveClock,symDataQuality,symSourceLabel,
-  detailMetaHtml,dashMajorsHtml,
+  detailMetaHtml,dashMajorsHtml,dashZu,dashPerfUmschalten,dashGruss,dashSessions,
   ZONE_OF_TYPE,dashZoneOf,mvWidget,PERF_WINDOWS,
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,

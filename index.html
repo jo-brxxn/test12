@@ -6023,7 +6023,8 @@ body.anim-enter:not(.no-data-anim) .risk-asset-bar,
 body.anim-enter:not(.no-data-anim) .perf-bar,
 body.anim-enter:not(.no-data-anim) .esi-bar{
   transform-origin:left center;animation:dataBarIn var(--enter-dur) cubic-bezier(.22,.9,.3,1) both}
-body.anim-enter:not(.no-data-anim) #dashWidgets>.dash-zone>.dw{
+body.anim-enter:not(.no-data-anim) #dashWidgets>.dash-zone>.dw,
+body.anim-enter:not(.no-data-anim) #dashWidgets>.db-grid{
   animation:dataCardIn var(--enter-dur) ease-out both}
 body.anim-enter:not(.no-data-anim) #dashWidgets>.dash-zone>.dw:nth-child(2){animation-delay:.05s}
 body.anim-enter:not(.no-data-anim) #dashWidgets>.dash-zone>.dw:nth-child(3){animation-delay:.1s}
@@ -6914,7 +6915,7 @@ body.no-ui-anim .fxlogo>.lg-k,body.no-ui-anim .fxlogo>.lg-b{animation:none!impor
 /* #pgDash ist ab 760 px oben nur 8 px gepolstert (mehr Platz fuer Karten,
    2026-07-25/27) - der Titel holt die 8 px nach, damit er auf derselben Hoehe
    steht wie auf jeder anderen Seite (y = Kopfleiste + 16 px). */
-@media(min-width:760px){#pgDash .dash-kopf{margin-top:8px}}
+@media(min-width:760px){#pgDash .dash-kopf,#pgDash .db-kopf{margin-top:8px}}
 .rterm-side-title{padding:0 0 12px}
 .rterm-side-title .pg-sub{max-width:300px}
 /* D5 Mindestschrift 11 px: die Leisten-Beschriftung (--fs-2xs) ist jetzt
@@ -7165,6 +7166,121 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .tr-auto{margin-right:6px}
 .tr-tip-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
 .tr-endlbl-t{cursor:pointer}
+
+/* ══ DASHBOARD (Neuaufbau 2026-11-05, renderDash in js/main.js) ══════════════
+   Sektionen ohne Kartenrahmen: Haarlinie oben statt Kasten, nur die
+   Notifications sind ein hervorgehobener Block. Jede Sektion ist weiterhin
+   .dw (Waechter), deshalb hier der Kasten-Look gezielt zurueckgenommen.
+   Raster mit grid-area AM KIND - ohne das ist die Vorlage nur ein Kommentar
+   (docs/navigation.md, "grid-template-areas platziert nichts"). */
+.db-wrap{display:block;max-width:1480px}
+.db-kopf{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding:4px 0 18px}
+.db-gruss{margin:0}
+.db-sub{display:flex;flex-wrap:wrap;align-items:center;gap:0 6px}
+.db-sub b{color:var(--t1);font-weight:700}
+.db-ses{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.db-live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px color-mix(in srgb,var(--success) 18%,transparent)}
+.db-chips{display:flex;flex-wrap:wrap;gap:8px}
+.db-chip{display:inline-flex;align-items:center;gap:5px;height:var(--h-s);padding:0 12px;border-radius:999px;border:1px solid var(--bd);background:var(--card);color:var(--t2);font:500 var(--fs-sm)/1 var(--ff-text);cursor:pointer;white-space:nowrap}
+.db-chip b{font-family:var(--ff-num);font-weight:800;color:var(--t0)}
+.db-chip.warn{border-color:color-mix(in srgb,var(--due) 45%,var(--bd));color:var(--due)}
+.db-chip.warn b{color:var(--due)}
+@media (hover:hover){.db-chip:hover{border-color:var(--bd2);background:var(--bg3)}}
+.db-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0 40px;grid-template-areas:"pos" "notif" "bias" "heute" "mover" "watch" "perf"}
+.db-grid #dbPos{grid-area:pos}.db-grid #dbNotif{grid-area:notif}.db-grid #dbBias{grid-area:bias}
+.db-grid #dbHeute{grid-area:heute}.db-grid #dbMover{grid-area:mover}.db-grid #dbWatch{grid-area:watch}.db-grid #dbPerf{grid-area:perf}
+@media(min-width:760px){.db-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"pos pos" "notif heute" "bias bias" "mover watch" "perf perf"}}
+/* Unter 1160 px loesen sich Hauptspalte/Leiste auf, die Sektionen liegen
+   direkt im Raster oben. Ab 1160 px: Hauptspalte (Positionen, Bias Scores,
+   Movers|Watchlist, Performance) + rechte Leiste (Notifications, Heute) -
+   zwei unabhaengige Spalten, keine gekoppelten Reihen, also keine Loecher. */
+.db-main,.db-rail,.db-duo{display:contents}
+@media(min-width:1160px){
+  .db-grid{grid-template-columns:minmax(0,2fr) minmax(300px,1fr);grid-template-areas:none;align-items:start}
+  .db-main,.db-rail{display:flex;flex-direction:column;min-width:0}
+  .db-duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px;align-items:start}
+  .db-grid #dbPos,.db-grid #dbNotif,.db-grid #dbBias,.db-grid #dbHeute,.db-grid #dbMover,.db-grid #dbWatch,.db-grid #dbPerf{grid-area:auto}
+  .db-rail #dbHeute .db-ev-list{max-height:580px}}
+#dashWidgets .db-sek{background:none;border:0;border-top:1px solid var(--bd2);border-radius:0;box-shadow:none;padding:16px 0 26px;margin:0;min-width:0}
+@media (hover:hover){#dashWidgets .db-sek:hover{box-shadow:none;border-color:var(--bd2)}}
+#dashWidgets #dbNotif{align-self:start;margin:12px 0 22px;padding:14px 16px 16px;border:1px solid var(--bd);border-radius:var(--r);background:var(--card);box-shadow:var(--shadow-card)}
+@media (hover:hover){#dashWidgets #dbNotif:hover{border-color:var(--bd);box-shadow:var(--shadow-card)}}
+.db-hdr{justify-content:flex-start;flex-wrap:nowrap;gap:8px;margin-bottom:10px;min-height:var(--h-s)}
+.db-hdr .dw-t-txt{font-size:var(--fs-kt);font-weight:700;color:var(--t0)}
+.db-anz{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--bg4);color:var(--t1);font:800 var(--fs-xs)/1 var(--ff-num)}
+.db-link{margin-left:auto;display:inline-flex;align-items:center;gap:2px;height:var(--h-s);padding:0 4px 0 8px;border:0;border-radius:var(--rss);background:none;color:var(--t2);font:600 var(--fs-sm)/1 var(--ff-text);cursor:pointer;white-space:nowrap;flex:0 0 auto}
+@media (hover:hover){.db-link:hover{background:var(--bg3);color:var(--t0)}}
+.db-gr-lbl{font:700 var(--fs-xs)/1 var(--ff-text);letter-spacing:.6px;text-transform:uppercase;color:var(--t3);margin:12px 0 6px}
+.dw-body>.db-gr-lbl:first-child,.db-perf-cols .db-gr-lbl:first-child{margin-top:2px}
+.db-leer{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-height:var(--h-m);padding:4px 0;color:var(--t3);font-size:var(--fs-base)}
+.db-fuss{margin-top:8px;font-size:var(--fs-xs);color:var(--t3)}
+.db-row{display:flex;align-items:center;gap:10px;min-height:var(--h-m);padding:0 8px;margin:0 -8px;border-radius:var(--rss);cursor:pointer;font-size:var(--fs-base);color:var(--t1)}
+.db-row+.db-row{box-shadow:inset 0 1px 0 var(--bd)}
+@media (hover:hover){.db-row:hover{background:var(--bg3);box-shadow:none}.db-row:hover+.db-row{box-shadow:none}}
+.db-row:focus-visible{outline:2px solid var(--ui-act);outline-offset:-2px}
+/* Offene Positionen */
+.db-pos-row{display:grid;grid-template-columns:minmax(120px,1.3fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr) 74px auto;min-height:var(--h-l)}
+.db-pos-a{display:flex;align-items:center;gap:8px;min-width:0}
+.db-pos-a b{font-weight:800;color:var(--t0)}
+.db-pos-px,.db-pos-z{font-family:var(--ff-num);white-space:nowrap}
+.db-pos-px i{font-family:var(--ff-text);color:var(--t3);font-size:var(--fs-xs);margin-right:2px}
+.db-pos-r{font:800 var(--fs-lg)/1 var(--ff-num);text-align:right}
+@media(max-width:759px){.db-pos-row{grid-template-columns:minmax(0,1fr) auto auto;row-gap:2px;padding-top:6px;padding-bottom:6px}
+  .db-pos-row .db-pos-px{grid-row:2;font-size:var(--fs-sm)}.db-pos-row .db-pos-px+.db-pos-px{grid-column:2/4;text-align:right}
+  .db-pos-row .db-pos-z{display:none}}
+/* Bias Scores */
+.db-bias-wrap{display:flex;flex-wrap:wrap;gap:4px 20px}
+.db-bias-gr{flex:var(--n) 1 calc(var(--n) * 106px - 6px);min-width:0}
+.db-bias-gr .db-gr-lbl{margin:8px 0 6px}
+.db-bias-grid{display:flex;flex-wrap:wrap;gap:6px}
+.db-bias-grid>.db-bias{flex:1 1 100px;min-width:100px}
+.db-bias{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:6px 10px;align-items:center;padding:8px 10px 9px;border:1px solid var(--bd);border-radius:var(--rss);background:var(--card);cursor:pointer;text-align:left;font:inherit;color:var(--t1);min-height:var(--h-l)}
+@media (hover:hover){.db-bias:hover{border-color:var(--bd2);background:var(--bg3)}}
+.db-bias-n{display:flex;align-items:center;gap:6px;min-width:0;font-size:var(--fs-sm);font-weight:600}
+.db-bias-n{grid-column:1/3}
+.db-bias-n>span:last-child{white-space:nowrap}
+.db-bias-v{grid-row:2;grid-column:2;font:800 var(--fs-md)/1 var(--ff-num);cursor:pointer;text-align:right}
+.db-bias-bar{grid-row:2;grid-column:1;height:3px;border-radius:2px;background:var(--bg4);overflow:hidden}
+.db-bias-bar>span{display:block;height:100%;border-radius:2px}
+@media(max-width:759px){.db-bias-gr{flex-basis:100%}.db-bias-grid>.db-bias{flex-basis:92px;min-width:92px}}
+/* Listen, deren Laenge vom Tag abhaengt (Termine, Meldungen), scrollen in
+   fester Hoehe - Nutzer-Regel 2026-08-20, es faellt nichts weg. */
+.db-ev-list{max-height:342px;overflow-y:auto;overscroll-behavior:contain;padding:0 8px;margin:0 -8px}
+#dbNotif .nb-list{max-height:520px;overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:1159px){#dbNotif .nb-list{max-height:342px}}
+/* Heute */
+.db-ev{display:grid;grid-template-columns:42px 8px 34px minmax(0,1fr) auto;gap:8px}
+.db-ev-t{font-family:var(--ff-num);font-weight:700;color:var(--t1)}
+.db-ev-imp{width:8px;height:8px;border-radius:50%}
+.db-ev-imp.ih{background:var(--due)}
+.db-ev-imp.im{background:var(--bd2)}
+.db-ev-c{font-weight:700;color:var(--t2);font-size:var(--fs-sm)}
+.db-ev-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t0)}
+.db-ev-act{font-family:var(--ff-num);font-weight:800}
+.db-ev-act.act-good{color:var(--bias-bull)}.db-ev-act.act-bad{color:var(--bias-bear)}
+.db-ev-fc{font-family:var(--ff-num);color:var(--t2);font-size:var(--fs-sm);white-space:nowrap}
+.db-ev-fc i{font-family:var(--ff-text);color:var(--t3)}
+.db-ev.vorbei .db-ev-t,.db-ev.vorbei .db-ev-n,.db-ev.vorbei .db-ev-c{color:var(--t3)}
+.db-ev.next{box-shadow:inset 3px 0 0 var(--ui-act)}
+.db-ev.next .db-ev-t{color:var(--t0)}
+/* Movers */
+.db-mv{display:grid;grid-template-columns:auto minmax(0,1fr) auto 70px}
+.db-mv-n{font-weight:700;color:var(--t0)}
+.db-mv-p{font-family:var(--ff-num);color:var(--t2);font-size:var(--fs-sm)}
+.db-mv-d{font-family:var(--ff-num);font-weight:800;text-align:right}
+/* Watchlist */
+#dbWatch .wl-row{flex-wrap:nowrap;padding:0 8px}
+#dbWatch .wl-name{flex:1 1 auto;min-width:0}
+.db-add{display:inline-flex;align-items:center;gap:6px;height:var(--h-m);margin-top:6px;padding:0 10px;border:1px dashed var(--bd2);border-radius:var(--rss);background:none;color:var(--t2);font:600 var(--fs-sm)/1 var(--ff-text);cursor:pointer}
+@media (hover:hover){.db-add:hover{border-style:solid;color:var(--t0)}}
+/* Performance */
+.db-perf-win{margin:0 0 0 8px;flex:0 0 auto}
+.db-perf-win .perf-win{flex:0 0 auto;min-width:40px;height:var(--h-s);padding:0 8px}
+.db-perf-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px}
+.db-perf-cols .perf-row{cursor:pointer;min-height:var(--h-m);gap:10px}
+.db-perf-cols .perf-name{flex:0 0 110px;color:var(--t0);font-weight:600}
+@media(max-width:759px){.db-perf-cols{grid-template-columns:minmax(0,1fr)}.db-perf-cols>div+div{margin-top:4px}
+  .db-hdr{flex-wrap:wrap}.db-perf-win{order:3;margin:6px 0 0;width:100%}}
 </style>
 </head>
 <body>
@@ -7252,11 +7368,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-669 - Schlagzeilen: in schmalen Listen Quelle/Zeit unter dem Titel; altes Preis-Fenster entfernt; vorher 668: Price-Karte ohne PRICE-Streifen."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-670 - Dashboard neu: Begruessung, Open positions, Bias scores, Today, Movers, Watchlist, Performance, Notifications als Sektionen; vorher 669: Schlagzeilen-Layout."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-669</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-670</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -7707,8 +7823,10 @@ window.fxLogoSvg=function(art){
        Der Bearbeitungsmodus (Long-Press: Karten hinzufuegen, verschieben,
        umbenennen, entfernen) ist seit 2026-10-07 entfernt - Nutzer: "Entfern
        den Bearbeitungsmodus wenn ich was bearbeiten will frag ich dich". -->
-  <div class="dash-kopf"><div class="pg-titel">Dashboard</div><div class="pg-sub">Your markets at a glance</div></div>
-  <div class="dash-layout" id="dashWidgets"></div>
+  <!-- Seit 2026-11-05 ersetzt die Begruessung ("Good morning, Trader") den
+       Seitentitel - sie traegt .pg-titel/.pg-sub und wird in renderDash()
+       (dashKopfHtml) mit dem Inhalt gebaut. -->
+  <div class="db-wrap" id="dashWidgets"></div>
 </div>
 
 </div>

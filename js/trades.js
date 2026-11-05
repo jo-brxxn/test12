@@ -926,6 +926,31 @@ function tjOffenHtml(){
   };
   return`<div class="tj-card tj-offen">${kopf}<div class="tjo-grid">${l.map(karte).join('')}</div></div>`;
 }
+// ── DASHBOARD: OFFENE POSITIONEN ─────────────────────────────────────────
+// Nutzer 2026-11-05 ("Dann sollen da die offenen Positionen stehen"): kompakte
+// Tabelle der offenen Trades fuer das Dashboard. Dieselbe Rechnung wie die
+// Journal-Karte oben (tjLive) - Stand als R + Kursabstand, kein Geldbetrag
+// (Regel 4). Zeile -> Journal, "Close" -> Abschluss-Fenster.
+function tjDashHtml(){
+  const l=tjChrono(tjOffeneListe()).reverse();
+  if(l.length&&!PRICE_DATA_FEED)tjPreiseLaden();
+  if(!l.length)return`<div class="db-leer"><i>No open positions</i><button class="btn g" onclick="tjNeu()">＋ Add position</button></div>`;
+  const zeile=t=>{
+    const L=tjLive(t),dz=L.e!=null?tjDez(L.e):5;
+    const zug=L.zug!=null?`<b style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b>`:'<i>–</i>';
+    const r=L.r!=null?`<b class="db-pos-r" style="color:${tjFarbe(L.r)}">${tjRText(L.r)}</b>`:'<b class="db-pos-r" style="color:var(--t3)">–</b>';
+    return`<div class="db-row db-pos-row" role="button" tabindex="0" onclick="showTab('journal')" title="Open the journal">
+      <span class="db-pos-a"><b>${escH(t.a)}</b>${tjSeiteHtml(t.dir)}</span>
+      <span class="db-pos-px"><i>Entry</i> <b>${tjPreis(L.e)}</b></span>
+      <span class="db-pos-px"><i>Now</i> <b>${L.j?tjPreis(L.j.v):'–'}</b></span>
+      <span class="db-pos-z">${zug}</span>
+      ${r}
+      <button class="btn g db-pos-btn" onclick="event.stopPropagation();tjAbschliessen('${escJH(t.id)}')" title="Close this trade">Close</button>
+    </div>`;
+  };
+  return`<div class="db-pos-list">${l.map(zeile).join('')}</div>`;
+}
+function tjOffenAnzahl(){return tjOffeneListe().length;}
 // Nur die Info-Zeile - beim Nachladen der Kurse bleiben die Eingaben stehen.
 function tjZuInfo(t){
   const L=tjLive(t),el=document.getElementById('tjcInfo');
@@ -1004,10 +1029,10 @@ if(typeof window!=='undefined'){
     tjOffeneChartsAuffrischen();},160);});
 }
 
-export {trades,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
+export {trades,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
   tjFuerCloud,tjGesendet,tjSendeFehler};
 if(typeof window!=='undefined'){
-  Object.assign(window,{renderJournal,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
+  Object.assign(window,{renderJournal,tjDashHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
     mergeTrades,tjUebernehmen,tjR,tjReihe,tjTagKlick,tjTagFenster,tjTagZuTrade,tjTagNeu,tjRichtung,tjExitAuf,tjEdEingabe,tjStreak,tjStats,
     tjStatus,tjAbschliessen,tjZuExit,tjZuErgebnis,tjZuSpeichern,tjZuBearbeiten,tjJetzt,tjLive,
     tjFuerCloud,tjCloudStand,tjJetztHochladen,tjSig});

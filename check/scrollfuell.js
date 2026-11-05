@@ -134,7 +134,7 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
     // mit ALLEN Kartentypen (die ohne feste Zone landen in 'bottom') - nur im Test
     await p.evaluate(() => { const da = new Set(widgets.map(x => x.type)); W_TYPES.forEach((t, i) => { if (!da.has(t.type)) widgets.push({ id: 'sftest' + i, type: t.type, title: t.label, order: widgets.length, content: '' }); }); showTab('dash'); renderDash(); }); await p.waitForTimeout(1200);
     const d = await p.evaluate(([gp, nurSpalten]) => {
-      if (gp) { const bz = document.querySelector('.dash-zone-bottom'); document.querySelectorAll('.dw-mini_calendar,.dw-movers_fx,.dw-notification').forEach(k => bz.appendChild(k)); }
+      if (gp) { const e = document.getElementById('dbWatch') || document.querySelector('#dashWidgets .dw:last-child'); if (e) e.style.marginTop = '60px'; }
       const ks = [...document.querySelectorAll('#dashWidgets .dw')].filter(k => k.offsetParent).map(k => ({ n: (k.querySelector('.dw-title') || k).textContent.trim().slice(0, 18), r: k.getBoundingClientRect(), z: k.parentElement, el: k }));
       const out = [];
       // keine Spalte darf zusammenfallen (fehlender Raster-Bereich -> 0px)

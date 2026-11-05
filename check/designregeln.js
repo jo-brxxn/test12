@@ -409,11 +409,12 @@ const ruhe = (p, z) => p.waitForTimeout(String(z).startsWith('A:') ? 1000 : 350)
       const seite = (row, bar, track, txt) => { const v = parseFloat(txt); const q = track.getBoundingClientRect(), bq = bar.getBoundingClientRect(), mid = (q.left + q.right) / 2; n.rank++;
         if (bq.width < 0.5 || !isFinite(v)) return; if (v >= 0 ? Math.abs(bq.left - mid) > 0.8 : Math.abs(bq.right - mid) > 0.8) out.push(`Staerke ${txt.trim()}: Balken ${Math.round(bq.left)}-${Math.round(bq.right)} statt ab Mitte ${Math.round(mid)}`); };
       document.querySelectorAll('.rank-row').forEach(r => { const t = r.querySelector('.rank-div'); if (t) seite(r, t.querySelector('.rank-bar'), t, (r.querySelector('.rank-sc') || {}).textContent || ''); });
-      if (!n.rank) out.push('Dashboard: keine Waehrungsstaerke-Zeile mit Mittellinie (.rank-div) gefunden');
+      // Seit dem Dashboard-Neuaufbau 2026-11-05 steht die Waehrungsstaerke nicht
+      // mehr auf dem Dashboard; geprueft wird jede .rank-div, die es noch gibt.
       document.querySelectorAll('.wl-table .wl-row.wl-click').forEach(r => { n.wl++; const h = r.getBoundingClientRect().height; if (h > 40) out.push(`Watchlist "${r.querySelector('.wl-name').textContent.trim()}" ${Math.round(h)} px hoch (zweizeilig)`);
         const x = r.querySelector('button.dw-del'); if (x && x.getBoundingClientRect().width > 0) out.push('Watchlist: Entfernen-× sichtbar (der Bearbeitungsmodus ist seit 2026-10-07 entfernt)'); });
       if (!n.wl) out.push('Watchlist: keine Zeilen (Testpaare nicht angelegt?)');
-      const mh = document.querySelector('.dash-majors-card .dw-t-txt'); if (!mh || parseFloat(getComputedStyle(mh).fontSize) < 16) out.push('Majors-Karte ohne Kartentitel');
+      const mh = document.querySelector('#dbBias .dw-t-txt'); if (!mh || parseFloat(getComputedStyle(mh).fontSize) < 16) out.push('Bias-scores-Sektion ohne Kartentitel');
       return { out: [...new Set(out)], n };
     });
     // N) Bearbeitungsmodus entfernt (2026-10-07): auch 2,5 s Druck aufs

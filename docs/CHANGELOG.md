@@ -21325,3 +21325,33 @@ Muster: jeder Fix schloss die Schicht, an der das Symptom auffiel; kein Wächter
 **Gemessen und behoben:** (1) Knopf 256 + Zeitfilter 263 px > 489 px Werkzeugzeile (1180, Spalte 523) → unter 560 px Kartenbreite ohne das Wort „Display“ (203 px); (2) 34-px-Knopf neben 28-px-Zeitknöpfen zählt als zweite Zeile und steht schief → Karten-Variante 28 px (`.km-klein`, ohne `.btn` — `.btn` ist laut Höhenraster 34 px). Danach Price-Karte bei 1180 px **eine** Bedienzeile (designregeln K war lokal rot), bei 1000 px zwei (erlaubt).
 **Nicht umgestellt (gesehen):** Calendar-Karte *Month | Past* und Sentiment *AAII*-Ansichten — Ansicht-Umschalter in einer Karte (benutzen `.ctyp` nur als Optik); als Vorschlag offen.
 **Wächter:** `check/einheit.js` C prüft jetzt den Display-Knopf (Gegenprobe rot, 70 Befunde); `check/kontrollmenue.js` E.
+
+
+## 2026-11-05 — Dashboard-Neuaufbau (VERSION-CHECK-670)
+
+Nutzer (Sprachnachricht): Dashboard weg von der Karten-Optik, oben „guten
+Morgen/Mittag/Nachmittag/Abend, Trader", dann offene Positionen, Bias Scores,
+Mini-Kalender heute, größte Mover, Watchlist, Performance Ranking,
+Notification-Karte; Design deutlich verbessern, Klickwege zu den Kategorien.
+Rückfrage (4 Fragen): Sektionen ohne Rahmen · alle Assets gruppiert · heute
+High + Medium · nur Dashboard.
+
+Vorher gemessen (1440 px): 14 Karten in 4 Zonen, ~1550 px hoch.
+Nachher (1440 px, 0 Positionen, 3 Meldungen, 36 Termine): Hauptspalte 990 px,
+Leiste 990 px.
+
+Iterationen (Playwright-Messungen):
+1. Reihen-Raster „pos pos notif / bias bias bias / heute mover watch" →
+   Positionen-Reihe 552 px hoch bei 123 px Inhalt (Meldungen 540 px).
+2. Meldungen über zwei Reihen, Kasten gestreckt → 180 px Leerraum IM Kasten.
+3. Hauptspalte + Leiste entkoppelt → kein Loch, Spalten-Enden ±120 px.
+4. Bias-Gruppenlabel als Seitenspalte → Kacheln 89 px, „Nasda q" umbrochen →
+   Label über den Kacheln, Gruppen fließen nebeneinander, Kachel ≥100 px.
+5. Heute-Liste ungedeckelt 1305 px → feste Höhe, springt auf den nächsten Termin.
+
+Wächter: `check/dashboard.js` erweitert (7 Sektionen, Bias = symScoreCmp,
+1x je Asset, sortiert, voller Name; Gegenprobe +99). Angepasst an den neuen
+Aufbau: `designregeln.js` (Titel der Bias-Sektion statt Majors-Karte,
+Währungsstärke nicht mehr Pflicht auf dem Dashboard), `scrollfuell.js`
+(Gegenprobe ohne `.dash-zone-bottom`), `uebergang.js` (Einblendung an
+`.db-grid`). `computeFxMovers(n)` nimmt jetzt die Anzahl (Dashboard 4+4).

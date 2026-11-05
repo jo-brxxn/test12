@@ -5,6 +5,7 @@ const URL=process.env.CHECK_URL||'http://127.0.0.1:8935/index.html';
 // einhalten, laeuft er in die untere Kartenreihe (Nutzer-Bugreport 2026-08-16).
 // Exit 1 bei Kollision -> gehoert vor jeden Push.
 const {chromium}=require(PW);
+const { wartenBisDatenDa } = require('./warten.js');
 const PORT=process.env.PORT||8935;
 const GEGENPROBE=process.argv.includes('--gegenprobe');
 (async()=>{
@@ -14,10 +15,11 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
     await p.addInitScript(()=>{try{localStorage.setItem('fxpro_help_seen','1');localStorage.setItem('fxpro_intro_anim_enabled','0');}catch(e){}});
     await p.goto('http://127.0.0.1:'+PORT+'/index.html',{waitUntil:'networkidle'});
     await p.evaluate(()=>{['lockScreen'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});});
-    await p.waitForTimeout(1700);
+    await wartenBisDatenDa(p);
     await p.evaluate(()=>{document.querySelectorAll('.mov,.mov2').forEach(m=>m.style.display='none');showTab('dash');});
     await p.waitForTimeout(800);
     if(GEGENPROBE)await p.addStyleTag({content:'#dashWidgets .dw-t-txt{display:inline-block!important;width:7px!important;white-space:nowrap!important;overflow:visible!important}'});
+    if(GEGENPROBE)await p.evaluate(()=>{const v=document.querySelector('#dashWidgets .db-bias-v');if(v)v.textContent='+99';});
     const r=await p.evaluate(()=>{
       const out=[];
       const alle=[...document.querySelectorAll('#dashWidgets .dw')].filter(c=>c.getBoundingClientRect().height>0);
@@ -109,13 +111,30 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
         if(ue>2)
           out.push('"'+t.slice(0,18)+'" laeuft '+ue+'px ueber sein Element (nur '+e.clientWidth+'px breit)');
       });
+      // ── Neuaufbau 2026-11-05: Sektionen + Bias-Kacheln ────────────────
+      // Alle sieben Sektionen muessen da sein; jede Bias-Kachel zeigt exakt
+      // symScoreCmp() ihres Assets (dieselbe Zahl wie Asset-Seite/Score-
+      // Fenster), jedes Asset genau einmal, je Gruppe absteigend sortiert,
+      // und der volle Name steht da (Regel "Namen nie gekuerzt").
+      ['dbPos','dbNotif','dbBias','dbHeute','dbMover','dbWatch','dbPerf'].forEach(id=>{if(!document.getElementById(id))out.push('Sektion #'+id+' fehlt');});
+      const tiles=[...document.querySelectorAll('#dashWidgets .db-bias')];
+      const ids=tiles.map(t=>t.dataset.id);
+      if(typeof syms!=='undefined'){
+        syms.forEach(s=>{const n=ids.filter(x=>x===s.id).length;if(n!==1)out.push('Bias: '+s.id+' '+n+'x statt 1x');});
+        tiles.forEach(t=>{const s=syms.find(x=>x.id===t.dataset.id);if(!s)return;
+          const v=+t.querySelector('.db-bias-v').textContent.replace('+','');
+          if(v!==symScoreCmp(s))out.push('Bias: '+s.id+' zeigt '+v+' statt '+symScoreCmp(s));
+          const nm=t.querySelector('.db-bias-n').textContent.trim();if(nm!==s.name)out.push('Bias: Name "'+nm+'" statt "'+s.name+'"');});
+        document.querySelectorAll('#dashWidgets .db-bias-grid').forEach(g=>{const v=[...g.querySelectorAll('.db-bias-v')].map(e=>+e.textContent.replace('+',''));
+          for(let i=1;i<v.length;i++)if(v[i]>v[i-1]){out.push('Bias: Gruppe nicht absteigend sortiert');break;}});
+      }
       return out;
     });
     if(r.length)fehler.push(w+'x'+h+': '+r.join(' | '));
     await p.close();
   }
   await b.close();
-  if(GEGENPROBE){const ok=fehler.some(f=>/laeuft \d+px ueber sein Element/.test(f));console.log(ok?'dashboard --gegenprobe: ok (gequetschter Titel wird als Textueberlauf gemeldet)':'dashboard --gegenprobe: FEHLER - nicht gemeldet');process.exit(ok?0:1);}
+  if(GEGENPROBE){const ok=fehler.some(f=>/laeuft \d+px ueber sein Element/.test(f))&&fehler.some(f=>/Bias: \w+ zeigt 99/.test(f));console.log(ok?'dashboard --gegenprobe: ok (gequetschter Titel = Textueberlauf, verfaelschte Bias-Kachel = Abweichung)':'dashboard --gegenprobe: FEHLER - nicht gemeldet');process.exit(ok?0:1);}
   if(fehler.length){console.log('DASHBOARD-KOLLISIONEN:\n  '+fehler.join('\n  '));process.exit(1);}
-  console.log('Dashboard ok: keine ueberlappenden Karten, kein ueberlappender Text, kein Zonen-Ueberlauf (8 Breiten)');
+  console.log('Dashboard ok: keine ueberlappenden Sektionen/Texte, 7 Sektionen, Bias-Kacheln = symScoreCmp, volle Namen (8 Breiten)');
 })();

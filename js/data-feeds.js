@@ -531,7 +531,8 @@ function tickerChipHtml(info){
 // Vortageswert (fuer die "Biggest Movers FX"-Dashboard-Karte) - getrennt nach
 // Vorzeichen statt einer gemischten Rangliste nach reinem Betrag, damit z.B.
 // ein einzelner grosser Ausreisser nicht alle Verlierer aus der Liste drueckt.
-function computeFxMovers(){
+function computeFxMovers(n){
+  n=n||2;
   const all=canonicalFxPairs().map(([base,quote])=>{
     const info=pairTickerInfo(base,quote);
     if(!info||info.changePct==null)return null;
@@ -543,8 +544,8 @@ function computeFxMovers(){
   // 2+2 echte Eintraege reichen dafuer und passen ohne das iPad-Layout zu
   // sprengen (kein erfundener Inhalt, nur weniger Zeilen derselben echten
   // Rangliste).
-  const gainers=all.filter(m=>m.changePct>0).sort((a,b)=>b.changePct-a.changePct).slice(0,2);
-  const losers=all.filter(m=>m.changePct<0).sort((a,b)=>a.changePct-b.changePct).slice(0,2);
+  const gainers=all.filter(m=>m.changePct>0).sort((a,b)=>b.changePct-a.changePct).slice(0,n);
+  const losers=all.filter(m=>m.changePct<0).sort((a,b)=>a.changePct-b.changePct).slice(0,n);
   return{gainers,losers};
 }
 // Zeitreihe eines Assets in "eigener Richtung" (invert angewandt) - das ist

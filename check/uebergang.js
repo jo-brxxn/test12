@@ -172,7 +172,7 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
   const w4 = await p.evaluate(() => ({ da: !!document.querySelector('.wisch'), bild: !!document.querySelector('.wisch .wisch-motiv svg, .wisch .wisch-flagge'), alt: (document.querySelector('.wisch-alt') || {}).id }));
   if (!w4.da) fail('KEIN WISCH BEI SEITENWECHSEL', 'Assets -> Dashboard ohne Wisch');
   if (w4.da && w4.alt !== 'pgCur') fail('ALTE SEITE FEHLT', `Assets -> Dashboard: obenauf liegt ${w4.alt || 'nichts'} statt #pgCur`);
-  const ein = await p.evaluate(() => { const pg = document.getElementById('pgDash'), dw = document.querySelector('#dashWidgets>.dash-zone>.dw');
+  const ein = await p.evaluate(() => { const pg = document.getElementById('pgDash'), dw = document.querySelector('#dashWidgets>.db-grid,#dashWidgets>.dash-zone>.dw');
     const d = e => e ? parseFloat(getComputedStyle(e).animationDuration) : null;
     return { seite: d(pg), karte: d(dw), wisch: WISCH_MS / 1000 }; });
   if (ein.seite !== 1 || (ein.karte !== null && ein.karte !== 1)) fail('EINBLENDUNG NICHT 1 S', `Seite ${ein.seite}s, Dashboard-Karte ${ein.karte}s - verlangt 1 s wie der Wisch (Nutzer 2026-09-23)`);
