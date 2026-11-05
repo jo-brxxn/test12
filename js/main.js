@@ -17386,7 +17386,7 @@ function dashSessions(d){
 }
 function dashKopfHtml(z){
   const now=new Date();
-  const datum=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  const datum=fmtDayHdr(todayStr());
   const uhr=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   const ses=dashSessions(now);
   const chip=(n,lbl,ziel,warn)=>`<button class="db-chip${warn?' warn':''}" onclick="dashZu('${ziel}')"><b>${n}</b> ${lbl}</button>`;
@@ -17408,9 +17408,10 @@ function dashSek(id,typ,titel,inhalt,o){
   o=o||{};
   return`<section class="dw db-sek dw-${typ}" id="${id}">
     <div class="dw-hdr db-hdr">
-      <div class="dw-t"><span class="dw-t-txt">${escH(titel)}</span>${o.anz!=null?`<span class="db-anz">${o.anz}</span>`:''}${abInfoBtn(titel,o.erkl||[],'rinfo')}</div>
+      <div class="dw-t"><span class="dw-t-txt">${escH(titel)}</span>${o.anz!=null?`<span class="db-anz">${o.anz}</span>`:''}</div>
       ${o.extra||''}
       ${o.link?`<button class="db-link" onclick="${o.link[1]}">${escH(o.link[0])}${icn('chevronRight',13)}</button>`:''}
+      ${abInfoBtn(titel,o.erkl||[],'rinfo')}
     </div>
     <div class="dw-body">${inhalt}</div>
   </section>`;
@@ -17570,7 +17571,7 @@ function dashUhrStarten(){
     const g=document.getElementById('dashGruss'),u=document.getElementById('dashUhr');if(!g||!u)return;
     const now=new Date();
     const t=dashGruss(now)+', Trader';if(g.textContent!==t)g.textContent=t;
-    u.textContent=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})+' · '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    u.textContent=fmtDayHdr(todayStr())+' · '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   },30000);
 }
 // ══ SPALTEN AUF EINE LINIE - OHNE LEERRAUM ═══════════════════════════════

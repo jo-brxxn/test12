@@ -566,7 +566,8 @@ const ruhe = (p, z) => p.waitForTimeout(String(z).startsWith('A:') ? 1000 : 350)
   await b.close();
   perr.forEach(x => fail('JS-FEHLER', x));
 
-  if (n.html < 1500 || n.svg < 120 || n.hoehe < 200 || n.flaechen < 200 || n.touch < 50 || n.k < 30 || n.svg390 < 120 || n.l < 100 || n.inline < 500 || (!GEGENPROBE && n.ltipp < 1)) fail('ZU WENIG GEMESSEN', `Text ${n.html}, SVG ${n.svg}, Bedienelemente ${n.hoehe}, Flaechen ${n.flaechen}, Touch ${n.touch}, Runde-2-Zeilen ${n.k}, SVG 390 ${n.svg390}, Paket C ${n.l}, Linien-Tipps ${n.ltipp}, Inline-CSS ${n.inline} - Selektoren veraltet?`);
+  // Runde-2-Zeilen: seit dem Dashboard-Neuaufbau 2026-11-05 fehlen die Waehrungsstaerke-Zeilen (.rank-div) auf dem Dashboard - nur noch Watchlist-Zeilen, daher 12 statt 30.
+  if (n.html < 1500 || n.svg < 120 || n.hoehe < 200 || n.flaechen < 200 || n.touch < 50 || n.k < 12 || n.svg390 < 120 || n.l < 100 || n.inline < 500 || (!GEGENPROBE && n.ltipp < 1)) fail('ZU WENIG GEMESSEN', `Text ${n.html}, SVG ${n.svg}, Bedienelemente ${n.hoehe}, Flaechen ${n.flaechen}, Touch ${n.touch}, Runde-2-Zeilen ${n.k}, SVG 390 ${n.svg390}, Paket C ${n.l}, Linien-Tipps ${n.ltipp}, Inline-CSS ${n.inline} - Selektoren veraltet?`);
   if (GEGENPROBE) {
     const stufen = ['A ', 'B ', 'C ', 'D ', 'E ', 'F ', 'G ', 'H ', 'I ', 'J ', 'K ', 'L ', 'M ', 'N '];
     const fehlt = stufen.filter(s => !F.some(f => f.startsWith(s)));
