@@ -1,8 +1,8 @@
 {
  "date": "2026-11-05",
- "value": -0.444,
- "label": "RISK-ON",
- "percentile": 16,
+ "value": 0.289,
+ "label": "RISK-OFF",
+ "percentile": 70,
  "components": [
   "VIX",
   "Gold",
@@ -3208,7 +3208,7 @@
   ],
   [
    "2026-11-05",
-   -0.444
+   0.289
   ]
  ],
  "method": "Mean z-score of 20-day changes in VIX, Gold, AUDUSD, USDJPY (positive = risk aversion)"
