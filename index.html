@@ -7174,7 +7174,7 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
    Raster mit grid-area AM KIND - ohne das ist die Vorlage nur ein Kommentar
    (docs/navigation.md, "grid-template-areas platziert nichts"). */
 .db-wrap{display:block;max-width:1480px}
-.db-kopf{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding:4px 0 18px}
+.db-kopf{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding:0 0 18px}
 .db-gruss{margin:0}
 .db-sub{display:flex;flex-wrap:wrap;align-items:center;gap:0 6px}
 .db-sub b{color:var(--t1);font-weight:700}
@@ -7219,6 +7219,7 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
    haelt check/hierarchie.js fuer eine Karte. */
 .db-row+.db-row{border-top:1px solid var(--bd)}
 @media (hover:hover){.db-row:hover{background:var(--bg3)}}
+.db-hdr{padding-right:16px} /* Trefferflaeche des ⓘ (::after) bleibt in der Sektion - check/cards.js */
 .db-hdr,.dw-body>.db-gr-lbl,.db-perf-cols .db-gr-lbl,.db-fuss,.db-leer{padding-left:8px}
 .db-row:focus-visible{outline:2px solid var(--ui-act);outline-offset:-2px}
 /* Offene Positionen */
@@ -7264,7 +7265,7 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .db-ev-fc{font-family:var(--ff-num);color:var(--t2);font-size:var(--fs-sm);white-space:nowrap}
 .db-ev-fc i{font-family:var(--ff-text);color:var(--t3)}
 .db-ev.vorbei .db-ev-t,.db-ev.vorbei .db-ev-n,.db-ev.vorbei .db-ev-c{color:var(--t3)}
-.db-ev.next{box-shadow:inset 3px 0 0 var(--ui-act)}
+.db-ev.next{background:linear-gradient(var(--ui-act),var(--ui-act)) left/3px 100% no-repeat} /* kein box-shadow: Radius + Schatten = "Karte" fuer check/hierarchie.js */
 .db-ev.next .db-ev-t{color:var(--t0)}
 /* Movers */
 .db-mv{display:grid;grid-template-columns:auto minmax(0,1fr) auto 70px}
@@ -7371,11 +7372,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-670 - Dashboard neu: Begruessung, Open positions, Bias scores, Today, Movers, Watchlist, Performance, Notifications als Sektionen; vorher 669: Schlagzeilen-Layout."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-671 - Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-670</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-671</span>
     </span>
   </div>
   <div class="hdr-r">
