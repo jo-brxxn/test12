@@ -131,6 +131,7 @@ const WATCHLIST_FUELLEN=()=>{try{
           k.querySelectorAll('*').forEach(e=>{
             if(e.children.length)return;
             if(!(e.textContent||'').trim())return;
+            if(e.closest('.lg-frei'))return;   // Logo im Freiraum: F und X des Schriftzugs ueberlappen gewollt
             const r=sichtbar(e);
             if(r)txt.push({e,r});
           });

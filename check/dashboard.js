@@ -138,9 +138,11 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
       // Kugel-Marker antippbar (2026-11-06): die Marker liegen auf einer Canvas-
       // Ebene; getroffen wird ueber die Projektion. An der Marker-Stelle muss
       // die Kugel selbst oben liegen (kein anderes Element darueber).
-      {const pos=(window.__globeMarkerPositionen&&window.__globeMarkerPositionen())||[];
+      {const sc=document.getElementById('pgDash'),sy=sc?sc.scrollTop:0,gk=document.getElementById('dbGlobe');if(gk)gk.scrollIntoView({block:'center'});   // Kugel ins Bild, sonst liefert elementFromPoint nichts
+       const pos=(window.__globeMarkerPositionen&&window.__globeMarkerPositionen())||[];
        if(innerWidth>=760&&!pos.length)out.push('Kugel: keine sichtbaren Marker');
-       pos.slice(0,2).forEach(m=>{const t=document.elementFromPoint(m.x,m.y);if(!t||!t.closest('#dashGlobeHost'))out.push('Kugel-Marker '+m.id+' verdeckt von '+(t?t.tagName.toLowerCase()+'.'+(t.getAttribute('class')||''):'nichts'));});}
+       pos.filter(m=>m.y>0&&m.y<innerHeight).slice(0,2).forEach(m=>{const t=document.elementFromPoint(m.x,m.y);if(!t||!t.closest('#dashGlobeHost'))out.push('Kugel-Marker '+m.id+' verdeckt von '+(t?t.tagName.toLowerCase()+'.'+(t.getAttribute('class')||''):'nichts'));});
+       if(sc)sc.scrollTop=sy;}
       ['dbHero','dbMarket','dbGlobe','dbTrades','dbHeute','dbSent','dbInsight','dbBias','dbMover','dbPerf'].forEach(id=>{if(!document.getElementById(id))out.push('Sektion #'+id+' fehlt');});
       const tiles=[...document.querySelectorAll('#dashWidgets .db-bias')];
       const ids=tiles.map(t=>t.dataset.id);
