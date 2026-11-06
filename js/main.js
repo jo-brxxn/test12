@@ -17546,7 +17546,7 @@ function renderDash(){
   const win=PERF_WINDOWS.find(w=>w[0]===perfWindow)||PERF_WINDOWS[1];
   const perfBar=`<div class="perf-winbar db-perf-win">${PERF_WINDOWS.map(w=>`<button class="perf-win${w[0]===perfWindow?' on':''}" onclick="setPerfWindow('${w[0]}')">${w[0]}</button>`).join('')}</div>`;
   el.className='db-wrap db-cards look-'+dashLook;
-  el.innerHTML=dashLookLeiste()+dashKopfHtml({pos:nPos,ev:heute.length,nf:notifs.length})+`<div class="db-grid">
+  el.innerHTML=dashKopfHtml({pos:nPos,ev:heute.length,nf:notifs.length})+dashLookLeiste()+`<div class="db-grid">
    <div class="db-main">
     ${dashSek('dbPos','positions','Open positions',tjDashHtml(),{anz:nPos||null,link:['Journal',"showTab('journal')"],
       erkl:['Your open trades from the journal.','Status in R and price distance since entry — no money amount (needs the value per point).','Tap a row for the journal, Close to log the exit.']})}
