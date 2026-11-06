@@ -7298,8 +7298,8 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .dx-hero-txt{position:relative;z-index:1;padding:22px 26px;max-width:62%}
 .dx-hero .pg-titel.dx-gruss{color:#fff;margin:0;line-height:1.15}
 .dx-name{background:linear-gradient(90deg,#8FD0FF,#4C9BFF);-webkit-background-clip:text;background-clip:text;color:transparent}
-.dx-hero-sub{margin-top:6px;font:600 var(--fs-md)/1.3 var(--ff-text);color:rgba(255,255,255,.88)}
-.dx-hero .pg-sub.dx-hero-meta{margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;color:rgba(255,255,255,.78)}
+.dx-hero .pg-sub.dx-hero-sub{margin-top:6px;font:600 var(--fs-md)/1.3 var(--ff-text);color:rgba(255,255,255,.88)}
+.dx-hero .dx-hero-meta{margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;color:rgba(255,255,255,.78)}
 .dx-hero-meta b{color:#fff;font-weight:700}
 .dx-sep{opacity:.45}
 @media(max-width:759px){.dx-hero-txt{max-width:100%;padding:18px 18px 22px}.dx-hero-logo{width:72px;right:12px;top:12px;opacity:.5}}
@@ -7331,6 +7331,9 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 #dbGlobe .dw-body{display:flex;align-items:center;justify-content:center}
 #dbGlobe .globe-host{width:min(100%,330px);aspect-ratio:1;position:relative}
 /* Key events */
+/* Zeitfilter: eigene Zeile ueber dem Inhalt, rechtsbuendig (Regel Einheitlichkeit, check/einheit.js) */
+.dx-zf{display:flex;justify-content:flex-end;margin:-4px 0 10px}
+.dx-zf .db-perf-win{margin:0}
 .dx-ev-f{line-height:0}
 #dbHeute .db-ev-list{max-height:306px}
 #dbHeute .db-ev{grid-template-columns:42px 18px 34px minmax(0,1fr) auto}
@@ -7449,11 +7452,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-674 - Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-675 - Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-674</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-675</span>
     </span>
   </div>
   <div class="hdr-r">

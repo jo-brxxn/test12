@@ -643,7 +643,7 @@ function globeUpdateOne(st){
     const sorted=[...euVis].sort((a,b)=>a.x-b.x);
     FIXED_LABEL_POS[sorted[0].id]={dx:-11,dy:3,anchor:'end'};
     FIXED_LABEL_POS[sorted[sorted.length-1].id]={dx:11,dy:3,anchor:'start'};
-    if(sorted.length===3)FIXED_LABEL_POS[sorted[1].id]={dx:0,dy:18,anchor:'middle'};
+    if(sorted.length===3)FIXED_LABEL_POS[sorted[1].id]={dx:0,dy:23,anchor:'middle'};   // 23 statt 18: auf der 330-px-Kugel (Dashboard, 2026-11-06) lag es 5 px auf dem EUR-Label
   }
   const placedLbl=[];
   visMarkers.forEach(v=>{

@@ -71,7 +71,10 @@ const GP_LAGE = process.argv.includes('--gegenprobe-lage');
         const blaetter = [...k.querySelectorAll('*')].filter(e => vis(e) && [...e.childNodes].some(c => c.nodeType === 3 && c.textContent.trim().length > 1) && !e.closest('button,select,option,svg,.rinfo,.info-b,.cmp-chip,.bbadge,.score-badge,.ab-tile-s,input,textarea'));
         if (!blaetter.length) return;
         // Kartentitel: erster fetter Text im oberen Bereich der Karte
-        const oben = blaetter.filter(e => e.getBoundingClientRect().top - kr.top < 56).sort((a, c) => a.getBoundingClientRect().top - c.getBoundingClientRect().top || a.getBoundingClientRect().left - c.getBoundingClientRect().left);
+        // nur, was in der Karte steht: eine nach oben weggescrollte Listenzeile liegt
+        // ueber der Karte (abgeschnitten) und ist kein Titel (Dashboard Key events, 2026-11-06)
+        const imBild = e => { let a = e.parentElement; while (a && a !== k) { const o = getComputedStyle(a).overflowY; if (o === 'auto' || o === 'scroll') return e.getBoundingClientRect().top >= a.getBoundingClientRect().top - 1; a = a.parentElement; } return true; };
+        const oben = blaetter.filter(e => e.getBoundingClientRect().top - kr.top < 56 && e.getBoundingClientRect().top >= kr.top - 1 && imBild(e)).sort((a, c) => a.getBoundingClientRect().top - c.getBoundingClientRect().top || a.getBoundingClientRect().left - c.getBoundingClientRect().left);
         const t = oben.find(e => fw(e) >= 700);
         if (!t) return;
         // Karte ohne Titelzeile (reine Liste/Zahl oben): der erste fette Text
@@ -90,7 +93,7 @@ const GP_LAGE = process.argv.includes('--gegenprobe-lage');
       if (r.titel.length !== 1) fail(z, `${r.titel.length} Seitentitel (.pg-titel) statt genau einem`);
       r.titel.forEach(t => { if (Math.abs(t.fs - 24) > .5 || t.fw < 800) fail(z + ' SEITENTITEL', `"${t.txt}" ${t.fs}px/${t.fw} statt 24px/800`);
         if (!t.sub) fail(z + ' UNTERTITEL', `"${t.txt}" ohne .pg-sub direkt darunter`);
-        if (z !== 'dash') lage.push({ z, x: t.x, y: t.y });  // Dashboard: Titel im Hero-Band (Nutzer-Referenzbild 2026-11-06) });
+        if (z !== 'dash') lage.push({ z, x: t.x, y: t.y }); });  // Dashboard: Titel im Hero-Band (Nutzer-Referenzbild 2026-11-06)
     }
     r.karten.forEach(k => {
       n.karten++;

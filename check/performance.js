@@ -270,7 +270,7 @@ function statisch() {
 
   // ── G) Overview-Kugel: Takt der Neuzeichnung ─────────────────────────────
   console.log('G) Dashboard-Kugel: Neuzeichnungen je Sekunde im Normaltempo');
-  await p.evaluate(gp => { if (gp) window.__gpGlobusJedesBild = true; showTab('dash'); }, GP_GLOBUS);
+  await p.evaluate(gp => { if (gp) window.__gpGlobusJedesBild = true; showTab('dash'); const g = document.getElementById('dbGlobe'); if (g) g.scrollIntoView({ block: 'center' }); }, GP_GLOBUS);
   await p.mouse.move(5, 5); await p.mouse.move(9, 9);   // Eingabe: die Kugel darf nicht schon ruhen (H)
   await p.waitForTimeout(2500);
   const gl = await p.evaluate(async () => {

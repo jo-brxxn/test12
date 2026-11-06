@@ -17385,8 +17385,8 @@ function dashHeroHtml(){
   const now=new Date(),ses=dashSessions(now);
   const upd=priceDataLastFetch?new Date(priceDataLastFetch).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):null;
   return`<div class="pg-titel dx-gruss" id="dashGruss">${dashGruss(now)}, <span class="dx-name">${escH(DASH_NAME)}</span>!</div>
-    <div class="dx-hero-sub">Here's your market overview.</div>
-    <div class="pg-sub dx-hero-meta"><span class="db-live"></span><b>Live data</b><span class="dx-sep">|</span><span id="dashUhr">${escH(fmtDayHdr(todayStr()))} · ${upd?'Last update '+escH(upd):'Updating'}</span>${ses.length?`<span class="dx-sep">|</span><b>${escH(ses.join(' + '))}</b>&nbsp;open`:'<span class="dx-sep">|</span><i>Markets closed</i>'}</div>`;
+    <div class="pg-sub dx-hero-sub">Here's your market overview.</div>
+    <div class="dx-hero-meta"><span class="db-live"></span><b>Live data</b><span class="dx-sep">|</span><span id="dashUhr">${escH(fmtDayHdr(todayStr()))} · ${upd?'Last update '+escH(upd):'Updating'}</span>${ses.length?`<span class="dx-sep">|</span><b>${escH(ses.join(' + '))}</b>&nbsp;open`:'<span class="dx-sep">|</span><i>Markets closed</i>'}</div>`;
 }
 // Kennzahl-Kacheln (Knoepfe - fuer check/hierarchie.js keine "Karten").
 function dashStatsHtml(z){
@@ -17566,7 +17566,7 @@ function renderDash(){
   const slot={
     hero:dashHeroHtml(),
     stats:dashStatsHtml({pos:nPos,ev:heute.length,nf:notifs.length}),
-    markt:dashSek('dbMarket','watchlist','Market overview',dashMarktHtml(),{extra:mktBar,link:['Watchlist',"showTab('watch')"],
+    markt:dashSek('dbMarket','watchlist','Market overview',`<div class="dx-zf">${mktBar}</div>`+dashMarktHtml(),{link:['Watchlist',"showTab('watch')"],
       erkl:['Your watchlist (first 6), filled up with EUR/USD, GBP/USD, USD/JPY, Gold, Silver, S&P 500.','Change since the start of the window; the chart shows at least the last month.','Tap a tile for the pair or asset, add pairs on the Watchlist page.']}),
     heute:dashSek('dbHeute','mini_calendar','Key events',dashEventsHtml(heute),{anz:heute.length||null,link:['View all',"showTab('cal')"],
       erkl:['High and medium impact releases today, your local time.','Released: actual in beat / miss colour. Next one is marked.']}),
@@ -17578,14 +17578,16 @@ function renderDash(){
       erkl:['Every asset by class, strongest score first.','Tap a tile for the asset, the number for the score breakdown.']}),
     mover:dashSek('dbMover','movers_fx','Biggest movers',dashMoverHtml(),{link:['Trends',"showTab('trends')"],
       erkl:['FX pairs with the largest move since the previous close.','Tap a pair for its overview.']}),
-    perf:dashSek('dbPerf','perf_ranking','Performance',dashPerfHtml(),{extra:perfBar,link:[dashPerfAlle?'Show less':'Show all','dashPerfUmschalten()'],
+    perf:dashSek('dbPerf','perf_ranking','Performance',`<div class="dx-zf">${perfBar}</div>`+dashPerfHtml(),{link:[dashPerfAlle?'Show less':'Show all','dashPerfUmschalten()'],
       erkl:['Actual price performance over '+win[0]+' — compare it with the score to spot where the market disagrees.']}),
   };
   Object.keys(slot).forEach(k=>{const s=el.querySelector('[data-slot="'+k+'"]');if(s)s.innerHTML=slot[k];});
   if(_dashScroll)_dashScroll.scrollTop=_scrollY;
   const _evL=el.querySelector('.db-ev-list'),_evN=_evL&&_evL.querySelector('.db-ev.next');
   if(_evN)_evL.scrollTop=Math.max(0,_evN.offsetTop-_evL.offsetTop-68);
-  if(neu||!el.querySelector('#dashGlobeHost svg'))requestAnimationFrame(()=>{if(curPage==='dash')startGlobes();});
+  // Kugel: beim Betreten startet showTab sie; hier nur, falls das Geruest neu ist
+  // und renderDash ohne Seitenwechsel lief (z. B. erster Aufbau beim Laden).
+  if(neu&&curPage==='dash')requestAnimationFrame(()=>{if(curPage==='dash'&&!document.querySelector('#dashGlobeHost svg'))startGlobes();});
   dashUhrStarten();
 }
 let _dashUhrT=null;
@@ -25923,7 +25925,7 @@ function showTab(tab,btn,fxMode){
   // auch per normaler Tab-Leiste statt der Pille - wieder auf 'cur' landet,
   // hat die Pille ihren Zweck erfuellt.
   if(tab==='cur'&&_resReturnActive&&_quickReturnAssetId){_resReturnActive=false;_quickReturnAssetId=null;document.body.classList.remove('res-return-active');}
-  else if(tab==='dash'){renderDash();}
+  else if(tab==='dash'){renderDash();resetGlobeLon();requestAnimationFrame(()=>{if(curPage==='dash')startGlobes();});}   // Kugel bei jedem Betreten neu starten (beim Verlassen stoppt sie, das Geruest bleibt)
   else if(tab==='cur'){renderSidebar();renderDetail();}
   else if(tab==='mx')renderMatrix();
   else if(tab==='trends'){renderTrends();autoFetchPriceData();}

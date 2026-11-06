@@ -74,6 +74,7 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
         k.querySelectorAll('*').forEach(e=>{
           if(e.children.length)return;
           if(!(e.textContent||'').trim())return;
+          if(e.closest('.lg-frei'))return;   // Logo im Freiraum: F und X ueberlappen gewollt (Schriftzug)
           const r=sichtbar(e);
           if(r)txt.push({e,r});
         });
