@@ -21425,7 +21425,7 @@ Keil mit `mix-blend-mode` je Bild per Attribut gedreht, Ortungs-Ringe
 animierten das SVG-Attribut `r`, Score-Cache aller 8 Marker jede Sekunde auf
 einmal geleert. Neu (`js/globe.js`, CSS „GLOBUS-EBENEN“): Meer und
 Randschatten feste Ebenen; Land + Raster als **ein** Canvas-Malvorgang je Bild
-(Path2D, Musterkachel in Geräteprixeln, kein `closePath` — kostete 2,3 ms);
+(Path2D, Musterkachel in Gerätepixeln, kein `closePath` — kostete 2,3 ms);
 Radar-Keil als CSS-Animation; Marker/Labels als HTML per `transform`;
 Ortungs-Ringe per transform/opacity; Scores gestaffelt (einer je ~0,6 s).
 Nachher: **jedes Bild eine Bewegung** (301/301 in 5 s), 0 Blockaden; 4×:
