@@ -3860,7 +3860,8 @@ body.no-ui-anim .hud-live-dot{animation:none}
    Von unten: Meer (fest) - Canvas (Land+Raster, je Bild EIN Malvorgang) -
    Randschatten (fest) - Radar-Keil (dreht per CSS-Animation auf der
    Grafikeinheit) - SVG (Ringe, Fadenkreuz, Jet, Bezel; aendert sich je Bild
-   NICHT mehr) - Marker (HTML, per transform verschoben, kein Neumalen).
+   NICHT mehr) - Marker-Canvas. Beide Canvas gehoeren einem Web Worker
+   (js/globe-worker.js): je Bild aendert sich am Dokument nichts.
    Vorher: alles in einem SVG, das jedes Bild neu gemalt werden musste. */
 .globe-buehne{position:relative;flex:none;aspect-ratio:1}
 .globe-buehne>.globe-meer,.globe-buehne>.globe-rand{position:absolute;border-radius:50%;pointer-events:none}
@@ -3873,14 +3874,8 @@ body.no-ui-anim .hud-live-dot{animation:none}
   background:conic-gradient(from 64deg,rgba(126,224,255,0) 0deg,rgba(126,224,255,.4) 52deg,transparent 52.01deg);
   animation:globeSweepDreh 4.5s linear infinite}
 @keyframes globeSweepDreh{to{transform:rotate(360deg)}}
-.globe-marker-ebene{position:absolute;inset:0;pointer-events:none;z-index:2}   /* ueber dem SVG (.dw-globe .globe-host svg hat z-index:1) */
-.gm{position:absolute;left:0;top:0;width:0;height:0;will-change:transform;pointer-events:auto;cursor:pointer}
-.gm-dot{position:absolute;left:-4.5px;top:-4.5px;width:9px;height:9px;border-radius:50%;box-sizing:border-box;border:1px solid #04101c}
-.gm-ping{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;border:1.3px solid;box-sizing:border-box;animation:gmPing 2.2s ease-out infinite;opacity:0}
-@keyframes gmPing{0%{transform:scale(1);opacity:.8}100%{transform:scale(3);opacity:0}}
-.gm-lbl{position:absolute;left:0;top:0;white-space:nowrap;font:800 11px/13px var(--ff-num);text-shadow:0 0 2px #04101c,0 0 2px #04101c,0 0 3px #04101c;pointer-events:none}
-.gm::before{content:'';position:absolute;left:-11px;top:-11px;width:22px;height:22px}
-body.no-ui-anim .gm-ping,body.no-ui-anim .globe-sweep-k{animation:none}
+.globe-buehne>.globe-mcanvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:2}   /* Marker-Ebene ueber dem SVG (.dw-globe .globe-host svg hat z-index:1) */
+body.no-ui-anim .globe-sweep-k{animation:none}
 .globe-host.boosting .globe-canvas{filter:blur(calc(var(--boost-blur,0)*9px))}
 body.no-ui-anim .globe-host.boosting .globe-canvas{filter:none}
 .globe-host svg circle{cursor:grab}
@@ -7496,11 +7491,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-681 - Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-682 - Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-681</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-682</span>
     </span>
   </div>
   <div class="hdr-r">

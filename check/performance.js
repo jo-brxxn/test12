@@ -268,38 +268,53 @@ function statisch() {
   if (reg.n > reg.dom * 2 + 150) rot(`Chart-Registry haelt ${reg.n} Eintraege, im Dokument stehen ${reg.dom} Charts - sie waechst mit jedem Aufbau`);
   else gruen(`Chart-Registry ${reg.n} Eintraege bei ${reg.dom} Charts im Dokument`);
 
-  // ── G) Dashboard-Kugel: JEDES Bild eine Bewegung, SVG still ──────────────
-  // Seit 2026-11-06 (Nutzer: "perfekt drehen ohne zu haengen"): Land auf einer
-  // Canvas-Ebene, je Bild gezeichnet; Marker per transform, Radar per CSS.
-  // Gemessen vorher 15 Bewegungsschritte/s bei 60 Bildern/s (0,5-px-Schwelle).
-  // Verlangt: Zeichnungen >= 90 % der Bilder; das SVG aendert sich im
-  // Normaltempo NICHT (jede Attributaenderung = Neumalen + Neuzusammensetzen
-  // der Seite); Canvas in Geraetepixeln.
-  // Gegenprobe --gegenprobe-globus: alte 0,5-px-Schwelle (__gpGlobusSchwelle) -> rot.
-  console.log('G) Dashboard-Kugel: jedes Bild eine Bewegung, SVG unveraendert');
-  await p.evaluate(gp => { if (gp) window.__gpGlobusSchwelle = true; showTab('dash'); const g = document.getElementById('dbGlobe'); if (g) g.scrollIntoView({ block: 'center' }); }, GP_GLOBUS);
+  // ── G) Dashboard-Kugel: jedes Bild eine Bewegung, Dokument still, 60/s gedrosselt
+  // Nutzer 2026-11-06: "perfekt drehen ohne zu haengen". GEMESSEN: jede
+  // Aenderung im Dokument (SVG-Attribut, Marker-transform, Canvas im
+  // Hauptthread) liess die GANZE Dashboard-Seite je Bild neu zusammensetzen -
+  // bei 4x gedrosselter CPU 34 Bilder/s. Seit 682 zeichnet ein Web Worker
+  // (OffscreenCanvas, js/globe-worker.js): 60 Bilder/s auch bei 4x und 6x.
+  // Verlangt: Worker-Modus; Kugel-Zeichnungen >= 90 % der Bilder; in der
+  // Kugel-Karte 0 Dokument-Aenderungen in 2 s; bei 4x CPU >= 54 Bilder/s und
+  // p95 <= 20 ms.
+  // Gegenproben: --gegenprobe-globus (alte 0,5-px-Schwelle) -> Zeichnungen rot;
+  //   --gegenprobe-hauptthread (ohne Worker) -> 4x-Messung rot.
+  console.log('G) Dashboard-Kugel: jedes Bild, Dokument still, 60/s bei 4x CPU');
+  await p.evaluate(async gp => {
+    if (gp.schwelle) window.__gpGlobusSchwelle = true;
+    if (gp.haupt) { window.__globusOhneWorker = true; const m = await import('/js/globe.js'); showTab('dash'); m.startGlobes({ neu: true }); }
+    showTab('dash'); const g = document.getElementById('dbGlobe'); if (g) g.scrollIntoView({ block: 'center' });
+  }, { schwelle: GP_GLOBUS, haupt: process.argv.includes('--gegenprobe-hauptthread') });
   await p.mouse.move(5, 5); await p.mouse.move(9, 9);
   await p.waitForTimeout(2500);
-  const gl = await p.evaluate(async () => {
-    const cv = document.querySelector('#dashGlobeHost canvas.globe-canvas'), svg = document.querySelector('#dashGlobeHost svg'); if (!cv || !svg) return null;
-    let svgMut = 0; const mo = new MutationObserver(ms => { svgMut += ms.length; });
-    mo.observe(svg, { attributes: true, subtree: true, childList: true, characterData: true });
-    const z0 = window.__globusZeichnungen || 0;
-    let bilder = 0; const t0 = performance.now(); await new Promise(r => { const f = () => { bilder++; if (performance.now() - t0 < 2000) requestAnimationFrame(f); else r(); }; requestAnimationFrame(f); });
-    mo.disconnect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.getBoundingClientRect().width;
-    return { n: (window.__globusZeichnungen || 0) - z0, bilder, svgMut, aufl: Math.abs(cv.width - w * dpr) <= 2, cw: cv.width, w: Math.round(w * dpr) };
+  const kugelMessen = () => p.evaluate(async () => {
+    const card = document.getElementById('dbGlobe'); if (!card || !card.querySelector('canvas.globe-mcanvas')) return null;
+    let mut = 0; const mo = new MutationObserver(ms => { mut += ms.length; });
+    mo.observe(card, { attributes: true, subtree: true, childList: true, characterData: true });
+    const z0 = window.__globusZeichnungen || 0, g = []; let l = performance.now(); window.__globusLuecken = [];
+    await new Promise(r => { const t0 = l; const f = n => { g.push(n - l); l = n; if (n - t0 < 2000) requestAnimationFrame(f); else r(); }; requestAnimationFrame(f); });
+    mo.disconnect(); g.sort((a, b) => a - b);
+    const m = await import('/js/globe.js');
+    // Kugel-Takt: im Worker-Modus die vom Worker gemeldeten Bildabstaende, sonst der Hauptthread
+    const L = (window.__globusLuecken || []).slice().sort((a, b) => a - b), w = L.length >= 30;
+    const p95 = w ? L[Math.floor(L.length * .95)] : g[Math.floor(g.length * .95)], fps = w ? 1000 / (L.reduce((a, b) => a + b, 0) / L.length) : g.length / 2;
+    return { n: (window.__globusZeichnungen || 0) - z0, bilder: g.length, mut, p95, fps, max: w ? L[L.length - 1] : g[g.length - 1], modus: m._globeHosts.map(x => x.modus).join(',') };
   });
-  if (!gl) rot('Dashboard-Kugel (Canvas + SVG) nicht gefunden');
+  const gl = await kugelMessen();
+  if (!gl) rot('Dashboard-Kugel (Canvas-Ebenen) nicht gefunden');
   else {
+    if (gl.modus !== 'worker') rot(`Kugel zeichnet im Hauptthread (${gl.modus || '-'}) statt im Worker`); else gruen('Kugel zeichnet im Web Worker (OffscreenCanvas)');
     if (gl.n < gl.bilder * 0.9) rot(`Kugel nur ${gl.n} Bewegungen bei ${gl.bilder} Bildern - sie rueckt nicht jedes Bild weiter (ruckelt)`);
     else gruen(`Kugel ${gl.n} Bewegungen bei ${gl.bilder} Bildern (jedes Bild)`);
-    if (gl.svgMut > 0) rot(`SVG der Kugel ${gl.svgMut}x veraendert in 2 s - jede Aenderung erzwingt Neumalen der Kugel`);
-    else gruen('SVG der Kugel im Normaltempo unveraendert (0 Aenderungen in 2 s)');
-    if (!gl.aufl) rot(`Canvas ${gl.cw} px statt ${gl.w} px (Geraetepixel) - unscharf`);
-    else gruen(`Canvas in Geraetepixeln (${gl.cw} px)`);
+    if (gl.mut > 0) rot(`Kugel-Karte ${gl.mut}x im Dokument veraendert in 2 s - jede Aenderung setzt die ganze Seite neu zusammen`);
+    else gruen('Kugel-Karte im Dokument unveraendert (0 Aenderungen in 2 s)');
   }
-  await p.evaluate(() => { window.__gpGlobusSchwelle = false; });
+  const cdpG = await p.context().newCDPSession(p);
+  await cdpG.send('Emulation.setCPUThrottlingRate', { rate: 4 }); await p.waitForTimeout(800);
+  const g4 = await kugelMessen();
+  await cdpG.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  if (g4) { if (g4.fps < 54 || g4.p95 > 20) rot(`bei 4x CPU Kugel nur ${g4.fps.toFixed(0)} Bilder/s, p95 ${g4.p95.toFixed(1)} ms - sie haengt auf langsamen Geraeten`); else gruen(`bei 4x CPU Kugel ${g4.fps.toFixed(0)} Bilder/s, p95 ${g4.p95.toFixed(1)} ms, max ${g4.max.toFixed(0)} ms`); }
+  await p.evaluate(async () => { window.__gpGlobusSchwelle = false; if (window.__globusOhneWorker) { window.__globusOhneWorker = false; const m = await import('/js/globe.js'); m.startGlobes({ neu: true }); } });
 
   // ── H) Overview-Kugel ruht im Leerlauf und wacht bei Eingabe auf ─────────
   // GEMESSEN 2026-10-17: Overview im Leerlauf 1.120-1.330 ms Arbeit je 5 s,

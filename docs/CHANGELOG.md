@@ -21438,3 +21438,28 @@ Nachtrag 681: Marker-Ebene lag unter dem SVG (`.dw-globe .globe-host svg{z-index
 → Tippen auf einen Marker traf den Kugelkreis (`elementFromPoint` = circle).
 Ebene jetzt `z-index:2`; Wächter `dashboard.js` prüft „Marker antippbar“
 (Gegenprobe ohne z-index → rot). Ziehen zum Drehen geprüft: 299° → 264°.
+
+## 2026-11-06 — Weltkugel im Web Worker: 60 Bilder/s auch auf langsamen Geräten (VERSION-CHECK-682)
+
+Nachfrage zum Ziel „perfekt drehen ohne zu hängen“: 680/681 lieferten bei
+normaler CPU 60/60, bei 4× gedrosselter CPU aber nur 34 Bilder/s. Gemessen
+(Ausschluss): **ohne den Rest des Dashboards 60 Bilder/s bei 4×** — die Kosten
+lagen nicht in der Kugel, sondern darin, dass jede Kugel-Änderung im Dokument
+(SVG-Attribut, Marker-transform, Canvas im Hauptthread) den Browser die ganze
+Seite neu zusammensetzen ließ (Layerize/Commit). Lösung:
+- `js/globe-zeichnen.js` (ohne Seitenzugriff): Land + Raster und Marker +
+  Ortungs-Ringe + Beschriftungen auf zwei Canvas-Flächen.
+- `js/globe-worker.js`: besitzt beide Flächen (OffscreenCanvas), **eigener
+  Bildtakt** (rAF im Worker); der Hauptthread schickt je Bild nur Winkel,
+  Geschwindigkeit, Zeitpunkt — der Worker rechnet bis „jetzt“ weiter, Hänger
+  im Hauptthread (Uhr, Feed-Aufbau) erreichen die Kugel nicht.
+- Rückfall ohne OffscreenCanvas/Worker-rAF: dieselbe Zeichenfunktion im
+  Hauptthread bzw. Zeichnen auf Zuruf mit Flusskontrolle.
+- Marker-Klick und Mauszeiger über die Projektion (keine Marker-Elemente).
+Nachher: 1×/4×/6× CPU je 60 Bilder/s, max 17–19 ms, 0 Blockaden, 0
+Dokument-Änderungen in der Kugel-Karte. Bedienung geprüft (Worker und
+Rückfall): Ziehen 300°→265°, Zeiger „pointer“ über Marker, Klick öffnet Asset,
+Rückkehr ohne Neuaufbau. Wächter `performance.js` G: Worker-Modus, jede
+Bewegung, 0 Dokument-Änderungen, bei 4× CPU ≥ 54 Bilder/s und p95 ≤ 20 ms am
+Kugel-Takt (vom Worker gemeldet) — Gegenproben `--gegenprobe-hauptthread`
+(41 Bilder/s, rot) und `--gegenprobe-globus` (30/121, rot).

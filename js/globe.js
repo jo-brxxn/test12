@@ -10,6 +10,7 @@
 // sind gehoisted, `let`-Bindungen werden erst innerhalb von Funktionskoerpern
 // gelesen, nie am Modul-Top-Level) - Details/Methodik: docs/module-split.md.
 import {BC} from './constants.js';
+import {erstelleZeichner} from './globe-zeichnen.js';
 import {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,uid} from './main.js';
 
 // ══ DASHBOARD: ROTIERENDER FX-WELTGLOBUS ════════════════════════════
@@ -274,8 +275,12 @@ function globeFuelTick(dtMs,thrustI){
 // laedt sondern einfach normal sich dreht"): beim Anhalten bleiben Geruest und
 // Referenzen erhalten; startGlobes() setzt sie fort, statt neu zu zeichnen.
 let _globeParked=null;
+function globeWorkerTakt(st,an){
+  st.laeuft=an;if(st.worker&&st.workerRaf)st.worker.postMessage({typ:an?'start':'stop'});
+}
 function stopGlobe(){
   if(_globeRAF){cancelAnimationFrame(_globeRAF);_globeRAF=null;}
+  _globeHosts.forEach(st=>globeWorkerTakt(st,false));
   _globeHosts.forEach(st=>{try{st.io&&st.io.disconnect();}catch(e){}});
   if(_globeHosts.length)_globeParked=_globeHosts;
   _globeHosts=[];_globeMode='auto';_globeVel=GLOBE_AUTO_VEL;_globeDrag=null;
@@ -380,43 +385,6 @@ function globePathD(pts,lon0,R,cx,cy){
   }
   return d?d+'Z':'';
 }
-// Dieselbe Projektion wie globePathD, aber direkt in einen Path2D (kein Text,
-// kein Zerlegen durch den Browser) - fuer die Canvas-Ebene.
-function globePathCanvas(pts,lon0,R,cx,cy,p){
-  const n=pts.length;
-  if(_gpX.length<n){_gpX=new Float64Array(n);_gpY=new Float64Array(n);_gpV=new Uint8Array(n);}
-  const pre=globeRingPre(pts),l0=lon0*Math.PI/180,s0=Math.sin(l0),c0=Math.cos(l0);
-  const sL=Math.sin(GLOBE_LAT0),cL=Math.cos(GLOBE_LAT0);
-  for(let i=0;i<n;i++){
-    const sf=pre[4*i],cf=pre[4*i+1],sl=pre[4*i+2],cl=pre[4*i+3];
-    const sinl=sl*c0-cl*s0,cosl=cl*c0+sl*s0;
-    _gpX[i]=R*cf*sinl;_gpY[i]=-R*(cL*sf-sL*cf*cosl);_gpV[i]=(sL*sf+cL*cf*cosl)>0?1:0;
-  }
-  const MIN_PX=0.6;
-  let lx=1e9,ly=1e9,offen=false;
-  const add=(x,y)=>{if(offen)p.lineTo(cx+x,cy+y);else{p.moveTo(cx+x,cy+y);offen=true;}lx=x;ly=y;};
-  for(let i=0;i<n;i++){
-    const j=i+1<n?i+1:0;
-    const wechsel=_gpV[i]!==_gpV[j];
-    if(_gpV[i]&&(wechsel||Math.abs(_gpX[i]-lx)>=MIN_PX||Math.abs(_gpY[i]-ly)>=MIN_PX))add(_gpX[i],_gpY[i]);
-    if(wechsel){const h=globeHorizonPoint(pts[i],pts[j],lon0,R);add(h.x,h.y);}
-  }
-  // kein closePath(): fill() schliesst jede Teilflaeche selbst - closePath kostete
-  // gemessen 2,3 ms je Bild (549 Ringe, Path2D)
-}
-// Meer, Land, Raster und Randabschattung in einem Zug auf die Canvas-Ebene.
-function globeLandMalen(st,lon0){
-  const c=st.ctx;if(!c)return;
-  const{R,cx,cy}=st,S=st.cv.width/st.dpr;
-  c.setTransform(st.dpr,0,0,st.dpr,0,0);
-  c.clearRect(0,0,S,S);
-  // Meer (.globe-meer) und Randschatten (.globe-rand) sind feste Ebenen darunter
-  // bzw. darueber - je Bild nur noch EIN Malvorgang: Land mit Raster.
-  const p=new Path2D();
-  for(let i=0;i<LAND.length;i++)globePathCanvas(LAND[i],lon0,R,cx,cy,p);
-  c.fillStyle=st.muster||GLOBE_LANDFARBE;c.fill(p);
-  st.zeichnungen=(st.zeichnungen||0)+1;window.__globusZeichnungen=(window.__globusZeichnungen||0)+1;
-}
 // Statisches SVG-Geruest EINMALIG bauen: alle Pfade/Punkte/Marker existieren schon
 // (zunaechst leer), spaeter werden nur noch ihre Attribute aktualisiert. Dadurch wird
 // NICHT bei jedem Frame neues SVG geparst/gerendert - die Kugel wird einmal aufgebaut
@@ -442,7 +410,7 @@ function globeLandMalen(st,lon0){
 function globeSkeleton(size,uid){
   const R=size/2-26,cx=size/2,cy=size/2; // 26px Rand statt 16px - Platz fuer den neuen Bezel-Ring/Gradnetz drumherum
   const fgid='gJetFlame'+uid; // Nachbrenner-Flammen-Verlauf (Boost, Nutzer-Wunsch 2026-07-28)
-  // Land/Meer/Raster: Canvas-Ebene (globeLandMalen), nicht mehr im SVG.
+  // Land/Raster und Marker: Canvas-Ebenen (js/globe-zeichnen.js), nicht mehr im SVG.
   // Jeder Marker bekommt jetzt zusaetzlich einen "Ping"-Ring (Reticle/Radar-
   // Ortungspunkt-Optik, "Global Market Surveillance"-Umbau 2026-07-27) - ein
   // zweiter <circle>, der per CSS-Keyframe kontinuierlich nach aussen
@@ -451,14 +419,8 @@ function globeSkeleton(size,uid){
   // (globeCollectRefs/globeUpdateOne setzen Position+Farbe), damit es nicht
   // wie ein einziges synchrones Blinken wirkt, sondern wie einzelne
   // Ortungssignale.
-  // Marker als HTML-Ebene ueber dem SVG (2026-11-06): verschoben wird per
-  // transform (Grafikeinheit, kein Neumalen); der Ortungs-Ring animiert per
-  // transform/opacity statt des SVG-Attributs r (das musste jedes Bild neu
-  // gemalt werden).
-  let markers='';let _mi=0;Object.keys(GLOBE_GEO).forEach(id=>{
-    const delay=(_mi++%4)*0.55;
-    markers+=`<div class="gm" data-id="${id}" style="visibility:hidden" onclick="globeMarkerClick(event,'${id}')"><span class="gm-ping" style="animation-delay:${delay}s"></span><span class="gm-dot"></span><span class="gm-lbl"></span></div>`;
-  });
+  // Marker, Ortungs-Ringe und Beschriftungen: zweite Canvas-Ebene ueber dem SVG
+  // (.globe-mcanvas), gezeichnet von js/globe-zeichnen.js - im Worker.
   // Radar-Sweep-Keil (Global-Market-Surveillance-Umbau 2026-07-27, Nutzer-
   // Korrektur 2026-07-28 "das Radar soll immer mit dem Flugzeug mitgehen"):
   // der Keil ist jetzt in LOKALEN Koordinaten (Ursprung 0,0) definiert und
@@ -554,7 +516,7 @@ function globeSkeleton(size,uid){
   // Screen permanent sichtbar ist (kein Popup-Trigger mehr noetig).
   const jetHit=`<g data-id="jet" transform="translate(${cx},${cy})" pointer-events="all"><circle r="15" fill="transparent"/></g>`;
   // ⚠ Meer + Land + Viereck-Raster + Randabschattung malt seit 2026-11-06 ein
-  // <canvas> UNTER dem SVG (globeLandMalen), in jedem Bild. Vorher stand das
+  // <canvas> UNTER dem SVG (js/globe-zeichnen.js), in jedem Bild. Vorher stand das
   // Land als 37.600-Zeichen-Pfad zweimal (Farbe + Muster) unter einer
   // Verlaufsmaske im SVG; der Radar-Keil (mix-blend-mode) liess das ganze SVG
   // jedes Bild neu malen - gemessen nur 15 Bewegungsschritte/s und bei 4x
@@ -562,7 +524,7 @@ function globeSkeleton(size,uid){
   // haengen").
   const rr=(v)=>(v/size*100).toFixed(3)+'%';
   const kreis=`left:${rr(cx-R)};top:${rr(cy-R)};width:${rr(2*R)};height:${rr(2*R)}`;
-  return`<div class="globe-buehne" style="width:${size}px"><div class="globe-meer" style="${kreis}"></div><canvas class="globe-canvas" aria-hidden="true"></canvas><div class="globe-rand" style="${kreis}"></div><div class="globe-sweep-w" style="width:${(2*R).toFixed(1)}px;height:${(2*R).toFixed(1)}px;transform:translate(${(cx-R).toFixed(1)}px,${(cy-R).toFixed(1)}px)"><div class="globe-sweep-k"></div></div><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" onclick="if(!event.target.closest('g[data-id],.gm'))closeGlobeTip()">
+  return`<div class="globe-buehne" style="width:${size}px"><div class="globe-meer" style="${kreis}"></div><canvas class="globe-canvas" aria-hidden="true"></canvas><div class="globe-rand" style="${kreis}"></div><div class="globe-sweep-w" style="width:${(2*R).toFixed(1)}px;height:${(2*R).toFixed(1)}px;transform:translate(${(cx-R).toFixed(1)}px,${(cy-R).toFixed(1)}px)"><div class="globe-sweep-k"></div></div><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" onclick="closeGlobeTip()">
     <defs>
       <linearGradient id="${fgid}" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#cfeaff"/>
@@ -587,7 +549,7 @@ function globeSkeleton(size,uid){
     ${vehicle}
     ${jetHit}
     <g pointer-events="none">${bezel}</g>
-  </svg><div class="globe-marker-ebene">${markers}</div></div>`;
+  </svg><canvas class="globe-mcanvas" aria-hidden="true"></canvas></div>`;
 }
 // Canvas-Ebene einrichten: Aufloesung = Geraetepixel (scharf auf dem iPad),
 // Viereck-Raster als Muster (gleiche Masse wie das fruehere SVG-<pattern>:
@@ -596,28 +558,93 @@ function globeSkeleton(size,uid){
 // 70 % des Radius zum Rand hin in das Meer aus).
 const GLOBE_MEER='#0b2445',GLOBE_LANDFARBE='#2d6ea8';
 function globeCanvasRefs(host,size){
-  const cv=host.querySelector('canvas.globe-canvas');if(!cv)return{};
-  const dpr=Math.min(window.devicePixelRatio||1,2);
-  cv.width=Math.round(size*dpr);cv.height=Math.round(size*dpr);
-  const ctx=cv.getContext('2d');if(!ctx)return{};
-  const SQ=4.2,SI=0.55,SW=SQ-2*SI;
-  // Kachel direkt in Geraetepixeln, ohne Skalierung: 5x5 Vierecke = 21 px
-  // (5 x 4,2) - ganzzahlig fuer dpr 1 und 2. Eine verkleinerte Kachel wurde
-  // weichgezeichnet und wirkte groeber und heller als das SVG-Muster.
-  const N=5,T=SQ*N*dpr,kachel=document.createElement('canvas');kachel.width=kachel.height=Math.round(T);
-  const kc=kachel.getContext('2d');kc.fillStyle=GLOBE_LANDFARBE;kc.fillRect(0,0,kachel.width,kachel.height);
-  kc.strokeStyle='rgba(126,196,255,.5)';kc.lineWidth=0.4*dpr;
-  for(let i=0;i<N;i++)for(let j=0;j<N;j++)kc.strokeRect((i*SQ+SI)*dpr,(j*SQ+SI)*dpr,SW*dpr,SW*dpr);
-  const muster=ctx.createPattern(kachel,'repeat');
-  // Muster im Geraetepixel-Raum: der Kontext zeichnet mit setTransform(dpr), das
-  // Muster wird deshalb um 1/dpr zurueckskaliert (exakt 1 Kachelpixel = 1 Geraetepixel)
-  try{muster.setTransform(new DOMMatrix().scale(1/dpr));}catch(e){}
-  return{cv,ctx,dpr,muster};
+  const lcv=host.querySelector('canvas.globe-canvas'),mcv=host.querySelector('canvas.globe-mcanvas');if(!lcv||!mcv)return{};
+  const o={size,dpr:Math.min(window.devicePixelRatio||1,2),lat0:GLOBE_LAT0,landfarbe:GLOBE_LANDFARBE,rasterFarbe:'rgba(126,196,255,.5)',
+    schrift:(getComputedStyle(document.body).fontFamily||'sans-serif')};
+  let worker=null;
+  // Worker + OffscreenCanvas, wo moeglich (iPadOS 16.4+, aktuelle Browser);
+  // __globusOhneWorker: Rueckfall nach einem Worker-Fehler bzw. fuer Pruefungen.
+  if(!window.__globusOhneWorker&&typeof OffscreenCanvas!=='undefined'&&lcv.transferControlToOffscreen&&typeof Worker!=='undefined'){
+    try{worker=new Worker(new URL('./globe-worker.js',import.meta.url),{type:'module'});}catch(e){worker=null;}
+    if(worker){
+      try{const lo=lcv.transferControlToOffscreen(),mo=mcv.transferControlToOffscreen();worker.postMessage({typ:'init',land:lo,marker:mo,o},[lo,mo]);}
+      catch(e){try{worker.terminate();}catch(e2){}worker=null;}
+    }
+  }
+  if(worker)return{worker,modus:'worker',o};
+  return{zeichner:erstelleZeichner(lcv,mcv,o),modus:'haupt',o};
 }
+// Verbindung zum Worker: 'fertig' gibt das naechste Bild frei (Flusskontrolle),
+// ein Fehler schaltet dauerhaft auf Zeichnen im Hauptthread um.
+function globeWorkerVerbinden(st){
+  if(!st.worker||st.worker.__verbunden)return;st.worker.__verbunden=true;
+  st.worker.onmessage=e=>{
+    const d=e.data;if(!d)return;
+    // Worker mit eigenem Bildtakt: ab jetzt nur noch Zustand schicken
+    if(d.typ==='bereit'){st.workerRaf=!!d.raf;if(st.workerRaf&&st.laeuft)st.worker.postMessage({typ:'start'});return;}
+    if(d.typ==='gezeichnet'){st.zeichnungen=(st.zeichnungen||0)+d.n;window.__globusZeichnungen=(window.__globusZeichnungen||0)+d.n;
+      const L=window.__globusLuecken||(window.__globusLuecken=[]);L.push(...(d.luecken||[]));if(L.length>600)L.splice(0,L.length-600);return;}
+    if(d.typ!=='fertig')return;
+    st.wartet=false;st.zeichnungen=(st.zeichnungen||0)+1;window.__globusZeichnungen=(window.__globusZeichnungen||0)+1;
+    if(st.offen){st.offen=false;globeZeichnen(st);}
+  };
+  st.worker.onerror=()=>{if(window.__globusOhneWorker)return;window.__globusOhneWorker=true;try{st.worker.terminate();}catch(e){}if(GLOBE_PAGES.includes(curPage))startGlobes({neu:true});};
+}
+function globeZeichnerLand(st){
+  st.landRef=LAND;
+  if(st.worker)st.worker.postMessage({typ:'ringe',ringe:LAND});else if(st.zeichner)st.zeichner.land(LAND);
+}
+// Marker-Daten (Farbe, Score-Beschriftung) nur bei Aenderung an den Zeichner.
+// Scores gestaffelt: einer je ~0,6 s neu (vorher alle acht auf einmal jede
+// Sekunde - eine Blockade von 50-100 ms bei gedrosselter CPU).
+function globeMetaPflegen(st){
+  if(!st.sc)st.sc={};
+  const ids=Object.keys(GLOBE_GEO),jetzt=performance.now();
+  if(!st.scNext||jetzt>=st.scNext){st.scI=((st.scI||0)+1)%ids.length;delete st.sc[ids[st.scI]];st.scNext=jetzt+5000/ids.length;st.metaPruefen=true;}
+  if(st.metaKey&&!st.metaPruefen)return;
+  st.metaPruefen=false;
+  const m=[];
+  ids.forEach((id,i)=>{const sym=syms.find(x=>x.id===id);if(!sym)return;
+    const sc=id in st.sc?st.sc[id]:(st.sc[id]=symScoreCmp(sym));
+    m.push({id,i,lat:GLOBE_GEO[id][0],lon:GLOBE_GEO[id][1],col:BC[sym.bias]||'#888',label:`${id} ${(sc>0?'+':'')+(Math.round(sc*10)/10)}`});});
+  const key=JSON.stringify(m);if(key===st.metaKey)return;st.metaKey=key;
+  if(st.worker)st.worker.postMessage({typ:'meta',marker:m});else if(st.zeichner)st.zeichner.meta(m);
+}
+function globeZeichnen(st){
+  const t=performance.now(),anim=!document.body.classList.contains('no-ui-anim');
+  if(st.worker&&st.workerRaf){
+    // Zustand an den Worker-Takt: Winkel, Geschwindigkeit (aus der letzten
+    // Aenderung, Grad/ms), absoluter Zeitpunkt - der Worker rechnet weiter.
+    const T=performance.timeOrigin+t,lon=_globeLon;
+    let vel=0;if(st.zLon!=null&&T>st.zT){vel=(((lon-st.zLon)%360+540)%360-180)/(T-st.zT);}
+    st.zLon=lon;st.zT=T;
+    st.worker.postMessage({typ:'zustand',lon,vel,t:T,anim});return;
+  }
+  if(st.worker){
+    if(st.wartet){st.offen=true;return;}
+    st.wartet=true;st.worker.postMessage({typ:'bild',lon:_globeLon,t,anim});return;
+  }
+  if(!st.zeichner)return;
+  st.zeichner.bild(_globeLon,t,anim);
+  st.zeichnungen=(st.zeichnungen||0)+1;window.__globusZeichnungen=(window.__globusZeichnungen||0)+1;
+}
+// Marker unter dem Zeiger (Klick/Mauszeiger) aus Drehwinkel und Projektion -
+// keine Marker-Elemente im Dokument, die je Bild verschoben werden muessten.
+function globeMarkerAt(ev,host){
+  const st=_globeHosts.find(x=>x.host===host)||(_globeParked||[]).find(x=>x.host===host);if(!st)return null;
+  const svg=host.querySelector('svg');if(!svg)return null;
+  const rc=svg.getBoundingClientRect(),k=rc.width/(st.groesse||rc.width);
+  let best=null,bd=13*13;
+  Object.keys(GLOBE_GEO).forEach(id=>{const q=globeProject(GLOBE_GEO[id][0],GLOBE_GEO[id][1],_globeLon,st.R);if(!q.vis)return;
+    const dx=ev.clientX-(rc.left+(st.cx+q.x)*k),dy=ev.clientY-(rc.top+(st.cy+q.y)*k),d=dx*dx+dy*dy;if(d<bd){bd=d;best=id;}});
+  return best;
+}
+// Nur fuer Pruefskripte: Bildschirmlage der sichtbaren Marker.
+window.__globeMarkerPositionen=()=>{const st=_globeHosts[0];if(!st)return[];const svg=st.host.querySelector('svg'),rc=svg.getBoundingClientRect(),k=rc.width/st.groesse;
+  return Object.keys(GLOBE_GEO).map(id=>{const q=globeProject(GLOBE_GEO[id][0],GLOBE_GEO[id][1],_globeLon,st.R);return q.vis?{id,x:rc.left+(st.cx+q.x)*k,y:rc.top+(st.cy+q.y)*k}:null;}).filter(Boolean);};
 function globeCollectRefs(host,size){
   const svg=host.querySelector('svg');if(!svg)return null;
   const markers={};
-  host.querySelectorAll('.globe-marker-ebene .gm').forEach(el=>{markers[el.dataset.id]={el,dot:el.querySelector('.gm-dot'),ping:el.querySelector('.gm-ping'),lbl:el.querySelector('.gm-lbl'),vis:false,col:'',lt:'',txt:'',tf:''};});
   const cx=size/2,cy=size/2;
   const vehGroup=svg.querySelector('.globe-vehicle');
   const vehicle=vehGroup?{groupEl:vehGroup}:null;
@@ -637,90 +664,15 @@ function globeCollectRefs(host,size){
     vehiclePos:{x:cx,y:cy},vehicleHeading:90
   };
 }
-// Label relativ zum Punkt (dx, dy = Grundlinie wie frueher im SVG). Nur bei
-// Aenderung schreiben: textContent= ist eine DOM-Mutation und weckt die
-// Beobachter der Seite (nurTextMutation, main.js).
-function globeLabelSetzen(m,txt,anchor,dx,dy){
-  if(m.txt!==txt){m.lbl.textContent=txt;m.txt=txt;}
-  const tf='translate('+dx.toFixed(1)+'px,'+(dy-10).toFixed(1)+'px) translateX('+(anchor==='middle'?-50:anchor==='end'?-100:0)+'%)';
-  if(m.tf!==tf){m.lbl.style.transform=tf;m.tf=tf;}
-}
 // Pro Frame nur Attribute der bestehenden Elemente updaten (kein innerHTML/Reparse).
 function globeUpdateOne(st){
-  const{R,cx,cy}=st,lon0=_globeLon;
-  // Nur noch die Land-Geometrie: das Meer ist eine gleichmaessige Flaeche
-  // ohne Sonnenstands-Verlaeufe, und Gitterlinien gibt es nicht mehr
-  // (Nutzer-Wunsch 2026-07-25). Die drei <use>-Ebenen (Grundfarbe, ruhige
-  // und leuchtende Vierecke) referenzieren genau diese Pfade und folgen
-  // dadurch automatisch mit.
-  // Alle Teilstuecke zu EINER Zeichenanweisung zusammensetzen und in einem
-  // Zug schreiben. globePathD liefert pro Polygon '' zurueck, wenn es ganz
-  // auf der Rueckseite liegt - die faellt hier von selbst weg.
-  globeLandMalen(st,lon0);
-  // Marker (Waehrungspunkt + Label)
-  const visMarkers=[];
-  // Der Score im Label aendert sich nur mit den Daten, nicht mit der Drehung -
-  // symScoreCmp rechnet aber jedes Mal den kompletten Asset-Score. Pro Bild
-  // fuer jeden sichtbaren Marker kostete das gemessen 254 ms je 4 s
-  // (2026-10-03). Jetzt hoechstens einmal pro Sekunde je Asset.
-  // Scores gestaffelt: hoechstens EINER je Bild neu (alle ~5 s je Asset). Vorher
-  // alle acht auf einmal jede Sekunde - gemessen eine Blockade von 50-100 ms
-  // bei gedrosselter CPU, ein sichtbares Haken der Drehung je Sekunde.
-  if(!st.sc)st.sc={};
-  const jetzt=performance.now();
-  if(!st.scNext||jetzt>=st.scNext){const ids=Object.keys(GLOBE_GEO);st.scI=((st.scI||0)+1)%ids.length;delete st.sc[ids[st.scI]];st.scNext=jetzt+5000/ids.length;}
-  Object.keys(GLOBE_GEO).forEach(id=>{
-    const m=st.markers[id];if(!m)return;
-    const sym=syms.find(s=>s.id===id);
-    const p=sym?globeProject(GLOBE_GEO[id][0],GLOBE_GEO[id][1],lon0,R):{vis:false};
-    if(!p.vis){if(m.vis){m.el.style.visibility='hidden';m.vis=false;}return;}
-    if(!m.vis){m.el.style.visibility='';m.vis=true;}
-    const x=cx+p.x,y=cy+p.y,col=BC[sym.bias]||'#888',sc=id in st.sc?st.sc[id]:(st.sc[id]=symScoreCmp(sym));
-    m.el.style.transform='translate3d('+x.toFixed(2)+'px,'+y.toFixed(2)+'px,0)';
-    if(m.col!==col){m.dot.style.background=col;m.ping.style.borderColor=col;m.lbl.style.color=col;m.col=col;}
-    const label=`${id} ${(sc>0?'+':'')+(Math.round(sc*10)/10)}`;
-    visMarkers.push({id,m,x,y,col,label});
-  });
-  // GBP/EUR/CHF liegen in Europa geografisch so nah beieinander, dass eine
-  // automatische Kollisionsvermeidung sie je nach Drehwinkel trotzdem noch
-  // ueberlappen liess. Eine rein an die Waehrung gebundene feste Position
-  // (immer GBP=links, EUR=rechts) reicht aber NICHT: nahe am Globus-Rand
-  // (z.B. die Amerika-Heimatposition) ruecken die drei Punkte so eng
-  // zusammen, dass sich ihre Bildschirm-Reihenfolge durch die 3D-Projektion
-  // sogar vertauschen kann - dann landete z.B. das EUR-Label direkt auf dem
-  // CHF-Punkt. Deshalb wird die links/rechts/darunter-Zuordnung JEDEN Frame
-  // neu anhand der tatsaechlichen aktuellen Bildschirmposition vergeben: der
-  // jeweils am weitesten links liegende der drei Punkte bekommt das linke,
-  // der am weitesten rechts liegende das rechte Label, der mittlere (meist
-  // CHF, da geografisch zwischen GBP und EUR) rutscht darunter.
-  const EU_LBL_IDS=['GBP','EUR','CHF'];
-  const euVis=visMarkers.filter(v=>EU_LBL_IDS.includes(v.id));
-  const FIXED_LABEL_POS={};
-  if(euVis.length>=2){
-    const sorted=[...euVis].sort((a,b)=>a.x-b.x);
-    FIXED_LABEL_POS[sorted[0].id]={dx:-11,dy:3,anchor:'end'};
-    FIXED_LABEL_POS[sorted[sorted.length-1].id]={dx:11,dy:3,anchor:'start'};
-    if(sorted.length===3)FIXED_LABEL_POS[sorted[1].id]={dx:0,dy:23,anchor:'middle'};   // 23 statt 18: auf der 330-px-Kugel (Dashboard, 2026-11-06) lag es 5 px auf dem EUR-Label
-  }
-  const placedLbl=[];
-  visMarkers.forEach(v=>{
-    const fixed=FIXED_LABEL_POS[v.id];
-    if(fixed){globeLabelSetzen(v.m,v.label,fixed.anchor,fixed.dx,fixed.dy);return;}
-    // Generische Kollisionsvermeidung fuer alle anderen Waehrungen: kollidierende
-    // Labels schrittweise nach oben staffeln statt direkt uebereinander zu zeichnen.
-    const halfW=15+v.label.length*2.6;
-    let off=-8,collide=true;
-    while(collide){
-      collide=false;
-      for(const q of placedLbl){
-        if(Math.abs(v.x-q.x)<(halfW+q.halfW)&&Math.abs((v.y+off)-q.ly)<13){off-=12;collide=true;break;}
-      }
-    }
-    placedLbl.push({x:v.x,ly:v.y+off,halfW});
-    globeLabelSetzen(v.m,v.label,'middle',0,off);
-  });
-  // HUD-Readout "Scan position" folgt der echten Rotation live mit (jeden
-  // Frame, wie die Marker selbst) - kein Extra-Interval noetig.
+  // Je Bild: Drehwinkel an den Zeichner (Worker bzw. Rueckfall im Hauptthread).
+  // Am Dokument aendert sich dabei NICHTS - Land, Marker, Ringe und
+  // Beschriftungen liegen auf den Canvas-Ebenen (js/globe-zeichnen.js).
+  if(st.landRef!==LAND)globeZeichnerLand(st);
+  globeMetaPflegen(st);
+  globeZeichnen(st);
+  // HUD-Readout "Scan position" (nur wo vorhanden) - nur bei Aenderung.
   const lonEl=document.getElementById('hudLon');
   if(lonEl){const t=globeHudLonTxt();if(lonEl.textContent!==t)lonEl.textContent=t;}
   globeUpdateSweep(st);
@@ -797,7 +749,7 @@ function globeHitTest(ev,host){
   return dx*dx+dy*dy<=hitR*hitR;
 }
 function globeOnPointerDown(ev,host){
-  if(ev.target.closest('g[data-id],.gm'))return; // Marker-Klicks nicht als Drag-Start behandeln
+  if(globeMarkerAt(ev,host))return; // Marker-Klicks nicht als Drag-Start behandeln
   if(!globeHitTest(ev,host))return;
   if(_globeDrag)return; // schon ein Dreh-Drag aktiv, weitere gleichzeitige Finger ignorieren
   try{host.setPointerCapture(ev.pointerId);}catch(e){}
@@ -864,7 +816,7 @@ async function ladeLandHD(){
     LAND=ringe;
     console.log('[globe] Kuestenlinien nachgeladen: '+ringe.length+' Polygone, '+punkte+' Punkte');
     // feinere Kueste ins laufende Bild uebernehmen - KEIN Neuaufbau (Nutzer 2026-11-06)
-    _globeHosts.forEach(st=>{st.lonGez=null;});
+    _globeHosts.forEach(globeZeichnerLand);
   }catch(e){
     console.log('[globe] Kuestenlinien nicht nachgeladen ('+(e&&e.message||e)+') - die eingebaute Fassung bleibt.');
   }
@@ -897,6 +849,7 @@ function startGlobes(opt){
   // Fortsetzen statt neu bauen: dieselben Host-Elemente, Geruest noch da, Groesse gleich.
   const weiter=!(opt&&opt.neu)&&park&&park.length===hosts.length&&park.every((st,i)=>st.host===hosts[i]&&st.host.querySelector('svg')&&Math.abs(globeHostGroesse(st.host)-(st.groesse||0))<8);
   if(weiter)_globeHosts=park;
+  else if(park)park.forEach(st=>{try{st.worker&&st.worker.terminate();}catch(e){}});   // Neuaufbau: alte Worker beenden
   else _globeHosts=hosts.map(h=>{
     // Groesse: globeHostGroesse() (Dashboard-Karte: kleinere Seite des Hosts,
     // die Kugel fuellt die Karte; sonst Kartenbreite, hoechstens 320 px).
@@ -908,10 +861,11 @@ function startGlobes(opt){
     h.insertAdjacentHTML('beforeend','<div class="globe-hud-frame"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div><div class="globe-hud-scan"></div><div class="globe-hud-badge top"><b></b> TRACKING</div><div class="globe-hud-badge bottom"><b></b> SIGNAL</div>');
     const st=globeCollectRefs(h,size);if(st)st.groesse=size;return st;
   }).filter(Boolean);
+  _globeHosts.forEach(st=>{globeWorkerVerbinden(st);if(st.landRef!==LAND)globeZeichnerLand(st);});
   _globeHosts.forEach(globeUpdateOne); // sofortiger, vollstaendiger erster Aufbau (alle Layer in einem Zug)
   // Aus dem Bild gescrollt -> keine Geometrie rechnen (2026-10-16). Die Laenge
   // laeuft weiter, beim Zurueckscrollen steht die Kugel also richtig.
-  _globeHosts.forEach(st=>{st.sichtbar=true;try{st.io=new IntersectionObserver(es=>{st.sichtbar=es[es.length-1].isIntersecting;});st.io.observe(st.host);}catch(e){}});
+  _globeHosts.forEach(st=>{st.sichtbar=true;st.zLon=null;globeWorkerTakt(st,true);try{st.io=new IntersectionObserver(es=>{st.sichtbar=es[es.length-1].isIntersecting;globeWorkerTakt(st,st.sichtbar);st.zLon=null;});st.io.observe(st.host);}catch(e){}});
   // Schubregler-Anzeige resyncen (Nutzer-Wunsch 2026-07-28): der Regler-DOM
   // (.globe-throttle) liegt AUSSERHALB von .globe-host, wird also bei jedem
   // Dashboard-Re-Render (renderDash() baut das Widget-HTML neu, z.B.
@@ -929,7 +883,11 @@ function startGlobes(opt){
   });
   if(!weiter)hosts.forEach(h=>{
     if(h.__globePtr)return;h.__globePtr=true;
-    h.addEventListener('pointerdown',ev=>globeOnPointerDown(ev,h));
+    h.addEventListener('pointerdown',ev=>{h.__ab={x:ev.clientX,y:ev.clientY};globeOnPointerDown(ev,h);});
+    // Marker antippen (Canvas-Ebene, keine Elemente): Lage aus der Projektion,
+    // nicht nach einem Ziehen (> 6 px).
+    h.addEventListener('click',ev=>{const a=h.__ab;if(a&&Math.hypot(ev.clientX-a.x,ev.clientY-a.y)>6)return;const id=globeMarkerAt(ev,h);if(id)globeMarkerClick(ev,id);});
+    h.addEventListener('pointermove',ev=>{if(_globeDrag)return;const c=globeMarkerAt(ev,h)?'pointer':'';if(h.__cur!==c){h.style.cursor=c;h.__cur=c;}});
     h.addEventListener('pointermove',globeOnPointerMove);
     h.addEventListener('pointerup',globeOnPointerUp);
     h.addEventListener('pointercancel',globeOnPointerUp);

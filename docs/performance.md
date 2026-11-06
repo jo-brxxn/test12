@@ -178,3 +178,17 @@ Kalender-Abgleich 131 → ~0, FF-Abgleich 93 → ~0, `indOverdueCycles` 63 → 2
 - **Reine Ansichts-Zustände speichern gebündelt** (`saveSoon`): jedes `save()` rechnet Score-Historie + Journal neu (~170 ms bei CPU 4x).
 - **Hover höchstens einmal je Bild**, nächster Punkt per binärer Suche.
 - Wächter: `check/makro.js` H (0 volle Aufbauten, genau 1x zeichnen je Bedienung, Gegenprobe = alter Weg).
+
+
+## ⚠ Weltkugel zeichnet im Web Worker (2026-11-06, VERSION-CHECK-682)
+
+- **Merksatz:** Jede Änderung im Dokument je Bild — auch nur ein SVG-Attribut
+  oder ein `transform` — lässt Chromium die Ebenen der GANZEN Seite neu
+  zusammensetzen (Layerize/Commit); die Kosten wachsen mit der Seite, nicht
+  mit dem animierten Element. Gemessen: Kugel allein 60 Bilder/s bei 4× CPU,
+  im vollen Dashboard 34.
+- Deshalb: Land, Marker, Ringe, Beschriftungen auf OffscreenCanvas im Worker
+  (`js/globe-worker.js`, `js/globe-zeichnen.js`) mit eigenem rAF-Takt; der
+  Hauptthread schickt nur Zustand (Winkel, Geschwindigkeit, Zeit). Radar-Keil
+  als CSS-Animation. In der Kugel-Karte ändert sich je Bild nichts im Dokument.
+- Wächter `check/performance.js` G (4× CPU ≥ 54 Bilder/s am Kugel-Takt).
