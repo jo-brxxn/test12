@@ -262,9 +262,12 @@ function globeFuelTick(dtMs,thrustI){
   else _globeFuel=Math.min(100,_globeFuel+GLOBE_FUEL_REGEN_PCT_S*dtS);
   const el=document.getElementById('hudFuel');
   if(el){
-    const pct=Math.round(_globeFuel);
-    el.textContent=pct+'%';
-    el.style.color=pct>45?BC.bull:pct>18?BC.neu:BC.bear;
+    // nur bei Aenderung schreiben (2026-11-06): textContent= in JEDEM Bild ersetzt
+    // den Textknoten -> Stil/Layout + Seiten-Beobachter je Bild, obwohl der Wert
+    // im Normaltempo bei 100 % steht
+    const pct=Math.round(_globeFuel),t=pct+'%',col=pct>45?BC.bull:pct>18?BC.neu:BC.bear;
+    if(el.textContent!==t)el.textContent=t;
+    if(el.__col!==col){el.style.color=col;el.__col=col;}
   }
 }
 // Geparkte Kugel (Nutzer 2026-11-06: "mach das die sich nicht die ganze Zeit neu
@@ -377,6 +380,43 @@ function globePathD(pts,lon0,R,cx,cy){
   }
   return d?d+'Z':'';
 }
+// Dieselbe Projektion wie globePathD, aber direkt in einen Path2D (kein Text,
+// kein Zerlegen durch den Browser) - fuer die Canvas-Ebene.
+function globePathCanvas(pts,lon0,R,cx,cy,p){
+  const n=pts.length;
+  if(_gpX.length<n){_gpX=new Float64Array(n);_gpY=new Float64Array(n);_gpV=new Uint8Array(n);}
+  const pre=globeRingPre(pts),l0=lon0*Math.PI/180,s0=Math.sin(l0),c0=Math.cos(l0);
+  const sL=Math.sin(GLOBE_LAT0),cL=Math.cos(GLOBE_LAT0);
+  for(let i=0;i<n;i++){
+    const sf=pre[4*i],cf=pre[4*i+1],sl=pre[4*i+2],cl=pre[4*i+3];
+    const sinl=sl*c0-cl*s0,cosl=cl*c0+sl*s0;
+    _gpX[i]=R*cf*sinl;_gpY[i]=-R*(cL*sf-sL*cf*cosl);_gpV[i]=(sL*sf+cL*cf*cosl)>0?1:0;
+  }
+  const MIN_PX=0.6;
+  let lx=1e9,ly=1e9,offen=false;
+  const add=(x,y)=>{if(offen)p.lineTo(cx+x,cy+y);else{p.moveTo(cx+x,cy+y);offen=true;}lx=x;ly=y;};
+  for(let i=0;i<n;i++){
+    const j=i+1<n?i+1:0;
+    const wechsel=_gpV[i]!==_gpV[j];
+    if(_gpV[i]&&(wechsel||Math.abs(_gpX[i]-lx)>=MIN_PX||Math.abs(_gpY[i]-ly)>=MIN_PX))add(_gpX[i],_gpY[i]);
+    if(wechsel){const h=globeHorizonPoint(pts[i],pts[j],lon0,R);add(h.x,h.y);}
+  }
+  // kein closePath(): fill() schliesst jede Teilflaeche selbst - closePath kostete
+  // gemessen 2,3 ms je Bild (549 Ringe, Path2D)
+}
+// Meer, Land, Raster und Randabschattung in einem Zug auf die Canvas-Ebene.
+function globeLandMalen(st,lon0){
+  const c=st.ctx;if(!c)return;
+  const{R,cx,cy}=st,S=st.cv.width/st.dpr;
+  c.setTransform(st.dpr,0,0,st.dpr,0,0);
+  c.clearRect(0,0,S,S);
+  // Meer (.globe-meer) und Randschatten (.globe-rand) sind feste Ebenen darunter
+  // bzw. darueber - je Bild nur noch EIN Malvorgang: Land mit Raster.
+  const p=new Path2D();
+  for(let i=0;i<LAND.length;i++)globePathCanvas(LAND[i],lon0,R,cx,cy,p);
+  c.fillStyle=st.muster||GLOBE_LANDFARBE;c.fill(p);
+  st.zeichnungen=(st.zeichnungen||0)+1;window.__globusZeichnungen=(window.__globusZeichnungen||0)+1;
+}
 // Statisches SVG-Geruest EINMALIG bauen: alle Pfade/Punkte/Marker existieren schon
 // (zunaechst leer), spaeter werden nur noch ihre Attribute aktualisiert. Dadurch wird
 // NICHT bei jedem Frame neues SVG geparst/gerendert - die Kugel wird einmal aufgebaut
@@ -401,20 +441,8 @@ function globePathD(pts,lon0,R,cx,cy){
 // HUD-Vorbildern, keine erfundenen Werte (siehe CLAUDE.md-Grundsatz).
 function globeSkeleton(size,uid){
   const R=size/2-26,cx=size/2,cy=size/2; // 26px Rand statt 16px - Platz fuer den neuen Bezel-Ring/Gradnetz drumherum
-  const lmgid='gLimbGrad'+uid,lmid='gLimbMask'+uid,shpid='gLandShape'+uid;
-  const sqid='gSq'+uid;
   const fgid='gJetFlame'+uid; // Nachbrenner-Flammen-Verlauf (Boost, Nutzer-Wunsch 2026-07-28)
-  // Pfade OHNE eigenes fill/stroke - sie erben beides vom jeweiligen <use>.
-  // ⚠ EIN Pfad fuer alles Land, nicht einer je Polygon. Ein SVG-Pfad darf
-  // beliebig viele Teilstuecke enthalten ("M ... M ... M ..."), und die
-  // Polygone brauchen weder eigene Farbe noch eigenen Treffertest - sie
-  // erben beides von ihrer Gruppe.
-  // GEMESSEN 2026-09-12: mit den nachgeladenen Natural-Earth-Kuesten (549
-  // Polygone, 14000 Punkte) kostete ein Element JE Polygon p95 33,4 ms und
-  // 66 von 179 Bildern ueber 20 ms - genau die Verschlechterung, die der
-  // Nutzer beheben lassen wollte. Die Rechenarbeit war es nicht; teuer sind
-  // die 549 DOM-Schreibzugriffe pro Bild. Als ein Element ist es einer.
-  let land='<path transform="scale(.1)"/>';   // Koordinaten in Zehntel-Pixeln, siehe globePathD
+  // Land/Meer/Raster: Canvas-Ebene (globeLandMalen), nicht mehr im SVG.
   // Jeder Marker bekommt jetzt zusaetzlich einen "Ping"-Ring (Reticle/Radar-
   // Ortungspunkt-Optik, "Global Market Surveillance"-Umbau 2026-07-27) - ein
   // zweiter <circle>, der per CSS-Keyframe kontinuierlich nach aussen
@@ -423,11 +451,14 @@ function globeSkeleton(size,uid){
   // (globeCollectRefs/globeUpdateOne setzen Position+Farbe), damit es nicht
   // wie ein einziges synchrones Blinken wirkt, sondern wie einzelne
   // Ortungssignale.
+  // Marker als HTML-Ebene ueber dem SVG (2026-11-06): verschoben wird per
+  // transform (Grafikeinheit, kein Neumalen); der Ortungs-Ring animiert per
+  // transform/opacity statt des SVG-Attributs r (das musste jedes Bild neu
+  // gemalt werden).
   let markers='';let _mi=0;Object.keys(GLOBE_GEO).forEach(id=>{
     const delay=(_mi++%4)*0.55;
-    markers+=`<g data-id="${id}" style="cursor:pointer;display:none" onclick="globeMarkerClick(event,'${id}')"><circle class="globe-ping" r="5" fill="none" stroke-width="1.3" style="animation-delay:${delay}s"></circle><circle r="4.5" stroke="#04101c" stroke-width="1"></circle><text text-anchor="middle" font-size="11" font-weight="800" style="paint-order:stroke;stroke:#04101c;stroke-width:2.5px;font-family:var(--ff-num)"></text></g>`;
+    markers+=`<div class="gm" data-id="${id}" style="visibility:hidden" onclick="globeMarkerClick(event,'${id}')"><span class="gm-ping" style="animation-delay:${delay}s"></span><span class="gm-dot"></span><span class="gm-lbl"></span></div>`;
   });
-  const SQ=4.2,SI=0.55,SW=SQ-2*SI; // Rasterweite / Innenabstand / Kantenlaenge
   // Radar-Sweep-Keil (Global-Market-Surveillance-Umbau 2026-07-27, Nutzer-
   // Korrektur 2026-07-28 "das Radar soll immer mit dem Flugzeug mitgehen"):
   // der Keil ist jetzt in LOKALEN Koordinaten (Ursprung 0,0) definiert und
@@ -438,9 +469,7 @@ function globeSkeleton(size,uid){
   // statt fix auf der Kartenmitte zu bleiben. Kein SMIL-<animateTransform>
   // mehr - dasselbe "pro Frame nur Attribute aktualisieren"-Prinzip wie
   // beim Rest des Globus.
-  const rsw=Math.PI/180*26,rgid='gRadarSweep'+uid;
-  const rx1=(R*Math.cos(-rsw)).toFixed(2),ry1=(R*Math.sin(-rsw)).toFixed(2);
-  const rx2=(R*Math.cos(rsw)).toFixed(2),ry2=(R*Math.sin(rsw)).toFixed(2);
+  // Radar-Keil: HTML-Ebene .globe-sweep-w/.globe-sweep-k (CSS), siehe CSS 'GLOBUS-EBENEN'.
   // Instrumenten-Bezel: gestrichelter Aussenring + 12 Gradstriche (alle 30°,
   // an den 4 Kardinalpunkten laenger+kraeftiger+mit Grad-Zahl) - reine
   // Protraktor-/Kompass-Optik, keine echten Messwerte.
@@ -524,18 +553,17 @@ function globeSkeleton(size,uid){
   // automatisch mit) - rein dekorativ seit der Thrust-Regler auf dem Intro-
   // Screen permanent sichtbar ist (kein Popup-Trigger mehr noetig).
   const jetHit=`<g data-id="jet" transform="translate(${cx},${cy})" pointer-events="all"><circle r="15" fill="transparent"/></g>`;
-  return`<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="max-width:100%" onclick="if(!event.target.closest('g[data-id]'))closeGlobeTip()">
+  // ⚠ Meer + Land + Viereck-Raster + Randabschattung malt seit 2026-11-06 ein
+  // <canvas> UNTER dem SVG (globeLandMalen), in jedem Bild. Vorher stand das
+  // Land als 37.600-Zeichen-Pfad zweimal (Farbe + Muster) unter einer
+  // Verlaufsmaske im SVG; der Radar-Keil (mix-blend-mode) liess das ganze SVG
+  // jedes Bild neu malen - gemessen nur 15 Bewegungsschritte/s und bei 4x
+  // gedrosselter CPU Haenger bis 133 ms (Nutzer: "perfekt drehen ohne zu
+  // haengen").
+  const rr=(v)=>(v/size*100).toFixed(3)+'%';
+  const kreis=`left:${rr(cx-R)};top:${rr(cy-R)};width:${rr(2*R)};height:${rr(2*R)}`;
+  return`<div class="globe-buehne" style="width:${size}px"><div class="globe-meer" style="${kreis}"></div><canvas class="globe-canvas" aria-hidden="true"></canvas><div class="globe-rand" style="${kreis}"></div><div class="globe-sweep-w" style="width:${(2*R).toFixed(1)}px;height:${(2*R).toFixed(1)}px;transform:translate(${(cx-R).toFixed(1)}px,${(cy-R).toFixed(1)}px)"><div class="globe-sweep-k"></div></div><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" onclick="if(!event.target.closest('g[data-id],.gm'))closeGlobeTip()">
     <defs>
-      <radialGradient id="${lmgid}" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff"/><stop offset="70%" stop-color="#fff"/><stop offset="100%" stop-color="#000"/></radialGradient>
-      <mask id="${lmid}" maskContentUnits="userSpaceOnUse"><circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#${lmgid})"/></mask>
-      <g id="${shpid}" data-layer="landshape">${land}</g>
-      <pattern id="${sqid}" width="${SQ}" height="${SQ}" patternUnits="userSpaceOnUse" patternTransform="scale(10)">
-        <rect x="${SI}" y="${SI}" width="${SW}" height="${SW}" fill="none" stroke="rgba(126,196,255,.5)" stroke-width="0.4"/>
-      </pattern>
-      <linearGradient id="${rgid}" x1="${rx1}" y1="${ry1}" x2="${rx2}" y2="${ry2}" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#7ee0ff" stop-opacity="0"/>
-        <stop offset="100%" stop-color="#7ee0ff" stop-opacity=".4"/>
-      </linearGradient>
       <linearGradient id="${fgid}" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#cfeaff"/>
         <stop offset="10%" stop-color="#fffaf0"/>
@@ -552,35 +580,52 @@ function globeSkeleton(size,uid){
       </linearGradient>
     </defs>
     <g class="globe-planet">
-      <circle cx="${cx}" cy="${cy}" r="${R}" fill="#0b2445" stroke="#1b4372" stroke-width="1"/>
-      <g mask="url(#${lmid})">
-        <use href="#${shpid}" fill="#2d6ea8"/>
-        <use href="#${shpid}" fill="url(#${sqid})"/>
-        ${rangeRings}
-      </g>
-    </g>
-    <g class="globe-sweep" transform="translate(${cx},${cy}) rotate(0)" style="mix-blend-mode:screen">
-      <path d="M 0 0 L ${rx1} ${ry1} A ${R} ${R} 0 0 1 ${rx2} ${ry2} Z" fill="url(#${rgid})"/>
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="transparent" stroke="#1b4372" stroke-width="1"/>
+      ${rangeRings}
     </g>
     <g pointer-events="none">${reticle}</g>
     ${vehicle}
     ${jetHit}
-    <g data-layer="markers">${markers}</g>
     <g pointer-events="none">${bezel}</g>
-  </svg>`;
+  </svg><div class="globe-marker-ebene">${markers}</div></div>`;
+}
+// Canvas-Ebene einrichten: Aufloesung = Geraetepixel (scharf auf dem iPad),
+// Viereck-Raster als Muster (gleiche Masse wie das fruehere SVG-<pattern>:
+// 4,2 px Raster, 0,55 px Innenabstand, 0,4 px Strich), Randabschattung als
+// Radialverlauf in Meeresfarbe (ersetzt die Luminanz-Maske: Land blendet ab
+// 70 % des Radius zum Rand hin in das Meer aus).
+const GLOBE_MEER='#0b2445',GLOBE_LANDFARBE='#2d6ea8';
+function globeCanvasRefs(host,size){
+  const cv=host.querySelector('canvas.globe-canvas');if(!cv)return{};
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=Math.round(size*dpr);cv.height=Math.round(size*dpr);
+  const ctx=cv.getContext('2d');if(!ctx)return{};
+  const SQ=4.2,SI=0.55,SW=SQ-2*SI;
+  // Kachel direkt in Geraetepixeln, ohne Skalierung: 5x5 Vierecke = 21 px
+  // (5 x 4,2) - ganzzahlig fuer dpr 1 und 2. Eine verkleinerte Kachel wurde
+  // weichgezeichnet und wirkte groeber und heller als das SVG-Muster.
+  const N=5,T=SQ*N*dpr,kachel=document.createElement('canvas');kachel.width=kachel.height=Math.round(T);
+  const kc=kachel.getContext('2d');kc.fillStyle=GLOBE_LANDFARBE;kc.fillRect(0,0,kachel.width,kachel.height);
+  kc.strokeStyle='rgba(126,196,255,.5)';kc.lineWidth=0.4*dpr;
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++)kc.strokeRect((i*SQ+SI)*dpr,(j*SQ+SI)*dpr,SW*dpr,SW*dpr);
+  const muster=ctx.createPattern(kachel,'repeat');
+  // Muster im Geraetepixel-Raum: der Kontext zeichnet mit setTransform(dpr), das
+  // Muster wird deshalb um 1/dpr zurueckskaliert (exakt 1 Kachelpixel = 1 Geraetepixel)
+  try{muster.setTransform(new DOMMatrix().scale(1/dpr));}catch(e){}
+  return{cv,ctx,dpr,muster};
 }
 function globeCollectRefs(host,size){
   const svg=host.querySelector('svg');if(!svg)return null;
   const markers={};
-  [...svg.querySelector('[data-layer="markers"]').children].forEach(g=>{const circles=g.querySelectorAll('circle');markers[g.dataset.id]={g,ping:circles[0],circle:circles[1],text:g.querySelector('text')};});
+  host.querySelectorAll('.globe-marker-ebene .gm').forEach(el=>{markers[el.dataset.id]={el,dot:el.querySelector('.gm-dot'),ping:el.querySelector('.gm-ping'),lbl:el.querySelector('.gm-lbl'),vis:false,col:'',lt:'',txt:'',tf:''};});
   const cx=size/2,cy=size/2;
   const vehGroup=svg.querySelector('.globe-vehicle');
   const vehicle=vehGroup?{groupEl:vehGroup}:null;
   return{
     host,R:size/2-26,cx,cy,
-    landPaths:[...svg.querySelector('[data-layer="landshape"]').children],
+    ...globeCanvasRefs(host,size),
     markers,vehicle,
-    sweepEl:svg.querySelector('.globe-sweep'),
+    sweepEl:host.querySelector('.globe-sweep-w'),
     // Aktuelle Position/Blickrichtung des Jets - startet in der Mitte, Nase
     // nach rechts (90°, siehe rotate(90)-Grundausrichtung in globeSkeleton()
     // oben - MUSS synchron bleiben, sonst "springt" das Flugzeug beim ersten
@@ -591,6 +636,14 @@ function globeCollectRefs(host,size){
     // Nutzer-Wunsch 2026-07-28).
     vehiclePos:{x:cx,y:cy},vehicleHeading:90
   };
+}
+// Label relativ zum Punkt (dx, dy = Grundlinie wie frueher im SVG). Nur bei
+// Aenderung schreiben: textContent= ist eine DOM-Mutation und weckt die
+// Beobachter der Seite (nurTextMutation, main.js).
+function globeLabelSetzen(m,txt,anchor,dx,dy){
+  if(m.txt!==txt){m.lbl.textContent=txt;m.txt=txt;}
+  const tf='translate('+dx.toFixed(1)+'px,'+(dy-10).toFixed(1)+'px) translateX('+(anchor==='middle'?-50:anchor==='end'?-100:0)+'%)';
+  if(m.tf!==tf){m.lbl.style.transform=tf;m.tf=tf;}
 }
 // Pro Frame nur Attribute der bestehenden Elemente updaten (kein innerHTML/Reparse).
 function globeUpdateOne(st){
@@ -603,29 +656,28 @@ function globeUpdateOne(st){
   // Alle Teilstuecke zu EINER Zeichenanweisung zusammensetzen und in einem
   // Zug schreiben. globePathD liefert pro Polygon '' zurueck, wenn es ganz
   // auf der Rueckseite liegt - die faellt hier von selbst weg.
-  const q=st.landPaths[0];
-  if(q){
-    let d='';
-    for(let i=0;i<LAND.length;i++){const t=globePathD(LAND[i],lon0,R,cx,cy);if(t)d+=t;}
-    q.setAttribute('d',d);
-  }
+  globeLandMalen(st,lon0);
   // Marker (Waehrungspunkt + Label)
   const visMarkers=[];
   // Der Score im Label aendert sich nur mit den Daten, nicht mit der Drehung -
   // symScoreCmp rechnet aber jedes Mal den kompletten Asset-Score. Pro Bild
   // fuer jeden sichtbaren Marker kostete das gemessen 254 ms je 4 s
   // (2026-10-03). Jetzt hoechstens einmal pro Sekunde je Asset.
+  // Scores gestaffelt: hoechstens EINER je Bild neu (alle ~5 s je Asset). Vorher
+  // alle acht auf einmal jede Sekunde - gemessen eine Blockade von 50-100 ms
+  // bei gedrosselter CPU, ein sichtbares Haken der Drehung je Sekunde.
+  if(!st.sc)st.sc={};
   const jetzt=performance.now();
-  if(!st.scZeit||jetzt-st.scZeit>1000){st.sc={};st.scZeit=jetzt;}
+  if(!st.scNext||jetzt>=st.scNext){const ids=Object.keys(GLOBE_GEO);st.scI=((st.scI||0)+1)%ids.length;delete st.sc[ids[st.scI]];st.scNext=jetzt+5000/ids.length;}
   Object.keys(GLOBE_GEO).forEach(id=>{
     const m=st.markers[id];if(!m)return;
     const sym=syms.find(s=>s.id===id);
     const p=sym?globeProject(GLOBE_GEO[id][0],GLOBE_GEO[id][1],lon0,R):{vis:false};
-    if(!p.vis){m.g.style.display='none';return;}
-    m.g.style.display='';
+    if(!p.vis){if(m.vis){m.el.style.visibility='hidden';m.vis=false;}return;}
+    if(!m.vis){m.el.style.visibility='';m.vis=true;}
     const x=cx+p.x,y=cy+p.y,col=BC[sym.bias]||'#888',sc=id in st.sc?st.sc[id]:(st.sc[id]=symScoreCmp(sym));
-    m.circle.setAttribute('cx',x.toFixed(1));m.circle.setAttribute('cy',y.toFixed(1));m.circle.setAttribute('fill',col);
-    if(m.ping){m.ping.setAttribute('cx',x.toFixed(1));m.ping.setAttribute('cy',y.toFixed(1));m.ping.setAttribute('stroke',col);}
+    m.el.style.transform='translate3d('+x.toFixed(2)+'px,'+y.toFixed(2)+'px,0)';
+    if(m.col!==col){m.dot.style.background=col;m.ping.style.borderColor=col;m.lbl.style.color=col;m.col=col;}
     const label=`${id} ${(sc>0?'+':'')+(Math.round(sc*10)/10)}`;
     visMarkers.push({id,m,x,y,col,label});
   });
@@ -653,14 +705,7 @@ function globeUpdateOne(st){
   const placedLbl=[];
   visMarkers.forEach(v=>{
     const fixed=FIXED_LABEL_POS[v.id];
-    if(fixed){
-      v.m.text.setAttribute('text-anchor',fixed.anchor);
-      v.m.text.setAttribute('x',(v.x+fixed.dx).toFixed(1));v.m.text.setAttribute('y',(v.y+fixed.dy).toFixed(1));v.m.text.setAttribute('fill',v.col);
-      // nur bei Aenderung schreiben: jedes textContent= ist eine DOM-Mutation
-      // und weckt die Beobachter der Seite (siehe nurTextMutation, main.js)
-      if(v.m.text.textContent!==v.label)v.m.text.textContent=v.label;
-      return;
-    }
+    if(fixed){globeLabelSetzen(v.m,v.label,fixed.anchor,fixed.dx,fixed.dy);return;}
     // Generische Kollisionsvermeidung fuer alle anderen Waehrungen: kollidierende
     // Labels schrittweise nach oben staffeln statt direkt uebereinander zu zeichnen.
     const halfW=15+v.label.length*2.6;
@@ -672,9 +717,7 @@ function globeUpdateOne(st){
       }
     }
     placedLbl.push({x:v.x,ly:v.y+off,halfW});
-    v.m.text.setAttribute('text-anchor','middle');
-    v.m.text.setAttribute('x',v.x.toFixed(1));v.m.text.setAttribute('y',(v.y+off).toFixed(1));v.m.text.setAttribute('fill',v.col);
-    if(v.m.text.textContent!==v.label)v.m.text.textContent=v.label;
+    globeLabelSetzen(v.m,v.label,'middle',0,off);
   });
   // HUD-Readout "Scan position" folgt der echten Rotation live mit (jeden
   // Frame, wie die Marker selbst) - kein Extra-Interval noetig.
@@ -691,9 +734,10 @@ function globeUpdateOne(st){
 // SMIL berechnet.
 function globeUpdateSweep(st){
   if(!st.sweepEl)return;
-  const angle=(performance.now()%4500)/4500*360;
-  const{x,y}=st.vehiclePos;
-  st.sweepEl.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+angle.toFixed(1)+')');
+  // Drehung laeuft als CSS-Animation (.globe-sweep-k, 4,5 s) auf der
+  // Grafikeinheit; hier nur die Verschiebung mit dem Jet - und nur bei Aenderung.
+  const{x,y}=st.vehiclePos,tf='translate('+(x-st.R).toFixed(1)+'px,'+(y-st.R).toFixed(1)+'px)';
+  if(st.sweepTf!==tf){st.sweepEl.style.transform=tf;st.sweepTf=tf;}
 }
 function closeGlobeTip(){document.querySelectorAll('.globe-tip').forEach(t=>t.remove());}
 // Jet-Reise per manuellem rAF-Tween (setAttribute statt CSS/WAAPI-Transform
@@ -753,7 +797,7 @@ function globeHitTest(ev,host){
   return dx*dx+dy*dy<=hitR*hitR;
 }
 function globeOnPointerDown(ev,host){
-  if(ev.target.closest('g[data-id]'))return; // Marker-Klicks nicht als Drag-Start behandeln
+  if(ev.target.closest('g[data-id],.gm'))return; // Marker-Klicks nicht als Drag-Start behandeln
   if(!globeHitTest(ev,host))return;
   if(_globeDrag)return; // schon ein Dreh-Drag aktiv, weitere gleichzeitige Finger ignorieren
   try{host.setPointerCapture(ev.pointerId);}catch(e){}
@@ -983,7 +1027,10 @@ function startGlobes(opt){
         // Der Radar-Strahl dreht unabhaengig von der Kugel (4,5 s je Umlauf) und
         // laeuft deshalb weiter in jedem Bild - ein einzelnes Attribut.
         // window.__gpGlobusJedesBild: nur fuer die Gegenprobe in check/performance.js (G).
-        if(weg<0.5&&_globeMode!=='drag'&&!window.__gpGlobusJedesBild){globeUpdateSweep(st);return;}
+        // Seit 2026-11-06 JEDES Bild (Canvas-Ebene ist billig genug): die
+        // 0,5-px-Schwelle liess die Kugel nur 15-mal je Sekunde weiterruecken.
+        // Gegenprobe check/performance.js (G): __gpGlobusSchwelle schaltet sie wieder ein.
+        if(window.__gpGlobusSchwelle&&weg<0.5&&_globeMode!=='drag'){globeUpdateSweep(st);return;}
         st.lonGez=_globeLon;globeUpdateOne(st);
       });
     }

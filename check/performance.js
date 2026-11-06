@@ -268,29 +268,38 @@ function statisch() {
   if (reg.n > reg.dom * 2 + 150) rot(`Chart-Registry haelt ${reg.n} Eintraege, im Dokument stehen ${reg.dom} Charts - sie waechst mit jedem Aufbau`);
   else gruen(`Chart-Registry ${reg.n} Eintraege bei ${reg.dom} Charts im Dokument`);
 
-  // ── G) Overview-Kugel: Takt der Neuzeichnung ─────────────────────────────
-  console.log('G) Dashboard-Kugel: Neuzeichnungen je Sekunde im Normaltempo');
-  await p.evaluate(gp => { if (gp) window.__gpGlobusJedesBild = true; showTab('dash'); const g = document.getElementById('dbGlobe'); if (g) g.scrollIntoView({ block: 'center' }); }, GP_GLOBUS);
-  await p.mouse.move(5, 5); await p.mouse.move(9, 9);   // Eingabe: die Kugel darf nicht schon ruhen (H)
+  // ── G) Dashboard-Kugel: JEDES Bild eine Bewegung, SVG still ──────────────
+  // Seit 2026-11-06 (Nutzer: "perfekt drehen ohne zu haengen"): Land auf einer
+  // Canvas-Ebene, je Bild gezeichnet; Marker per transform, Radar per CSS.
+  // Gemessen vorher 15 Bewegungsschritte/s bei 60 Bildern/s (0,5-px-Schwelle).
+  // Verlangt: Zeichnungen >= 90 % der Bilder; das SVG aendert sich im
+  // Normaltempo NICHT (jede Attributaenderung = Neumalen + Neuzusammensetzen
+  // der Seite); Canvas in Geraetepixeln.
+  // Gegenprobe --gegenprobe-globus: alte 0,5-px-Schwelle (__gpGlobusSchwelle) -> rot.
+  console.log('G) Dashboard-Kugel: jedes Bild eine Bewegung, SVG unveraendert');
+  await p.evaluate(gp => { if (gp) window.__gpGlobusSchwelle = true; showTab('dash'); const g = document.getElementById('dbGlobe'); if (g) g.scrollIntoView({ block: 'center' }); }, GP_GLOBUS);
+  await p.mouse.move(5, 5); await p.mouse.move(9, 9);
   await p.waitForTimeout(2500);
   const gl = await p.evaluate(async () => {
-    const pfad = document.querySelector('[data-layer="landshape"] path'); if (!pfad) return null;
-    let n = 0; const mo = new MutationObserver(ms => { n += ms.filter(m => m.attributeName === 'd').length; });
-    mo.observe(pfad, { attributes: true });
+    const cv = document.querySelector('#dashGlobeHost canvas.globe-canvas'), svg = document.querySelector('#dashGlobeHost svg'); if (!cv || !svg) return null;
+    let svgMut = 0; const mo = new MutationObserver(ms => { svgMut += ms.length; });
+    mo.observe(svg, { attributes: true, subtree: true, childList: true, characterData: true });
+    const z0 = window.__globusZeichnungen || 0;
     let bilder = 0; const t0 = performance.now(); await new Promise(r => { const f = () => { bilder++; if (performance.now() - t0 < 2000) requestAnimationFrame(f); else r(); }; requestAnimationFrame(f); });
     mo.disconnect();
-    // Ganzzahl-Pfad (2026-10-17): Koordinaten in Zehntel-Pixeln unter scale(.1),
-    // das Viereck-Muster dazu unter scale(10) - sonst schrumpft es auf 1/10.
-    const d = pfad.getAttribute('d') || '', muster = document.querySelector('.globe-host svg pattern');
-    return { n, bilder, s: (performance.now() - t0) / 1000, komma: /\d\.\d/.test(d), tr: pfad.getAttribute('transform'), mtr: muster && muster.getAttribute('patternTransform') };
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.getBoundingClientRect().width;
+    return { n: (window.__globusZeichnungen || 0) - z0, bilder, svgMut, aufl: Math.abs(cv.width - w * dpr) <= 2, cw: cv.width, w: Math.round(w * dpr) };
   });
-  if (!gl) rot('Dashboard-Kugel nicht gefunden');
-  else { const jeS = gl.n / gl.s; if (jeS > 40) rot(`Kugel ${jeS.toFixed(0)}x je Sekunde neu gezeichnet (${gl.bilder} Bilder) - Bewegung unter 0,5 px wird mitgezeichnet`); else gruen(`Kugel ${jeS.toFixed(0)} Neuzeichnungen je Sekunde bei ${(gl.bilder / gl.s).toFixed(0)} Bildern`); }
-  if (gl) {
-    if (gl.komma || gl.tr !== 'scale(.1)' || gl.mtr !== 'scale(10)') rot(`Kuestenpfad nicht als Ganzzahl-Pfad (Kommazahlen: ${gl.komma}, Pfad ${gl.tr}, Muster ${gl.mtr}) - 3,5x teurer bzw. Muster falsch skaliert`);
-    else gruen('Kuestenpfad in Ganzzahlen unter scale(.1), Muster passend unter scale(10)');
+  if (!gl) rot('Dashboard-Kugel (Canvas + SVG) nicht gefunden');
+  else {
+    if (gl.n < gl.bilder * 0.9) rot(`Kugel nur ${gl.n} Bewegungen bei ${gl.bilder} Bildern - sie rueckt nicht jedes Bild weiter (ruckelt)`);
+    else gruen(`Kugel ${gl.n} Bewegungen bei ${gl.bilder} Bildern (jedes Bild)`);
+    if (gl.svgMut > 0) rot(`SVG der Kugel ${gl.svgMut}x veraendert in 2 s - jede Aenderung erzwingt Neumalen der Kugel`);
+    else gruen('SVG der Kugel im Normaltempo unveraendert (0 Aenderungen in 2 s)');
+    if (!gl.aufl) rot(`Canvas ${gl.cw} px statt ${gl.w} px (Geraetepixel) - unscharf`);
+    else gruen(`Canvas in Geraetepixeln (${gl.cw} px)`);
   }
-  await p.evaluate(() => { window.__gpGlobusJedesBild = false; });
+  await p.evaluate(() => { window.__gpGlobusSchwelle = false; });
 
   // ── H) Overview-Kugel ruht im Leerlauf und wacht bei Eingabe auf ─────────
   // GEMESSEN 2026-10-17: Overview im Leerlauf 1.120-1.330 ms Arbeit je 5 s,
@@ -304,10 +313,9 @@ function statisch() {
   await p.mouse.move(12, 12);
   await p.waitForTimeout(1500 + 3500);
   const zaehle = () => p.evaluate(async () => {
-    const pfad = document.querySelector('[data-layer="landshape"] path'); if (!pfad) return null;
-    let n = 0; const mo = new MutationObserver(ms => { n += ms.filter(m => m.attributeName === 'd').length; });
-    mo.observe(pfad, { attributes: true }); await new Promise(r => setTimeout(r, 1500)); mo.disconnect();
-    return { n, ruht: !!document.querySelector('.globe-host.globe-ruht') };
+    if (!document.querySelector('#dashGlobeHost canvas.globe-canvas')) return null;
+    const z0 = window.__globusZeichnungen || 0; await new Promise(r => setTimeout(r, 1500));
+    return { n: (window.__globusZeichnungen || 0) - z0, ruht: !!document.querySelector('.globe-host.globe-ruht') };
   });
   const ruhe = await zaehle();
   await p.mouse.move(40, 40); await p.mouse.move(60, 60);
