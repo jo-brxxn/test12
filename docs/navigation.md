@@ -1612,3 +1612,8 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
   Seitentitel steht im Hero → Dashboard ist von der LAGE-Regel ausgenommen.
 - ⚠ **Klasse `ab` ist vergeben** (Asset-Knopf, `width:100%`): die fallenden
   Hero-Kerzen hießen zuerst so und wurden 759 px breite Balken → `hk-dn`.
+
+### Nachtrag 2026-11-06 (678)
+- Reihen: Hero | Kennzahlen / Market overview | World map / **Open trades** | Key events | Sentiment & COT / Bias scores | Your insights / Biggest movers | Performance.
+- **Kugel wird nie ohne Not neu gebaut:** `stopGlobe()` parkt Gerüst + Referenzen, `startGlobes()` setzt fort; Neuaufbau nur bei Größenänderung der Karte (ResizeObserver). Kein `resetGlobeLon()` beim Betreten. Keine Leerlauf-Ruhe (Nutzer: *„Es muss nur drehen“*).
+- Kugelgröße = kleinere Seite des Kartenkörpers (`globeHostGroesse`), der Host selbst ist rechteckig.

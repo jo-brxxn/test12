@@ -7271,10 +7271,12 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .dx-r2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:var(--dx-gap);align-items:stretch}
 .dx-r3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--dx-gap);align-items:stretch}
 .dx-r4{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:var(--dx-gap);align-items:stretch}
+.dx-r5{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:var(--dx-gap);align-items:stretch}
+.dx-tjo{grid-template-columns:minmax(0,1fr)!important;gap:10px}
 .dx [data-slot]{display:flex;flex-direction:column;min-width:0}
 .dx [data-slot]>.dx-card{flex:1 1 auto}
-@media(max-width:1159px){.dx-top,.dx-r2,.dx-r4{grid-template-columns:minmax(0,1fr)}.dx-r3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.dx-r3>[data-slot="ins"]{grid-column:1/3}}
-@media(max-width:759px){.dx-r3{grid-template-columns:minmax(0,1fr)}.dx-r3>[data-slot="ins"]{grid-column:auto}}
+@media(max-width:1159px){.dx-top,.dx-r2,.dx-r4,.dx-r5{grid-template-columns:minmax(0,1fr)}.dx-r3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.dx-r3>[data-slot="sent"]{grid-column:1/3}}
+@media(max-width:759px){.dx-r3{grid-template-columns:minmax(0,1fr)}.dx-r3>[data-slot="sent"]{grid-column:auto}}
 /* Karten */
 #dashWidgets .dx-card{background:var(--card);border:1px solid var(--dx-rand);border-radius:var(--dx-r);padding:14px 12px 12px;margin:0;
   box-shadow:var(--shadow-card),inset 0 1px 0 rgba(var(--blue-rgb),.06)}
@@ -7333,7 +7335,11 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .dx-spark{display:block;width:calc(100% + 24px);height:46px;margin:auto -12px 0}
 /* World map */
 #dbGlobe .dw-body{display:flex;align-items:center;justify-content:center}
-#dbGlobe .globe-host{width:min(100%,330px);aspect-ratio:1;position:relative}
+/* Kugel fuellt die Karte (Nutzer 2026-11-06: "muss die ganze Karte ausfuellen,
+   muss nicht perfekt viereckig sein"): Host = ganze Kartenflaeche, Kugel =
+   kleinere Seite davon (globeHostGroesse), HUD-Rahmen folgt dem Host. */
+#dbGlobe .dw-body{align-items:stretch}
+#dbGlobe .globe-host{flex:1 1 auto;width:100%;min-height:280px;position:relative;display:flex;align-items:center;justify-content:center}
 /* Key events */
 /* Zeitfilter: eigene Zeile ueber dem Inhalt, rechtsbuendig (Regel Einheitlichkeit, check/einheit.js) */
 .dx-zf{display:flex;justify-content:flex-end;margin:-4px 0 10px}
@@ -7459,11 +7465,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-677 - Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-678 - Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-677</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-678</span>
     </span>
   </div>
   <div class="hdr-r">

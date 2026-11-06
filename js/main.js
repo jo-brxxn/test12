@@ -19,7 +19,7 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 // 2026-10-20, siehe Kopf von makro.js). Zirkulaerer Import wie bei journal.js.
 // Trading Journal: eigene Trades im Monatskalender (Nutzer-Wunsch 2026-10-24,
 // siehe Kopf von trades.js). Zirkulaerer Import wie bei makro.js.
-import {trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenAnzahl,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
+import {trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 // Hero-Zeichnung des Dashboards (Nutzer 2026-11-06, siehe Kopf von heroart.js).
@@ -17555,9 +17555,9 @@ function dashGeruest(){
         <div class="dw-hdr db-hdr"><div class="dw-t"><span class="dw-t-txt">World map</span></div><button class="db-link" onclick="showTab('cur')">All assets${icn('chevronRight',13)}</button>${abInfoBtn('World map',['Each currency at its central bank, labelled with its score.','Drag to spin.'],'rinfo')}</div>
         <div class="dw-body"><div class="globe-host" id="dashGlobeHost"></div></div>
       </section></div>
-    <div class="dx-r3"><div data-slot="heute"></div><div data-slot="sent"></div><div data-slot="ins"></div></div>
-    <div class="dx-r4"><div data-slot="bias"></div><div data-slot="mover"></div></div>
-    <div data-slot="perf"></div>
+    <div class="dx-r3"><div data-slot="trades"></div><div data-slot="heute"></div><div data-slot="sent"></div></div>
+    <div class="dx-r4"><div data-slot="bias"></div><div data-slot="ins"></div></div>
+    <div class="dx-r5"><div data-slot="mover"></div><div data-slot="perf"></div></div>
   </div>`;
 }
 function renderDash(){
@@ -17578,6 +17578,8 @@ function renderDash(){
     stats:dashStatsHtml({pos:nPos,ev:heute.length,nf:notifs.length}),
     markt:dashSek('dbMarket','watchlist','Market overview',`<div class="dx-zf">${mktBar}</div>`+dashMarktHtml(),{link:['Watchlist',"showTab('watch')"],
       erkl:['Your watchlist (first 6), filled up with EUR/USD, GBP/USD, USD/JPY, Gold, Silver, S&P 500.','Change since the start of the window; the chart shows at least the last month.','Tap a tile for the pair or asset, add pairs on the Watchlist page.']}),
+    trades:dashSek('dbTrades','positions','Open trades',tjOffenKartenHtml(),{anz:nPos||null,link:['Journal',"showTab('journal')"],
+      erkl:['Your open trades from the journal, same card as there.','Status in R and price distance since entry; the bar shows SL, entry, now and TP.','Close logs the exit.']}),
     heute:dashSek('dbHeute','mini_calendar','Key events',dashEventsHtml(heute),{anz:heute.length||null,link:['View all',"showTab('cal')"],
       erkl:['High and medium impact releases today, your local time.','Released: actual in beat / miss colour. Next one is marked.']}),
     sent:dashSek('dbSent','sentiment','Sentiment & COT',dashSentCotHtml(),{link:['COT',"showTab('cot')"],
@@ -25938,7 +25940,7 @@ function showTab(tab,btn,fxMode){
   // auch per normaler Tab-Leiste statt der Pille - wieder auf 'cur' landet,
   // hat die Pille ihren Zweck erfuellt.
   if(tab==='cur'&&_resReturnActive&&_quickReturnAssetId){_resReturnActive=false;_quickReturnAssetId=null;document.body.classList.remove('res-return-active');}
-  else if(tab==='dash'){renderDash();resetGlobeLon();requestAnimationFrame(()=>{if(curPage==='dash')startGlobes();});}   // Kugel bei jedem Betreten neu starten (beim Verlassen stoppt sie, das Geruest bleibt)
+  else if(tab==='dash'){renderDash();requestAnimationFrame(()=>{if(curPage==='dash')startGlobes();});}   // Kugel fortsetzen: startGlobes() nimmt das geparkte Geruest, dreht weiter wo sie war (Nutzer 2026-11-06: nicht neu laden)
   else if(tab==='cur'){renderSidebar();renderDetail();}
   else if(tab==='mx')renderMatrix();
   else if(tab==='trends'){renderTrends();autoFetchPriceData();}

@@ -21380,3 +21380,22 @@ min(1100 px, Seite − 32 px), Inhalt bricht um, 0 px Überlauf. Fehlerklasse:
 nur dieses Fenster setzte eine feste Inhaltsbreite. Wächter: `dashboard.js`
 (Hero ≤ 170 px, Statuszeile einzeilig, beide Fenster ohne Seitenüberlauf).
 Federn: Seiten wieder nativ (Stand vor 2026-11-01), `check/federn.js` neu.
+
+## 2026-11-06 — Weltkugel füllt die Karte, dreht ohne Neuladen; Open trades (VERSION-CHECK-678)
+
+Nutzer: Kugel soll die ganze Karte füllen (nicht zwingend quadratisch), sich
+nicht „die ganze Zeit neu laden", nur drehen; Karte „Open trades" wie im
+Journal weit oben. Ursachen des „Neuladens" (Code + Messung): (1) jedes
+Betreten des Dashboards → `startGlobes()` = innerHTML-Neuaufbau +
+`resetGlobeLon()` (Sprung zurück nach Amerika); (2) nach dem Nachladen der
+feinen Küsten erneut ein Neuaufbau; (3) nach 60 s ohne Eingabe lief die Kugel
+aus und bei Berührung wieder an. Jetzt: geparkte Kugel wird fortgesetzt
+(gemessen: dasselbe SVG nach Kalender → Dashboard, 23 Neuzeichnungen/1,5 s),
+feine Küste ohne Neuaufbau, keine Ruhe mehr (`GLOBE_RUHE_MS=Infinity`),
+Neuaufbau nur bei Größenänderung (ResizeObserver, ≥ 8 px). Kugel = kleinere
+Seite des Kartenkörpers (1180 px: Host 418×308, Kugel 308). Open trades:
+`tjOffenKarte()` aus `js/trades.js` (dieselbe Karte wie im Journal) in Reihe 3;
+Insights → Reihe 4 neben Bias, Movers | Performance → Reihe 5. Wächter:
+performance H umgedreht (dreht ohne Eingabe), neu K (kein Neuaufbau),
+Gegenproben `--gegenprobe-ruhe`, `--gegenprobe-neubau`; designregeln prüft
+die Market-overview-Kacheln statt der alten Watchlist-Zeilen.

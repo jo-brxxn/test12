@@ -154,7 +154,7 @@ let _globeMode='auto',_globeVel=GLOBE_AUTO_VEL,_globeDrag=null;
 // Scroll-Eingabe startet sie sofort wieder. Solange jemand die Seite bedient,
 // sieht die Kugel exakt aus wie vorher.
 // window.__gpGlobusRuheMs: nur fuer check/performance.js (H) - verkuerzt die Frist.
-const GLOBE_RUHE_MS=60000;
+const GLOBE_RUHE_MS=Infinity;   // seit 2026-11-06 keine Ruhe mehr: Nutzer "Es muss nur drehen" (vorher 60 s ohne Eingabe -> stehen, bei Beruehrung wieder anlaufen)
 let _globeEingabe=performance.now(),_globeRuheF=1,_globeRuhtCls=false;
 if(typeof window!=='undefined'&&!window.__globeEingabeHorcher){
   window.__globeEingabeHorcher=true;
@@ -267,9 +267,14 @@ function globeFuelTick(dtMs,thrustI){
     el.style.color=pct>45?BC.bull:pct>18?BC.neu:BC.bear;
   }
 }
+// Geparkte Kugel (Nutzer 2026-11-06: "mach das die sich nicht die ganze Zeit neu
+// laedt sondern einfach normal sich dreht"): beim Anhalten bleiben Geruest und
+// Referenzen erhalten; startGlobes() setzt sie fort, statt neu zu zeichnen.
+let _globeParked=null;
 function stopGlobe(){
   if(_globeRAF){cancelAnimationFrame(_globeRAF);_globeRAF=null;}
   _globeHosts.forEach(st=>{try{st.io&&st.io.disconnect();}catch(e){}});
+  if(_globeHosts.length)_globeParked=_globeHosts;
   _globeHosts=[];_globeMode='auto';_globeVel=GLOBE_AUTO_VEL;_globeDrag=null;
   _globeVehicleBusy=false;_globeRuhtCls=false;_globeRuheF=1;_globeEingabe=performance.now();
 }
@@ -814,14 +819,25 @@ async function ladeLandHD(){
     if(punkte<=LAND.reduce((n,r2)=>n+r2.length,0))throw new Error('nicht detaillierter als das Eingebaute');
     LAND=ringe;
     console.log('[globe] Kuestenlinien nachgeladen: '+ringe.length+' Polygone, '+punkte+' Punkte');
-    if(GLOBE_PAGES.includes(curPage))startGlobes();   // mit der feineren Fassung neu aufbauen
+    // feinere Kueste ins laufende Bild uebernehmen - KEIN Neuaufbau (Nutzer 2026-11-06)
+    _globeHosts.forEach(st=>{st.lonGez=null;});
   }catch(e){
     console.log('[globe] Kuestenlinien nicht nachgeladen ('+(e&&e.message||e)+') - die eingebaute Fassung bleibt.');
   }
 }
 
-function startGlobes(){
-  stopGlobe();
+// Kugelgroesse eines Hosts: auf der Dashboard-Karte fuellt die Kugel die Karte
+// (kleinere Seite des Hosts - der Host selbst darf rechteckig sein).
+function globeHostGroesse(h){
+  if(h.closest('#dbGlobe'))return Math.max(140,Math.floor(Math.min(h.clientWidth,h.clientHeight)));
+  let w=h.clientWidth;
+  if(!w){const card=h.closest('.dw');w=card?card.clientWidth-24:0;}
+  return Math.max(140,Math.min(w||220,320));
+}
+function startGlobes(opt){
+  if(window.__gpGlobusNeubau)opt={neu:true};   // nur Gegenprobe check/performance.js (K)
+  const park=_globeParked;
+  stopGlobe();_globeParked=null;
   // ⚠ Seit 2026-09-11 lebt die Kugel auf der Overview-Seite, nicht mehr auf
   // dem Dashboard. Beide Stellen (hier und die Abbruchbedingung in der
   // Frame-Schleife unten) muessen dieselbe Liste kennen - stuenden sie
@@ -834,32 +850,19 @@ function startGlobes(){
   // dreht sie sich fluessig, indem pro Frame NUR die Attribute der vorhandenen
   // Elemente (Pfad-d, Marker-Position) aktualisiert werden - kein innerHTML/Reparse,
   // daher kein Ruckeln und keine UI-Blockade beim Tab-/Kategorie-Wechsel.
-  _globeHosts=hosts.map(h=>{
-    // Falls der Host transient 0 Breite meldet (z.B. waehrend eines Layout-/Tab-Wechsels),
-    // Kartenbreite als Fallback nehmen statt mit falscher Groesse zu starten - verhindert,
-    // dass der Globus beim allerersten Aufbau in der falschen Groesse "reinpoppt".
-    let w=h.clientWidth;
-    if(!w){const card=h.closest('.dw');w=card?card.clientWidth-24:0;}
-    // Nutzer-Wunsch 2026-08-04: der Globus lebt jetzt nur noch auf dem Intro-
-    // /Lade-Screen (Dashboard-Karte komplett entfernt) - dort darf er deutlich
-    // groesser werden als die alte 320px-Kartenobergrenze, da er nicht mehr in
-    // ein Karten-Raster eingepasst werden muss, sondern der Bildschirmmitte
-    // gehoert (siehe .intro-globe-host-CSS fuer die tatsaechliche Breite).
-    // ⚠ Zwei Buehnen, zwei Obergrenzen (das Intro gibt es seit 2026-09-24
-    // nicht mehr): eine Dashboard-Karte muss ins Raster passen (320), und
-    // die Overview-Seite gehoert der Kugel GANZ - dort
-    // begrenzt bereits das CSS (.pg-over .globe-host: min(72vh,760px)),
-    // eine zweite, niedrigere Kappung hier wuerde die Kugel klein in eine
-    // grosse Flaeche setzen.
-    // Dashboard-Karte "World map" (2026-11-06): Kugel bis 330 px, damit die Reihe so hoch wie Market overview bleibt.
-    const isDash=!!h.closest('#dbGlobe');
-    const size=Math.max(140,Math.min(w||220,isDash?330:320));
+  // Fortsetzen statt neu bauen: dieselben Host-Elemente, Geruest noch da, Groesse gleich.
+  const weiter=!(opt&&opt.neu)&&park&&park.length===hosts.length&&park.every((st,i)=>st.host===hosts[i]&&st.host.querySelector('svg')&&Math.abs(globeHostGroesse(st.host)-(st.groesse||0))<8);
+  if(weiter)_globeHosts=park;
+  else _globeHosts=hosts.map(h=>{
+    // Groesse: globeHostGroesse() (Dashboard-Karte: kleinere Seite des Hosts,
+    // die Kugel fuellt die Karte; sonst Kartenbreite, hoechstens 320 px).
+    const size=globeHostGroesse(h);
     h.innerHTML=globeSkeleton(size,_globeUid++);
     // HUD-Rahmen/Scanline NACH dem Skeleton einfuegen (nicht Teil des
     // Skeleton-Strings selbst) - h.innerHTML= wuerde sie sonst bei jedem
     // Neuaufbau (Tab-Wechsel, Resize) sofort wieder loeschen.
     h.insertAdjacentHTML('beforeend','<div class="globe-hud-frame"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div><div class="globe-hud-scan"></div><div class="globe-hud-badge top"><b></b> TRACKING</div><div class="globe-hud-badge bottom"><b></b> SIGNAL</div>');
-    return globeCollectRefs(h,size);
+    const st=globeCollectRefs(h,size);if(st)st.groesse=size;return st;
   }).filter(Boolean);
   _globeHosts.forEach(globeUpdateOne); // sofortiger, vollstaendiger erster Aufbau (alle Layer in einem Zug)
   // Aus dem Bild gescrollt -> keine Geometrie rechnen (2026-10-16). Die Laenge
@@ -873,7 +876,15 @@ function startGlobes(){
   // besteht - hier den echten Wert zurueckspiegeln, sonst zeigt der Griff
   // faelschlich 0%, waehrend der Globus tatsaechlich noch mit Schub laeuft.
   setGlobeThrust(_throttleFrac);
+  // Groessenwechsel der Karte (Drehen des iPads, Fensterbreite): erst dann neu bauen.
   hosts.forEach(h=>{
+    if(h.__globeRO||typeof ResizeObserver==='undefined')return;
+    let t=null;h.__globeRO=new ResizeObserver(()=>{clearTimeout(t);t=setTimeout(()=>{
+      const st=_globeHosts.find(x=>x.host===h);if(st&&Math.abs(globeHostGroesse(h)-(st.groesse||0))>=8)startGlobes({neu:true});},250);});
+    h.__globeRO.observe(h);
+  });
+  if(!weiter)hosts.forEach(h=>{
+    if(h.__globePtr)return;h.__globePtr=true;
     h.addEventListener('pointerdown',ev=>globeOnPointerDown(ev,h));
     h.addEventListener('pointermove',globeOnPointerMove);
     h.addEventListener('pointerup',globeOnPointerUp);

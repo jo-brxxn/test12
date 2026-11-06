@@ -411,9 +411,11 @@ const ruhe = (p, z) => p.waitForTimeout(String(z).startsWith('A:') ? 1000 : 350)
       document.querySelectorAll('.rank-row').forEach(r => { const t = r.querySelector('.rank-div'); if (t) seite(r, t.querySelector('.rank-bar'), t, (r.querySelector('.rank-sc') || {}).textContent || ''); });
       // Seit dem Dashboard-Neuaufbau 2026-11-05 steht die Waehrungsstaerke nicht
       // mehr auf dem Dashboard; geprueft wird jede .rank-div, die es noch gibt.
-      document.querySelectorAll('.wl-table .wl-row.wl-click').forEach(r => { n.wl++; const h = r.getBoundingClientRect().height; if (h > 40) out.push(`Watchlist "${r.querySelector('.wl-name').textContent.trim()}" ${Math.round(h)} px hoch (zweizeilig)`);
+      // Seit 2026-11-06 ist die Dashboard-Watchlist die Market-overview-Kachelreihe:
+      // Name einzeilig (nie umbrochen), sonst wie vorher.
+      document.querySelectorAll('#dbMarket .dx-mkt').forEach(r => { n.wl++; const nm = r.querySelector('.dx-mkt-n'); const h = nm ? nm.getBoundingClientRect().height : 0; if (h > 24) out.push(`Market overview "${nm.textContent.trim()}" Namenszeile ${Math.round(h)} px hoch (zweizeilig)`);
         const x = r.querySelector('button.dw-del'); if (x && x.getBoundingClientRect().width > 0) out.push('Watchlist: Entfernen-× sichtbar (der Bearbeitungsmodus ist seit 2026-10-07 entfernt)'); });
-      if (!n.wl) out.push('Watchlist: keine Zeilen (Testpaare nicht angelegt?)');
+      if (!n.wl) out.push('Market overview: keine Kacheln');
       const mh = document.querySelector('#dbBias .dw-t-txt'); if (!mh || parseFloat(getComputedStyle(mh).fontSize) < 16) out.push('Bias-scores-Sektion ohne Kartentitel');
       return { out: [...new Set(out)], n };
     });

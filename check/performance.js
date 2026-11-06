@@ -296,8 +296,11 @@ function statisch() {
   // GEMESSEN 2026-10-17: Overview im Leerlauf 1.120-1.330 ms Arbeit je 5 s,
   // ohne Kugel 22 ms. Ohne Eingabe muss die Kugel nach der Frist ruhen
   // (0 Neuzeichnungen), nach einer Mausbewegung sofort wieder drehen.
-  console.log('H) Overview-Kugel: Ruhe im Leerlauf, Aufwachen bei Eingabe');
-  await p.evaluate(gp => { window.__gpGlobusRuheMs = gp ? 1e12 : 1500; }, GP_RUHE);
+  // Seit 2026-11-06 umgekehrt (Nutzer: "Es muss nur drehen"): die Kugel ruht
+  // NIE - sie dreht ohne Eingabe weiter. Gegenprobe --gegenprobe-ruhe schaltet
+  // die alte 1,5-s-Ruhe ein -> rot.
+  console.log('H) Dashboard-Kugel: dreht ohne Eingabe weiter (keine Ruhe)');
+  await p.evaluate(gp => { window.__gpGlobusRuheMs = gp ? 1500 : undefined; }, GP_RUHE);
   await p.mouse.move(12, 12);
   await p.waitForTimeout(1500 + 3500);
   const zaehle = () => p.evaluate(async () => {
@@ -309,10 +312,10 @@ function statisch() {
   const ruhe = await zaehle();
   await p.mouse.move(40, 40); await p.mouse.move(60, 60);
   const wach = await zaehle();
-  if (!ruhe || !wach) rot('Overview-Kugel nicht gefunden');
+  if (!ruhe || !wach) rot('Dashboard-Kugel nicht gefunden');
   else {
-    if (ruhe.n > 0 || !ruhe.ruht) rot(`Kugel ohne Eingabe weiter ${ruhe.n}x in 1,5 s neu gezeichnet (ruht: ${ruhe.ruht}) - sie dreht im Leerlauf endlos`);
-    else gruen('Kugel ruht ohne Eingabe (0 Neuzeichnungen, Animationen pausiert)');
+    if (ruhe.n < 5 || ruhe.ruht) rot(`Kugel ohne Eingabe nur ${ruhe.n}x in 1,5 s gezeichnet (ruht: ${ruhe.ruht}) - sie bleibt stehen statt zu drehen`);
+    else gruen(`Kugel dreht ohne Eingabe weiter (${ruhe.n} Neuzeichnungen in 1,5 s)`);
     if (wach.n < 5 || wach.ruht) rot(`Kugel nach Mausbewegung nur ${wach.n}x in 1,5 s neu gezeichnet - sie wacht nicht auf`);
     else gruen(`Kugel nach Eingabe wieder ${wach.n} Neuzeichnungen in 1,5 s`);
   }
@@ -364,6 +367,22 @@ function statisch() {
     if (r.frames || r.anim) rot(`${name}: Kugel laeuft weiter - ${r.frames} Bild-Aufrufe in 1,5 s, ${r.anim} laufende Animationen in der Kugel`);
     else gruen(`${name.padEnd(10)} Kugel steht: 0 Bild-Aufrufe, 0 Animationen`);
   }
+  // ── K) Rueckkehr ins Dashboard: Kugel laeuft weiter, KEIN Neuaufbau ───────
+  // Nutzer 2026-11-06: "mach das die sich nicht die ganze Zeit neu laedt sondern
+  // einfach normal sich dreht". Gegenprobe: --gegenprobe-neubau (startGlobes
+  // baut immer neu) -> rot.
+  console.log('K) Kugel: Seitenwechsel und zurueck ohne Neuaufbau');
+  const k = await p.evaluate(async gp => {
+    showTab('dash'); await new Promise(r => setTimeout(r, 900));
+    const h = document.getElementById('dashGlobeHost'); if (!h) return null;
+    const svg0 = h.querySelector('svg');
+    if (gp) window.__gpGlobusNeubau = true;
+    showTab('cal'); await new Promise(r => setTimeout(r, 600)); showTab('dash'); await new Promise(r => setTimeout(r, 900));
+    return { gleich: h.querySelector('svg') === svg0 };
+  }, process.argv.includes('--gegenprobe-neubau'));
+  if (!k) rot('Dashboard-Kugel nicht gefunden (K)');
+  else if (!k.gleich) rot('Kugel nach Kalender -> Dashboard neu aufgebaut statt fortgesetzt');
+  else gruen('Kugel nach Seitenwechsel fortgesetzt (dasselbe Bild, kein Neuaufbau)');
   await p.evaluate(() => showTab('dash'));
 
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));

@@ -905,26 +905,35 @@ function tjLive(t){
   const zug=t.dir==='short'?e-j.v:j.v-e,ri=sl==null?null:(t.dir==='short'?sl-e:e-sl);
   return{j,e,zug,r:ri>0?zug/ri:null};
 }
+// Eine offene Position als Karte (Journal UND Dashboard-Karte "Open trades",
+// Nutzer 2026-11-06: "fueg die Karte Open trades hinzu wie auf dem Bild").
+function tjOffenKarte(t){
+  const L=tjLive(t),dz=L.e!=null?tjDez(L.e):5;
+  const kl=L.zug==null?'':L.zug>0?' plus':L.zug<0?' minus':'';
+  const stand=L.r!=null?`<b class="tjo-r" style="color:${tjFarbe(L.r)}">${tjRText(L.r)}</b>`:L.zug!=null?`<b class="tjo-r" style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b>`:'<b class="tjo-r" style="color:var(--t3)">–</b>';
+  const zeile1=L.e==null?'<i>Add an entry price to track it live</i>':`Entry <b>${tjPreis(L.e)}</b> · Now <b>${L.j?tjPreis(L.j.v):'–'}</b>`;
+  const zeile2=L.zug!=null?`<b style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b> since entry${L.r==null?' · <i>add a stop for R</i>':''}`:(L.e!=null?(PRICE_DATA_FEED?`<i>No price data for ${escH(t.a)}</i>`:'<i>Loading prices</i>'):'');
+  return`<div class="tjo${kl}" role="button" tabindex="0" onclick="tjAbschliessen('${escJH(t.id)}')" title="Close this trade">
+    <div class="tjo-kopf"><div class="tjo-a"><b>${escH(t.a)}</b>${tjSeiteHtml(t.dir)}</div>${stand}</div>
+    <div class="tjo-z">${zeile1}</div>
+    ${zeile2?`<div class="tjo-z">${zeile2}</div>`:''}
+    ${L.j&&L.e!=null?tjPreisleisteHtml(t,L.j.v):''}
+    <div class="tjo-fuss"><i>Opened ${escH(fmtDayShort(t.d))}${L.j?` · price ${escH(fmtDayShort(L.j.d))}`:''}</i><button class="btn g tjo-btn" onclick="event.stopPropagation();tjAbschliessen('${escJH(t.id)}')">Close</button></div>
+  </div>`;
+}
+// Nur die Karten (ohne Journal-Kopf) - fuer das Dashboard.
+function tjOffenKartenHtml(){
+  const l=tjChrono(tjOffeneListe());
+  if(l.length&&!PRICE_DATA_FEED)tjPreiseLaden();
+  if(!l.length)return`<div class="db-leer"><i>No open trades</i><button class="btn g" onclick="tjNeu()">＋ Add open trade</button></div>`;
+  return`<div class="tjo-grid dx-tjo">${l.map(tjOffenKarte).join('')}</div>`;
+}
 function tjOffenHtml(){
   const l=tjChrono(tjOffeneListe());
   if(l.length&&!PRICE_DATA_FEED)tjPreiseLaden();
   const kopf=`<div class="tj-kh">${tjTitel(`Open trades${l.length?` <span class="tj-anz">${l.length}</span>`:''}`,TJ_ERKL.offen)}<div class="tj-kh-r"><i>${l.length?'Tap a trade to close it':'Log a position you are in now - close it later'}</i></div></div>`;
   if(!l.length)return`<div class="tj-card tj-offen leer">${kopf}<div class="tj-leertext"><i>No open trades</i><button class="btn g" onclick="tjNeu()">＋ Add open trade</button></div></div>`;
-  const karte=t=>{
-    const L=tjLive(t),dz=L.e!=null?tjDez(L.e):5;
-    const kl=L.zug==null?'':L.zug>0?' plus':L.zug<0?' minus':'';
-    const stand=L.r!=null?`<b class="tjo-r" style="color:${tjFarbe(L.r)}">${tjRText(L.r)}</b>`:L.zug!=null?`<b class="tjo-r" style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b>`:'<b class="tjo-r" style="color:var(--t3)">–</b>';
-    const zeile1=L.e==null?'<i>Add an entry price to track it live</i>':`Entry <b>${tjPreis(L.e)}</b> · Now <b>${L.j?tjPreis(L.j.v):'–'}</b>`;
-    const zeile2=L.zug!=null?`<b style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b> since entry${L.r==null?' · <i>add a stop for R</i>':''}`:(L.e!=null?(PRICE_DATA_FEED?`<i>No price data for ${escH(t.a)}</i>`:'<i>Loading prices</i>'):'');
-    return`<div class="tjo${kl}" role="button" tabindex="0" onclick="tjAbschliessen('${escJH(t.id)}')" title="Close this trade">
-      <div class="tjo-kopf"><div class="tjo-a"><b>${escH(t.a)}</b>${tjSeiteHtml(t.dir)}</div>${stand}</div>
-      <div class="tjo-z">${zeile1}</div>
-      ${zeile2?`<div class="tjo-z">${zeile2}</div>`:''}
-      ${L.j&&L.e!=null?tjPreisleisteHtml(t,L.j.v):''}
-      <div class="tjo-fuss"><i>Opened ${escH(fmtDayShort(t.d))}${L.j?` · price ${escH(fmtDayShort(L.j.d))}`:''}</i><button class="btn g tjo-btn" onclick="event.stopPropagation();tjAbschliessen('${escJH(t.id)}')">Close</button></div>
-    </div>`;
-  };
-  return`<div class="tj-card tj-offen">${kopf}<div class="tjo-grid">${l.map(karte).join('')}</div></div>`;
+  return`<div class="tj-card tj-offen">${kopf}<div class="tjo-grid">${l.map(tjOffenKarte).join('')}</div></div>`;
 }
 // ── DASHBOARD: OFFENE POSITIONEN ─────────────────────────────────────────
 // Nutzer 2026-11-05 ("Dann sollen da die offenen Positionen stehen"): kompakte
@@ -1029,10 +1038,10 @@ if(typeof window!=='undefined'){
     tjOffeneChartsAuffrischen();},160);});
 }
 
-export {trades,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
+export {trades,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
   tjFuerCloud,tjGesendet,tjSendeFehler};
 if(typeof window!=='undefined'){
-  Object.assign(window,{renderJournal,tjDashHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
+  Object.assign(window,{renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
     mergeTrades,tjUebernehmen,tjR,tjReihe,tjTagKlick,tjTagFenster,tjTagZuTrade,tjTagNeu,tjRichtung,tjExitAuf,tjEdEingabe,tjStreak,tjStats,
     tjStatus,tjAbschliessen,tjZuExit,tjZuErgebnis,tjZuSpeichern,tjZuBearbeiten,tjJetzt,tjLive,
     tjFuerCloud,tjCloudStand,tjJetztHochladen,tjSig});

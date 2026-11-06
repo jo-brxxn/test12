@@ -125,7 +125,7 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
       // Listen-Fenster der Kennzahlen: nie seitlich scrollbar (Inhalt 560 px in 538-px-Fenster)
       ['dashMeldungenFenster','dashPositionenFenster'].forEach(f=>{try{window[f]();const md=document.querySelector('#mCardInfo .modal');
         if(md&&md.scrollWidth>md.clientWidth+1)out.push(f+': Fenster seitlich '+(md.scrollWidth-md.clientWidth)+'px ueberlaufend');closeM('mCardInfo');}catch(e){out.push(f+': '+e.message);}});
-      ['dbHero','dbMarket','dbGlobe','dbHeute','dbSent','dbInsight','dbBias','dbMover','dbPerf'].forEach(id=>{if(!document.getElementById(id))out.push('Sektion #'+id+' fehlt');});
+      ['dbHero','dbMarket','dbGlobe','dbTrades','dbHeute','dbSent','dbInsight','dbBias','dbMover','dbPerf'].forEach(id=>{if(!document.getElementById(id))out.push('Sektion #'+id+' fehlt');});
       const tiles=[...document.querySelectorAll('#dashWidgets .db-bias')];
       const ids=tiles.map(t=>t.dataset.id);
       if(typeof syms!=='undefined'){
@@ -145,5 +145,5 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
   await b.close();
   if(GEGENPROBE){const ok=fehler.some(f=>/laeuft \d+px ueber sein Element/.test(f))&&fehler.some(f=>/Bias: \w+ zeigt 99/.test(f));console.log(ok?'dashboard --gegenprobe: ok (gequetschter Titel = Textueberlauf, verfaelschte Bias-Kachel = Abweichung)':'dashboard --gegenprobe: FEHLER - nicht gemeldet');process.exit(ok?0:1);}
   if(fehler.length){console.log('DASHBOARD-KOLLISIONEN:\n  '+fehler.join('\n  '));process.exit(1);}
-  console.log('Dashboard ok: keine ueberlappenden Sektionen/Texte, 9 Sektionen, Bias-Kacheln = symScoreCmp, volle Namen (8 Breiten)');
+  console.log('Dashboard ok: keine ueberlappenden Sektionen/Texte, 10 Sektionen, Bias-Kacheln = symScoreCmp, volle Namen (8 Breiten)');
 })();
