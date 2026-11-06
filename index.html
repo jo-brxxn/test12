@@ -3873,7 +3873,7 @@ body.no-ui-anim .hud-live-dot{animation:none}
   background:conic-gradient(from 64deg,rgba(126,224,255,0) 0deg,rgba(126,224,255,.4) 52deg,transparent 52.01deg);
   animation:globeSweepDreh 4.5s linear infinite}
 @keyframes globeSweepDreh{to{transform:rotate(360deg)}}
-.globe-marker-ebene{position:absolute;inset:0;pointer-events:none}
+.globe-marker-ebene{position:absolute;inset:0;pointer-events:none;z-index:2}   /* ueber dem SVG (.dw-globe .globe-host svg hat z-index:1) */
 .gm{position:absolute;left:0;top:0;width:0;height:0;will-change:transform;pointer-events:auto;cursor:pointer}
 .gm-dot{position:absolute;left:-4.5px;top:-4.5px;width:9px;height:9px;border-radius:50%;box-sizing:border-box;border:1px solid #04101c}
 .gm-ping{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;border:1.3px solid;box-sizing:border-box;animation:gmPing 2.2s ease-out infinite;opacity:0}
@@ -7496,11 +7496,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-680 - Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-681 - Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-680</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-681</span>
     </span>
   </div>
   <div class="hdr-r">

@@ -21434,3 +21434,7 @@ Malen/Zusammensetzen ohne GPU im Testbrowser (auf dem iPad läuft Canvas auf der
 Grafikeinheit). Wächter `performance.js` G neu (Bewegungen ≥ 90 % der Bilder,
 SVG unverändert, Canvas in Gerätepixeln; Gegenprobe `--gegenprobe-globus`
 alte Schwelle → 30/121 rot), H zählt Canvas-Zeichnungen.
+Nachtrag 681: Marker-Ebene lag unter dem SVG (`.dw-globe .globe-host svg{z-index:1}`)
+→ Tippen auf einen Marker traf den Kugelkreis (`elementFromPoint` = circle).
+Ebene jetzt `z-index:2`; Wächter `dashboard.js` prüft „Marker antippbar“
+(Gegenprobe ohne z-index → rot). Ziehen zum Drehen geprüft: 299° → 264°.

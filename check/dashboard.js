@@ -135,6 +135,11 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
         W['1W'].forEach((_,i)=>{const r=['1W','1M','3M','1Y'].map(w=>W[w][i]);if(!(r[0]<r[1]&&r[1]<r[2]&&r[2]<r[3]))out.push('Market overview Kachel '+(i+1)+': Punkte je Intervall '+r.join('/')+' - Linie folgt dem Intervall nicht');});
         dashMktWinSetzen('1D');
       }
+      // Kugel-Marker antippbar (2026-11-06: das SVG lag mit z-index 1 ueber der
+      // neuen HTML-Marker-Ebene - Tippen traf den Kugelkreis, nichts passierte)
+      {const gm=[...document.querySelectorAll('#dbGlobe .gm')].find(e=>e.style.visibility!=='hidden');
+       if(gm){const r=gm.querySelector('.gm-dot').getBoundingClientRect(),t=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+         if(r.width&&t&&!t.closest('.gm'))out.push('Kugel-Marker '+gm.dataset.id+' verdeckt von '+t.tagName.toLowerCase()+' - nicht antippbar');}}
       ['dbHero','dbMarket','dbGlobe','dbTrades','dbHeute','dbSent','dbInsight','dbBias','dbMover','dbPerf'].forEach(id=>{if(!document.getElementById(id))out.push('Sektion #'+id+' fehlt');});
       const tiles=[...document.querySelectorAll('#dashWidgets .db-bias')];
       const ids=tiles.map(t=>t.dataset.id);
