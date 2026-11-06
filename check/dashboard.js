@@ -125,6 +125,16 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
       // Listen-Fenster der Kennzahlen: nie seitlich scrollbar (Inhalt 560 px in 538-px-Fenster)
       ['dashMeldungenFenster','dashPositionenFenster'].forEach(f=>{try{window[f]();const md=document.querySelector('#mCardInfo .modal');
         if(md&&md.scrollWidth>md.clientWidth+1)out.push(f+': Fenster seitlich '+(md.scrollWidth-md.clientWidth)+'px ueberlaufend');closeM('mCardInfo');}catch(e){out.push(f+': '+e.message);}});
+      // Market overview: Chart = gewaehltes Intervall (Nutzer 2026-11-06: Linie
+      // aenderte sich beim Wechsel nicht - 1D/1W/1M hatten alle 31 Punkte).
+      // 1D = Tageskerze, danach je Kachel strikt mehr Punkte je laengerem Fenster.
+      if(innerWidth===1440&&typeof dashMktWinSetzen==='function'){
+        const pkt=()=>[...document.querySelectorAll('#dbMarket .dx-mkt')].map(t=>{const pf=t.querySelector('.dx-spark path:last-child');return t.querySelector('.dx-kz')?'K':pf?pf.getAttribute('d').split('L').length:0;});
+        const W={};['1D','1W','1M','3M','1Y'].forEach(w=>{dashMktWinSetzen(w);W[w]=pkt();});
+        if(W['1D'].some(x=>x!=='K'))out.push('Market overview 1D: nicht ueberall Tageskerze ('+W['1D'].join(',')+')');
+        W['1W'].forEach((_,i)=>{const r=['1W','1M','3M','1Y'].map(w=>W[w][i]);if(!(r[0]<r[1]&&r[1]<r[2]&&r[2]<r[3]))out.push('Market overview Kachel '+(i+1)+': Punkte je Intervall '+r.join('/')+' - Linie folgt dem Intervall nicht');});
+        dashMktWinSetzen('1D');
+      }
       ['dbHero','dbMarket','dbGlobe','dbTrades','dbHeute','dbSent','dbInsight','dbBias','dbMover','dbPerf'].forEach(id=>{if(!document.getElementById(id))out.push('Sektion #'+id+' fehlt');});
       const tiles=[...document.querySelectorAll('#dashWidgets .db-bias')];
       const ids=tiles.map(t=>t.dataset.id);

@@ -21399,3 +21399,16 @@ Insights → Reihe 4 neben Bias, Movers | Performance → Reihe 5. Wächter:
 performance H umgedreht (dreht ohne Eingabe), neu K (kein Neuaufbau),
 Gegenproben `--gegenprobe-ruhe`, `--gegenprobe-neubau`; designregeln prüft
 die Market-overview-Kacheln statt der alten Watchlist-Zeilen.
+
+## 2026-11-06 — Market overview: Chart folgt dem Intervall, 1D = Tageskerze (VERSION-CHECK-679)
+
+Nutzer: beim Intervallwechsel änderte sich die Preislinie teils nicht.
+Reproduziert (1180 px, Punkte je Mini-Chart): 1D 31 · 1W 31 · 1M 31 · 3M 92 ·
+1Y 297 — Ursache: Chart „mindestens 30 Tage" (`Math.max(30,…)`), also drei
+identische Linien. Nachher: Kerze · 8 · 31 · 92 · 297. 1D per Rückfrage als
+Tageskerze (nur Tageswerte vorhanden, kein Intraday): L/O/H + Körper O→Kurs;
+USD/X per Kehrwert (H/L getauscht), Kreuzpaare nur O und Kurs (H/L eines
+Kreuzes nicht aus den Legs ableitbar → kein Docht). Fehlerklasse: andere
+Mini-Charts mit Mindestfenster gibt es im Dashboard nicht. Wächter
+`dashboard.js`: 1D = Kerze, Punkte strikt steigend 1W<1M<3M<1Y — gegen den
+alten Code rot (31/31/92/297).

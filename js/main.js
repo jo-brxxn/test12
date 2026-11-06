@@ -17440,6 +17440,34 @@ function dashSparkSvg(pts,col,uid){
   const d='M'+xy.map(p=>p.join(' ')).join('L');
   return`<svg class="dx-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="dxg${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".32"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs><path d="${d}L${W} ${H}L0 ${H}Z" fill="url(#dxg${uid})"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg>`;
 }
+// Tageskerze fuer 1D (Nutzer 2026-11-06: "soll der Kursverlauf dargestellt
+// werden" + Wahl "Tageskerze": es gibt nur Tageswerte, keinen Verlauf im Tag).
+// Eintrag = [Datum, Schluss, Eroeffnung, Hoch, Tief]. X/USD und Assets: direkt;
+// USD/X: Kehrwert (Hoch und Tief tauschen); Kreuzpaar: Eroeffnung und Kurs
+// exakt als Verhaeltnis der Legs, Hoch/Tief NICHT (das Hoch eines Kreuzes ist
+// nicht Hoch/Hoch) -> nur der Koerper, kein Docht (Regel 4: nie schaetzen).
+function dashTagesKerze(n){
+  const z=e=>e&&isFinite(+e[1])&&+e[1]>0?e:null;
+  const letzt=id=>{const s=priceSeriesFor(id);return s&&s.length?z(s[s.length-1]):null;};
+  const ohlc=e=>(e&&e.length>=5&&[2,3,4].every(i=>isFinite(+e[i])&&+e[i]>0))?{d:e[0],c:+e[1],o:+e[2],h:+e[3],l:+e[4]}:null;
+  if(!isPureFxPair(n))return ohlc(letzt(nonFxLegAssetId(n)));
+  const[a,b]=n.split('/');
+  if(b==='USD')return ohlc(letzt(a));
+  if(a==='USD'){const k=ohlc(letzt(b));return k?{d:k.d,c:1/k.c,o:1/k.o,h:1/k.l,l:1/k.h}:null;}
+  const ea=ohlc(letzt(a)),eb=ohlc(letzt(b));
+  if(!ea||!eb||ea.d!==eb.d)return null;
+  return{d:ea.d,c:ea.c/eb.c,o:ea.o/eb.o,h:null,l:null};
+}
+function dashKerzeSvg(k){
+  if(!k)return`<div class="dx-kz-leer"><i>No daily candle yet</i></div>`;
+  const auf=k.c>=k.o,col=biasCss(auf?'bull':'bear');
+  const lo=Math.min(k.o,k.c,k.l??Infinity),hi=Math.max(k.o,k.c,k.h??-Infinity),r=hi-lo||Math.abs(k.c)*1e-4||1;
+  const W=240,x=v=>(8+(v-lo)/r*(W-16)).toFixed(1);
+  const docht=k.h!=null?`<line x1="${x(k.l)}" y1="17" x2="${x(k.h)}" y2="17" stroke="${col}" stroke-width="2"/>`:'';
+  const x0=Math.min(+x(k.o),+x(k.c)),bw=Math.max(3,Math.abs(+x(k.c)-+x(k.o)));
+  return`<svg class="dx-kz" viewBox="0 0 ${W} 34" preserveAspectRatio="none" aria-hidden="true">${docht}<rect x="${x0.toFixed(1)}" y="8" width="${bw.toFixed(1)}" height="18" rx="2" fill="${col}"/></svg>
+    <div class="dx-kz-l">${k.h!=null?`<span>L <b>${fmtPriceTick(k.l)}</b></span>`:''}<span>O <b>${fmtPriceTick(k.o)}</b></span>${k.h!=null?`<span>H <b>${fmtPriceTick(k.h)}</b></span>`:'<span><i>no high/low for crosses</i></span>'}</div>`;
+}
 function dashMarktHtml(){
   const win=DASH_MKT_WIN.find(w=>w[0]===dashMktWin)||DASH_MKT_WIN[0];
   const kach=dashMktListe().map((m,i)=>{
@@ -17450,15 +17478,16 @@ function dashMarktHtml(){
     const ref=win[1]===1?bondPick(s.slice(0,-1),isoMinusDays(last[0],1)):bondPick(s,isoMinusDays(last[0],win[1]));
     const rv=ref?+ref[1]:null,abs=rv?lv-rv:null,pct=rv?abs/rv*100:null;
     const b=pct==null?'neu':pct>0.001?'bull':pct<-0.001?'bear':'neu';
-    // Chart: das Fenster, mindestens aber 30 Tage (1D/1W zeigen den Monat als Rahmen)
-    const ab=isoMinusDays(last[0],Math.max(30,win[1]));
-    const pts=s.filter(p=>p[0]>=ab);
+    // Chart = GENAU das gewaehlte Fenster, ab dem Vergleichswert (Nutzer
+    // 2026-11-06: Linie aenderte sich beim Intervallwechsel nicht - vorher galt
+    // "mindestens 30 Tage", 1D/1W/1M zeigten dieselbe Linie). 1D = Tageskerze.
+    const pts=ref?s.filter(p=>p[0]>=ref[0]):s.slice(-2);
     const sc=m.sym?symScoreCmp(m.sym):(isPureFxPair(m.n)?pairScore(m.n):null);
     return`<button class="dx-mkt" onclick="${m.go}" title="${escH(m.lbl)} · ${win[0]} change${ref?' vs '+escH(fmtDayHdr(ref[0])):''} — open">
       <span class="dx-mkt-n">${m.ic}<span>${escH(m.lbl)}</span>${sc!=null?`<span class="dx-mkt-sc" style="color:${scoreColor(sc)}" title="Score">${sc>0?'+':''}${sc}</span>`:''}</span>
       <span class="dx-mkt-p">${fmtPriceTick(lv)}</span>
       <span class="dx-mkt-c" style="color:${biasCss(b)}">${pct==null?'–':`${b==='bear'?'▼':'▲'} ${abs>0?'+':abs<0?'−':''}${fmtPriceTick(Math.abs(abs))} (${pct>0?'+':''}${pct.toFixed(2)}%)`}</span>
-      ${dashSparkSvg(pts,biasCss(b),i)}
+      ${win[1]===1?dashKerzeSvg(dashTagesKerze(m.n)):dashSparkSvg(pts,biasCss(b),i)}
     </button>`;
   }).join('');
   return`<div class="dx-mkt-grid">${kach}</div>`;
@@ -17577,7 +17606,7 @@ function renderDash(){
     hero:dashHeroHtml(),
     stats:dashStatsHtml({pos:nPos,ev:heute.length,nf:notifs.length}),
     markt:dashSek('dbMarket','watchlist','Market overview',`<div class="dx-zf">${mktBar}</div>`+dashMarktHtml(),{link:['Watchlist',"showTab('watch')"],
-      erkl:['Your watchlist (first 6), filled up with EUR/USD, GBP/USD, USD/JPY, Gold, Silver, S&P 500.','Change since the start of the window; the chart shows at least the last month.','Tap a tile for the pair or asset, add pairs on the Watchlist page.']}),
+      erkl:['Your watchlist (first 6), filled up with EUR/USD, GBP/USD, USD/JPY, Gold, Silver, S&P 500.','Change and chart cover exactly the selected window.','1D: today\'s candle (open, high, low, now) — there is no intraday data; crosses show open and now only.','Tap a tile for the pair or asset, add pairs on the Watchlist page.']}),
     trades:dashSek('dbTrades','positions','Open trades',tjOffenKartenHtml(),{anz:nPos||null,link:['Journal',"showTab('journal')"],
       erkl:['Your open trades from the journal, same card as there.','Status in R and price distance since entry; the bar shows SL, entry, now and TP.','Close logs the exit.']}),
     heute:dashSek('dbHeute','mini_calendar','Key events',dashEventsHtml(heute),{anz:heute.length||null,link:['View all',"showTab('cal')"],
