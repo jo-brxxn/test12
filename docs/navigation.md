@@ -1581,3 +1581,34 @@ Per Rückfrage festgelegt:
   gespeichert und unangetastet (kein Bearbeitungsmodus, Regel 2026-10-07).
 - Wächter: `check/dashboard.js` (Sektionen, Bias-Kacheln = `symScoreCmp`,
   volle Namen, Überlappung, Gegenprobe).
+
+## ⚠ DASHBOARD NACH REFERENZBILD 2026-11-06 (VERSION-CHECK-674) — ersetzt den Abschnitt darüber
+
+Nutzer: Optik vom 2026-11-05 „beschissen", Karten-Optik „auch blöd" → vier
+Design-Ideen zum Umschalten (672/673) → Nutzer schickt ein Referenzbild
+(Dark Mode): *„so bauen, mit der Weltkugel aus Overview, Overview komplett
+entfernen, bei Karten ohne passende Daten was ausdenken, oben das Bild
+gezeichnet + FX-Analyst-Pro-Logo".* Rückfrage: **folgt dem Theme**, alte
+Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
+
+- **Overview ist entfernt** (Tab, Seite, CSS). `showTab('over')` landet auf
+  dem Dashboard; die Kugel lebt in „World map" (`#dbGlobe`,
+  `GLOBE_PAGES=['dash']`, max. 330 px).
+- **Aufbau:** Hero (gezeichnet: `js/heroart.js` — Punkt-Weltkarte aus
+  `globe_land.json`, feste Kerzenfolge, Logo `fxLogoSvg`) | 3 Kennzahl-Knöpfe
+  (Positionen → Fenster, Termine → Sprung, Meldungen → Fenster) /
+  Market overview (Watchlist, mit Standards auf 6 aufgefüllt, 1D–1Y) | World
+  map / Key events | Sentiment & COT | Your insights / Bias scores | Biggest
+  movers / Performance.
+- **Ersatz für Bild-Karten ohne unsere Daten:** „Your insights" zeigt nur
+  echte Befunde (scoreLog-Änderungen, größter Score-Abstand, Retail-Extrem,
+  nächster High-Termin) — keine erfundenen Texte (Regel 4). COT = Währung mit
+  der größten 4-Wochen-Änderung der Nettoposition in % des OI.
+- **Ein Gerüst, viele Füllungen:** `renderDash()` füllt nur `[data-slot]`;
+  das Gerüst samt Kugel wird einmal gebaut (sonst Kugel-Neuaufbau bei jedem
+  Feed-Takt).
+- **Hero ohne Schatten, Kennzahlen als `<button>`:** sonst hält
+  `check/hierarchie.js` sie für Karten (Titel 24/30 px statt 17). Der
+  Seitentitel steht im Hero → Dashboard ist von der LAGE-Regel ausgenommen.
+- ⚠ **Klasse `ab` ist vergeben** (Asset-Knopf, `width:100%`): die fallenden
+  Hero-Kerzen hießen zuerst so und wurden 759 px breite Balken → `hk-dn`.

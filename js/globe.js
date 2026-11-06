@@ -781,7 +781,7 @@ function globeOnPointerUp(ev){
     _globeMode='decel';
   }
 }
-const GLOBE_PAGES=['over'];
+const GLOBE_PAGES=['dash'];   // seit 2026-11-06 im Dashboard (Overview entfernt)
 
 // ══ KUESTENLINIEN NACHLADEN ════════════════════════════════════════════
 // Nutzer-Wunsch 2026-09-12: "die Weltkugel auch mit deutlich mehr Details
@@ -851,8 +851,9 @@ function startGlobes(){
     // begrenzt bereits das CSS (.pg-over .globe-host: min(72vh,760px)),
     // eine zweite, niedrigere Kappung hier wuerde die Kugel klein in eine
     // grosse Flaeche setzen.
-    const isOver=!!h.closest('#pgOver');
-    const size=Math.max(140,Math.min(w||220,isOver?760:320));
+    // Dashboard-Karte "World map" (2026-11-06): Kugel bis 330 px, damit die Reihe so hoch wie Market overview bleibt.
+    const isDash=!!h.closest('#dbGlobe');
+    const size=Math.max(140,Math.min(w||220,isDash?330:320));
     h.innerHTML=globeSkeleton(size,_globeUid++);
     // HUD-Rahmen/Scanline NACH dem Skeleton einfuegen (nicht Teil des
     // Skeleton-Strings selbst) - h.innerHTML= wuerde sie sonst bei jedem

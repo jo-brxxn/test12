@@ -90,7 +90,7 @@ const GP_LAGE = process.argv.includes('--gegenprobe-lage');
       if (r.titel.length !== 1) fail(z, `${r.titel.length} Seitentitel (.pg-titel) statt genau einem`);
       r.titel.forEach(t => { if (Math.abs(t.fs - 24) > .5 || t.fw < 800) fail(z + ' SEITENTITEL', `"${t.txt}" ${t.fs}px/${t.fw} statt 24px/800`);
         if (!t.sub) fail(z + ' UNTERTITEL', `"${t.txt}" ohne .pg-sub direkt darunter`);
-        lage.push({ z, x: t.x, y: t.y }); });
+        if (z !== 'dash') lage.push({ z, x: t.x, y: t.y });  // Dashboard: Titel im Hero-Band (Nutzer-Referenzbild 2026-11-06) });
     }
     r.karten.forEach(k => {
       n.karten++;

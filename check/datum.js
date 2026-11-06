@@ -166,7 +166,7 @@ console.log(`  ${fehler ? '✗' : '✓'} ${geprueft} Datums-Aufrufe geprueft, ${
   //       richtig ist). Fuer Datumsangaben ist es genau falsch - die
   //       Chart-ACHSEN sind der Hauptfundort.
   console.log('\n── 3) Sichtbarer Text: kein "Sep 2026" irgendwo ──');
-  const SEITEN = ['over', 'dash', 'cur', 'mx', 'trends', 'cot', 'sent', 'seas',
+  const SEITEN = ['dash', 'cur', 'mx', 'trends', 'cot', 'sent', 'seas',
     'data', 'rate', 'news',  'carry', 'pairs', 'journal', 'cal', 'notes', 'regime'];
   const MONAT = '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*';
   let treffer3 = 0;

@@ -21355,3 +21355,16 @@ Aufbau: `designregeln.js` (Titel der Bias-Sektion statt Majors-Karte,
 Währungsstärke nicht mehr Pflicht auf dem Dashboard), `scrollfuell.js`
 (Gegenprobe ohne `.dash-zone-bottom`), `uebergang.js` (Einblendung an
 `.db-grid`). `computeFxMovers(n)` nimmt jetzt die Anzahl (Dashboard 4+4).
+
+## 2026-11-06 — Dashboard nach Referenzbild, Overview entfernt (VERSION-CHECK-672 bis 674)
+
+672/673: vier umschaltbare Design-Ideen (Bento, Terminal, Hero, Mix) — vom
+Nutzer durch ein eigenes Referenzbild ersetzt. 674: Aufbau nach dem Bild
+(Details `docs/navigation.md`). Gemessen 1440 px: Hero 761×176, Kennzahlen
+543×176, Market | World map 398 hoch, Events/Sentiment/Insights 427.
+Fehler unterwegs: fallende Hero-Kerzen mit Klasse `ab` → 759 px breit
+(Asset-Knopf-Regel); Kennzahl-Raster von `.dx [data-slot]{display:flex}`
+überstimmt (3 Kacheln gestapelt, Hero 369 statt 176 hoch). Wächter
+angepasst: dashboard (9 Sektionen), hierarchie (Dashboard ohne LAGE),
+performance (Kugel auf dem Dashboard), datum/designregeln/einheit/html/typo/
+seasretail (ohne 'over').

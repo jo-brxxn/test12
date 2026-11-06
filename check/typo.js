@@ -161,7 +161,7 @@ const NAH = 1.0;           // Unterschied < 1px zwischen Nachbarn = zu nah
   ];
   const istAusnahme = kl => SEITEN_AUSNAHMEN.some(a => String(kl).split(/\s+/).includes(a.klasse));
 
-  const SEITEN = [['over','pgOver'],['dash','pgDash'],['cur','pgCur'],['mx','pgMx'],
+  const SEITEN = [['dash','pgDash'],['cur','pgCur'],['mx','pgMx'],
     ['trends','pgTrends'],['cot','pgCot'],['sent','pgSent'],['seas','pgSeas'],
     ['data','pgData'],['rate','pgRate'],['news','pgNews'],
     ['carry','pgCarry'],['pairs','pgPairs'],['watch','pgWatch'],['journal','pgJournal'],['cal','pgCal'],

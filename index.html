@@ -1210,40 +1210,8 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .rec-btn{flex:0 0 auto;font-size:var(--fs-xs)}
 .rec-alle{padding:11px 2px 2px;display:flex;justify-content:flex-end}
-/* ══ OVERVIEW-SEITE ═════════════════════════════════════════════════════
-   Der Sternenhimmel ist eine eigene Ebene INNERHALB der Seite, nicht der
-   body-Hintergrund: sonst liefe er unter allen anderen Seiten mit und
-   kollidierte mit der Hintergrund-Wahl aus den Einstellungen.
-   ⚠ position:fixed statt absolute - die Seite scrollt, der Himmel soll
-   stehenbleiben. inset:0 mit z-index:0 legt ihn unter den Inhalt, ohne ihn
-   aus dem Stapelkontext der Kopfleiste zu heben (die hat einen eigenen,
-   hoeheren z-index).
-   ⚠ Kein background-attachment:fixed - das ruckelt auf iOS bekanntermassen
-   und wird dort teils ganz ignoriert. */
-.pg-over{position:relative;padding:0;overflow:hidden}
-/* ⚠ Die Grundfarbe ist ein sehr dunkles Nachtblau, KEIN Schwarz und kein
-   Verlass auf das Bild. Faellt die Datei aus (noch nicht geholt, offline,
-   Ladefehler), steht die Seite trotzdem auf einem Nachthimmel statt auf
-   einer weissen Flaeche, auf der eine helle Kugel verschwinden wuerde.
-   Das Bild liegt darueber und ergaenzt nur. */
-.over-sky{position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-color:#05070F;
-  background-image:url(img/starfield.webp);
-  background-size:cover;background-position:center center;background-repeat:no-repeat}
-/* Vignette: zieht den Blick in die Mitte, wo die Kugel steht, und daempft
-   die hellen Sternfelder am Rand, damit sie nicht mit der Kopfleiste
-   konkurrieren. */
-.over-sky::after{content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 50% 45%,transparent 30%,rgba(3,5,12,.45) 72%,rgba(3,5,12,.82) 100%)}
-.over-inner{position:relative;z-index:1;min-height:100%;
-  display:flex;align-items:center;justify-content:center;padding:24px}
-/* ⚠ Die Kugel bekommt hier eine eigene Groessenobergrenze. startGlobes()
-   deckelt eine Karte auf 320px und den Intro-Bildschirm auf 900px; die
-   Overview-Seite ist keins von beidem - sie gehoert der Kugel ganz, also
-   darf sie so gross werden, wie das Fenster hergibt (Kappung in
-   startGlobes(), siehe dortigen Kommentar). */
-.pg-over .globe-host{width:min(72vh,760px);max-width:100%;aspect-ratio:1;position:relative}
-.pg-over .globe-host svg{position:relative;z-index:1}
+/* OVERVIEW-SEITE: seit 2026-11-06 entfernt - die Weltkugel lebt im Dashboard
+   (Karte "World map", #dbGlobe). img/starfield.webp dient jetzt dem Hero. */
 /* ══ DESIGN-VORLAGEN (Nutzer-Wunsch 2026-09-04) ══════════════════════════
    ⚠ DAS AKTUELLE DESIGN IST DER STANDARD und steht weiter oben in :root -
    es traegt KEIN [data-fx-theme]-Regelwerk. Damit landet ein Geraet mit
@@ -7234,9 +7202,9 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
   .db-pos-row .db-pos-z{display:none}}
 /* Bias Scores */
 .db-bias-wrap{display:flex;flex-wrap:wrap;gap:4px 20px}
-.db-bias-gr{flex:var(--n) 1 calc(var(--n) * 98px - 6px);min-width:0}
+.db-bias-gr{flex:var(--n) 1 calc(var(--n) * 90px - 6px);min-width:0}
 .db-bias-gr .db-gr-lbl{margin:8px 0 6px}
-.db-bias-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+.db-bias-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
 .db-bias{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:6px 10px;align-items:center;padding:8px 10px 9px;border:1px solid var(--bd);border-radius:var(--rss);background:var(--card);cursor:pointer;text-align:left;font:inherit;color:var(--t1);min-height:var(--h-l)}
 @media (hover:hover){.db-bias:hover{border-color:var(--bd2);background:var(--bg3)}}
 .db-bias-n{display:flex;align-items:center;gap:6px;min-width:0;font-size:var(--fs-sm);font-weight:600}
@@ -7286,62 +7254,114 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 @media(max-width:759px){.db-perf-cols{grid-template-columns:minmax(0,1fr)}.db-perf-cols>div+div{margin-top:4px}
   .db-hdr{flex-wrap:wrap}.db-perf-win{order:3;margin:6px 0 0;width:100%}}
 
-/* ══ DASHBOARD: DESIGN-IDEEN (voruebergehend 2026-11-06, dashLook in main.js) ══
-   .db-cards = gemeinsame Grundlage aller vier Ideen (Abschnitte als Flaechen
-   mit Abstand statt Haarlinien), look-* = die jeweilige Idee. */
-.db-look-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 16px;padding:6px;border:1px dashed var(--bd2);border-radius:var(--rs);width:fit-content;max-width:100%}
-.db-look-lbl{font:700 var(--fs-xs)/1 var(--ff-text);letter-spacing:.6px;text-transform:uppercase;color:var(--t3);padding:0 6px}
-.db-look-b{height:var(--h-s);padding:0 12px;border:1px solid var(--bd);border-radius:999px;background:var(--card);color:var(--t1);font:600 var(--fs-sm)/1 var(--ff-text);cursor:pointer}
-.db-look-b.on{background:var(--ui-act);border-color:var(--ui-act);color:var(--ui-act-fg)}
-#dashWidgets.db-cards .db-grid{gap:16px}
-#dashWidgets.db-cards .db-main,#dashWidgets.db-cards .db-rail{gap:16px}
-#dashWidgets.db-cards .db-duo{gap:16px}
-#dashWidgets.db-cards .db-sek,#dashWidgets.db-cards #dbNotif{border:1px solid var(--bd);border-radius:var(--r);background:var(--card);box-shadow:var(--shadow-card);padding:16px 14px 14px;margin:0;align-self:stretch}
-@media (hover:hover){#dashWidgets.db-cards .db-sek:hover,#dashWidgets.db-cards #dbNotif:hover{box-shadow:var(--shadow-card);border-color:var(--bd)}}
-#dashWidgets.db-cards .db-hdr{margin-bottom:12px}
-
-/* 1 · BENTO - weiche, rahmenlose Kacheln, Bias Scores als farbige Heatmap,
-   Kennzahlen im Kopf als grosse Zahlenkacheln. */
-#dashWidgets.look-bento .db-sek,#dashWidgets.look-bento #dbNotif{border-color:transparent;border-radius:20px;padding:18px 16px 16px}
-#dashWidgets.look-bento .db-chips{gap:10px}
-#dashWidgets.look-bento .db-chip{flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;height:auto;min-height:56px;padding:8px 16px;border-radius:16px;border-color:transparent;box-shadow:var(--shadow-card)}
-#dashWidgets.look-bento .db-chip b{font-size:var(--fs-xl);line-height:1}
-#dashWidgets.look-bento .db-bias,#dashWidgets.look-mix .db-bias{border-color:transparent;background:color-mix(in srgb,var(--bc) 13%,var(--card));border-radius:12px}
-#dashWidgets.look-bento .db-bias-v,#dashWidgets.look-mix .db-bias-v{font-size:var(--fs-lg)}
-#dashWidgets.look-bento .db-bias-bar>span,#dashWidgets.look-mix .db-bias-bar>span{background:var(--bc)!important}
-#dashWidgets.look-bento .db-bias-bar,#dashWidgets.look-mix .db-bias-bar{background:color-mix(in srgb,var(--bc) 18%,transparent)}
-#dashWidgets.look-bento .db-pos-r{font-size:var(--fs-xl)}
-
-/* 2 · TERMINAL - dunkle, dichte Panels wie ein Handelsterminal; Farben aus
-   dem Dunkel-Thema lokal ueberschrieben, damit jeder Baustein mitzieht. */
-#dashWidgets.look-terminal .db-sek,#dashWidgets.look-terminal #dbNotif,#dashWidgets.look-mix .db-rail .db-sek,#dashWidgets.look-mix .db-rail #dbNotif{
-  --t0:#EEF3FB;--t1:#D5DFEF;--t2:#BCC8DA;--t3:#A3B2CB;--bd:rgba(150,180,225,.16);--bd2:rgba(150,180,225,.28);
-  --bg2:#16223A;--bg3:#1B2740;--bg4:#22304C;--card:#16223A;--bias-bull:#5AA2F5;--bias-bear:#F07A82;--bias-neu:#8FA3C8;
-  --ui-act:#5AA2F5;--ui-act-fg:#0A101C;--due:#F0913A;--blue:#5AA2F5;--green:#5AA2F5;--red:#F07A82;
-  background:#0F1828;border-color:#22304C;border-radius:12px;color:var(--t1);box-shadow:0 6px 18px rgba(10,16,28,.18)}
-#dashWidgets.look-terminal .db-sek,#dashWidgets.look-terminal #dbNotif{padding:12px 12px 10px}
-#dashWidgets.look-terminal .db-hdr{margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--bd)}
-#dashWidgets.look-terminal .db-row{min-height:var(--h-m)}
-#dashWidgets.look-terminal .db-bias{border-radius:6px;background:#16223A;border-color:var(--bd)}
-#dashWidgets.look-terminal .db-chip{border-radius:6px;background:#0F1828;border-color:#22304C;color:#BCC8DA}
-#dashWidgets.look-terminal .db-chip b{color:#EEF3FB}
-#dashWidgets.look-terminal .db-chip.warn,#dashWidgets.look-terminal .db-chip.warn b{color:#F0913A}
-
-/* 3 · HERO - Begruessung als farbiges Band mit den Kennzahlen, darunter
-   helle Karten mit farbigem Symbolfeld vor jedem Titel. */
-#dashWidgets.look-hero .db-kopf,#dashWidgets.look-mix .db-kopf{margin:0 0 16px;padding:22px 24px;border-radius:var(--r);background:linear-gradient(120deg,#172A46 0%,#0B5FCC 100%);color:#fff}
-#dashWidgets.look-hero .db-kopf .pg-titel,#dashWidgets.look-mix .db-kopf .pg-titel{color:#fff}
-#dashWidgets.look-hero .db-kopf .pg-sub,#dashWidgets.look-mix .db-kopf .pg-sub,#dashWidgets.look-hero .db-sub b,#dashWidgets.look-mix .db-sub b{color:rgba(255,255,255,.88)}
-#dashWidgets.look-hero .db-chip,#dashWidgets.look-mix .db-chip{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28);color:#fff}
-#dashWidgets.look-hero .db-chip b,#dashWidgets.look-mix .db-chip b{color:#fff}
-#dashWidgets.look-hero .db-chip.warn,#dashWidgets.look-mix .db-chip.warn{background:rgba(240,145,58,.22);border-color:rgba(240,145,58,.6)}
-#dashWidgets.look-hero .db-hdr .k-ic{box-sizing:content-box;padding:6px;margin-right:6px;border-radius:8px;background:color-mix(in srgb,var(--bias-bull) 12%,transparent);color:var(--bias-bull)}
-#dashWidgets.look-hero .db-sek,#dashWidgets.look-hero #dbNotif{border-top:3px solid var(--bias-bull)}
-#dashWidgets.look-hero .db-bias{border-left:3px solid var(--bc)}
-
-/* 4 · MIX - Hero-Band + Bento-Heatmap in der Hauptspalte + dunkle
-   Terminal-Leiste rechts (Meldungen, Termine). */
-#dashWidgets.look-mix .db-main .db-sek{border-color:transparent;border-radius:20px}
+/* ══ DASHBOARD NEUAUFBAU 2 (2026-11-06, Referenzbild des Nutzers) ═══════════
+   Folgt dem Theme: alle Flaechen aus den Theme-Farben; im dunklen Theme
+   ergibt das das Bild (Navy, leuchtende Raender). Nur der Hero ist in jedem
+   Theme dunkel - er ist eine Zeichnung, kein Datenfeld.
+   Raster mit festen Reihen: Hero | Kennzahlen / Market | World map /
+   Events | Sentiment & COT | Insights / Bias | Movers / Performance. */
+#dashWidgets{--dx-r:16px;--dx-gap:16px;--dx-rand:rgba(var(--blue-rgb),.16);
+  --hero-bg1:#0C1A33;--hero-bg2:#0B5FCC;--hero-dot:rgba(125,187,255,.55);--hero-up:#4C9BFF;--hero-dn:rgba(214,226,245,.55);--hero-glow:#2F7BFF;--hero-line:#8FD0FF}
+:root[data-fx-theme] #dashWidgets{--hero-bg1:#070E1D;--hero-bg2:#0E2A5C}
+.dx{display:flex;flex-direction:column;gap:var(--dx-gap)}
+.dx-top{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1.25fr);gap:var(--dx-gap)}
+.dx-r2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:var(--dx-gap);align-items:stretch}
+.dx-r3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--dx-gap);align-items:stretch}
+.dx-r4{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:var(--dx-gap);align-items:stretch}
+.dx [data-slot]{display:flex;flex-direction:column;min-width:0}
+.dx [data-slot]>.dx-card{flex:1 1 auto}
+@media(max-width:1159px){.dx-top,.dx-r2,.dx-r4{grid-template-columns:minmax(0,1fr)}.dx-r3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.dx-r3>[data-slot="ins"]{grid-column:1/3}}
+@media(max-width:759px){.dx-r3{grid-template-columns:minmax(0,1fr)}.dx-r3>[data-slot="ins"]{grid-column:auto}}
+/* Karten */
+#dashWidgets .dx-card{background:var(--card);border:1px solid var(--dx-rand);border-radius:var(--dx-r);padding:14px 12px 12px;margin:0;
+  box-shadow:var(--shadow-card),inset 0 1px 0 rgba(var(--blue-rgb),.06)}
+@media (hover:hover){#dashWidgets .dx-card:hover{border-color:rgba(var(--blue-rgb),.3);box-shadow:var(--shadow-card),0 0 0 1px rgba(var(--blue-rgb),.08)}}
+:root[data-fx-theme] #dashWidgets .dx-card{background:linear-gradient(180deg,color-mix(in srgb,var(--card) 88%,var(--blue)) 0%,var(--card) 60%)}
+#dashWidgets .dx-card .db-hdr{margin-bottom:12px}
+#dashWidgets .dx-card{display:flex;flex-direction:column}
+#dashWidgets .dx-card>.dw-body{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+#dbMarket .dx-mkt-grid{flex:1 1 auto;grid-auto-rows:1fr}
+.dx-gauge-w{max-width:230px!important}
+#dashWidgets .dx-card .k-ic{color:var(--blue)}
+/* Hero (Knoten ohne Schatten - fuer check/hierarchie.js keine "Karte") */
+.dx-hero{position:relative;overflow:hidden;min-height:176px;border-radius:var(--dx-r);border:1px solid rgba(125,187,255,.28);
+  background:linear-gradient(115deg,var(--hero-bg1) 0%,var(--hero-bg1) 38%,var(--hero-bg2) 140%);color:#fff;display:flex;align-items:center}
+:root[data-fx-theme] .dx-hero{background:linear-gradient(115deg,rgba(7,14,29,.96) 0%,rgba(7,14,29,.88) 40%,rgba(14,42,92,.75) 100%),url(img/starfield.webp) center/cover,var(--hero-bg1)}
+.dx-hero-art{position:absolute;inset:0;pointer-events:none}
+.hero-art{width:100%;height:100%;display:block}
+.hero-dots{fill:none;stroke:var(--hero-dot);stroke-width:.42;stroke-linecap:round}
+.hk-k{fill:var(--hero-up)}.hk-k.hk-dn{fill:var(--hero-dn)}
+.hk-d{stroke:var(--hero-up);stroke-width:1.2}.hk-d.hk-dn{stroke:var(--hero-dn)}
+.hero-linie{stroke:var(--hero-line);stroke-width:2;opacity:.75;filter:drop-shadow(0 0 4px var(--hero-glow))}
+.dx-hero-logo{position:absolute;right:22px;top:16px;width:112px;opacity:.95;pointer-events:none;filter:drop-shadow(0 0 14px rgba(47,123,255,.55))}
+.dx-hero-logo .fxlogo{width:100%}
+.dx-hero-txt{position:relative;z-index:1;padding:22px 26px;max-width:62%}
+.dx-hero .pg-titel.dx-gruss{color:#fff;margin:0;line-height:1.15}
+.dx-name{background:linear-gradient(90deg,#8FD0FF,#4C9BFF);-webkit-background-clip:text;background-clip:text;color:transparent}
+.dx-hero-sub{margin-top:6px;font:600 var(--fs-md)/1.3 var(--ff-text);color:rgba(255,255,255,.88)}
+.dx-hero .pg-sub.dx-hero-meta{margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;color:rgba(255,255,255,.78)}
+.dx-hero-meta b{color:#fff;font-weight:700}
+.dx-sep{opacity:.45}
+@media(max-width:759px){.dx-hero-txt{max-width:100%;padding:18px 18px 22px}.dx-hero-logo{width:72px;right:12px;top:12px;opacity:.5}}
+/* Kennzahl-Kacheln */
+.dx .dx-stats[data-slot]{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--dx-gap)}
+.dx-stat{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:6px;min-height:var(--h-l);padding:16px;border:1px solid var(--dx-rand);border-radius:var(--dx-r);
+  background:var(--card);color:var(--t1);cursor:pointer;text-align:left;font:inherit;box-shadow:var(--shadow-card)}
+:root[data-fx-theme] .dx-stat{background:linear-gradient(180deg,color-mix(in srgb,var(--card) 84%,var(--blue)) 0%,var(--card) 70%)}
+@media (hover:hover){.dx-stat:hover{border-color:rgba(var(--blue-rgb),.4)}}
+.dx-stat-ic{color:var(--blue);margin-bottom:auto;line-height:0}
+.dx-stat.warn .dx-stat-ic,.dx-stat.warn .dx-stat-n{color:var(--due)}
+.dx-stat-n{font:800 var(--fs-hero)/1 var(--ff-num);color:var(--t0)}
+.dx-stat-l{display:flex;align-items:center;gap:2px;font:600 var(--fs-sm)/1.2 var(--ff-text);color:var(--t2)}
+@media(max-width:759px){.dx-stat{padding:12px}.dx-stat-n{font-size:var(--fs-xl)}}
+/* Market overview */
+.dx-mkt-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:759px){.dx-mkt-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dx-mkt{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 12px 0;overflow:hidden;border:1px solid var(--bd);border-radius:12px;
+  background:color-mix(in srgb,var(--card) 70%,var(--bg3));color:var(--t1);text-align:left;font:inherit;cursor:pointer;min-height:132px}
+@media (hover:hover){.dx-mkt:hover{border-color:rgba(var(--blue-rgb),.4)}}
+.dx-mkt-n{display:flex;align-items:center;gap:7px;width:100%;font:700 var(--fs-base)/1.2 var(--ff-text);color:var(--t0)}
+.dx-mkt-n>span:nth-child(2){white-space:nowrap}
+.dx-mkt-sc{margin-left:auto;font:800 var(--fs-sm)/1 var(--ff-num)}
+.dx-mkt-p{font:800 var(--fs-lg)/1.1 var(--ff-num);color:var(--t0);margin-top:4px}
+.dx-mkt-c{font:700 var(--fs-sm)/1.2 var(--ff-num);white-space:nowrap}
+.dx-mkt-c i{font-family:var(--ff-text);font-weight:500;color:var(--t3)}
+.dx-spark{display:block;width:calc(100% + 24px);height:46px;margin:auto -12px 0}
+/* World map */
+#dbGlobe .dw-body{display:flex;align-items:center;justify-content:center}
+#dbGlobe .globe-host{width:min(100%,330px);aspect-ratio:1;position:relative}
+/* Key events */
+.dx-ev-f{line-height:0}
+#dbHeute .db-ev-list{max-height:306px}
+#dbHeute .db-ev{grid-template-columns:42px 18px 34px minmax(0,1fr) auto}
+.dx-imp{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font:700 var(--fs-xs)/1 var(--ff-text)}
+.dx-imp.ih{background:color-mix(in srgb,var(--due) 18%,transparent);color:var(--due)}
+.dx-imp.im{background:var(--bg4);color:var(--t2)}
+/* Sentiment & COT */
+.dx-sc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;height:100%}
+.dx-sc>div{display:flex;flex-direction:column;gap:6px;padding:0 8px;cursor:pointer;min-width:0}
+.dx-sc-r{border-left:1px solid var(--bd)}
+.dx-sc-h{font:700 var(--fs-base)/1.2 var(--ff-text);color:var(--t0)}
+.dx-sc-h span{color:var(--t2);font-weight:600}
+.dx-gauge-w{position:relative;width:100%;max-width:190px;align-self:center}
+.dx-gauge{width:100%;display:block}
+.dx-g-bg{fill:none;stroke:var(--bg4);stroke-width:12;stroke-linecap:round}
+.dx-g-fg{fill:none;stroke:var(--blue);stroke-width:12;stroke-linecap:round}
+.dx-gauge-v{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center}
+.dx-gauge-v b{font:800 var(--fs-xl)/1 var(--ff-num);color:var(--t0)}
+.dx-gauge-v span{font:700 var(--fs-sm)/1.2 var(--ff-text);color:var(--blue)}
+.dx-sc-f{font-size:var(--fs-sm);color:var(--t2)}
+.dx-sc-f i{color:var(--t3)}
+.dx-cot-v{font:800 var(--fs-xl)/1.1 var(--ff-num);margin-top:6px}
+.dx-sc-r .dx-spark{width:100%;margin:auto 0 0;height:52px}
+/* Insights */
+.dx-ins{min-height:var(--h-l);padding-top:8px;padding-bottom:8px;gap:12px}
+.dx-ins-ic{flex:none;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:color-mix(in srgb,currentColor 14%,transparent)}
+.dx-ins-t{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.dx-ins-t b{font-weight:700;color:var(--t0);font-size:var(--fs-base);line-height:1.3}
+.dx-ins-t span{font-size:var(--fs-sm);color:var(--t3);line-height:1.3}
+.dx-ins>svg:last-child{flex:none;color:var(--t3)}
+.dx-fenster{min-width:min(560px,80vw)}
 </style>
 </head>
 <body>
@@ -7429,11 +7449,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-673 - Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-674 - Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-673</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-674</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -7870,12 +7890,6 @@ window.fxLogoSvg=function(art){
      ⚠ Der Sternenhimmel liegt NICHT auf body: er gehoert dieser einen Seite.
      Sonst wuerde er unter allen anderen Seiten mitlaufen und mit der
      Hintergrund-Wahl aus den Einstellungen kollidieren. -->
-<div class="pc pg-over" id="pgOver" style="display:none">
-  <div class="over-sky" aria-hidden="true"></div>
-  <div class="over-inner">
-    <div class="globe-host" id="overGlobeHost"></div>
-  </div>
-</div>
 <div class="pc" id="pgDash">
   <!-- Seitentitel seit 2026-10-04 wieder da (Design-Audit, Nutzerwahl
        "Seitentitel ueberall gleich": Dashboard und Data bekommen Titel +

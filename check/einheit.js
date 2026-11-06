@@ -23,7 +23,7 @@ const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
-const ZIELE = ['over', 'regime', 'news', 'dash', 'cur', 'mx', 'trends', 'cot', 'sent:retail', 'sent:putcall', 'sent:netflow', 'sent:fg', 'sent:aaii', 'seas', 'data', 'rate', 'carry', 'pairs', 'watch', 'cal', 'notes', 'A:EUR', 'A:GOLD', 'A:US10Y'];
+const ZIELE = ['regime', 'news', 'dash', 'cur', 'mx', 'trends', 'cot', 'sent:retail', 'sent:putcall', 'sent:netflow', 'sent:fg', 'sent:aaii', 'seas', 'data', 'rate', 'carry', 'pairs', 'watch', 'cal', 'notes', 'A:EUR', 'A:GOLD', 'A:US10Y'];
 
 (async () => {
   const b = await chromium.launch();

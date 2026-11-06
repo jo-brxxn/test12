@@ -63,9 +63,10 @@
 //      Elemente, 17.700 px) wurde in JEDEM Bild der Seiten-Einblendung neu
 //      geordnet - 7x ~170 ms Layerize, Wechsel 1.294 ms, Handy dpr 3 929 ms;
 //      mit eigener Ebene 160-180 ms.
-// (J, seit 2026-10-24) Ausserhalb der Overview laeuft die Kugel-Schleife
-//      nicht: 0 Bild-Aufrufe der Kugel und 0 laufende Animationen in #pgOver
-//      auf Dashboard/Calendar/Asset. Nutzer 2026-10-24: "wenn man nicht auf
+// (J, seit 2026-10-24) Ausserhalb der Kugel-Seite laeuft die Kugel-Schleife
+//      nicht: 0 Bild-Aufrufe der Kugel und 0 laufende Animationen in der Kugel
+//      auf Calendar/Asset. Seit 2026-11-06 lebt die Kugel im Dashboard
+//      (#dbGlobe, Overview entfernt). Nutzer 2026-10-24: "wenn man nicht auf
 //      der Weltkugel ist soll diese sich auch nicht drehen".
 // (G, seit 2026-10-16) Overview-Kugel im Normaltempo hoechstens 40
 //      Neuzeichnungen je Sekunde (Bewegung < 0,5 px je Bild wird nicht
@@ -199,7 +200,7 @@ function statisch() {
   // ── A/B/C je Seite ──────────────────────────────────────────────────────
   console.log('A) gleichzeitige Animationen / B) fertige Einblendungen / C) Leerlauf-Messungen');
   const SEITEN = [["showTab('dash')", 'Dashboard'], ["gotoSym('USD')", 'Asset USD'], ["showTab('trends')", 'Trends'], ["showTab('cal')", 'Calendar'],
-    ["showTab('watch')", 'Watchlist'], ["showTab('cot')", 'COT'], ["showTab('pairs')", 'Set-ups'], ["showTab('over')", 'Overview'],
+    ["showTab('watch')", 'Watchlist'], ["showTab('cot')", 'COT'], ["showTab('pairs')", 'Set-ups'],
     ["showTab('carry')", 'Carry'], ["showTab('mx')", 'Matrix'], ["showTab('sent')", 'Sentiment'], ["showTab('news')", 'News']];
   for (const [code, name] of SEITEN) {
     const r = await p.evaluate(async code => {
@@ -259,7 +260,7 @@ function statisch() {
   console.log('F) Speicher: Chart-Registry nach 60 Wechseln');
   if (GP_CHV) await p.evaluate(() => { window.__gpKeinChvAufr = true; });
   for (let i = 0; i < 60; i++) {
-    await p.evaluate(i => { const ids = ['EUR', 'USD', 'GOLD', 'JPY', 'NAS']; if (i % 2) gotoSym(ids[i % 5]); else showTab(['dash', 'trends', 'mx', 'cot', 'pairs', 'over'][i % 6]); }, i);
+    await p.evaluate(i => { const ids = ['EUR', 'USD', 'GOLD', 'JPY', 'NAS']; if (i % 2) gotoSym(ids[i % 5]); else showTab(['dash', 'trends', 'mx', 'cot', 'pairs', 'cal'][i % 6]); }, i);
     await p.waitForTimeout(90);
   }
   await p.evaluate(() => showTab('dash')); await p.waitForTimeout(2300); await p.evaluate(() => { showTab('trends'); }); await p.waitForTimeout(600);
@@ -268,8 +269,8 @@ function statisch() {
   else gruen(`Chart-Registry ${reg.n} Eintraege bei ${reg.dom} Charts im Dokument`);
 
   // ── G) Overview-Kugel: Takt der Neuzeichnung ─────────────────────────────
-  console.log('G) Overview-Kugel: Neuzeichnungen je Sekunde im Normaltempo');
-  await p.evaluate(gp => { if (gp) window.__gpGlobusJedesBild = true; showTab('over'); }, GP_GLOBUS);
+  console.log('G) Dashboard-Kugel: Neuzeichnungen je Sekunde im Normaltempo');
+  await p.evaluate(gp => { if (gp) window.__gpGlobusJedesBild = true; showTab('dash'); }, GP_GLOBUS);
   await p.mouse.move(5, 5); await p.mouse.move(9, 9);   // Eingabe: die Kugel darf nicht schon ruhen (H)
   await p.waitForTimeout(2500);
   const gl = await p.evaluate(async () => {
@@ -283,7 +284,7 @@ function statisch() {
     const d = pfad.getAttribute('d') || '', muster = document.querySelector('.globe-host svg pattern');
     return { n, bilder, s: (performance.now() - t0) / 1000, komma: /\d\.\d/.test(d), tr: pfad.getAttribute('transform'), mtr: muster && muster.getAttribute('patternTransform') };
   });
-  if (!gl) rot('Overview-Kugel nicht gefunden');
+  if (!gl) rot('Dashboard-Kugel nicht gefunden');
   else { const jeS = gl.n / gl.s; if (jeS > 40) rot(`Kugel ${jeS.toFixed(0)}x je Sekunde neu gezeichnet (${gl.bilder} Bilder) - Bewegung unter 0,5 px wird mitgezeichnet`); else gruen(`Kugel ${jeS.toFixed(0)} Neuzeichnungen je Sekunde bei ${(gl.bilder / gl.s).toFixed(0)} Bildern`); }
   if (gl) {
     if (gl.komma || gl.tr !== 'scale(.1)' || gl.mtr !== 'scale(10)') rot(`Kuestenpfad nicht als Ganzzahl-Pfad (Kommazahlen: ${gl.komma}, Pfad ${gl.tr}, Muster ${gl.mtr}) - 3,5x teurer bzw. Muster falsch skaliert`);
@@ -345,22 +346,22 @@ function statisch() {
   gruen('uebrige Seiten ohne grosse mitwachsende Scroll-Container');
 
   // ── J) Ausserhalb der Overview steht die Kugel ───────────────────────────
-  console.log('J) Kugel ausserhalb der Overview');
-  await p.evaluate(() => showTab('over')); await p.mouse.move(70, 70); await p.waitForTimeout(1500);
+  console.log('J) Kugel ausserhalb des Dashboards');
+  await p.evaluate(() => showTab('dash')); await p.mouse.move(70, 70); await p.waitForTimeout(1500);
   const kugelLief = await p.evaluate(() => (window.__rafN || {}).frame || 0);
-  if (!kugelLief) rot('Kugel-Schleife lief auf der Overview gar nicht - Messung von J ungueltig');
-  for (const [code, name] of [["showTab('dash')", 'Dashboard'], ["showTab('cal')", 'Calendar'], ["gotoSym('USD')", 'Asset USD']]) {
-    await p.evaluate(() => showTab('over')); await p.mouse.move(80, 80); await p.waitForTimeout(800);
+  if (!kugelLief) rot('Kugel-Schleife lief auf dem Dashboard gar nicht - Messung von J ungueltig');
+  for (const [code, name] of [["showTab('trends')", 'Trends'], ["showTab('cal')", 'Calendar'], ["gotoSym('USD')", 'Asset USD']]) {
+    await p.evaluate(() => showTab('dash')); await p.mouse.move(80, 80); await p.waitForTimeout(800);
     const r = await p.evaluate(async code => {
       (0, eval)(code);
       await new Promise(r => setTimeout(r, 300));   // ein Bild Auslauf: die Schleife beendet sich im naechsten Aufruf
       window.__rafN.frame = 0;
       await new Promise(r => setTimeout(r, 1500));
-      const over = document.getElementById('pgOver');
+      const over = document.getElementById('dbGlobe') || document.body;
       const anim = document.getAnimations().filter(a => a.playState === 'running' && a.effect && a.effect.target && over.contains(a.effect.target)).length;
       return { frames: window.__rafN.frame || 0, anim };
     }, code);
-    if (r.frames || r.anim) rot(`${name}: Kugel laeuft weiter - ${r.frames} Bild-Aufrufe in 1,5 s, ${r.anim} laufende Animationen in der Overview`);
+    if (r.frames || r.anim) rot(`${name}: Kugel laeuft weiter - ${r.frames} Bild-Aufrufe in 1,5 s, ${r.anim} laufende Animationen in der Kugel`);
     else gruen(`${name.padEnd(10)} Kugel steht: 0 Bild-Aufrufe, 0 Animationen`);
   }
   await p.evaluate(() => showTab('dash'));

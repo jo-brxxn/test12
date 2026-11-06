@@ -129,7 +129,7 @@ const PRAEFIX = /^(data-|aria-|on|xlink:|xmlns:|v-|:|@|_)/;
     return { n: document.querySelectorAll('*').length, bad };
   }, { erlaubt: [...ERLAUBT], praefix: PRAEFIX.source });
 
-  const SEITEN = ['over', 'dash', 'cur', 'mx', 'trends', 'cot', 'sent', 'seas', 'data',
+  const SEITEN = ['dash', 'cur', 'mx', 'trends', 'cot', 'sent', 'seas', 'data',
     'rate', 'news',  'carry', 'pairs', 'cal', 'notes', 'regime'];
   let elemente = 0, treffer = 0;
   const gesehen = new Set();

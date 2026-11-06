@@ -116,7 +116,7 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
       // symScoreCmp() ihres Assets (dieselbe Zahl wie Asset-Seite/Score-
       // Fenster), jedes Asset genau einmal, je Gruppe absteigend sortiert,
       // und der volle Name steht da (Regel "Namen nie gekuerzt").
-      ['dbPos','dbNotif','dbBias','dbHeute','dbMover','dbWatch','dbPerf'].forEach(id=>{if(!document.getElementById(id))out.push('Sektion #'+id+' fehlt');});
+      ['dbHero','dbMarket','dbGlobe','dbHeute','dbSent','dbInsight','dbBias','dbMover','dbPerf'].forEach(id=>{if(!document.getElementById(id))out.push('Sektion #'+id+' fehlt');});
       const tiles=[...document.querySelectorAll('#dashWidgets .db-bias')];
       const ids=tiles.map(t=>t.dataset.id);
       if(typeof syms!=='undefined'){
@@ -136,5 +136,5 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
   await b.close();
   if(GEGENPROBE){const ok=fehler.some(f=>/laeuft \d+px ueber sein Element/.test(f))&&fehler.some(f=>/Bias: \w+ zeigt 99/.test(f));console.log(ok?'dashboard --gegenprobe: ok (gequetschter Titel = Textueberlauf, verfaelschte Bias-Kachel = Abweichung)':'dashboard --gegenprobe: FEHLER - nicht gemeldet');process.exit(ok?0:1);}
   if(fehler.length){console.log('DASHBOARD-KOLLISIONEN:\n  '+fehler.join('\n  '));process.exit(1);}
-  console.log('Dashboard ok: keine ueberlappenden Sektionen/Texte, 7 Sektionen, Bias-Kacheln = symScoreCmp, volle Namen (8 Breiten)');
+  console.log('Dashboard ok: keine ueberlappenden Sektionen/Texte, 9 Sektionen, Bias-Kacheln = symScoreCmp, volle Namen (8 Breiten)');
 })();

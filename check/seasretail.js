@@ -387,7 +387,7 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
     o.bp = [...document.querySelectorAll('#seasBody .sz-z span:first-child')].slice(1, 4).map(x => x.textContent);
     // Paare gehen in keinen Score: kein Asset traegt eine Paar-Zeile
     o.paarImScore = syms.some(sy => (sy.rubrics || []).some(r => (r.indicators || []).some(i => /\//.test(i.name) && /season/i.test(i.name))));
-    SEASONALITY_DATA = echt; seasAsset = ''; showTab('over');
+    SEASONALITY_DATA = echt; seasAsset = ''; showTab('dash');
     return o;
   });
   if (JSON.stringify(s8.gruppen) !== JSON.stringify(['Currencies (basket):1', 'Pairs:3', 'Non-FX:1', 'Yields:1']))
