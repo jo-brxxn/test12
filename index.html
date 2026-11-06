@@ -1583,7 +1583,10 @@ body.no-ui-anim .np-sub-wrap,body.no-ui-anim .np-arrow,body.no-ui-anim .np-lbl,b
    Nutzer-Wunsch 2026-07-23 - frueher deutlich dunkler). */
 .aurora-c{background:radial-gradient(circle,var(--aurora-c,#3d6fa8) 0%,transparent 70%);width:38vw;height:38vw;top:28%;right:8%}
 /* ── DETAIL ── */
-.detail{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+/* Seiten-Scroller federn wieder NATIV (Nutzer 2026-11-06: "bau wieder das
+   normale iOS bouncen ein beim scrollen") - Stand vor 2026-11-01: Seiten
+   mit Gummiband, Listen/Tabellen in Karten fest (*{overscroll-behavior:none}). */
+.detail{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:auto}
 .dp{padding:14px}
 /* ⚠ DIE KOPFLEISTE (.ahead/.ahk-*) IST WIEDER WEG (2026-09-14).
    Sie stand genau eine Version lang da (VERSION-CHECK-518) und ist auf
@@ -3238,7 +3241,7 @@ body.no-ui-anim .cd-heute{animation:none}
    prefers-reduced-motion, siehe Kommentar bei wischErlaubt(). */
 body.no-ui-anim .ind-data-body.ind-data-reveal{animation:none}
 /* ── FULL PAGE ── */
-.pc{padding:14px;overflow-y:auto;overflow-x:auto;overscroll-behavior-x:none;flex:1;min-height:0;min-width:0;-webkit-overflow-scrolling:touch}
+.pc{padding:14px;overflow-y:auto;overflow-x:auto;overscroll-behavior-x:none;overscroll-behavior-y:auto;flex:1;min-height:0;min-width:0;-webkit-overflow-scrolling:touch}
 /* ── PAIRS ── */
 .pcc{background:var(--bg1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:10px}
 .pcc-hdr{display:flex;align-items:center;gap:6px;padding:9px 12px;background:var(--bg2);border-radius:var(--r) var(--r) 0 0;border-bottom:1px solid var(--bd)}
@@ -7284,7 +7287,7 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .dx-gauge-w{max-width:230px!important}
 #dashWidgets .dx-card .k-ic{color:var(--blue)}
 /* Hero (Knoten ohne Schatten - fuer check/hierarchie.js keine "Karte") */
-.dx-hero{position:relative;overflow:hidden;min-height:176px;border-radius:var(--dx-r);border:1px solid rgba(125,187,255,.28);
+.dx-hero{position:relative;overflow:hidden;min-height:150px;border-radius:var(--dx-r);border:1px solid rgba(125,187,255,.28);
   background:linear-gradient(115deg,var(--hero-bg1) 0%,var(--hero-bg1) 38%,var(--hero-bg2) 140%);color:#fff;display:flex;align-items:center}
 :root[data-fx-theme] .dx-hero{background:linear-gradient(115deg,rgba(7,14,29,.96) 0%,rgba(7,14,29,.88) 40%,rgba(14,42,92,.75) 100%),url(img/starfield.webp) center/cover,var(--hero-bg1)}
 .dx-hero-art{position:absolute;inset:0;pointer-events:none}
@@ -7295,24 +7298,25 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .hero-linie{stroke:var(--hero-line);stroke-width:2;opacity:.75;filter:drop-shadow(0 0 4px var(--hero-glow))}
 .dx-hero-logo{position:absolute;right:22px;top:16px;width:112px;opacity:.95;pointer-events:none;filter:drop-shadow(0 0 14px rgba(47,123,255,.55))}
 .dx-hero-logo .fxlogo{width:100%}
-.dx-hero-txt{position:relative;z-index:1;padding:22px 26px;max-width:62%}
+.dx-hero-txt{position:relative;z-index:1;padding:20px 26px;max-width:78%}
 .dx-hero .pg-titel.dx-gruss{color:#fff;margin:0;line-height:1.15}
 .dx-name{background:linear-gradient(90deg,#8FD0FF,#4C9BFF);-webkit-background-clip:text;background-clip:text;color:transparent}
 .dx-hero .pg-sub.dx-hero-sub{margin-top:6px;font:600 var(--fs-md)/1.3 var(--ff-text);color:rgba(255,255,255,.88)}
-.dx-hero .dx-hero-meta{margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;color:rgba(255,255,255,.78)}
+.dx-hero .dx-hero-meta{margin-top:14px;display:flex;flex-wrap:nowrap;white-space:nowrap;align-items:center;gap:4px 8px;color:rgba(255,255,255,.78)}
 .dx-hero-meta b{color:#fff;font-weight:700}
 .dx-sep{opacity:.45}
 @media(max-width:759px){.dx-hero-txt{max-width:100%;padding:18px 18px 22px}.dx-hero-logo{width:72px;right:12px;top:12px;opacity:.5}}
 /* Kennzahl-Kacheln */
 .dx .dx-stats[data-slot]{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--dx-gap)}
-.dx-stat{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:6px;min-height:var(--h-l);padding:16px;border:1px solid var(--dx-rand);border-radius:var(--dx-r);
+.dx-stat{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:6px;min-height:var(--h-l);padding:16px;border:1px solid var(--dx-rand);border-radius:var(--dx-r);
   background:var(--card);color:var(--t1);cursor:pointer;text-align:left;font:inherit;box-shadow:var(--shadow-card)}
 :root[data-fx-theme] .dx-stat{background:linear-gradient(180deg,color-mix(in srgb,var(--card) 84%,var(--blue)) 0%,var(--card) 70%)}
 @media (hover:hover){.dx-stat:hover{border-color:rgba(var(--blue-rgb),.4)}}
-.dx-stat-ic{color:var(--blue);margin-bottom:auto;line-height:0}
+.dx-stat-ic{color:var(--blue);line-height:0}
+.dx-stat-n{margin-top:auto}
 .dx-stat.warn .dx-stat-ic,.dx-stat.warn .dx-stat-n{color:var(--due)}
 .dx-stat-n{font:800 var(--fs-hero)/1 var(--ff-num);color:var(--t0)}
-.dx-stat-l{display:flex;align-items:center;gap:2px;font:600 var(--fs-sm)/1.2 var(--ff-text);color:var(--t2)}
+.dx-stat-l{display:flex;align-items:center;gap:2px;white-space:nowrap;font:600 var(--fs-sm)/1.2 var(--ff-text);color:var(--t2)}
 @media(max-width:759px){.dx-stat{padding:12px}.dx-stat-n{font-size:var(--fs-xl)}}
 /* Market overview */
 .dx-mkt-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -7364,7 +7368,10 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .dx-ins-t b{font-weight:700;color:var(--t0);font-size:var(--fs-base);line-height:1.3}
 .dx-ins-t span{font-size:var(--fs-sm);color:var(--t3);line-height:1.3}
 .dx-ins>svg:last-child{flex:none;color:var(--t3)}
-.dx-fenster{min-width:min(560px,80vw)}
+.dx-fenster{min-width:0}
+#mCardInfo .modal.ci-modal.dx-gross{max-width:none;width:min(1100px,calc(100vw - 32px));overflow-x:hidden}
+.dx-gross .ci-body{overflow-x:hidden}
+.dx-gross .stale-notify-row{flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -7452,11 +7459,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-675 - Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-676 - Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-675</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-676</span>
     </span>
   </div>
   <div class="hdr-r">

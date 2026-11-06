@@ -123,7 +123,7 @@ const PRUEFUNGEN = [
   { n: 'filterfest', s: 150, d: 'Filter stehen beim Auswaehlen fest (Auswahllisten + Chip-Popups, 1180/390 px), Gruppen in 2 Spalten', f: 'check/filterfest.js', args: [], browser: true },
   { n: 'ratelink', s: 25, d: 'Asset-Seite: Rate Probabilities oeffnet den Link der Bank (CHF Hinweis), Central-bank-Go-to fuehrt in die Kategorie', f: 'check/ratelink.js', args: [], browser: true },
   { n: 'hoverpunkte', s: 25, d: 'Hover bei mehreren Linien: Punkt auf jeder Linie, Karte nach Lage, Linie bis oben; Ein-Linien-Charts unveraendert', f: 'check/hoverpunkte.js', args: [], browser: true },
-  { n: 'federn', s: 30, d: 'Leichtes Federn: natives iOS-Federn aus, Seite 14 / Listen 8 / seitlich 6 px, Kick nur nach Beruehrung', f: 'check/federn.js', args: [], browser: true },
+  { n: 'federn', s: 15, d: 'Seiten federn nativ (iOS-Gummiband), eigenes Federn aus', f: 'check/federn.js', args: [], browser: true },
   { n: 'datamenu', s: 25, d: 'Data-Kontrollmenue (Option C): Reiter, Display-Knopf mit Zusammenfassung, Menue unter dem Knopf, wirkt sofort', f: 'check/datamenu.js', args: [], browser: true },
   { n: 'preiskarte', s: 40, d: 'Price-Karte: volle Breite + Pinned/History/Calendar, Release-Pfeile, Spalte Next up/Tag, Markers aus, eigene Pfeile (Notiz pm), Vergleich bis 2 Kurse als Linien, Handy', f: 'check/preiskarte.js', args: [], browser: true },
   // 2026-11-02 (CI 675, Nutzer-Wahl Option A): Quelle/Zeit unter den Titel in schmalen Listen.

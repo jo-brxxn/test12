@@ -117,6 +117,14 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
       // symScoreCmp() ihres Assets (dieselbe Zahl wie Asset-Seite/Score-
       // Fenster), jedes Asset genau einmal, je Gruppe absteigend sortiert,
       // und der volle Name steht da (Regel "Namen nie gekuerzt").
+      // Kopfreihe kompakt (Nutzer-iPad-Foto 2026-11-06: Statuszeile brach auf 3
+      // Zeilen, Hero/Kacheln 190 px, Zahl 108 px unter dem Symbol)
+      if(innerWidth>=1160){const h=document.getElementById('dbHero'),m=document.querySelector('.dx-hero-meta');
+        if(h&&h.getBoundingClientRect().height>170)out.push('Hero '+Math.round(h.getBoundingClientRect().height)+'px hoch (max 170)');
+        if(m&&m.getBoundingClientRect().height>30)out.push('Hero-Statuszeile bricht um ('+Math.round(m.getBoundingClientRect().height)+'px)');}
+      // Listen-Fenster der Kennzahlen: nie seitlich scrollbar (Inhalt 560 px in 538-px-Fenster)
+      ['dashMeldungenFenster','dashPositionenFenster'].forEach(f=>{try{window[f]();const md=document.querySelector('#mCardInfo .modal');
+        if(md&&md.scrollWidth>md.clientWidth+1)out.push(f+': Fenster seitlich '+(md.scrollWidth-md.clientWidth)+'px ueberlaufend');closeM('mCardInfo');}catch(e){out.push(f+': '+e.message);}});
       ['dbHero','dbMarket','dbGlobe','dbHeute','dbSent','dbInsight','dbBias','dbMover','dbPerf'].forEach(id=>{if(!document.getElementById(id))out.push('Sektion #'+id+' fehlt');});
       const tiles=[...document.querySelectorAll('#dashWidgets .db-bias')];
       const ids=tiles.map(t=>t.dataset.id);

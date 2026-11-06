@@ -21368,3 +21368,15 @@ Fehler unterwegs: fallende Hero-Kerzen mit Klasse `ab` → 759 px breit
 angepasst: dashboard (9 Sektionen), hierarchie (Dashboard ohne LAGE),
 performance (Kugel auf dem Dashboard), datum/designregeln/einheit/html/typo/
 seasretail (ohne 'over').
+
+## 2026-11-06 — Dashboard-Kopf kompakt, Meldungs-Fenster breit, natives Federn (VERSION-CHECK-676)
+
+iPad-Foto des Nutzers (1180×820). Gemessen vorher: Hero-Statuszeile 3 Zeilen
+(75 px) → Hero und Kennzahl-Kacheln 190 px, Zahl 108–123 px unter dem Symbol;
+Meldungs-Fenster 538 px breit mit 560 px festem Inhalt (`.dx-fenster
+min-width`) → 22 px seitlich scrollbar, rechts abgeschnitten. Nachher: Status
+eine Zeile (Datum raus), Hero/Kacheln 150 px; Fenster `dx-gross` =
+min(1100 px, Seite − 32 px), Inhalt bricht um, 0 px Überlauf. Fehlerklasse:
+nur dieses Fenster setzte eine feste Inhaltsbreite. Wächter: `dashboard.js`
+(Hero ≤ 170 px, Statuszeile einzeilig, beide Fenster ohne Seitenüberlauf).
+Federn: Seiten wieder nativ (Stand vor 2026-11-01), `check/federn.js` neu.

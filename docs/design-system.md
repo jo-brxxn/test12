@@ -1130,6 +1130,7 @@ entfernt. Trend zählt jetzt als Score-Treiber in der Price-Karte (EMA20 4h/1d).
 ## Leichtes Federn am Scroll-Ende (Dauerregel seit 2026-11-01)
 
 - Nutzer: *„… bounct das ja am Ende immer so zurück das finde ich gut mach das überall wo man scrollen kann“* → *„Senkrecht und seitlich aber in Tabellen nur ganz wenig und generell nur ganz wenig das es nicht so verspielt aussieht“*.
+- ⚠ **Seit 2026-11-06 (676) wieder NATIV:** Nutzer *„bau wieder das normale iOS bouncen ein beim scrollen“* → Seiten (`.pc`, `.detail`) `overscroll-behavior-y:auto` (Gummiband), Listen/Tabellen in Karten weiter fest (`*{none}`), `federnAn()` nicht mehr gestartet. Die beiden Punkte darunter sind damit **historisch**. Wächter `check/federn.js`.
 - **Natives iOS-Gummiband überall aus** (nicht dosierbar) — `*{overscroll-behavior:none}` gilt jetzt auch für `.pc`/`.detail` und Chip-Fenster; nie `auto`/`contain`.
 - **Eigenes Federn `js/federn.js`:** Seite **20 px**, Listen/Tabellen/Fenster **12 px**, seitlich **9 px** (seit 663, *„bischen stärker“*; vorher 14/8/6; Obergrenze für „leicht“ 24/14/10 im Wächter); beim Ziehen über den Rand (abnehmender Zuwachs) und als kurzer Kick, wenn ein Wisch an den Rand ausläuft. **Nur Touch** — Mausrad federt nicht.
 - Bewegt nur die sichtbaren Kinder des Scrollbereichs per CSS `translate` (addiert sich zu `transform`, Grafikebene). Keine Weitergabe an die Seite.

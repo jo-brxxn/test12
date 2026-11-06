@@ -7,7 +7,7 @@
 // Scrollbereich sonst ueber seinen Rand hinaus (Gummiband) bzw. reicht den
 // Wisch an die Seite weiter. Loesung an der Wurzel: `*{overscroll-behavior:
 // none}` im Kopf von index.html. Die Seiten-Scroller .pc/.detail sind seit
-// 2026-11-01 ebenfalls none (leichtes Federn per js/federn.js) - die prueft check/federn.js.
+// seit 2026-11-06 wieder NATIV federnd (overscroll-behavior-y auto) - die prueft check/federn.js.
 // Geprueft wird jeder tatsaechlich scrollbare Bereich auf allen Tabs, auf der
 // Asset-Seite und im Asset-Kalender-Fenster.
 // Zweite Regel (Nutzer 2026-10-06, iPad: "beim Scrollen im Kalender bei past

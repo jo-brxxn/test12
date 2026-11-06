@@ -9050,6 +9050,7 @@ function abInfoBtn(titel,erkl,kl){
 }
 function openCardInfo(k){
   const e=_abInfo[k];if(!e)return;
+  dashFensterGross(false);
   // ⚠ mCardInfo, NICHT mInfo: `mInfo`/`mInfoTitle` gehoeren seit jeher dem
   // Indikator-Info-Fenster (openInfoM). Die erste Fassung dieses Fensters hat
   // dieselbe id ein zweites Mal vergeben - getElementById liefert dann das
@@ -12639,6 +12640,7 @@ function kurzDom(root){
 // zeilen [[Etikett, Wert-HTML]], liste [[Zeit/Name, Wert-HTML]], hinweis}.
 // Werte-HTML wird vom Aufrufer gebaut (escaped) - fett/kursiv/Farbe dort.
 function faktenFenster(titel,abschnitte){
+  dashFensterGross(false);
   const t=document.getElementById('mCardInfoTitle');if(t)t.textContent=titel;
   const b=document.getElementById('mCardInfoBody');if(!b)return;
   b.innerHTML=(abschnitte||[]).map(a=>{
@@ -17386,7 +17388,7 @@ function dashHeroHtml(){
   const upd=priceDataLastFetch?new Date(priceDataLastFetch).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):null;
   return`<div class="pg-titel dx-gruss" id="dashGruss">${dashGruss(now)}, <span class="dx-name">${escH(DASH_NAME)}</span>!</div>
     <div class="pg-sub dx-hero-sub">Here's your market overview.</div>
-    <div class="dx-hero-meta"><span class="db-live"></span><b>Live data</b><span class="dx-sep">|</span><span id="dashUhr">${escH(fmtDayHdr(todayStr()))} · ${upd?'Last update '+escH(upd):'Updating'}</span>${ses.length?`<span class="dx-sep">|</span><b>${escH(ses.join(' + '))}</b>&nbsp;open`:'<span class="dx-sep">|</span><i>Markets closed</i>'}</div>`;
+    <div class="dx-hero-meta"><span class="db-live"></span><b>Live data</b><span class="dx-sep">|</span><span id="dashUhr">${upd?'Last update '+escH(upd):'Updating'}</span><span class="dx-sep">|</span>${ses.length?`<b>${escH(ses.join(' + '))}</b>&nbsp;open`:'<i>Markets closed</i>'}</div>`;
 }
 // Kennzahl-Kacheln (Knoepfe - fuer check/hierarchie.js keine "Karten").
 function dashStatsHtml(z){
@@ -17395,13 +17397,21 @@ function dashStatsHtml(z){
     k('calendar',z.ev,z.ev===1?'event today':'events today',"dashZu('dbHeute')")+
     k('bell',z.nf,z.nf===1?'notification':'notifications','dashMeldungenFenster()',z.nf?'warn':'');
 }
+// Grosses Fenster fuer Listen vom Dashboard (Nutzer 2026-11-06, iPad-Foto:
+// Meldungen waren rechts abgeschnitten und seitlich scrollbar - gemessen
+// Inhalt 560 px fest in einem 538-px-Fenster). Jetzt: fast seitenbreit, der
+// Inhalt bricht um, gescrollt wird nur senkrecht. Andere Erklaer-Fenster
+// setzen die Klasse zurueck (openCardInfo/faktenFenster).
+function dashFensterGross(an){const m=document.querySelector('#mCardInfo .modal');if(m)m.classList.toggle('dx-gross',!!an);}
 function dashPositionenFenster(){
+  dashFensterGross(true);
   const t=document.getElementById('mCardInfoTitle');if(t)t.textContent='Open positions';
   const b=document.getElementById('mCardInfoBody');if(!b)return;
   b.innerHTML=`<div class="dx-fenster">${tjDashHtml()}</div><div class="db-fuss"><button class="db-link" onclick="closeM('mCardInfo');showTab('journal')">Open journal${icn('chevronRight',13)}</button></div>`;
   openM('mCardInfo');
 }
 function dashMeldungenFenster(){
+  dashFensterGross(true);
   const t=document.getElementById('mCardInfoTitle');if(t)t.textContent='Notifications';
   const b=document.getElementById('mCardInfoBody');if(!b)return;
   const l=dashNotifListe();
@@ -17800,7 +17810,10 @@ import {
 import {qcZerlegen} from './quickcapture.js';
 // Leichtes Federn am Scroll-Ende (Nutzer 2026-11-01), siehe js/federn.js
 import {federnAn} from './federn.js';
-try{federnAn();}catch(e){}
+// Eigenes Leicht-Federn (js/federn.js) seit 2026-11-06 AUS - die Seiten federn
+// wieder nativ (Nutzer: "wieder das normale iOS bouncen"). Modul bleibt fuer
+// eine Rueckkehr liegen.
+// try{federnAn();}catch(e){}
 // Price-Karte: Release-Pfeile, Spalte, eigene Pfeile, Vergleich (Wahl B, 2026-11-01)
 import {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkAddAktiv,PFEIL} from './preiskarte.js';
 
