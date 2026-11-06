@@ -17402,6 +17402,18 @@ function dashKopfHtml(z){
     </div>
   </div>`;
 }
+// ── DESIGN-IDEEN ZUM AUSWAEHLEN (voruebergehend, Nutzer 2026-11-06) ──────
+// Nutzer: "so wie du es gemacht hast mit der Optik ist es beschissen ... Karten
+// Optik finde ich auch bloed, setz ein paar Ideen auf der Webseite um und ich
+// sag dir welche ich waehle". Vier Optiken ueber denselben Inhalt, live
+// umschaltbar. Bewusst NICHT gespeichert (nur diese Sitzung) - die Leiste
+// fliegt raus, sobald der Nutzer gewaehlt hat; dann wird die Wahl fest.
+const DASH_LOOKS=[['bento','Bento'],['terminal','Terminal'],['hero','Hero'],['mix','Mix']];
+let dashLook='bento';
+function dashLookSetzen(k){dashLook=k;renderDash();}
+function dashLookLeiste(){
+  return`<div class="db-look-bar"><span class="db-look-lbl">Design idea</span>${DASH_LOOKS.map(([k,l],i)=>`<button class="db-look-b${k===dashLook?' on':''}" onclick="dashLookSetzen('${k}')">${i+1} · ${l}</button>`).join('')}</div>`;
+}
 function dashZu(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}
 // Sektionskopf: Titel (Kartentitel-Stufe 17/700) + Zaehler + "View all".
 function dashSek(id,typ,titel,inhalt,o){
@@ -17428,7 +17440,7 @@ function dashBiasHtml(){
   const mx=Math.max(1,...syms.map(s=>Math.abs(sc(s))));
   const kachel=s=>{
     const v=sc(s),col=biasCss(s.bias);
-    return`<button class="db-bias" data-id="${escH(s.id)}" onclick="gotoSym('${escJH(s.id)}')" title="${escH(s.name)} · ${BL[s.bias]} — open the asset">
+    return`<button class="db-bias" data-id="${escH(s.id)}" style="--bc:${BC[s.bias]}" onclick="gotoSym('${escJH(s.id)}')" title="${escH(s.name)} · ${BL[s.bias]} — open the asset">
       <span class="db-bias-n">${assetIconHtml(s.id,14)}<span>${escH(s.name)}</span></span>
       <span class="db-bias-v" role="button" onclick="event.stopPropagation();openScoreInfoSym('${escJH(s.id)}')" style="color:${col}" title="Score — tap for the breakdown">${v>0?'+':''}${v}</span>
       <span class="db-bias-bar"><span style="width:${Math.max(4,Math.round(Math.abs(v)/mx*100))}%;background:${BC[s.bias]}"></span></span>
@@ -17533,7 +17545,8 @@ function renderDash(){
   const heute=dashHeuteListe(),notifs=dashNotifListe(),nPos=tjOffenAnzahl();
   const win=PERF_WINDOWS.find(w=>w[0]===perfWindow)||PERF_WINDOWS[1];
   const perfBar=`<div class="perf-winbar db-perf-win">${PERF_WINDOWS.map(w=>`<button class="perf-win${w[0]===perfWindow?' on':''}" onclick="setPerfWindow('${w[0]}')">${w[0]}</button>`).join('')}</div>`;
-  el.innerHTML=dashKopfHtml({pos:nPos,ev:heute.length,nf:notifs.length})+`<div class="db-grid">
+  el.className='db-wrap db-cards look-'+dashLook;
+  el.innerHTML=dashLookLeiste()+dashKopfHtml({pos:nPos,ev:heute.length,nf:notifs.length})+`<div class="db-grid">
    <div class="db-main">
     ${dashSek('dbPos','positions','Open positions',tjDashHtml(),{anz:nPos||null,link:['Journal',"showTab('journal')"],
       erkl:['Your open trades from the journal.','Status in R and price distance since entry — no money amount (needs the value per point).','Tap a row for the journal, Close to log the exit.']})}
@@ -27390,7 +27403,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   resRemovePlace,resFillPlaceFolderSelect,resFillNoteModal,saveResNote,delResNote,W_TYPES,staleNotifyHtml,
   awaitingNotifyHtml,dataFeedStaleNotifyHtml,cotNotifyHtml,cloudNotConnectedNoticeHtml,renderCotNotify,
   AURORA_NEU,updateAuroraColors,startLiveClock,startHdrLiveClock,symDataQuality,symSourceLabel,
-  detailMetaHtml,dashMajorsHtml,dashZu,dashPerfUmschalten,dashGruss,dashSessions,
+  detailMetaHtml,dashMajorsHtml,dashLookSetzen,dashZu,dashPerfUmschalten,dashGruss,dashSessions,
   ZONE_OF_TYPE,dashZoneOf,mvWidget,PERF_WINDOWS,
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,

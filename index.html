@@ -7234,10 +7234,9 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
   .db-pos-row .db-pos-z{display:none}}
 /* Bias Scores */
 .db-bias-wrap{display:flex;flex-wrap:wrap;gap:4px 20px}
-.db-bias-gr{flex:var(--n) 1 calc(var(--n) * 106px - 6px);min-width:0}
+.db-bias-gr{flex:var(--n) 1 calc(var(--n) * 98px - 6px);min-width:0}
 .db-bias-gr .db-gr-lbl{margin:8px 0 6px}
-.db-bias-grid{display:flex;flex-wrap:wrap;gap:6px}
-.db-bias-grid>.db-bias{flex:1 1 100px;min-width:100px}
+.db-bias-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
 .db-bias{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:6px 10px;align-items:center;padding:8px 10px 9px;border:1px solid var(--bd);border-radius:var(--rss);background:var(--card);cursor:pointer;text-align:left;font:inherit;color:var(--t1);min-height:var(--h-l)}
 @media (hover:hover){.db-bias:hover{border-color:var(--bd2);background:var(--bg3)}}
 .db-bias-n{display:flex;align-items:center;gap:6px;min-width:0;font-size:var(--fs-sm);font-weight:600}
@@ -7246,7 +7245,7 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .db-bias-v{grid-row:2;grid-column:2;font:800 var(--fs-md)/1 var(--ff-num);cursor:pointer;text-align:right}
 .db-bias-bar{grid-row:2;grid-column:1;height:3px;border-radius:2px;background:var(--bg4);overflow:hidden}
 .db-bias-bar>span{display:block;height:100%;border-radius:2px}
-@media(max-width:759px){.db-bias-gr{flex-basis:100%}.db-bias-grid>.db-bias{flex-basis:92px;min-width:92px}}
+@media(max-width:759px){.db-bias-gr{flex-basis:100%}}
 /* Listen, deren Laenge vom Tag abhaengt (Termine, Meldungen), scrollen in
    fester Hoehe - Nutzer-Regel 2026-08-20, es faellt nichts weg. */
 .db-ev-list{max-height:342px;overflow-y:auto;overscroll-behavior:none}
@@ -7285,6 +7284,63 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .db-perf-cols .perf-name{flex:0 0 110px;color:var(--t0);font-weight:600}
 @media(max-width:759px){.db-perf-cols{grid-template-columns:minmax(0,1fr)}.db-perf-cols>div+div{margin-top:4px}
   .db-hdr{flex-wrap:wrap}.db-perf-win{order:3;margin:6px 0 0;width:100%}}
+
+/* ══ DASHBOARD: DESIGN-IDEEN (voruebergehend 2026-11-06, dashLook in main.js) ══
+   .db-cards = gemeinsame Grundlage aller vier Ideen (Abschnitte als Flaechen
+   mit Abstand statt Haarlinien), look-* = die jeweilige Idee. */
+.db-look-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 14px;padding:6px;border:1px dashed var(--bd2);border-radius:var(--rs);width:fit-content;max-width:100%}
+.db-look-lbl{font:700 var(--fs-xs)/1 var(--ff-text);letter-spacing:.6px;text-transform:uppercase;color:var(--t3);padding:0 6px}
+.db-look-b{height:var(--h-s);padding:0 12px;border:1px solid var(--bd);border-radius:999px;background:var(--card);color:var(--t1);font:600 var(--fs-sm)/1 var(--ff-text);cursor:pointer}
+.db-look-b.on{background:var(--ui-act);border-color:var(--ui-act);color:var(--ui-act-fg)}
+#dashWidgets.db-cards .db-grid{gap:16px}
+#dashWidgets.db-cards .db-main,#dashWidgets.db-cards .db-rail{gap:16px}
+#dashWidgets.db-cards .db-duo{gap:16px}
+#dashWidgets.db-cards .db-sek,#dashWidgets.db-cards #dbNotif{border:1px solid var(--bd);border-radius:var(--r);background:var(--card);box-shadow:var(--shadow-card);padding:16px 14px 14px;margin:0;align-self:stretch}
+@media (hover:hover){#dashWidgets.db-cards .db-sek:hover,#dashWidgets.db-cards #dbNotif:hover{box-shadow:var(--shadow-card);border-color:var(--bd)}}
+#dashWidgets.db-cards .db-hdr{margin-bottom:12px}
+
+/* 1 · BENTO - weiche, rahmenlose Kacheln, Bias Scores als farbige Heatmap,
+   Kennzahlen im Kopf als grosse Zahlenkacheln. */
+#dashWidgets.look-bento .db-sek,#dashWidgets.look-bento #dbNotif{border-color:transparent;border-radius:20px;padding:18px 16px 16px}
+#dashWidgets.look-bento .db-chips{gap:10px}
+#dashWidgets.look-bento .db-chip{flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;height:auto;min-height:56px;padding:8px 16px;border-radius:16px;border-color:transparent;box-shadow:var(--shadow-card)}
+#dashWidgets.look-bento .db-chip b{font-size:var(--fs-xl);line-height:1}
+#dashWidgets.look-bento .db-bias,#dashWidgets.look-mix .db-bias{border-color:transparent;background:color-mix(in srgb,var(--bc) 13%,var(--card));border-radius:12px}
+#dashWidgets.look-bento .db-bias-v,#dashWidgets.look-mix .db-bias-v{font-size:var(--fs-lg)}
+#dashWidgets.look-bento .db-bias-bar>span,#dashWidgets.look-mix .db-bias-bar>span{background:var(--bc)!important}
+#dashWidgets.look-bento .db-bias-bar,#dashWidgets.look-mix .db-bias-bar{background:color-mix(in srgb,var(--bc) 18%,transparent)}
+#dashWidgets.look-bento .db-pos-r{font-size:var(--fs-xl)}
+
+/* 2 · TERMINAL - dunkle, dichte Panels wie ein Handelsterminal; Farben aus
+   dem Dunkel-Thema lokal ueberschrieben, damit jeder Baustein mitzieht. */
+#dashWidgets.look-terminal .db-sek,#dashWidgets.look-terminal #dbNotif,#dashWidgets.look-mix .db-rail .db-sek,#dashWidgets.look-mix .db-rail #dbNotif{
+  --t0:#EEF3FB;--t1:#D5DFEF;--t2:#BCC8DA;--t3:#A3B2CB;--bd:rgba(150,180,225,.16);--bd2:rgba(150,180,225,.28);
+  --bg2:#16223A;--bg3:#1B2740;--bg4:#22304C;--card:#16223A;--bias-bull:#5AA2F5;--bias-bear:#F07A82;--bias-neu:#8FA3C8;
+  --ui-act:#5AA2F5;--ui-act-fg:#0A101C;--due:#F0913A;--blue:#5AA2F5;--green:#5AA2F5;--red:#F07A82;
+  background:#0F1828;border-color:#22304C;border-radius:12px;color:var(--t1);box-shadow:0 6px 18px rgba(10,16,28,.18)}
+#dashWidgets.look-terminal .db-sek,#dashWidgets.look-terminal #dbNotif{padding:12px 12px 10px}
+#dashWidgets.look-terminal .db-hdr{margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--bd)}
+#dashWidgets.look-terminal .db-row{min-height:var(--h-m)}
+#dashWidgets.look-terminal .db-bias{border-radius:6px;background:#16223A;border-color:var(--bd)}
+#dashWidgets.look-terminal .db-chip{border-radius:6px;background:#0F1828;border-color:#22304C;color:#BCC8DA}
+#dashWidgets.look-terminal .db-chip b{color:#EEF3FB}
+#dashWidgets.look-terminal .db-chip.warn,#dashWidgets.look-terminal .db-chip.warn b{color:#F0913A}
+
+/* 3 · HERO - Begruessung als farbiges Band mit den Kennzahlen, darunter
+   helle Karten mit farbigem Symbolfeld vor jedem Titel. */
+#dashWidgets.look-hero .db-kopf,#dashWidgets.look-mix .db-kopf{margin:0 0 16px;padding:22px 24px;border-radius:var(--r);background:linear-gradient(120deg,#172A46 0%,#0B5FCC 100%);color:#fff}
+#dashWidgets.look-hero .db-kopf .pg-titel,#dashWidgets.look-mix .db-kopf .pg-titel{color:#fff}
+#dashWidgets.look-hero .db-kopf .pg-sub,#dashWidgets.look-mix .db-kopf .pg-sub,#dashWidgets.look-hero .db-sub b,#dashWidgets.look-mix .db-sub b{color:rgba(255,255,255,.88)}
+#dashWidgets.look-hero .db-chip,#dashWidgets.look-mix .db-chip{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28);color:#fff}
+#dashWidgets.look-hero .db-chip b,#dashWidgets.look-mix .db-chip b{color:#fff}
+#dashWidgets.look-hero .db-chip.warn,#dashWidgets.look-mix .db-chip.warn{background:rgba(240,145,58,.22);border-color:rgba(240,145,58,.6)}
+#dashWidgets.look-hero .db-hdr .k-ic{box-sizing:content-box;padding:6px;margin-right:6px;border-radius:8px;background:color-mix(in srgb,var(--bias-bull) 12%,transparent);color:var(--bias-bull)}
+#dashWidgets.look-hero .db-sek,#dashWidgets.look-hero #dbNotif{border-top:3px solid var(--bias-bull)}
+#dashWidgets.look-hero .db-bias{border-left:3px solid var(--bc)}
+
+/* 4 · MIX - Hero-Band + Bento-Heatmap in der Hauptspalte + dunkle
+   Terminal-Leiste rechts (Meldungen, Termine). */
+#dashWidgets.look-mix .db-main .db-sek{border-color:transparent;border-radius:20px}
 </style>
 </head>
 <body>
@@ -7372,11 +7428,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-671 - Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-672 - Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-671</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-672</span>
     </span>
   </div>
   <div class="hdr-r">
