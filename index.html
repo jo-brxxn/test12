@@ -7354,12 +7354,18 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
   background:var(--card);color:var(--t1);cursor:pointer;text-align:left;font:inherit;box-shadow:var(--shadow-card)}
 :root[data-fx-theme] .dx-stat{background:linear-gradient(180deg,color-mix(in srgb,var(--card) 84%,var(--blue)) 0%,var(--card) 70%)}
 @media (hover:hover){.dx-stat:hover{border-color:rgba(var(--blue-rgb),.4)}}
-.dx-stat-ic{color:var(--blue);line-height:0}
+.dx-stat-ic{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:16px;background:rgba(var(--blue-rgb),.14);color:var(--blue);line-height:0}
+.dx-stat-ic svg{width:30px;height:30px}
 .dx-stat-n{margin-top:auto}
 .dx-stat.warn .dx-stat-ic,.dx-stat.warn .dx-stat-n{color:var(--due)}
+.dx-stat.warn .dx-stat-ic{background:rgba(var(--due-rgb),.16)}
 .dx-stat-n{font:800 var(--fs-hero)/1 var(--ff-num);color:var(--t0)}
 .dx-stat-l{display:flex;align-items:center;gap:2px;white-space:nowrap;font:600 var(--fs-sm)/1.2 var(--ff-text);color:var(--t2)}
-@media(max-width:759px){.dx-stat{padding:12px}.dx-stat-n{font-size:var(--fs-xl)}}
+@media(max-width:759px){.dx-stat{padding:12px}.dx-stat-n{font-size:var(--fs-xl)}.dx-stat-ic{width:42px;height:42px;border-radius:12px}.dx-stat-ic svg{width:24px;height:24px}
+  /* Handy: Beschriftung bricht um statt ueber den Rand zu laufen (gemessen 390 px:
+     Text 102-114 px in 77 px Karte); der Pfeil entfaellt - die ganze Karte ist der Knopf */
+  .dx-stat-l{white-space:normal;font-size:var(--fs-xs);font-weight:500;min-height:2.4em;align-items:flex-end}.dx-stat-l svg{display:none}}
+@media(max-width:420px){.dx .dx-stats[data-slot]{gap:8px}.dx-stat{padding:12px 10px}}
 /* Market overview */
 .dx-mkt-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 @media(max-width:759px){.dx-mkt-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -7375,6 +7381,11 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .dx-mkt-p{font:800 var(--fs-lg)/1.1 var(--ff-num);color:var(--t0);margin-top:4px}
 .dx-mkt-c{font:700 var(--fs-sm)/1.2 var(--ff-num);white-space:nowrap}
 .dx-mkt-c i{font-family:var(--ff-text);font-weight:500;color:var(--t3)}
+.dx-mkt-c>span{white-space:nowrap}
+/* Handy (2 Spalten, Kachel ~105 px Inhalt): Score und Prozent brechen in die
+   naechste Zeile statt abgeschnitten zu werden (gemessen 390 px: Name+Score
+   122 px, Veraenderung 116-126 px in 105 px) */
+@media(max-width:759px){.dx-mkt-n{flex-wrap:wrap;row-gap:2px}.dx-mkt-c{white-space:normal}}
 .dx-spark{display:block;width:calc(100% + 24px);height:46px;margin:auto -12px 0}
 /* 1D-Kachel: Bild statt Tageskerze (2026-11-07, js/kachelbild.js) */
 .dx-kb{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:58px;margin-top:auto;padding:2px 0 8px;pointer-events:none}
@@ -7517,11 +7528,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-689 - Weltkugel: kein Keil/Vollkreis am Rand mehr (verdeckte Kuesten am Kugelrand entlang wie d3-geo, keine selbstkreuzenden Ringe), Kuesten je Kugelgroesse vereinfacht (halb so viele Pfadpunkte je Bild), Randschatten in die Land-Textur eingebacken (eine Kopie ueber die ganze Flaeche je Bild weniger), beides ohne sichtbaren Unterschied; Kugel-Takt haelt vor dem Seitenwechsel an; vorher 688: Entfernen-Knoepfe (Watchlist, Market overview) mit Seitenschrift statt Browser-Standard 13,33 px; vorher 687: 1D-Kacheln der Market overview: Bild statt Tageskerze, drei Varianten zur Wahl (Outline, Globe, Logo); vorher 686: Weltkugel dreht gleichmaessig (Winkel aus Zeitformel statt Hochrechnung aus altem Stand, kein Vor-und-Zurueck); vorher 685: Weltkugel in WebKit belegt (eine Flaeche, Radar im Canvas, Flamme flackert nur beim Boost); Kalender ohne Speicher-Explosion in Safari; vorher 684: Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-690 - Kennzahl-Karten oben rechts: Symbol als grosse getoente Plakette (56 px statt 22 px); vorher 689: Weltkugel: kein Keil/Vollkreis am Rand mehr (verdeckte Kuesten am Kugelrand entlang wie d3-geo, keine selbstkreuzenden Ringe), Kuesten je Kugelgroesse vereinfacht (halb so viele Pfadpunkte je Bild), Randschatten in die Land-Textur eingebacken (eine Kopie ueber die ganze Flaeche je Bild weniger), beides ohne sichtbaren Unterschied; Kugel-Takt haelt vor dem Seitenwechsel an; vorher 688: Entfernen-Knoepfe (Watchlist, Market overview) mit Seitenschrift statt Browser-Standard 13,33 px; vorher 687: 1D-Kacheln der Market overview: Bild statt Tageskerze, drei Varianten zur Wahl (Outline, Globe, Logo); vorher 686: Weltkugel dreht gleichmaessig (Winkel aus Zeitformel statt Hochrechnung aus altem Stand, kein Vor-und-Zurueck); vorher 685: Weltkugel in WebKit belegt (eine Flaeche, Radar im Canvas, Flamme flackert nur beim Boost); Kalender ohne Speicher-Explosion in Safari; vorher 684: Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-689</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-690</span>
     </span>
   </div>
   <div class="hdr-r">

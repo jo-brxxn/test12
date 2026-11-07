@@ -1982,3 +1982,8 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 - **Kein History-Teil** (Nutzer 2026-10-25 entfernt).
 - **Jede Linie ist anklickbar** (`.cp-spk`, Symbol oben rechts immer sichtbar) → Fenster `#mCpChart` = **die Data-Seite im Fenster** (Nutzer 2026-10-26: *„so aussehen wie bei data auch von der Anordnung“*): Kopf mit Unterzeile + *Charts n/8* rechts, Zeitfilter + Schere darunter rechts, Auswahl als Popover (`.data-picker`, Chips je Gruppe, schließt bei 8), Raster `dataRaster` (1 = ganze Fläche, 2 untereinander, 2×2, 3×2, 4×2) füllt das Fenster, Panel-Kopf `.data-ph` mit Legende + As of. Namen nie gekürzt (schmale Panels lassen die Gruppe weg). Gezeichnet mit `indHistChart`/`rohstoffTrendChartHtml` — nie ein eigener Chart-Typ.
 - Geprüft von `check/profil.js`.
+
+## Kennzahl-Karten & Handy-Kacheln (2026-11-07)
+- Kennzahl-Karten (Dashboard oben rechts): Symbol als getönte Plakette 56 px (Handy 42 px), nie mehr ein kleines Eck-Symbol (Nutzer: „Logos zu klein, Karten zu leer").
+- Text in Karten/Kacheln wird nie still abgeschnitten: auf dem Handy umbrechen (Score/Prozent in die nächste Zeile). Geprüft von `check/dashboard.js`.
+

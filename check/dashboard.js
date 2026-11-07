@@ -124,6 +124,13 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
       if(innerWidth>=1160){const h=document.getElementById('dbHero'),m=document.querySelector('.dx-hero-meta');
         if(h&&h.getBoundingClientRect().height>170)out.push('Hero '+Math.round(h.getBoundingClientRect().height)+'px hoch (max 170)');
         if(m&&m.getBoundingClientRect().height>30)out.push('Hero-Statuszeile bricht um ('+Math.round(m.getBoundingClientRect().height)+'px)');}
+      // Texte in Kennzahl-Karten und Market-overview-Kacheln bleiben drin (2026-11-07:
+      // Handy 390 px - "notifications" 102 px in 77-px-Karte, Kachel-Score und
+      // Veraenderung 116-126 px in 105 px, von overflow:hidden still abgeschnitten).
+      // Kennzahl-Symbol >= 40 px (Nutzer: "die Logos zu klein, die Karten zu leer").
+      document.querySelectorAll('.dx-stat,.dx-mkt').forEach(k=>{const kr=k.getBoundingClientRect();if(!kr.width)return;const cs=getComputedStyle(k),rechts=kr.right-parseFloat(cs.paddingRight)+1,links=kr.left+parseFloat(cs.paddingLeft)-1;
+        k.querySelectorAll('.dx-stat-l,.dx-stat-n,.dx-mkt-n,.dx-mkt-p,.dx-mkt-c').forEach(e=>{const rg=document.createRange();rg.selectNodeContents(e);const r=rg.getBoundingClientRect();if(r.width&&(r.right>rechts||r.left<links))out.push(`Text "${e.textContent.trim().slice(0,24)}" ragt ${Math.round(Math.max(r.right-rechts,links-r.left))}px aus ${k.classList.contains('dx-stat')?'Kennzahl-Karte':'Kachel'}`);});
+        const ic=k.querySelector('.dx-stat-ic');if(ic&&ic.getBoundingClientRect().width<40)out.push(`Kennzahl-Symbol nur ${Math.round(ic.getBoundingClientRect().width)}px (min 40)`);});
       // Listen-Fenster der Kennzahlen: nie seitlich scrollbar (Inhalt 560 px in 538-px-Fenster)
       ['dashMeldungenFenster','dashPositionenFenster'].forEach(f=>{try{window[f]();const md=document.querySelector('#mCardInfo .modal');
         if(md&&md.scrollWidth>md.clientWidth+1)out.push(f+': Fenster seitlich '+(md.scrollWidth-md.clientWidth)+'px ueberlaufend');closeM('mCardInfo');}catch(e){out.push(f+': '+e.message);}});

@@ -17411,7 +17411,9 @@ function dashHeroHtml(){
 }
 // Kennzahl-Kacheln (Knoepfe - fuer check/hierarchie.js keine "Karten").
 function dashStatsHtml(z){
-  const k=(ic,n,lbl,on,cls)=>`<button class="dx-stat${cls?' '+cls:''}" onclick="${on}"><span class="dx-stat-ic">${icn(ic,22)}</span><b class="dx-stat-n">${n}</b><span class="dx-stat-l">${lbl}${icn('chevronRight',14)}</span></button>`;
+  // Symbol als getoente Plakette (Nutzer 2026-11-07, iPad-Foto: "die Logos zu
+  // klein, die Karten sind sonst zu leer" - vorher 22 px in der Ecke)
+  const k=(ic,n,lbl,on,cls)=>`<button class="dx-stat${cls?' '+cls:''}" onclick="${on}"><span class="dx-stat-ic">${icn(ic,30)}</span><b class="dx-stat-n">${n}</b><span class="dx-stat-l">${lbl}${icn('chevronRight',14)}</span></button>`;
   return k('briefcase',z.pos,z.pos===1?'open position':'open positions','dashPositionenFenster()')+
     k('calendar',z.ev,z.ev===1?'event today':'events today',"dashZu('dbHeute')")+
     k('bell',z.nf,z.nf===1?'notification':'notifications','dashMeldungenFenster()',z.nf?'warn':'');
@@ -17486,7 +17488,7 @@ function dashMarktHtml(){
     return`<div class="dx-mkt${m.wl?' dx-mkt-wl':''}" role="button" tabindex="0" onclick="${m.go}" title="${escH(m.lbl)} · ${win[0]} change${ref?' vs '+escH(fmtDayHdr(ref[0])):''} — open">
       <span class="dx-mkt-n">${m.ic}<span>${escH(m.lbl)}</span>${sc!=null?`<span class="dx-mkt-sc" style="color:${scoreColor(sc)}" title="Score">${sc>0?'+':''}${sc}</span>`:''}</span>
       <span class="dx-mkt-p">${fmtPriceTick(lv)}</span>
-      <span class="dx-mkt-c" style="color:${biasCss(b)}">${pct==null?'–':`${b==='bear'?'▼':'▲'} ${abs>0?'+':abs<0?'−':''}${fmtPriceTick(Math.abs(abs))} (${pct>0?'+':''}${pct.toFixed(2)}%)`}</span>
+      <span class="dx-mkt-c" style="color:${biasCss(b)}">${pct==null?'–':`<span>${b==='bear'?'▼':'▲'} ${abs>0?'+':abs<0?'−':''}${fmtPriceTick(Math.abs(abs))}</span> <span>(${pct>0?'+':''}${pct.toFixed(2)}%)</span>`}</span>
       ${win[1]===1?kachelBildHtml(dashKachelBild,kachelLaender(m.n,m.id),biasCss(b),m.icGross):dashSparkSvg(pts,biasCss(b),i)}
       ${weg}
     </div>`;

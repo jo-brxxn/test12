@@ -21629,3 +21629,21 @@ ab (Segfault im Worker-Thread, immer dieselbe Adresse in libWPEWebKit).
 - Trotzdem gehärtet: `showTab` hält den Kugel-Takt an, BEVOR die Seite
   verschwindet (vorher erst im nächsten Bild). `check/webkitkugel.js` F meldet
   Abstürze (Gegenlauf `--cpu`).
+
+## 2026-11-07 — Kennzahl-Karten: große Symbole; Handy-Texte brechen um statt abgeschnitten (VERSION-CHECK-690)
+
+Nutzer (iPad-Foto): *„oben rechts die drei Karten da sind die Logos zu klein die
+Karten sind sonst zu leer“*.
+- Symbol als getönte Plakette 56 px (Symbol 30 px) statt 22 px in der Ecke;
+  Meldungen in Orange-Tönung. Handy 42 px.
+- **Fehlerklasse (vorbestehend, mit und ohne Änderung gleich gemessen):** auf dem
+  Handy (390/375 px) liefen Texte über den Rand und wurden von `overflow:hidden`
+  still abgeschnitten — Kennzahl-Beschriftung 102–114 px in 72–77 px Karte,
+  Kachel-Name+Score 122 px und Veränderung 116–126 px in 105 px.
+  Fix: Handy-Beschriftung bricht um (11 px, Pfeil entfällt — die ganze Karte ist
+  der Knopf, 2 Zeilen reserviert, Zahlen auf einer Linie), etwas engere
+  Abstände ≤ 420 px; Kachel-Score und Prozent brechen in die nächste Zeile.
+- Wächter `check/dashboard.js`: Texte in Kennzahl-Karten/Kacheln bleiben im
+  Innenrand (8 Breiten), Kennzahl-Symbol ≥ 40 px; Gegenprobe von Hand (Umbruch
+  raus, Symbol 22 px) → rot. Die Lücke: der bisherige Überlauf-Test übersprang
+  Text in abschneidenden Vorfahren.
