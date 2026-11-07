@@ -63,7 +63,10 @@ const IND_EVENT_MATCHERS={
   // gezogen wird und nicht versehentlich ein Kernmass.
   // "\bex[\s-]": JPY "Inflation Rate Ex-Food and Energy" ist ein Kernmass,
   // keine Headline (dieselbe Ausschlussregel wie EXCORE im Indikator-Feed).
-  'CPI (Headline)':mkIndMatcher([/\bcpi\b/,/inflation rate/],[/core/,/common/,/median/,/trimmed/,/super/,/\bppi\b/,/\bpce\b/,/expectation/,/\bboj\b/,/tokyo/,/services/,/\bsppi\b/,/wage/,/rent/,/\bex[\s-]/]),
+  // 2026-11-07: ohne die bereinigte/unbereinigte Zweitfassung ("... s.a",
+  // "... NSA"), die TradingView seit Okt. am SELBEN Tag fuehrt - wie RULES
+  // im Indikator-Feed (check/feedregeln.js A2, Historie ausgezaehlt).
+  'CPI (Headline)':mkIndMatcher([/\bcpi\b/,/inflation rate/],[/\bs\.a\b/,/\bnsa\b/,/core/,/common/,/median/,/trimmed/,/super/,/\bppi\b/,/\bpce\b/,/expectation/,/\bboj\b/,/tokyo/,/services/,/\bsppi\b/,/wage/,/rent/,/\bex[\s-]/]),
   // Kern-/Core-Inflation: "Core CPI", "Core Inflation Rate".
   // CAD: bewusst die BoC-Kennzahl "CPI-Median" statt der StatCan "Core
   // Inflation Rate" (CPIX) - nur die BoC-Masse liefern im Kalender einen
@@ -99,7 +102,7 @@ const IND_EVENT_MATCHERS={
   // Releases mit eigenem Wert (Private/Manufacturing/Government Payrolls,
   // GBP "HMRC Payrolls Change").
   'NFP / Employment Change':mkIndMatcher([/non[\s-]?farm/,/\bnfp\b/,/\bemployment change\b/,/payrolls/,/net employment/,/employment level/],[/adp/,/unemployment/,/full[\s-]?time/,/part[\s-]?time/,/change in/,/productivity/,/revision/,/benchmark/,/private/,/manufacturing payrolls/,/government payrolls/,/hmrc/]),
-  'Unemployment Rate':mkIndMatcher([/unemployment rate/]),
+  'Unemployment Rate':mkIndMatcher([/unemployment rate/],[/\bs\.a\b/,/\bnsa\b/]),   // CHF "... s.a" seit 05.11. zusaetzlich (2026-11-07)
   'ADP Employment':mkIndMatcher([/\badp\b/],[/weekly/]),
   'JOLTS Job Openings':mkIndMatcher([/jolts/,/job openings/,/job vacanc/],[/quits/]),
   // Lohnwachstum heisst in JEDEM Land anders - das Muster kannte bisher aber
@@ -151,7 +154,7 @@ const IND_EVENT_MATCHERS={
     [/manufacturing pmi/]
   ),
   'Services PMI':mkCcyIndMatcher(
-    {USD:/ism (services|non-?manufacturing) pmi/,EUR:/^(flash |final |s&p global |hcob )*services pmi( flash| final)?$/,CAD:/ivey/},
+    {USD:/ism (services|non-?manufacturing) pmi/,EUR:/^(flash |final |s&p global |hcob )*services pmi( flash| final)?$/,CAD:/ivey.*\bs\.a\b/},   // CAD: nur "Ivey PMI s.a" wie im Feed (2026-11-07)
     [/services pmi/,/non-?manufacturing pmi/]
   ),
   // ⚠ USD seit 2026-10-07 nur die Conference-Board-Reihe: der Indikator-Feed
@@ -167,7 +170,10 @@ const IND_EVENT_MATCHERS={
   // Feed (Nutzer-Entscheid nach Messung, docs/score-model.md).
   'Consumer Confidence':mkCcyIndMatcher(
     {EUR:/^consumer confidence(\s+flash)?$/,USD:/^(cb )?consumer confidence$|conference board/,
-     AUD:/^westpac consumer (confidence|sentiment)( index)?$/,NZD:/anz roy morgan consumer confidence/},
+     AUD:/^westpac consumer (confidence|sentiment)( index)?$/,NZD:/anz roy morgan consumer confidence/,
+     // 2026-11-07 wie im Feed: GBP = GfK (nicht "Consumer Confidence Index",
+     // nicht LSEG/Ipsos), CHF ohne die s.a-Zweitfassung (FF nennt sie "SECO Consumer Climate")
+     GBP:/gfk consumer confidence/,CHF:/^consumer confidence( final)?$|seco consumer climate/},
     [/consumer confidence/,/consumer sentiment/,/consumer climate/]
   ),
   // Umfragen (2026-08-20). ZEW fuehrt der Kalender doppelt - als Eurozone-

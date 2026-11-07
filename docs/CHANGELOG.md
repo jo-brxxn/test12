@@ -21463,3 +21463,19 @@ Rückkehr ohne Neuaufbau. Wächter `performance.js` G: Worker-Modus, jede
 Bewegung, 0 Dokument-Änderungen, bei 4× CPU ≥ 54 Bilder/s und p95 ≤ 20 ms am
 Kugel-Takt (vom Worker gemeldet) — Gegenproben `--gegenprobe-hauptthread`
 (41 Bilder/s, rot) und `--gegenprobe-globus` (30/121, rot).
+
+## 2026-11-07 — Handy-Kopfzeile, Zweitfassungen im Indikator-Feed (VERSION-CHECK-683)
+
+- Kopfzeile 390 px: rechte Knopfgruppe bis x 396 (Seite 396 > 390). Ursache:
+  `.hdr-status` ist auf dem Handy 0 px breit, belegt aber zwei Abstände.
+  Fix ≤ 420 px engere Abstände/Knopf-Innenabstände, ≤ 374 px Logo 18 px.
+  Gemessen 360/375/390/414: Rand rechts 10/9/10/10 px. `cards` grün.
+- `feedregeln` A2: TradingView führt seit Okt./Nov. am selben Tag eine
+  Zweitfassung (USD CPI NSA, CAD CPI s.a, CHF Arbeitslosenquote/Konsumklima
+  s.a, GBP „Consumer Confidence Index“/LSEG-Ipsos, CAD „Ivey PMI“ ohne s.a) —
+  je 1 Tag Historie gegen 63–122 Tage der bisherigen Fassung (cal_hist
+  ausgezählt). RULES + `js/event-matchers.js` schließen sie aus (CAD Ivey: nur
+  s.a). A2 meldet nur noch Titel mit VERSCHIEDENEN Werten (CAD Retail Sales
+  „MoM“ + „MoM Final“ am 23.10. beide 1,2 % = derselbe Release doppelt; den
+  alten Titel auszuschließen hätte 100 Tage Historie gekostet). Neu A3:
+  App-Muster = Feed-Regeln (gegen die alten Muster 6 Befunde).

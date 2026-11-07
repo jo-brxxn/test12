@@ -103,6 +103,22 @@ if (rules && excore) {
       ['Business Inflation Expectations', 'NZD', 'Inflation Expectations', true],
       ['Michigan Inflation Expectations Prel', 'USD', 'Inflation Expectations', true],
       ['Business Inflation Expectations', 'USD', 'Inflation Expectations', false],
+      // 2026-11-07: Fassungen derselben Veroeffentlichung am selben Tag (A2)
+      ['Inflation Rate MoM', 'USD', 'CPI', true],
+      ['Inflation Rate MoM NSA', 'USD', 'CPI', false],
+      ['Inflation Rate YoY', 'CAD', 'CPI (Headline)', true],
+      ['Inflation Rate YoY s.a', 'CAD', 'CPI (Headline)', false],
+      ['Inflation Rate MoM s.a', 'CAD', 'CPI', false],
+      ['Unemployment Rate', 'CHF', 'Unemployment Rate', true],
+      ['Unemployment Rate s.a', 'CHF', 'Unemployment Rate', false],
+      ['Consumer Confidence', 'CHF', 'Consumer Confidence', true],
+      ['Consumer Confidence s.a', 'CHF', 'Consumer Confidence', false],
+      ['GfK Consumer Confidence', 'GBP', 'Consumer Confidence', true],
+      ['Consumer Confidence Index', 'GBP', 'Consumer Confidence', false],
+      ['LSEG/Ipsos Primary Consumer Sentiment Index', 'GBP', 'Consumer Confidence', false],
+      ['Westpac Consumer Confidence Index', 'AUD', 'Consumer Confidence', true],
+      ['Ivey PMI s.a', 'CAD', 'Services PMI', true],
+      ['Ivey PMI', 'CAD', 'Services PMI', false],
     ];
     FALL.forEach(([t, c, ind, soll]) => {
       const ist = trifft(t, c, ind);
@@ -130,12 +146,17 @@ if (rules && excore) {
         R.forEach(r => {
           if (!r.test(t, ccy) || (r.period && per !== r.period)) return;
           const k = ccy + '|' + r.ind + '|' + zeit.slice(0, 10);
-          (tag[k] = tag[k] || new Set()).add(titel);
+          (tag[k] = tag[k] || new Map()).set(titel, String(act).trim());
         });
       }
     }
-    const konf = Object.entries(tag).filter(([, s]) => s.size > 1);
-    if (konf.length) fail('SELBER TAG', `${konf.length} Release-Tage mit 2+ Titeln in einer Reihe, z.B. ${konf.slice(-3).map(([k, s]) => k + ' ' + JSON.stringify([...s])).join('; ')}`);
+    // Konflikt = zwei Titel mit VERSCHIEDENEN Werten (2026-11-07): nur dann
+    // entscheidet die Sortierung, welche Zahl gilt. Derselbe Release doppelt
+    // geliefert (CAD "Retail Sales MoM" + "... Final", beide 1,2 % am 23.10.)
+    // aendert keine Zahl - und den alten Titel auszuschliessen, wuerde die
+    // Historie 2016-2024 (100 Tage) aus der Reihe werfen.
+    const konf = Object.entries(tag).filter(([, m]) => new Set(m.values()).size > 1).map(([k, m]) => [k, new Set(m.keys())]);
+    if (konf.length) fail('SELBER TAG', `${konf.length} Release-Tage mit 2+ Titeln in einer Reihe, z.B. ${(process.env.ALLE?konf:konf.slice(-3)).map(([k, s]) => k + ' ' + JSON.stringify([...s])).join('; ')}`);
   }
 }
 
@@ -286,11 +307,30 @@ if (keinRelease) {
   } catch (e) {}
 }
 
+// ── A3) App-Muster = Feed-Regeln (2026-11-07) ────────────────────────────
+// Die App ordnet Kalenderzeilen mit js/event-matchers.js eigenen Indikatoren
+// zu (Faerbung, Next-Termin). Dieselben Zweitfassungen, die der Feed seit
+// 2026-11-07 ausschliesst, muss auch die App ausschliessen - sonst zeigt sie
+// am selben Tag die andere Zahl als der Score.
+(async () => {
+  try {
+    const M = (await import(require('url').pathToFileURL(path.join(ROOT, 'js', 'event-matchers.js')).href)).IND_EVENT_MATCHERS;
+    const APP = [
+      ['CPI (Headline)', 'Inflation Rate MoM', 'USD', true], ['CPI (Headline)', 'Inflation Rate MoM NSA', 'USD', false],
+      ['CPI (Headline)', 'Inflation Rate YoY s.a', 'CAD', false], ['Unemployment Rate', 'Unemployment Rate', 'CHF', true],
+      ['Unemployment Rate', 'Unemployment Rate s.a', 'CHF', false], ['Services PMI', 'Ivey PMI s.a', 'CAD', true],
+      ['Services PMI', 'Ivey PMI', 'CAD', false], ['Consumer Confidence', 'GfK Consumer Confidence', 'GBP', true],
+      ['Consumer Confidence', 'Consumer Confidence Index', 'GBP', false], ['Consumer Confidence', 'Consumer Confidence', 'CHF', true],
+      ['Consumer Confidence', 'Consumer Confidence s.a', 'CHF', false], ['Consumer Confidence', 'Westpac Consumer Confidence Index', 'AUD', true],
+    ];
+    APP.forEach(([ind, t, c, soll]) => { const ist = !!(M[ind] && M[ind](t, c)); if (ist !== soll) fail('APP-MUSTER', `js/event-matchers.js: ${c} "${t}" ${ist ? 'trifft' : 'trifft nicht'} ${ind} - anders als der Indikator-Feed`); });
+  } catch (e) { fail('APP-MUSTER', 'js/event-matchers.js nicht ladbar: ' + e.message); }
 if (GEGENPROBE) {
-  const ok = F.some(x => x.startsWith('FREMDER RELEASE')) && F.some(x => x.startsWith('SELBER TAG')) &&
-    F.some(x => x.startsWith('VORWERT REVIDIERT')) && F.some(x => x.startsWith('UMDATIERTER RELEASE')) && F.some(x => x.startsWith('NON-TRADABLES'));
-  console.log(ok ? 'feedregeln --gegenprobe: ok (alte Regeln: Benchmark-Revision, S&P-Flash, Control Group; alte Aggregation: Erstdruck als Vorwert, Doppelpunkt bleibt - alles gemeldet)' : 'feedregeln --gegenprobe: FEHLER - nicht gemeldet\n  ' + F.join('\n  '));
-  process.exit(ok ? 0 : 1);
-}
-if (F.length) { console.log(`feedregeln: ${F.length} Befund(e)\n  ` + F.join('\n  ')); process.exit(1); }
-console.log('feedregeln: ok (Indikator-Feed: NFP ohne Benchmark-Revision, US-PMI nur ISM, kein Tag mit zwei Titeln je Reihe, revidierter Vorwert, keine umdatierten/fremden Historienpunkte, TE-Datum und -Historie stabil; Bereinigung entfernt genau die eingeschleppten Punkte)');
+    const ok = F.some(x => x.startsWith('FREMDER RELEASE')) && F.some(x => x.startsWith('SELBER TAG')) &&
+      F.some(x => x.startsWith('VORWERT REVIDIERT')) && F.some(x => x.startsWith('UMDATIERTER RELEASE')) && F.some(x => x.startsWith('NON-TRADABLES'));
+    console.log(ok ? 'feedregeln --gegenprobe: ok (alte Regeln: Benchmark-Revision, S&P-Flash, Control Group; alte Aggregation: Erstdruck als Vorwert, Doppelpunkt bleibt - alles gemeldet)' : 'feedregeln --gegenprobe: FEHLER - nicht gemeldet\n  ' + F.join('\n  '));
+    process.exit(ok ? 0 : 1);
+  }
+  if (F.length) { console.log(`feedregeln: ${F.length} Befund(e)\n  ` + F.join('\n  ')); process.exit(1); }
+  console.log('feedregeln: ok (Indikator-Feed: NFP ohne Benchmark-Revision, US-PMI nur ISM, kein Tag mit zwei Titeln je Reihe, revidierter Vorwert, keine umdatierten/fremden Historienpunkte, TE-Datum und -Historie stabil; Bereinigung entfernt genau die eingeschleppten Punkte)');
+})();

@@ -1489,8 +1489,17 @@ jobs:
             const EXCORE=/core|\bex[\s-]|ex food|ex-food|excluding|trimmed|median|weighted|super/;
             const RULES=[
               {ind:"Central Bank Rate",period:null,test:t=>/interest rate decision|rate decision/.test(t)},
-              {ind:"CPI (Headline)",period:"y/y",test:t=>/\binflation rate\b/.test(t)&&!EXCORE.test(t)&&!/wage|expectation|harmoni/.test(t)},
-              {ind:"CPI",period:"m/m",test:t=>/\binflation rate\b/.test(t)&&!EXCORE.test(t)&&!/wage|expectation|harmoni/.test(t)},
+              // ⚠ 2026-11-07 (check/feedregeln.js A2, Historie in cal_hist ausgezaehlt):
+              // TradingView fuehrt seit Okt/Nov zusaetzlich die bereinigte bzw.
+              // unbereinigte Fassung derselben Veroeffentlichung am SELBEN Tag
+              // (USD "Inflation Rate MoM NSA", CAD "... s.a", CHF "Unemployment
+              // Rate s.a"/"Consumer Confidence s.a", GBP "Consumer Confidence
+              // Index"/"LSEG/Ipsos ...", CAD "Ivey PMI" ohne s.a) - je 1 Tag
+              // Historie gegen 63-122 Tage der bisherigen Fassung. Die Reihe
+              // bleibt bei ihrer Veroeffentlichung; welche Zahl gilt, entschied
+              // sonst die Sortierung.
+              {ind:"CPI (Headline)",period:"y/y",test:t=>/\binflation rate\b/.test(t)&&!EXCORE.test(t)&&!/wage|expectation|harmoni/.test(t)&&!/\bs\.a\b|\bnsa\b/.test(t)},
+              {ind:"CPI",period:"m/m",test:t=>/\binflation rate\b/.test(t)&&!EXCORE.test(t)&&!/wage|expectation|harmoni/.test(t)&&!/\bs\.a\b|\bnsa\b/.test(t)},
               {ind:"Core CPI",period:"y/y",test:t=>/core inflation rate/.test(t)},
               // ⚠ 2026-10-27: ohne Dienstleistungs-PPI. Japans "Services
               // Producer Price Index YoY" (CSPI, eigene Reihe "Services
@@ -1504,7 +1513,7 @@ jobs:
               {ind:"Core PPI",period:"y/y",test:t=>/core producer pric|core ppi/.test(t)},
               {ind:"PCE",period:"y/y",test:(t,c)=>c==="USD"&&/\bpce price index\b/.test(t)&&!EXCORE.test(t)},
               {ind:"Core PCE",period:"y/y",test:(t,c)=>c==="USD"&&/core pce price index/.test(t)},
-              {ind:"Unemployment Rate",period:null,test:t=>/unemployment rate/.test(t)&&!/ex|youth|\bu-?\d/.test(t)},
+              {ind:"Unemployment Rate",period:null,test:t=>/unemployment rate/.test(t)&&!/ex|youth|\bu-?\d/.test(t)&&!/\bs\.a\b|\bnsa\b/.test(t)},   // s.a: siehe Kommentar bei CPI (2026-11-07)
               // ⚠ 2026-10-07: ohne die jaehrliche Benchmark-Revision ("Non Farm
               // Payrolls Annual Revision Prel") - sie stand dreimal als NFP-Wert
               // in der Historie (2024-08-21 -818K, 2025-09-09 -911K, 2026-08-28
@@ -1554,7 +1563,7 @@ jobs:
               // Zuordnung laengst (IND_EVENT_MATCHERS hat CAD:/ivey/ und
               // IND_DISPLAY_NAMES zeigt "Ivey PMI"), nur der Workflow nicht -
               // die einzige CAD-PMI-Reihe MIT Actual lief dadurch ins Leere.
-              {ind:"Services PMI",period:null,test:(t,c)=>c==="CAD"&&/ivey/.test(t)},
+              {ind:"Services PMI",period:null,test:(t,c)=>c==="CAD"&&/ivey/.test(t)&&/\bs\.a\b/.test(t)},   // nur "Ivey PMI s.a" (122 Tage Historie), nicht die unbereinigte (2026-11-07)
               // NZD: BusinessNZ fuehrt eigene, anders betitelte Reihen statt
               // der generischen S&P-Global-Namen ("business nz pmi"/
               // "services nz psi" statt "manufacturing/services pmi") - per
@@ -1630,7 +1639,7 @@ jobs:
               {ind:"Inflation Expectations",period:null,test:(t,c)=>c==="NZD"&&/business inflation expectations/.test(t)},
               // Uebrige Waehrungen: jeweils ihr landesuebliches Stimmungsmass
               // (EU-Kommission, GfK, SECO Climate, Cabinet Office, Westpac ...).
-              {ind:"Consumer Confidence",period:null,test:(t,c)=>c!=="USD"&&c!=="NZD"&&/consumer confidence|consumer sentiment|consumer climate/.test(t)&&!/change|expectation/.test(t)},
+              {ind:"Consumer Confidence",period:null,test:(t,c)=>c!=="USD"&&c!=="NZD"&&/consumer confidence|consumer sentiment|consumer climate/.test(t)&&!/change|expectation/.test(t)&&!/\bs\.a\b|\bnsa\b/.test(t)&&!(c==="GBP"&&/index|lseg|ipsos/.test(t))},   // GBP = GfK; s.a: siehe CPI (2026-11-07)
               // ── Nutzer 2026-11-01 ─────────────────────────────────────
               // OIL: "fueg bei Oel den Indikator oil inventories hinzu bei
               // economy" - die woechentliche EIA-Reihe (Mittwoch). NUR die
