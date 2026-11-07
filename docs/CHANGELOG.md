@@ -21662,3 +21662,22 @@ einem Absturz neu → zählt hoch), Urteil „Smooth“ (≥ 55/s, p95 ≤ 20 ms
   alle CSS-Animationen 59,9/s p95 24 ms 10,8 %. Rest = Zusammensetzen der
   ganzen Seite in Software (keine GPU im Container); die Drehung selbst bleibt
   4,00 °/s ohne Rückwärts-Schritt. Aussagekräftig ist nur der Lauf auf dem iPad.
+
+## 2026-11-07 — Selbsttest misst den Hauptthread; WebKit-Fund Flaggen-Filme (VERSION-CHECK-692)
+
+Fund in WPE WebKit (Safari-Engine, Linux, ohne GPU), Dashboard 1180 × 820 dpr 2,
+Hauptthread-Takt (rAF):
+- leere Seite 61,5/s; Kalender (Kugel aus) 62/s; **Dashboard 9,5/s, p95 165 ms**;
+  Chromium gleiches Dashboard 60/s.
+- Kugel aus 20,3/s; zusätzlich ohne CSS-Animationen 58,8/s; Kugel an ohne
+  CSS-Animationen 14/s → in WPE laufen die Bildübergabe des Kugel-Workers UND
+  die Flaggen-Filme (`img.ai-film`, `steps(108)`, 3,6 s) über den Hauptthread.
+- Flaggen-Filme aus: 21 → 51,5/s; unsichtbare 31 von 39 anhalten: kein Gewinn
+  (die 8 sichtbaren der Market overview reichen). Jet-Blinken/HUD: kein Effekt.
+- Ob Safari auf dem iPad (CoreGraphics/Core Animation statt Skia/Software-OpenGL)
+  das genauso macht, ist hier nicht messbar → `#globetest` zeigt jetzt
+  „Main thread“ (Bilder/s, p95); Urteil „Smooth“ verlangt zusätzlich ≥ 50/s,
+  p95 ≤ 34 ms. Chromium: 60/s, p95 17 ms.
+- Nichts am Design geändert: falls das iPad den Hauptthread auch so zeigt, sind
+  die Optionen (Flaggen im Dashboard still, Filme als Video statt Bildstreifen)
+  eine Design-Entscheidung des Nutzers.

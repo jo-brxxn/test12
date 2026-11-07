@@ -1035,6 +1035,10 @@ function globusTest(){
   let ladungen=1;try{ladungen=+(sessionStorage.getItem('fxpro_globetest_loads')||0)+1;sessionStorage.setItem('fxpro_globetest_loads',String(ladungen));}catch(e){}
   const el=document.createElement('div');el.id='globusTest';el.className='globus-test';el.setAttribute('aria-hidden','true');document.body.appendChild(el);
   const t0=Date.now(),q=(a,f)=>a.length?a[Math.min(a.length-1,Math.floor(a.length*f))]:NaN;
+  // Hauptthread-Takt (2026-11-07, WPE WebKit: Dashboard 9,5 Bilder/s - Flaggen-
+  // Filme und die Bilduebergabe der Kugel liefen dort ueber den Hauptthread,
+  // der auch Tippen/Scrollen bedient). Misst, ob das auf dem Geraet auch so ist.
+  const H=[];let hl=0;const hTakt=n=>{if(!el.isConnected)return;if(hl)H.push(n-hl);hl=n;if(H.length>240)H.splice(0,H.length-240);requestAnimationFrame(hTakt);};requestAnimationFrame(hTakt);
   const zeile=(k,v,ok)=>`<div><span>${k}</span><b class="${ok==null?'':ok?'ok':'nok'}">${v}</b></div>`;
   const upd=()=>{
     if(!el.isConnected)return;
@@ -1044,7 +1048,8 @@ function globusTest(){
     const fps=L.length?1000/(L.reduce((s,x)=>s+x,0)/L.length):0,p95=q(L,.95),ueber=L.length?L.filter(x=>x>20).length/L.length*100:0;
     const rueck=v.filter(x=>x<0).length,p5v=q(v,.05),p95v=q(v,.95),auto=_globeMode==='auto';
     const st=_globeHosts[0],modus=st?(st.modus+(st.workerRaf?'+raf':'')):'-';
-    const okTakt=fps>=55&&p95<=20&&ueber<=2,okDreh=!auto||(rueck===0&&p5v>=3.6&&p95v<=4.4),okLaden=ladungen===1;
+    const Hs=H.slice(-120).sort((a,b)=>a-b),hFps=Hs.length?1000/(Hs.reduce((s,x)=>s+x,0)/Hs.length):0,hP95=q(Hs,.95);
+    const okTakt=fps>=55&&p95<=20&&ueber<=2,okDreh=!auto||(rueck===0&&p5v>=3.6&&p95v<=4.4),okLaden=ladungen===1,okHaupt=!Hs.length||(hFps>=50&&hP95<=34);
     el.innerHTML=`<div class="gt-titel">Globe test</div>`
       +zeile('Mode',modus,modus.startsWith('worker'))
       +zeile('Frames/s',fps?fps.toFixed(1):'–',L.length?fps>=55:null)
@@ -1052,9 +1057,10 @@ function globusTest(){
       +zeile('Gaps > 20 ms',L.length?ueber.toFixed(1)+' %':'–',L.length?ueber<=2:null)
       +zeile('Speed',auto?(v.length?p5v.toFixed(2)+'–'+p95v.toFixed(2)+' °/s':'–'):'<i>dragging</i>',auto&&v.length?okDreh:null)
       +zeile('Backward steps',String(rueck),auto?rueck===0:null)
+      +zeile('Main thread',Hs.length?hFps.toFixed(1)+'/s · p95 '+hP95.toFixed(0)+' ms':'–',Hs.length?okHaupt:null)
       +zeile('Page loads (tab)',String(ladungen),okLaden)
       +zeile('Running',Math.round((Date.now()-t0)/1000)+' s',null)
-      +`<div class="gt-urteil ${okTakt&&okDreh&&okLaden?'ok':'nok'}">${!L.length?'Open the dashboard':okTakt&&okDreh&&okLaden?'Smooth':'Not smooth'}</div>`;
+      +`<div class="gt-urteil ${okTakt&&okDreh&&okLaden&&okHaupt?'ok':'nok'}">${!L.length?'Open the dashboard':okTakt&&okDreh&&okLaden&&okHaupt?'Smooth':'Not smooth'}</div>`;
   };
   upd();setInterval(upd,1000);
 }
