@@ -291,14 +291,15 @@ function statisch() {
     const card = document.getElementById('dbGlobe'); if (!card || !card.querySelector('canvas.globe-canvas')) return null;
     let mut = 0; const mo = new MutationObserver(ms => { mut += ms.length; });
     mo.observe(card, { attributes: true, subtree: true, childList: true, characterData: true });
-    const z0 = window.__globusZeichnungen || 0, g = []; let l = performance.now(); window.__globusLuecken = [];
+    const z0 = window.__globusZeichnungen || 0, g = []; let l = performance.now(); window.__globusLuecken = []; window.__globusWinkel = [];
     await new Promise(r => { const t0 = l; const f = n => { g.push(n - l); l = n; if (n - t0 < 2000) requestAnimationFrame(f); else r(); }; requestAnimationFrame(f); });
     mo.disconnect(); g.sort((a, b) => a - b);
     const m = await import('/js/globe.js');
     // Kugel-Takt: im Worker-Modus die vom Worker gemeldeten Bildabstaende, sonst der Hauptthread
     const L = (window.__globusLuecken || []).slice().sort((a, b) => a - b), w = L.length >= 30;
     const p95 = w ? L[Math.floor(L.length * .95)] : g[Math.floor(g.length * .95)], fps = w ? 1000 / (L.reduce((a, b) => a + b, 0) / L.length) : g.length / 2;
-    return { n: (window.__globusZeichnungen || 0) - z0, bilder: g.length, mut, p95, fps, max: w ? L[L.length - 1] : g[g.length - 1], modus: m._globeHosts.map(x => x.modus).join(',') };
+    const tempo = (() => { const W = (window.__globusWinkel || []).slice(), v = []; for (let i = 1; i < W.length; i++) { const dt = (W[i][0] - W[i - 1][0]) / 1000; if (dt > 0.004) v.push((((W[i][1] - W[i - 1][1]) % 360 + 540) % 360 - 180) / dt); } v.sort((a, b) => a - b); return v.length ? { n: v.length, rueck: v.filter(x => x < 0).length, med: v[v.length >> 1], p5: v[Math.floor(v.length * .05)], p95: v[Math.floor(v.length * .95)] } : null; })();
+    return { n: (window.__globusZeichnungen || 0) - z0, bilder: g.length, mut, p95, fps, max: w ? L[L.length - 1] : g[g.length - 1], modus: m._globeHosts.map(x => x.modus).join(','), tempo };
   });
   const gl = await kugelMessen();
   if (!gl) rot('Dashboard-Kugel (Canvas-Ebenen) nicht gefunden');
@@ -313,6 +314,14 @@ function statisch() {
   await cdpG.send('Emulation.setCPUThrottlingRate', { rate: 4 }); await p.waitForTimeout(800);
   const g4 = await kugelMessen();
   await cdpG.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  // Gleichmaessige Drehung (Nutzer-Fotos 2026-11-07: Kugel sprang vor und zurueck,
+  // gemessen -22 bis +19 Grad/s statt 4): nie rueckwaerts, Tempo 4 Grad/s +-10 %.
+  for (const [lbl, r] of [['1x', gl], ['4x', g4]]) {
+    const t = r && r.tempo;
+    if (!t) { rot(`${lbl} CPU: keine Winkel vom Worker gemeldet`); continue; }
+    if (t.rueck > 0 || t.p5 < 3.6 || t.p95 > 4.4) rot(`${lbl} CPU: Drehung ungleichmaessig - ${t.rueck} Rueckwaerts-Schritte, Tempo p5 ${t.p5.toFixed(2)} / Median ${t.med.toFixed(2)} / p95 ${t.p95.toFixed(2)} Grad/s (soll 4)`);
+    else gruen(`${lbl} CPU: Drehung gleichmaessig (0 rueckwaerts, ${t.p5.toFixed(2)}-${t.p95.toFixed(2)} Grad/s, Median ${t.med.toFixed(2)})`);
+  }
   if (g4) { if (g4.fps < 54 || g4.p95 > 20) rot(`bei 4x CPU Kugel nur ${g4.fps.toFixed(0)} Bilder/s, p95 ${g4.p95.toFixed(1)} ms - sie haengt auf langsamen Geraeten`); else gruen(`bei 4x CPU Kugel ${g4.fps.toFixed(0)} Bilder/s, p95 ${g4.p95.toFixed(1)} ms, max ${g4.max.toFixed(0)} ms`); }
   await p.evaluate(async () => { window.__gpGlobusSchwelle = false; if (window.__globusOhneWorker) { window.__globusOhneWorker = false; const m = await import('/js/globe.js'); m.startGlobes({ neu: true }); } });
 

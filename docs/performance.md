@@ -199,3 +199,7 @@ Kalender-Abgleich 131 → ~0, FF-Abgleich 93 → ~0, `indOverdueCycles` 63 → 2
 - **Merksatz WebKit:** Ein sehr hoher Scroll-Container (hier 18.000 px) legt
   WebKit in voller Höhe an - Speicher bis zum Absturz. Hohe Inhalte nie als
   eigenen Scroll-Container; für bloßes Abschneiden `overflow:clip`.
+- **Merksatz Drehung (2026-11-07):** Ein Takt, der aus dem letzten Stand eines
+  ANDEREN Threads hochrechnet, springt zurück, sobald der Stand verspätet
+  ankommt. Gleichmäßige Bewegung = Zeitfunktion (Start + Tempo × Zeit), die
+  beide Seiten aus derselben Uhr rechnen; Stände nur bei Eingriffen.

@@ -21517,3 +21517,22 @@ Messungen bei Pixeldichte 2 (wie iPad), Container ohne GPU:
   Nachher Kalender stabil ~2 GB wie andere Seiten.
 - Wächter neu `check/webkitkugel.js` (ohne WebKit übersprungen; Gegenprobe
   Hauptthread → rot).
+
+## 2026-11-07 — Weltkugel dreht gleichmäßig, kein Vor-und-Zurück (VERSION-CHECK-686)
+
+Nutzer (3 iPad-Fotos): *„Es ruckelt“* — Kugel sprang in 3 s um ~35° statt 12°.
+- **Reproduziert:** Winkel je Worker-Bild aufgezeichnet (`__globusWinkel`).
+  WebKit: Tempo **−22 bis +19 °/s** statt 4, Rückwärts-Schritte vorhanden.
+- **Ursache:** Der Worker rechnete aus dem letzten Hauptthread-Stand weiter
+  (bis 50 ms). Kam ein neuer Stand an, der hinter der Hochrechnung lag,
+  sprang das Bild zurück. Zusätzlich verlor der Hauptthread Zeit (Bildabstand
+  bei 100 ms gekappt) → Stand und Uhr liefen auseinander.
+- **Fix an der Wurzel:** Normalbetrieb = reine Zeitfunktion
+  `lon = lon0 + v · (jetzt − t0)` (`_globeSeg`), gleiche Formel in Hauptthread
+  und Worker; der Hauptthread schickt sie nur bei Änderung (`typ:'seg'`).
+  Ziehen/Schwung/Boost schicken weiter laufende Stände. Ein Zeitpunkt für
+  Winkel und Aufzeichnung.
+- **Nachher:** WebKit 450 Bilder, Tempo p5/Median/p95 **4,00/4,00/4,00 °/s**,
+  0 Rückwärts-Schritte; Chromium 1× und 4× CPU ebenso.
+- Wächter: `check/performance.js` G und `check/webkitkugel.js` E (0 Rückwärts,
+  p5 ≥ 3,6, p95 ≤ 4,4 °/s).

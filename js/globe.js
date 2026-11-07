@@ -275,6 +275,15 @@ function globeFuelTick(dtMs,thrustI){
 // laedt sondern einfach normal sich dreht"): beim Anhalten bleiben Geruest und
 // Referenzen erhalten; startGlobes() setzt sie fort, statt neu zu zeichnen.
 let _globeParked=null;
+// Drehung im Normalbetrieb als reine ZEITFUNKTION (2026-11-07, Nutzer-Fotos:
+// Kugel sprang in 3 s um ~35 Grad statt 12, "es ruckelt"). GEMESSEN vorher: der
+// Worker rechnete aus dem letzten Hauptthread-Stand weiter - kam ein neuer
+// Stand hinter der Hochrechnung an, sprang das Bild zurueck (WebKit: -22 bis
+// +19 Grad/s statt 4); der Hauptthread selbst verlor Zeit (Bildabstand bei
+// 100 ms gekappt). Jetzt: Winkel = Start + Tempo x (jetzt - Startzeit), im
+// Hauptthread UND im Worker aus derselben Formel; nur Ziehen/Schwung/Boost
+// schicken weiter laufende Staende.
+let _globeSeg=null;
 function globeWorkerTakt(st,an){
   st.laeuft=an;if(st.worker&&st.workerRaf)st.worker.postMessage({typ:an?'start':'stop'});
 }
@@ -581,7 +590,8 @@ function globeWorkerVerbinden(st){
     // Worker mit eigenem Bildtakt: ab jetzt nur noch Zustand schicken
     if(d.typ==='bereit'){st.workerRaf=!!d.raf;if(st.workerRaf&&st.laeuft)st.worker.postMessage({typ:'start'});return;}
     if(d.typ==='gezeichnet'){st.zeichnungen=(st.zeichnungen||0)+d.n;window.__globusZeichnungen=(window.__globusZeichnungen||0)+d.n;
-      const L=window.__globusLuecken||(window.__globusLuecken=[]);L.push(...(d.luecken||[]));if(L.length>600)L.splice(0,L.length-600);return;}
+      const L=window.__globusLuecken||(window.__globusLuecken=[]);L.push(...(d.luecken||[]));if(L.length>600)L.splice(0,L.length-600);
+      const W=window.__globusWinkel||(window.__globusWinkel=[]);W.push(...(d.winkel||[]));if(W.length>600)W.splice(0,W.length-600);return;}
     if(d.typ!=='fertig')return;
     st.wartet=false;st.zeichnungen=(st.zeichnungen||0)+1;window.__globusZeichnungen=(window.__globusZeichnungen||0)+1;
     if(st.offen){st.offen=false;globeZeichnen(st);}
@@ -610,7 +620,18 @@ function globeMetaPflegen(st){
 }
 function globeZeichnen(st){
   const t=performance.now(),anim=!document.body.classList.contains('no-ui-anim');
+  if(st.worker&&st.workerRaf&&_globeSeg&&_globeMode==='auto'){
+    // Normalbetrieb: die Zeitformel nur bei Aenderung senden - der Worker
+    // rechnet jedes Bild selbst exakt aus seiner Uhr.
+    const vx=st.vehiclePos.x,vy=st.vehiclePos.y;
+    if(st.segGesendet!==_globeSeg||st.segAnim!==anim||st.segVx!==vx||st.segVy!==vy){
+      st.segGesendet=_globeSeg;st.segAnim=anim;st.segVx=vx;st.segVy=vy;st.zLon=null;
+      st.worker.postMessage({typ:'seg',lon0:_globeSeg.lon0,t0:_globeSeg.abs,v:_globeSeg.v,anim,vx,vy});
+    }
+    return;
+  }
   if(st.worker&&st.workerRaf){
+    st.segGesendet=null;
     // Zustand an den Worker-Takt: Winkel, Geschwindigkeit (aus der letzten
     // Aenderung, Grad/ms), absoluter Zeitpunkt - der Worker rechnet weiter.
     const T=performance.timeOrigin+t,lon=_globeLon;
@@ -832,6 +853,7 @@ function globeHostGroesse(h){
 }
 function startGlobes(opt){
   if(window.__gpGlobusNeubau)opt={neu:true};   // nur Gegenprobe check/performance.js (K)
+  _globeSeg=null;   // ab dem aktuellen Winkel weiter, kein Sprung um die Abwesenheit
   const park=_globeParked;
   stopGlobe();_globeParked=null;
   // ⚠ Seit 2026-09-11 lebt die Kugel auf der Overview-Seite, nicht mehr auf
@@ -916,6 +938,7 @@ function startGlobes(opt){
     const dt=Math.min(now-_globeLast,DT_MAX);
     const ruheMs=window.__gpGlobusRuheMs||GLOBE_RUHE_MS;
     const ruht=_globeMode==='auto'&&_throttleFrac<=0.002&&!_globeVehicleBusy&&now-_globeEingabe>ruheMs;
+    if(_globeMode!=='auto'||_throttleFrac>0.002)_globeSeg=null;
     _globeRuheF=ruht?_globeRuheF*Math.exp(-dt/500):1;   // auslaufen statt abrupt stehen; aufwachen sofort
     const steht=ruht&&_globeRuheF<0.01;
     if(steht!==_globeRuhtCls){_globeRuhtCls=steht;_globeHosts.forEach(st=>st.host.classList.toggle('globe-ruht',steht));}
@@ -968,7 +991,8 @@ function startGlobes(opt){
         _globeLon=(_globeLon+dt*_globeVel+360*1000)%360;
         if(_globeMode==='boost')_globeHosts.forEach(st=>{st.host.style.setProperty('--boost-i',thrustI.toFixed(3));st.host.style.setProperty('--boost-blur',blurI.toFixed(3));});
       }else if(_globeMode==='auto'){
-        _globeLon=(_globeLon+dt*GLOBE_AUTO_VEL*_globeRuheF)%360;
+        if(!_globeSeg||_globeSeg.v!==GLOBE_AUTO_VEL*_globeRuheF)_globeSeg={lon0:_globeLon,t0:now,v:GLOBE_AUTO_VEL*_globeRuheF,abs:performance.timeOrigin+now};
+        _globeLon=((_globeSeg.lon0+_globeSeg.v*(now-_globeSeg.t0))%360+360)%360;
       } // 'drag': Position wird direkt per Pointermove gesetzt, hier nichts tun
       globeFuelTick(dt,thrustI);
       // Nur neu zeichnen, wenn sich die Oberflaeche seit dem letzten Bild um

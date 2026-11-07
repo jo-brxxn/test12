@@ -11,6 +11,7 @@
 //   C) 0 Dokument-Aenderungen in der Kugel-Karte (sonst setzt der Browser die
 //      ganze Seite je Bild neu zusammen)
 //   D) Rueckkehr ins Dashboard ohne Neuaufbau, Marker-Tipp oeffnet das Asset
+//   E) gleichmaessige Drehung: nie rueckwaerts, Tempo 4 Grad/s +-10 % (p5/p95)
 // GEMESSEN 2026-11-07 (Container ohne GPU - WebKit setzt den Bildschirm auf der
 // CPU zusammen, die Untergrenze liegt hier bei p95 ~21-24 ms): vorher 47-50/s,
 // p95 39 ms (zwei Canvas + feste Ebenen + flackernde Duesenflamme im SVG);
@@ -45,10 +46,11 @@ const URL = process.env.CHECK_URL || `http://127.0.0.1:${PORT}/index.html`;
     await new Promise(r => setTimeout(r, 800));
     const card = document.getElementById('dbGlobe'); let mut = 0; const mo = new MutationObserver(m => { mut += m.length; });
     mo.observe(card, { subtree: true, attributes: true, childList: true, characterData: true });
-    const z0 = window.__globusZeichnungen || 0; window.__globusLuecken = []; const t0 = performance.now();
+    const z0 = window.__globusZeichnungen || 0; window.__globusLuecken = []; window.__globusWinkel = []; const t0 = performance.now();
     await new Promise(r => setTimeout(r, 5000)); mo.disconnect();
     const s = (performance.now() - t0) / 1000, a = (window.__globusLuecken || []).slice().sort((x, y) => x - y);
-    return { jeS: ((window.__globusZeichnungen || 0) - z0) / s, p95: a.length ? a[Math.floor(a.length * .95)] : 999, ueber: a.filter(v => v > 20).length / Math.max(1, a.length) * 100, mut };
+    const tempo = (() => { const W = (window.__globusWinkel || []).slice(), v = []; for (let i = 1; i < W.length; i++) { const dt = (W[i][0] - W[i - 1][0]) / 1000; if (dt > 0.004) v.push((((W[i][1] - W[i - 1][1]) % 360 + 540) % 360 - 180) / dt); } v.sort((a, b) => a - b); return v.length ? { n: v.length, rueck: v.filter(x => x < 0).length, med: v[v.length >> 1], p5: v[Math.floor(v.length * .05)], p95: v[Math.floor(v.length * .95)] } : null; })();
+    return { jeS: ((window.__globusZeichnungen || 0) - z0) / s, p95: a.length ? a[Math.floor(a.length * .95)] : 999, ueber: a.filter(v => v > 20).length / Math.max(1, a.length) * 100, mut, tempo };
   }, css);
   const ALLEIN = '.dx-top,.dx-r3,.dx-r4,.dx-r5,[data-slot=markt],.hdr,#navSidebar{display:none!important}*{animation:none!important}';
   await lauf('');
@@ -58,6 +60,8 @@ const URL = process.env.CHECK_URL || `http://127.0.0.1:${PORT}/index.html`;
   const m = (a, f) => a.reduce((x, r) => x + r[f], 0) / a.length;
   const jeS = m(D, 'jeS'), p95 = m(D, 'p95'), kJeS = m(K, 'jeS'), kP95 = m(K, 'p95'), kU = m(K, 'ueber'), mut = D.reduce((x, r) => x + r.mut, 0);
   if (kJeS < 58 || kP95 > 20 || kU > 2) F.push(`B: Kugel allein ${kJeS.toFixed(1)} Zeichnungen/s, p95 ${kP95.toFixed(1)} ms, ${kU.toFixed(0)} % > 20 ms (verlangt >= 58/s, p95 <= 20 ms, <= 2 %)`);
+  // E) gleichmaessige Drehung (Nutzer-Fotos 2026-11-07: vor und zurueck, -22 bis +19 Grad/s)
+  [...D, ...K].forEach((r, i) => { const t = r.tempo; if (!t) F.push('E: keine Winkel vom Worker'); else if (t.rueck > 0 || t.p5 < 3.6 || t.p95 > 4.4) F.push(`E: Drehung ungleichmaessig (Lauf ${i + 1}): ${t.rueck} rueckwaerts, Tempo ${t.p5.toFixed(2)}-${t.p95.toFixed(2)} Grad/s, Median ${t.med.toFixed(2)} (soll 4)`); });
   if (jeS < 54 || p95 > 26) F.push(`B: Kugel im Dashboard ${jeS.toFixed(1)} Zeichnungen/s, p95 ${p95.toFixed(1)} ms (verlangt >= 54/s, p95 <= 26 ms)`);
   if (mut > 0) F.push(`C: Kugel-Karte ${mut}x im Dokument veraendert in 20 s`);
   const d = await p.evaluate(async () => {
@@ -71,5 +75,5 @@ const URL = process.env.CHECK_URL || `http://127.0.0.1:${PORT}/index.html`;
   await b.close();
   if (GP) { const ok = F.some(f => f.startsWith('A:')); console.log(ok ? 'webkitkugel --gegenprobe: ok (Hauptthread-Zeichnen wird gemeldet)' : 'webkitkugel --gegenprobe: FEHLER - nicht gemeldet'); process.exit(ok ? 0 : 1); }
   if (F.length) { console.log('webkitkugel: ' + F.length + ' Befund(e)\n  ' + F.join('\n  ')); process.exit(1); }
-  console.log(`webkitkugel: ok (WebKit, Pixeldichte 2, ${modus}: Kugel allein ${kJeS.toFixed(1)}/s p95 ${kP95.toFixed(1)} ms ${kU.toFixed(0)} % > 20 ms; im Dashboard ${jeS.toFixed(1)}/s p95 ${p95.toFixed(1)} ms; 0 Dokument-Aenderungen, Rueckkehr ohne Neuaufbau, Marker-Tipp oeffnet Asset)`);
+  console.log(`webkitkugel: ok (WebKit, Pixeldichte 2, ${modus}: Kugel allein ${kJeS.toFixed(1)}/s p95 ${kP95.toFixed(1)} ms ${kU.toFixed(0)} % > 20 ms; im Dashboard ${jeS.toFixed(1)}/s p95 ${p95.toFixed(1)} ms; 0 Dokument-Aenderungen, Rueckkehr ohne Neuaufbau, Marker-Tipp oeffnet Asset, Drehung gleichmaessig 4 Grad/s ohne Rueckwaerts-Schritt)`);
 })().catch(e => { console.error(e); process.exit(2); });
