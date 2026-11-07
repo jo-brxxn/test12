@@ -419,8 +419,8 @@ function globeSkeleton(size,uid){
   // (globeCollectRefs/globeUpdateOne setzen Position+Farbe), damit es nicht
   // wie ein einziges synchrones Blinken wirkt, sondern wie einzelne
   // Ortungssignale.
-  // Marker, Ortungs-Ringe und Beschriftungen: zweite Canvas-Ebene ueber dem SVG
-  // (.globe-mcanvas), gezeichnet von js/globe-zeichnen.js - im Worker.
+  // Marker, Ortungs-Ringe und Beschriftungen: auf derselben Canvas-Flaeche wie
+  // das Land (js/globe-zeichnen.js, im Worker).
   // Radar-Sweep-Keil (Global-Market-Surveillance-Umbau 2026-07-27, Nutzer-
   // Korrektur 2026-07-28 "das Radar soll immer mit dem Flugzeug mitgehen"):
   // der Keil ist jetzt in LOKALEN Koordinaten (Ursprung 0,0) definiert und
@@ -522,9 +522,7 @@ function globeSkeleton(size,uid){
   // jedes Bild neu malen - gemessen nur 15 Bewegungsschritte/s und bei 4x
   // gedrosselter CPU Haenger bis 133 ms (Nutzer: "perfekt drehen ohne zu
   // haengen").
-  const rr=(v)=>(v/size*100).toFixed(3)+'%';
-  const kreis=`left:${rr(cx-R)};top:${rr(cy-R)};width:${rr(2*R)};height:${rr(2*R)}`;
-  return`<div class="globe-buehne" style="width:${size}px"><div class="globe-meer" style="${kreis}"></div><canvas class="globe-canvas" aria-hidden="true"></canvas><div class="globe-rand" style="${kreis}"></div><div class="globe-sweep-w" style="width:${(2*R).toFixed(1)}px;height:${(2*R).toFixed(1)}px;transform:translate(${(cx-R).toFixed(1)}px,${(cy-R).toFixed(1)}px)"><div class="globe-sweep-k"></div></div><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" onclick="closeGlobeTip()">
+  return`<div class="globe-buehne" style="width:${size}px"><canvas class="globe-canvas" aria-hidden="true"></canvas><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" onclick="closeGlobeTip()">
     <defs>
       <linearGradient id="${fgid}" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#cfeaff"/>
@@ -549,7 +547,7 @@ function globeSkeleton(size,uid){
     ${vehicle}
     ${jetHit}
     <g pointer-events="none">${bezel}</g>
-  </svg><canvas class="globe-mcanvas" aria-hidden="true"></canvas></div>`;
+  </svg></div>`;
 }
 // Canvas-Ebene einrichten: Aufloesung = Geraetepixel (scharf auf dem iPad),
 // Viereck-Raster als Muster (gleiche Masse wie das fruehere SVG-<pattern>:
@@ -558,21 +556,21 @@ function globeSkeleton(size,uid){
 // 70 % des Radius zum Rand hin in das Meer aus).
 const GLOBE_MEER='#0b2445',GLOBE_LANDFARBE='#2d6ea8';
 function globeCanvasRefs(host,size){
-  const lcv=host.querySelector('canvas.globe-canvas'),mcv=host.querySelector('canvas.globe-mcanvas');if(!lcv||!mcv)return{};
+  const lcv=host.querySelector('canvas.globe-canvas');if(!lcv)return{};
   const o={size,dpr:Math.min(window.devicePixelRatio||1,2),lat0:GLOBE_LAT0,landfarbe:GLOBE_LANDFARBE,rasterFarbe:'rgba(126,196,255,.5)',
-    schrift:(getComputedStyle(document.body).fontFamily||'sans-serif')};
+    schrift:(getComputedStyle(document.body).fontFamily||'sans-serif'),meer:GLOBE_MEER};
   let worker=null;
   // Worker + OffscreenCanvas, wo moeglich (iPadOS 16.4+, aktuelle Browser);
   // __globusOhneWorker: Rueckfall nach einem Worker-Fehler bzw. fuer Pruefungen.
   if(!window.__globusOhneWorker&&typeof OffscreenCanvas!=='undefined'&&lcv.transferControlToOffscreen&&typeof Worker!=='undefined'){
     try{worker=new Worker(new URL('./globe-worker.js',import.meta.url),{type:'module'});}catch(e){worker=null;}
     if(worker){
-      try{const lo=lcv.transferControlToOffscreen(),mo=mcv.transferControlToOffscreen();worker.postMessage({typ:'init',land:lo,marker:mo,o},[lo,mo]);}
+      try{const lo=lcv.transferControlToOffscreen();worker.postMessage({typ:'init',land:lo,o},[lo]);}
       catch(e){try{worker.terminate();}catch(e2){}worker=null;}
     }
   }
   if(worker)return{worker,modus:'worker',o};
-  return{zeichner:erstelleZeichner(lcv,mcv,o),modus:'haupt',o};
+  return{zeichner:erstelleZeichner(lcv,o),modus:'haupt',o};
 }
 // Verbindung zum Worker: 'fertig' gibt das naechste Bild frei (Flusskontrolle),
 // ein Fehler schaltet dauerhaft auf Zeichnen im Hauptthread um.
@@ -618,14 +616,14 @@ function globeZeichnen(st){
     const T=performance.timeOrigin+t,lon=_globeLon;
     let vel=0;if(st.zLon!=null&&T>st.zT){vel=(((lon-st.zLon)%360+540)%360-180)/(T-st.zT);}
     st.zLon=lon;st.zT=T;
-    st.worker.postMessage({typ:'zustand',lon,vel,t:T,anim});return;
+    st.worker.postMessage({typ:'zustand',lon,vel,t:T,anim,vx:st.vehiclePos.x,vy:st.vehiclePos.y});return;
   }
   if(st.worker){
     if(st.wartet){st.offen=true;return;}
-    st.wartet=true;st.worker.postMessage({typ:'bild',lon:_globeLon,t,anim});return;
+    st.wartet=true;st.worker.postMessage({typ:'bild',lon:_globeLon,t,anim,vx:st.vehiclePos.x,vy:st.vehiclePos.y});return;
   }
   if(!st.zeichner)return;
-  st.zeichner.bild(_globeLon,t,anim);
+  st.zeichner.bild(_globeLon,t,anim,st.vehiclePos.x,st.vehiclePos.y);
   st.zeichnungen=(st.zeichnungen||0)+1;window.__globusZeichnungen=(window.__globusZeichnungen||0)+1;
 }
 // Marker unter dem Zeiger (Klick/Mauszeiger) aus Drehwinkel und Projektion -
@@ -685,6 +683,8 @@ function globeUpdateOne(st){
 // exakt wie zuvor (volle Umdrehung alle 4,5s), jetzt per Zeitstempel statt
 // SMIL berechnet.
 function globeUpdateSweep(st){
+  // Radar-Keil zeichnet seit 2026-11-07 der Zeichner (Jet-Position kommt mit
+  // jedem Bild mit) - hier bleibt nur der Rueckfall fuer eine alte Ebene.
   if(!st.sweepEl)return;
   // Drehung laeuft als CSS-Animation (.globe-sweep-k, 4,5 s) auf der
   // Grafikeinheit; hier nur die Verschiebung mit dem Jet - und nur bei Aenderung.

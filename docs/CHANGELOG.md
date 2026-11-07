@@ -21492,3 +21492,28 @@ aufgefüllten Standard-Kacheln). Kacheln sind jetzt `div role=button` (kein
 Knopf im Knopf). Gemessen: GBP/CAD entfernt, Seite bleibt offen, Undo stellt
 wieder her; × öffnet die Kachel nicht. Wächter `dashboard.js` (Knopf da,
 oben, ≥ 28 px, entfernt, öffnet nicht; Gegenprobe ohne stopPropagation → rot).
+
+## 2026-11-07 — Weltkugel in WebKit belegt, Kalender-Speicherexplosion in Safari (VERSION-CHECK-685)
+
+Ziel „Weltkugel perfekt drehen ohne Neuladen/Hängen“ — Nachweis in **WebKit**
+(Safari-Engine; Netzwerk-Freigabe cdn.playwright.dev /
+playwright.download.prss.microsoft.com, WebKit 26.6 in den Scratch-Ordner).
+Messungen bei Pixeldichte 2 (wie iPad), Container ohne GPU:
+- Worker-Modus mit eigenem Bildtakt läuft in WebKit (OffscreenCanvas + rAF im Worker).
+- Vorher 47–50 Zeichnungen/s, p95 39 ms. Schritte: EINE Canvas-Fläche statt
+  zwei + feste Meer/Rand-Ebenen (57–59/s, p95 26–28); Radar-Keil im Canvas statt
+  drehender Ebene; Düsenflamme flackert nur beim Boost (die Filter-Animation
+  lief alle 60 ms INNERHALB des Kugel-SVG).
+- Nachher, abwechselnd gemessen: **Kugel allein 64,1/s, p95 17,5 ms, 0 % > 20 ms**;
+  Dashboard ohne Animationen 63,5/s p95 18,8; volles Dashboard 61,3/s p95 22
+  (Rest = übrige Seiten-Animationen, v. a. 37 Flaggen-Filme, in dieser
+  Umgebung auf der CPU zusammengesetzt).
+- **Fund am Rand: Kalender in WebKit** — Speicher +~650 MB/s bis 14 GB
+  (OOM). Auf dem iPad beendet Safari so einen Tab und lädt die Seite neu (auch
+  die Kugel). Ursache: `.cal-table` war Scroll-Container (`overflow-x:auto`) bei
+  18.000–25.000 px Höhe; WebKit legte ihn in voller Höhe an. Ohne
+  Scroll-Container (+ eigene Ebene) +64 MB stabil. Seitlich scrollen brauchte
+  die Tabelle nie (≥ 768 px passt sie, Handy 4 px Überstand) → `overflow-x:clip`.
+  Nachher Kalender stabil ~2 GB wie andere Seiten.
+- Wächter neu `check/webkitkugel.js` (ohne WebKit übersprungen; Gegenprobe
+  Hauptthread → rot).

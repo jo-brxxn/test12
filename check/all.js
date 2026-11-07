@@ -124,6 +124,7 @@ const PRUEFUNGEN = [
   { n: 'ratelink', s: 25, d: 'Asset-Seite: Rate Probabilities oeffnet den Link der Bank (CHF Hinweis), Central-bank-Go-to fuehrt in die Kategorie', f: 'check/ratelink.js', args: [], browser: true },
   { n: 'hoverpunkte', s: 25, d: 'Hover bei mehreren Linien: Punkt auf jeder Linie, Karte nach Lage, Linie bis oben; Ein-Linien-Charts unveraendert', f: 'check/hoverpunkte.js', args: [], browser: true },
   { n: 'federn', s: 15, d: 'Seiten federn nativ (iOS-Gummiband), eigenes Federn aus', f: 'check/federn.js', args: [], browser: true },
+  { n: 'webkitkugel', s: 90, d: 'Weltkugel in WebKit (Safari-Engine, dpr 2): Worker mit eigenem Takt, allein >= 58/s p95 <= 20 ms, im Dashboard >= 54/s; ohne WebKit uebersprungen', f: 'check/webkitkugel.js', args: [], browser: true },
   { n: 'datamenu', s: 25, d: 'Data-Kontrollmenue (Option C): Reiter, Display-Knopf mit Zusammenfassung, Menue unter dem Knopf, wirkt sofort', f: 'check/datamenu.js', args: [], browser: true },
   { n: 'preiskarte', s: 40, d: 'Price-Karte: volle Breite + Pinned/History/Calendar, Release-Pfeile, Spalte Next up/Tag, Markers aus, eigene Pfeile (Notiz pm), Vergleich bis 2 Kurse als Linien, Handy', f: 'check/preiskarte.js', args: [], browser: true },
   // 2026-11-02 (CI 675, Nutzer-Wahl Option A): Quelle/Zeit unter den Titel in schmalen Listen.

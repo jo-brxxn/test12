@@ -3689,7 +3689,11 @@ body.no-ui-anim .globe-jet-light{animation:none;opacity:.55}
    (kein JS-Zusatz noetig). Multiplikatoren so gewaehlt, dass BEIDE Achsen bei
    --boost-i=1 (Boost + Regler ganz oben) mindestens die geforderten 4x der
    Ruhegroesse erreichen: scaleY 0.32->1.67 (5.2x), scaleX 0.6->2.4 (4.0x). */
-.globe-jet-flame{opacity:1;transform:scaleY(calc(.32 + var(--boost-i,0)*1.35)) scaleX(calc(.6 + var(--boost-i,0)*1.8));animation:jetFlameFlicker .12s steps(2) infinite}
+.globe-jet-flame{opacity:1;transform:scaleY(calc(.32 + var(--boost-i,0)*1.35)) scaleX(calc(.6 + var(--boost-i,0)*1.8))}
+/* Flackern nur beim Boost (2026-11-07): im Normalbetrieb lief die Filter-
+   Animation alle 60 ms INNERHALB des Kugel-SVG - das ganze SVG wurde ~16x/s mit
+   Filtern neu gemalt (WebKit, Pixeldichte 2: p95 30 -> 25 ms ohne). */
+.globe-host.boosting .globe-jet-flame{animation:jetFlameFlicker .12s steps(2) infinite}
 /* Flacker-Amplitude verstaerkt (Nutzer-Wunsch 2026-07-28, Schubregler-
    Nachbesserung "Feuer muss auch leicht dynamisch sein") - Helligkeit UND
    Deckkraft schwanken jetzt zusaetzlich zu Farbton/Saettigung, damit die
@@ -3863,16 +3867,13 @@ body.no-ui-anim .hud-live-dot{animation:none}
    der ganze Host. */
 .globe-host{position:relative;display:flex;justify-content:center;align-items:center;padding:2px 0 4px;min-height:120px;touch-action:none;user-select:none}
 /* ══ GLOBUS-EBENEN (2026-11-06, Nutzer: "perfekt drehen ohne zu haengen") ══
-   Von unten: Meer (fest) - Canvas (Land+Raster, je Bild EIN Malvorgang) -
-   Randschatten (fest) - Radar-Keil (dreht per CSS-Animation auf der
+   Von unten: Canvas (Meer, Land+Raster, Randschatten, Marker - EINE Flaeche,
+   gezeichnet im Web Worker) - Radar-Keil (dreht per CSS-Animation auf der
    Grafikeinheit) - SVG (Ringe, Fadenkreuz, Jet, Bezel; aendert sich je Bild
    NICHT mehr) - Marker-Canvas. Beide Canvas gehoeren einem Web Worker
    (js/globe-worker.js): je Bild aendert sich am Dokument nichts.
    Vorher: alles in einem SVG, das jedes Bild neu gemalt werden musste. */
 .globe-buehne{position:relative;flex:none;aspect-ratio:1}
-.globe-buehne>.globe-meer,.globe-buehne>.globe-rand{position:absolute;border-radius:50%;pointer-events:none}
-.globe-buehne>.globe-meer{background:#0b2445}
-.globe-buehne>.globe-rand{background:radial-gradient(circle closest-side,rgba(11,36,69,0) 70%,rgba(11,36,69,1) 100%)}
 .globe-buehne>.globe-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 .globe-buehne>svg{position:relative;display:block;width:100%;height:auto}
 .globe-sweep-w{position:absolute;left:0;top:0;pointer-events:none;will-change:transform}
@@ -3880,7 +3881,6 @@ body.no-ui-anim .hud-live-dot{animation:none}
   background:conic-gradient(from 64deg,rgba(126,224,255,0) 0deg,rgba(126,224,255,.4) 52deg,transparent 52.01deg);
   animation:globeSweepDreh 4.5s linear infinite}
 @keyframes globeSweepDreh{to{transform:rotate(360deg)}}
-.globe-buehne>.globe-mcanvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:2}   /* Marker-Ebene ueber dem SVG (.dw-globe .globe-host svg hat z-index:1) */
 body.no-ui-anim .globe-sweep-k{animation:none}
 .globe-host.boosting .globe-canvas{filter:blur(calc(var(--boost-blur,0)*9px))}
 body.no-ui-anim .globe-host.boosting .globe-canvas{filter:none}
@@ -3941,13 +3941,20 @@ body.no-ui-anim .globe-host.boosting .globe-canvas{filter:none}
 .dw-mini_calendar .cal-scroll{max-height:52vh;overflow-y:auto}
 /* ── CALENDAR TABLE (FF-Style) ── */
 /* ⚠ will-change:transform = eigene Ebene (2026-10-24, gemessen). Die Tabelle
-   ist ein Scroll-Container (overflow-x fuer schmale Bildschirme) mit ~5.200
+   war ein Scroll-Container (bis 2026-11-07, siehe unten) mit ~5.200
    Elementen und 17.700 px Hoehe. Ohne eigene Ebene ordnete Chrome sie in
    JEDEM Bild der Seiten-Einblendung (pageFadeIn, translateY) neu:
    7x ~170 ms Layerize, Calendar-Wechsel 1.294 ms (Handy dpr 3: 929 ms).
    Mit eigener Ebene 160-180 ms, Optik und Scrollen unveraendert.
    Waechter: check/performance.js I. Regel: docs/performance.md 10. */
-.cal-table{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);overflow-x:auto;margin-bottom:6px;will-change:transform}
+/* ⚠ overflow-x:CLIP statt auto (2026-11-07, gemessen in WebKit = Safari-
+   Engine, Pixeldichte 2): als SCROLL-Container legte WebKit die 18.000-25.000 px
+   hohe Tabelle in voller Hoehe an - der Speicher wuchs ~650 MB/s bis zum
+   Absturz (auf dem iPad: Safari beendet den Tab und laedt die Seite NEU).
+   Ohne Scroll-Container, mit eigener Ebene: +64 MB, stabil. Seitlich scrollen
+   brauchte die Tabelle ohnehin nie: ab 768 px passt sie, am Handy waren es
+   4 px Randueberstand - clip schneidet die ab, ohne Scroll-Container. */
+.cal-table{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);overflow-x:clip;margin-bottom:6px;will-change:transform}
 .cal-day-hdr{font-size:var(--fs-sm);font-weight:800;color:var(--t1);padding:6px 9px;background:var(--bg4);border-bottom:1px solid var(--bd);font-family:var(--ff-num);letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase}
 .cal-day-hdr.today{color:var(--red)}
 .cal-day-hdr .cal-day-cd{color:var(--t3);font-weight:700}
@@ -7505,11 +7512,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-684 - Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-685 - Weltkugel in WebKit belegt (eine Flaeche, Radar im Canvas, Flamme flackert nur beim Boost); Kalender ohne Speicher-Explosion in Safari; vorher 684: Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-684</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-685</span>
     </span>
   </div>
   <div class="hdr-r">

@@ -288,7 +288,7 @@ function statisch() {
   await p.mouse.move(5, 5); await p.mouse.move(9, 9);
   await p.waitForTimeout(2500);
   const kugelMessen = () => p.evaluate(async () => {
-    const card = document.getElementById('dbGlobe'); if (!card || !card.querySelector('canvas.globe-mcanvas')) return null;
+    const card = document.getElementById('dbGlobe'); if (!card || !card.querySelector('canvas.globe-canvas')) return null;
     let mut = 0; const mo = new MutationObserver(ms => { mut += ms.length; });
     mo.observe(card, { attributes: true, subtree: true, childList: true, characterData: true });
     const z0 = window.__globusZeichnungen || 0, g = []; let l = performance.now(); window.__globusLuecken = [];

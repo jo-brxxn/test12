@@ -192,3 +192,10 @@ Kalender-Abgleich 131 → ~0, FF-Abgleich 93 → ~0, `indOverdueCycles` 63 → 2
   Hauptthread schickt nur Zustand (Winkel, Geschwindigkeit, Zeit). Radar-Keil
   als CSS-Animation. In der Kugel-Karte ändert sich je Bild nichts im Dokument.
 - Wächter `check/performance.js` G (4× CPU ≥ 54 Bilder/s am Kugel-Takt).
+
+- **Nachtrag 2026-11-07 (WebKit):** EINE Canvas-Flaeche (Meer, Land, Rand,
+  Radar, Marker); keine Dauer-Animation INNERHALB des Kugel-SVG (Flamme nur
+  beim Boost). Wächter `check/webkitkugel.js`.
+- **Merksatz WebKit:** Ein sehr hoher Scroll-Container (hier 18.000 px) legt
+  WebKit in voller Höhe an - Speicher bis zum Absturz. Hohe Inhalte nie als
+  eigenen Scroll-Container; für bloßes Abschneiden `overflow:clip`.

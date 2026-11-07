@@ -12,7 +12,7 @@
 // Dieselben Funktionen nutzt js/globe.js als Rueckfall im Hauptthread, wenn
 // ein Geraet kein OffscreenCanvas kann. KEIN document/window hier.
 //
-// o = {size, dpr, lat0, landfarbe, schrift, rasterFarbe}
+// o = {size, dpr, lat0, landfarbe, meer, schrift, rasterFarbe}
 // Ringe: [[lat,lon], ...] je Polygon. Marker: [{id,lat,lon,col,label,i}].
 
 const MIN_PX = 0.6;
@@ -24,11 +24,22 @@ function neueFlaeche(w, h) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; return c;   // Rueckfall Hauptthread
 }
 
-export function erstelleZeichner(landCv, markerCv, o) {
+// EINE Zeichenflaeche (seit 2026-11-07): Meer, Land, Raster, Randschatten,
+// Marker - gemessen in WebKit (Safari-Engine, Pixeldichte 2): zwei Flaechen +
+// zwei feste Ebenen 47-50 Bilder/s, p95 39 ms; eine Flaeche 57-59, p95 26-28.
+// Jede Ebene ueber/unter einer Flaeche, die sich je Bild aendert, muss der
+// Compositor mit zusammensetzen.
+export function erstelleZeichner(cv, o) {
   const dpr = o.dpr, size = o.size, R = size / 2 - 26, cx = size / 2, cy = size / 2;
   const sL = Math.sin(o.lat0), cL = Math.cos(o.lat0);
-  [landCv, markerCv].forEach(c => { c.width = Math.round(size * dpr); c.height = Math.round(size * dpr); });
-  const lc = landCv.getContext('2d'), mc = markerCv.getContext('2d');
+  cv.width = Math.round(size * dpr); cv.height = Math.round(size * dpr);
+  const lc = cv.getContext('2d'), mc = lc;
+  // Randschatten einmal vorberechnet (Land blendet ab 70 % des Radius ins Meer
+  // aus - ersetzt die frueher feste Ebene .globe-rand), je Bild nur ein drawImage.
+  const rand = neueFlaeche(Math.round(size * dpr), Math.round(size * dpr)), rc = rand.getContext('2d');
+  rc.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const rg = rc.createRadialGradient(cx, cy, R * 0.7, cx, cy, R); rg.addColorStop(0, 'rgba(11,36,69,0)'); rg.addColorStop(1, 'rgba(11,36,69,1)');
+  rc.fillStyle = rg; rc.beginPath(); rc.arc(cx, cy, R, 0, Math.PI * 2); rc.fill();
   // Musterkachel direkt in Geraetepixeln: 5x5 Vierecke = 21 px je dpr-Einheit
   // (ganzzahlig fuer dpr 1 und 2), Grund in Landfarbe -> EIN Malvorgang je Bild.
   const N = 5, kachel = neueFlaeche(Math.round(SQ * N * dpr), Math.round(SQ * N * dpr));
@@ -71,16 +82,30 @@ export function erstelleZeichner(landCv, markerCv, o) {
   function landMalen(lon0) {
     lc.setTransform(dpr, 0, 0, dpr, 0, 0);
     lc.clearRect(0, 0, size, size);
+    lc.beginPath(); lc.arc(cx, cy, R, 0, Math.PI * 2); lc.fillStyle = o.meer; lc.fill();   // Meer (frueher feste Ebene .globe-meer)
     const p = new Path2D();
     for (let k = 0; k < ringe.length; k++) ring(k, lon0, p);
     lc.fillStyle = muster; lc.fill(p);
+    lc.setTransform(1, 0, 0, 1, 0, 0); lc.drawImage(rand, 0, 0);
+  }
+  // Radar-Keil (+-26 Grad, Radius R, 4,5 s je Umlauf) um die Jet-Position -
+  // seit 2026-11-07 hier statt als eigene, staendig drehende Ebene (WebKit,
+  // Pixeldichte 2: ohne die drehende Ebene p95 30 -> 22 ms).
+  function radarMalen(t, vx, vy) {
+    const w = (t % 4500) / 4500 * Math.PI * 2, b = 26 * Math.PI / 180;
+    const x = vx == null ? cx : vx, y = vy == null ? cy : vy;
+    lc.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const g = lc.createLinearGradient(x + R * Math.cos(w - b), y + R * Math.sin(w - b), x + R * Math.cos(w + b), y + R * Math.sin(w + b));
+    g.addColorStop(0, 'rgba(126,224,255,0)'); g.addColorStop(1, 'rgba(126,224,255,.4)');
+    lc.save(); lc.globalCompositeOperation = 'screen';
+    lc.beginPath(); lc.moveTo(x, y); lc.arc(x, y, R, w - b, w + b); lc.closePath(); lc.fillStyle = g; lc.fill();
+    lc.restore();
   }
   // Marker + Ortungs-Ring + Beschriftung. Beschriftungs-Lage wie bisher:
   // GBP/EUR/CHF je Bild nach Bildschirmlage links/rechts/darunter, die
   // uebrigen mit Kollisions-Staffelung nach oben.
   function markerMalen(lon0, t, anim) {
     mc.setTransform(dpr, 0, 0, dpr, 0, 0);
-    mc.clearRect(0, 0, size, size);
     const vis = [];
     marker.forEach(m => { const q = proj(m.lat, m.lon, lon0); if (q.vis) vis.push({ m, x: cx + q.x, y: cy + q.y }); });
     const eu = vis.filter(v => EU.includes(v.m.id)), fest = {};
@@ -118,6 +143,6 @@ export function erstelleZeichner(landCv, markerCv, o) {
   return {
     land(r) { ringe = r || []; pre = ringe.map(vorrechnen); },
     meta(m) { marker = m || []; },
-    bild(lon0, t, anim) { landMalen(lon0); markerMalen(lon0, t, anim); },
+    bild(lon0, t, anim, vx, vy) { landMalen(lon0); if (anim) radarMalen(t, vx, vy); markerMalen(lon0, t, anim); },
   };
 }
