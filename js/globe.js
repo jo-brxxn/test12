@@ -1022,6 +1022,44 @@ function startGlobes(opt){
   _globeRAF=requestAnimationFrame(frame);
 }
 
+// ── Kugel-Selbsttest auf dem Geraet (Adresse mit #globetest) ──────────────
+// 2026-11-07: "perfekt drehen ohne zu haengen, ohne neu zu laden" laesst sich
+// im Container nur in Chromium/WPE messen, nicht auf dem iPad. Diese Anzeige
+// misst AUF dem Geraet: Bildtakt des Kugel-Workers (letzte ~2 s), Drehtempo
+// (gleichmaessig 4 Grad/s, nie rueckwaerts) und wie oft die Seite in diesem
+// Tab geladen wurde (laedt Safari nach einem Absturz neu, zaehlt das hoch).
+// Nur Anzeige, keine Bedienung, nichts wird gespeichert ausser dem Zaehler im
+// sessionStorage des Tabs.
+function globusTest(){
+  if(location.hash!=='#globetest'||document.getElementById('globusTest'))return;
+  let ladungen=1;try{ladungen=+(sessionStorage.getItem('fxpro_globetest_loads')||0)+1;sessionStorage.setItem('fxpro_globetest_loads',String(ladungen));}catch(e){}
+  const el=document.createElement('div');el.id='globusTest';el.className='globus-test';el.setAttribute('aria-hidden','true');document.body.appendChild(el);
+  const t0=Date.now(),q=(a,f)=>a.length?a[Math.min(a.length-1,Math.floor(a.length*f))]:NaN;
+  const zeile=(k,v,ok)=>`<div><span>${k}</span><b class="${ok==null?'':ok?'ok':'nok'}">${v}</b></div>`;
+  const upd=()=>{
+    if(!el.isConnected)return;
+    const L=(window.__globusLuecken||[]).slice(-120).sort((a,b)=>a-b),W=(window.__globusWinkel||[]).slice(-120),v=[];
+    for(let i=1;i<W.length;i++){const dt=(W[i][0]-W[i-1][0])/1000;if(dt>0.004)v.push((((W[i][1]-W[i-1][1])%360+540)%360-180)/dt);}
+    v.sort((a,b)=>a-b);
+    const fps=L.length?1000/(L.reduce((s,x)=>s+x,0)/L.length):0,p95=q(L,.95),ueber=L.length?L.filter(x=>x>20).length/L.length*100:0;
+    const rueck=v.filter(x=>x<0).length,p5v=q(v,.05),p95v=q(v,.95),auto=_globeMode==='auto';
+    const st=_globeHosts[0],modus=st?(st.modus+(st.workerRaf?'+raf':'')):'-';
+    const okTakt=fps>=55&&p95<=20&&ueber<=2,okDreh=!auto||(rueck===0&&p5v>=3.6&&p95v<=4.4),okLaden=ladungen===1;
+    el.innerHTML=`<div class="gt-titel">Globe test</div>`
+      +zeile('Mode',modus,modus.startsWith('worker'))
+      +zeile('Frames/s',fps?fps.toFixed(1):'–',L.length?fps>=55:null)
+      +zeile('Frame gap p95',L.length?p95.toFixed(1)+' ms':'–',L.length?p95<=20:null)
+      +zeile('Gaps > 20 ms',L.length?ueber.toFixed(1)+' %':'–',L.length?ueber<=2:null)
+      +zeile('Speed',auto?(v.length?p5v.toFixed(2)+'–'+p95v.toFixed(2)+' °/s':'–'):'<i>dragging</i>',auto&&v.length?okDreh:null)
+      +zeile('Backward steps',String(rueck),auto?rueck===0:null)
+      +zeile('Page loads (tab)',String(ladungen),okLaden)
+      +zeile('Running',Math.round((Date.now()-t0)/1000)+' s',null)
+      +`<div class="gt-urteil ${okTakt&&okDreh&&okLaden?'ok':'nok'}">${!L.length?'Open the dashboard':okTakt&&okDreh&&okLaden?'Smooth':'Not smooth'}</div>`;
+  };
+  upd();setInterval(upd,1000);
+}
+try{globusTest();window.addEventListener('hashchange',globusTest);}catch(e){}
+
 export {
   GLOBE_GEO,GLOBE_LAT0,GLOBE_LAND,GLOBE_HOME_LON,_globeRAF,_globeLon,_globeLast,_globeHosts,
   _globeUid,GLOBE_AUTO_VEL,_globeMode,_globeVel,_globeDrag,_globeVehicleBusy,GLOBE_BOOST_PEAK_MS,GLOBE_BOOST_HOLD_MS,

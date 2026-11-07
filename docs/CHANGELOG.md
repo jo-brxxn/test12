@@ -21647,3 +21647,18 @@ Karten sind sonst zu leer“*.
   Innenrand (8 Breiten), Kennzahl-Symbol ≥ 40 px; Gegenprobe von Hand (Umbruch
   raus, Symbol 22 px) → rot. Die Lücke: der bisherige Überlauf-Test übersprang
   Text in abschneidenden Vorfahren.
+
+## 2026-11-07 — Kugel-Selbsttest auf dem Gerät: `#globetest` (VERSION-CHECK-691)
+
+Ziel „Kugel dreht perfekt ohne Hängen/Neuladen“ ist im Container nur in
+Chromium und WPE WebKit (ohne GPU) messbar, nicht auf dem iPad. Neu: Adresse mit
+`#globetest` öffnet eine reine Anzeige unten links (js/globe.js `globusTest`):
+Modus, Bilder/s und p95-Bildabstand des Kugel-Workers (letzte ~2 s), Anteil > 20 ms,
+Drehtempo p5–p95 und Rückwärts-Schritte, Seiten-Ladungen im Tab (Safari lädt nach
+einem Absturz neu → zählt hoch), Urteil „Smooth“ (≥ 55/s, p95 ≤ 20 ms, ≤ 2 % > 20 ms,
+4 ± 0,4 °/s, 0 rückwärts, 1 Ladung).
+- Chromium (Dashboard oben, 1180 × 820, dpr 2): 60,0/s, p95 16,9 ms, 0 %, 4,00 °/s → Smooth.
+- WPE WebKit gleiche Ansicht: 55–58/s, p95 26–32 ms, 12–19 % → Not smooth; ohne
+  alle CSS-Animationen 59,9/s p95 24 ms 10,8 %. Rest = Zusammensetzen der
+  ganzen Seite in Software (keine GPU im Container); die Drehung selbst bleibt
+  4,00 °/s ohne Rückwärts-Schritt. Aussagekräftig ist nur der Lauf auf dem iPad.
