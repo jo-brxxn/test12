@@ -203,3 +203,14 @@ Kalender-Abgleich 131 → ~0, FF-Abgleich 93 → ~0, `indOverdueCycles` 63 → 2
   ANDEREN Threads hochrechnet, springt zurück, sobald der Stand verspätet
   ankommt. Gleichmäßige Bewegung = Zeitfunktion (Start + Tempo × Zeit), die
   beide Seiten aus derselben Uhr rechnen; Stände nur bei Eingriffen.
+- **Merksatz Pfadpunkte (2026-11-07):** Die Kosten einer Fläche, die je Bild neu
+  gefüllt wird, laufen mit der Zahl der Pfadpunkte, nicht mit dem Muster. Küsten
+  deshalb einmal je Kugelgröße vereinfachen (`KUESTE_PX` = 1 px Abweichung,
+  `js/globe-zeichnen.js`), nicht je Bild mit größerem Mindestabstand (Küste
+  flimmert). Wächter `check/performance.js` G (≤ 6.000 Punkte).
+- **Merksatz Worker-Takt (2026-11-07):** Den Worker anhalten, BEVOR seine Fläche
+  versteckt wird (`showTab` ruft `stopGlobe()` vor dem Ausblenden). In WPE WebKit
+  (Linux, Skia über OpenGL) stürzt der Seitenprozess ab, wenn der Worker in eine
+  versteckte Fläche liefert oder während er zeichnet Nachrichten bekommt; mit
+  CPU-Raster (`WEBKIT_SKIA_ENABLE_CPU_RENDERING=1`) nie. Nachrichten an den
+  Worker nur bei Änderung (`seg`, `meta` vergleichen schon).

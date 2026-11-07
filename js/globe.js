@@ -567,7 +567,7 @@ const GLOBE_MEER='#0b2445',GLOBE_LANDFARBE='#2d6ea8';
 function globeCanvasRefs(host,size){
   const lcv=host.querySelector('canvas.globe-canvas');if(!lcv)return{};
   const o={size,dpr:Math.min(window.devicePixelRatio||1,2),lat0:GLOBE_LAT0,landfarbe:GLOBE_LANDFARBE,rasterFarbe:'rgba(126,196,255,.5)',
-    schrift:(getComputedStyle(document.body).fontFamily||'sans-serif'),meer:GLOBE_MEER};
+    schrift:(getComputedStyle(document.body).fontFamily||'sans-serif'),meer:GLOBE_MEER,kuesteRoh:!!window.__gpGlobusKuesteRoh};   // __gp...: nur Gegenprobe check/performance.js
   let worker=null;
   // Worker + OffscreenCanvas, wo moeglich (iPadOS 16.4+, aktuelle Browser);
   // __globusOhneWorker: Rueckfall nach einem Worker-Fehler bzw. fuer Pruefungen.
@@ -589,6 +589,7 @@ function globeWorkerVerbinden(st){
     const d=e.data;if(!d)return;
     // Worker mit eigenem Bildtakt: ab jetzt nur noch Zustand schicken
     if(d.typ==='bereit'){st.workerRaf=!!d.raf;if(st.workerRaf&&st.laeuft)st.worker.postMessage({typ:'start'});return;}
+    if(d.typ==='kueste'){window.__globusKuestenPunkte=d.punkte;return;}
     if(d.typ==='gezeichnet'){st.zeichnungen=(st.zeichnungen||0)+d.n;window.__globusZeichnungen=(window.__globusZeichnungen||0)+d.n;
       const L=window.__globusLuecken||(window.__globusLuecken=[]);L.push(...(d.luecken||[]));if(L.length>600)L.splice(0,L.length-600);
       const W=window.__globusWinkel||(window.__globusWinkel=[]);W.push(...(d.winkel||[]));if(W.length>600)W.splice(0,W.length-600);return;}
@@ -600,7 +601,7 @@ function globeWorkerVerbinden(st){
 }
 function globeZeichnerLand(st){
   st.landRef=LAND;
-  if(st.worker)st.worker.postMessage({typ:'ringe',ringe:LAND});else if(st.zeichner)st.zeichner.land(LAND);
+  if(st.worker)st.worker.postMessage({typ:'ringe',ringe:LAND});else if(st.zeichner){st.zeichner.land(LAND);window.__globusKuestenPunkte=st.zeichner.punkte();}
 }
 // Marker-Daten (Farbe, Score-Beschriftung) nur bei Aenderung an den Zeichner.
 // Scores gestaffelt: einer je ~0,6 s neu (vorher alle acht auf einmal jede

@@ -21581,3 +21581,51 @@ Möglichkeiten … Auch so ein Bild wie die Kugel oder halt das fx Analyse pro l
 die Browser-Standardschrift für Knöpfe (13,33 px) direkt unter 14 px. Knopf ohne
 Text, aber die Schriftgröße zählt für die Stufen. `font:inherit` auf `.wt-weg`
 und `.dx-mkt-weg` → 0 Befunde.
+
+## 2026-11-07 — Weltkugel: kein Keil am Rand, halbe Pfadlast, WPE-Absturz eingegrenzt (VERSION-CHECK-689)
+
+Nutzer-Fotos (iPad, 685) zeigen neben den Winkelsprüngen (686 behoben) einen
+**hellen/dunklen Keil über dem Atlantik**, der beim Drehen auf- und zuklappt.
+- **Reproduziert:** Zeichner gegen Rückprojektion (Punkt-im-Polygon) an 24
+  Winkeln: 6 davon 8,7–15 % der Kugel falsch; 3.600 Winkel (0,1°): Landanteil
+  springt bis 10,8 % zwischen Nachbarbildern.
+- **Ursache:** `globe_land.json` (Natural Earth 1:50m) hat Afrika+Eurasien als
+  EIN Polygon; verdeckte Strecken wurden als Sehne geschlossen (die grobe
+  eingebaute Karte war dafür extra in Stücke geteilt, die feine nicht).
+- **Fix an der Wurzel** (`js/globe-zeichnen.js` `ring()`): wie d3-geo — sichtbare
+  Teilstücke sammeln, jedes Austrittsende über den Kugelrand mit dem nächsten
+  Eintritt ENTLANG DES RANDES verbinden; alle Ringe gleich herum (`gegenUhr`).
+  Zwei Fallen unterwegs: (1) nächster Eintritt in Laufreihenfolge statt entlang
+  des Randes → Vollkreis an der Arktisküste; (2) Douglas-Peucker machte 7 Ringe
+  selbstkreuzend (Sri Lanka 21 → 6 Punkte) → 3–4 Bilder lang ganze Kugel Land;
+  jetzt feiner vereinfachen, notfalls roh. Ein-/Austritte < 0,001 rad = gleich.
+- **Nachher:** 24 Winkel ≤ 1,7 % (Kantenrauschen), 3.600 Winkel größter Sprung
+  0,20 %. Wächter neu `check/kugelland.js` (Gegenprobe Sehne → rot: 11,1 % Sprung,
+  7 von 24 Winkeln falsch).
+
+**Bildtakt in WebKit (Safari-Engine) — gemessen, was je Bild kostet:**
+- Zeichenbefehle selbst ~2 ms; die Zeit liegt im Rastern. Ohne Zeichnen
+  p95 18 ms / 0,1–0,7 % > 20 ms (Umgebungsboden). Späte Bilder liefen mit der
+  Pfad-Punktzahl: 4.000 Punkte 4,3 %, 1.800 Punkte 1,9 %, ohne Land 0,6 %.
+- **Küsten je Kugelgröße vereinfacht** (`KUESTE_PX` = 1 px): 14.000 → 5.220
+  Punkte, im Bildvergleich bis 1,2 px kein Unterschied. Wächter
+  `check/performance.js` G (≤ 6.000, Gegenprobe `--gegenprobe-kueste` → rot).
+- **Randschatten in die Land-Textur eingebacken** (Meeresfarbe — über dem Meer
+  wirkungslos): innen ≤ 3/255 Rundung, äußerste Randkante 435 Pixel ≤ 19/255.
+  Späte Bilder (≥ 25 ms) 26 → 11, > 20 ms 3,5 → 2,8 % (je 8 Läufe abwechselnd).
+- WebKit-Wächter (OpenGL): Kugel allein 64,3/s p95 18,0 ms 0 % > 20 ms, im
+  Dashboard 62,0/s p95 21,5 ms (grün); ein weiterer Lauf 2,3 % > 20 ms (Grenze
+  2 %) — die Umgebung (Software-OpenGL ohne GPU) schwankt um diese Grenze.
+
+**WPE-Absturz (Fund unterwegs):** Der WebKit-Seitenprozess stürzte sporadisch
+ab (Segfault im Worker-Thread, immer dieselbe Adresse in libWPEWebKit).
+- App-Dauerlauf 3 × 15 min: mit Kugel-Worker 9–10 Abstürze, Kugel im
+  Hauptthread 0. Minimal-Testseite: Worker liefert in versteckte Fläche 5/6 min,
+  Nachrichten an zeichnenden Worker 2–4/6 min; ohne beides 0.
+- **Mit WPE-CPU-Raster (`WEBKIT_SKIA_ENABLE_CPU_RENDERING=1`): 0 Abstürze** —
+  Testseite und App (3 × 15 min). Der Fehler liegt im Linux-Grafikpfad von WPE
+  (Skia über Software-OpenGL); Safari auf dem iPad nutzt ihn nicht
+  (CoreGraphics/Metal). Auf dem iPad selbst nicht belegbar.
+- Trotzdem gehärtet: `showTab` hält den Kugel-Takt an, BEVOR die Seite
+  verschwindet (vorher erst im nächsten Bild). `check/webkitkugel.js` F meldet
+  Abstürze (Gegenlauf `--cpu`).

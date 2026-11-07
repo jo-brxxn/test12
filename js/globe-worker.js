@@ -42,7 +42,7 @@ self.onmessage = e => {
   const d = e.data;
   if (d.typ === 'init') { z = erstelleZeichner(d.land, d.o); self.postMessage({ typ: 'bereit', raf: RAF }); return; }
   if (!z) return;
-  if (d.typ === 'ringe') z.land(d.ringe);
+  if (d.typ === 'ringe') { z.land(d.ringe); self.postMessage({ typ: 'kueste', punkte: z.punkte() }); }   // Punktzahl fuer check/performance.js
   else if (d.typ === 'meta') z.meta(d.marker);
   else if (d.typ === 'start') { if (RAF && !laeuft) { laeuft = true; letzt = 0; self.requestAnimationFrame(schleife); } }
   else if (d.typ === 'stop') laeuft = false;

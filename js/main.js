@@ -25899,6 +25899,11 @@ function showTab(tab,btn,fxMode){
   // War die Zielseite schon sichtbar (dieselbe Seite erneut gewaehlt)? Nur dann
   // muss die Einblendung unten von Hand neu gestartet werden.
   const zielWarSichtbar=!!pgEl&&!!pgEl.style.display&&pgEl.style.display!=='none';
+  // Kugel-Takt anhalten, BEVOR die Seite verschwindet (2026-11-07): sonst
+  // lieferte der Worker bis zum naechsten Bild weiter in eine versteckte Flaeche.
+  // GEMESSEN in WPE WebKit (Linux, Skia-OpenGL): versteckte Flaeche + laufender
+  // Worker-Takt 5 Abstuerze des Seitenprozesses in 6 min, erst anhalten 0.
+  if(tab!=='dash')stopGlobe();
   Object.values(PAGE_IDS).forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   updateAuroraColors();
   if(tab!=='cot')cotStopCountdown();

@@ -50,6 +50,7 @@
 //   --gegenprobe-chv       Aufraeumen der Chart-Registry aus               -> F rot
 //   --gegenprobe-globus    Kugel wieder in jedem Bild neu gezeichnet       -> G rot
 //   --gegenprobe-drehung   Worker rechnet wieder aus altem Stand hoch      -> G rot (Drehung bei belegtem Hauptthread)
+//   --gegenprobe-kueste    Kuesten unvereinfacht (14.000 Punkte je Bild)   -> G rot
 //   --gegenprobe-ruhe      Kugel ruht im Leerlauf nie (Frist unendlich)    -> H rot
 //   --gegenprobe-ebene     Calendar-Tabelle ohne eigene Ebene              -> I rot
 //   --gegenprobe-kugelweg  Kugel-Schleife laeuft auf jeder Seite weiter    -> J rot
@@ -86,9 +87,10 @@ const GP_CHV = process.argv.includes('--gegenprobe-chv');
 const GP_GLOBUS = process.argv.includes('--gegenprobe-globus');
 const GP_RUHE = process.argv.includes('--gegenprobe-ruhe');
 const GP_DREHUNG = process.argv.includes('--gegenprobe-drehung');
+const GP_KUESTE = process.argv.includes('--gegenprobe-kueste');
 const GP_EBENE = process.argv.includes('--gegenprobe-ebene');
 const GP_KUGELWEG = process.argv.includes('--gegenprobe-kugelweg');
-const GP = GP_PUNKTE || GP_FILL || GP_TEXT || GP_DOPPELT || GP_SMIL || GP_CHV || GP_GLOBUS || GP_DREHUNG || GP_RUHE || GP_EBENE || GP_KUGELWEG;
+const GP = GP_PUNKTE || GP_FILL || GP_TEXT || GP_DOPPELT || GP_SMIL || GP_CHV || GP_GLOBUS || GP_DREHUNG || GP_KUESTE || GP_RUHE || GP_EBENE || GP_KUGELWEG;
 
 const MAX_GLEICHZEITIG = 400;   // Trends nachher ~110, vorher 3363
 const MAX_FERTIG = 3;           // pageFadeIn/detailFadeIn halten bewusst (transform-Kontext), sonst 0
@@ -285,9 +287,10 @@ function statisch() {
   await p.evaluate(async gp => {
     if (gp.schwelle) window.__gpGlobusSchwelle = true;
     if (gp.drehung) window.__gpGlobusHochrechnung = true;
+    if (gp.kueste) { window.__gpGlobusKuesteRoh = true; const m = await import('/js/globe.js'); showTab('dash'); m.startGlobes({ neu: true }); }
     if (gp.haupt) { window.__globusOhneWorker = true; const m = await import('/js/globe.js'); showTab('dash'); m.startGlobes({ neu: true }); }
     showTab('dash'); const g = document.getElementById('dbGlobe'); if (g) g.scrollIntoView({ block: 'center' });
-  }, { schwelle: GP_GLOBUS, drehung: GP_DREHUNG, haupt: process.argv.includes('--gegenprobe-hauptthread') });
+  }, { schwelle: GP_GLOBUS, drehung: GP_DREHUNG, kueste: GP_KUESTE, haupt: process.argv.includes('--gegenprobe-hauptthread') });
   await p.mouse.move(5, 5); await p.mouse.move(9, 9);
   await p.waitForTimeout(2500);
   const kugelMessen = (belegt) => p.evaluate(async (belegt) => {
@@ -307,6 +310,12 @@ function statisch() {
     return { n: (window.__globusZeichnungen || 0) - z0, bilder: g.length, mut, p95, fps, max: w ? L[L.length - 1] : g[g.length - 1], modus: m._globeHosts.map(x => x.modus).join(','), tempo };
   }, !!belegt);
   const gl = await kugelMessen();
+  // Kuesten je Kugelgroesse vereinfacht (2026-11-07, WebKit: spaete Bilder liefen
+  // mit der Pfad-Punktzahl; 14.000 -> 4.781 bei 318 px, im Bild kein Unterschied)
+  const kp = await p.evaluate(() => window.__globusKuestenPunkte || 0);
+  if (!kp) rot('Kugel meldet keine Kuesten-Punktzahl');
+  else if (kp > 6000) rot(`Kugel-Kuesten ${kp} Punkte - unvereinfacht, jedes Bild rastert den vollen Pfad (soll <= 6.000)`);
+  else gruen(`Kugel-Kuesten ${kp} Punkte (vereinfacht, <= 6.000)`);
   if (!gl) rot('Dashboard-Kugel (Canvas-Ebenen) nicht gefunden');
   else {
     if (gl.modus !== 'worker') rot(`Kugel zeichnet im Hauptthread (${gl.modus || '-'}) statt im Worker`); else gruen('Kugel zeichnet im Web Worker (OffscreenCanvas)');
@@ -332,7 +341,7 @@ function statisch() {
     else gruen(`${lbl}: Drehung gleichmaessig (0 rueckwaerts, ${t.p5.toFixed(2)}-${t.p95.toFixed(2)} Grad/s, Median ${t.med.toFixed(2)})`);
   }
   if (g4) { if (g4.fps < 54 || g4.p95 > 20) rot(`bei 4x CPU Kugel nur ${g4.fps.toFixed(0)} Bilder/s, p95 ${g4.p95.toFixed(1)} ms - sie haengt auf langsamen Geraeten`); else gruen(`bei 4x CPU Kugel ${g4.fps.toFixed(0)} Bilder/s, p95 ${g4.p95.toFixed(1)} ms, max ${g4.max.toFixed(0)} ms`); }
-  await p.evaluate(async () => { window.__gpGlobusSchwelle = false; window.__gpGlobusHochrechnung = false; if (window.__globusOhneWorker) { window.__globusOhneWorker = false; const m = await import('/js/globe.js'); m.startGlobes({ neu: true }); } });
+  await p.evaluate(async () => { window.__gpGlobusSchwelle = false; window.__gpGlobusHochrechnung = false; if (window.__gpGlobusKuesteRoh) { window.__gpGlobusKuesteRoh = false; const m = await import('/js/globe.js'); m.startGlobes({ neu: true }); } if (window.__globusOhneWorker) { window.__globusOhneWorker = false; const m = await import('/js/globe.js'); m.startGlobes({ neu: true }); } });
 
   // ── H) Overview-Kugel ruht im Leerlauf und wacht bei Eingabe auf ─────────
   // GEMESSEN 2026-10-17: Overview im Leerlauf 1.120-1.330 ms Arbeit je 5 s,

@@ -16,6 +16,18 @@
 // CPU zusammen, die Untergrenze liegt hier bei p95 ~21-24 ms): vorher 47-50/s,
 // p95 39 ms (zwei Canvas + feste Ebenen + flackernde Duesenflamme im SVG);
 // nachher 60-62/s, p95 21-22 ms.
+//   F) kein Absturz des Seitenprozesses (Safari laedt die Seite sonst neu).
+//      GEMESSEN 2026-11-07: WPE WebKit (Linux, Skia ueber OpenGL - hier
+//      Software-OpenGL ohne GPU) stuerzt im Worker-Thread ab, wenn der Worker in
+//      eine versteckte Flaeche liefert oder beim Zeichnen Nachrichten bekommt
+//      (Testseite: 5 bzw. 2-4 Abstuerze in 6 min; mit
+//      WEBKIT_SKIA_ENABLE_CPU_RENDERING=1 jeweils 0). Safari auf dem iPad hat
+//      diesen Grafikpfad nicht (CoreGraphics/Metal). App-Dauerlauf 3 x 15 min:
+//      OpenGL-Pfad 10 Abstuerze, CPU-Raster 0. Gemessen wird trotzdem im
+//      OpenGL-Pfad (beschleunigtes Zusammensetzen wie auf dem iPad; CPU-Raster
+//      setzt die ganze Seite in Software zusammen: Kugel allein 57/s p95 25 ms
+//      statt 64/s p95 18,5 ms). Meldet F einen Absturz: Gegenlauf mit --cpu -
+//      bleibt er dort aus, ist es der WPE-Fehler, nicht die App.
 // WebKit ist nicht ueberall installiert (CI: nur Chromium) - dann wird
 // uebersprungen (Exit 0 mit Hinweis). Installation lokal:
 //   PLAYWRIGHT_BROWSERS_PATH=<ordner> node <playwright>/cli.js install webkit && ... install-deps webkit
@@ -25,12 +37,15 @@ let webkit;
 try { ({ webkit } = require(PW)); } catch (e) { try { ({ webkit } = require('playwright')); } catch (e2) {} }
 const PORT = process.env.PORT || 8935;
 const GP = process.argv.includes('--gegenprobe');   // Kugel im Hauptthread (ohne Worker) -> A rot
+const CPU = process.argv.includes('--cpu');   // WPE im CPU-Raster statt Skia/OpenGL (Gegenlauf zu F)
 const URL = process.env.CHECK_URL || `http://127.0.0.1:${PORT}/index.html`;
 (async () => {
   let b;
-  try { b = await webkit.launch(); } catch (e) { console.log('webkitkugel: uebersprungen (WebKit nicht installiert: ' + String(e.message || e).split('\n')[0].slice(0, 80) + ')'); process.exit(0); }
+  try { b = await webkit.launch(CPU ? { env: { ...process.env, WEBKIT_SKIA_ENABLE_CPU_RENDERING: '1' } } : {}); } catch (e) { console.log('webkitkugel: uebersprungen (WebKit nicht installiert: ' + String(e.message || e).split('\n')[0].slice(0, 80) + ')'); process.exit(0); }
   const F = [];
   const p = await b.newPage({ viewport: { width: 1180, height: 820 }, deviceScaleFactor: 2 });
+  let abgestuerzt = false; p.on('crash', () => { abgestuerzt = true; });
+  process.on('unhandledRejection', e => { if (abgestuerzt) { console.log('webkitkugel: 1 Befund(e)\n  F: Seitenprozess abgestuerzt (Safari wuerde die Seite neu laden)' + (CPU ? '' : ' - Gegenlauf mit --cpu (WPE-OpenGL-Fehler?)') + ' - ' + String(e && e.message || e).split('\n')[0].slice(0, 80)); process.exit(1); } console.error(e); process.exit(2); });
   if (GP) await p.addInitScript(() => { window.__globusOhneWorker = true; });
   await p.addInitScript(() => { try { sessionStorage.setItem('fxpro_unlocked', '1'); localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) {} });
   await p.goto(URL); await p.waitForTimeout(8000);
@@ -75,5 +90,5 @@ const URL = process.env.CHECK_URL || `http://127.0.0.1:${PORT}/index.html`;
   await b.close();
   if (GP) { const ok = F.some(f => f.startsWith('A:')); console.log(ok ? 'webkitkugel --gegenprobe: ok (Hauptthread-Zeichnen wird gemeldet)' : 'webkitkugel --gegenprobe: FEHLER - nicht gemeldet'); process.exit(ok ? 0 : 1); }
   if (F.length) { console.log('webkitkugel: ' + F.length + ' Befund(e)\n  ' + F.join('\n  ')); process.exit(1); }
-  console.log(`webkitkugel: ok (WebKit, Pixeldichte 2, ${modus}: Kugel allein ${kJeS.toFixed(1)}/s p95 ${kP95.toFixed(1)} ms ${kU.toFixed(0)} % > 20 ms; im Dashboard ${jeS.toFixed(1)}/s p95 ${p95.toFixed(1)} ms; 0 Dokument-Aenderungen, Rueckkehr ohne Neuaufbau, Marker-Tipp oeffnet Asset, Drehung gleichmaessig 4 Grad/s ohne Rueckwaerts-Schritt)`);
-})().catch(e => { console.error(e); process.exit(2); });
+  console.log(`webkitkugel: ok (WebKit ${CPU ? 'CPU-Raster' : 'OpenGL'}, Pixeldichte 2, ${modus}: Kugel allein ${kJeS.toFixed(1)}/s p95 ${kP95.toFixed(1)} ms ${kU.toFixed(0)} % > 20 ms; im Dashboard ${jeS.toFixed(1)}/s p95 ${p95.toFixed(1)} ms; 0 Dokument-Aenderungen, Rueckkehr ohne Neuaufbau, Marker-Tipp oeffnet Asset, Drehung gleichmaessig 4 Grad/s ohne Rueckwaerts-Schritt)`);
+})().catch(e => { process.emit('unhandledRejection', e); });
