@@ -21574,3 +21574,10 @@ Möglichkeiten … Auch so ein Bild wie die Kugel oder halt das fx Analyse pro l
   ohne diese Änderung identisch gemessen. `dashboard.js` sieht es nicht, weil
   Text in einem abschneidenden Vorfahren übersprungen wird.
 
+
+## 2026-11-07 — Entfernen-Knöpfe mit Seitenschrift (VERSION-CHECK-688)
+
+`check/typo.js` rot auf der Watchlist-Seite: `.wt-weg` (Papierkorb aus 684) hatte
+die Browser-Standardschrift für Knöpfe (13,33 px) direkt unter 14 px. Knopf ohne
+Text, aber die Schriftgröße zählt für die Stufen. `font:inherit` auf `.wt-weg`
+und `.dx-mkt-weg` → 0 Befunde.
