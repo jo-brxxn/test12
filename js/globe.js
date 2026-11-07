@@ -620,7 +620,7 @@ function globeMetaPflegen(st){
 }
 function globeZeichnen(st){
   const t=performance.now(),anim=!document.body.classList.contains('no-ui-anim');
-  if(st.worker&&st.workerRaf&&_globeSeg&&_globeMode==='auto'){
+  if(st.worker&&st.workerRaf&&_globeSeg&&_globeMode==='auto'&&!window.__gpGlobusHochrechnung){   // __gp...: nur Gegenprobe check/performance.js (alter Weg)
     // Normalbetrieb: die Zeitformel nur bei Aenderung senden - der Worker
     // rechnet jedes Bild selbst exakt aus seiner Uhr.
     const vx=st.vehiclePos.x,vy=st.vehiclePos.y;

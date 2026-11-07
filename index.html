@@ -7376,10 +7376,14 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .dx-mkt-c{font:700 var(--fs-sm)/1.2 var(--ff-num);white-space:nowrap}
 .dx-mkt-c i{font-family:var(--ff-text);font-weight:500;color:var(--t3)}
 .dx-spark{display:block;width:calc(100% + 24px);height:46px;margin:auto -12px 0}
-.dx-kz{display:block;width:100%;height:34px;margin-top:auto}
-.dx-kz-l{display:flex;justify-content:space-between;gap:6px;width:100%;padding:2px 0 10px;font:600 var(--fs-xs)/1.2 var(--ff-num);color:var(--t3)}
-.dx-kz-l b{color:var(--t1);font-weight:700}
-.dx-kz-leer{margin-top:auto;padding-bottom:10px;font-size:var(--fs-xs);color:var(--t3)}
+/* 1D-Kachel: Bild statt Tageskerze (2026-11-07, js/kachelbild.js) */
+.dx-kb{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:58px;margin-top:auto;padding:2px 0 8px;pointer-events:none}
+.dx-kb-u{display:block;height:100%;max-width:44%;min-width:0;flex:0 1 auto}
+.dx-kb-tr{font:600 var(--fs-sm)/1 var(--ff-num);color:var(--t3)}
+.dx-kb-k img{display:block;width:48px;height:48px}
+.dx-kb-ic .aicon,.dx-kb-ic svg{opacity:.9}
+.dx-kb-logo{--lg-f1:color-mix(in srgb,var(--t0) 62%,#2F6FF0);--lg-f2:var(--t0);--lg-x1:#6FB6FF;--lg-x2:#2F6FF0;--lg-kb:#3E8BFF;--lg-kw:color-mix(in srgb,#3E8BFF 38%,var(--card));--lg-t:var(--t2);--lg-p:#2F7BFF}
+.dx-kb-logo .fxlogo{width:92px}
 /* World map */
 #dbGlobe .dw-body{display:flex;align-items:center;justify-content:center}
 /* Kugel fuellt die Karte (Nutzer 2026-11-06: "muss die ganze Karte ausfuellen,
@@ -7391,6 +7395,7 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 /* Zeitfilter: eigene Zeile ueber dem Inhalt, rechtsbuendig (Regel Einheitlichkeit, check/einheit.js) */
 .dx-zf{display:flex;justify-content:flex-end;margin:-4px 0 10px}
 .dx-zf .db-perf-win{margin:0}
+.dx-zf{gap:8px;flex-wrap:wrap}
 .dx-ev-f{line-height:0}
 #dbHeute .db-ev-list{max-height:306px}
 #dbHeute .db-ev{grid-template-columns:42px 18px 34px minmax(0,1fr) auto}
@@ -7512,11 +7517,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-686 - Weltkugel dreht gleichmaessig (Winkel aus Zeitformel statt Hochrechnung aus altem Stand, kein Vor-und-Zurueck); vorher 685: Weltkugel in WebKit belegt (eine Flaeche, Radar im Canvas, Flamme flackert nur beim Boost); Kalender ohne Speicher-Explosion in Safari; vorher 684: Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-687 - 1D-Kacheln der Market overview: Bild statt Tageskerze, drei Varianten zur Wahl (Outline, Globe, Logo); vorher 686: Weltkugel dreht gleichmaessig (Winkel aus Zeitformel statt Hochrechnung aus altem Stand, kein Vor-und-Zurueck); vorher 685: Weltkugel in WebKit belegt (eine Flaeche, Radar im Canvas, Flamme flackert nur beim Boost); Kalender ohne Speicher-Explosion in Safari; vorher 684: Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-686</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-687</span>
     </span>
   </div>
   <div class="hdr-r">

@@ -21536,3 +21536,41 @@ Nutzer (3 iPad-Fotos): *„Es ruckelt“* — Kugel sprang in 3 s um ~35° statt
   0 Rückwärts-Schritte; Chromium 1× und 4× CPU ebenso.
 - Wächter: `check/performance.js` G und `check/webkitkugel.js` E (0 Rückwärts,
   p5 ≥ 3,6, p95 ≤ 4,4 °/s).
+- **Nachtrag Wächter (686):** `check/performance.js` G misst die Drehung jetzt
+  auch bei belegtem Hauptthread (70 ms je 250 ms blockiert, wie Uhr/Feed auf
+  dem iPad). Gegenprobe `--gegenprobe-drehung` (Worker rechnet wieder aus dem
+  alten Stand hoch) → rot: 1× p5 3,29 / p95 4,68; 4× 3 Rückwärts, p95 7,7;
+  belegt **14 Rückwärts-Schritte, −8,5 bis +18 °/s** - dasselbe Bild wie auf
+  den iPad-Fotos, jetzt auch in Chromium. Mit Fix: alle drei 4,00 °/s.
+
+## 2026-11-07 — Market overview 1D: Bild statt Tageskerze, drei Varianten zur Wahl (VERSION-CHECK-687)
+
+Nutzer: *„bei den Assets wenn da ein Tag ausgewählt ist will ich nicht die eine
+Kerze sondern ein Bild von dem Land also der Umriss davon so gib mir da 3
+Möglichkeiten … Auch so ein Bild wie die Kugel oder halt das fx Analyse pro logo“*.
+- Schalter `Outline | Globe | Logo` (nur bei 1D, vorübergehend, ohne Speicherung).
+- **Outline:** Länder-Umriss; Paar = Basis in Farbe der Tagesveränderung / Quote
+  neutral; S&P 500/Nasdaq = USA, DAX = Deutschland; Gold/Silber/Öl/Krypto haben
+  kein Land → eigenes Symbol groß.
+- **Globe:** kleine Kugel je Land, auf das Land gedreht, Land hell mit weißem Rand,
+  Ring um kleine Länder (Schweiz ~2 px). Einmal je Land auf Canvas gezeichnet und
+  als Bild gemerkt. Erster Versuch (Punkte hinter dem Horizont auf den Rand
+  gelegt) ergab Keile quer über die Kugel, NZD ganz zugedeckt → Horizont-Schnitt
+  wie die große Kugel.
+- **Logo:** FX-Analyst-Pro-Logo, Farben aus den Vorlagen-Tokens (sonst im hellen
+  Theme weiß auf weiß).
+- Daten: `country_shapes.json` 28,8 KB aus Natural Earth 1:50m (`world-atlas@2.0.2`,
+  `tools/laender-umrisse.mjs`); EUR = 21 Euro-Länder vereinigt (Bulgarien seit
+  2026-01-01), nur Europa; USD = 48 zusammenhängende Staaten. Vereinfachung
+  relativ zur Ausdehnung (0,5 %), Inseln ab 1 % der größten Fläche.
+- Tageskerze (`dashTagesKerze`, `dashKerzeSvg`, `.dx-kz*`) entfernt - O/H/L steht
+  in 1D nicht mehr in der Kachel.
+- Wächter `check/dashboard.js`: jede Variante zeigt das Bild (Paar 2, Index 1,
+  Gold/Silber Symbol), ≥ 20 px, innerhalb der Kachel; Gegenprobe von Hand (nur
+  Basis-Umriss) → rot.
+- **Fund am Rand (nicht behoben, vorbestehend):** Handy 390/375 px — Kacheltexte
+  der Market overview laufen über (Name+Score 122 px in 105 px, Veränderung
+  116–126 px in 105 px) und werden von `overflow:hidden` abgeschnitten. Mit und
+  ohne diese Änderung identisch gemessen. `dashboard.js` sieht es nicht, weil
+  Text in einem abschneidenden Vorfahren übersprungen wird.
+

@@ -20,6 +20,8 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
     await p.waitForTimeout(800);
     if(GEGENPROBE)await p.addStyleTag({content:'#dashWidgets .dw-t-txt{display:inline-block!important;width:7px!important;white-space:nowrap!important;overflow:visible!important}'});
     if(GEGENPROBE)await p.evaluate(()=>{const v=document.querySelector('#dashWidgets .db-bias-v');if(v)v.textContent='+99';});
+    // Laender-Umrisse der 1D-Kacheln laden (country_shapes.json, asynchron)
+    await p.evaluate(async()=>{try{const m=await import('/js/kachelbild.js');await new Promise(r=>{m.kachelFormenLaden(r);setTimeout(r,5000);});renderDash();}catch(e){}});
     const r=await p.evaluate(()=>{
       const out=[];
       const alle=[...document.querySelectorAll('#dashWidgets .dw')].filter(c=>c.getBoundingClientRect().height>0);
@@ -127,11 +129,33 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
         if(md&&md.scrollWidth>md.clientWidth+1)out.push(f+': Fenster seitlich '+(md.scrollWidth-md.clientWidth)+'px ueberlaufend');closeM('mCardInfo');}catch(e){out.push(f+': '+e.message);}});
       // Market overview: Chart = gewaehltes Intervall (Nutzer 2026-11-06: Linie
       // aenderte sich beim Wechsel nicht - 1D/1W/1M hatten alle 31 Punkte).
-      // 1D = Tageskerze, danach je Kachel strikt mehr Punkte je laengerem Fenster.
+      // 1D = Bild statt Linie (seit 2026-11-07), danach je Kachel strikt mehr
+      // Punkte je laengerem Fenster.
       if(innerWidth===1440&&typeof dashMktWinSetzen==='function'){
-        const pkt=()=>[...document.querySelectorAll('#dbMarket .dx-mkt')].map(t=>{const pf=t.querySelector('.dx-spark path:last-child');return t.querySelector('.dx-kz')?'K':pf?pf.getAttribute('d').split('L').length:0;});
+        const pkt=()=>[...document.querySelectorAll('#dbMarket .dx-mkt')].map(t=>{const pf=t.querySelector('.dx-spark path:last-child');return t.querySelector('.dx-kb')?'B':pf?pf.getAttribute('d').split('L').length:0;});
         const W={};['1D','1W','1M','3M','1Y'].forEach(w=>{dashMktWinSetzen(w);W[w]=pkt();});
-        if(W['1D'].some(x=>x!=='K'))out.push('Market overview 1D: nicht ueberall Tageskerze ('+W['1D'].join(',')+')');
+        if(W['1D'].some(x=>x!=='B'))out.push('Market overview 1D: nicht ueberall ein Bild ('+W['1D'].join(',')+')');
+        // 1D-Bild (Nutzer 2026-11-07: "Bild von dem Land ... 3 Moeglichkeiten"):
+        // Paar = 2 Umrisse/Kugeln (Basis, Quote), Index = 1, Gold/Silber = Symbol;
+        // jedes Bild sichtbar, innerhalb der Kachel.
+        if(typeof dashKachelBildSetzen==='function'){
+          dashMktWinSetzen('1D');
+          [['umriss','.dx-kb-u'],['kugel','.dx-kb-k img'],['logo','.dx-kb-logo .fxlogo']].forEach(([art,sel])=>{
+            dashKachelBildSetzen(art);
+            document.querySelectorAll('#dbMarket .dx-mkt').forEach(t=>{
+              const n=(t.querySelector('.dx-mkt-n')||t).textContent.trim(),paar=/^[A-Z]{3}\/[A-Z]{3}/.test(n),land=paar||/S&P|Nasdaq|DAX/.test(n);
+              const b=[...t.querySelectorAll(sel)],soll=art==='logo'?1:paar?2:land?1:0;
+              if(!soll){if(!t.querySelector('.dx-kb-ic svg,.dx-kb-ic img,.dx-kb-ic .aicon'))out.push(`1D-Bild ${art}: ${n} ohne Symbol`);return;}
+              if(b.length!==soll)out.push(`1D-Bild ${art}: ${n} zeigt ${b.length} statt ${soll} Bild(er)`);
+              const tr=t.getBoundingClientRect();
+              b.forEach(e=>{const r=e.getBoundingClientRect();if(r.width<20||r.height<20)out.push(`1D-Bild ${art}: ${n} nur ${Math.round(r.width)}x${Math.round(r.height)} px`);
+                if(r.left<tr.left-1||r.right>tr.right+1||r.bottom>tr.bottom+1)out.push(`1D-Bild ${art}: ${n} ragt aus der Kachel`);
+                const pa=e.querySelector('path');if(art==='umriss'&&!(pa&&pa.getAttribute('d')))out.push(`1D-Bild umriss: ${n} ohne Umriss`);
+                if(art==='kugel'&&!/^data:image\/png;base64,.{800}/.test(e.getAttribute('src')||''))out.push(`1D-Bild kugel: ${n} ohne gezeichnete Kugel`);});
+            });
+          });
+          dashKachelBildSetzen('umriss');
+        }
         W['1W'].forEach((_,i)=>{const r=['1W','1M','3M','1Y'].map(w=>W[w][i]);if(!(r[0]<r[1]&&r[1]<r[2]&&r[2]<r[3]))out.push('Market overview Kachel '+(i+1)+': Punkte je Intervall '+r.join('/')+' - Linie folgt dem Intervall nicht');});
         dashMktWinSetzen('1D');
       }

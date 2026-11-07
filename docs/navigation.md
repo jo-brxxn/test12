@@ -1619,4 +1619,5 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Kugelgröße = kleinere Seite des Kartenkörpers (`globeHostGroesse`), der Host selbst ist rechteckig.
 
 ### Nachtrag 2026-11-07 (684): Watchlist-Eintrag entfernen
+- Market overview 1D (2026-11-07): Bild statt Tageskerze (kein Verlauf im Tag). Drei Varianten zur Wahl, Schalter `Outline | Globe | Logo` nur bei 1D, Sitzungs-Wahl ohne Speicherung - **vorübergehend**, bis der Nutzer gewählt hat; dann bleibt EINE Variante und der Schalter fällt weg. Umriss: Paar = Basis (Farbe der Tagesveränderung) / Quote (neutral), Index = sein Land, Gold/Silber/Öl/Krypto = eigenes Symbol. Daten `country_shapes.json` (`tools/laender-umrisse.mjs`, Natural Earth 1:50m, EUR = Euro-Raum vereinigt). Code `js/kachelbild.js`.
 - Watchlist-Seite: Papierkorb im Kartenkopf; Dashboard Market overview: × nur auf Kacheln, die auf der Watchlist stehen. Beide rufen `watchEntfernen()` (Undo über den Pfeil oben). Kein Bearbeitungsmodus - der Knopf ist immer sichtbar.
