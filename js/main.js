@@ -824,7 +824,9 @@ const ICONS={
   trendDown:'<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>',
   lifebuoy:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>',
   external:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
-  info:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
+  info:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+  // Entfernen (Watchlist-Kacheln, 2026-11-07)
+  x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
 };
 // Titel -> Symbol. Die ERSTE passende Regel gewinnt; spezifische Begriffe
 // stehen deshalb vor allgemeinen ("rate probabilit" vor "rate").
@@ -14736,6 +14738,21 @@ function toggleWatch(name){
   if(curPage==='watch')renderWatchlistTab();
   if(curPage==='dash')renderDash();
 }
+// Von der Watchlist entfernen (Nutzer 2026-11-07: "bau ein, dass man Assets von
+// der Watchlist entfernen kann") - Knopf auf jeder Watchlist-Karte und auf den
+// Watchlist-Kacheln der Market overview. Rueckgaengig ueber den Undo-Pfeil
+// (pushU); synchronisiert ueber pairs (snap), wie jedes Hinzufuegen.
+function watchEntfernen(name){
+  if(!name||!isWatched(name))return;
+  try{
+    pushU();
+    setWatched(name,false);
+    save();
+  }catch(e){alert('Could not remove '+name+' from the watchlist: '+(e&&e.message||e));return;}
+  if(curPage==='pairs')renderPairs();
+  if(curPage==='watch')renderWatchlistTab();
+  if(curPage==='dash')renderDash();
+}
 // Aus der Watchlist-Karte / den Set-ups direkt in die Paar-Overview springen.
 // Merkt sich vorher, wo der Nutzer stand (Tab + Scrollposition) - der
 // Zurueck-Pfeil der Overview bringt ihn genau dorthin zurueck.
@@ -14810,6 +14827,7 @@ function watchRowHtml(p){
       <span class="wt-name">${escH(title)}</span>
       <span class="wt-bias" style="color:${biasCss(bias)};border-color:${biasCss(bias)}">${bias==='bull'?'▲ Bullish':bias==='bear'?'▼ Bearish':'◆ Neutral'}</span>
       <span class="wt-score" style="color:${biasCss(scoreBias(sc))}">${sc>0?'+':''}${sc}</span>
+      <button class="wt-weg" onclick="event.stopPropagation();watchEntfernen('${escJH(name)}')" title="Remove ${escH(title)} from the watchlist" aria-label="Remove ${escH(title)} from the watchlist">${icn('trash',15)}</button>
       <span class="wt-open">${icn('chevronRight',15)}</span>
     </div>
     <div class="wt-metrics">
@@ -17472,7 +17490,8 @@ function dashMarktHtml(){
   const win=DASH_MKT_WIN.find(w=>w[0]===dashMktWin)||DASH_MKT_WIN[0];
   const kach=dashMktListe().map((m,i)=>{
     const s=(m.s||[]).filter(p=>isFinite(+p[1])&&+p[1]>0);
-    if(s.length<2)return`<button class="dx-mkt" onclick="${m.go}"><span class="dx-mkt-n">${m.ic}<span>${escH(m.lbl)}</span></span><span class="dx-mkt-p">–</span><span class="dx-mkt-c"><i>No price data</i></span></button>`;
+    const weg=m.wl?`<button class="dx-mkt-weg" onclick="event.stopPropagation();watchEntfernen('${escJH(m.n)}')" title="Remove ${escH(m.lbl)} from the watchlist" aria-label="Remove ${escH(m.lbl)} from the watchlist">${icn('x',14)}</button>`:'';
+    if(s.length<2)return`<div class="dx-mkt${m.wl?' dx-mkt-wl':''}" role="button" tabindex="0" onclick="${m.go}"><span class="dx-mkt-n">${m.ic}<span>${escH(m.lbl)}</span></span><span class="dx-mkt-p">–</span><span class="dx-mkt-c"><i>No price data</i></span>${weg}</div>`;
     const last=s[s.length-1],lv=+last[1];
     // Vergleichswert: letzter Schluss am/vor dem Fensterbeginn (wie perfReturn)
     const ref=win[1]===1?bondPick(s.slice(0,-1),isoMinusDays(last[0],1)):bondPick(s,isoMinusDays(last[0],win[1]));
@@ -17483,12 +17502,13 @@ function dashMarktHtml(){
     // "mindestens 30 Tage", 1D/1W/1M zeigten dieselbe Linie). 1D = Tageskerze.
     const pts=ref?s.filter(p=>p[0]>=ref[0]):s.slice(-2);
     const sc=m.sym?symScoreCmp(m.sym):(isPureFxPair(m.n)?pairScore(m.n):null);
-    return`<button class="dx-mkt" onclick="${m.go}" title="${escH(m.lbl)} · ${win[0]} change${ref?' vs '+escH(fmtDayHdr(ref[0])):''} — open">
+    return`<div class="dx-mkt${m.wl?' dx-mkt-wl':''}" role="button" tabindex="0" onclick="${m.go}" title="${escH(m.lbl)} · ${win[0]} change${ref?' vs '+escH(fmtDayHdr(ref[0])):''} — open">
       <span class="dx-mkt-n">${m.ic}<span>${escH(m.lbl)}</span>${sc!=null?`<span class="dx-mkt-sc" style="color:${scoreColor(sc)}" title="Score">${sc>0?'+':''}${sc}</span>`:''}</span>
       <span class="dx-mkt-p">${fmtPriceTick(lv)}</span>
       <span class="dx-mkt-c" style="color:${biasCss(b)}">${pct==null?'–':`${b==='bear'?'▼':'▲'} ${abs>0?'+':abs<0?'−':''}${fmtPriceTick(Math.abs(abs))} (${pct>0?'+':''}${pct.toFixed(2)}%)`}</span>
       ${win[1]===1?dashKerzeSvg(dashTagesKerze(m.n)):dashSparkSvg(pts,biasCss(b),i)}
-    </button>`;
+      ${weg}
+    </div>`;
   }).join('');
   return`<div class="dx-mkt-grid">${kach}</div>`;
 }
@@ -27534,7 +27554,7 @@ Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushScher
   resRemovePlace,resFillPlaceFolderSelect,resFillNoteModal,saveResNote,delResNote,W_TYPES,staleNotifyHtml,
   awaitingNotifyHtml,dataFeedStaleNotifyHtml,cotNotifyHtml,cloudNotConnectedNoticeHtml,renderCotNotify,
   AURORA_NEU,updateAuroraColors,startLiveClock,startHdrLiveClock,symDataQuality,symSourceLabel,
-  detailMetaHtml,dashMajorsHtml,dashZu,dashPositionenFenster,dashMeldungenFenster,dashMktWinSetzen,dashPerfUmschalten,dashGruss,dashSessions,
+  detailMetaHtml,dashMajorsHtml,watchEntfernen,dashZu,dashPositionenFenster,dashMeldungenFenster,dashMktWinSetzen,dashPerfUmschalten,dashGruss,dashSessions,
   ZONE_OF_TYPE,dashZoneOf,mvWidget,PERF_WINDOWS,
   setPerfWindow,perfReturn,perfRankingHtml,carryRankingHtml,CORR_MIN_DAYS,CORR_FALLBACK_PAIRS,watchlistCorrPairs,
   corrWarnHtml,ESI_HALFLIFE_D,ESI_THIN_N,esiForCcy,ESI_SERIE_TAGE,esiSeries,esiSpark,esiCardHtml,renderDash,

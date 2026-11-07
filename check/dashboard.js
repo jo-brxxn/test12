@@ -143,6 +143,22 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
        if(innerWidth>=760&&!pos.length)out.push('Kugel: keine sichtbaren Marker');
        pos.filter(m=>m.y>0&&m.y<innerHeight).slice(0,2).forEach(m=>{const t=document.elementFromPoint(m.x,m.y);if(!t||!t.closest('#dashGlobeHost'))out.push('Kugel-Marker '+m.id+' verdeckt von '+(t?t.tagName.toLowerCase()+'.'+(t.getAttribute('class')||''):'nichts'));});
        if(sc)sc.scrollTop=sy;}
+      // Von der Watchlist entfernen (Nutzer 2026-11-07): Watchlist-Kachel hat ein x,
+      // es liegt oben, entfernt den Eintrag und oeffnet NICHT die Kachel.
+      if(innerWidth===1440&&typeof watchEntfernen==='function'){
+        if(!isWatched('GBP/CAD'))toggleWatch('GBP/CAD');
+        const t=[...document.querySelectorAll('#dbMarket .dx-mkt')].find(e=>e.querySelector('.dx-mkt-weg')&&/GBP\/CAD/.test(e.textContent));
+        if(!t)out.push('Watchlist-Kachel GBP/CAD ohne Entfernen-Knopf');
+        else{const x=t.querySelector('.dx-mkt-weg'),r=x.getBoundingClientRect();x.scrollIntoView({block:'center'});const r2=x.getBoundingClientRect(),o=document.elementFromPoint(r2.left+r2.width/2,r2.top+r2.height/2);
+          if(!o||!o.closest('.dx-mkt-weg'))out.push('Entfernen-Knopf verdeckt von '+(o?o.tagName.toLowerCase():'nichts'));
+          if(r.width<27||r.height<27)out.push('Entfernen-Knopf nur '+Math.round(r.width)+'x'+Math.round(r.height)+' px (min 28)');
+          x.click();
+          if(isWatched('GBP/CAD'))out.push('x auf der Watchlist-Kachel entfernt GBP/CAD nicht');
+          if(curPage!=='dash')out.push('x oeffnet die Kachel ('+curPage+') statt nur zu entfernen');
+          if(curPage!=='dash')showTab('dash');}
+        const std=[...document.querySelectorAll('#dbMarket .dx-mkt')].filter(e=>!e.classList.contains('dx-mkt-wl')&&e.querySelector('.dx-mkt-weg'));
+        if(std.length)out.push(std.length+' Standard-Kachel(n) mit Entfernen-Knopf (stehen nicht auf der Watchlist)');
+      }
       ['dbHero','dbMarket','dbGlobe','dbTrades','dbHeute','dbSent','dbInsight','dbBias','dbMover','dbPerf'].forEach(id=>{if(!document.getElementById(id))out.push('Sektion #'+id+' fehlt');});
       const tiles=[...document.querySelectorAll('#dashWidgets .db-bias')];
       const ids=tiles.map(t=>t.dataset.id);

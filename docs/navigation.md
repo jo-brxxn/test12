@@ -1617,3 +1617,6 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Reihen: Hero | Kennzahlen / Market overview | World map / **Open trades** | Key events | Sentiment & COT / Bias scores | Your insights / Biggest movers | Performance.
 - **Kugel wird nie ohne Not neu gebaut:** `stopGlobe()` parkt Gerüst + Referenzen, `startGlobes()` setzt fort; Neuaufbau nur bei Größenänderung der Karte (ResizeObserver). Kein `resetGlobeLon()` beim Betreten. Keine Leerlauf-Ruhe (Nutzer: *„Es muss nur drehen“*).
 - Kugelgröße = kleinere Seite des Kartenkörpers (`globeHostGroesse`), der Host selbst ist rechteckig.
+
+### Nachtrag 2026-11-07 (684): Watchlist-Eintrag entfernen
+- Watchlist-Seite: Papierkorb im Kartenkopf; Dashboard Market overview: × nur auf Kacheln, die auf der Watchlist stehen. Beide rufen `watchEntfernen()` (Undo über den Pfeil oben). Kein Bearbeitungsmodus - der Knopf ist immer sichtbar.

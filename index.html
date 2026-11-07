@@ -5335,6 +5335,11 @@ body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
 .wt-bias{font-size:var(--fs-2xs);font-weight:700;border:1px solid;border-radius:20px;padding:2px 9px;white-space:nowrap}
 .wt-score{font-size:14px;font-weight:800;font-family:var(--ff-num);min-width:40px;text-align:right}
 .wt-open{display:flex;align-items:center;color:var(--t3);flex:0 0 auto}
+/* Von der Watchlist entfernen (2026-11-07) - immer sichtbar (auch auf Touch),
+   neutral grau, nicht rot (Rot nur bearish/Warnung). */
+.wt-weg{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:var(--h-s);height:var(--h-s);margin-left:auto;padding:0;border:1px solid var(--bd);border-radius:var(--rss);background:none;color:var(--t2);cursor:pointer}
+.wt-weg+.wt-open{margin-left:0}
+@media(hover:hover){.wt-weg:hover{border-color:var(--bd2);color:var(--t0);background:var(--bg3)}}
 @media(hover:hover){.wt-head:hover .wt-name{text-decoration:underline}.wt-head:hover .wt-open{color:var(--blue)}}
 /* Vier gleich breite Kacheln, "Next event" (immer die letzte) darunter ueber
    die volle Breite. ⚠ Vorher: repeat(auto-fit,minmax(112px,1fr)) - alle FUENF
@@ -7357,6 +7362,9 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 .dx-mkt-n{display:flex;align-items:center;gap:7px;width:100%;font:700 var(--fs-base)/1.2 var(--ff-text);color:var(--t0)}
 .dx-mkt-n>span:nth-child(2){white-space:nowrap}
 .dx-mkt-sc{margin-left:auto;font:800 var(--fs-sm)/1 var(--ff-num)}
+.dx-mkt-wl .dx-mkt-n{padding-right:26px}
+.dx-mkt-weg{position:absolute;top:6px;right:6px;display:inline-flex;align-items:center;justify-content:center;width:var(--h-s);height:var(--h-s);padding:0;border:0;border-radius:var(--rss);background:none;color:var(--t3);cursor:pointer}
+@media(hover:hover){.dx-mkt-weg:hover{background:var(--bg4);color:var(--t0)}}
 .dx-mkt-p{font:800 var(--fs-lg)/1.1 var(--ff-num);color:var(--t0);margin-top:4px}
 .dx-mkt-c{font:700 var(--fs-sm)/1.2 var(--ff-num);white-space:nowrap}
 .dx-mkt-c i{font-family:var(--ff-text);font-weight:500;color:var(--t3)}
@@ -7497,11 +7505,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-683 - Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-684 - Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-683</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-684</span>
     </span>
   </div>
   <div class="hdr-r">

@@ -21479,3 +21479,16 @@ Kugel-Takt (vom Worker gemeldet) — Gegenproben `--gegenprobe-hauptthread`
   „MoM“ + „MoM Final“ am 23.10. beide 1,2 % = derselbe Release doppelt; den
   alten Titel auszuschließen hätte 100 Tage Historie gekostet). Neu A3:
   App-Muster = Feed-Regeln (gegen die alten Muster 6 Befunde).
+
+## 2026-11-07 — Von der Watchlist entfernen (VERSION-CHECK-684)
+
+Nutzer (Priorität): *„dass man Assets von der Watchlist entfernen kann“*.
+Seit dem Wegfall des Bearbeitungsmodus (2026-10-07) ging das nur über den
+Stern in Set-ups/Asset-Seite. Neu: `watchEntfernen(name)` (pushU → Undo,
+`setWatched(false)`, save, Neuaufbau; Fehler sichtbar per alert) —
+Papierkorb-Knopf im Kopf jeder Karte auf der Watchlist-Seite, × auf den
+Watchlist-Kacheln der Dashboard-„Market overview“ (nicht auf den
+aufgefüllten Standard-Kacheln). Kacheln sind jetzt `div role=button` (kein
+Knopf im Knopf). Gemessen: GBP/CAD entfernt, Seite bleibt offen, Undo stellt
+wieder her; × öffnet die Kachel nicht. Wächter `dashboard.js` (Knopf da,
+oben, ≥ 28 px, entfernt, öffnet nicht; Gegenprobe ohne stopPropagation → rot).
