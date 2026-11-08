@@ -1619,5 +1619,6 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Kugelgröße = kleinere Seite des Kartenkörpers (`globeHostGroesse`), der Host selbst ist rechteckig.
 
 ### Nachtrag 2026-11-07 (684): Watchlist-Eintrag entfernen
+- **Große Bildschirme (2026-11-08):** Das Dashboard hat ein 1480-px-Raster; ist mehr Platz da, wird es als Ganzes hochskaliert (`zoom` über `--dx-zoom`, `dashZoomSetzen`, höchstens 1,8), statt nur breiter zu werden - Schrift, Karten und Kugel wachsen mit. Wer im Dashboard misst (`getBoundingClientRect`) und Pixel setzt, muss durch den Zoom teilen (Beispiel `lgKarte`). Die Kugel rechnet den Zoom in ihre Auflösung ein. Geprüft: `check/dashboard.js` bis 2560 px.
 - Market overview 1D (2026-11-07, Wahl 2026-11-08 „Outline“): Länder-Umriss statt Tageskerze (kein Verlauf im Tag). Paar = Basis (Farbe der Tagesveränderung) / Quote (neutral), Index = sein Land, Gold/Silber/Öl/Krypto = eigenes Symbol. Daten `country_shapes.json` (`tools/laender-umrisse.mjs`, Natural Earth 1:50m, EUR = Euro-Raum vereinigt). Code `js/kachelbild.js`. Globe/Logo-Varianten entfernt.
 - Watchlist-Seite: Papierkorb im Kartenkopf; Dashboard Market overview: × nur auf Kacheln, die auf der Watchlist stehen. Beide rufen `watchEntfernen()` (Undo über den Pfeil oben). Kein Bearbeitungsmodus - der Knopf ist immer sichtbar.

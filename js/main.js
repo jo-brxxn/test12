@@ -17593,6 +17593,20 @@ function dashGeruest(){
     <div class="dx-r5"><div data-slot="mover"></div><div data-slot="perf"></div></div>
   </div>`;
 }
+// Dashboard auf grossen Bildschirmen hochskalieren (siehe CSS #dashWidgets zoom):
+// Massstab = verfuegbare Breite / 1480 px (Raster des Dashboards), hoechstens 1,8.
+// Aendert sich der Massstab, baut die Kugel neu - ihre Flaeche rechnet mit der
+// echten Bildpunktzahl (sonst hochgezogen unscharf).
+const DASH_BASIS_PX=1480;
+function dashZoomSetzen(){
+  const pg=document.getElementById('pgDash'),w=document.getElementById('dashWidgets');if(!pg||!w||!pg.clientWidth)return;
+  const cs=getComputedStyle(pg),verf=pg.clientWidth-parseFloat(cs.paddingLeft||0)-parseFloat(cs.paddingRight||0);
+  const z=verf>DASH_BASIS_PX?Math.min(1.8,verf/DASH_BASIS_PX):1,alt=parseFloat(w.style.getPropertyValue('--dx-zoom'))||1;
+  if(Math.abs(alt-z)<0.004)return;
+  if(z===1)w.style.removeProperty('--dx-zoom');else w.style.setProperty('--dx-zoom',z.toFixed(3));
+  if(curPage==='dash'&&document.querySelector('#dashGlobeHost svg'))startGlobes({neu:true});
+}
+try{let _dzT;window.addEventListener('resize',()=>{clearTimeout(_dzT);_dzT=setTimeout(()=>{if(curPage==='dash')dashZoomSetzen();},120);});}catch(e){}
 function renderDash(){
   beginRenderPass();
   updateAuroraColors();
@@ -17634,6 +17648,7 @@ function renderDash(){
   if(_evN)_evL.scrollTop=Math.max(0,_evN.offsetTop-_evL.offsetTop-68);
   // Kugel: beim Betreten startet showTab sie; hier nur, falls das Geruest neu ist
   // und renderDash ohne Seitenwechsel lief (z. B. erster Aufbau beim Laden).
+  if(curPage==='dash')dashZoomSetzen();
   if(neu&&curPage==='dash')requestAnimationFrame(()=>{if(curPage==='dash'&&!document.querySelector('#dashGlobeHost svg'))startGlobes();});
   dashUhrStarten();
 }
@@ -27172,9 +27187,13 @@ function lgKarte(card,m){
   }else if(!laedt){
     const f=lg.querySelector('.fxlogo');if(f&&f.classList.contains('lg-loop'))f.classList.remove('lg-loop');
   }
-  lg.style.width=Math.round(breite)+'px';
+  // Gemessen wird in Bildschirm-Pixeln (getBoundingClientRect), gesetzt in CSS-
+  // Pixeln - im hochskalierten Dashboard (zoom, grosse Bildschirme 2026-11-08)
+  // sonst doppelt skaliert: gemessen 1920 px - Logo ragte unten aus der Karte.
+  const zd=card.closest('#dashWidgets'),z=zd?(parseFloat(getComputedStyle(zd).zoom)||1):1;
+  lg.style.width=Math.round(breite/z)+'px';
   // unten mittig in der freien Flaeche, mit etwas Abstand zum Fuss
-  lg.style.top=Math.round(m.unten-m.top-hoehe-Math.min(18,m.frei*0.08))+'px';
+  lg.style.top=Math.round((m.unten-m.top-hoehe-Math.min(18,m.frei*0.08))/z)+'px';
 }
 // ── ⓘ in die rechte obere Ecke (Nutzer-Regel 2026-09-25) ────────────────
 // Die CSS-Regel (index.html, "EIN DRITTEL KLEINER") schiebt das ⓘ an den

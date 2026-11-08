@@ -10,7 +10,7 @@ const PORT=process.env.PORT||8935;
 const GEGENPROBE=process.argv.includes('--gegenprobe');
 (async()=>{
   const b=await chromium.launch(); let fehler=[];
-  for(const [w,h] of [[1920,1080],[1600,900],[1440,900],[1280,800],[1180,820],[1100,800],[900,900],[390,844]]){
+  for(const [w,h] of [[2560,1440],[1920,1080],[1600,900],[1440,900],[1280,800],[1180,820],[1100,800],[900,900],[390,844]]){
     const p=await b.newPage({viewport:{width:w,height:h}});
     await p.addInitScript(()=>{try{localStorage.setItem('fxpro_help_seen','1');localStorage.setItem('fxpro_intro_anim_enabled','0');}catch(e){}});
     await p.goto('http://127.0.0.1:'+PORT+'/index.html',{waitUntil:'networkidle'});
@@ -122,8 +122,10 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
       // Kopfreihe kompakt (Nutzer-iPad-Foto 2026-11-06: Statuszeile brach auf 3
       // Zeilen, Hero/Kacheln 190 px, Zahl 108 px unter dem Symbol)
       if(innerWidth>=1160){const h=document.getElementById('dbHero'),m=document.querySelector('.dx-hero-meta');
-        if(h&&h.getBoundingClientRect().height>170)out.push('Hero '+Math.round(h.getBoundingClientRect().height)+'px hoch (max 170)');
-        if(m&&m.getBoundingClientRect().height>30)out.push('Hero-Statuszeile bricht um ('+Math.round(m.getBoundingClientRect().height)+'px)');}
+        // in Raster-Pixeln (grosse Bildschirme: Dashboard hochskaliert, zoom)
+        const zd=document.getElementById('dashWidgets'),zz=zd?(parseFloat(getComputedStyle(zd).zoom)||1):1;
+        if(h&&h.getBoundingClientRect().height/zz>170)out.push('Hero '+Math.round(h.getBoundingClientRect().height/zz)+'px hoch (max 170)');
+        if(m&&m.getBoundingClientRect().height/zz>30)out.push('Hero-Statuszeile bricht um ('+Math.round(m.getBoundingClientRect().height/zz)+'px)');}
       // Texte in Kennzahl-Karten und Market-overview-Kacheln bleiben drin (2026-11-07:
       // Handy 390 px - "notifications" 102 px in 77-px-Karte, Kachel-Score und
       // Veraenderung 116-126 px in 105 px, von overflow:hidden still abgeschnitten).
@@ -144,6 +146,16 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
       // klein rechts" teilen eine Spaltengrenze (vorher 707/698/740 px bei 1180 px)
       if(innerWidth>=1160){const g=s=>{const e=document.querySelector(s);return e&&e.children[1]?Math.round(e.children[1].getBoundingClientRect().left):null;};
         const L=['.dx-top','.dx-r2','.dx-r4'].map(g);if(L.every(x=>x!=null)&&Math.max(...L)-Math.min(...L)>1)out.push('Karten nicht gleich breit: rechte Spalte beginnt bei '+L.join(' / ')+' px');}
+      // Grosse Bildschirme (Nutzer 2026-11-08 am PC: "verlaengert sich nicht nach
+      // rechts ... passen sich nicht in der Groesse an"): Dashboard reicht bis zum
+      // rechten Rand (hochskaliert), Fuell-Logos bleiben in ihrer Karte, Kugel scharf.
+      if(innerWidth>=1600){const pg=document.getElementById('pgDash'),dw=document.getElementById('dashWidgets');
+        if(pg&&dw){const cs=getComputedStyle(pg),innen=pg.getBoundingClientRect().left+pg.clientWidth-parseFloat(cs.paddingRight),re=dw.getBoundingClientRect().right;
+          if(innen-re>4)out.push(`Dashboard endet ${Math.round(innen-re)} px vor dem rechten Rand`);}}
+      document.querySelectorAll('#dashWidgets .lg-frei').forEach(g=>{const k=g.closest('.dw');if(!k)return;const a=g.getBoundingClientRect(),c=k.getBoundingClientRect();
+        if(a.height&&(a.bottom>c.bottom+1||a.right>c.right+1))out.push(`Fuell-Logo ragt aus ${k.id} (${Math.round(a.bottom-c.bottom)} px unten)`);});
+      {const cv=document.querySelector('#dashGlobeHost canvas.globe-canvas');if(cv){const r=cv.getBoundingClientRect();
+        if(r.width&&cv.width/(r.width*devicePixelRatio)<0.95)out.push(`Kugel unscharf: ${cv.width} Bildpunkte fuer ${Math.round(r.width*devicePixelRatio)} angezeigte`);}}
       // Listen-Fenster der Kennzahlen: nie seitlich scrollbar (Inhalt 560 px in 538-px-Fenster)
       ['dashMeldungenFenster','dashPositionenFenster'].forEach(f=>{try{window[f]();const md=document.querySelector('#mCardInfo .modal');
         if(md&&md.scrollWidth>md.clientWidth+1)out.push(f+': Fenster seitlich '+(md.scrollWidth-md.clientWidth)+'px ueberlaufend');closeM('mCardInfo');}catch(e){out.push(f+': '+e.message);}});
@@ -257,5 +269,5 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
   await b.close();
   if(GEGENPROBE){const ok=fehler.some(f=>/laeuft \d+px ueber sein Element/.test(f))&&fehler.some(f=>/Bias: \w+ zeigt 99/.test(f));console.log(ok?'dashboard --gegenprobe: ok (gequetschter Titel = Textueberlauf, verfaelschte Bias-Kachel = Abweichung)':'dashboard --gegenprobe: FEHLER - nicht gemeldet');process.exit(ok?0:1);}
   if(fehler.length){console.log('DASHBOARD-KOLLISIONEN:\n  '+fehler.join('\n  '));process.exit(1);}
-  console.log('Dashboard ok: keine ueberlappenden Sektionen/Texte, 10 Sektionen, Bias-Kacheln = symScoreCmp, volle Namen (8 Breiten)');
+  console.log('Dashboard ok: keine ueberlappenden Sektionen/Texte, 10 Sektionen, Bias-Kacheln = symScoreCmp, volle Namen (9 Breiten bis 2560 px)');
 })();

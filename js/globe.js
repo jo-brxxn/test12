@@ -590,7 +590,9 @@ function globePaletteSetzen(k){if(!GLOBE_PALETTEN[k])return;_globePaletteHell=k;
 function globeCanvasRefs(host,size){
   const lcv=host.querySelector('canvas.globe-canvas');if(!lcv)return{};
   const P=GLOBE_PALETTEN[globePaletteKey()]||GLOBE_PALETTEN.nacht;
-  const o={size,dpr:Math.min(window.devicePixelRatio||1,2),lat0:GLOBE_LAT0,landfarbe:P.land,rasterFarbe:P.raster,
+  // Dashboard-Zoom (grosse Bildschirme, js/main.js dashZoomSetzen) in die Aufloesung einrechnen
+  const zoom=parseFloat(getComputedStyle(host.closest('#dashWidgets')||host).zoom)||1;
+  const o={size,dpr:Math.min((window.devicePixelRatio||1)*zoom,3),lat0:GLOBE_LAT0,landfarbe:P.land,rasterFarbe:P.raster,
     schrift:(getComputedStyle(document.body).fontFamily||'sans-serif'),meer:P.meer,kuesteRoh:!!window.__gpGlobusKuesteRoh,
     randRgb:P.rand,radarRgb:P.radar,radarA:P.radarA,radarModus:P.radarModus,schriftRand:P.schriftRand,punktRand:P.punktRand};   // __gp...: nur Gegenprobe check/performance.js
   let worker=null;

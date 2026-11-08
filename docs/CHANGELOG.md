@@ -21819,3 +21819,21 @@ Nutzer (iPad-Foto, Kante zwischen Begrüßung und Market overview umkreist):
   gleiche Spalten) und Zeile 5 (Movers | Performance, klein links) bleiben bewusst.
 - Wächter `check/dashboard.js`: gleiche Spaltengrenze ab 1160 px; Gegenprobe
   (Begrüßungszeile mit altem Verhältnis) → rot bei 1180 und 1280 px.
+
+## 2026-11-08 — Dashboard am PC: füllt die Breite und skaliert mit (VERSION-CHECK-701)
+
+Nutzer: *„Die ganzen neuen Karten gehen nicht am PC. Das verlängert sich nicht nach
+rechts … weil sich die Sachen nicht in der Größe anpassen“*.
+- **Gemessen:** `.db-wrap{max-width:1480px}` - bei 1920 px 342 px leer rechts,
+  bei 2560 px ~980 px; Kugel 318 px in 623-px-Karte (Zeilenhöhe begrenzt).
+- **Fix:** 1480-px-Raster bleibt, darüber skaliert das ganze Dashboard hoch
+  (`zoom` = verfügbare Breite / 1480, max. 1,8): 1920 px → 1,22, 2560 px → 1,65;
+  rechter Rand erreicht, Kugel 385/523 px. Kugel-Auflösung rechnet den Zoom ein
+  (Bildpunkte = angezeigte Größe, scharf); Marker-Tipp trifft (Chromium + WebKit).
+- **Fehlerklasse:** Füll-Logo (`lgKarte`) maß in Bildschirm-Pixeln und setzte
+  CSS-Pixel → doppelt skaliert, ragte bei 1920 px unten aus „Open trades“/„Key
+  events“; jetzt durch den Zoom geteilt. Globe-Trefferprüfung rechnet schon mit
+  Verhältnissen (zoomfest).
+- Wächter `check/dashboard.js`: +2560 px; ab 1600 px kein Leerraum rechts, Füll-
+  Logos in ihrer Karte, Kugel nicht hochgezogen; Hero-Höhe in Raster-Pixeln.
+  Gegenprobe ohne Zoom → rot (1920: 320 px, 2560: 960 px Leerraum).
