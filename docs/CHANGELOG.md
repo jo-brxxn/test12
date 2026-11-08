@@ -21771,3 +21771,19 @@ Nutzer nach 697 (eigenes iPad): *„Weltkugel ist gut“*. Damit ist das Ziel vo
 ohne zu hängen“) auf dem Gerät bestätigt: Drehung als Zeitfunktion (686),
 kein Keil am Rand + halbe Pfadlast (689), Schwung als Bahn im Worker (695).
 Selbsttest `#globetest` bleibt für spätere Nachmessungen auf dem Gerät.
+
+## 2026-11-08 — Bias scores: Neutral eingeklappt, Show all / Show less (VERSION-CHECK-698)
+
+Nutzer: *„die neutralen Assets sollen nur so lang sein wie die längsten bullish
+oder bearish Assets … einen Button wie expand all … und dann wenn das expanded
+ist auch wieder ein kleiner machen Button“*.
+- Neutral eingeklappt = so viele wie die längere Bull-/Bear-Spalte (mind. 3),
+  darunter „Show all 12“, ausgeklappt „Show less“ (Sitzungs-Zustand wie
+  Performance „Show all“). Karte iPad 750 → 435 px eingeklappt.
+- Neutral jetzt nach Ausschlag sortiert (stärkster zuerst, egal welche Richtung):
+  nach Score sortiert hätte das Kürzen nur die positiven Neutralen gezeigt.
+- Versteckte Zeilen bleiben im Dokument (`hidden`) - jedes Asset weiter genau 1×.
+- Icons `chevronDown`/`chevronUp` neu (fehlten; `icn()` gab still nichts zurück).
+- Wächter `check/dashboard.js`: eingeklappt sichtbar = Grenze, Show all → alle,
+  Show less → wieder Grenze, kein Knopf wenn nichts versteckt; Gegenprobe von Hand
+  (nicht gekürzt) → rot.

@@ -1995,5 +1995,6 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 
 ## Bias scores (Dashboard) — Podium + Bull / Bear (Nutzer-Wahl 2026-11-08)
 - Oben je 3 stärkste Long-/Short-Scores als Podium-Karten, darunter ALLE übrigen in drei Spalten nach Bias (Bullish | Neutral | Bearish), stärkste zuerst; Zeilen kompakt (`--h-m`).
+- Neutral eingeklappt nur so lang wie die längere Bull-/Bear-Spalte (mind. 3), stärkster Ausschlag zuerst; „Show all N“ / „Show less“ (Nutzer 2026-11-08).
 - Getestet und verworfen: Tiles (alt), Ranking, Scale, Heatmap, Podium mit Chips. Geprüft von `check/dashboard.js` (je Asset 1×, Score = `symScoreCmp`, Sortierung, Spalte = Bias, kein Schalter).
 

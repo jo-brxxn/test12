@@ -780,6 +780,8 @@ const ICONS={
   // gespiegelt, statt ein zweites chevronLeft-Icon zu pflegen.
   chevronRight:'<polyline points="9 18 15 12 9 6"/>',
   chevronLeft:'<polyline points="15 18 9 12 15 6"/>',
+  chevronDown:'<polyline points="6 9 12 15 18 9"/>',   // Show all / Show less (Bias scores, 2026-11-08)
+  chevronUp:'<polyline points="6 15 12 9 18 15"/>',
   // Fuer die Assets-Quick-Links (Nutzer-Wunsch 2026-08-23) - identischer Pfad
   // wie TAB_ICONS.news, nur hier auch ueber icn() aufrufbar (die
   // Tab-Leiste nutzt einen eigenen, nicht mit ICONS geteilten Renderpfad).
@@ -17618,7 +17620,7 @@ function renderDash(){
     ins:dashSek('dbInsight','insights','Your insights',dashInsightsHtml(),{link:['Journal',"showTab('journal')"],
       erkl:['Only facts from your data: latest score changes, widest score gap, retail extremes, next high-impact release.','Tap a line to open it.']}),
     bias:dashSek('dbBias','bias_scores','Bias scores',dashBiasHtml(),{link:['All assets',"showTab('cur')"],
-      erkl:['Top: the 3 strongest long and short scores.','Below: every other asset by bias — bullish | neutral | bearish, strongest first.','Tap an asset to open it, the number for the score breakdown.']}),
+      erkl:['Top: the 3 strongest long and short scores.','Below: every other asset by bias — bullish | neutral | bearish, strongest first.','Neutral shows as many as the longer side — Show all for the rest.','Tap an asset to open it, the number for the score breakdown.']}),
     mover:dashSek('dbMover','movers_fx','Biggest movers',dashMoverHtml(),{link:['Trends',"showTab('trends')"],
       erkl:['FX pairs with the largest move since the previous close.','Tap a pair for its overview.']}),
     perf:dashSek('dbPerf','perf_ranking','Performance',`<div class="dx-zf">${perfBar}</div>`+dashPerfHtml(),{link:[dashPerfAlle?'Show less':'Show all','dashPerfUmschalten()'],
@@ -17669,6 +17671,8 @@ const DASH_KLASSEN=[['fx','Currencies'],['metal','Metals'],['energy','Energy'],[
 // Bias (bullish | neutral | bearish), staerkste zuerst. Je Asset genau ein
 // .db-bias[data-id] mit vollem Namen (.db-bias-n) und exaktem Score
 // (.db-bias-v, Tipp = Aufschluesselung) - check/dashboard.js.
+let dashBiasNeutralAlle=false;
+function dashBiasNeutralUmschalten(){dashBiasNeutralAlle=!dashBiasNeutralAlle;renderDash();}
 function dashBiasDaten(){
   const sc=s=>symScoreCmp(s);
   const alle=syms.filter(s=>DASH_KLASSEN.some(([k])=>assetCls(s.id)===k)).sort((a,b)=>sc(b)-sc(a));
@@ -17685,9 +17689,18 @@ function dashBiasHtml(){
   const rest=D.alle.filter(s=>!oben.includes(s)&&!unten.includes(s));
   const karte=(s,i)=>{const v=D.sc(s);return dashBiasKnopf(s,'dbv-p',`<span class="dbv-p-nr">${i+1}</span>${dashBiasN(s,18)}${dashBiasV(s,v,'dbv-p-v')}${dashBiasBalken(s,v,D.mx)}`);};
   const podest=n?`<div class="dbv-podest"><div class="dbv-p-sp"><div class="db-gr-lbl">Strongest long</div>${oben.map(karte).join('')}</div><div class="dbv-p-sp"><div class="db-gr-lbl">Strongest short</div>${unten.map(karte).join('')}</div></div>`:'';
-  const sp=[['bull','Bullish',rest.filter(s=>s.bias==='bull')],['neu','Neutral',rest.filter(s=>s.bias!=='bull'&&s.bias!=='bear')],['bear','Bearish',rest.filter(s=>s.bias==='bear').reverse()]];
-  const zeile=s=>{const v=D.sc(s);return dashBiasKnopf(s,'dbv-l',`${dashBiasN(s)}${dashBiasV(s,v)}${dashBiasBalken(s,v,D.mx)}`);};
-  const spalten=rest.length?`<div class="dbv-lang">${sp.map(([b,l,arr])=>`<div class="dbv-sp" data-bias="${b}"><div class="db-gr-lbl" style="color:${biasCss(b)}">${l} <b>${arr.length}</b></div>${arr.length?arr.map(zeile).join(''):'<div class="db-leer"><i>None</i></div>'}</div>`).join('')}</div>`:'';
+  // Neutral: staerkster Ausschlag zuerst (egal welche Richtung) und eingeklappt
+  // nur so lang wie die laengere Bull-/Bear-Spalte (Nutzer 2026-11-08: "die
+  // neutralen Assets sollen nur so lang sein wie die laengsten bullish oder
+  // bearish ... einen Button wie expand all"). Die uebrigen stehen versteckt im
+  // Dokument (hidden), damit jedes Asset genau einmal da ist.
+  const bull=rest.filter(s=>s.bias==='bull'),bear=rest.filter(s=>s.bias==='bear').reverse();
+  const neu=rest.filter(s=>s.bias!=='bull'&&s.bias!=='bear').sort((a,b)=>Math.abs(D.sc(b))-Math.abs(D.sc(a)));
+  const grenze=Math.max(bull.length,bear.length,3),kuerzen=neu.length>grenze;
+  const sp=[['bull','Bullish',bull],['neu','Neutral',neu],['bear','Bearish',bear]];
+  const zeile=(s,i,b)=>{const v=D.sc(s),weg=b==='neu'&&kuerzen&&!dashBiasNeutralAlle&&i>=grenze;return dashBiasKnopf(s,'dbv-l',`${dashBiasN(s)}${dashBiasV(s,v)}${dashBiasBalken(s,v,D.mx)}`).replace('<button ',weg?'<button hidden ':'<button ');};
+  const knopf=b=>b==='neu'&&kuerzen?`<button class="dbv-mehr" onclick="dashBiasNeutralUmschalten()" aria-expanded="${dashBiasNeutralAlle}">${dashBiasNeutralAlle?`Show less${icn('chevronUp',14)}`:`Show all ${neu.length}${icn('chevronDown',14)}`}</button>`:'';
+  const spalten=rest.length?`<div class="dbv-lang">${sp.map(([b,l,arr])=>`<div class="dbv-sp" data-bias="${b}"><div class="db-gr-lbl" style="color:${biasCss(b)}">${l} <b>${arr.length}</b></div>${arr.length?arr.map((s,i)=>zeile(s,i,b)).join(''):'<div class="db-leer"><i>None</i></div>'}${knopf(b)}</div>`).join('')}</div>`:'';
   return podest+spalten;
 }
 // Heute: High + Medium, chronologisch; vergangene mit Ist-Wert in Beat/Miss-Farbe.
@@ -27404,7 +27417,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

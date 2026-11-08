@@ -213,9 +213,23 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
               if(rest.length&&(Math.max(...rest)>Math.min(...lo)+1e-9||Math.min(...rest)<Math.max(...sh)-1e-9))out.push('Bias: ein Asset unter dem Podium ist staerker als das Podium');}
             card.querySelectorAll('.dbv-sp').forEach(c=>{const b=c.dataset.bias,T=[...c.querySelectorAll('.db-bias')],v=T.map(zahl);
               T.forEach(t=>{const s=syms.find(x=>x.id===t.dataset.id);const sb=s&&(s.bias==='bull'||s.bias==='bear')?s.bias:'neu';if(s&&sb!==b)out.push(`Bias: ${s.id} (${s.bias}) in Spalte ${b}`);});
-              for(let i=1;i<v.length;i++)if(b==='bear'?v[i]<v[i-1]:v[i]>v[i-1]){out.push('Bias: Spalte '+b+' nicht nach Staerke sortiert');break;}});
-            const T=[...card.querySelectorAll('.db-bias')];
-            T.forEach(t=>{const r=t.getBoundingClientRect();if(r.right>cr.right+1||r.left<cr.left-1)out.push(`Bias: ${t.dataset.id} ragt aus der Karte`);
+              for(let i=1;i<v.length;i++)if(b==='bear'?v[i]<v[i-1]:b==='neu'?Math.abs(v[i])>Math.abs(v[i-1]):v[i]>v[i-1]){out.push('Bias: Spalte '+b+' nicht nach Staerke sortiert');break;}});
+            // Neutral eingeklappt so lang wie die laengere Bull-/Bear-Spalte (mind. 3),
+            // Show all zeigt alle, Show less klappt wieder ein (Nutzer 2026-11-08)
+            {const K=()=>document.getElementById('dbBias');   // Klick baut die Karte neu - jedes Mal frisch holen
+             const zael=b=>{const c=K().querySelector(`.dbv-sp[data-bias="${b}"]`);return c?[...c.querySelectorAll('.db-bias')]:[];};
+             const sichtbar=T=>T.filter(t=>!t.hidden&&t.getBoundingClientRect().height>0).length;
+             const grenze=Math.max(zael('bull').length,zael('bear').length,3),nAlle=zael('neu').length,knopf=()=>K().querySelector('.dbv-sp[data-bias="neu"] .dbv-mehr');
+             if(nAlle>grenze){
+               if(sichtbar(zael('neu'))!==grenze)out.push(`Bias: Neutral eingeklappt ${sichtbar(zael('neu'))} sichtbar statt ${grenze}`);
+               if(!knopf()||!/Show all/.test(knopf().textContent))out.push('Bias: Neutral ohne "Show all"');
+               else{knopf().click();const n=sichtbar(zael('neu'));if(n!==nAlle)out.push(`Bias: nach Show all ${n} statt ${nAlle} sichtbar`);
+                 if(!knopf()||!/Show less/.test(knopf().textContent))out.push('Bias: ausgeklappt ohne "Show less"');else{knopf().click();if(sichtbar(zael('neu'))!==grenze)out.push('Bias: Show less klappt nicht wieder ein');}}
+             }else if(knopf())out.push('Bias: Show-all-Knopf, obwohl nichts verborgen ist');}
+            const card2=document.getElementById('dbBias'),cr2=card2.getBoundingClientRect();
+            const T=[...card2.querySelectorAll('.db-bias')];
+            T.forEach(t=>{const r=t.getBoundingClientRect();if(!r.width)return;   // eingeklappt (hidden) - kein Platz
+              if(r.right>cr2.right+1||r.left<cr2.left-1)out.push(`Bias: ${t.dataset.id} ragt aus der Karte`);
               t.querySelectorAll('.db-bias-n,.db-bias-v').forEach(e=>{const rg=document.createRange();rg.selectNodeContents(e);const q=rg.getBoundingClientRect();if(q.width&&(q.right>r.right+1||q.left<r.left-1))out.push(`Bias: Text "${e.textContent.trim()}" ragt aus ${t.dataset.id}`);});});
             for(let i=0;i<T.length;i++)for(let j=i+1;j<T.length;j++){const A=T[i].getBoundingClientRect(),B=T[j].getBoundingClientRect();
               if(A.width&&B.width&&A.left<B.right-1&&B.left<A.right-1&&A.top<B.bottom-1&&B.top<A.bottom-1){out.push(`Bias: ${T[i].dataset.id} ueberlappt ${T[j].dataset.id}`);i=T.length;break;}}
