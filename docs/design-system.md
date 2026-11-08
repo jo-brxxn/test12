@@ -1993,3 +1993,7 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 - Kennzahl-Karten (Dashboard oben rechts): Symbol als getönte Plakette 56 px (Handy 42 px), nie mehr ein kleines Eck-Symbol (Nutzer: „Logos zu klein, Karten zu leer").
 - Text in Karten/Kacheln wird nie still abgeschnitten: auf dem Handy umbrechen (Score/Prozent in die nächste Zeile). Geprüft von `check/dashboard.js`.
 
+## Bias scores (Dashboard) — Podium + Bull / Bear (Nutzer-Wahl 2026-11-08)
+- Oben je 3 stärkste Long-/Short-Scores als Podium-Karten, darunter ALLE übrigen in drei Spalten nach Bias (Bullish | Neutral | Bearish), stärkste zuerst; Zeilen kompakt (`--h-m`).
+- Getestet und verworfen: Tiles (alt), Ranking, Scale, Heatmap, Podium mit Chips. Geprüft von `check/dashboard.js` (je Asset 1×, Score = `symScoreCmp`, Sortierung, Spalte = Bias, kein Schalter).
+

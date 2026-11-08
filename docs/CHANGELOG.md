@@ -21750,3 +21750,16 @@ Bias) · **Podium** (je 3 stärkste Long/Short groß, Rest als Chips).
 - **Fund am Rand (vorbestehend, behoben):** Tiles „S&P 500“, „CH Yield“,
   „AU Yield“ ragten bei 390 px und 1280 px aus ihren 84-px-Kacheln → Kachel ≥ 102 px
   (Handy 122 px).
+
+## 2026-11-08 — Bias scores: Podium + Bull / Bear fest (VERSION-CHECK-697)
+
+Nutzer-Wahl: *„Ich will das Podium und unterm Podium dann die Bull Bear Variante
+für die anderen Assets“*. Oben je 3 stärkste Long-/Short-Scores, darunter alle
+übrigen in Bullish | Neutral | Bearish (stärkste zuerst). Schalter und die
+Varianten Tiles/Ranking/Scale/Heatmap entfernt (Code + CSS). Zeilen kompakt
+(`--h-m` statt `--h-l`): Karte iPad 813 → 750 px. Hinweis an den Nutzer: mit den
+aktuellen Daten 3 | 12 | 2 — die Neutral-Spalte bestimmt die Höhe.
+Wächter `check/dashboard.js`: Podium 3/3 (long absteigend, short aufsteigend,
+nichts darunter stärker), Spalte = Bias, nach Stärke sortiert, kein Schalter,
+nichts ragt heraus/überlappt (8 Breiten); Gegenprobe von Hand (Bearish
+unsortiert) → rot.

@@ -195,24 +195,31 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
           const nm=t.querySelector('.db-bias-n').textContent.trim();if(nm!==s.name)out.push('Bias: Name "'+nm+'" statt "'+s.name+'"');});
         document.querySelectorAll('#dashWidgets .db-bias-grid').forEach(g=>{const v=[...g.querySelectorAll('.db-bias-v')].map(e=>+e.textContent.replace('+',''));
           for(let i=1;i<v.length;i++)if(v[i]>v[i-1]){out.push('Bias: Gruppe nicht absteigend sortiert');break;}});
-        // Bias-scores-Varianten zur Wahl (Nutzer 2026-11-08: "5 Alternativen zum
-        // Testen"): JEDE Variante zeigt jedes Asset genau 1x mit exaktem Score und
-        // vollem Namen, nichts ragt aus der Karte/Kachel, keine zwei Assets ueberlappen.
-        if(typeof dashBiasArtSetzen==='function'){
-          ['kacheln','rang','skala','heat','lang','podest'].forEach(a=>{
-            dashBiasArtSetzen(a);
-            const card=document.getElementById('dbBias');if(!card)return;const cr=card.getBoundingClientRect();
+        // Bias scores = Podium + Bull/Bear (Nutzer-Wahl 2026-11-08): kein Schalter mehr;
+        // Podium je 3 (long absteigend, short aufsteigend), jede Spalte nach Staerke
+        // sortiert, Spalte passt zum Bias; nichts ragt aus Karte/Kachel, keine Ueberlappung.
+        {
+          const card=document.getElementById('dbBias');
+          if(card){
+            const cr=card.getBoundingClientRect(),zahl=e=>+e.querySelector('.db-bias-v').textContent.replace('+','');
+            if(card.querySelector('.dbv-wahl'))out.push('Bias: Darstellungs-Schalter noch da (Wahl getroffen: Podium + Bull/Bear)');
+            const sp=[...card.querySelectorAll('.dbv-p-sp')];
+            if(sp.length!==2)out.push('Bias: Podium fehlt ('+sp.length+' Spalten)');
+            else{const lo=[...sp[0].querySelectorAll('.db-bias')].map(zahl),sh=[...sp[1].querySelectorAll('.db-bias')].map(zahl);
+              if(lo.length!==3||sh.length!==3)out.push(`Bias: Podium ${lo.length}/${sh.length} statt 3/3`);
+              for(let i=1;i<lo.length;i++)if(lo[i]>lo[i-1])out.push('Bias: Podium long nicht absteigend');
+              for(let i=1;i<sh.length;i++)if(sh[i]<sh[i-1])out.push('Bias: Podium short nicht aufsteigend');
+              const rest=[...card.querySelectorAll('.dbv-sp .db-bias')].map(zahl);
+              if(rest.length&&(Math.max(...rest)>Math.min(...lo)+1e-9||Math.min(...rest)<Math.max(...sh)-1e-9))out.push('Bias: ein Asset unter dem Podium ist staerker als das Podium');}
+            card.querySelectorAll('.dbv-sp').forEach(c=>{const b=c.dataset.bias,T=[...c.querySelectorAll('.db-bias')],v=T.map(zahl);
+              T.forEach(t=>{const s=syms.find(x=>x.id===t.dataset.id);const sb=s&&(s.bias==='bull'||s.bias==='bear')?s.bias:'neu';if(s&&sb!==b)out.push(`Bias: ${s.id} (${s.bias}) in Spalte ${b}`);});
+              for(let i=1;i<v.length;i++)if(b==='bear'?v[i]<v[i-1]:v[i]>v[i-1]){out.push('Bias: Spalte '+b+' nicht nach Staerke sortiert');break;}});
             const T=[...card.querySelectorAll('.db-bias')];
-            syms.forEach(s=>{const n=T.filter(t=>t.dataset.id===s.id).length;if(n!==1)out.push(`Bias ${a}: ${s.id} ${n}x statt 1x`);});
-            T.forEach(t=>{const s=syms.find(x=>x.id===t.dataset.id);if(!s)return;
-              const v=+t.querySelector('.db-bias-v').textContent.replace('+','');if(v!==symScoreCmp(s))out.push(`Bias ${a}: ${s.id} zeigt ${v} statt ${symScoreCmp(s)}`);
-              const nm=t.querySelector('.db-bias-n').textContent.trim();if(nm!==s.name)out.push(`Bias ${a}: Name "${nm}" statt "${s.name}"`);
-              const r=t.getBoundingClientRect();if(r.right>cr.right+1||r.left<cr.left-1)out.push(`Bias ${a}: ${s.id} ragt aus der Karte`);
-              t.querySelectorAll('.db-bias-n,.db-bias-v').forEach(e=>{const rg=document.createRange();rg.selectNodeContents(e);const q=rg.getBoundingClientRect();if(q.width&&(q.right>r.right+1||q.left<r.left-1))out.push(`Bias ${a}: Text "${e.textContent.trim()}" ragt aus ${s.id}`);});});
+            T.forEach(t=>{const r=t.getBoundingClientRect();if(r.right>cr.right+1||r.left<cr.left-1)out.push(`Bias: ${t.dataset.id} ragt aus der Karte`);
+              t.querySelectorAll('.db-bias-n,.db-bias-v').forEach(e=>{const rg=document.createRange();rg.selectNodeContents(e);const q=rg.getBoundingClientRect();if(q.width&&(q.right>r.right+1||q.left<r.left-1))out.push(`Bias: Text "${e.textContent.trim()}" ragt aus ${t.dataset.id}`);});});
             for(let i=0;i<T.length;i++)for(let j=i+1;j<T.length;j++){const A=T[i].getBoundingClientRect(),B=T[j].getBoundingClientRect();
-              if(A.width&&B.width&&A.left<B.right-1&&B.left<A.right-1&&A.top<B.bottom-1&&B.top<A.bottom-1){out.push(`Bias ${a}: ${T[i].dataset.id} ueberlappt ${T[j].dataset.id}`);i=T.length;break;}}
-          });
-          dashBiasArtSetzen('kacheln');
+              if(A.width&&B.width&&A.left<B.right-1&&B.left<A.right-1&&A.top<B.bottom-1&&B.top<A.bottom-1){out.push(`Bias: ${T[i].dataset.id} ueberlappt ${T[j].dataset.id}`);i=T.length;break;}}
+          }
         }
       }
       return out;
