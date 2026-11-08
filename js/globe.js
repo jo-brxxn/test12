@@ -564,29 +564,31 @@ function globeSkeleton(size,uid){
   </svg></div>`;
 }
 // Canvas-Ebene einrichten: Aufloesung = Geraetepixel (scharf auf dem iPad),
-// Viereck-Raster als Muster (gleiche Masse wie das fruehere SVG-<pattern>:
-// 4,2 px Raster, 0,55 px Innenabstand, 0,4 px Strich), Randabschattung als
+// Viereck-Raster fest auf der Kugel (seit 2026-11-08, js/globe-zeichnen.js
+// rasterMalen; in der Kugelmitte wie das fruehere SVG-<pattern>: 4,2 px
+// Raster, 0,55 px Innenabstand, 0,4 px Strich), Randabschattung als
 // Radialverlauf in Meeresfarbe (ersetzt die Luminanz-Maske: Land blendet ab
 // 70 % des Radius zum Rand hin in das Meer aus).
 const GLOBE_MEER='#0b2445',GLOBE_LANDFARBE='#2d6ea8';
 // Farbschemata der Kugel (Nutzer 2026-11-08: "Im hellen Modus hat die
-// Weltkugel ganz komische Farben gib mir da mal Alternativen") - im dunklen
-// Modus immer 'nacht' (bisherige Optik); im hellen Modus zur Wahl, bis der
-// Nutzer entschieden hat (Schalter in der Karte, nur diese Sitzung).
+// Weltkugel ganz komische Farben gib mir da mal Alternativen"; Wahl: "Ich nehme
+// Atlas") - dunkler Modus 'nacht' (bisherige Optik), heller Modus 'atlas'.
 // rand = Randschatten (RGB), radar = Keil (RGB, Deckkraft, Mischmodus),
 // schriftRand/punktRand = Umrandung von Beschriftung und Marker-Punkt.
 const GLOBE_PALETTEN={
   nacht:{meer:GLOBE_MEER,land:GLOBE_LANDFARBE,raster:'rgba(126,196,255,.5)',rand:'11,36,69',radar:'126,224,255',radarA:.4,radarModus:'screen',schriftRand:'#04101c',punktRand:'#04101c'},
   atlas:{meer:'#dce9f7',land:'#5b8fd0',raster:'rgba(255,255,255,.55)',rand:'199,214,233',radar:'11,95,204',radarA:.16,radarModus:'source-over',schriftRand:'#ffffff',punktRand:'#ffffff'},
-  tinte:{meer:'#f2f5fa',land:'#1f4478',raster:'rgba(255,255,255,.28)',rand:'226,233,243',radar:'31,68,120',radarA:.14,radarModus:'source-over',schriftRand:'#ffffff',punktRand:'#ffffff'},
-  schiefer:{meer:'#e8ecf2',land:'#a3b0c2',raster:'rgba(255,255,255,.6)',rand:'214,221,231',radar:'85,97,122',radarA:.14,radarModus:'source-over',schriftRand:'#ffffff',punktRand:'#ffffff'},
-  tag:{meer:'#5f9fe0',land:'#f4f7fb',raster:'rgba(95,159,224,.35)',rand:'47,111,186',radar:'255,255,255',radarA:.35,radarModus:'screen',schriftRand:'#ffffff',punktRand:'#0b2445'},
 };
-GLOBE_PALETTEN.panel=GLOBE_PALETTEN.nacht;   // dunkle Kugel auf dunklem Feld (nur Hintergrund per CSS)
-const GLOBE_PALETTE_NAMEN=[['nacht','Current'],['panel','Panel'],['atlas','Atlas'],['tinte','Ink'],['schiefer','Slate'],['tag','Day']];
-let _globePaletteHell='nacht';
-function globePaletteKey(){return document.documentElement.hasAttribute('data-fx-theme')?'nacht':_globePaletteHell;}
-function globePaletteSetzen(k){if(!GLOBE_PALETTEN[k])return;_globePaletteHell=k;if(_globeHosts.length||_globeParked)startGlobes({neu:true});}
+function globePaletteKey(){return document.documentElement.hasAttribute('data-fx-theme')?'nacht':'atlas';}
+// Zeichenweg des Rasters auf der Kugel (js/globe-zeichnen.js, GEMESSEN 2026-11-08):
+// WebKit (Safari, jeder iPad-Browser) zahlt je kleiner Form -> Stempel aus einem
+// Bildatlas; Chromium/Firefox zeichnen Striche billiger als gestempelte Bilder.
+// __gpRasterWeg: nur Pruefungen (erzwingt einen Weg).
+function globeRasterWeg(){
+  if(window.__gpRasterWeg)return window.__gpRasterWeg;
+  const ua=navigator.userAgent||'';
+  return /AppleWebKit/.test(ua)&&!/Chrome\/|Chromium\/|Edg\//.test(ua)?'atlas':'pfad';
+}
 function globeCanvasRefs(host,size){
   const lcv=host.querySelector('canvas.globe-canvas');if(!lcv)return{};
   const P=GLOBE_PALETTEN[globePaletteKey()]||GLOBE_PALETTEN.nacht;
@@ -594,7 +596,7 @@ function globeCanvasRefs(host,size){
   const zoom=parseFloat(getComputedStyle(host.closest('#dashWidgets')||host).zoom)||1;
   const o={size,dpr:Math.min((window.devicePixelRatio||1)*zoom,3),lat0:GLOBE_LAT0,landfarbe:P.land,rasterFarbe:P.raster,
     schrift:(getComputedStyle(document.body).fontFamily||'sans-serif'),meer:P.meer,kuesteRoh:!!window.__gpGlobusKuesteRoh,
-    randRgb:P.rand,radarRgb:P.radar,radarA:P.radarA,radarModus:P.radarModus,schriftRand:P.schriftRand,punktRand:P.punktRand};   // __gp...: nur Gegenprobe check/performance.js
+    randRgb:P.rand,radarRgb:P.radar,radarA:P.radarA,radarModus:P.radarModus,schriftRand:P.schriftRand,punktRand:P.punktRand,rasterWeg:globeRasterWeg()};   // __gp...: nur Gegenprobe check/performance.js
   let worker=null;
   // Worker + OffscreenCanvas, wo moeglich (iPadOS 16.4+, aktuelle Browser);
   // __globusOhneWorker: Rueckfall nach einem Worker-Fehler bzw. fuer Pruefungen.
@@ -1109,7 +1111,7 @@ export {
   _globeFuel,GLOBE_FUEL_BURN_PCT_S,GLOBE_FUEL_REGEN_PCT_S,globeFuelTick,stopGlobe,globeProject,globeHorizonPoint,
   globePathD,globeSkeleton,globeCollectRefs,globeUpdateOne,globeUpdateSweep,closeGlobeTip,globeVehicleTravel,globeMarkerClick,
   globeHitTest,globeOnPointerDown,globeOnPointerMove,globeOnPointerUp,startGlobes,resetGlobeLon,ladeLandHD,
-  GLOBE_PALETTE_NAMEN,globePaletteSetzen,globePaletteKey};
+  globePaletteKey};
 // Kompatibilitaets-Bruecke: diese Namen werden per inline onclick=/
 // onpointerdown=/... aus generiertem HTML im GLOBALEN Scope aufgerufen
 // (siehe docs/module-split.md) - selbst gebridged, nicht Aufgabe von main.js.

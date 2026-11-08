@@ -133,14 +133,13 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
       document.querySelectorAll('.dx-stat,.dx-mkt').forEach(k=>{const kr=k.getBoundingClientRect();if(!kr.width)return;const cs=getComputedStyle(k),rechts=kr.right-parseFloat(cs.paddingRight)+1,links=kr.left+parseFloat(cs.paddingLeft)-1;
         k.querySelectorAll('.dx-stat-l,.dx-stat-n,.dx-mkt-n,.dx-mkt-p,.dx-mkt-c').forEach(e=>{const rg=document.createRange();rg.selectNodeContents(e);const r=rg.getBoundingClientRect();if(r.width&&(r.right>rechts||r.left<links))out.push(`Text "${e.textContent.trim().slice(0,24)}" ragt ${Math.round(Math.max(r.right-rechts,links-r.left))}px aus ${k.classList.contains('dx-stat')?'Kennzahl-Karte':'Kachel'}`);});
         const ic=k.querySelector('.dx-stat-ic');if(ic&&ic.getBoundingClientRect().width<40)out.push(`Kennzahl-Symbol nur ${Math.round(ic.getBoundingClientRect().width)}px (min 40)`);});
-      // Kugel-Farbschemata im hellen Modus (2026-11-08, zur Wahl): jedes baut die
-      // Kugel mit seinem Schema neu (Host-Attribut + Kugel-Flaeche), Schalter nur hell
-      if(innerWidth===1440&&typeof dashGlobusPalette==='function'){
-        const hell=!document.documentElement.hasAttribute('data-fx-theme');
-        if(hell!==!!document.querySelector('#dbGlobe .gp-wahl'))out.push('Kugel-Farbschema: Schalter '+(hell?'fehlt im hellen':'steht im dunklen')+' Modus');
-        if(hell){['panel','atlas','tinte','schiefer','tag','nacht'].forEach(k=>{dashGlobusPalette(k);const h=document.getElementById('dashGlobeHost');
-          if(!h||h.dataset.palette!==k)out.push('Kugel-Farbschema '+k+': Host zeigt '+(h&&h.dataset.palette));
-          else if(!h.querySelector('canvas.globe-canvas'))out.push('Kugel-Farbschema '+k+': keine Kugel-Flaeche');});}
+      // Kugel-Farbschema fest (Nutzer-Wahl 2026-11-08 "Ich nehme Atlas"): hell =
+      // atlas, dunkel = nacht; kein Schalter mehr in der Karte
+      if(innerWidth===1440){
+        const soll=document.documentElement.hasAttribute('data-fx-theme')?'nacht':'atlas',h=document.getElementById('dashGlobeHost');
+        if(!h||h.dataset.palette!==soll)out.push('Kugel-Farbschema: Host zeigt '+(h&&h.dataset.palette)+' statt '+soll);
+        else if(!h.querySelector('canvas.globe-canvas'))out.push('Kugel-Farbschema '+soll+': keine Kugel-Flaeche');
+        if(document.querySelector('#dbGlobe .gp-wahl,#dbGlobe [data-slot=globewahl]'))out.push('Kugel-Farbschema: Schalter steht noch in der Karte');
       }
       // Karten gleich breit (Nutzer 2026-11-08, iPad-Foto): die Zeilen "gross links |
       // klein rechts" teilen eine Spaltengrenze (vorher 707/698/740 px bei 1180 px)

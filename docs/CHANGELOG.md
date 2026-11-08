@@ -21837,3 +21837,48 @@ rechts … weil sich die Sachen nicht in der Größe anpassen“*.
 - Wächter `check/dashboard.js`: +2560 px; ab 1600 px kein Leerraum rechts, Füll-
   Logos in ihrer Karte, Kugel nicht hochgezogen; Hero-Höhe in Raster-Pixeln.
   Gegenprobe ohne Zoom → rot (1920: 320 px, 2560: 960 px Leerraum).
+
+## 2026-11-08 — Weltkugel: Atlas fest, Raster dreht mit (VERSION-CHECK-702)
+
+Nutzer: *„Ich nehme Atlas und dieses Raster das man sieht mach das fest auf die
+Weltkugel drauf“*.
+- **Farbschema:** heller Modus fest `atlas`, dunkler Modus `nacht`; Schalter,
+  Panel/Ink/Slate/Day samt CSS und `dashGlobusPalette` entfernt.
+- **Gemessen vorher:** das Raster war ein Bildschirm-Muster in der Land-Textur -
+  es stand still, das Land drehte darunter durch.
+- **Fix:** Vierecke auf der Kugeloberfläche (Breitenreihen im Abstand 4,2 px in
+  der Kugelmitte, je Reihe so viele wie auf den Breitenkreis passen; 4.293 Vierecke,
+  davon je Bild etwa die Hälfte sichtbar), je Bild projiziert und zum Rand hin
+  verkürzt wie das Land; Randschatten stufenlos (ab 70 % des Radius). Küsten-Vierecke
+  werden einmal beim Aufbau zugeschnitten (je Kante 4 Teilstücke gegen die
+  Küsten, Fehler ≤ 0,4 px) - Japan, UK, Neuseeland, Mittelamerika behalten das
+  Raster bis zur Küste. Erste Fassung (nur Vierecke ganz auf Land) ließ einen
+  rasterfreien Küstenstreifen und schmale Inseln fast leer.
+- **Kosten je Bild (Pixeldichte 2; Muster vorher WebKit 3 ms, Chromium 1,7 ms):**
+  - Strich-Pfad (~2.000 Vierecke): Chromium 2,5-2,9 ms, **WebKit 10-13 ms** →
+    `check/webkitkugel.js` rot (Dashboard 54/s, p95 31,8 ms; 701 im selben
+    Container: 65/s, p95 19,3 ms). WebKit zahlt je kleiner Form: strokeRect 9-11,
+    gefüllt 7-8, drawImage je Viereck 10; Pfad bauen allein kostet nichts.
+  - Pixelpuffer + putImageData: WebKit-Dashboard 49-52/s - das Hochladen je Bild
+    (ohne putImageData 61/s); als CPU-Fläche (`willReadFrequently`) 55-62/s, aber
+    WPE-Absturz in 2 von 2 Wächterläufen; Kacheln (25 Flächen) stürzen immer ab.
+  - Küstenzuschnitt je Bild: Chromium `clip()` 23 ms, `source-atop` 5,0 ms.
+  - **Endfassung, zwei Wege nach Engine** (`globeRasterWeg` in `js/globe.js`):
+    WebKit (Safari, jeder iPad-Browser) = **Atlas**: je Reihe bis zu 8 Vierecke als
+    ein Stück einmal in einen festen Bildatlas, je Bild jedes sichtbare Stück
+    gestempelt (affin aus projizierten Enden + Nordrichtung, Fehler ≤ 0,5 px am
+    Rand) - WebKit 5 ms (OpenGL und CPU-Raster; Striche dort 8-13 ms). Chromium/
+    Firefox = **Pfad** (2,8 ms; der Atlas kostet dort ohne Grafikkarte 7 ms).
+    Äußerster Rand ab 95,5 % des Radius ohne Raster (30 % der sichtbaren
+    Vierecke, dort < 15 % sichtbar).
+  - Wächter: `check/webkitkugel.js` grün - Kugel allein 65,2/s p95 17,0 ms,
+    Dashboard 62,7/s p95 23,5 ms (701: 65,1/17,8 und 65,2/19,3). Daneben ein
+    WPE-Absturz (F) in 2 von 4 Läufen; Gegenlauf `--cpu` ohne Absturz = der
+    bekannte WPE-OpenGL-Fehler (Safari hat diesen Grafikpfad nicht). Im
+    CPU-Raster Dashboard 50,2/s p95 30,3 (701 dort 56,2/26,3 - schon vorher rot).
+    `check/performance.js` G: 4× CPU 60/s, p95 16,8 ms.
+- Wächter `check/kugelland.js` C: Ausschnitt in der Sahara nach 6-px-Drehung um
+  6 px versetzt gleich (3,6-4,7 Stufen; stehend 14,2-17,9), Raster sichtbar,
+  Raster auf Honshu - für beide Wege; Gegenprobe `--gegenprobe-raster` (Raster
+  steht still) → rot für beide. `check/dashboard.js`: Schema
+  je Modus, kein Schalter.

@@ -104,21 +104,15 @@ export function erstelleZeichner(cv, o) {
   rc.setTransform(dpr, 0, 0, dpr, 0, 0);
   const rg = rc.createRadialGradient(cx, cy, R * 0.7, cx, cy, R); rg.addColorStop(0, `rgba(${o.randRgb || '11,36,69'},0)`); rg.addColorStop(1, `rgba(${o.randRgb || '11,36,69'},1)`);   // Farbschema (globe.js GLOBE_PALETTEN)
   rc.fillStyle = rg; rc.beginPath(); rc.arc(cx, cy, R, 0, Math.PI * 2); rc.fill();
-  // Musterkachel direkt in Geraetepixeln: 5x5 Vierecke = 21 px je dpr-Einheit
-  // (ganzzahlig fuer dpr 1 und 2), Grund in Landfarbe -> EIN Malvorgang je Bild.
-  const N = 5, kachel = neueFlaeche(Math.round(SQ * N * dpr), Math.round(SQ * N * dpr));
-  const kc = kachel.getContext('2d');
-  kc.fillStyle = o.landfarbe; kc.fillRect(0, 0, kachel.width, kachel.height);
-  kc.strokeStyle = o.rasterFarbe; kc.lineWidth = 0.4 * dpr;
-  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) kc.strokeRect((i * SQ + SI) * dpr, (j * SQ + SI) * dpr, SW * dpr, SW * dpr);
-  // Land-Textur mit eingebackenem Randschatten (2026-11-07): Raster + Schatten
-  // EINMAL in eine Flaeche; je Bild fuellt der Land-Pfad direkt mit ihr. Der
-  // Schatten hat Meeresfarbe - ueber dem Meer aenderte er nichts. GEMESSEN
-  // (Pixelvergleich, Pixeldichte 2): innen hoechstens 3 von 255 Stufen
-  // Rundung, an der aeussersten Randkante 435 Pixel bis 19 Stufen. Je Bild eine
-  // Kopie ueber die ganze Flaeche weniger: WebKit Bilder >= 25 ms 26 -> 11.
+  // Land-Textur = Landfarbe mit eingebackenem Randschatten (2026-11-07): je
+  // Bild fuellt der Land-Pfad direkt mit ihr. Der Schatten hat Meeresfarbe -
+  // ueber dem Meer aenderte er nichts. GEMESSEN (Pixelvergleich, Pixeldichte 2):
+  // innen hoechstens 3 von 255 Stufen Rundung, an der aeussersten Randkante 435
+  // Pixel bis 19 Stufen. Je Bild eine Kopie ueber die ganze Flaeche weniger:
+  // WebKit Bilder >= 25 ms 26 -> 11. Das Raster steckt seit 2026-11-08 NICHT
+  // mehr in der Textur (stand dort fest zum Bildschirm) - siehe rasterMalen().
   const textur = neueFlaeche(Math.round(size * dpr), Math.round(size * dpr)), tc = textur.getContext('2d');
-  tc.fillStyle = tc.createPattern(kachel, 'repeat'); tc.fillRect(0, 0, textur.width, textur.height);   // Kachel in Geraetepixeln, hier ohne Skalierung
+  tc.fillStyle = o.landfarbe; tc.fillRect(0, 0, textur.width, textur.height);
   tc.drawImage(rand, 0, 0);
   const landFuellung = lc.createPattern(textur, 'no-repeat');
   const randRing = new Path2D(); randRing.arc(cx, cy, R, 0, Math.PI * 2); randRing.arc(cx, cy, R - 1, 0, Math.PI * 2, true);
@@ -202,10 +196,179 @@ export function erstelleZeichner(cv, o) {
     const p = new Path2D();
     for (let k = 0; k < ringe.length; k++) ring(k, lon0, p);
     lc.fillStyle = landFuellung; lc.fill(p);
+    rasterMalen(lon0);
     // Kugelrand: der fruehere Schatten deckte die geglaettete Kante ein zweites
     // Mal - ein 1-px-Ring in Meeresfarbe gibt denselben Rand (dort war das Land
     // durch den Schatten schon zu ~97 % Meeresfarbe)
     lc.fillStyle = o.meer; lc.fill(randRing);
+  }
+  // ── RASTER FEST AUF DER KUGEL (Nutzer 2026-11-08: "dieses Raster das man
+  // sieht mach das fest auf die Weltkugel drauf") ──
+  // Vorher ein Bildschirm-Muster in der Land-Textur: das Land drehte unter
+  // einem stehenden Gitter durch. Jetzt liegen die Vierecke auf der
+  // Kugeloberflaeche - in der Kugelmitte dieselben Masse wie vorher (SQ
+  // Abstand, SW Kante, 0,4 px Strich): Breitenreihen im Abstand SQ, je Reihe so
+  // viele Vierecke, wie auf den Breitenkreis passen (keins reicht ueber 180
+  // Grad). An der Kueste wird der Umriss jedes Vierecks EINMAL beim Aufbau
+  // zugeschnitten (je Kante 4 Teilstuecke, Mitte gegen dieselben vereinfachten
+  // Kuesten, die gezeichnet werden - Fehler hoechstens 1/8 Kante = 0,4 px):
+  // UK, Japan, Neuseeland, Mittelamerika behalten ihr Raster bis zur Kueste.
+  //
+  // ZWEI ZEICHENWEGE, je nach Browser-Engine (o.rasterWeg, gesetzt in
+  // js/globe.js globeRasterWeg) - GEMESSEN 2026-11-08, Pixeldichte 2, je Bild,
+  // Muster vorher: WebKit 3 ms / Chromium 1,7 ms:
+  //   'pfad'  (Chromium, Firefox): ~2.000 sichtbare Vierecke als Strich-Pfad -
+  //           Chromium 2,5-2,9 ms; WebKit aber 10-13 ms (zahlt je kleiner Form;
+  //           strokeRect 9-11, gefuellt 7-8), WebKit-Dashboard 54 statt 60/s.
+  //   'atlas' (WebKit = Safari/iPad): je Reihe bis zu STUECK Vierecke als ein
+  //           Stueck EINMAL in einen festen Bildatlas; je Bild jedes sichtbare
+  //           Stueck mit seiner Lage auf der Kugel gestempelt (drawImage, affin
+  //           aus den projizierten Enden + Nordrichtung) - WebKit 5 ms im
+  //           OpenGL- wie im CPU-Raster (Striche dort 8-13), Dashboard 60-63/s;
+  //           Chromium ohne Grafikkarte aber 7 ms (rechnet
+  //           jedes gestempelte Bild Pixel fuer Pixel um).
+  // Verworfen: Striche selbst in einen Pixelpuffer + putImageData (WebKit-
+  // Dashboard 49-52/s - das Hochladen je Bild; als CPU-Flaeche stuerzt WPE
+  // WebKit ab); Zuschnitt je Bild (Chromium clip() 23 ms, source-atop 5 ms);
+  // closePath() je Viereck (+2 ms).
+  // Umriss als Teilstuecke in (u, v), u = Ost, v = Nord, je -1..1; Lauf
+  // oben (v=1) nach Westen, links nach Sueden, unten nach Osten, rechts nach Norden.
+  const ECKE = [[1, 1], [-1, 1], [-1, -1], [1, -1], [1, 1]], TEILE = 4, STUECK = 8, STF = 15;
+  const ATLAS = o.rasterWeg === 'atlas';
+  let ST = new Float64Array(0), SN = 0, RQ = 0, atlas = null;   // je Stueck STF Werte (siehe unten)
+  let RS = new Float64Array(0), RU = [];   // Weg 'pfad': je Viereck sin/cos Breite, sin/cos Laenge; RU: null = ganz, sonst Laeufe [u,v,...]
+  function rasterBauen() {
+    const d = SQ / R, h = SW / 2 / R, G = 180 / Math.PI;
+    const schnitt = y => {   // Laengen, an denen Kuesten den Breitenkreis y (Grad) kreuzen
+      const xs = [];
+      for (const r of ringe) for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const a = r[j], b = r[i]; if ((a[0] <= y) !== (b[0] <= y)) xs.push(a[1] + (y - a[0]) / (b[0] - a[0]) * (b[1] - a[1])); }
+      return xs.sort((p, q) => p - q);
+    };
+    // Punkt auf Land: ungerade viele Kreuzungen links davon (Ringe sind reine
+    // Aussenringe ohne Ueberlappung - gerade/ungerade = Vereinigung)
+    const aufLand = (xs, x) => { let lo = 0, hi = xs.length; while (lo < hi) { const m = (lo + hi) >> 1; if (xs[m] < x) lo = m + 1; else hi = m; } return (lo & 1) === 1; };
+    const VS = [];   // v der Teilstueck-Mitten auf den senkrechten Kanten + Ober-/Unterkante
+    for (let t = 0; t < TEILE; t++) VS.push(1 - (t + 0.5) * 2 / TEILE);
+    VS.push(1, -1);
+    const pkt = q => { const e = Math.floor(q / TEILE) % 4, w = (q % TEILE) / TEILE; return [ECKE[e][0] + (ECKE[e + 1][0] - ECKE[e][0]) * w, ECKE[e][1] + (ECKE[e + 1][1] - ECKE[e][1]) * w]; };
+    const stuecke = [], J = Math.floor((Math.PI / 2 - h) / d), S = [], U = [];
+    RQ = 0;
+    for (let j = -J; j <= J; j++) {
+      const f = j * d, cf = Math.cos(f), n = Math.floor(2 * Math.PI * cf / d);
+      if (n < 1) continue;
+      const xs = new Map(VS.map(v => [Math.round(v * 1e3), schnitt((f + v * h) * G)])), dl = 2 * Math.PI / n, hw = h / cf * G;
+      let cur = null;
+      for (let k = 0; k < n; k++) {
+        const x = (-Math.PI + (k + 0.5) * dl) * G;
+        // Teilstueck q (0..4*TEILE-1) auf Land? Mitte in (u, v) -> Breite/Laenge
+        const an = [];
+        for (let e = 0; e < 4; e++) for (let t = 0; t < TEILE; t++) {
+          const w = (t + 0.5) / TEILE, u = ECKE[e][0] + (ECKE[e + 1][0] - ECKE[e][0]) * w, v = ECKE[e][1] + (ECKE[e + 1][1] - ECKE[e][1]) * w;
+          an.push(aufLand(xs.get(Math.round(v * 1e3)), x + u * hw));
+        }
+        const zahl = an.filter(Boolean).length;
+        if (!zahl) { cur = null; continue; }
+        let laeufe = null;
+        if (zahl < an.length) {   // Laeufe: zusammenhaengende Teilstuecke auf Land, ab einem Stueck im Meer
+          const N = an.length, st = an.indexOf(false); let lf = null; laeufe = [];
+          for (let s2 = 1; s2 <= N; s2++) {
+            const q = (st + s2) % N;
+            if (an[q]) { if (!lf) lf = [...pkt(q)]; lf.push(...pkt(q + 1)); }
+            else if (lf) { laeufe.push(lf); lf = null; }
+          }
+          if (lf) laeufe.push(lf);
+        }
+        RQ++;
+        if (!ATLAS) { const l = -Math.PI + (k + 0.5) * dl; S.push(Math.sin(f), cf, Math.sin(l), Math.cos(l)); U.push(laeufe); continue; }
+        if (cur && cur.q.length < STUECK) { cur.q.push(laeufe); cur.k1 = k; }
+        else { cur = { f, cf, dl, k0: k, k1: k, q: [laeufe] }; stuecke.push(cur); }
+      }
+    }
+    RS = Float64Array.from(S); RU = U;
+    if (!ATLAS) return;
+    // Atlas: Regale (Hoehe eines Vierecks), Stuecke mit 2 px Abstand (Filter
+    // greift sonst ins Nachbarstueck); 1 Atlas-Pixel = 1 Geraetepixel in der Kugelmitte
+    const a = SW / 2 * dpr, lw = 0.4 * dpr, RD = 2, hoehe = Math.ceil(2 * a + lw) + 2 * RD;
+    let AW = 1024; while (AW < 8192 && stuecke.length * hoehe * 60 * dpr > AW * AW) AW *= 2;
+    let ax = 0, ay = 0;
+    stuecke.forEach(s2 => {
+      s2.sp = R * s2.dl * s2.cf * dpr;   // Abstand der Vierecke im Atlas (= auf dem Bildschirm in der Kugelmitte)
+      s2.w = Math.ceil((s2.q.length - 1) * s2.sp + 2 * a + lw) + 2 * RD;
+      if (ax + s2.w > AW) { ax = 0; ay += hoehe; }
+      s2.sx = ax; s2.sy = ay; ax += s2.w;
+    });
+    const AH = Math.max(1, ay + hoehe);
+    atlas = neueFlaeche(AW, AH);
+    const g = atlas.getContext('2d'), pf = new Path2D();
+    ST = new Float64Array(stuecke.length * STF); SN = stuecke.length;
+    stuecke.forEach((s2, i) => {
+      const m = s2.q.length, l0 = -Math.PI + (s2.k0 + 0.5) * s2.dl, l1 = -Math.PI + (s2.k1 + 0.5) * s2.dl, lm = (l0 + l1) / 2;
+      const ox = RD + lw / 2 + a + (m - 1) * s2.sp / 2, oy = hoehe / 2;
+      s2.q.forEach((lf, q) => {
+        const x = s2.sx + ox + (q - (m - 1) / 2) * s2.sp, y = s2.sy + oy;
+        const zuege = lf || [[1, 1, -1, 1, -1, -1, 1, -1, 1, 1]];
+        for (const L of zuege) { pf.moveTo(x + L[0] * a, y - L[1] * a); for (let k = 2; k < L.length; k += 2) pf.lineTo(x + L[k] * a, y - L[k + 1] * a); }
+      });
+      ST.set([Math.sin(s2.f), s2.cf, Math.sin(l0), Math.cos(l0), Math.sin(l1), Math.cos(l1), Math.sin(lm), Math.cos(lm), (m - 1) * s2.sp, s2.sx, s2.sy, s2.w, hoehe, ox, oy], i * STF);
+    });
+    g.strokeStyle = o.rasterFarbe; g.lineWidth = lw; g.lineJoin = 'miter'; g.stroke(pf);
+  }
+  // Weg 'pfad': je Viereck Mitte projizieren, Ecken ueber Ost/Nord (zum Rand
+  // hin verkuerzt wie das Land); Randschatten in 6 Deckkraft-Stufen, je ein Strich-Pfad.
+  const STUFEN = [1, 0.9, 0.7, 0.5, 0.3, 0.2];
+  function pfadMalen(lon0) {
+    const n = RS.length / 4; if (!n) return;
+    const l0 = lon0 * Math.PI / 180, s0 = Math.sin(l0), c0 = Math.cos(l0), a = SW / 2, R2 = R * R;
+    const pf = STUFEN.map(() => new Path2D());
+    for (let i = 0; i < n; i++) {
+      const sf = RS[4 * i], cf = RS[4 * i + 1], sl = RS[4 * i + 2], cl = RS[4 * i + 3];
+      const sinl = sl * c0 - cl * s0, cosl = cl * c0 + sl * s0;
+      if (sL * sf + cL * cf * cosl < 0.05) continue;   // hinter dem Horizont bzw. ganz am Rand
+      const X = R * cf * sinl, Y = -R * (cL * sf - sL * cf * cosl);
+      const rr = Math.sqrt((X * X + Y * Y) / R2), sch = rr <= 0.7 ? 0 : (rr - 0.7) / 0.3;
+      if (sch > 0.85) continue;   // aeusserster Rand (ab 95,5 % des Radius): 30 % der sichtbaren Vierecke, Raster dort < 15 % sichtbar
+      const p = pf[sch <= 0 ? 0 : Math.min(5, 1 + Math.floor(sch * 5))];
+      const ex = a * cosl, ey = -a * sL * sinl, nx = -a * sf * sinl, ny = -a * (cL * cf + sL * sf * cosl);
+      const x = cx + X, y = cy + Y, lf = RU[i];
+      // kein closePath(): kostete hier 2 ms je Bild (Chromium, 1.500 Vierecke)
+      if (!lf) { p.moveTo(x + ex + nx, y + ey + ny); p.lineTo(x - ex + nx, y - ey + ny); p.lineTo(x - ex - nx, y - ey - ny); p.lineTo(x + ex - nx, y + ey - ny); p.lineTo(x + ex + nx, y + ey + ny); continue; }
+      for (const L of lf) {
+        p.moveTo(x + L[0] * ex + L[1] * nx, y + L[0] * ey + L[1] * ny);
+        for (let q = 2; q < L.length; q += 2) p.lineTo(x + L[q] * ex + L[q + 1] * nx, y + L[q] * ey + L[q + 1] * ny);
+      }
+    }
+    lc.strokeStyle = o.rasterFarbe; lc.lineWidth = 0.4;
+    for (let b = 0; b < pf.length; b++) { lc.globalAlpha = STUFEN[b]; lc.stroke(pf[b]); }
+    lc.globalAlpha = 1;
+  }
+  // Weg 'atlas', je Bild: Enden und Mitte jedes Stuecks projizieren; Abbildung Atlas ->
+  // Bildschirm: Ost = Sehne zwischen den Enden, Sued = Suedrichtung der Kugel in
+  // der Mitte, Ursprung zwischen Mitte und Sehnenmitte (Fehler hoechstens die
+  // halbe Bogenhoehe, am Kugelrand ~0,5 px). Randschatten wie vorher (ab 70 %
+  // des Radius zum Rand hin aus) als Deckkraft je Stueck. Stuecke, deren Ende
+  // hinter dem Horizont liegt, fallen weg (dort ist das Raster ohnehin ausgeblendet).
+  function rasterMalen(lon0) {
+    if (o.rasterStehend) lon0 = 0;   // nur Gegenprobe check/kugelland.js: Raster steht still, Land dreht darunter
+    if (!ATLAS) { pfadMalen(lon0); return; }
+    if (!SN) return;
+    const l0 = lon0 * Math.PI / 180, s0 = Math.sin(l0), c0 = Math.cos(l0), R2 = R * R, D = dpr;
+    for (let i = 0, b = 0; i < SN; i++, b += STF) {
+      const sf = ST[b], cf = ST[b + 1];
+      const sa = ST[b + 2] * c0 - ST[b + 3] * s0, ca = ST[b + 3] * c0 + ST[b + 2] * s0;
+      if (sL * sf + cL * cf * ca < 0.05) continue;
+      const se = ST[b + 4] * c0 - ST[b + 5] * s0, ce = ST[b + 5] * c0 + ST[b + 4] * s0;
+      if (sL * sf + cL * cf * ce < 0.05) continue;
+      const sm = ST[b + 6] * c0 - ST[b + 7] * s0, cm = ST[b + 7] * c0 + ST[b + 6] * s0;
+      const Xm = R * cf * sm, Ym = -R * (cL * sf - sL * cf * cm);
+      const rr = Math.sqrt((Xm * Xm + Ym * Ym) / R2), al = rr <= 0.7 ? 1 : 1 - (rr - 0.7) / 0.3;
+      if (al < 0.15) continue;   // aeusserster Rand (ab 95,5 % des Radius): 30 % der sichtbaren Vierecke, Raster dort < 15 % sichtbar
+      const Xa = R * cf * sa, Ya = -R * (cL * sf - sL * cf * ca), Xe = R * cf * se, Ye = -R * (cL * sf - sL * cf * ce), L = ST[b + 8];
+      const mxx = L > 0 ? (Xe - Xa) * D / L : cm, mxy = L > 0 ? (Ye - Ya) * D / L : -sL * sm;
+      lc.globalAlpha = al;
+      lc.setTransform(mxx, mxy, sf * sm, cL * cf + sL * sf * cm, (cx + (Xm + (Xa + Xe) / 2) / 2) * D, (cy + (Ym + (Ya + Ye) / 2) / 2) * D);
+      lc.drawImage(atlas, ST[b + 9], ST[b + 10], ST[b + 11], ST[b + 12], -ST[b + 13], -ST[b + 14], ST[b + 11], ST[b + 12]);
+    }
+    lc.globalAlpha = 1; lc.setTransform(D, 0, 0, D, 0, 0);
   }
   // Radar-Keil (+-26 Grad, Radius R, 4,5 s je Umlauf) um die Jet-Position -
   // seit 2026-11-07 hier statt als eigene, staendig drehende Ebene (WebKit,
@@ -260,8 +423,9 @@ export function erstelleZeichner(cv, o) {
     });
   }
   return {
-    land(r) { const eps = o.kuesteRoh ? 0 : KUESTE_PX / (R * Math.PI / 180); ringe = (r || []).map(x => gegenUhr(kuesteVereinfachen(x, eps))).filter(x => x.length >= 3); pre = ringe.map(vorrechnen); },
+    land(r) { const eps = o.kuesteRoh ? 0 : KUESTE_PX / (R * Math.PI / 180); ringe = (r || []).map(x => gegenUhr(kuesteVereinfachen(x, eps))).filter(x => x.length >= 3); pre = ringe.map(vorrechnen); rasterBauen(); },
     punkte() { return ringe.reduce((n, x) => n + x.length, 0); },
+    raster() { return RQ; },
     meta(m) { marker = m || []; },
     bild(lon0, t, anim, vx, vy) { landMalen(lon0); if (anim) radarMalen(t, vx, vy); markerMalen(lon0, t, anim); },
   };

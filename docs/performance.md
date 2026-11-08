@@ -220,4 +220,14 @@ Kalender-Abgleich 131 → ~0, FF-Abgleich 93 → ~0, `indOverdueCycles` 63 → 2
   Hauptthread-Bild + Hochrechnung" - beim schnellen Drehen gab das 22-27
   Rückwärts-Schritte je Wisch. Wächter `check/performance.js` G (Wisch bei
   belegtem Hauptthread, Gegenprobe `--gegenprobe-schwung`).
+- **Merksatz Raster auf der Kugel (2026-11-08):** Was auf der Kugel festsitzen
+  soll, wird je Bild projiziert - ein Bildschirm-Muster in der Füllung steht still.
+  **WebKit zahlt je kleiner Form, Chromium (ohne Grafikkarte) je umgerechnetem
+  Bildpixel:** ~2.000 Vierecke als Strich-Pfad WebKit 10-13 ms je Bild (Chromium
+  2,8), dieselben als Stempel aus einem festen Bildatlas WebKit 5 ms (Chromium 7).
+  Deshalb zwei Wege nach Engine (`globeRasterWeg`, `js/globe.js`). **Nie je Bild
+  Pixel hochladen** (putImageData: WebKit-Dashboard 49-52 statt 61/s; als
+  CPU-Fläche stürzt WPE ab). Zuschnitt an der Küste EINMAL beim Aufbau (Chromium
+  `clip()` 23 ms, `source-atop` 5 ms je Bild). Viele kleine Umrisse ohne
+  `closePath()` (+2 ms). Wächter `check/kugelland.js` C, `check/webkitkugel.js`.
 

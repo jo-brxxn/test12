@@ -1617,6 +1617,7 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Reihen: Hero | Kennzahlen / Market overview | World map / **Open trades** | Key events | Sentiment & COT / Bias scores | Your insights / Biggest movers | Performance.
 - **Kugel wird nie ohne Not neu gebaut:** `stopGlobe()` parkt Gerüst + Referenzen, `startGlobes()` setzt fort; Neuaufbau nur bei Größenänderung der Karte (ResizeObserver). Kein `resetGlobeLon()` beim Betreten. Keine Leerlauf-Ruhe (Nutzer: *„Es muss nur drehen“*).
 - Kugelgröße = kleinere Seite des Kartenkörpers (`globeHostGroesse`), der Host selbst ist rechteckig.
+- **Kugel-Farben + Raster (Nutzer-Wahl 2026-11-08 „Ich nehme Atlas“):** heller Modus = Schema `atlas` (hellblaues Meer, blaue Kontinente, weißes Raster), dunkler Modus = `nacht` (bisherige Optik); kein Schalter. Das Viereck-Raster liegt FEST auf der Kugel und dreht mit dem Land (`rasterMalen` in `js/globe-zeichnen.js`), reicht bis an die Küste. Geprüft: `check/dashboard.js` (Schema je Modus), `check/kugelland.js` C.
 
 ### Nachtrag 2026-11-07 (684): Watchlist-Eintrag entfernen
 - **Große Bildschirme (2026-11-08):** Das Dashboard hat ein 1480-px-Raster; ist mehr Platz da, wird es als Ganzes hochskaliert (`zoom` über `--dx-zoom`, `dashZoomSetzen`, höchstens 1,8), statt nur breiter zu werden - Schrift, Karten und Kugel wachsen mit. Wer im Dashboard misst (`getBoundingClientRect`) und Pixel setzt, muss durch den Zoom teilen (Beispiel `lgKarte`). Die Kugel rechnet den Zoom in ihre Auflösung ein. Geprüft: `check/dashboard.js` bis 2560 px.

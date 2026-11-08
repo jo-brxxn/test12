@@ -17586,7 +17586,7 @@ function dashGeruest(){
     <div class="dx-r2"><div data-slot="markt"></div>
       <section class="dw db-sek dx-card dw-globe" id="dbGlobe">
         <div class="dw-hdr db-hdr"><div class="dw-t"><span class="dw-t-txt">World map</span></div><button class="db-link" onclick="showTab('cur')">All assets${icn('chevronRight',13)}</button>${abInfoBtn('World map',['Each currency at its central bank, labelled with its score.','Drag to spin.'],'rinfo')}</div>
-        <div class="dw-body"><div class="gp-wahl-z" data-slot="globewahl"></div><div class="globe-host" id="dashGlobeHost"></div></div>
+        <div class="dw-body"><div class="globe-host" id="dashGlobeHost"></div></div>
       </section></div>
     <div class="dx-r3"><div data-slot="trades"></div><div data-slot="heute"></div><div data-slot="sent"></div></div>
     <div class="dx-r4"><div data-slot="bias"></div><div data-slot="ins"></div></div>
@@ -17624,7 +17624,6 @@ function renderDash(){
     hero:dashHeroHtml(),
     stats:dashStatsHtml({pos:nPos,ev:heute.length,nf:notifs.length}),
     // voruebergehend: Farbschema der Kugel im hellen Modus (Nutzer 2026-11-08 "gib mir da mal Alternativen")
-    globewahl:globePaletteKey()==='nacht'&&document.documentElement.hasAttribute('data-fx-theme')?'':`<div class="perf-winbar db-perf-win gp-wahl" title="Globe colours (light mode) — pick one">${GLOBE_PALETTE_NAMEN.map(([k,l])=>`<button class="perf-win${k===globePaletteKey()?' on':''}" onclick="dashGlobusPalette('${k}')">${l}</button>`).join('')}</div>`,
     markt:dashSek('dbMarket','watchlist','Market overview',`<div class="dx-zf">${mktBar}</div>`+dashMarktHtml(),{link:['Watchlist',"showTab('watch')"],
       erkl:['Your watchlist (first 6), filled up with EUR/USD, GBP/USD, USD/JPY, Gold, Silver, S&P 500.','Change and chart cover exactly the selected window.','1D: country outline instead of a chart — no intraday data. Base in the day\'s colour, quote grey; metals, oil, crypto: their symbol.','Tap a tile for the pair or asset, add pairs on the Watchlist page.']}),
     trades:dashSek('dbTrades','positions','Open trades',tjOffenKartenHtml(),{anz:nPos||null,link:['Journal',"showTab('journal')"],
@@ -17688,7 +17687,6 @@ const DASH_KLASSEN=[['fx','Currencies'],['metal','Metals'],['energy','Energy'],[
 // Bias (bullish | neutral | bearish), staerkste zuerst. Je Asset genau ein
 // .db-bias[data-id] mit vollem Namen (.db-bias-n) und exaktem Score
 // (.db-bias-v, Tipp = Aufschluesselung) - check/dashboard.js.
-function dashGlobusPalette(k){globePaletteSetzen(k);renderDash();}
 let dashBiasNeutralAlle=false;
 function dashBiasNeutralUmschalten(){dashBiasNeutralAlle=!dashBiasNeutralAlle;renderDash();}
 function dashBiasDaten(){
@@ -17881,7 +17879,7 @@ import {
   _globeFuel,GLOBE_FUEL_BURN_PCT_S,GLOBE_FUEL_REGEN_PCT_S,globeFuelTick,stopGlobe,globeProject,globeHorizonPoint,
   globePathD,globeSkeleton,globeCollectRefs,globeUpdateOne,globeUpdateSweep,closeGlobeTip,globeVehicleTravel,globeMarkerClick,
   globeHitTest,globeOnPointerDown,globeOnPointerMove,globeOnPointerUp,startGlobes,resetGlobeLon,
-  GLOBE_PALETTE_NAMEN,globePaletteSetzen,globePaletteKey,
+  globePaletteKey,
 } from './globe.js';
 import {qcZerlegen} from './quickcapture.js';
 // Leichtes Federn am Scroll-Ende (Nutzer 2026-11-01), siehe js/federn.js
@@ -27442,7 +27440,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{dashGlobusPalette,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
