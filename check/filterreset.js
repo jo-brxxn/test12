@@ -44,7 +44,7 @@ const FILTER = [
     const bar = s.parentElement;
     const xs = [...bar.querySelectorAll('.flt-x')].filter(vis);
     const sr = s.getBoundingClientRect();
-    return { wert: s.value, anzahl: xs.length, lage: xs[0] ? (() => { const r = xs[0].getBoundingClientRect(); return { abstand: Math.round(r.left - sr.right), dy: Math.round(Math.abs((r.top + r.bottom) / 2 - (sr.top + sr.bottom) / 2)), dh: Math.round(Math.abs(r.height - sr.height)) }; })() : null };
+    return { wert: s.value, anzahl: xs.length, lage: xs[0] ? (() => { const r = xs[0].getBoundingClientRect(); return { abstand: Math.round(sr.left - r.right),   /* ✕ links vom Feld seit 2026-11-08 */ dy: Math.round(Math.abs((r.top + r.bottom) / 2 - (sr.top + sr.bottom) / 2)), dh: Math.round(Math.abs(r.height - sr.height)) }; })() : null };
   }, sel);
   let geprueft = 0;
   for (const [name, oeffnen, sel, alle] of FILTER) {
@@ -63,7 +63,7 @@ const FILTER = [
     await p.waitForTimeout(500);
     const bz = await xZustand(sel);
     if (bz.anzahl !== 1) { fail(`${name} B`, `${bz.anzahl} sichtbare ✕ nach Wahl von ${wahl} (soll 1)`); continue; }
-    if (bz.lage.abstand < 0 || bz.lage.abstand > 16) fail(`${name} B`, `✕ ${bz.lage.abstand}px vom Dropdown (soll direkt rechts daneben, 0-16px)`);
+    if (bz.lage.abstand < 0 || bz.lage.abstand > 16) fail(`${name} B`, `✕ ${bz.lage.abstand}px vom Dropdown (soll direkt links daneben, 0-16px - seit 2026-11-08 links, damit rechts keine Luecke bleibt)`);
     if (bz.lage.dy > 4 || bz.lage.dh > 4) fail(`${name} B`, `✕ nicht in Zeile/Hoehe des Dropdowns (dy ${bz.lage.dy}px, Hoehe ±${bz.lage.dh}px)`);
     await p.locator(sel).locator('xpath=..').locator('.flt-x:visible').first().click();
     await p.waitForTimeout(500);

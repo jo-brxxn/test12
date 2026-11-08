@@ -1293,9 +1293,15 @@ den selben Stellen die i dann die Zeitfilterbutton"*; per Rückfrage festgelegt:
 - **✕ neben Asset-Dropdowns** (Dauerregel seit 2026-10-03, Nutzer: *„neben
   dem Filter einen Button … um den Filter zurückzusetzen also zurück auf alle
   Symbole"*, per Rückfrage „✕ nur bei aktivem Filter"): jedes Asset-Dropdown
-  mit einer „alle"-Ansicht bekommt direkt rechts daneben ein `✕`
+  mit einer „alle"-Ansicht bekommt direkt daneben ein `✕`
   (`filterResetHtml`, Optik `.btn.flt-x`, gleiche Höhe), sichtbar NUR,
   solange ein einzelnes Asset gewählt ist; Klick → zurück auf „alle".
+  **Seit 2026-11-08: versteckt OHNE Platz, LINKS vom Feld** (Nutzer, iPad-Foto
+  COT: Lücke zwischen „All assets" und „Refresh" = der unsichtbar reservierte
+  Platz). Filtergruppen sind rechtsbündig (auch umgebrochen: `margin-left:auto`),
+  in Kartenköpfen auf dem Handy eine eigene Zeile (`.kt-filter`) - so wächst das
+  ✕ nach links und das Feld steht fest. Geprüft: `check/filterfest.js` A (fest)
+  + F (kein Platz für verstecktes ✕), `check/filterreset.js` B (links daneben).
   Bestand: Trends, Calendar, News, Sentiment/Retail, COT, Put/Call.
   `assetFilterSelect` bringt es automatisch mit, sobald ein `allLabel`
   gesetzt ist. Geprüft von `check/filterreset.js`.

@@ -21690,3 +21690,20 @@ und die Varianten Kugel/Logo entfernt (`js/kachelbild.js` nur noch Umriss);
 Index 1, Gold/Silber Symbol), kein Schalter mehr.
 Nutzer zur Kugel nach 692: *„Die Weltkugel klappt“* — Rest siehe nächster Eintrag
 (Haken beim schnellen Drehen).
+
+## 2026-11-08 — Keine Lücke mehr neben Filtern (VERSION-CHECK-694)
+
+Nutzer (iPad-Foto COT, Lücke umkreist zwischen „All assets“ und „Refresh“).
+- **Gemessen:** die Lücke war das unsichtbar reservierte ✕ (Regel 2026-10-31
+  „Filter soll fest stehen“): COT 57 px statt 10 px Abstand, Kalender 51 px,
+  News 53 px; Trends/Stimmung: Feld 37–47 px vom Rand eingerückt.
+- **Fix:** verstecktes ✕ belegt keinen Platz mehr (`display:none`) und steht
+  LINKS vom Feld; Filtergruppen rechtsbündig (auch umgebrochen), Kartenköpfe
+  auf dem Handy mit eigener Filterzeile (`.kt-filter`). Erste Fassung (nur links
+  vom Feld) ließ das Feld auf dem Handy 31–42 px springen (Gruppe brach um bzw.
+  stand nach dem Umbruch links) – Wächter rot, dann behoben.
+- **Nachher:** COT 10 px zu Refresh, Felder schließen bündig ab; nach Auswahl
+  steht jedes Feld auf dem Pixel (1180 + 390 px).
+- Wächter `check/filterfest.js` F neu (kein Platz rechts vom Filter, verstecktes
+  ✕ belegt nirgends Platz; Gegenprobe reservierter Platz → rot auf 6 Seiten),
+  `check/filterreset.js` B: ✕ links daneben.

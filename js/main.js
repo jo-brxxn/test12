@@ -666,7 +666,10 @@ function assetFilterSelect(ids,selected,onChange,allLabel,titleAttr,labelFn){
   const optHtml=id=>`<option value="${escH(id)}"${selected===id?' selected':''}>${labelFn?labelFn(id):escH(COT_NAME[id]||id)}</option>`;
   const head=allLabel?`<option value=""${selected?'':' selected'}>${allLabel}</option>`:'';
   const x=allLabel?filterResetHtml(`${onChange}('')`,allLabel,null,!selected):'';
-  return`<div class="cot-filterbar"><select class="btn" onchange="${onChange}(this.value)" title="${escH(titleAttr)}" style="cursor:pointer">${head}${sbCatsOptgroups(ids,optHtml)}</select>${x}</div>`;
+  // ✕ LINKS vom Feld (Nutzer 2026-11-08, iPad-Foto COT: Luecke zwischen "All
+  // assets" und "Refresh" = der unsichtbar reservierte Platz des ✕). Die Leiste
+  // ist rechtsbuendig: links erscheinend verschiebt das ✕ das Feld nicht.
+  return`<div class="cot-filterbar">${x}<select class="btn" onchange="${onChange}(this.value)" title="${escH(titleAttr)}" style="cursor:pointer">${head}${sbCatsOptgroups(ids,optHtml)}</select></div>`;
 }
 // ── Mehrfach-Waehrungsfilter (Chips + All/FX/Non-FX/Yields), ERGAENZEND zum
 // Einzel-Dropdown oben (Nutzer-Wunsch 2026-08-24: "bei set ups gibt es den
@@ -22910,7 +22913,7 @@ function renderNewsTabRoh(){
   const kopf=`<div class="news-tools">
     <input class="news-q" type="search" placeholder="Search headlines…" value="${escH(newsTabQuery)}"
       oninput="setNewsTabQuery(this.value)">
-    <select onchange="setNewsTabAsset(this.value)" title="Filter by asset">${opt('ALL','All assets',newsTabAsset)}${sbCatsOptgroups(assetIds,id=>opt(id,(COT_NAME[id]||id),newsTabAsset))}</select>${filterResetHtml("setNewsTabAsset('ALL')",'All assets',null,newsTabAsset==='ALL')}
+    ${filterResetHtml("setNewsTabAsset('ALL')",'All assets',null,newsTabAsset==='ALL')}<select onchange="setNewsTabAsset(this.value)" title="Filter by asset">${opt('ALL','All assets',newsTabAsset)}${sbCatsOptgroups(assetIds,id=>opt(id,(COT_NAME[id]||id),newsTabAsset))}</select>
     <select onchange="setNewsTabSrc(this.value)">${opt('ALL','All sources',newsTabSrc)}${quellen.map(x=>opt(x,x,newsTabSrc)).join('')}</select>
   </div>
   ${chartLeisteHtml('',timeRangeBarHtml(newsTabRange,'setNewsTabRange',NEWS_RANGES)+timeRangeCustomHtml(newsTabRange,newsTabFrom,newsTabTo,'setNewsTabRange'))}`;
@@ -23139,7 +23142,7 @@ function sentFilterBar(){
   const nonFxGroups=SB_CATS.filter(c=>c.l!=='FX').map(cat=>
     grp(cat.l,nonFx.filter(s=>cat.ids.includes(SENT_NONFX_PRICE_ID[s])))).join('');
   const opts=`<option value=""${sentSym?'':' selected'}>All symbols</option>${grp('Watchlist',wl)}${grp('FX Pairs',fxPairs)}${nonFxGroups}`;
-  return`<div class="cot-filterbar"><select class="btn" onchange="setSentSym(this.value)" title="Filter by symbol" style="cursor:pointer">${opts}</select>${filterResetHtml("setSentSym('')",'All symbols',null,!sentSym)}</div>`;
+  return`<div class="cot-filterbar">${filterResetHtml("setSentSym('')",'All symbols',null,!sentSym)}<select class="btn" onchange="setSentSym(this.value)" title="Filter by symbol" style="cursor:pointer">${opts}</select></div>`;   // ✕ links, siehe assetFilterSelect
 }
 // Asset-Filter fuer Put/Call Ratio + Net Options Flow: '' = markt-weite OCC-
 // Summe (alle US-Optionsboersen), sonst der ETF-Proxy des gewaehlten Assets
@@ -23220,7 +23223,7 @@ function renderRetailBars(D){
   const src=D.retailSource||'https://www.myfxbook.com/community/outlook';
   const filt=sentFilterBar();
   const scope=sentSym?` · ${escH(sentSymLabel(sentSym))}`:'';
-  const hdr=`<div class="cot-card-title">Retail Sentiment${iBtn('retail')}${filt?`<span style="margin-left:auto">${filt}</span>`:''}<small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">Contrarian · source: <a href="${safeUrl(src)}" target="_blank" rel="noopener" class="cct-src">Myfxbook ↗</a> · ${escH(upd)}${scope}</small></div>`;
+  const hdr=`<div class="cot-card-title">Retail Sentiment${iBtn('retail')}${filt?`<span class="kt-filter">${filt}</span>`:''}<small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">Contrarian · source: <a href="${safeUrl(src)}" target="_blank" rel="noopener" class="cct-src">Myfxbook ↗</a> · ${escH(upd)}${scope}</small></div>`;
   if(sentSym)return renderRetailHistory(D,sentSym,hdr);
   let list=(D.retail||[]).filter(r=>r&&isFinite(+r.long)).map(r=>({sym:r.sym,long:Math.max(0,Math.min(100,+r.long))})).sort((a,b)=>b.long-a.long);
   if(!list.length){
@@ -23740,7 +23743,7 @@ function renderPutCallChart(D){
     ?`Proxy: <b>${escH(perAsset.proxy)}</b> ETF options (closest liquid options market for ${escH(COT_NAME[pcAsset]||pcAsset)}) — a market read, not literally ${escH(COT_NAME[pcAsset]||pcAsset)} options. Snapshot-based (today's chain), builds a trend day by day.${pcThinNote(perAsset)}`
     :`Market-wide (all U.S. options exchanges combined) — pick an asset above for a per-symbol read`;
   const filt=pcUsableAssetIds(D).length?pcFilterBar(D):'';
-  const hdr=`<div class="cot-card-title">Put-Call Ratio${iBtn('putcall')}${filt?`<span style="margin-left:auto">${filt}</span>`:''}<small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">Contrarian · source: <a href="${safeUrl(src)}" target="_blank" rel="noopener" class="cct-src">${srcLabel}</a> · ${escH(upd)} · ${scopeNote}</small></div>`;
+  const hdr=`<div class="cot-card-title">Put-Call Ratio${iBtn('putcall')}${filt?`<span class="kt-filter">${filt}</span>`:''}<small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">Contrarian · source: <a href="${safeUrl(src)}" target="_blank" rel="noopener" class="cct-src">${srcLabel}</a> · ${escH(upd)} · ${scopeNote}</small></div>`;
   const pcId=perAsset?pcAsset:'';
   // ⚠ Die Glaettung laeuft auf der VOLLEN Reihe, erst DANACH wird der
   // Zeitraum-Regler angewendet. Andersherum haette der erste sichtbare Tag
@@ -23911,7 +23914,7 @@ function renderNetFlowChart(D){
   // ⚠ Die Bezugslinie steht schon in der Kopfzeile - sonst behauptet sie
   // "vs. own median" auch dort, wo gegen die rohe Null gemessen wird.
   const bezugKopf=pcFlowBezug(D,pcId,PC_FLOW_SMOOTH).mode==='median'?', vs. own median':', zero = even call/put split';
-  const hdr=`<div class="cot-card-title">Call/Put Balance${iBtn('netflow')}${filt?`<span style="margin-left:auto">${filt}</span>`:''}<small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">(Call−Put)/(Call+Put)${bezugKopf} · volume-based, not buy/sell · source: <a href="${safeUrl(src)}" target="_blank" rel="noopener" class="cct-src">${srcLabel}</a> · ${escH(upd)} · ${scopeNote}</small></div>`;
+  const hdr=`<div class="cot-card-title">Call/Put Balance${iBtn('netflow')}${filt?`<span class="kt-filter">${filt}</span>`:''}<small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">(Call−Put)/(Call+Put)${bezugKopf} · volume-based, not buy/sell · source: <a href="${safeUrl(src)}" target="_blank" rel="noopener" class="cct-src">${srcLabel}</a> · ${escH(upd)} · ${scopeNote}</small></div>`;
   // ⚠ Ueber pcRawSeries(), NICHT selbst zusammengebaut: sonst haette diese
   // Karte wieder eine eigene Sicht auf dieselbe Reihe (Wochenendfilter
   // dort, aber nicht hier) - genau das Muster, das beim Put/Call schon
@@ -24919,7 +24922,7 @@ function renderSeasonalityRoh(){
   // Filter IM Karten-Titel oben rechts, wie bei Retail Sentiment/Put-Call/
   // Net Options Flow (Nutzer-Wunsch 2026-08-31: "immer oben rechts").
   const chartCard=`<div class="cot-card">
-    <div class="cot-card-title">Monthly Seasonality — ${escH(titel)}${iBtn('seas')}<span style="margin-left:auto">${filt}</span><small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">${cur?cur[3]:15}y stats · ${quelle} · ${escH(upd)}</small></div>
+    <div class="cot-card-title">Monthly Seasonality — ${escH(titel)}${iBtn('seas')}<span class="kt-filter">${filt}</span><small style="width:100%;font-weight:500;color:var(--t2);font-size:var(--fs-xs)">${cur?cur[3]:15}y stats · ${quelle} · ${escH(upd)}</small></div>
     <div style="padding:12px 14px">${seasZeilenHtml(A.months,curMon,curYear,true,A.unit)}${curLine}</div>
   </div>`;
   // Kompakte Uebersicht: der AKTUELLE Monat quer ueber alle Eintraege einer

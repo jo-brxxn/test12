@@ -33,6 +33,7 @@
 //   --gegenprobe-spalten  eine Spalte                                              -> C rot
 //   --gegenprobe-hoehe    Popup ohne Hoehengrenze                                  -> D rot
 //   --gegenprobe-nativ    Listen wieder als Browser-Liste                          -> E rot
+//   (F, seit 2026-11-08: Gegenprobe von Hand - ✕ wieder rechts vom Feld -> F rot)
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const fs = require('fs');
@@ -99,6 +100,22 @@ const gruen = m => console.log('  ✓ ' + m);
     }
     if (!geprueft) rot('keine Gruppen-Auswahlliste gefunden - Stufe A laeuft ins Leere');
     else if (!gesprungen) gruen(`${geprueft} Auswahllisten bleiben nach der Auswahl stehen`);
+
+    // ── F) kein unsichtbarer Platz RECHTS vom Filter (Nutzer 2026-11-08, iPad-Foto
+    // COT: Luecke zwischen "All assets" und "Refresh" = reservierter Platz des ✕).
+    // Das ✕ steht links vom Feld; das Feld schliesst die (rechtsbuendige) Leiste ab.
+    console.log(`F) kein leerer Platz rechts vom Filter (${vp.width} px)`);
+    let fGez = 0, fLuecke = 0;
+    for (const z of ziele) {
+      const [t, s] = z.split(':');
+      const r = await p.evaluate(([t, s]) => { showTab(t); if (s) setSentSub(s); return [...document.querySelectorAll('.cot-filterbar')].filter(f => f.offsetParent && f.querySelector('.flt-x') && f.querySelector('select')).map(f => { const fr = f.getBoundingClientRect(), sr = f.querySelector('select').getBoundingClientRect(); return Math.round(fr.right - sr.right); }); }, [t, s]);
+      r.forEach(d => { fGez++; if (d > 1) { fLuecke++; rot(`${z}: ${d} px leerer Platz rechts vom Filter (unsichtbares ✕)`); } });
+      // ueberall (auch Kalender/News/Trends): ein verstecktes ✕ belegt keinen Platz
+      const belegt = await p.evaluate(() => [...document.querySelectorAll('.flt-x[hidden]')].filter(x => { const pg = x.closest('[id^=pg]'); return pg && pg.offsetParent && x.getBoundingClientRect().width > 0; }).map(x => x.id || (x.getAttribute('onclick') || '').slice(0, 24)));
+      belegt.forEach(b => { fLuecke++; rot(`${z}: verstecktes ✕ ${b} belegt Platz (sichtbare Luecke)`); });
+    }
+    if (!fGez) rot('keine Filter-Leiste mit ✕ gefunden - Stufe F laeuft ins Leere');
+    else if (!fLuecke) gruen(`${fGez} Filter-Leisten schliessen mit dem Feld ab`);
 
     // ── E) Option a: echtes Antippen jeder Gruppen-Liste ──
     console.log(`E) Gruppen-Listen oeffnen das 2-Spalten-Fenster (${vp.width} px)`);
