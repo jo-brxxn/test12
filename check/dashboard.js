@@ -140,6 +140,10 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
           if(!h||h.dataset.palette!==k)out.push('Kugel-Farbschema '+k+': Host zeigt '+(h&&h.dataset.palette));
           else if(!h.querySelector('canvas.globe-canvas'))out.push('Kugel-Farbschema '+k+': keine Kugel-Flaeche');});}
       }
+      // Karten gleich breit (Nutzer 2026-11-08, iPad-Foto): die Zeilen "gross links |
+      // klein rechts" teilen eine Spaltengrenze (vorher 707/698/740 px bei 1180 px)
+      if(innerWidth>=1160){const g=s=>{const e=document.querySelector(s);return e&&e.children[1]?Math.round(e.children[1].getBoundingClientRect().left):null;};
+        const L=['.dx-top','.dx-r2','.dx-r4'].map(g);if(L.every(x=>x!=null)&&Math.max(...L)-Math.min(...L)>1)out.push('Karten nicht gleich breit: rechte Spalte beginnt bei '+L.join(' / ')+' px');}
       // Listen-Fenster der Kennzahlen: nie seitlich scrollbar (Inhalt 560 px in 538-px-Fenster)
       ['dashMeldungenFenster','dashPositionenFenster'].forEach(f=>{try{window[f]();const md=document.querySelector('#mCardInfo .modal');
         if(md&&md.scrollWidth>md.clientWidth+1)out.push(f+': Fenster seitlich '+(md.scrollWidth-md.clientWidth)+'px ueberlaufend');closeM('mCardInfo');}catch(e){out.push(f+': '+e.message);}});

@@ -21806,3 +21806,16 @@ die Marker-Beschriftungen - alle Kugel-Farben waren fest auf dunkel gesetzt.
   (Kalender offen, iPad gedreht, zurück) dreht die Kugel normal weiter; nichts geändert.
 - Wächter `check/dashboard.js`: Schalter nur hell, jedes Schema baut die Kugel
   mit seinem Attribut neu.
+
+## 2026-11-08 — Dashboard: Karten gleich breit (VERSION-CHECK-700)
+
+Nutzer (iPad-Foto, Kante zwischen Begrüßung und Market overview umkreist):
+*„Mach die Karten gleich breit“*.
+- **Gemessen 1180 px:** rechte Spalte begann bei 723 (Begrüßung | Kennzahlen),
+  714 (Market overview | World map) und 756 px (Bias | Insights) - jede Zeile hatte
+  ihr eigenes Verhältnis (1,75:1,25 / 1,35:1 / 1,6:1).
+- **Fix:** ein Spaltenmaß `--dx-spalten` (1,35:1) für alle Zeilen „groß links |
+  klein rechts“; jetzt überall 698 | 714 px (1366 px: 805 | 821). Zeile 3 (drei
+  gleiche Spalten) und Zeile 5 (Movers | Performance, klein links) bleiben bewusst.
+- Wächter `check/dashboard.js`: gleiche Spaltengrenze ab 1160 px; Gegenprobe
+  (Begrüßungszeile mit altem Verhältnis) → rot bei 1180 und 1280 px.
