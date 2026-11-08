@@ -21787,3 +21787,22 @@ ist auch wieder ein kleiner machen Button“*.
 - Wächter `check/dashboard.js`: eingeklappt sichtbar = Grenze, Show all → alle,
   Show less → wieder Grenze, kein Knopf wenn nichts versteckt; Gegenprobe von Hand
   (nicht gekürzt) → rot.
+
+## 2026-11-08 — Weltkugel im hellen Modus: Farbschemata zur Wahl (VERSION-CHECK-699)
+
+Nutzer: *„Im hellen Modus hat die Weltkugel ganz komische Farben gib mir da mal
+Alternativen ich sag dann welche“*. Gesehen: dunkle Radar-Kugel auf heller Karte,
+hellcyane HUD-Schrift (TRACKING/SIGNAL) kaum lesbar, schwere dunkle Umrandung um
+die Marker-Beschriftungen - alle Kugel-Farben waren fest auf dunkel gesetzt.
+- Farben jetzt je Schema (`js/globe.js` GLOBE_PALETTEN): Meer, Land, Raster,
+  Randschatten, Radar-Keil (Farbe, Deckkraft, Mischmodus), Umrandung von Schrift
+  und Punkt; SVG-Linien per `currentColor` + `--gl-linie`, HUD per `--hud`.
+- Dunkler Modus: immer das bisherige Schema. Heller Modus: Schalter in der Karte
+  (vorübergehend, nur Sitzung): Current · Panel (dunkle Kugel auf dunklem Feld) ·
+  Atlas (hellblau) · Ink (Navy auf Weiß) · Slate (grau) · Day (blaues Meer, helle
+  Kontinente). Moduswechsel baut die Kugel mit passendem Schema neu.
+- Nebenbefund geprüft, nicht reproduzierbar: `startGlobes` beendet bei geparkter
+  Kugel + Größenänderung nur die Worker ohne Neuaufbau (Code-Lesart) - gemessen
+  (Kalender offen, iPad gedreht, zurück) dreht die Kugel normal weiter; nichts geändert.
+- Wächter `check/dashboard.js`: Schalter nur hell, jedes Schema baut die Kugel
+  mit seinem Attribut neu.

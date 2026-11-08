@@ -449,13 +449,13 @@ function globeSkeleton(size,uid){
   // Instrumenten-Bezel: gestrichelter Aussenring + 12 Gradstriche (alle 30°,
   // an den 4 Kardinalpunkten laenger+kraeftiger+mit Grad-Zahl) - reine
   // Protraktor-/Kompass-Optik, keine echten Messwerte.
-  let bezel=`<circle cx="${cx}" cy="${cy}" r="${(R+5).toFixed(1)}" fill="none" stroke="rgba(126,196,255,.28)" stroke-width="1" stroke-dasharray="1 4"/>`;
+  let bezel=`<circle cx="${cx}" cy="${cy}" r="${(R+5).toFixed(1)}" fill="none" stroke="currentColor" stroke-opacity=".28" stroke-width="1" stroke-dasharray="1 4"/>`;
   for(let a=0;a<360;a+=30){
     const card=a%90===0,rad=a*Math.PI/180;
     const r0=card?R+2:R+3,r1=card?R+11:R+7.5;
     const x0=(cx+r0*Math.cos(rad)).toFixed(2),y0=(cy+r0*Math.sin(rad)).toFixed(2);
     const x1=(cx+r1*Math.cos(rad)).toFixed(2),y1=(cy+r1*Math.sin(rad)).toFixed(2);
-    bezel+=`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="rgba(126,196,255,${card?.6:.32})" stroke-width="${card?1.3:.8}"/>`;
+    bezel+=`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="currentColor" stroke-opacity="${card?.6:.32}" stroke-width="${card?1.3:.8}"/>`;
     // Die Grad-Zahlen (000/090/180/270, 6,5 px) an den Kardinalpunkten sind
     // seit 2026-10-04 weg (Design-Audit, Mindestschrift 11 px): sie waren
     // reine Kompass-Optik ohne Messwert, und in 11 px stiessen sie oben und
@@ -466,11 +466,11 @@ function globeSkeleton(size,uid){
   // in der Kartenmitte nicht verdeckt werden.
   const rIn=R*0.32,rOut=R*0.96;
   const reticle=[[0,-1],[0,1],[-1,0],[1,0]].map(([dx,dy])=>
-    `<line x1="${(cx+dx*rIn).toFixed(1)}" y1="${(cy+dy*rIn).toFixed(1)}" x2="${(cx+dx*rOut).toFixed(1)}" y2="${(cy+dy*rOut).toFixed(1)}" stroke="rgba(126,196,255,.22)" stroke-width="1"/>`
+    `<line x1="${(cx+dx*rIn).toFixed(1)}" y1="${(cy+dy*rIn).toFixed(1)}" x2="${(cx+dx*rOut).toFixed(1)}" y2="${(cy+dy*rOut).toFixed(1)}" stroke="currentColor" stroke-opacity=".22" stroke-width="1"/>`
   ).join('');
   // Zwei duenne Radar-Entfernungsringe innerhalb der Landflaeche (rein
   // dekorativ, klassische Scope-Optik).
-  const rangeRings=[0.42,0.72].map(f=>`<circle cx="${cx}" cy="${cy}" r="${(R*f).toFixed(1)}" fill="none" stroke="rgba(126,196,255,.1)" stroke-width="1" stroke-dasharray="1 3"/>`).join('');
+  const rangeRings=[0.42,0.72].map(f=>`<circle cx="${cx}" cy="${cy}" r="${(R*f).toFixed(1)}" fill="none" stroke="currentColor" stroke-opacity=".1" stroke-width="1" stroke-dasharray="1 3"/>`).join('');
   // Kampfjet am Scanner-Ursprung (Nutzer-Wunsch 2026-07-28 - ersetzt das
   // vorherige land/wasser-abhaengige Auto/Schiff durch ein DAUERHAFTES
   // Symbol): steht in Ruhe immer exakt in der Kartenmitte, Nase nach oben.
@@ -569,10 +569,30 @@ function globeSkeleton(size,uid){
 // Radialverlauf in Meeresfarbe (ersetzt die Luminanz-Maske: Land blendet ab
 // 70 % des Radius zum Rand hin in das Meer aus).
 const GLOBE_MEER='#0b2445',GLOBE_LANDFARBE='#2d6ea8';
+// Farbschemata der Kugel (Nutzer 2026-11-08: "Im hellen Modus hat die
+// Weltkugel ganz komische Farben gib mir da mal Alternativen") - im dunklen
+// Modus immer 'nacht' (bisherige Optik); im hellen Modus zur Wahl, bis der
+// Nutzer entschieden hat (Schalter in der Karte, nur diese Sitzung).
+// rand = Randschatten (RGB), radar = Keil (RGB, Deckkraft, Mischmodus),
+// schriftRand/punktRand = Umrandung von Beschriftung und Marker-Punkt.
+const GLOBE_PALETTEN={
+  nacht:{meer:GLOBE_MEER,land:GLOBE_LANDFARBE,raster:'rgba(126,196,255,.5)',rand:'11,36,69',radar:'126,224,255',radarA:.4,radarModus:'screen',schriftRand:'#04101c',punktRand:'#04101c'},
+  atlas:{meer:'#dce9f7',land:'#5b8fd0',raster:'rgba(255,255,255,.55)',rand:'199,214,233',radar:'11,95,204',radarA:.16,radarModus:'source-over',schriftRand:'#ffffff',punktRand:'#ffffff'},
+  tinte:{meer:'#f2f5fa',land:'#1f4478',raster:'rgba(255,255,255,.28)',rand:'226,233,243',radar:'31,68,120',radarA:.14,radarModus:'source-over',schriftRand:'#ffffff',punktRand:'#ffffff'},
+  schiefer:{meer:'#e8ecf2',land:'#a3b0c2',raster:'rgba(255,255,255,.6)',rand:'214,221,231',radar:'85,97,122',radarA:.14,radarModus:'source-over',schriftRand:'#ffffff',punktRand:'#ffffff'},
+  tag:{meer:'#5f9fe0',land:'#f4f7fb',raster:'rgba(95,159,224,.35)',rand:'47,111,186',radar:'255,255,255',radarA:.35,radarModus:'screen',schriftRand:'#ffffff',punktRand:'#0b2445'},
+};
+GLOBE_PALETTEN.panel=GLOBE_PALETTEN.nacht;   // dunkle Kugel auf dunklem Feld (nur Hintergrund per CSS)
+const GLOBE_PALETTE_NAMEN=[['nacht','Current'],['panel','Panel'],['atlas','Atlas'],['tinte','Ink'],['schiefer','Slate'],['tag','Day']];
+let _globePaletteHell='nacht';
+function globePaletteKey(){return document.documentElement.hasAttribute('data-fx-theme')?'nacht':_globePaletteHell;}
+function globePaletteSetzen(k){if(!GLOBE_PALETTEN[k])return;_globePaletteHell=k;if(_globeHosts.length||_globeParked)startGlobes({neu:true});}
 function globeCanvasRefs(host,size){
   const lcv=host.querySelector('canvas.globe-canvas');if(!lcv)return{};
-  const o={size,dpr:Math.min(window.devicePixelRatio||1,2),lat0:GLOBE_LAT0,landfarbe:GLOBE_LANDFARBE,rasterFarbe:'rgba(126,196,255,.5)',
-    schrift:(getComputedStyle(document.body).fontFamily||'sans-serif'),meer:GLOBE_MEER,kuesteRoh:!!window.__gpGlobusKuesteRoh};   // __gp...: nur Gegenprobe check/performance.js
+  const P=GLOBE_PALETTEN[globePaletteKey()]||GLOBE_PALETTEN.nacht;
+  const o={size,dpr:Math.min(window.devicePixelRatio||1,2),lat0:GLOBE_LAT0,landfarbe:P.land,rasterFarbe:P.raster,
+    schrift:(getComputedStyle(document.body).fontFamily||'sans-serif'),meer:P.meer,kuesteRoh:!!window.__gpGlobusKuesteRoh,
+    randRgb:P.rand,radarRgb:P.radar,radarA:P.radarA,radarModus:P.radarModus,schriftRand:P.schriftRand,punktRand:P.punktRand};   // __gp...: nur Gegenprobe check/performance.js
   let worker=null;
   // Worker + OffscreenCanvas, wo moeglich (iPadOS 16.4+, aktuelle Browser);
   // __globusOhneWorker: Rueckfall nach einem Worker-Fehler bzw. fuer Pruefungen.
@@ -889,6 +909,7 @@ function startGlobes(opt){
     // Groesse: globeHostGroesse() (Dashboard-Karte: kleinere Seite des Hosts,
     // die Kugel fuellt die Karte; sonst Kartenbreite, hoechstens 320 px).
     const size=globeHostGroesse(h);
+    h.dataset.palette=globePaletteKey();   // Farbschema: Linien/HUD per CSS, Kugel per Zeichner-Optionen
     h.innerHTML=globeSkeleton(size,_globeUid++);
     // HUD-Rahmen/Scanline NACH dem Skeleton einfuegen (nicht Teil des
     // Skeleton-Strings selbst) - h.innerHTML= wuerde sie sonst bei jedem
@@ -1086,7 +1107,7 @@ export {
   _globeFuel,GLOBE_FUEL_BURN_PCT_S,GLOBE_FUEL_REGEN_PCT_S,globeFuelTick,stopGlobe,globeProject,globeHorizonPoint,
   globePathD,globeSkeleton,globeCollectRefs,globeUpdateOne,globeUpdateSweep,closeGlobeTip,globeVehicleTravel,globeMarkerClick,
   globeHitTest,globeOnPointerDown,globeOnPointerMove,globeOnPointerUp,startGlobes,resetGlobeLon,ladeLandHD,
-};
+  GLOBE_PALETTE_NAMEN,globePaletteSetzen,globePaletteKey};
 // Kompatibilitaets-Bruecke: diese Namen werden per inline onclick=/
 // onpointerdown=/... aus generiertem HTML im GLOBALEN Scope aufgerufen
 // (siehe docs/module-split.md) - selbst gebridged, nicht Aufgabe von main.js.

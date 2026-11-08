@@ -102,7 +102,7 @@ export function erstelleZeichner(cv, o) {
   // Land-Textur eingebacken (siehe landFuellung).
   const rand = neueFlaeche(Math.round(size * dpr), Math.round(size * dpr)), rc = rand.getContext('2d');
   rc.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const rg = rc.createRadialGradient(cx, cy, R * 0.7, cx, cy, R); rg.addColorStop(0, 'rgba(11,36,69,0)'); rg.addColorStop(1, 'rgba(11,36,69,1)');
+  const rg = rc.createRadialGradient(cx, cy, R * 0.7, cx, cy, R); rg.addColorStop(0, `rgba(${o.randRgb || '11,36,69'},0)`); rg.addColorStop(1, `rgba(${o.randRgb || '11,36,69'},1)`);   // Farbschema (globe.js GLOBE_PALETTEN)
   rc.fillStyle = rg; rc.beginPath(); rc.arc(cx, cy, R, 0, Math.PI * 2); rc.fill();
   // Musterkachel direkt in Geraetepixeln: 5x5 Vierecke = 21 px je dpr-Einheit
   // (ganzzahlig fuer dpr 1 und 2), Grund in Landfarbe -> EIN Malvorgang je Bild.
@@ -215,8 +215,8 @@ export function erstelleZeichner(cv, o) {
     const x = vx == null ? cx : vx, y = vy == null ? cy : vy;
     lc.setTransform(dpr, 0, 0, dpr, 0, 0);
     const g = lc.createLinearGradient(x + R * Math.cos(w - b), y + R * Math.sin(w - b), x + R * Math.cos(w + b), y + R * Math.sin(w + b));
-    g.addColorStop(0, 'rgba(126,224,255,0)'); g.addColorStop(1, 'rgba(126,224,255,.4)');
-    lc.save(); lc.globalCompositeOperation = 'screen';
+    g.addColorStop(0, `rgba(${o.radarRgb || '126,224,255'},0)`); g.addColorStop(1, `rgba(${o.radarRgb || '126,224,255'},${o.radarA || .4})`);
+    lc.save(); lc.globalCompositeOperation = o.radarModus || 'screen';
     lc.beginPath(); lc.moveTo(x, y); lc.arc(x, y, R, w - b, w + b); lc.closePath(); lc.fillStyle = g; lc.fill();
     lc.restore();
   }
@@ -245,7 +245,7 @@ export function erstelleZeichner(cv, o) {
         mc.beginPath(); mc.arc(x, y, 5 + 10 * e, 0, Math.PI * 2); mc.stroke(); mc.globalAlpha = 1;
       }
       mc.beginPath(); mc.arc(x, y, 4.5, 0, Math.PI * 2); mc.fillStyle = m.col; mc.fill();
-      mc.lineWidth = 1; mc.strokeStyle = '#04101c'; mc.stroke();
+      mc.lineWidth = 1; mc.strokeStyle = o.punktRand || '#04101c'; mc.stroke();
       let lx, ly, al;
       const f = fest[m.id];
       if (f) { lx = x + f.dx; ly = y + f.dy; al = f.a; }
@@ -255,7 +255,7 @@ export function erstelleZeichner(cv, o) {
         platz.push({ x, ly: y + off, halfW }); lx = x; ly = y + off; al = 'center';
       }
       mc.textAlign = al; mc.textBaseline = 'alphabetic';
-      mc.lineWidth = 2.5; mc.strokeStyle = '#04101c'; mc.strokeText(m.label, lx, ly);
+      mc.lineWidth = 2.5; mc.strokeStyle = o.schriftRand || '#04101c'; mc.strokeText(m.label, lx, ly);
       mc.fillStyle = m.col; mc.fillText(m.label, lx, ly);
     });
   }
