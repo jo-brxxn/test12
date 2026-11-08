@@ -142,27 +142,21 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
         const pkt=()=>[...document.querySelectorAll('#dbMarket .dx-mkt')].map(t=>{const pf=t.querySelector('.dx-spark path:last-child');return t.querySelector('.dx-kb')?'B':pf?pf.getAttribute('d').split('L').length:0;});
         const W={};['1D','1W','1M','3M','1Y'].forEach(w=>{dashMktWinSetzen(w);W[w]=pkt();});
         if(W['1D'].some(x=>x!=='B'))out.push('Market overview 1D: nicht ueberall ein Bild ('+W['1D'].join(',')+')');
-        // 1D-Bild (Nutzer 2026-11-07: "Bild von dem Land ... 3 Moeglichkeiten"):
-        // Paar = 2 Umrisse/Kugeln (Basis, Quote), Index = 1, Gold/Silber = Symbol;
-        // jedes Bild sichtbar, innerhalb der Kachel.
-        if(typeof dashKachelBildSetzen==='function'){
-          dashMktWinSetzen('1D');
-          [['umriss','.dx-kb-u'],['kugel','.dx-kb-k img'],['logo','.dx-kb-logo .fxlogo']].forEach(([art,sel])=>{
-            dashKachelBildSetzen(art);
-            document.querySelectorAll('#dbMarket .dx-mkt').forEach(t=>{
-              const n=(t.querySelector('.dx-mkt-n')||t).textContent.trim(),paar=/^[A-Z]{3}\/[A-Z]{3}/.test(n),land=paar||/S&P|Nasdaq|DAX/.test(n);
-              const b=[...t.querySelectorAll(sel)],soll=art==='logo'?1:paar?2:land?1:0;
-              if(!soll){if(!t.querySelector('.dx-kb-ic svg,.dx-kb-ic img,.dx-kb-ic .aicon'))out.push(`1D-Bild ${art}: ${n} ohne Symbol`);return;}
-              if(b.length!==soll)out.push(`1D-Bild ${art}: ${n} zeigt ${b.length} statt ${soll} Bild(er)`);
-              const tr=t.getBoundingClientRect();
-              b.forEach(e=>{const r=e.getBoundingClientRect();if(r.width<20||r.height<20)out.push(`1D-Bild ${art}: ${n} nur ${Math.round(r.width)}x${Math.round(r.height)} px`);
-                if(r.left<tr.left-1||r.right>tr.right+1||r.bottom>tr.bottom+1)out.push(`1D-Bild ${art}: ${n} ragt aus der Kachel`);
-                const pa=e.querySelector('path');if(art==='umriss'&&!(pa&&pa.getAttribute('d')))out.push(`1D-Bild umriss: ${n} ohne Umriss`);
-                if(art==='kugel'&&!/^data:image\/png;base64,.{800}/.test(e.getAttribute('src')||''))out.push(`1D-Bild kugel: ${n} ohne gezeichnete Kugel`);});
-            });
-          });
-          dashKachelBildSetzen('umriss');
-        }
+        // 1D-Bild = Laender-Umriss (Nutzer-Wahl 2026-11-08 "Outline"): Paar = 2
+        // Umrisse (Basis, Quote), Index = 1, Gold/Silber = Symbol; sichtbar, in
+        // der Kachel; kein Auswahl-Schalter mehr.
+        dashMktWinSetzen('1D');
+        if(document.querySelector('#dbMarket .dx-kb-wahl'))out.push('1D-Bild: Auswahl-Schalter noch da (Wahl getroffen: Outline)');
+        document.querySelectorAll('#dbMarket .dx-mkt').forEach(t=>{
+          const n=(t.querySelector('.dx-mkt-n')||t).textContent.trim(),paar=/^[A-Z]{3}\/[A-Z]{3}/.test(n),land=paar||/S&P|Nasdaq|DAX/.test(n);
+          const b=[...t.querySelectorAll('.dx-kb-u')],soll=paar?2:land?1:0;
+          if(!soll){if(!t.querySelector('.dx-kb-ic svg,.dx-kb-ic img,.dx-kb-ic .aicon'))out.push(`1D-Bild: ${n} ohne Symbol`);return;}
+          if(b.length!==soll)out.push(`1D-Bild: ${n} zeigt ${b.length} statt ${soll} Umriss(e)`);
+          const tr=t.getBoundingClientRect();
+          b.forEach(e=>{const r=e.getBoundingClientRect();if(r.width<20||r.height<20)out.push(`1D-Bild: ${n} nur ${Math.round(r.width)}x${Math.round(r.height)} px`);
+            if(r.left<tr.left-1||r.right>tr.right+1||r.bottom>tr.bottom+1)out.push(`1D-Bild: ${n} ragt aus der Kachel`);
+            const pa=e.querySelector('path');if(!(pa&&pa.getAttribute('d')))out.push(`1D-Bild: ${n} ohne Umriss`);});
+        });
         W['1W'].forEach((_,i)=>{const r=['1W','1M','3M','1Y'].map(w=>W[w][i]);if(!(r[0]<r[1]&&r[1]<r[2]&&r[2]<r[3]))out.push('Market overview Kachel '+(i+1)+': Punkte je Intervall '+r.join('/')+' - Linie folgt dem Intervall nicht');});
         dashMktWinSetzen('1D');
       }

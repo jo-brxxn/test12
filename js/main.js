@@ -17461,13 +17461,9 @@ function dashSparkSvg(pts,col,uid){
   const d='M'+xy.map(p=>p.join(' ')).join('L');
   return`<svg class="dx-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="dxg${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".32"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs><path d="${d}L${W} ${H}L0 ${H}Z" fill="url(#dxg${uid})"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg>`;
 }
-// 1D-Kachel: Bild statt Tageskerze (Nutzer 2026-11-07: "nicht die eine Kerze
-// sondern ein Bild von dem Land ... gib mir da 3 Moeglichkeiten"). Varianten
-// in js/kachelbild.js; die Wahl gilt nur fuer diese Sitzung, bis der Nutzer
-// sich entschieden hat (dann bleibt EINE Variante, der Schalter faellt weg).
-let dashKachelBild='umriss';
-const DASH_KB_ARTEN=[['umriss','Outline'],['kugel','Globe'],['logo','Logo']];
-function dashKachelBildSetzen(a){dashKachelBild=a;renderDash();}
+// 1D-Kachel: Laender-Umriss statt Tageskerze (Nutzer 2026-11-07: "nicht die
+// eine Kerze sondern ein Bild von dem Land"; Wahl 2026-11-08: Outline).
+// js/kachelbild.js
 function dashMarktHtml(){
   const win=DASH_MKT_WIN.find(w=>w[0]===dashMktWin)||DASH_MKT_WIN[0];
   if(win[1]===1&&!kachelFormenDa())kachelFormenLaden(()=>{if(curPage==='dash'&&dashMktWin==='1D')renderDash();});
@@ -17489,7 +17485,7 @@ function dashMarktHtml(){
       <span class="dx-mkt-n">${m.ic}<span>${escH(m.lbl)}</span>${sc!=null?`<span class="dx-mkt-sc" style="color:${scoreColor(sc)}" title="Score">${sc>0?'+':''}${sc}</span>`:''}</span>
       <span class="dx-mkt-p">${fmtPriceTick(lv)}</span>
       <span class="dx-mkt-c" style="color:${biasCss(b)}">${pct==null?'–':`<span>${b==='bear'?'▼':'▲'} ${abs>0?'+':abs<0?'−':''}${fmtPriceTick(Math.abs(abs))}</span> <span>(${pct>0?'+':''}${pct.toFixed(2)}%)</span>`}</span>
-      ${win[1]===1?kachelBildHtml(dashKachelBild,kachelLaender(m.n,m.id),biasCss(b),m.icGross):dashSparkSvg(pts,biasCss(b),i)}
+      ${win[1]===1?kachelBildHtml(kachelLaender(m.n,m.id),biasCss(b),m.icGross):dashSparkSvg(pts,biasCss(b),i)}
       ${weg}
     </div>`;
   }).join('');
@@ -17604,14 +17600,12 @@ function renderDash(){
   const heute=dashHeuteListe(),notifs=dashNotifListe(),nPos=tjOffenAnzahl();
   const win=PERF_WINDOWS.find(w=>w[0]===perfWindow)||PERF_WINDOWS[1];
   const perfBar=`<div class="perf-winbar db-perf-win">${PERF_WINDOWS.map(w=>`<button class="perf-win${w[0]===perfWindow?' on':''}" onclick="setPerfWindow('${w[0]}')">${w[0]}</button>`).join('')}</div>`;
-  const mktBar=`<div class="perf-winbar db-perf-win">${DASH_MKT_WIN.map(w=>`<button class="perf-win${w[0]===dashMktWin?' on':''}" onclick="dashMktWinSetzen('${w[0]}')">${w[0]}</button>`).join('')}</div>`
-    // voruebergehend: Wahl des 1D-Bilds (Nutzer entscheidet, dann faellt der Schalter weg)
-    +(dashMktWin==='1D'?`<div class="perf-winbar db-perf-win dx-kb-wahl" title="1D image — pick one">${DASH_KB_ARTEN.map(a=>`<button class="perf-win${a[0]===dashKachelBild?' on':''}" onclick="dashKachelBildSetzen('${a[0]}')">${a[1]}</button>`).join('')}</div>`:'');
+  const mktBar=`<div class="perf-winbar db-perf-win">${DASH_MKT_WIN.map(w=>`<button class="perf-win${w[0]===dashMktWin?' on':''}" onclick="dashMktWinSetzen('${w[0]}')">${w[0]}</button>`).join('')}</div>`;
   const slot={
     hero:dashHeroHtml(),
     stats:dashStatsHtml({pos:nPos,ev:heute.length,nf:notifs.length}),
     markt:dashSek('dbMarket','watchlist','Market overview',`<div class="dx-zf">${mktBar}</div>`+dashMarktHtml(),{link:['Watchlist',"showTab('watch')"],
-      erkl:['Your watchlist (first 6), filled up with EUR/USD, GBP/USD, USD/JPY, Gold, Silver, S&P 500.','Change and chart cover exactly the selected window.','1D: image instead of a chart — no intraday data. Outline | Globe | Logo.','Tap a tile for the pair or asset, add pairs on the Watchlist page.']}),
+      erkl:['Your watchlist (first 6), filled up with EUR/USD, GBP/USD, USD/JPY, Gold, Silver, S&P 500.','Change and chart cover exactly the selected window.','1D: country outline instead of a chart — no intraday data. Base in the day\'s colour, quote grey; metals, oil, crypto: their symbol.','Tap a tile for the pair or asset, add pairs on the Watchlist page.']}),
     trades:dashSek('dbTrades','positions','Open trades',tjOffenKartenHtml(),{anz:nPos||null,link:['Journal',"showTab('journal')"],
       erkl:['Your open trades from the journal, same card as there.','Status in R and price distance since entry; the bar shows SL, entry, now and TP.','Close logs the exit.']}),
     heute:dashSek('dbHeute','mini_calendar','Key events',dashEventsHtml(heute),{anz:heute.length||null,link:['View all',"showTab('cal')"],
@@ -27396,7 +27390,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{dashKachelBildSetzen,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

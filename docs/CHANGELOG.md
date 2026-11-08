@@ -21681,3 +21681,12 @@ Hauptthread-Takt (rAF):
 - Nichts am Design geändert: falls das iPad den Hauptthread auch so zeigt, sind
   die Optionen (Flaggen im Dashboard still, Filme als Video statt Bildstreifen)
   eine Design-Entscheidung des Nutzers.
+
+## 2026-11-08 — 1D-Bild: Länder-Umriss fest (VERSION-CHECK-693)
+
+Nutzer-Wahl: *„Ich will die Option outline“*. Schalter `Outline | Globe | Logo`
+und die Varianten Kugel/Logo entfernt (`js/kachelbild.js` nur noch Umriss);
+ⓘ-Text angepasst. Wächter `check/dashboard.js`: Umriss je Kachel (Paar 2,
+Index 1, Gold/Silber Symbol), kein Schalter mehr.
+Nutzer zur Kugel nach 692: *„Die Weltkugel klappt“* — Rest siehe nächster Eintrag
+(Haken beim schnellen Drehen).
