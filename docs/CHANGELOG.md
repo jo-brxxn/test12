@@ -21707,3 +21707,27 @@ Nutzer (iPad-Foto COT, Lücke umkreist zwischen „All assets“ und „Refresh�
 - Wächter `check/filterfest.js` F neu (kein Platz rechts vom Filter, verstecktes
   ✕ belegt nirgends Platz; Gegenprobe reservierter Platz → rot auf 6 Seiten),
   `check/filterreset.js` B: ✕ links daneben.
+
+## 2026-11-08 — Weltkugel: kein Haken beim schnellen Drehen (VERSION-CHECK-695)
+
+Nutzer nach 692: *„Die Weltkugel klappt … ruckelt und hakt aber manchmal wenn man
+sie schnell dreht“*.
+- **Reproduziert** (Wisch per Zeiger, Tempo je Worker-Bild): Chromium normal
+  Ziehen −486/0/−479/0 °/s im Wechsel, Auslaufen vereinzelt −28/−400/+29;
+  **Hauptthread belegt: 22–27 Rückwärts-Schritte je Wisch, Spitzen bis
+  6.400 °/s**; WebKit: Stillstand-Aufhol-Folgen (−166, −124, 0, 0, 0, −596 °/s).
+- **Ursache:** nur das Normaltempo war seit 686 eine Zeitfunktion; Schwung,
+  Boost und Schub kamen als Stand je Hauptthread-Bild, der Worker rechnete
+  ≤ 50 ms hoch → Stillstand, dann Sprung, bei Überschuss rückwärts. Schwung beim
+  Loslassen = Tempo des LETZTEN Zeigerereignisses (zwei fast gleichzeitige
+  Ereignisse → absurde Spitzen).
+- **Fix an der Wurzel:** jede Bewegung ist eine Bahn (`js/globe-bahn.js`: lin,
+  abkling τ 1600 ms, ziel), Hauptthread und Worker rechnen dieselbe Formel; neue
+  Bahn nur bei Änderung. Ziehen: Worker folgt dem Fingerziel geglättet (30 ms),
+  Bahnwechsel blenden in 120 ms über (kein Sprung, nie rückwärts). Schwung =
+  Tempo über die letzten 120 ms, 0 wenn der Finger zuletzt ruhte.
+- **Nachher:** Auslaufen stetig fallend, 0 rückwärts, 0 Stillstand — Chromium
+  normal, Chromium belegt, WebKit. Drehung im Normalbetrieb weiter 4,00 °/s.
+- Wächter `check/performance.js` G: Wisch bei belegtem Hauptthread (Gegenprobe
+  `--gegenprobe-schwung` → 16 rückwärts, 13 Stillstände). WebKit-Wächter grün
+  (Kugel allein 63,4/s p95 19 ms).

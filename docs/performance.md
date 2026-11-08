@@ -214,3 +214,10 @@ Kalender-Abgleich 131 → ~0, FF-Abgleich 93 → ~0, `indOverdueCycles` 63 → 2
   versteckte Fläche liefert oder während er zeichnet Nachrichten bekommt; mit
   CPU-Raster (`WEBKIT_SKIA_ENABLE_CPU_RENDERING=1`) nie. Nachrichten an den
   Worker nur bei Änderung (`seg`, `meta` vergleichen schon).
+- **Merksatz Bahn (2026-11-08):** JEDE Bewegung der Kugel ist eine Zeitfunktion
+  (`js/globe-bahn.js`: lin / abkling / ziel), die Hauptthread und Worker aus
+  derselben Uhr rechnen; neue Bahn nur bei Änderung. Nie wieder „Stand je
+  Hauptthread-Bild + Hochrechnung" - beim schnellen Drehen gab das 22-27
+  Rückwärts-Schritte je Wisch. Wächter `check/performance.js` G (Wisch bei
+  belegtem Hauptthread, Gegenprobe `--gegenprobe-schwung`).
+

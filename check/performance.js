@@ -51,6 +51,7 @@
 //   --gegenprobe-globus    Kugel wieder in jedem Bild neu gezeichnet       -> G rot
 //   --gegenprobe-drehung   Worker rechnet wieder aus altem Stand hoch      -> G rot (Drehung bei belegtem Hauptthread)
 //   --gegenprobe-kueste    Kuesten unvereinfacht (14.000 Punkte je Bild)   -> G rot
+//   --gegenprobe-schwung   Schwung wieder als Stand je Bild (50 ms hochgerechnet) -> G rot (Wisch)
 //   --gegenprobe-ruhe      Kugel ruht im Leerlauf nie (Frist unendlich)    -> H rot
 //   --gegenprobe-ebene     Calendar-Tabelle ohne eigene Ebene              -> I rot
 //   --gegenprobe-kugelweg  Kugel-Schleife laeuft auf jeder Seite weiter    -> J rot
@@ -88,9 +89,10 @@ const GP_GLOBUS = process.argv.includes('--gegenprobe-globus');
 const GP_RUHE = process.argv.includes('--gegenprobe-ruhe');
 const GP_DREHUNG = process.argv.includes('--gegenprobe-drehung');
 const GP_KUESTE = process.argv.includes('--gegenprobe-kueste');
+const GP_SCHWUNG = process.argv.includes('--gegenprobe-schwung');
 const GP_EBENE = process.argv.includes('--gegenprobe-ebene');
 const GP_KUGELWEG = process.argv.includes('--gegenprobe-kugelweg');
-const GP = GP_PUNKTE || GP_FILL || GP_TEXT || GP_DOPPELT || GP_SMIL || GP_CHV || GP_GLOBUS || GP_DREHUNG || GP_KUESTE || GP_RUHE || GP_EBENE || GP_KUGELWEG;
+const GP = GP_PUNKTE || GP_FILL || GP_TEXT || GP_DOPPELT || GP_SMIL || GP_CHV || GP_GLOBUS || GP_DREHUNG || GP_KUESTE || GP_SCHWUNG || GP_RUHE || GP_EBENE || GP_KUGELWEG;
 
 const MAX_GLEICHZEITIG = 400;   // Trends nachher ~110, vorher 3363
 const MAX_FERTIG = 3;           // pageFadeIn/detailFadeIn halten bewusst (transform-Kontext), sonst 0
@@ -339,6 +341,39 @@ function statisch() {
     if (!t) { rot(`${lbl}: keine Winkel vom Worker gemeldet`); continue; }
     if (t.rueck > 0 || t.p5 < 3.6 || t.p95 > 4.4) rot(`${lbl}: Drehung ungleichmaessig - ${t.rueck} Rueckwaerts-Schritte, Tempo p5 ${t.p5.toFixed(2)} / Median ${t.med.toFixed(2)} / p95 ${t.p95.toFixed(2)} Grad/s (soll 4)`);
     else gruen(`${lbl}: Drehung gleichmaessig (0 rueckwaerts, ${t.p5.toFixed(2)}-${t.p95.toFixed(2)} Grad/s, Median ${t.med.toFixed(2)})`);
+  }
+  // Schneller Wisch bei belegtem Hauptthread (Nutzer 2026-11-08: "ruckelt und hakt
+  // manchmal wenn man sie schnell dreht"; GEMESSEN vorher 22-27 Rueckwaerts-
+  // Schritte je Wisch, Spitzen bis 6.400 Grad/s): das Auslaufen ist eine Bahn im
+  // Worker - nie rueckwaerts, kein Stillstand, Tempo faellt stetig.
+  {
+    if (GP_SCHWUNG) await p.evaluate(() => { window.__gpGlobusHochrechnung = true; });
+    await p.evaluate(() => { window.__lastW = setInterval(() => { const e = performance.now() + 70; while (performance.now() < e); }, 250); });
+    const cv = await p.$('#dashGlobeHost canvas.globe-canvas'), bb = cv && await cv.boundingBox();
+    if (!bb) rot('Wisch: Kugel-Flaeche nicht gefunden');
+    else {
+      const cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2, W = [];
+      for (let w = 0; w < 2; w++) {
+        await p.evaluate(() => { window.__globusWinkel = []; });
+        await p.mouse.move(cx - 80, cy); await p.mouse.down();
+        for (let i = 1; i <= 8; i++) { await p.mouse.move(cx - 80 + i * 20, cy); await p.waitForTimeout(16); }
+        await p.mouse.up(); await p.waitForTimeout(2600);
+        W.push(await p.evaluate(() => {
+          const A = (window.__globusWinkel || []).slice(), v = [];
+          for (let i = 1; i < A.length; i++) { const dt = (A[i][0] - A[i - 1][0]) / 1000; if (dt > 0.004) v.push((((A[i][1] - A[i - 1][1]) % 360 + 540) % 360 - 180) / dt); }
+          let iMax = 0; v.forEach((x, i) => { if (Math.abs(x) > Math.abs(v[iMax])) iMax = i; });
+          const r = Math.sign(v[iMax] || -1), aus = v.slice(iMax + 18).map(x => x * r);   // ab ~300 ms nach der Spitze: reines Auslaufen
+          let rueck = 0, steh = 0, sprung = 0;
+          for (let i = 1; i < aus.length; i++) { if (aus[i] < 0) rueck++; if (aus[i] < 1 && aus[i - 1] > 10) steh++; if (aus[i] > aus[i - 1] * 1.08 + 4) sprung++; }
+          return { n: aus.length, rueck, steh, sprung, start: Math.round(aus[0] || 0), ende: Math.round(aus[aus.length - 1] || 0) };
+        }));
+      }
+      const s = W.reduce((a, x) => ({ rueck: a.rueck + x.rueck, steh: a.steh + x.steh, sprung: a.sprung + x.sprung }), { rueck: 0, steh: 0, sprung: 0 });
+      if (s.rueck || s.steh || s.sprung > 1 || W.some(x => x.n < 60)) rot(`Wisch bei belegtem Hauptthread: Auslaufen ungleichmaessig - ${s.rueck} rueckwaerts, ${s.steh} Stillstaende, ${s.sprung} Tempo-Spruenge (${W.map(x => x.start + '->' + x.ende + ' Grad/s, ' + x.n + ' Bilder').join('; ')})`);
+      else gruen(`Wisch bei belegtem Hauptthread: Auslaufen stetig (${W.map(x => x.start + '->' + x.ende + ' Grad/s').join(', ')}; 0 rueckwaerts, 0 Stillstand)`);
+    }
+    await p.evaluate(() => { clearInterval(window.__lastW); window.__gpGlobusHochrechnung = false; });
+    await p.waitForTimeout(500);
   }
   if (g4) { if (g4.fps < 54 || g4.p95 > 20) rot(`bei 4x CPU Kugel nur ${g4.fps.toFixed(0)} Bilder/s, p95 ${g4.p95.toFixed(1)} ms - sie haengt auf langsamen Geraeten`); else gruen(`bei 4x CPU Kugel ${g4.fps.toFixed(0)} Bilder/s, p95 ${g4.p95.toFixed(1)} ms, max ${g4.max.toFixed(0)} ms`); }
   await p.evaluate(async () => { window.__gpGlobusSchwelle = false; window.__gpGlobusHochrechnung = false; if (window.__gpGlobusKuesteRoh) { window.__gpGlobusKuesteRoh = false; const m = await import('/js/globe.js'); m.startGlobes({ neu: true }); } if (window.__globusOhneWorker) { window.__globusOhneWorker = false; const m = await import('/js/globe.js'); m.startGlobes({ neu: true }); } });

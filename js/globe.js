@@ -11,6 +11,7 @@
 // gelesen, nie am Modul-Top-Level) - Details/Methodik: docs/module-split.md.
 import {BC} from './constants.js';
 import {erstelleZeichner} from './globe-zeichnen.js';
+import {bahnWinkel,bahnTempo} from './globe-bahn.js';
 import {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,uid} from './main.js';
 
 // ══ DASHBOARD: ROTIERENDER FX-WELTGLOBUS ════════════════════════════
@@ -275,15 +276,19 @@ function globeFuelTick(dtMs,thrustI){
 // laedt sondern einfach normal sich dreht"): beim Anhalten bleiben Geruest und
 // Referenzen erhalten; startGlobes() setzt sie fort, statt neu zu zeichnen.
 let _globeParked=null;
-// Drehung im Normalbetrieb als reine ZEITFUNKTION (2026-11-07, Nutzer-Fotos:
-// Kugel sprang in 3 s um ~35 Grad statt 12, "es ruckelt"). GEMESSEN vorher: der
-// Worker rechnete aus dem letzten Hauptthread-Stand weiter - kam ein neuer
-// Stand hinter der Hochrechnung an, sprang das Bild zurueck (WebKit: -22 bis
-// +19 Grad/s statt 4); der Hauptthread selbst verlor Zeit (Bildabstand bei
-// 100 ms gekappt). Jetzt: Winkel = Start + Tempo x (jetzt - Startzeit), im
-// Hauptthread UND im Worker aus derselben Formel; nur Ziehen/Schwung/Boost
-// schicken weiter laufende Staende.
-let _globeSeg=null;
+// Drehung als ZEITFUNKTION (Bahn, js/globe-bahn.js). 2026-11-07 fuer das
+// Normaltempo (Nutzer-Fotos: Kugel sprang in 3 s um ~35 Grad statt 12;
+// WebKit -22 bis +19 Grad/s statt 4), seit 2026-11-08 fuer JEDE Bewegung
+// (Nutzer: "ruckelt und hakt manchmal wenn man sie schnell dreht" - Schwung
+// kam als Stand je Hauptthread-Bild, belegt 22-27 Rueckwaerts-Schritte je
+// Wisch). Hauptthread und Worker rechnen aus derselben Bahn und derselben Uhr;
+// eine neue Bahn nur bei Aenderung (Loslassen, Normaltempo erreicht, Finger).
+let _globeBahn=null;
+const globeT=now=>performance.timeOrigin+now;
+function globeBahnLin(v,now){   // lineare Bahn ab dem aktuellen Winkel (nur neu, wenn sich das Tempo aendert)
+  if(!_globeBahn||_globeBahn.typ!=='lin'||Math.abs(_globeBahn.v-v)>1e-9)_globeBahn={typ:'lin',lon0:_globeLon,t0:globeT(now),v};
+  _globeLon=bahnWinkel(_globeBahn,globeT(now));
+}
 function globeWorkerTakt(st,an){
   st.laeuft=an;if(st.worker&&st.workerRaf)st.worker.postMessage({typ:an?'start':'stop'});
 }
@@ -299,7 +304,7 @@ function stopGlobe(){
 // beim Tab-Wechsel zurueck auf Heimat-Laenge (showTab('dash')), kann sie aber
 // nicht direkt zuweisen (Import-Bindings sind schreibgeschuetzt). Deshalb
 // dieser kleine Setter statt des Feldzugriffs von aussen.
-function resetGlobeLon(){_globeLon=GLOBE_HOME_LON;}
+function resetGlobeLon(){_globeLon=GLOBE_HOME_LON;_globeBahn=null;}
 function globeProject(lat,lon,lon0,R){
   const f=lat*Math.PI/180,l=(lon-lon0)*Math.PI/180;
   const cosc=Math.sin(GLOBE_LAT0)*Math.sin(f)+Math.cos(GLOBE_LAT0)*Math.cos(f)*Math.cos(l);
@@ -621,24 +626,16 @@ function globeMetaPflegen(st){
 }
 function globeZeichnen(st){
   const t=performance.now(),anim=!document.body.classList.contains('no-ui-anim');
-  if(st.worker&&st.workerRaf&&_globeSeg&&_globeMode==='auto'&&!window.__gpGlobusHochrechnung){   // __gp...: nur Gegenprobe check/performance.js (alter Weg)
-    // Normalbetrieb: die Zeitformel nur bei Aenderung senden - der Worker
-    // rechnet jedes Bild selbst exakt aus seiner Uhr.
+  if(st.worker&&st.workerRaf){
     const vx=st.vehiclePos.x,vy=st.vehiclePos.y;
-    if(st.segGesendet!==_globeSeg||st.segAnim!==anim||st.segVx!==vx||st.segVy!==vy){
-      st.segGesendet=_globeSeg;st.segAnim=anim;st.segVx=vx;st.segVy=vy;st.zLon=null;
-      st.worker.postMessage({typ:'seg',lon0:_globeSeg.lon0,t0:_globeSeg.abs,v:_globeSeg.v,anim,vx,vy});
+    // nur Gegenprobe check/performance.js: alter Weg - Stand je Bild, hoechstens 50 ms hochgerechnet
+    if(window.__gpGlobusHochrechnung){const T=globeT(t);st.worker.postMessage({typ:'bahn',bahn:{typ:'lin',lon0:_globeLon,t0:T,v:_globeBahn?bahnTempo(_globeBahn,T):GLOBE_AUTO_VEL,kappe:50,ohneUebergang:true},anim,vx,vy});return;}
+    // Bahn nur bei Aenderung senden - der Worker rechnet jedes Bild selbst aus seiner Uhr
+    if(_globeBahn&&(st.bahnGesendet!==_globeBahn||st.segAnim!==anim||st.segVx!==vx||st.segVy!==vy)){
+      st.bahnGesendet=_globeBahn;st.segAnim=anim;st.segVx=vx;st.segVy=vy;
+      st.worker.postMessage({typ:'bahn',bahn:_globeBahn,anim,vx,vy});
     }
     return;
-  }
-  if(st.worker&&st.workerRaf){
-    st.segGesendet=null;
-    // Zustand an den Worker-Takt: Winkel, Geschwindigkeit (aus der letzten
-    // Aenderung, Grad/ms), absoluter Zeitpunkt - der Worker rechnet weiter.
-    const T=performance.timeOrigin+t,lon=_globeLon;
-    let vel=0;if(st.zLon!=null&&T>st.zT){vel=(((lon-st.zLon)%360+540)%360-180)/(T-st.zT);}
-    st.zLon=lon;st.zT=T;
-    st.worker.postMessage({typ:'zustand',lon,vel,t:T,anim,vx:st.vehiclePos.x,vy:st.vehiclePos.y});return;
   }
   if(st.worker){
     if(st.wartet){st.offen=true;return;}
@@ -777,7 +774,9 @@ function globeOnPointerDown(ev,host){
   try{host.setPointerCapture(ev.pointerId);}catch(e){}
   closeGlobeTip();
   _globeMode='drag';
-  _globeDrag={lastX:ev.clientX,lastY:ev.clientY,lastT:performance.now(),pid:ev.pointerId,host};
+  const t0=performance.now();
+  _globeDrag={lastX:ev.clientX,lastY:ev.clientY,lastT:t0,pid:ev.pointerId,host,verlauf:[[t0,0]],summe:0};
+  _globeBahn={typ:'ziel',lon0:_globeLon,t0:globeT(t0)};
   host.classList.add('grabbing');
 }
 function globeOnPointerMove(ev){
@@ -785,16 +784,27 @@ function globeOnPointerMove(ev){
   const now=performance.now(),dx=ev.clientX-_globeDrag.lastX,dt=Math.max(1,now-_globeDrag.lastT);
   const dDeg=dx*0.4; // Drag-Sensitivitaet: Pixel -> Grad
   _globeLon=(_globeLon-dDeg+360)%360;
-  _globeVel=-dDeg/dt; // Schwung fuers Abklingen nach dem Loslassen merken
+  _globeVel=-dDeg/dt;
+  // Verlauf der letzten 120 ms fuer den Schwung beim Loslassen (vorher: Tempo
+  // des LETZTEN Ereignisses - gemessen Spitzen bis 6.400 Grad/s, wenn zwei
+  // Ereignisse fast gleichzeitig kamen)
+  _globeDrag.summe-=dDeg;_globeDrag.verlauf.push([now,_globeDrag.summe]);
+  while(_globeDrag.verlauf.length>2&&now-_globeDrag.verlauf[0][0]>120)_globeDrag.verlauf.shift();
   _globeDrag.lastX=ev.clientX;_globeDrag.lastY=ev.clientY;_globeDrag.lastT=now;
+  _globeBahn={typ:'ziel',lon0:_globeLon,t0:globeT(now)};
   _globeHosts.forEach(globeUpdateOne);
 }
 function globeOnPointerUp(ev){
   try{ev.currentTarget.releasePointerCapture(ev.pointerId);}catch(e){}
   if(!_globeDrag||ev.pointerId!==_globeDrag.pid)return;
   _globeDrag.host.classList.remove('grabbing');
+  const d=_globeDrag,jetztU=performance.now();
   _globeDrag=null;
   if(_globeMode==='drag'){
+    // Schwung = Tempo ueber die letzten bis zu 120 ms; ruhte der Finger zuletzt
+    // (> 80 ms keine Bewegung), gibt es keinen Schwung.
+    const v0=d.verlauf[0],v1=d.verlauf[d.verlauf.length-1];
+    _globeVel=jetztU-d.lastT>80||v1[0]-v0[0]<8?0:(v1[1]-v0[1])/(v1[0]-v0[0]);
     // Deckel deutlich hoeher als zuvor (war 0.06): vorher wurde praktisch jeder
     // spuerbare Wisch sofort auf denselben Wert gekappt, wodurch sich schnelle
     // Bewegungen anfuehlten, als wuerden sie augenblicklich ausgebremst. Jetzt
@@ -802,6 +812,8 @@ function globeOnPointerUp(ev){
     // (Math.exp(-dt/1600) oben) sorgt weiterhin fuer ein sanftes, laengeres Auslaufen.
     _globeVel=Math.max(-0.2,Math.min(0.2,_globeVel)); // Schwung deckeln
     _globeMode='decel';
+    _globeBahn={typ:'abkling',lon0:_globeLon,t0:globeT(jetztU),v0:_globeVel,a:GLOBE_AUTO_VEL,tau:1600};
+    _globeHosts.forEach(globeUpdateOne);   // Bahn sofort an den Worker, nicht erst im naechsten Hauptthread-Bild
   }
 }
 const GLOBE_PAGES=['dash'];   // seit 2026-11-06 im Dashboard (Overview entfernt)
@@ -854,7 +866,7 @@ function globeHostGroesse(h){
 }
 function startGlobes(opt){
   if(window.__gpGlobusNeubau)opt={neu:true};   // nur Gegenprobe check/performance.js (K)
-  _globeSeg=null;   // ab dem aktuellen Winkel weiter, kein Sprung um die Abwesenheit
+  _globeBahn=null;   // ab dem aktuellen Winkel weiter, kein Sprung um die Abwesenheit
   const park=_globeParked;
   stopGlobe();_globeParked=null;
   // ⚠ Seit 2026-09-11 lebt die Kugel auf der Overview-Seite, nicht mehr auf
@@ -888,7 +900,7 @@ function startGlobes(opt){
   _globeHosts.forEach(globeUpdateOne); // sofortiger, vollstaendiger erster Aufbau (alle Layer in einem Zug)
   // Aus dem Bild gescrollt -> keine Geometrie rechnen (2026-10-16). Die Laenge
   // laeuft weiter, beim Zurueckscrollen steht die Kugel also richtig.
-  _globeHosts.forEach(st=>{st.sichtbar=true;st.zLon=null;globeWorkerTakt(st,true);try{st.io=new IntersectionObserver(es=>{st.sichtbar=es[es.length-1].isIntersecting;globeWorkerTakt(st,st.sichtbar);st.zLon=null;});st.io.observe(st.host);}catch(e){}});
+  _globeHosts.forEach(st=>{st.sichtbar=true;globeWorkerTakt(st,true);try{st.io=new IntersectionObserver(es=>{st.sichtbar=es[es.length-1].isIntersecting;globeWorkerTakt(st,st.sichtbar);st.zLon=null;});st.io.observe(st.host);}catch(e){}});
   // Schubregler-Anzeige resyncen (Nutzer-Wunsch 2026-07-28): der Regler-DOM
   // (.globe-throttle) liegt AUSSERHALB von .globe-host, wird also bei jedem
   // Dashboard-Re-Render (renderDash() baut das Widget-HTML neu, z.B.
@@ -939,7 +951,6 @@ function startGlobes(opt){
     const dt=Math.min(now-_globeLast,DT_MAX);
     const ruheMs=window.__gpGlobusRuheMs||GLOBE_RUHE_MS;
     const ruht=_globeMode==='auto'&&_throttleFrac<=0.002&&!_globeVehicleBusy&&now-_globeEingabe>ruheMs;
-    if(_globeMode!=='auto'||_throttleFrac>0.002)_globeSeg=null;
     _globeRuheF=ruht?_globeRuheF*Math.exp(-dt/500):1;   // auslaufen statt abrupt stehen; aufwachen sofort
     const steht=ruht&&_globeRuheF<0.01;
     if(steht!==_globeRuhtCls){_globeRuhtCls=steht;_globeHosts.forEach(st=>st.host.classList.toggle('globe-ruht',steht));}
@@ -958,12 +969,13 @@ function startGlobes(opt){
         thrustI=_throttleFrac;
         _globeVel=GLOBE_AUTO_VEL+(GLOBE_BOOST_PEAK_VEL-GLOBE_AUTO_VEL)*thrustI;
         const BLUR_FROM=0.82,blurI=thrustI>BLUR_FROM?(thrustI-BLUR_FROM)/(1-BLUR_FROM):0;
-        _globeLon=(_globeLon+dt*_globeVel+360*1000)%360;
+        globeBahnLin(_globeVel,now);
         _globeHosts.forEach(st=>{st.host.style.setProperty('--boost-i',thrustI.toFixed(3));st.host.style.setProperty('--boost-blur',blurI.toFixed(3));});
       }else if(_globeMode==='decel'){
-        _globeVel=GLOBE_AUTO_VEL+(_globeVel-GLOBE_AUTO_VEL)*Math.exp(-dt/1600); // Schwung klingt Richtung Normaltempo ab - spuerbar lang und sanft statt abrupt
-        if(Math.abs(_globeVel-GLOBE_AUTO_VEL)<0.0006){_globeVel=GLOBE_AUTO_VEL;_globeMode='auto';}
-        _globeLon=(_globeLon+dt*_globeVel+360*1000)%360;
+        // Schwung klingt Richtung Normaltempo ab (tau 1600 ms) - als Bahn, die der Worker selbst rechnet
+        if(!_globeBahn||_globeBahn.typ!=='abkling')_globeBahn={typ:'abkling',lon0:_globeLon,t0:globeT(now),v0:_globeVel,a:GLOBE_AUTO_VEL,tau:1600};
+        _globeLon=bahnWinkel(_globeBahn,globeT(now));_globeVel=bahnTempo(_globeBahn,globeT(now));
+        if(Math.abs(_globeVel-GLOBE_AUTO_VEL)<0.0006){_globeVel=GLOBE_AUTO_VEL;_globeMode='auto';globeBahnLin(GLOBE_AUTO_VEL*_globeRuheF,now);}
       }else if(_globeMode==='boost'){
         // Dreiphasige Kurve: kubisch beschleunigen -> kurz auf Spitzentempo
         // halten -> sanft (ease-out) auf Normaltempo abbremsen.
@@ -989,11 +1001,10 @@ function startGlobes(opt){
         }else{
           thrustI=0;_globeVel=GLOBE_AUTO_VEL;_globeMode='auto';endGlobeBoost();
         }
-        _globeLon=(_globeLon+dt*_globeVel+360*1000)%360;
+        globeBahnLin(_globeVel,now);
         if(_globeMode==='boost')_globeHosts.forEach(st=>{st.host.style.setProperty('--boost-i',thrustI.toFixed(3));st.host.style.setProperty('--boost-blur',blurI.toFixed(3));});
       }else if(_globeMode==='auto'){
-        if(!_globeSeg||_globeSeg.v!==GLOBE_AUTO_VEL*_globeRuheF)_globeSeg={lon0:_globeLon,t0:now,v:GLOBE_AUTO_VEL*_globeRuheF,abs:performance.timeOrigin+now};
-        _globeLon=((_globeSeg.lon0+_globeSeg.v*(now-_globeSeg.t0))%360+360)%360;
+        globeBahnLin(GLOBE_AUTO_VEL*_globeRuheF,now);
       } // 'drag': Position wird direkt per Pointermove gesetzt, hier nichts tun
       globeFuelTick(dt,thrustI);
       // Nur neu zeichnen, wenn sich die Oberflaeche seit dem letzten Bild um
