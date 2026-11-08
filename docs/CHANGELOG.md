@@ -21731,3 +21731,22 @@ sie schnell dreht“*.
 - Wächter `check/performance.js` G: Wisch bei belegtem Hauptthread (Gegenprobe
   `--gegenprobe-schwung` → 16 rückwärts, 13 Stillstände). WebKit-Wächter grün
   (Kugel allein 63,4/s p95 19 ms).
+
+## 2026-11-08 — Bias scores: 5 Darstellungen zum Testen (VERSION-CHECK-696)
+
+Nutzer: *„gib mir zur Karte bias Scores 5 Alternativen zum Testen weil mir da die
+Anordnung nicht gefällt … kreative Optionen“*. Schalter in der Karte (nur diese
+Sitzung, bis zur Wahl): **Tiles** (bisher) · **Ranking** (alle 23 in einer
+Rangliste, Balken vom Nullpunkt) · **Scale** (Währungen/Renditen/Märkte je eine
+Bahn auf derselben Score-Skala, Chips am Wert, ohne Überlappung gestapelt) ·
+**Heatmap** (Felder nach Stärke eingefärbt) · **Bull / Bear** (drei Spalten nach
+Bias) · **Podium** (je 3 stärkste Long/Short groß, Rest als Chips).
+- Jede Variante: jedes Asset genau 1×, Score = `symScoreCmp`, voller Name, Tipp
+  auf den Score = Aufschlüsselung, Tipp aufs Asset = Asset-Seite.
+- Wächter `check/dashboard.js`: alle sechs bei 8 Breiten (1×, Score, Name,
+  nichts ragt aus Karte/Kachel, keine Überlappung). Unterwegs rot und behoben:
+  Scale-Chips überlappten auf Touch (Knopfhöhe > fester Zeilenabstand →
+  gemessen), Heatmap-Namen zu eng bei 8 festen Spalten.
+- **Fund am Rand (vorbestehend, behoben):** Tiles „S&P 500“, „CH Yield“,
+  „AU Yield“ ragten bei 390 px und 1280 px aus ihren 84-px-Kacheln → Kachel ≥ 102 px
+  (Handy 122 px).

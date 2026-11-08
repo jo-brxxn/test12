@@ -17625,6 +17625,7 @@ function renderDash(){
       erkl:['Actual price performance over '+win[0]+' — compare it with the score to spot where the market disagrees.']}),
   };
   Object.keys(slot).forEach(k=>{const s=el.querySelector('[data-slot="'+k+'"]');if(s)s.innerHTML=slot[k];});
+  if(dashBiasArt==='skala'){dashBiasSkalaLayout();const b=document.getElementById('dbBias');if(b&&!b.__ro&&window.ResizeObserver){b.__ro=new ResizeObserver(()=>{if(dashBiasArt==='skala')dashBiasSkalaLayout();});b.__ro.observe(b);}}
   if(_dashScroll)_dashScroll.scrollTop=_scrollY;
   const _evL=el.querySelector('.db-ev-list'),_evN=_evL&&_evL.querySelector('.db-ev.next');
   if(_evN)_evL.scrollTop=Math.max(0,_evN.offsetTop-_evL.offsetTop-68);
@@ -17661,23 +17662,87 @@ function dashSek(id,typ,titel,inhalt,o){
 }
 // Bias Scores: alle Assets, nach Klasse gruppiert, je Gruppe nach Score.
 const DASH_KLASSEN=[['fx','Currencies'],['metal','Metals'],['energy','Energy'],['index','Indices'],['stock','Stocks'],['crypto','Crypto'],['yield','Yields']];
-function dashBiasHtml(){
+// ── Bias scores: Darstellung zur Wahl ─────────────────────────────────────
+// Nutzer 2026-11-08: "gib mir zur Karte bias Scores 5 Alternativen zum Testen
+// weil mir da die Anordnung nicht gefaellt du kannst aber auch dir was ganz
+// anderes ausdenken". Schalter in der Karte, nur fuer diese Sitzung, bis der
+// Nutzer gewaehlt hat (dann bleibt EINE, Schalter faellt weg). Jede Variante:
+// je Asset genau ein .db-bias[data-id] mit vollem Namen (.db-bias-n) und
+// exaktem Score (.db-bias-v, Tipp = Aufschluesselung) - check/dashboard.js.
+let dashBiasArt='kacheln';
+const DASH_BIAS_ARTEN=[['kacheln','Tiles'],['rang','Ranking'],['skala','Scale'],['heat','Heatmap'],['lang','Bull / Bear'],['podest','Podium']];
+function dashBiasArtSetzen(a){dashBiasArt=a;renderDash();}
+function dashBiasDaten(){
   const sc=s=>symScoreCmp(s);
-  const gruppen=DASH_KLASSEN.map(([k,lbl])=>{
-    const l=syms.filter(s=>assetCls(s.id)===k).sort((a,b)=>sc(b)-sc(a));
-    return l.length?{lbl,l}:null;
-  }).filter(Boolean);
-  if(!gruppen.length)return`<div class="dw-empty">No assets yet.</div>`;
-  const mx=Math.max(1,...syms.map(s=>Math.abs(sc(s))));
-  const kachel=s=>{
-    const v=sc(s),col=biasCss(s.bias);
-    return`<button class="db-bias" data-id="${escH(s.id)}" style="--bc:${BC[s.bias]}" onclick="gotoSym('${escJH(s.id)}')" title="${escH(s.name)} · ${BL[s.bias]} — open the asset">
-      <span class="db-bias-n">${assetIconHtml(s.id,14)}<span>${escH(s.name)}</span></span>
-      <span class="db-bias-v" role="button" onclick="event.stopPropagation();openScoreInfoSym('${escJH(s.id)}')" style="color:${col}" title="Score — tap for the breakdown">${v>0?'+':''}${v}</span>
-      <span class="db-bias-bar"><span style="width:${Math.max(4,Math.round(Math.abs(v)/mx*100))}%;background:${BC[s.bias]}"></span></span>
-    </button>`;
-  };
-  return`<div class="db-bias-wrap">${gruppen.map(g=>`<div class="db-bias-gr" style="--n:${Math.min(g.l.length,8)}"><div class="db-gr-lbl">${escH(g.lbl)}</div><div class="db-bias-grid">${g.l.map(kachel).join('')}</div></div>`).join('')}</div>`;
+  const gruppen=DASH_KLASSEN.map(([k,lbl])=>{const l=syms.filter(s=>assetCls(s.id)===k).sort((a,b)=>sc(b)-sc(a));return l.length?{k,lbl,l}:null;}).filter(Boolean);
+  const alle=gruppen.flatMap(g=>g.l).sort((a,b)=>sc(b)-sc(a));
+  return{sc,gruppen,alle,mx:Math.max(1,...alle.map(s=>Math.abs(sc(s))))};
+}
+const dashBiasN=(s,ic)=>`<span class="db-bias-n">${assetIconHtml(s.id,ic||14)}<span>${escH(s.name)}</span></span>`;
+const dashBiasV=(s,v,k)=>`<span class="db-bias-v${k?' '+k:''}" role="button" onclick="event.stopPropagation();openScoreInfoSym('${escJH(s.id)}')" style="color:${biasCss(s.bias)}" title="Score — tap for the breakdown">${v>0?'+':''}${v}</span>`;
+const dashBiasKnopf=(s,cls,inhalt,stil)=>`<button class="db-bias ${cls}" data-id="${escH(s.id)}" style="--bc:${BC[s.bias]};${stil||''}" onclick="gotoSym('${escJH(s.id)}')" title="${escH(s.name)} · ${BL[s.bias]} — open the asset">${inhalt}</button>`;
+function dashBiasHtml(){
+  const D=dashBiasDaten();
+  if(!D.gruppen.length)return`<div class="dw-empty">No assets yet.</div>`;
+  const wahl=`<div class="dx-zf"><div class="perf-winbar db-perf-win dbv-wahl" title="Layout — pick one">${DASH_BIAS_ARTEN.map(a=>`<button class="perf-win${a[0]===dashBiasArt?' on':''}" onclick="dashBiasArtSetzen('${a[0]}')">${a[1]}</button>`).join('')}</div></div>`;
+  const f={kacheln:dashBiasKacheln,rang:dashBiasRang,skala:dashBiasSkala,heat:dashBiasHeat,lang:dashBiasLang,podest:dashBiasPodest}[dashBiasArt]||dashBiasKacheln;
+  return wahl+f(D);
+}
+// 0) Tiles (bisher): Kacheln je Klasse
+function dashBiasKacheln(D){
+  const kachel=s=>{const v=D.sc(s);
+    return dashBiasKnopf(s,'',`${dashBiasN(s)}${dashBiasV(s,v)}<span class="db-bias-bar"><span style="width:${Math.max(4,Math.round(Math.abs(v)/D.mx*100))}%;background:${BC[s.bias]}"></span></span>`);};
+  return`<div class="db-bias-wrap">${D.gruppen.map(g=>`<div class="db-bias-gr" style="--n:${Math.min(g.l.length,8)}"><div class="db-gr-lbl">${escH(g.lbl)}</div><div class="db-bias-grid">${g.l.map(kachel).join('')}</div></div>`).join('')}</div>`;
+}
+// 1) Ranking: eine Rangliste, Balken vom Nullpunkt nach links (bearish) / rechts (bullish)
+function dashBiasRang(D){
+  const zeile=(s,i)=>{const v=D.sc(s),w=Math.max(2,Math.abs(v)/D.mx*50);
+    return dashBiasKnopf(s,'dbv-r',`<span class="dbv-r-nr">${i+1}</span>${dashBiasN(s)}<span class="dbv-r-bar"><span class="dbv-r-null"></span><span class="dbv-r-f" style="${v>=0?'left:50%':'right:50%'};width:${w.toFixed(1)}%;background:${BC[s.bias]}"></span></span>${dashBiasV(s,v)}`);};
+  return`<div class="dbv-rang" style="--zeilen:${Math.ceil(D.alle.length/2)}">${D.alle.map(zeile).join('')}</div>`;
+}
+// Drei Zeilen fuer Scale und Heatmap: Waehrungen, Renditen, Maerkte (kleine Klassen zusammen)
+function dashBiasDreiZeilen(D){
+  const gr=k=>D.gruppen.filter(g=>k.includes(g.k)).flatMap(g=>g.l).sort((a,b)=>D.sc(b)-D.sc(a));
+  return[{lbl:'Currencies',l:gr(['fx'])},{lbl:'Yields',l:gr(['yield'])},{lbl:'Markets',l:gr(['index','stock','metal','energy','crypto'])}].filter(z=>z.l.length);
+}
+// 2) Scale: Waehrungen, Renditen, Maerkte je eine Bahn auf derselben Score-Skala, jedes Asset als Chip an seinem Wert
+function dashBiasSkala(D){
+  const m=Math.ceil(D.mx),pct=v=>(v+m)/(2*m)*100;
+  const achse=`<div class="dbv-achse"><span style="left:0%">−${m}</span><span style="left:25%">−${(m/2).toFixed(m%2?1:0)}</span><span style="left:50%">0</span><span style="left:75%">+${(m/2).toFixed(m%2?1:0)}</span><span style="left:100%">+${m}</span></div>`;
+  const bahn=g=>`<div class="dbv-bahn"><div class="db-gr-lbl">${escH(g.lbl)}</div><div class="dbv-feld"><span class="dbv-null"></span>${g.l.map(s=>{const v=D.sc(s);return dashBiasKnopf(s,'dbv-chip',`${dashBiasN(s,13)}${dashBiasV(s,v)}`,`--x:${pct(v).toFixed(2)}`);}).join('')}</div></div>`;
+  return`<div class="dbv-skala"><div class="dbv-achse-z"><span></span>${achse}</div>${dashBiasDreiZeilen(D).map(bahn).join('')}<div class="dbv-legende"><span>bearish</span><span>bullish</span></div></div>`;
+}
+// Chips der Skala ohne Ueberlappung stapeln (nach dem Einsetzen und bei jeder Groessenaenderung)
+function dashBiasSkalaLayout(){
+  document.querySelectorAll('#dbBias .dbv-feld').forEach(f=>{
+    const W=f.clientWidth;if(!W)return;
+    const chips=[...f.querySelectorAll('.dbv-chip')].map(c=>({c,x:+c.style.getPropertyValue('--x')/100*W,w:c.offsetWidth,h:c.offsetHeight})).sort((a,b)=>a.x-b.x);
+    const H=Math.max(28,...chips.map(o=>o.h))+5,reihen=[];   // Hoehe gemessen: auf Touch-Geraeten sind Knoepfe hoeher (Trefferflaeche)
+    chips.forEach(o=>{const l=Math.max(0,Math.min(W-o.w,o.x-o.w/2));let r=reihen.findIndex(e=>l>=e+6);if(r<0){r=reihen.length;reihen.push(0);}reihen[r]=l+o.w;
+      o.c.style.left=l.toFixed(1)+'px';o.c.style.top=(r*H)+'px';});
+    f.style.height=(Math.max(1,reihen.length)*H)+'px';
+  });
+}
+// 3) Heatmap: gleich grosse Felder, Farbe nach Staerke; Waehrungen, Renditen, Maerkte je eine Zeile
+function dashBiasHeat(D){
+  const zeilen=dashBiasDreiZeilen(D).map(z=>[z.lbl,z.l]);
+  const feld=s=>{const v=D.sc(s),a=Math.round(10+60*Math.abs(v)/D.mx);
+    return dashBiasKnopf(s,'dbv-h',`${dashBiasN(s,13)}${dashBiasV(s,v,'dbv-h-v')}`,`background:color-mix(in srgb,${BC[s.bias]} ${a}%,var(--card))`);};
+  return`<div class="dbv-heat">${zeilen.map(([l,arr])=>`<div class="db-gr-lbl">${l}</div><div class="dbv-heat-g">${arr.map(feld).join('')}</div>`).join('')}</div>`;
+}
+// 4) Bull / Bear: drei Spalten nach Bias (bullish | neutral | bearish), staerkste zuerst
+function dashBiasLang(D){
+  const sp=[['bull','Bullish',D.alle.filter(s=>s.bias==='bull')],['neu','Neutral',D.alle.filter(s=>s.bias!=='bull'&&s.bias!=='bear')],['bear','Bearish',D.alle.filter(s=>s.bias==='bear').reverse()]];
+  const zeile=s=>{const v=D.sc(s);return dashBiasKnopf(s,'dbv-l',`${dashBiasN(s)}${dashBiasV(s,v)}<span class="db-bias-bar"><span style="width:${Math.max(4,Math.round(Math.abs(v)/D.mx*100))}%;background:${BC[s.bias]}"></span></span>`);};
+  return`<div class="dbv-lang">${sp.map(([b,l,arr])=>`<div class="dbv-sp"><div class="db-gr-lbl" style="color:${biasCss(b)}">${l} <b>${arr.length}</b></div>${arr.length?arr.map(zeile).join(''):'<div class="db-leer"><i>None</i></div>'}</div>`).join('')}</div>`;
+}
+// 5) Podium: je drei staerkste Long- und Short-Kandidaten gross, der Rest kompakt nach Score
+function dashBiasPodest(D){
+  const oben=D.alle.slice(0,3),unten=D.alle.slice(-3).reverse(),rest=D.alle.filter(s=>!oben.includes(s)&&!unten.includes(s));
+  const karte=(s,i)=>{const v=D.sc(s);return dashBiasKnopf(s,'dbv-p',`<span class="dbv-p-nr">${i+1}</span>${dashBiasN(s,18)}${dashBiasV(s,v,'dbv-p-v')}<span class="db-bias-bar"><span style="width:${Math.max(4,Math.round(Math.abs(v)/D.mx*100))}%;background:${BC[s.bias]}"></span></span>`);};
+  const chip=s=>dashBiasKnopf(s,'dbv-c',`${dashBiasN(s,13)}${dashBiasV(s,D.sc(s))}`);
+  return`<div class="dbv-podest"><div class="dbv-p-sp"><div class="db-gr-lbl">Strongest long</div>${oben.map(karte).join('')}</div><div class="dbv-p-sp"><div class="db-gr-lbl">Strongest short</div>${unten.map(karte).join('')}</div></div>
+    <div class="db-gr-lbl dbv-rest-l">All others · by score</div><div class="dbv-rest">${rest.map(chip).join('')}</div>`;
 }
 // Heute: High + Medium, chronologisch; vergangene mit Ist-Wert in Beat/Miss-Farbe.
 function dashHeuteListe(){
@@ -27393,7 +27458,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{dashBiasArtSetzen,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

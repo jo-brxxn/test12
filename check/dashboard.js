@@ -195,6 +195,25 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
           const nm=t.querySelector('.db-bias-n').textContent.trim();if(nm!==s.name)out.push('Bias: Name "'+nm+'" statt "'+s.name+'"');});
         document.querySelectorAll('#dashWidgets .db-bias-grid').forEach(g=>{const v=[...g.querySelectorAll('.db-bias-v')].map(e=>+e.textContent.replace('+',''));
           for(let i=1;i<v.length;i++)if(v[i]>v[i-1]){out.push('Bias: Gruppe nicht absteigend sortiert');break;}});
+        // Bias-scores-Varianten zur Wahl (Nutzer 2026-11-08: "5 Alternativen zum
+        // Testen"): JEDE Variante zeigt jedes Asset genau 1x mit exaktem Score und
+        // vollem Namen, nichts ragt aus der Karte/Kachel, keine zwei Assets ueberlappen.
+        if(typeof dashBiasArtSetzen==='function'){
+          ['kacheln','rang','skala','heat','lang','podest'].forEach(a=>{
+            dashBiasArtSetzen(a);
+            const card=document.getElementById('dbBias');if(!card)return;const cr=card.getBoundingClientRect();
+            const T=[...card.querySelectorAll('.db-bias')];
+            syms.forEach(s=>{const n=T.filter(t=>t.dataset.id===s.id).length;if(n!==1)out.push(`Bias ${a}: ${s.id} ${n}x statt 1x`);});
+            T.forEach(t=>{const s=syms.find(x=>x.id===t.dataset.id);if(!s)return;
+              const v=+t.querySelector('.db-bias-v').textContent.replace('+','');if(v!==symScoreCmp(s))out.push(`Bias ${a}: ${s.id} zeigt ${v} statt ${symScoreCmp(s)}`);
+              const nm=t.querySelector('.db-bias-n').textContent.trim();if(nm!==s.name)out.push(`Bias ${a}: Name "${nm}" statt "${s.name}"`);
+              const r=t.getBoundingClientRect();if(r.right>cr.right+1||r.left<cr.left-1)out.push(`Bias ${a}: ${s.id} ragt aus der Karte`);
+              t.querySelectorAll('.db-bias-n,.db-bias-v').forEach(e=>{const rg=document.createRange();rg.selectNodeContents(e);const q=rg.getBoundingClientRect();if(q.width&&(q.right>r.right+1||q.left<r.left-1))out.push(`Bias ${a}: Text "${e.textContent.trim()}" ragt aus ${s.id}`);});});
+            for(let i=0;i<T.length;i++)for(let j=i+1;j<T.length;j++){const A=T[i].getBoundingClientRect(),B=T[j].getBoundingClientRect();
+              if(A.width&&B.width&&A.left<B.right-1&&B.left<A.right-1&&A.top<B.bottom-1&&B.top<A.bottom-1){out.push(`Bias ${a}: ${T[i].dataset.id} ueberlappt ${T[j].dataset.id}`);i=T.length;break;}}
+          });
+          dashBiasArtSetzen('kacheln');
+        }
       }
       return out;
     });
