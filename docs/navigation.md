@@ -1617,6 +1617,7 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Reihen: Hero | Kennzahlen / Market overview | World map / **Open trades** | Key events | Sentiment & COT / Bias scores | Your insights / Biggest movers | Performance.
 - **Kugel wird nie ohne Not neu gebaut:** `stopGlobe()` parkt Gerüst + Referenzen, `startGlobes()` setzt fort; Neuaufbau nur bei Größenänderung der Karte (ResizeObserver). Kein `resetGlobeLon()` beim Betreten. Keine Leerlauf-Ruhe (Nutzer: *„Es muss nur drehen“*).
 - Kugelgröße = kleinere Seite des Kartenkörpers (`globeHostGroesse`), der Host selbst ist rechteckig.
+- **Begrüßung (Hero, 2026-11-08):** das Logo bleibt frei - die gezeichneten Kerzen liegen im unteren Drittel und enden unter dem Logo (`js/heroart.js` `Y_OBEN`), keine Linie über den Kerzen. Geprüft: `check/dashboard.js` (Kerzen außerhalb des Logos, jede Breite).
 - **Kugel-Farben + Raster (Nutzer-Wahl 2026-11-08 „Ich nehme Atlas“):** heller Modus = Schema `atlas` (hellblaues Meer, blaue Kontinente, weißes Raster), dunkler Modus = `nacht` (bisherige Optik); kein Schalter. Das Viereck-Raster liegt FEST auf der Kugel und dreht mit dem Land (`rasterMalen` in `js/globe-zeichnen.js`), reicht bis an die Küste. Geprüft: `check/dashboard.js` (Schema je Modus), `check/kugelland.js` C.
 
 ### Nachtrag 2026-11-07 (684): Watchlist-Eintrag entfernen

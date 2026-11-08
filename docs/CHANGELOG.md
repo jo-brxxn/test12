@@ -21882,3 +21882,24 @@ Weltkugel drauf“*.
   Raster auf Honshu - für beide Wege; Gegenprobe `--gegenprobe-raster` (Raster
   steht still) → rot für beide. `check/dashboard.js`: Schema
   je Modus, kein Schalter.
+
+## 2026-11-08 — Begrüßung: Logo frei, keine Linie über den Kerzen (VERSION-CHECK-703)
+
+Nutzer (iPad-Foto, Logo umkreist): *„Mach auch das das Logo da komplett zu sehen
+ist und nicht die Kerzen dadrüber sind und mach die Linie aus den Kerzen raus“*.
+- **Gemessen:** ab 820 px Breite liefen 22-23 Kerzen bis 17-31 px tief durch das
+  Logo („ANALYST PRO“ halb verdeckt); 390 px ohne Überlappung, Kerzen dort aber
+  bis hinter die Unterzeile.
+- **Fix (`js/heroart.js`):** nur der Kerzenverlauf wird gestaucht (oberste
+  Dochtspitze viewBox-y 172, unterste 252), die Kerzen behalten 85 % ihrer Höhe;
+  das Logo endet bei jeder Breite über viewBox-y 151. Trendlinie (`.hero-linie`)
+  samt CSS entfernt. Jetzt 0 Kerzen im Logo bei 390-2560 px.
+- Wächter `check/dashboard.js`: Kerzen außerhalb des Logos, keine Linie;
+  Gegenprobe (Kerzen 70 px höher) → rot.
+- **Fehlerklasse im Wächter selbst:** die Bias-Teilprobe der Gegenprobe war seit
+  693 wirkungslos - der Wächter baute das Dashboard nach dem Laden der
+  Länder-Umrisse neu (`renderDash`) und überschrieb die eingespielte „+99“ -
+  `--gegenprobe` meldete seitdem „nicht gemeldet“. Einspielung jetzt nach dem
+  Neuaufbau; Gegenprobe wieder grün (alle drei Teile).
+- Nebenbefund: das iPad-Foto zeigt noch den Farbschema-Schalter der Kugel - also
+  einen Stand vor 702 (Zwischenspeicher).

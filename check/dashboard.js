@@ -19,9 +19,11 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
     await p.evaluate(()=>{document.querySelectorAll('.mov,.mov2').forEach(m=>m.style.display='none');showTab('dash');});
     await p.waitForTimeout(800);
     if(GEGENPROBE)await p.addStyleTag({content:'#dashWidgets .dw-t-txt{display:inline-block!important;width:7px!important;white-space:nowrap!important;overflow:visible!important}'});
-    if(GEGENPROBE)await p.evaluate(()=>{const v=document.querySelector('#dashWidgets .db-bias-v');if(v)v.textContent='+99';});
+    if(GEGENPROBE)await p.addStyleTag({content:'#dbHero .hero-kerzen{transform:translateY(-70px)}'});   // Kerzen wie vor 703 bis ins Logo
     // Laender-Umrisse der 1D-Kacheln laden (country_shapes.json, asynchron)
     await p.evaluate(async()=>{try{const m=await import('/js/kachelbild.js');await new Promise(r=>{m.kachelFormenLaden(r);setTimeout(r,5000);});renderDash();}catch(e){}});
+    // nach dem Neuaufbau (renderDash oben) - vorher ueberschrieb er die +99 (Gegenprobe seit 693 wirkungslos)
+    if(GEGENPROBE)await p.evaluate(()=>{const v=document.querySelector('#dashWidgets .db-bias-v');if(v)v.textContent='+99';});
     const r=await p.evaluate(()=>{
       const out=[];
       const alle=[...document.querySelectorAll('#dashWidgets .dw')].filter(c=>c.getBoundingClientRect().height>0);
@@ -145,6 +147,15 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
       // klein rechts" teilen eine Spaltengrenze (vorher 707/698/740 px bei 1180 px)
       if(innerWidth>=1160){const g=s=>{const e=document.querySelector(s);return e&&e.children[1]?Math.round(e.children[1].getBoundingClientRect().left):null;};
         const L=['.dx-top','.dx-r2','.dx-r4'].map(g);if(L.every(x=>x!=null)&&Math.max(...L)-Math.min(...L)>1)out.push('Karten nicht gleich breit: rechte Spalte beginnt bei '+L.join(' / ')+' px');}
+      // Hero: Logo frei (Nutzer 2026-11-08, iPad-Foto: "das Logo da komplett zu
+      // sehen ist und nicht die Kerzen dadrueber sind und mach die Linie aus den
+      // Kerzen raus") - vorher 22-23 Kerzen bis 17-31 px tief im Logo ab 820 px
+      {const lg=document.querySelector('#dbHero .dx-hero-logo'),H=document.getElementById('dbHero');
+        if(lg&&H){const L=lg.getBoundingClientRect(),HR=H.getBoundingClientRect();let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+          lg.querySelectorAll('*').forEach(e=>{const q=e.getBoundingClientRect();if(q.width<1||q.height<1)return;x0=Math.min(x0,q.left);y0=Math.min(y0,q.top);x1=Math.max(x1,q.right);y1=Math.max(y1,q.bottom);});
+          let n=0,tief=0;document.querySelectorAll('#dbHero .hero-kerzen rect,#dbHero .hero-kerzen line').forEach(e=>{const q=e.getBoundingClientRect();if(q.right>L.left&&q.left<L.right&&q.top<y1&&q.bottom>y0&&q.left<HR.right&&q.top<HR.bottom){n++;tief=Math.max(tief,y1-q.top);}});
+          if(n)out.push(`Hero: ${n} Kerzen im Logo (bis ${Math.round(tief)}px tief)`);}
+        if(document.querySelector('#dbHero .hero-linie'))out.push('Hero: Linie ueber den Kerzen ist wieder da');}
       // Grosse Bildschirme (Nutzer 2026-11-08 am PC: "verlaengert sich nicht nach
       // rechts ... passen sich nicht in der Groesse an"): Dashboard reicht bis zum
       // rechten Rand (hochskaliert), Fuell-Logos bleiben in ihrer Karte, Kugel scharf.
@@ -266,7 +277,7 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
     await p.close();
   }
   await b.close();
-  if(GEGENPROBE){const ok=fehler.some(f=>/laeuft \d+px ueber sein Element/.test(f))&&fehler.some(f=>/Bias: \w+ zeigt 99/.test(f));console.log(ok?'dashboard --gegenprobe: ok (gequetschter Titel = Textueberlauf, verfaelschte Bias-Kachel = Abweichung)':'dashboard --gegenprobe: FEHLER - nicht gemeldet');process.exit(ok?0:1);}
+  if(GEGENPROBE){const ok=fehler.some(f=>/laeuft \d+px ueber sein Element/.test(f))&&fehler.some(f=>/Bias: \w+ zeigt 99/.test(f))&&fehler.some(f=>/Hero: \d+ Kerzen im Logo/.test(f));console.log(ok?'dashboard --gegenprobe: ok (gequetschter Titel = Textueberlauf, verfaelschte Bias-Kachel = Abweichung, Kerzen im Logo)':'dashboard --gegenprobe: FEHLER - nicht gemeldet');process.exit(ok?0:1);}
   if(fehler.length){console.log('DASHBOARD-KOLLISIONEN:\n  '+fehler.join('\n  '));process.exit(1);}
-  console.log('Dashboard ok: keine ueberlappenden Sektionen/Texte, 10 Sektionen, Bias-Kacheln = symScoreCmp, volle Namen (9 Breiten bis 2560 px)');
+  console.log('Dashboard ok: keine ueberlappenden Sektionen/Texte, 10 Sektionen, Bias-Kacheln = symScoreCmp, volle Namen, Hero-Logo frei (9 Breiten bis 2560 px)');
 })();
