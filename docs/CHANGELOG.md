@@ -21763,3 +21763,11 @@ Wächter `check/dashboard.js`: Podium 3/3 (long absteigend, short aufsteigend,
 nichts darunter stärker), Spalte = Bias, nach Stärke sortiert, kein Schalter,
 nichts ragt heraus/überlappt (8 Breiten); Gegenprobe von Hand (Bearish
 unsortiert) → rot.
+
+## 2026-11-08 — Weltkugel auf dem iPad bestätigt
+
+Nutzer nach 697 (eigenes iPad): *„Weltkugel ist gut“*. Damit ist das Ziel vom
+2026-11-06 („dass sich die Weltkugel ohne das immer neu zu laden perfekt dreht
+ohne zu hängen“) auf dem Gerät bestätigt: Drehung als Zeitfunktion (686),
+kein Keil am Rand + halbe Pfadlast (689), Schwung als Bahn im Worker (695).
+Selbsttest `#globetest` bleibt für spätere Nachmessungen auf dem Gerät.
