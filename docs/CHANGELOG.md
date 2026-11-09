@@ -21903,3 +21903,27 @@ ist und nicht die Kerzen dadrüber sind und mach die Linie aus den Kerzen raus�
   Neuaufbau; Gegenprobe wieder grün (alle drei Teile).
 - Nebenbefund: das iPad-Foto zeigt noch den Farbschema-Schalter der Kugel - also
   einen Stand vor 702 (Zwischenspeicher).
+
+## 2026-11-09 — Asset-Seite am PC füllt die Breite (VERSION-CHECK-704)
+
+Nutzer (Fotos vom PC, Asset-Seite USD): *„Beheb den Bug das sich das nicht am pc
+nach rechts weiterverlängert“*.
+- **Gemessen 2560 px:** Price-Karte 603 von 2440 px breit, rechts daneben leer;
+  Pinned notes · History · Calendar in einem 4-Spalten-Raster, vierte Spalte leer.
+  1440 px (iPad-Breiten) korrekt.
+- **Ursache:** `@media(min-width:1500px){body.dense-mode .ab-cards>.ab-orow
+  {4 Spalten}}` (Kompakt „Auto am PC“, 2026-10-11, aus der Zeit der
+  4-Karten-Kopfzeile) war spezifischer als die eigenen Spaltenzahlen der Zeilen
+  seit 2026-11-01 (`.ab-prow` 1, `.ab-orow3` 3). Kein Wächter lief auf der
+  Asset-Seite über 1500 px.
+- **Fix:** Regel entfernt (keine Zeile mehr, für die sie gedacht war). 2560 px:
+  Price 2440 px, Dreierzeile 3 × 807 px.
+- **Fehlerklasse (feste Spaltenzahl ≠ Zahl der Kinder):** Watchlist-Schnellzugriff
+  `.wt-quick` fest 4 Spalten bei 3 Links (Trends, Data, Rate Probabilities) -
+  am PC rechts 170-290 px leer. Jetzt so viele Spalten wie Links
+  (`grid-auto-flow:column`), schmale Karten weiter 3 bzw. 2 Spalten. Sonst auf
+  17 Seiten × 1600/1920/2560 px nichts gefunden.
+- Wächter `check/breit.js` (neu): leere Rasterspalten + Abstand der Karten zum
+  rechten Rand; Gegenprobe (alte Kompakt-Regel) → rot.
+- Offen (nicht beauftragt): Asset- und andere Seiten skalieren am großen
+  Bildschirm nicht mit wie das Dashboard (Schrift bleibt klein).
