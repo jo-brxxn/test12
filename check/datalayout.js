@@ -73,7 +73,9 @@ const ALLE = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'NZD', 'GOLD'];
           if (!sv) return null; const sr = sv.getBoundingClientRect();
           const txt = [...sv.querySelectorAll('text')].map(t => t.getBoundingClientRect()).filter(r => r.width);
           const raus = txt.filter(r => r.left < sr.left - 1 || r.right > sr.right + 1).length;
-          return { h: sr.height, fuell: sr.height / (br.height - 10), ueber: bx.scrollHeight > bx.clientHeight + 1, raus }; }) };
+          // 2026-11-10: eine Legendenzeile ueber dem Chart (AUD CPI, 19 px) gehoert zum Chart - ohne sie galt das Feld als nur 88 % gefuellt.
+          const lg = bx.querySelector('.ind-hist-legend'), lh = lg ? lg.getBoundingClientRect().height : 0;
+          return { h: sr.height, fuell: (sr.height + lh) / (br.height - 10), ueber: bx.scrollHeight > bx.clientHeight + 1, raus }; }) };
     });
     if (m.panels !== n) { fail(`${n} ASSETS`, `${m.panels} Panels`); continue; }
     if (m.scroll > 1) fail(`${n} ASSETS SCROLL`, `Seite scrollt ${m.scroll}px - soll auf einen Bildschirm passen`);

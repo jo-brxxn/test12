@@ -6614,6 +6614,12 @@ falsch-positiv.
 
 ---
 
+## 2026-11-10 — Nachlauf zu 708: ⓘ-Abstand fest, Data-Prüfung zählt die Legende (VERSION-CHECK-709)
+
+- **CI nach 708:** 3 rot (`einheit`, `filterfest`, `datalayout`) statt 9.
+- `einheit`/`filterfest`: meine ⓘ-Regel aus 708 verlor bei 1180 px gegen eine stärkere `margin-left:auto`-Regel → Filter 349 px vor dem Rand, 23 px Versatz beim Auswählen. Fix: `margin-left:8px!important` am ⓘ. Gemessen 1180 px: Filter 999–1109, ⓘ 1126–1147.
+- `datalayout`: AUD-Feld trägt eine Legendenzeile (19 px) über dem Chart → 88 %. Die Prüfung zählt die Legende jetzt zum Chart. Kein App-Fehler.
+
 ## 2026-11-10 — `main` wieder grün: neun rote Prüfungen (VERSION-CHECK-708)
 
 **Befund:** der CI-Lauf „Waechter“ war bei 703 und 704 rot (9 Prüfungen), niemand hat nachgesehen. **Regel ab jetzt:** nach jedem Push das CI-Ergebnis kontrollieren (`docs/workflow.md`).
