@@ -1,0 +1,17 @@
+# Was fuehrt TradingViews Kalender JETZT, und treffen es die Feed-Regeln?
+# 2026-11-10: seit dem Lauf vom 03.11. fehlen neun Reihen in ind_data.json
+# (u. a. der Leitzins von USD, GBP, JPY, CAD). TradingView ist aus der
+# Claude-Umgebung gesperrt - die Sonde laeuft deshalb auf dem Runner.
+# Schreibt NICHTS in die Daten. Ausgabe: tools/tv-sonde.mjs.
+name: Probe TradingView titles vs feed rules
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: TradingView-Titel gegen die Feed-Regeln
+        run: node tools/tv-sonde.mjs
