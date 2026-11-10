@@ -3,7 +3,7 @@
 // inflation" - per Rueckfrage EUR/GBP/USD im Score (gegen die Messung) und die
 // uebrigen fuenf ueber die Quellen der Zentralbanken (tools/geldmenge.mjs).
 // Geprueft am ECHTEN Code (Workflow, Skript, App) und echten TV-Titeln (cal_hist):
-//   A) Regeln: EUR = "M3 Money Supply YoY", GBP = "M4 Money Supply MoM", USD nur
+//   A) Regeln: EUR = "M3 Money Supply Annual Growth" (bis 10/2026 "... YoY", fuehrt seither den Bestand), GBP = "M4 Money Supply MoM", USD nur
 //      die zusammengesetzte Jahresrate - der M2-BESTAND ("Money Supply") nie
 //      direkt; keine andere Regel faengt diese Titel
 //   B) USD-Jahresrate (usM2Jahresrate) an den Bestaenden aus cal_hist: >= 12
@@ -40,7 +40,7 @@ fs.readdirSync(path.join(ROOT, 'cal_hist')).filter(f => /^\d{4}\.json$/.test(f))
   try { RULES = new Function('return (()=>{' + y.slice(i, j + 2) + ' return RULES;})()')(); } catch (e) { fail('A', 'RULES nicht lesbar: ' + e.message); }
   if (RULES) {
     const wer = (t, c) => RULES.filter(r => r.test(norm(t), c)).map(r => r.ind);
-    const soll = [['M3 Money Supply YoY', 'EUR'], ['M4 Money Supply MoM', 'GBP'], ['US M2 Money Supply YoY', 'USD']];
+    const soll = [['M3 Money Supply Annual Growth', 'EUR'], ['M4 Money Supply MoM', 'GBP'], ['US M2 Money Supply YoY', 'USD']];
     soll.forEach(([t, c]) => { const w = wer(t, c); if (w.join() !== 'Money Supply') fail('A', `"${t}" (${c}) -> ${JSON.stringify(w)} statt nur Money Supply`); });
     const nie = [['Money Supply', 'USD'], ['M3 Money Supply 3M', 'EUR'], ['M2 Money Supply YoY', 'CNY'], ['M4 Money Supply YoY', 'GBP']];
     nie.forEach(([t, c]) => { const w = wer(t, c).filter(x => x === 'Money Supply'); if (w.length) fail('A', `"${t}" (${c}) wird als Money Supply gelesen`); });

@@ -48,7 +48,8 @@ if (!excore || !rules) fail('RULES', 'const EXCORE / const RULES nicht in update
 if (!kein) fail('BEREINIGUNG', 'function keinRelease(...) // ENDE keinRelease nicht in update-ff-calendar.yml gefunden');
 if (GEGENPROBE && rules) {
   rules = rules.replace('!/private|revision|benchmark/.test(t)', '!/private/.test(t)').split('&&(c!=="USD"||/\\bism\\b/.test(t))').join('')
-    .replace('|control/.test(t)', '/.test(t)');
+    .replace('|control/.test(t)', '/.test(t)')
+    .replace('(t==="interest rate"||/interest rate decision|rate decision/.test(t))&&!/qe |gilts/.test(t)', '/interest rate decision|rate decision/.test(t)');
 }
 
 if (rules && excore) {
@@ -114,7 +115,24 @@ if (rules && excore) {
       ['Consumer Confidence', 'CHF', 'Consumer Confidence', true],
       ['Consumer Confidence s.a', 'CHF', 'Consumer Confidence', false],
       ['GfK Consumer Confidence', 'GBP', 'Consumer Confidence', true],
-      ['Consumer Confidence Index', 'GBP', 'Consumer Confidence', false],
+      // 2026-11-10 (Sonde probe-tv-titel.yml): TradingView hat Reihen UMBENANNT -
+      // der alte Titel verschwand samt Vergangenheit, neun Reihen fielen am
+      // 03.11. aus dem Feed. Der neue Titel muss treffen, der fremde nicht.
+      ['Consumer Confidence Index', 'GBP', 'Consumer Confidence', true],
+      ['LSEG/Ipsos Primary Consumer Sentiment Index', 'GBP', 'Consumer Confidence', false],
+      ['LSEG/Ipsos Primary Consumer Sentiment Index', 'JPY', 'Consumer Confidence', false],
+      ['Interest Rate', 'USD', 'Central Bank Rate', true],
+      ['Interest Rate', 'GBP', 'Central Bank Rate', true],
+      ['Fed Interest Rate Decision', 'USD', 'Central Bank Rate', true],
+      ['RBA Interest Rate Decision', 'AUD', 'Central Bank Rate', true],
+      ['Interest Rate on Reserve Balances', 'USD', 'Central Bank Rate', false],
+      ['Interest Rate Projection - 1st Yr', 'USD', 'Central Bank Rate', false],
+      ['Deposit Facility Rate', 'EUR', 'Central Bank Rate', false],
+      ['United Kingdom-BoE Bank rate decision-GB BOE QE Gilts*', 'GBP', 'Central Bank Rate', false],
+      ['Wage Growth YoY', 'AUD', 'Avg Hourly Earnings', true],
+      ['Wage Price Index YoY', 'AUD', 'Avg Hourly Earnings', true],
+      ['M3 Money Supply Annual Growth', 'EUR', 'Money Supply', true],
+      ['M3 Money Supply YoY', 'EUR', 'Money Supply', false],
       ['LSEG/Ipsos Primary Consumer Sentiment Index', 'GBP', 'Consumer Confidence', false],
       ['Westpac Consumer Confidence Index', 'AUD', 'Consumer Confidence', true],
       ['Ivey PMI s.a', 'CAD', 'Services PMI', true],
@@ -320,14 +338,17 @@ if (keinRelease) {
       ['CPI (Headline)', 'Inflation Rate YoY s.a', 'CAD', false], ['Unemployment Rate', 'Unemployment Rate', 'CHF', true],
       ['Unemployment Rate', 'Unemployment Rate s.a', 'CHF', false], ['Services PMI', 'Ivey PMI s.a', 'CAD', true],
       ['Services PMI', 'Ivey PMI', 'CAD', false], ['Consumer Confidence', 'GfK Consumer Confidence', 'GBP', true],
-      ['Consumer Confidence', 'Consumer Confidence Index', 'GBP', false], ['Consumer Confidence', 'Consumer Confidence', 'CHF', true],
+      ['Consumer Confidence', 'Consumer Confidence Index', 'GBP', true], ['Consumer Confidence', 'LSEG/Ipsos Primary Consumer Sentiment Index', 'GBP', false],
+      ['Central Bank Rate', 'Interest Rate', 'USD', true], ['Central Bank Rate', 'Interest Rate on Reserve Balances', 'USD', false], ['Avg Hourly Earnings', 'Wage Growth YoY', 'AUD', true],
+      ['Money Supply', 'M3 Money Supply Annual Growth', 'EUR', true], ['Money Supply', 'M3 Money Supply YoY', 'EUR', false], ['Consumer Confidence', 'Consumer Confidence', 'CHF', true],
       ['Consumer Confidence', 'Consumer Confidence s.a', 'CHF', false], ['Consumer Confidence', 'Westpac Consumer Confidence Index', 'AUD', true],
     ];
     APP.forEach(([ind, t, c, soll]) => { const ist = !!(M[ind] && M[ind](t, c)); if (ist !== soll) fail('APP-MUSTER', `js/event-matchers.js: ${c} "${t}" ${ist ? 'trifft' : 'trifft nicht'} ${ind} - anders als der Indikator-Feed`); });
   } catch (e) { fail('APP-MUSTER', 'js/event-matchers.js nicht ladbar: ' + e.message); }
 if (GEGENPROBE) {
     const ok = F.some(x => x.startsWith('FREMDER RELEASE')) && F.some(x => x.startsWith('SELBER TAG')) &&
-      F.some(x => x.startsWith('VORWERT REVIDIERT')) && F.some(x => x.startsWith('UMDATIERTER RELEASE')) && F.some(x => x.startsWith('NON-TRADABLES'));
+      F.some(x => x.startsWith('VORWERT REVIDIERT')) && F.some(x => x.startsWith('UMDATIERTER RELEASE')) && F.some(x => x.startsWith('NON-TRADABLES')) &&
+      F.some(x => x.startsWith("EIGENER RELEASE FEHLT") && /Interest Rate/.test(x));
     console.log(ok ? 'feedregeln --gegenprobe: ok (alte Regeln: Benchmark-Revision, S&P-Flash, Control Group; alte Aggregation: Erstdruck als Vorwert, Doppelpunkt bleibt - alles gemeldet)' : 'feedregeln --gegenprobe: FEHLER - nicht gemeldet\n  ' + F.join('\n  '));
     process.exit(ok ? 0 : 1);
   }

@@ -6614,6 +6614,25 @@ falsch-positiv.
 
 ---
 
+## 2026-11-10 — TradingView hat Reihen umbenannt: neun Reihen fehlten seit 03.11. im Feed (VERSION-CHECK-705)
+
+**Anlass:** Bestandsaufnahme — Leitzins USD/GBP/JPY/CAD *OUT OF DATE*, *Last decision unknown*; CI seit 03.11. rot (`backtester`, `zentralbank`, `zellen`).
+
+- **Gemessen (Git-Historie von `ind_data.json`):** bis 03.11. 07:59 alle 8 Leitzinsen da (USD 4 % @28.10., 111 Sitzungen). Lauf 03.11. 16:22: USD/JPY/CAD weg, GBP = `375B @2012-12-06` („…BoE Bank rate decision-GB BOE QE Gilts*“). Verloren insgesamt 9 Reihen: Central Bank Rate USD/GBP/JPY/CAD, Avg Hourly Earnings EUR/AUD, Consumer Confidence GBP/NZD, Retail Sales JPY. EUR Money Supply = `17717267%`.
+- **Die App zeigte danach die Startwerte vom April** (Fed 3,50–3,75 % statt 4 %, BoJ 0,75 statt 1,25 %, BoC 2,25 statt 2,5 %, BoE 3,75 statt 4 %) — auch in Carry und realem Leitzins.
+- **Ursache (Sonde `probe-tv-titel.yml` auf dem Runner, `tools/tv-sonde.mjs`):** TradingView hat Reihen **samt Vergangenheit umbenannt**:
+  | alt | neu |
+  |---|---|
+  | Fed/BoE/BoJ/BoC „… Interest Rate Decision“ | „Interest Rate“ |
+  | AUD „Wage Price Index YoY“ | „Wage Growth YoY“ |
+  | GBP „GfK Consumer Confidence“ | „Consumer Confidence Index“ |
+  | EUR „M3 Money Supply YoY“ (führt jetzt den Bestand) | „M3 Money Supply Annual Growth“ |
+- **Fehldiagnose vom 07.11. (683):** „Consumer Confidence Index“ galt als Zweitfassung mit 1 Tag Historie — gezählt in `cal_hist`. Das ist ein **Archiv** und behält Titel, die TradingView nicht mehr führt.
+- **Fix:** RULES + `js/event-matchers.js` treffen die neuen Titel; „interest rate“ exakt, QE-Gilts-Alttitel ausgeschlossen; LSEG/Ipsos bei allen Währungen ausgeschlossen (andere Umfrage); gleicher Zeitpunkt → Eintrag mit Prognose gewinnt; `HIST_REGELN=2026-11-10` (Tiefen-Historie neu).
+- **Nicht ersetzt (TradingView führt die Reihe nicht mehr, eine andere Reihe wäre ein anderer Indikator):** EUR Negotiated Wage Growth, NZD ANZ Roy Morgan Consumer Confidence, JPY Retail Sales MoM — offen beim Nutzer.
+- **Nebenbefund:** die 95-Tage-Abfrage ist bei 2000 Terminen gedeckelt und reicht nur noch 07.08.–06.10.; zusammen mit dem 45-Tage-Fenster lückenlos (Sonde: 0 fehlend).
+- **Wächter:** `feedregeln` A/A3 + Gegenprobe (alte Leitzins-Regel → „EIGENER RELEASE FEHLT … Interest Rate“), `geldmenge` A auf den neuen EUR-Titel.
+
 ## 2026-08-23 — History: Aufschluesselung der Tagesbewegung (VERSION-CHECK-434)
 
 **Bugreport:** "Ergibt keinen sinn." Die in VERSION-CHECK-433 eingefuehrte

@@ -1443,7 +1443,9 @@ jobs:
           # 2026-11-01: Oil Inventories (OIL) + MPC Vote Split (GBP) neu -
           # einmal die volle Tiefen-Historie holen.
           # 2026-11-01b: Money Supply (EUR M3, GBP M4, USD M2-Jahresrate) neu.
-          export HIST_REGELN=2026-11-01b
+          # 2026-11-10: umbenannte Reihen (Interest Rate, Wage Growth, Consumer
+          # Confidence Index, M3 Annual Growth) - Tiefen-Historie neu holen.
+          export HIST_REGELN=2026-11-10
           CHUNKS_DONE=$(node -e '
             const T=+process.env.TARGET_CHUNKS||84;
             try{const d=JSON.parse(require("fs").readFileSync("ind_data.json","utf8"));console.log(d._histRegeln!==process.env.HIST_REGELN?5:Math.max(5,Math.min(T,+d._histChunksFetched||5)));}catch(e){console.log(5);}
@@ -1488,7 +1490,21 @@ jobs:
             // nicht faelschlich eine Ex-/Input-/Weekly-Reihe erwischt.
             const EXCORE=/core|\bex[\s-]|ex food|ex-food|excluding|trimmed|median|weighted|super/;
             const RULES=[
-              {ind:"Central Bank Rate",period:null,test:t=>/interest rate decision|rate decision/.test(t)},
+              // ⚠ 2026-11-10 (Sonde probe-tv-titel.yml auf dem Runner): TradingView
+              // hat Anfang November Reihen UMBENANNT, samt ihrer Vergangenheit -
+              // der alte Titel verschwindet, die Reihe fiel am 03.11. 16:22 ganz
+              // aus ind_data.json (die App zeigte danach den Startwert vom April):
+              //   Fed/BoE/BoJ/BoC "... Interest Rate Decision" -> "Interest Rate"
+              //   AUD "Wage Price Index YoY" -> "Wage Growth YoY"
+              //   GBP "GfK Consumer Confidence" -> "Consumer Confidence Index"
+              //   EUR "M3 Money Supply YoY" fuehrt jetzt den BESTAND (17717267 %),
+              //       die Rate steht unter "M3 Money Supply Annual Growth"
+              // cal_hist ist ein Archiv und zeigte die alten Titel weiter - die
+              // Einstufung als "Zweitfassung" vom 07.11. war deshalb falsch.
+              // "interest rate" EXAKT (nicht "... on reserve balances",
+              // "... projection"); der 2012er Alt-Titel "...BoE Bank rate
+              // decision-GB BOE QE Gilts*" (375B) ist ein Kaufvolumen.
+              {ind:"Central Bank Rate",period:null,test:t=>(t==="interest rate"||/interest rate decision|rate decision/.test(t))&&!/qe |gilts/.test(t)},
               // ⚠ 2026-11-07 (check/feedregeln.js A2, Historie in cal_hist ausgezaehlt):
               // TradingView fuehrt seit Okt/Nov zusaetzlich die bereinigte bzw.
               // unbereinigte Fassung derselben Veroeffentlichung am SELBEN Tag
@@ -1542,7 +1558,7 @@ jobs:
               {ind:"Avg Hourly Earnings",period:"y/y",test:(t,c)=>c==="JPY"&&/average cash earnings/.test(t)},
               {ind:"Avg Hourly Earnings",period:"y/y",test:(t,c)=>c==="CAD"&&/average hourly wages/.test(t)},
               {ind:"Avg Hourly Earnings",period:null,test:(t,c)=>c==="EUR"&&/negotiated wage growth/.test(t)},
-              {ind:"Avg Hourly Earnings",period:"y/y",test:(t,c)=>c==="AUD"&&/wage price index/.test(t)},
+              {ind:"Avg Hourly Earnings",period:"y/y",test:(t,c)=>c==="AUD"&&/wage price index|^wage growth/.test(t)},
               // ⚠ 2026-10-27: TradingView schreibt "Labour CostS Index" - das
               // alte Muster "labour cost index" traf nie, die Reihe stand seit
               // der Startbefuellung (Mai) still. y/y wie die Lohnreihen der
@@ -1639,7 +1655,7 @@ jobs:
               {ind:"Inflation Expectations",period:null,test:(t,c)=>c==="NZD"&&/business inflation expectations/.test(t)},
               // Uebrige Waehrungen: jeweils ihr landesuebliches Stimmungsmass
               // (EU-Kommission, GfK, SECO Climate, Cabinet Office, Westpac ...).
-              {ind:"Consumer Confidence",period:null,test:(t,c)=>c!=="USD"&&c!=="NZD"&&/consumer confidence|consumer sentiment|consumer climate/.test(t)&&!/change|expectation/.test(t)&&!/\bs\.a\b|\bnsa\b/.test(t)&&!(c==="GBP"&&/index|lseg|ipsos/.test(t))},   // GBP = GfK; s.a: siehe CPI (2026-11-07)
+              {ind:"Consumer Confidence",period:null,test:(t,c)=>c!=="USD"&&c!=="NZD"&&/consumer confidence|consumer sentiment|consumer climate/.test(t)&&!/change|expectation/.test(t)&&!/\bs\.a\b|\bnsa\b/.test(t)&&!/lseg|ipsos/.test(t)&&!(c==="GBP"&&!/^(gfk consumer confidence|consumer confidence index)$/.test(t))},   // GBP = GfK, seit 11/2026 bei TV "Consumer Confidence Index"; LSEG/Ipsos ist eine andere Umfrage (alle Waehrungen); s.a: siehe CPI
               // ── Nutzer 2026-11-01 ─────────────────────────────────────
               // OIL: "fueg bei Oel den Indikator oil inventories hinzu bei
               // economy" - die woechentliche EIA-Reihe (Mittwoch). NUR die
@@ -1660,7 +1676,7 @@ jobs:
               // Supply", Billionen), die Jahresrate entsteht unten in
               // usM2Jahresrate aus zwei echten Bestaenden. JPY/CHF/AUD/CAD/NZD
               // kommen aus tools/geldmenge.mjs (Zentralbanken).
-              {ind:"Money Supply",period:null,test:(t,c)=>c==="EUR"&&/^m3 money supply yoy$/.test(t)},
+              {ind:"Money Supply",period:null,test:(t,c)=>c==="EUR"&&/^m3 money supply annual growth$/.test(t)},   // "... YoY" fuehrt seit 10/2026 den Bestand
               {ind:"Money Supply",period:null,test:(t,c)=>c==="GBP"&&/^m4 money supply mom$/.test(t)},
               {ind:"Money Supply",period:null,test:(t,c)=>c==="USD"&&t==="us m2 money supply yoy"},
             ];
@@ -1816,7 +1832,7 @@ jobs:
               // Nationale Quelle bleibt nur Fallback, falls kein EU-Release
               // im Fenster vorliegt.
               if(ccy==="EUR"){const eu=arr.filter(e=>e.origin==="EU");if(eu.length)arr=eu;}
-              const list=arr.sort((a,b)=>b._t-a._t);
+              const list=arr.sort((a,b)=>b._t-a._t||((b.forecast!=null)-(a.forecast!=null)));   // gleicher Zeitpunkt: der Eintrag MIT Prognose zuerst
               // Duplikate entdoppeln: recent- und wide-Fenster ueberlappen,
               // dasselbe Release kann doppelt in der Liste stehen - fuer
               // "previous" und die Historie zaehlt jedes Datum nur einmal.

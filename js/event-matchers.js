@@ -55,7 +55,7 @@ function RETAIL_SALES_MATCHER(name,ccy){
   return !/y\/y|yoy/.test(n);
 }
 const IND_EVENT_MATCHERS={
-  'Central Bank Rate':mkIndMatcher([/rate decision/,/interest rate decision/,/\bcash rate\b/,/bank rate/,/refinancing rate/,/overnight rate/,/policy rate/,/deposit facility/,/official cash rate/,/fed funds/]),
+  'Central Bank Rate':mkIndMatcher([/^interest rate$/,/rate decision/,/interest rate decision/,/\bcash rate\b/,/bank rate/,/refinancing rate/,/overnight rate/,/policy rate/,/deposit facility/,/official cash rate/,/fed funds/]),
   // Der Headline-CPI heisst je nach Datenquelle "CPI" (Forex Factory) ODER
   // "Inflation Rate" (TradingView, z.B. bei CAD/EUR/CHF). Kern- und Teilmasse
   // (Core/Common/Median/Trimmed/Super, PPI/PCE, Inflationserwartungen, BoJ/
@@ -117,7 +117,7 @@ const IND_EVENT_MATCHERS={
   // Cost Index) waren ueber die generische Liste schon abgedeckt.
   'Avg Hourly Earnings':mkCcyIndMatcher(
     {GBP:/average earnings.*incl/,JPY:/average cash earnings/,CHF:/^wage index/,EUR:/negotiated wage/},
-    [/average hourly earnings/,/avg hourly earnings/,/average hourly wages/,/wage price index/,/labou?r cost index/]
+    [/average hourly earnings/,/avg hourly earnings/,/average hourly wages/,/wage price index/,/^wage growth/,/labou?r cost index/]
   ),
   // Economic Growth: GDP-Wachstum, Retail Sales, Manufacturing-/Services-PMI und
   // Consumer Confidence ziehen jetzt ebenfalls LIVE-Werte aus dem Kalender -
@@ -171,9 +171,9 @@ const IND_EVENT_MATCHERS={
   'Consumer Confidence':mkCcyIndMatcher(
     {EUR:/^consumer confidence(\s+flash)?$/,USD:/^(cb )?consumer confidence$|conference board/,
      AUD:/^westpac consumer (confidence|sentiment)( index)?$/,NZD:/anz roy morgan consumer confidence/,
-     // 2026-11-07 wie im Feed: GBP = GfK (nicht "Consumer Confidence Index",
-     // nicht LSEG/Ipsos), CHF ohne die s.a-Zweitfassung (FF nennt sie "SECO Consumer Climate")
-     GBP:/gfk consumer confidence/,CHF:/^consumer confidence( final)?$|seco consumer climate/},
+     // wie im Feed: GBP = GfK, bei TradingView seit 11/2026 "Consumer Confidence
+     // Index" (umbenannt, 2026-11-10), nicht LSEG/Ipsos; CHF ohne die s.a-Zweitfassung (FF nennt sie "SECO Consumer Climate")
+     GBP:/^(gfk consumer confidence|consumer confidence index)$/,CHF:/^consumer confidence( final)?$|seco consumer climate/},
     [/consumer confidence/,/consumer sentiment/,/consumer climate/]
   ),
   // Umfragen (2026-08-20). ZEW fuehrt der Kalender doppelt - als Eurozone-
@@ -206,7 +206,7 @@ const IND_EVENT_MATCHERS={
   // Kalenderzeile der BESTAND, die Zeile zeigt die Jahresrate.
   'Money Supply':(n,c)=>{const t=(n||'').toLowerCase();
     return c==='GBP'?/\bm4 money supply/.test(t):c==='USD'?/^(m2 )?money supply/.test(t):c==='CAD'?/m2\+\+|money supply/.test(t)
-      :c==='JPY'?/\bm[23] money (stock|supply)/.test(t):/\bm3 money supply/.test(t);},
+      :c==='JPY'?/\bm[23] money (stock|supply)/.test(t):/\bm3 money supply/.test(t)&&!(c==='EUR'&&/yoy$/.test(t));}   // EUR: "... YoY" fuehrt seit 10/2026 den Bestand,
 };
 
 // Nationale Releases unter EUR ("German …", "French …"): die EUR-Indikatoren

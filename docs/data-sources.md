@@ -945,3 +945,10 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
   Die anderen Renditen haben keine freie 15-Jahres-Monatsreihe.
 - Was ein Lauf nicht rechnen kann, behaelt seinen letzten Stand.
 - Waechter: `check/saisonfeed.js` (Workflow-Block), `check/seasretail.js` 8 (Seite).
+
+## TradingView benennt Reihen um (2026-11-10)
+
+- **Ein Titel, der in `cal_hist` steht, wird nicht zwingend noch geliefert.** `cal_hist` ist ein Archiv. Was TradingView JETZT führt, zeigt nur die Sonde `probe-tv-titel.yml` (`tools/tv-sonde.mjs`, Runner).
+- **Neuer Titel am selben Tag mit gleichem Wert = Umbenennung, keine Zweitfassung.** Erst die Sonde laufen lassen, dann die Regel ändern.
+- **Fällt eine Reihe aus `ind_data.json`, zeigt die App ihren Startwert** — Abschnitt B der Sonde listet jede Reihe ohne Treffer (`!!`).
+- **Verschwundene Reihe wird nicht durch eine ähnliche ersetzt** (anderer Indikator) — Entscheidung des Nutzers.
