@@ -204,3 +204,9 @@ Ergebnis gehört ins Changelog, damit niemand dieselbe Suche zweimal macht.
 **5. Wächter ergänzen**, wo die Klasse automatisch prüfbar ist — mit
 Gegenprobe, dass er den Fehler wirklich rot meldet. Ein Absatz erinnert
 niemanden, ein roter Lauf schon.
+
+## Nach jedem Push: CI-Ergebnis ansehen (2026-11-10)
+
+- **Der Lauf „Waechter“ auf `main` wird nach jedem Push kontrolliert** (GitHub-Actions-Liste, fehlgeschlagene Pakete lesen) — spätestens vor der nächsten Aufgabe.
+- **Anlass:** 703 und 704 liefen mit 9 roten Prüfungen durch, ohne dass es auffiel; der Feed war seit dem 03.11. beschädigt.
+- **Ein Umbau passt die Prüfungen im selben Push an**, die den alten Aufbau voraussetzen.

@@ -73,7 +73,9 @@ const BREIT = 'DejaVu Sans';
     };
     await p.evaluate(() => { const da = new Set(widgets.map(x => x.type)); W_TYPES.forEach((t, i) => { if (!da.has(t.type)) widgets.push({ id: 'hltest' + i, type: t.type, title: t.label, order: widgets.length, content: '' }); }); showTab('dash'); renderDash(); });
     await p.waitForTimeout(700);
-    if (!(await pruefe('Dashboard'))) fail('KEINE ZEILEN ' + ort, 'Dashboard ohne Schlagzeilen-Zeile');
+    // 2026-11-10: das Dashboard (Neuaufbau 670-678) fuehrt keine Schlagzeilen-
+    // Karte mehr - vorhandene Zeilen werden weiter geprueft, fehlende sind kein Befund.
+    await pruefe('Dashboard');
     await p.evaluate(() => showTab('news')); await p.waitForTimeout(500);
     if (!(await pruefe('News'))) fail('KEINE ZEILEN ' + ort, 'News-Seite ohne Schlagzeilen-Zeile');
     for (const s of ['GOLD', 'SP500', 'EUR']) { await p.evaluate(s => gotoSym(s), s); await p.waitForTimeout(600); await pruefe('Asset ' + s); }

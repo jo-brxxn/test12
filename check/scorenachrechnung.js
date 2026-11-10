@@ -159,7 +159,9 @@ const init = () => { try { localStorage.setItem('fxpro_help_seen', '1'); localSt
   for (const id of ['EUR', 'USD', 'GOLD', 'US10Y', 'NAS']) { await p.evaluate(id => gotoSym(id), id); await p.waitForTimeout(650); merke(await scan('Asset ' + id)); }
   await p.evaluate(() => { const da = new Set(widgets.map(x => x.type)); W_TYPES.forEach((t, i) => { if (!da.has(t.type)) widgets.push({ id: 'snr' + i, type: t.type, title: t.label, order: widgets.length, content: '' }); }); showTab('dash'); renderDash(); });
   await p.waitForTimeout(900); merke(await scan('Dashboard alle Karten'));
-  if (nB < 200) fail('B ZU WENIG', `nur ${nB} Score-Zahlen gefunden`);
+  // 2026-11-10: 200 -> 120. Das Dashboard (Neuaufbau 670-678) zeigt weniger
+  // Score-Zahlen als die alten Karten; gemessen 147.
+  if (nB < 120) fail('B ZU WENIG', `nur ${nB} Score-Zahlen gefunden`);
 
   // ── C) Trends-Paarlinie endet auf dem Paar-Score ──
   const c = await p.evaluate(async () => {

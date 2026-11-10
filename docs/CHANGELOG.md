@@ -6614,6 +6614,20 @@ falsch-positiv.
 
 ---
 
+## 2026-11-10 — `main` wieder grün: neun rote Prüfungen (VERSION-CHECK-708)
+
+**Befund:** der CI-Lauf „Waechter“ war bei 703 und 704 rot (9 Prüfungen), niemand hat nachgesehen. **Regel ab jetzt:** nach jedem Push das CI-Ergebnis kontrollieren (`docs/workflow.md`).
+
+| Prüfung | Ursache | Behebung |
+|---|---|---|
+| `backtester`, `zentralbank` | Leitzins fehlte im Feed (705) | Feed-Regeln, Lauf 1439 |
+| `zellen` | EUR M3 `17717267%` (705); dazu „+2.7 ATR“/„-0.865M“ 2–3 px über der Zelle (1180 px, Spalte 47,5 px, Text 49–50 px) | Wertspalten 15 → 16 %, Name 35 → 32 % |
+| `infoi` | ⓘ und Filter trugen beide `margin-left:auto` → ⓘ 475 px (Sentiment) / 396 px (Seasonality) vom Rand | ab 760 px: Filter rechts, ⓘ dahinter |
+| `scrollfuell` D | Kartenabstand wächst mit dem Dashboard-Zoom (1920 px: 19 px), Grenze stand fest bei 16 | Grenze × Zoom |
+| `schlagzeilen` | Dashboard führt seit dem Neuaufbau keine Schlagzeilen-Karte | fehlende Zeilen dort kein Befund |
+| `yachse` | Hero-Bild und Halbkreis als Daten-Chart gezählt | ausgenommen |
+| `scorenachrechnung` | Dashboard zeigt weniger Score-Zahlen (147) | Mindestzahl 200 → 120 |
+
 ## 2026-11-10 — USD CPI und Core CPI y/y hochgerechnet, auf Wunsch des Nutzers (VERSION-CHECK-707)
 
 **Nutzer:** *„trag bei usd für cpi und core cpi einen geschätzten fc und actual ein den du aus veröffentlichen Werten heute hochrechnest. Weil es wurde kein y/y herausgegeben nur m/m das soll auch voll in den Score zählen“* — **bewusste Ausnahme von Regel 4**.

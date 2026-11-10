@@ -147,7 +147,10 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
         if (!drueber.length) return;
         const naechst = Math.max(...drueber.map(o => o.r.bottom));
         const luft = Math.round(k.r.top - naechst);
-        if (luft > 16) out.push(`${k.n}: ${luft}px unter der Karte darueber`);
+        // 2026-11-10: das Dashboard waechst am PC als Ganzes (--dx-zoom, 700) -
+        // der Kartenabstand von 16 px waechst mit (1920 px: 19 px).
+        const zf = parseFloat(getComputedStyle(document.getElementById('dashWidgets')).zoom) || 1;
+        if (luft > 16 * zf + 1) out.push(`${k.n}: ${luft}px unter der Karte darueber`);
       });
       return out;
     }, [GEGENPROBE, nurSpalten]);

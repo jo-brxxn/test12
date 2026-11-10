@@ -56,7 +56,7 @@ const ZIELE = ['regime', 'dash', 'mx', 'trends', 'cot', 'sent:retail', 'sent:put
       const vis = e => { const q = e.getBoundingClientRect(); if (!(q.width > 0 && q.height > 0)) return false; for (let x = e; x; x = x.parentElement) { const cs = getComputedStyle(x); if (cs.display === 'none' || cs.visibility === 'hidden') return false; } return true; };
       const zahl = t => /^[−\-+]?\$?[\d.,]+\s*(%|pp|w|k|K|M|B|bp)?$/.test(t.trim());
       const out = [];
-      [...document.querySelectorAll('svg')].filter(s => vis(s) && !s.closest('button,.k-ic,.logo,.ahead-motif,.lg-loop,.lg-frei,.globe-host,.sent-gauge,.gauge,.fxlogo,.zb-giebel-svg')).forEach(s => {
+      [...document.querySelectorAll('svg')].filter(s => vis(s) && !s.closest('button,.k-ic,.logo,.ahead-motif,.lg-loop,.lg-frei,.globe-host,.sent-gauge,.gauge,.fxlogo,.zb-giebel-svg,.hero-art,.dx-gauge')).forEach(s => {
         const q = s.getBoundingClientRect(); if (q.width < 140 || q.height < 70) return;
         if (s.querySelector('text') && [...s.querySelectorAll('text')].length === 0) return;
         // .sz = Saisonalitaet als Monatszeilen (2026-10-11): Y = Monatsnamen, die
