@@ -125,6 +125,7 @@ const PRUEFUNGEN = [
   { n: 'hoverpunkte', s: 25, d: 'Hover bei mehreren Linien: Punkt auf jeder Linie, Karte nach Lage, Linie bis oben; Ein-Linien-Charts unveraendert', f: 'check/hoverpunkte.js', args: [], browser: true },
   { n: 'federn', s: 15, d: 'Seiten federn nativ (iOS-Gummiband), eigenes Federn aus', f: 'check/federn.js', args: [], browser: true },
   { n: 'kugelland', s: 20, d: 'Weltkugel: Land stimmt bei jedem Winkel (720 Winkel ohne Sprung > 3 %, 24 Winkel gegen Rueckprojektion) - kein Keil/Vollkreis am Rand; Raster dreht mit dem Land', f: 'check/kugelland.js', args: [], browser: true },
+  { n: 'surprise', s: 20, d: 'Strength Matrix: Surprise-Spalte hat Werte (Feed-Historie, nicht der 2-Tage-Kalender), Zelle = net/n', f: 'check/surprise.js', args: [], browser: true },
   { n: 'breit', s: 60, d: 'Grosse Bildschirme (1600/1920/2560 px): jede Seite fuellt die Breite - keine leeren Rasterspalten, Karten bis an den rechten Rand', f: 'check/breit.js', args: [], browser: true },
   { n: 'webkitkugel', s: 90, d: 'Weltkugel in WebKit (Safari-Engine, dpr 2): Worker mit eigenem Takt, allein >= 58/s p95 <= 20 ms, im Dashboard >= 54/s; ohne WebKit uebersprungen', f: 'check/webkitkugel.js', args: [], browser: true },
   { n: 'datamenu', s: 25, d: 'Data-Kontrollmenue (Option C): Reiter, Display-Knopf mit Zusammenfassung, Menue unter dem Knopf, wirkt sofort', f: 'check/datamenu.js', args: [], browser: true },

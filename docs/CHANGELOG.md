@@ -6614,6 +6614,13 @@ falsch-positiv.
 
 ---
 
+## 2026-11-10 — Surprise-Spalte der Strength Matrix zählt wieder (VERSION-CHECK-706)
+
+- **Gemessen:** alle 8 Währungen `0` (`surpriseIndex` → `{net:0,n:0}`). Ursache: gezählt wurden `calEvts` mit Actual der letzten 30 Tage; `ff_calendar.json` reicht 2 Tage zurück und führte 1 Termin mit Actual.
+- **Fix:** dieselbe Quelle wie die Release-Pfeile (`pkReleases`: Feed-Historie je getracktem Indikator, Farbe `actualColor`), nur Releases mit Prognose.
+- **Danach:** USD +15/20, EUR 0/12, GBP +4/8, JPY 0/3, CHF +2/2, CAD −4/4, AUD −1/4, NZD −5/5.
+- **Wächter:** `check/surprise.js` + Gegenprobe.
+
 ## 2026-11-10 — TradingView hat Reihen umbenannt: neun Reihen fehlten seit 03.11. im Feed (VERSION-CHECK-705)
 
 **Anlass:** Bestandsaufnahme — Leitzins USD/GBP/JPY/CAD *OUT OF DATE*, *Last decision unknown*; CI seit 03.11. rot (`backtester`, `zentralbank`, `zellen`).

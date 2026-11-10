@@ -424,3 +424,4 @@ Wächter war grün, obwohl das Laden fehlte. Deshalb wird jetzt ausdrücklich
 
 Gegenprobe: Ladezeile entfernt → `STRUKTURFEHLER: … seedNoteFlags`; wieder
 eingesetzt → grün.
+| `surprise.js` | **Surprise-Spalte der Strength Matrix** (2026-11-10: stand bei allen 8 Währungen auf 0 — gezählt wurden Kalendertermine mit Actual, der Kalender-Feed reicht 2 Tage zurück). (A) ≥ 6 von 8 Währungen mit bewerteten Releases, (B) Zelle = net/n. Gegenprobe `--gegenprobe` (Uhr 400 Tage vor → kein Release im Fenster → rot). | nein |

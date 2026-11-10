@@ -17889,7 +17889,7 @@ import {federnAn} from './federn.js';
 // eine Rueckkehr liegen.
 // try{federnAn();}catch(e){}
 // Price-Karte: Release-Pfeile, Spalte, eigene Pfeile, Vergleich (Wahl B, 2026-11-01)
-import {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkAddAktiv,PFEIL} from './preiskarte.js';
+import {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkAddAktiv,PFEIL,pkReleases} from './preiskarte.js';
 
 // mvWidget() ist jetzt zonen-bewusst - siehe Definition oben bei
 // dashZoneOf()/ZONE_OF_TYPE (direkt vor renderDash()).
@@ -18338,14 +18338,21 @@ function scanFlyParticle(x0,y0,targetEl){
 // berücksichtigt bereits "lower is better" (z.B. Arbeitslosenquote), daher
 // ist ein Beat hier immer ein wirtschaftlich positiver Überraschungswert.
 function surpriseIndex(ccy){
+  // ⚠ 2026-11-10: bis hierher zaehlte die Funktion calEvts mit Actual der
+  // letzten 30 Tage. Gemessen: der Kalender-Feed reicht 2 Tage zurueck und
+  // fuehrte 1 Termin mit Actual - die Spalte stand bei allen 8 Waehrungen auf
+  // 0. Jetzt dieselbe Quelle wie die Release-Pfeile der Price-Karte
+  // (pkReleases: Feed-Historie je getracktem Indikator, Farbe = actualColor),
+  // nur Releases MIT Prognose.
   let net=0,n=0;
-  calEvts.forEach(ev=>{
-    if(!ev.actual||ev.forecast==null||ev.forecast===''||!ev.date)return;
-    const du=daysUntil(ev.date);if(du>0||du<-30)return;
-    if(!evtMatchesSym(ev,ccy)||!isScoreDrivingEvent(ev))return;
-    const c=actualColor(ev);
-    if(c==='act-good')net++;else if(c==='act-bad')net--;
-    n++;
+  const rel=pkReleases(ccy)||{},heute=todayStr(),ab=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  Object.keys(rel).forEach(d=>{
+    if(d<ab||d>heute)return;
+    rel[d].forEach(r=>{
+      if(r.f==null||r.f==='')return;
+      if(r.col==='act-good')net++;else if(r.col==='act-bad')net--;
+      n++;
+    });
   });
   return{net,n};
 }
