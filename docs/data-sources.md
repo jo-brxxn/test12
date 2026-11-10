@@ -952,3 +952,10 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
 - **Neuer Titel am selben Tag mit gleichem Wert = Umbenennung, keine Zweitfassung.** Erst die Sonde laufen lassen, dann die Regel ändern.
 - **Fällt eine Reihe aus `ind_data.json`, zeigt die App ihren Startwert** — Abschnitt B der Sonde listet jede Reihe ohne Treffer (`!!`).
 - **Verschwundene Reihe wird nicht durch eine ähnliche ersetzt** (anderer Indikator) — Entscheidung des Nutzers.
+
+## Hochgerechnete Werte (2026-11-10, Ausnahme von „nie schätzen“)
+
+- **Nur auf ausdrückliche Ansage des Nutzers**, nie von selbst.
+- **Ort:** `feed_zusatz.json` — Wert, Prognose, Datum, Rechnung mit Spanne. Eingespielt von `tools/feed-zusatz.mjs` (Workflow).
+- **Sichtbar:** Marke **EST** in der Indikatorzeile, Rechnung im Tooltip. Zählt voll im Score.
+- **Befristet:** ein jüngerer oder gleich alter echter Release ersetzt ihn automatisch. Erledigte Einträge aus der Datei löschen.

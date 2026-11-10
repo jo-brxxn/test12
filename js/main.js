@@ -12022,6 +12022,10 @@ function renderIndRow(ind,ri,ii,rub,total,pairPos){
   const isOpen=!!indDetailsOpen[ind.id];
   const stale=indIsStale(ind);
   const staleBadge=stale?`<span class="ir-stale" title="Last release ${escH((ind.research&&ind.research.date)||'?')} — more than ${IND_STALE_CYCLES} of its own release cycles overdue, so it no longer counts toward the score. The value stays visible.">OUT OF DATE</span>`:'';
+  // Hochgerechneter Wert (feed_zusatz.json, Nutzer 2026-11-10 - bewusste
+  // Ausnahme von "nie schaetzen"): sichtbar markiert, Rechnung im Tooltip.
+  const _fe=(()=>{try{const c=macroCcyFor(getSym().id);return feedEntryFor(IND_DATA_FEED&&IND_DATA_FEED[c],ind.name);}catch(e){return null;}})();
+  const estBadge=_fe&&_fe.est?`<span class="ir-await" title="${escH('Estimated, not published. '+(_fe.estNote||''))}">EST</span>`:'';
   // Release war faellig, aber keine Quelle hat einen Wert geliefert -
   // eigene, ruhigere Marke neben OUT OF DATE. Nur wenn nicht ohnehin
   // schon veraltet, sonst staenden zwei Marken mit derselben Aussage.
@@ -12029,7 +12033,7 @@ function renderIndRow(ind,ri,ii,rub,total,pairPos){
   const awaitBadge=awEv?`<span class="ir-await" title="${escH(awEv.name)} was due on ${escH(awEv.date)}, but no source has delivered a value yet. Nothing is estimated - the figures shown are still the last confirmed ones${(ind.research&&ind.research.date)?` from ${escH(ind.research.date)}`:''}.">AWAITING VALUE</span>`:'';
   const pairCls=pairPos?` ind-pair-row ind-pair-${pairPos}`:'';
   const mainRow=`<tr class="ind-row ${glowClass(ind.bias)}${stale?' ind-stale':''}${pairCls}" data-indbase="${escH(stripPeriodSuffix(ind.name).base)}" data-indid="${escH(ind.id)}" onclick="toggleIndDetailRow(event,'${escH(ind.id)}')" onpointerdown="biasPressStart(event,'ind',${ri},${ii})" onpointerup="biasPressEnd()" onpointerleave="biasPressEnd()" onpointercancel="biasPressEnd()" oncontextmenu="return false" title="Tap to expand · long-press to set bias">
-    <td class="ir-name"><span class="ir-name-txt" title="${escH(indName(ind))}">${escH(indName(ind))}</span>${staleBadge}${awaitBadge}
+    <td class="ir-name"><span class="ir-name-txt" title="${escH(indName(ind))}">${escH(indName(ind))}</span>${staleBadge}${estBadge}${awaitBadge}
     </td>
     <td class="ir-act${actCls?' '+actCls:''}" title="${escH(actTxt)}">${escH(actTxt)}</td>
     <td class="ir-fc" title="${escH(fcTxt)}">${escH(fcTxt)}</td>

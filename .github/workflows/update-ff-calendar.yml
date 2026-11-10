@@ -2337,6 +2337,12 @@ jobs:
           node tools/geldmenge.mjs
           rm -f mg_prev.json
 
+      # Hochgerechnete Werte (feed_zusatz.json) - Nutzer 2026-11-10, bewusste
+      # Ausnahme von "nie schaetzen": gilt nur, bis ein echter Release kommt.
+      - name: Add estimated values (feed_zusatz.json) -> ind_data.json
+        continue-on-error: true
+        run: node tools/feed-zusatz.mjs
+
       # ── BOND-HISTORIE BACKFILL (offizielle Gratis-Quellen, ohne Key) ──
       # Fuellt die Zeitreihe fuer Waehrungen, deren Tageshistorie frei und ohne
       # API-Key verfuegbar ist, sofort mit echten Werten (statt ~10 Tage zu

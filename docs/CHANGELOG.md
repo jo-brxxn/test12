@@ -6614,6 +6614,16 @@ falsch-positiv.
 
 ---
 
+## 2026-11-10 — USD CPI und Core CPI y/y hochgerechnet, auf Wunsch des Nutzers (VERSION-CHECK-707)
+
+**Nutzer:** *„trag bei usd für cpi und core cpi einen geschätzten fc und actual ein den du aus veröffentlichen Werten heute hochrechnest. Weil es wurde kein y/y herausgegeben nur m/m das soll auch voll in den Score zählen“* — **bewusste Ausnahme von Regel 4**.
+
+- **Warum keine Jahresrate:** der Index Oktober 2025 wurde nie veröffentlicht (Release 18.12.2025 ohne Monatsrate) → die Basis fehlt.
+- **CPI y/y = 4,0 %** (Spanne 3,9–4,1): Index Okt 2026 337,511 / interpolierte Basis 324,46 (Sep 324,8 · Nov 324,12). Kontrolle Sep: 3,74 % gegen veröffentlichte 3,7 %. **Prognose 3,9 %** = veröffentlichter Konsens.
+- **Core y/y = 2,8 %** (Spanne 2,7–2,9): 2,6 % (Sep) × Kernindex +0,296 % / geschätzte Monatsrate Okt 2025 0,105 %. **Prognose 2,8 %** = Konsens.
+- **Umsetzung:** `feed_zusatz.json` (Wert + Rechnung) → `tools/feed-zusatz.mjs` als Workflow-Schritt nach dem Indikator-Schritt; Eintrag `est:true`, zählt voll im Score, in der Zeile Marke **EST** mit Rechnung im Tooltip; entfällt, sobald der Feed einen jüngeren echten Release führt.
+- **Feed-Reparatur 705 bestätigt (Lauf 1439):** Fed 4 % (113 Sitzungen), BoE 4 % @05.11. (128), BoJ 1,25 % (83), BoC 2,5 % (106), AUD-Löhne 3,2 %, GBP-Konsumklima −24, EUR M3 3,5 %.
+
 ## 2026-11-10 — Surprise-Spalte der Strength Matrix zählt wieder (VERSION-CHECK-706)
 
 - **Gemessen:** alle 8 Währungen `0` (`surpriseIndex` → `{net:0,n:0}`). Ursache: gezählt wurden `calEvts` mit Actual der letzten 30 Tage; `ff_calendar.json` reicht 2 Tage zurück und führte 1 Termin mit Actual.
