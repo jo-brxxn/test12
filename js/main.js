@@ -11299,7 +11299,7 @@ function abTrendScoreZeile(c){
   return`<div class="ab-scoreline tr-line" title="${escH(trendRegelText())}">
     <span class="ab-scoreline-l">Trend score</span>
     <b style="color:${col}">${sum>0?'+':''}${sum}</b>
-    <span class="ab-scoreline-n">${d.html} · ${h.html}</span>
+    <span class="ab-scoreline-n">${d.html} · ${h.html}</span>${pkBandLegende()}
   </div>`;
 }
 // ── Das Grafik-Band ─────────────────────────────────────────────────────
@@ -11573,7 +11573,54 @@ function abReihenTitel(txt,extra){
 }
 // Makro-Reihe der Asset-Seite: drei Tabellen-Karten oder EINE Reiter-Karte.
 // Eigene Funktion, damit makroReiheNeu() sie allein austauschen kann.
+// ── SEKTOREN-ANSICHT: PLATZHALTER (VORUEBERGEHEND, 2026-11-11) ────────────
+// Nutzer: "Ich will die aktuellen Indikatoren als Main Dinger behalten aber
+// ich will umschalten koennen und dann sollen die 3 Karten Groesse werden und
+// richtig gefuellt werden also die Wirtschaft soll in jeden Sektor auseinander
+// genommen werden das man jedes Investment sieht jede Nachfrage jeden Markt
+// egal ob Haus oder yields ... setz das als Platzhalter um wie das aussieht
+// dann sag ich dir ob du das umsetzen sollst."
+// NUR AUFBAU, KEINE WERTE (Regel 4): je Zeile steht, ob die Reihe schon in der
+// App laeuft (Live), ob TradingView sie fuehrt (Available - Sonde
+// probe-tv-themen.yml vom 11.11., USD) oder ob die Quelle noch zu pruefen ist
+// (To check). Schalter "Sectors" in der Macro-Zeile, nicht gespeichert.
+let makroSektorenAn=false;
+function makroSektorenSchalten(an){makroSektorenAn=!!an;renderDetail();}
+const SEKTOREN_VORSCHAU=[
+  ['Prices & money','infl',[
+    ['Consumer prices',[['CPI y/y','l'],['Core CPI y/y','l'],['PCE y/y','l'],['Core PCE y/y','l']]],
+    ['Producer & trade prices',[['PPI y/y','l'],['Core PPI y/y','l'],['Import prices','a'],['Export prices','a']]],
+    ['Wages & labour cost',[['Avg hourly earnings y/y','l'],['Employment cost index q/q','a'],['Unit labour costs q/q','a']]],
+    ['Inflation expectations',[['Michigan expectations','l'],['NY Fed 1-year expectations','a']]],
+    ['Money & credit',[['M2 money supply y/y','l'],['Consumer credit','c'],['Bank lending','c']]],
+    ['Rates & yields',[['Policy rate','l'],['2Y yield','l'],['10Y yield','l'],['Yield curve 10Y–2Y','l'],['Real policy rate','l'],['5Y TIPS auction','a']]]]],
+  ['Jobs & households','lab',[
+    ['Jobs',[['Nonfarm payrolls','l'],['Unemployment rate','l'],['ADP employment','l'],['Initial jobless claims','l'],['JOLTS job openings','l'],['Participation rate','c'],['Continuing claims','c']]],
+    ['Income & spending',[['Retail sales m/m','l'],['Real consumer spending q/q','a'],['Personal income','c'],['Personal spending','c']]],
+    ['Confidence',[['CB consumer confidence','l'],['Michigan sentiment','a']]],
+    ['Housing',[['Housing starts','a'],['Building permits','a'],['Existing home sales','a'],['New home sales','a'],['Pending home sales m/m','a'],['House price index y/y','a'],['Mortgage rate','a']]]]],
+  ['Business, trade & government','grow',[
+    ['Output',[['GDP q/q','l'],['Industrial production m/m','a'],['Manufacturing production m/m','a'],['Capacity utilisation','c']]],
+    ['Orders & investment',[['Durable goods orders m/m','a'],['Factory orders m/m','a'],['Business inventories','c']]],
+    ['Surveys',[['ISM Manufacturing PMI','l'],['ISM Services PMI','l'],['Regional Fed surveys','a']]],
+    ['Trade & external',[['Trade balance','a'],['Goods trade balance','a'],['Exports','a'],['Imports','a'],['Current account (quarterly)','a']]],
+    ['Government & supply',[['Budget balance','c'],['Treasury auctions','a']]],
+    ['Energy',[['EIA crude oil inventories','l']]]]]
+];
+const SEKTOR_STATUS={l:['Live','Already in the app with values and score'],a:['Available','The data source carries this series'],c:['To check','Source not confirmed yet']};
+function sektorenVorschauHtml(c){
+  const zahl=k=>SEKTOREN_VORSCHAU.reduce((n,x)=>n+x[2].reduce((m,g)=>m+g[1].filter(r=>r[1]===k).length,0),0);
+  const kopf=`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note"><b>Preview</b><span>Layout only, no values yet</span><span class="sk-chip sk-l">Live ${zahl('l')}</span><span class="sk-chip sk-a">Available ${zahl('a')}</span><span class="sk-chip sk-c">To check ${zahl('c')}</span></div></div>`;
+  return kopf+SEKTOREN_VORSCHAU.map(([titel,akz,gruppen])=>`<div class="ab-col" data-mkreihe="1"><div class="sk-card" style="--sk:var(--a-${akz})">
+      <div class="sk-hd"><span class="sk-t">${escH(titel)}</span><span class="sk-n">${gruppen.reduce((n,g)=>n+g[1].length,0)} series</span></div>
+      ${gruppen.map(([g,zeilen])=>`<div class="sk-gr"><div class="sk-gr-t">${escH(g)}</div>${zeilen.map(([n,k])=>`<div class="sk-row"><span class="sk-row-n">${escH(n)}</span><span class="sk-row-w" aria-hidden="true">–</span><span class="sk-chip sk-${k}" title="${escH(SEKTOR_STATUS[k][1])}">${SEKTOR_STATUS[k][0]}</span></div>`).join('')}</div>`).join('')}
+    </div></div>`).join('');
+}
+function makroSektorenSchalterHtml(){
+  return`<label class="sk-rsw" title="${makroSektorenAn?'Back to the main indicators':'Preview: the economy split into sectors'}"><span class="sk-rsw-l">Sectors</span><span class="tgl tgl-s"><input type="checkbox"${makroSektorenAn?' checked':''} aria-label="Preview the sector view" onchange="makroSektorenSchalten(this.checked)"><span class="tgl-track"></span></span></label>`;
+}
 function abMakroReiheHtml(c,teil){
+  if(makroSektorenAn)return sektorenVorschauHtml(c);
   // Voller Seitenaufbau (jede Datenaenderung) leert die Zwischenspeicher der
   // Makro-Charts; ein Teil-Aufbau (makroReiheNeu) behaelt sie.
   makroRenderStart(!teil);
@@ -11668,7 +11715,7 @@ function renderAssetBoard(c){
            Fenster ueber den Knopf in der Schnellzugriffszeile (Nutzer
            2026-10-27: "mach da noch einen Button names country profile in
            die Zeile ... entfern die Karte vom normalen Bildschirm"). */''}
-      ${abReihenTitel('Macro',makroReihenSchalterHtml(c))}
+      ${abReihenTitel('Macro',makroSektorenSchalterHtml()+(makroSektorenAn?'':makroReihenSchalterHtml(c)))}
       ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE
            breite Karte mit Reitern (Nutzer 2026-10-21, siehe Kopf von makro.js). */''}
       ${abMakroReiheHtml(c)}
@@ -11827,6 +11874,7 @@ function assetPreisKarteHtml(c){
     ${chartLeisteHtml((vergleich?kmKnopfHtml('abPreis',pkVglTeile(),'',true):YIELD_CCY[c.id]?kmKnopfHtml('abPreisRendite',[pxTypTeil()],'',true):kmKnopfHtml('abPreis',[pxTypTeil(),abTrendTeil()],'',true))
       +`<button type="button" id="pkVglBtn" class="km-klein pk-knopf${vergleich?' an':''}" onclick="pkVglAuf()" aria-haspopup="true" title="Add up to 2 prices to this chart - it switches to lines">${vergleich?`Compare <em>${pkVglListe(c.id).length}/2</em>`:'＋ Compare'}</button>`
       +`<button type="button" class="km-klein pk-knopf pk-mk-btn${pkMarkenAn?' an':''}" onclick="pkMarkenSchalter()" aria-pressed="${pkMarkenAn}" title="${pkMarkenAn?'Hide':'Show'} the release arrows in the chart">${PFEIL}<span>Markers</span></button>`
+      +`<button type="button" class="km-klein pk-knopf pk-band-btn${pkBandWert()?' an':''}" onclick="pkBandWeiter()" title="Preview: weekly band under the chart — tap to switch Off, A, B, C">Band: ${escH(pkBandName())}</button>`
       +(pkMarkenAn?`<button type="button" class="km-klein pk-knopf pk-add-btn${pkAddAktiv()?' on':''}" onclick="pkAddUmschalten()" aria-pressed="${pkAddAktiv()}" title="Add your own arrow: tap a day in the chart">${pkAddAktiv()?'✕ Cancel':'＋ Mark'}</button>`:''),
       `<span class="ab-rgs">${regler}</span>`)}`;
   // Kerzen-Zaehler ("N daily candles · M with a measured high/low") am
@@ -17638,7 +17686,7 @@ function hellVorschauSetzen(v){
 function hellWahlZeichnen(){
   const el=document.getElementById('hellBtn');if(!el)return;
   const akt=document.documentElement.getAttribute('data-hell')||'';
-  el.textContent='Style: '+((HELL_VAR.find(x=>x[0]===akt)||HELL_VAR[0])[1]);
+  el.innerHTML='<span class="hell-pre">Style: </span>'+escH((HELL_VAR.find(x=>x[0]===akt)||HELL_VAR[0])[1]);
 }
 function hellVorschauWeiter(){
   const akt=document.documentElement.getAttribute('data-hell')||'',i=HELL_VAR.findIndex(x=>x[0]===akt);
@@ -17656,10 +17704,18 @@ function seitenZoomSetzen(){
   const pa=document.getElementById('pageArea');if(!pa||!pa.clientWidth)return;
   const pd=document.getElementById('pgDash');let rand=40;
   try{if(pd){const cs=getComputedStyle(pd);const r=parseFloat(cs.paddingLeft||0)+parseFloat(cs.paddingRight||0);if(r>0)rand=r;}}catch(e){}
-  const verf=pa.clientWidth-rand,z=verf>DASH_BASIS_PX?Math.min(1.8,verf/DASH_BASIS_PX):1;
-  const R=document.documentElement,alt=parseFloat(R.style.getPropertyValue('--pg-zoom'))||1;
-  if(Math.abs(alt-z)<0.004)return;
-  if(z===1)R.style.removeProperty('--pg-zoom');else R.style.setProperty('--pg-zoom',z.toFixed(3));
+  const R=document.documentElement;
+  // Nutzer 2026-11-11: "die leisten sollen mitwachsen also Alles waechst" -
+  // Kopfzeile und Seitenleiste tragen denselben Massstab. Die Seitenleiste
+  // wird dabei breiter, der Inhalt schmaler: der Massstab haengt an der Breite,
+  // die er selbst veraendert. Deshalb in wenigen Schritten einpendeln
+  // (gemessen: nach 3 Schritten < 0,004 Abweichung).
+  for(let n=0;n<5;n++){
+    const verf=pa.clientWidth-rand,alt=parseFloat(R.style.getPropertyValue('--pg-zoom'))||1;
+    const z=verf>DASH_BASIS_PX?Math.min(1.8,verf/DASH_BASIS_PX):1;
+    if(Math.abs(alt-z)<0.004)break;
+    if(z===1)R.style.removeProperty('--pg-zoom');else R.style.setProperty('--pg-zoom',z.toFixed(3));
+  }
 }
 try{let _dzT;window.addEventListener('resize',()=>{clearTimeout(_dzT);_dzT=setTimeout(()=>{seitenZoomSetzen();if(curPage==='dash')dashZoomSetzen();},120);});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',seitenZoomSetzen);else setTimeout(seitenZoomSetzen,0);}catch(e){}
@@ -17946,7 +18002,7 @@ import {federnAn} from './federn.js';
 // eine Rueckkehr liegen.
 // try{federnAn();}catch(e){}
 // Price-Karte: Release-Pfeile, Spalte, eigene Pfeile, Vergleich (Wahl B, 2026-11-01)
-import {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkAddAktiv,PFEIL,pkReleases} from './preiskarte.js';
+import {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkAddAktiv,PFEIL,pkReleases,pkBandWert,pkBandName,pkBandLegende} from './preiskarte.js';
 
 // mvWidget() ist jetzt zonen-bewusst - siehe Definition oben bei
 // dashZoneOf()/ZONE_OF_TYPE (direkt vor renderDash()).
@@ -27504,7 +27560,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

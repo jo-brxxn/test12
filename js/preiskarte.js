@@ -148,6 +148,71 @@ const tagJahr=d=>tagKurz(d)+', '+String(d).slice(2,4);
 // (kein Kurs an dem Tag - z. B. der erste Tag des Fensters: eine Kerze braucht
 // den Vortagesschluss), breite:px}
 const PFEIL='<svg class="pk-pfeil" viewBox="0 0 14 17" aria-hidden="true"><path d="M4.5 .8h5v6.6h3.7L7 16.2.8 7.4h3.7z"/></svg>';
+// ── TREIBER-BAND: BEISPIEL MIT DREI OPTIONEN (VORUEBERGEHEND, 2026-11-11) ───
+// Nutzer: "treiberband unter dem Chart mach auch mal Beispiel rein und drei
+// Optionen und ich sag ob ja oder nein und welche Option". Ein Streifen am
+// unteren Chartrand, je WOCHE ein Feld. Knopf "Band" in der Leiste schaltet
+// Off -> A -> B -> C. Nur Vorschau: localStorage, kein Sync.
+//   A  Data     Releases der Woche: mehr Beats = blau, mehr Misses = rot,
+//               gleich = grau, keine = leer (Deckkraft nach Anzahl)
+//   B  Driver   was sich in der Woche am staerksten bewegt hat, gemessen am
+//               eigenen Median der sichtbaren Wochen: Central bank (Sitzung),
+//               Rates (Rendite >= 1,5x Median), Risk (S&P >= 1,5x Median),
+//               Data (>= 3 Releases, Saldo >= 2), sonst leer
+//   C  Move     Wochenbewegung des Assets selbst: blau/rot, Deckkraft nach Betrag
+// ⚠ Gleichzeitigkeit, keine Ursache. Nach der Wahl: fest einbauen, Rest loeschen.
+const PK_BAND=[['','Off'],['a','A · Data'],['b','B · Driver'],['c','C · Move']];
+let pkBandArt=(()=>{try{const v=localStorage.getItem('fxpro_band_vorschau')||'';return PK_BAND.some(x=>x[0]===v)?v:'';}catch(e){return'';}})();
+function pkBandWert(){return pkBandArt;}
+function pkBandName(){return(PK_BAND.find(x=>x[0]===pkBandArt)||PK_BAND[0])[1];}
+function pkBandWeiter(){
+  const i=PK_BAND.findIndex(x=>x[0]===pkBandArt);pkBandArt=PK_BAND[(i+1)%PK_BAND.length][0];
+  try{pkBandArt?localStorage.setItem('fxpro_band_vorschau',pkBandArt):localStorage.removeItem('fxpro_band_vorschau');}catch(e){}
+  if(typeof window.renderDetail==='function')window.renderDetail();
+}
+const PK_BAND_FARBE={cb:'var(--t0)',rates:'var(--a-rate)',risk:'var(--a-lab)',data:'var(--a-infl)'};
+const PK_BAND_TXT={cb:'Central bank',rates:'Rates',risk:'Risk',data:'Data'};
+function pkBandHtml(id,api,tage){
+  if(!pkBandArt||tage.length<10)return'';
+  const k=pkSchluesse(id),ki=new Map(k.map((x,i)=>[x.d,i]));
+  const rel=pkReleases(id),W=new Map();
+  tage.forEach((d,i)=>{const w=wocheVon(d);let g=W.get(w);if(!g){g={w,i0:i,i1:i,d0:d,d1:d,g:0,s:0,n:0,cb:false};W.set(w,g);}g.i1=i;g.d1=d;
+    (rel[d]||[]).forEach(e=>{g.n++;if(e.col==='act-good')g.g++;else if(e.col==='act-bad')g.s++;if(/Rate$/.test(e.n)&&/Fed Funds|Bank Rate|Policy Rate|Cash Rate|Overnight Rate|Deposit Facility|Official Cash/.test(e.n))g.cb=true;});});
+  const L=[...W.values()];
+  const eigen=g=>{const a=ki.get(g.d0),e=ki.get(g.d1);return a>0&&e!=null&&k[a-1].c?k[e].c/k[a-1].c-1:null;};
+  const ry=PK_RENDITE[macroCcyFor(id)]||'USYIELD',kr=pkSchluesse(ry),ri=new Map(kr.map((x,i)=>[x.d,i]));
+  const ks=pkSchluesse('SP500'),si=new Map(ks.map((x,i)=>[x.d,i]));
+  const von=(arr,idx,g,bp)=>{let a=null,e=null;for(let i=g.i0;i<=g.i1;i++){const j=idx.get(tage[i]);if(j==null)continue;if(a==null)a=j;e=j;}if(a==null||a<1)return null;return bp?(arr[e].c-arr[a-1].c)*100:(arr[a-1].c?arr[e].c/arr[a-1].c-1:null);};
+  L.forEach(g=>{g.v=eigen(g);g.r=ry===id?null:von(kr,ri,g,true);g.sp=id==='SP500'?null:von(ks,si,g,false);});
+  const med=a=>{const s=a.filter(x=>x!=null&&isFinite(x)).map(Math.abs).sort((x,y)=>x-y);return s.length?s[Math.floor(s.length/2)]:0;};
+  const mR=med(L.map(g=>g.r)),mS=med(L.map(g=>g.sp)),mV=Math.max(...L.map(g=>Math.abs(g.v||0)),1e-9);
+  const dx=tage.length>1?api.x(1)-api.x(0):0.02;
+  let h='';
+  L.forEach(g=>{
+    let farbe='',deck=0,txt='';
+    if(pkBandArt==='a'){if(!g.n)return;farbe=g.g>g.s?BC.bull:g.s>g.g?BC.bear:BC.neu;deck=Math.min(1,0.35+g.n*0.11);txt=`${g.n} release${g.n>1?'s':''}: ▲${g.g} ▼${g.s} ◆${g.n-g.g-g.s}`;}
+    else if(pkBandArt==='c'){if(g.v==null)return;farbe=g.v>0?BC.bull:BC.bear;deck=Math.max(0.12,Math.abs(g.v)/mV);txt='Week '+pct(g.v);}
+    else{
+      const qR=g.r!=null&&mR?Math.abs(g.r)/mR:0,qS=g.sp!=null&&mS?Math.abs(g.sp)/mS:0;
+      let art='';
+      if(g.cb)art='cb';else if(Math.max(qR,qS)>=1.5)art=qR>=qS?'rates':'risk';else if(g.n>=3&&Math.abs(g.g-g.s)>=2)art='data';
+      if(!art)return;
+      farbe=PK_BAND_FARBE[art];deck=0.9;
+      txt=PK_BAND_TXT[art]+(g.r!=null?` · yield ${(g.r>0?'+':'')+g.r.toFixed(1)} bp`:'')+(g.sp!=null?` · S&P ${pct(g.sp)}`:'')+(g.n?` · ${g.n} releases`:'');
+    }
+    const x0=api.x(g.i0)-dx/2,x1=api.x(g.i1)+dx/2;
+    h+=`<span class="pk-tb-f" style="left:${(x0*100).toFixed(3)}%;width:${(Math.max(dx,x1-x0)*100).toFixed(3)}%;background:${farbe};opacity:${deck.toFixed(2)}" title="${escH('Week of '+tagKurz(g.w)+' · '+txt)}"></span>`;
+  });
+  return`<span class="pk-tb" data-art="${pkBandArt}" aria-hidden="true">${h}</span>`;
+}
+// Legende des Bands (in der Fusszeile der Karte)
+function pkBandLegende(){
+  if(!pkBandArt)return'';
+  const p=(f,t)=>`<span class="pk-tb-lg"><i style="background:${f}"></i>${t}</span>`;
+  return`<span class="pk-tb-leg">${pkBandArt==='a'?p(BC.bull,'More beats')+p(BC.bear,'More misses')+p(BC.neu,'Even')
+    :pkBandArt==='c'?p(BC.bull,'Week up')+p(BC.bear,'Week down')+'<span class="pk-tb-lg"><em>stronger = larger move</em></span>'
+    :p(PK_BAND_FARBE.cb,'Central bank')+p(PK_BAND_FARBE.rates,'Rates')+p(PK_BAND_FARBE.risk,'Risk')+p(PK_BAND_FARBE.data,'Data')}</span>`;
+}
 function pkLageHtml(id,api){
   const lid='pk'+(++_pkSeq),tage=api.tage||[];
   if(tage.length<2)return'';
@@ -156,7 +221,7 @@ function pkLageHtml(id,api){
   _pkReg[lid]={a:id,tage,x:api.x,y:api.y,B,woche};
   // Alte Lagen abraeumen (gleiche Idee wie chvAufraeumen)
   Object.keys(_pkReg).forEach(k=>{if(k!==lid&&+k.slice(2)<_pkSeq-6)delete _pkReg[k];});
-  if(!pkMarkenAn)return`<div class="pk-lage pk-aus" data-pk="${lid}"></div>`;
+  if(!pkMarkenAn)return`<div class="pk-lage pk-aus" data-pk="${lid}">${pkBandHtml(id,api,tage)}</div>`;
   // Knopfbreite = Abstand zweier Pfeile minus 1 px, hoechstens 22 px - sonst
   // ueberdecken sich Nachbartage (gemessen 2026-11-01, check/designregeln.js F:
   // 1180 px = ~12 px je Tag, Knopf 22 px). Nach dem Aufbau mit der echten
@@ -175,7 +240,7 @@ function pkLageHtml(id,api){
       +(b.ev.length?`${b.ev.length>1?`<i class="pk-n">${b.ev.length}</i>`:''}<span class="pk-pf-i" style="--c:${bcol(b.bias)}">${PFEIL}</span>`:'');
     h+=`<button type="button" class="pk-pf${pkSel&&pkSel.a===id&&pkSel.k===b.k?' on':''}" data-b="${escH(b.k)}" style="left:${(x*100).toFixed(3)}%;top:${(y*100).toFixed(3)}%" title="${escH(tagKurz(tage[b.i0])+' · '+tip)}" aria-label="${escH((woche?'Week of ':'')+tagKurz(tage[b.i0])+': '+tip)}">${teile}</button>`;
   });
-  return`<div class="pk-lage${pkSel&&pkSel.a===id?' sel':''}" data-pk="${lid}" style="--pk-w:${kw}px"><span class="pk-band" aria-hidden="true"></span>${h}<span class="pk-tipp" aria-hidden="true">Tap a day</span></div>`;
+  return`<div class="pk-lage${pkSel&&pkSel.a===id?' sel':''}" data-pk="${lid}" style="--pk-w:${kw}px"><span class="pk-band" aria-hidden="true"></span>${pkBandHtml(id,api,tage)}${h}<span class="pk-tipp" aria-hidden="true">Tap a day</span></div>`;
 }
 
 function pkKnopfBreite(breite,n,woche){const px=(breite||600)/Math.max(1,n)*(woche?5:1);return Math.max(8,Math.min(22,Math.floor(px-1)));}
@@ -506,8 +571,8 @@ function pkVergleichAktiv(id){return pkVglListe(id).length>0;}
 function pkVglSkalaWert(){return pkVglSkala;}
 function pkZustand(){return{sel:pkSel,add:pkAdd,form:pkForm,vgl:JSON.parse(JSON.stringify(pkVgl)),skala:pkVglSkala};}
 
-export {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkReleases,pkEimer,PFEIL,pkAddAktiv};
+export {pkBandWert,pkBandName,pkBandLegende,pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkReleases,pkEimer,PFEIL,pkAddAktiv};
 function pkAddAktiv(){return pkAdd;}
 // Inline-Handler (onclick) brauchen die Funktionen am window.
 Object.assign(window,{pkWaehle,pkMarkenSchalter,pkAddUmschalten,pkFormAuf,pkFormText,pkFormBias,pkFormZu,pkSpeichern,pkEigenWeg,
-  pkModusSetzen,pkMoveWaehle,pkBewegungen,pkVglAuf,pkVglAsset,pkVglGruppe,pkVglUmschalten,pkVglWeg,pkVglSkalaSetzen,pkZustand,pkReleases});
+  pkBandWeiter,pkModusSetzen,pkMoveWaehle,pkBewegungen,pkVglAuf,pkVglAsset,pkVglGruppe,pkVglUmschalten,pkVglWeg,pkVglSkalaSetzen,pkZustand,pkReleases});

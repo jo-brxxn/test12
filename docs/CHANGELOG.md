@@ -6614,6 +6614,16 @@ falsch-positiv.
 
 ---
 
+## 2026-11-11 — Alles wächst (Leisten), Style-Knopf ab 700 px, zwei Vorschauen: Treiber-Band und Sektoren-Ansicht (VERSION-CHECK-713)
+
+**Nutzer:** *„diese Varianten vom hellen Modus sehe ich nicht … die aktuellen Indikatoren als Main Dinger behalten aber ich will umschalten können und dann sollen die 3 Karten Größe werden und richtig gefüllt werden also die Wirtschaft soll in jeden Sektor auseinander genommen werden … setz das als Platzhalter um … treiberband unter dem Chart mach auch mal Beispiel rein und drei Optionen … die leisten sollen mitwachsen also Alles wächst“*
+
+- **Leisten wachsen mit:** `zoom:var(--pg-zoom)` an `.hdr` und `#navSidebar`. Der Maßstab hängt an der Breite, die er selbst verändert → `seitenZoomSetzen` pendelt in ≤ 5 Schritten ein. Gemessen: 1920 px Maßstab 1,205 (Kopf 64 px, Leiste 92 px), 2560 px 1,616 (85 / 123 px), Dashboard gleich (1,617); 1366 px unverändert.
+- **Style-Knopf:** war erst ab 1100 px sichtbar (iPad: nicht da). Jetzt ab 700 px, unter 1100 px nur das Kürzel; Kopfzeilen-Abstand dort 9 px (`versionssicht` 1024 px sonst 14 px Überlauf).
+- **Treiber-Band (Vorschau):** Knopf *Band* in der Price-Leiste schaltet Off → A · Data (Beats/Misses je Woche) → B · Driver (Central bank / Rates / Risk / Data nach festen Regeln: Sitzung; Rendite bzw. S&P ≥ 1,5× Median der sichtbaren Wochen; ≥ 3 Releases mit Saldo ≥ 2) → C · Move (Wochenbewegung). Legende in der Trend-score-Zeile. Lokal (`fxpro_band_vorschau`).
+- **Sektoren-Ansicht (Platzhalter):** Schalter *Sectors* in der Macro-Zeile ersetzt die drei Karten durch *Prices & money* (22 Reihen), *Jobs & households* (20), *Business, trade & government* (18). **Keine Werte**, nur Aufbau und Status je Reihe: Live 25 · Available 26 (Sonde `probe-tv-themen.yml`) · To check 9. Nicht gespeichert.
+- **Nach der Entscheidung:** gewählte Fassungen fest einbauen, Vorschau-Code löschen.
+
 ## 2026-11-11 — Heller Modus: vier Varianten zur Wahl (Vorschau, vorübergehend) (VERSION-CHECK-712)
 
 **Nutzer 2026-11-10:** *„im light Mode was kann man da im Design ändern um es nicht so komplett weis aussehen zu lassen“* — gemessen 72–95 % der Inhaltsfläche sehr hell, 0–5 % klar farbig; Seite `#E9F0F8` gegen Karte `#F8FAFD`.
