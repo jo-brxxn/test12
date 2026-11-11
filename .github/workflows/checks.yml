@@ -78,7 +78,15 @@ jobs:
       - name: Chromium fuer die Browser-Waechter
         run: |
           npm install --no-save playwright@latest
-          npx playwright install --with-deps chromium
+          # 2026-11-11: drei Laeufe hintereinander scheiterten hier, nicht an einer
+          # Pruefung - der Runner konnte security.ubuntu.com nicht aufloesen (DNS),
+          # die Schriftpakete fehlten. Drei Versuche mit Pause und frischem apt-Index.
+          for i in 1 2 3; do
+            if npx playwright install --with-deps chromium; then exit 0; fi
+            echo "Browser-Installation fehlgeschlagen (Versuch $i) - neuer Versuch in $((i*30)) s"
+            sleep $((i*30)); sudo apt-get update -o Acquire::Retries=3 || true
+          done
+          exit 1
 
       - name: Testserver starten
         run: |
