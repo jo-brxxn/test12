@@ -1,0 +1,16 @@
+# Welche Reihen fuehrt TradingView zu den Themen, die im Feed fehlen
+# (Handels-/Leistungsbilanz, Industrie, Immobilien, Loehne)? 2026-11-11.
+# Laeuft auf dem Runner (TradingView ist aus der Claude-Umgebung gesperrt),
+# schreibt NICHTS. Ausgabe: tools/tv-themen.mjs.
+name: Probe TradingView series for missing topics
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reihen je Thema und Waehrung
+        run: node tools/tv-themen.mjs
