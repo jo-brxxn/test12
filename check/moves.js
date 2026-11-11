@@ -7,6 +7,7 @@ const PW=process.env.PW_PATH||'/opt/node22/lib/node_modules/playwright';
 //   B) Tipp waehlt den Tag - auch einen OHNE Release -, die Tageskarte nennt
 //      S&P 500 und die Rendite
 //   C) ✕ fuehrt zurueck in die Liste (nicht nach Next up)
+//   D) Ereignis-Band: fuenf Kategorien, nur ihre Reihen, Tipp = Tageskarte
 // Gegenprobe --gegenprobe: Zeilen ausgeblendet -> rot.
 const {chromium}=require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
@@ -20,7 +21,7 @@ const PORT=process.env.PORT||8935,GP=process.argv.includes('--gegenprobe');
     await p.evaluate(()=>{const l=document.getElementById('lockScreen');if(l)l.remove();document.querySelectorAll('.ov').forEach(o=>o.style.display='none');});
     await wartenBisDatenDa(p);
     await p.evaluate(id=>gotoSym(id),id);await p.waitForTimeout(1800);
-    if(GP)await p.addStyleTag({content:'.pk-mv{display:none!important}'});
+    if(GP){await p.addStyleTag({content:'.pk-mv{display:none!important}'});await p.evaluate(()=>document.querySelectorAll('.pk-tb-f').forEach(e=>e.remove()));}
     const o=w+'px '+id;
     if(!(await p.$('.pk-modus'))){F.push(o+' A: kein Umschalter Next up | Biggest moves');await p.close();continue;}
     await p.evaluate(()=>pkModusSetzen('moves'));await p.waitForTimeout(400);
@@ -40,6 +41,20 @@ const PORT=process.env.PORT||8935,GP=process.argv.includes('--gegenprobe');
     if(!/ bp/.test(t.txt))F.push(o+' B: Tageskarte ohne Rendite');
     await p.evaluate(()=>pkWaehle(null));await p.waitForTimeout(400);
     if(!(await p.evaluate(()=>!!document.querySelector('.pk-col .pk-mv'))))F.push(o+' C: nach ✕ nicht zurueck in Biggest moves');
+    // D) Ereignis-Band (2026-11-11): Felder nur in den fuenf Kategorien, jede
+    //    Kategorie nur aus ihren Reihen, Tipp oeffnet die Tageskarte, Legende mit 5 Eintraegen
+    const bd=await p.evaluate(id=>{const ERL={infl:/CPI|PPI|PCE/,lab:/Nonfarm|NFP|Unemployment Rate|Employment Change/,grow:/GDP|PMI/,rate:/Rate/};
+      const f=[...document.querySelectorAll('.pk-tb-f')],rel=pkReleases(id),falsch=[];
+      f.forEach(e=>{const k=e.dataset.kat.split(' '),tag=e.dataset.b,woche=/^Week of/.test(e.getAttribute('aria-label')||''),tage=woche?Array.from({length:7},(_,i)=>{const t=new Date(tag+'T12:00:00Z');t.setUTCDate(t.getUTCDate()+i);return t.toISOString().slice(0,10);}):[tag],namen=tage.flatMap(d=>rel[d]||[]).map(x=>x.n).join(' | ');
+        k.forEach(x=>{if(!['infl','lab','grow','rate','own'].includes(x))falsch.push(tag+': unbekannte Kategorie '+x);else if(ERL[x]&&!ERL[x].test(namen))falsch.push(tag+': '+x+' ohne passende Reihe ('+namen.slice(0,60)+')');});
+        if(e.querySelectorAll('i').length!==k.length)falsch.push(tag+': '+k.length+' Kategorien, '+e.querySelectorAll('i').length+' Farben');});
+      return{n:f.length,falsch,leg:document.querySelectorAll('.pk-tb-leg .pk-tb-lg').length,erstes:f.length?f[f.length-1].dataset.b:null};},id);
+    if(!bd.n)F.push(o+' D: Band ohne Felder');
+    bd.falsch.slice(0,3).forEach(x=>F.push(o+' D: '+x));
+    if(bd.leg!==5)F.push(o+' D: Legende mit '+bd.leg+' statt 5 Eintraegen');
+    if(bd.erstes){await p.evaluate(k=>document.querySelector('.pk-tb-f[data-b="'+k+'"]').click(),bd.erstes);await p.waitForTimeout(400);
+      if(!(await p.evaluate(()=>!!document.querySelector('.pk-col .pk-x'))))F.push(o+' D: Tipp auf das Band oeffnet keine Tageskarte');
+      await p.evaluate(()=>pkWaehle(null));}
     if(err.length)F.push(o+' JS-Fehler: '+err[0]);
     await p.close();
   }

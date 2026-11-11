@@ -11874,7 +11874,6 @@ function assetPreisKarteHtml(c){
     ${chartLeisteHtml((vergleich?kmKnopfHtml('abPreis',pkVglTeile(),'',true):YIELD_CCY[c.id]?kmKnopfHtml('abPreisRendite',[pxTypTeil()],'',true):kmKnopfHtml('abPreis',[pxTypTeil(),abTrendTeil()],'',true))
       +`<button type="button" id="pkVglBtn" class="km-klein pk-knopf${vergleich?' an':''}" onclick="pkVglAuf()" aria-haspopup="true" title="Add up to 2 prices to this chart - it switches to lines">${vergleich?`Compare <em>${pkVglListe(c.id).length}/2</em>`:'＋ Compare'}</button>`
       +`<button type="button" class="km-klein pk-knopf pk-mk-btn${pkMarkenAn?' an':''}" onclick="pkMarkenSchalter()" aria-pressed="${pkMarkenAn}" title="${pkMarkenAn?'Hide':'Show'} the release arrows in the chart">${PFEIL}<span>Markers</span></button>`
-      +`<button type="button" class="km-klein pk-knopf pk-band-btn${pkBandWert()?' an':''}" onclick="pkBandWeiter()" title="Preview: weekly band under the chart — tap to switch Off, A, B, C">Band: ${escH(pkBandName())}</button>`
       +(pkMarkenAn?`<button type="button" class="km-klein pk-knopf pk-add-btn${pkAddAktiv()?' on':''}" onclick="pkAddUmschalten()" aria-pressed="${pkAddAktiv()}" title="Add your own arrow: tap a day in the chart">${pkAddAktiv()?'✕ Cancel':'＋ Mark'}</button>`:''),
       `<span class="ab-rgs">${regler}</span>`)}`;
   // Kerzen-Zaehler ("N daily candles · M with a measured high/low") am
@@ -18002,7 +18001,7 @@ import {federnAn} from './federn.js';
 // eine Rueckkehr liegen.
 // try{federnAn();}catch(e){}
 // Price-Karte: Release-Pfeile, Spalte, eigene Pfeile, Vergleich (Wahl B, 2026-11-01)
-import {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkAddAktiv,PFEIL,pkReleases,pkBandWert,pkBandName,pkBandLegende} from './preiskarte.js';
+import {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkAddAktiv,PFEIL,pkReleases,pkBandLegende} from './preiskarte.js';
 
 // mvWidget() ist jetzt zonen-bewusst - siehe Definition oben bei
 // dashZoneOf()/ZONE_OF_TYPE (direkt vor renderDash()).
@@ -27278,7 +27277,13 @@ function lgFreiraum(card){
     if(!r.width&&!r.height)continue;
     if(r.bottom>inhalt)inhalt=r.bottom;
   }
-  return{frei:unten-inhalt,unten,inhalt,breite:cr.width,top:cr.top};
+  // 2026-11-11 (Nutzer: "das Logo als Platzhalter ist am pc sehr oft
+  // abgeschnitten"): seit 710 traegt die Seite CSS-zoom. getBoundingClientRect
+  // misst in Bildschirm-Pixeln, das Logo wird aber im Massstab der Karte
+  // gesetzt - bei 1920 px (1,2-fach) ragte es 44-60 px unten heraus. Alle
+  // Masse deshalb zurueck in den Massstab der Karte.
+  const z=(typeof card.currentCSSZoom==='number'&&card.currentCSSZoom>0)?card.currentCSSZoom:(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pg-zoom'))||1);
+  return{frei:(unten-inhalt)/z,unten:unten/z,inhalt:inhalt/z,breite:cr.width/z,top:cr.top/z};
 }
 // Animiert nur, wenn etwas LAEDT (Nutzer 2026-09-24: "mach die Platzhalter
 // nicht animiert, nur wenn etwas laedt soll es animiert sein ... beim

@@ -6614,6 +6614,17 @@ falsch-positiv.
 
 ---
 
+## 2026-11-11 — Ereignis-Band unter dem Chart, Platzhalter-Logo im Maßstab (VERSION-CHECK-714)
+
+**Nutzer (nach den Entwürfen A/B/C aus 713):** *„ich will ein anderes band … mit drei Farben eine für jede Kategorie also Inflation Arbeitsmarkt und Wirtschaftswachstum. Für Inflation nur bei cpis dann ppis und pce und bei Labour … nur für nfp und unemployment rate und für Wirtschaft … nur gdp und pmis. Und noch eine Farbe für die interest rate und … eine eigene Farbe … wo ich Ereignisse hinzufügen kann. Und wenn man auf einen Teil des Bands klickt soll man sehen was da passiert ist.“* · *„das Logo als Platzhalter ist am pc sehr oft abgeschnitten“*
+
+- **Band:** Streifen am unteren Chartrand, je Tag (Wochen-Pfeile: je Woche) ein Feld. Kategorien: Inflation (CPI, Core CPI, PPI, Core PPI, PCE, Core PCE) · Labour market (NFP, Unemployment Rate) · Growth (GDP, Manufacturing/Services PMI) · Interest rate (Leitzins) · Own events (eigene Markierungen, „+ Mark“). Mehrere Kategorien am Tag teilen das Feld. Tipp = Tageskarte (Releases, Bewegung, S&P 500, Rendite). Legende in der Trend-score-Zeile. Gemessen USD 3M: 20 Felder (Inflation 9, Growth 9, Labour 3, Rate 2).
+- **Farben:** Growth `--tb-grow` (Navy) und Own `--tb-own` (Pink), weil Orange zu nah an Amber und Cyan zu nah an Teal lag.
+- **Die Vorschau A/B/C ist weg** (Knopf *Band*, `fxpro_band_vorschau`) — damit auch der CI-Befund `zurueck` B (Klick speicherte ohne Nutzer-Markierung).
+- **Logo:** gemessen 1920 px — 44–60 px unter dem Kartenrand. Ursache: `lgFreiraum` misst in Bildschirm-Pixeln, das Logo wird im Maßstab der Karte gesetzt (CSS-zoom seit 710). Maße durch `currentCSSZoom` geteilt → 0 px. **Fehlerklasse offen:** weitere Stellen, die `getBoundingClientRect` mit Pixel-Stilen innerhalb skalierter Seiten mischen.
+- **Performance („hakt alles“):** im Testbrowser 1920 px keine Ursache messbar (Scrollen Asset-Seite Median 16,7 ms mit und ohne Maßstab, Kalender 21,9 gegen 17,2 ms). Braucht Angabe von Gerät und Seite.
+- **Wächter:** `check/moves.js` D (Kategorien, Reihen je Kategorie, Tipp, Legende).
+
 ## 2026-11-11 — Alles wächst (Leisten), Style-Knopf ab 700 px, zwei Vorschauen: Treiber-Band und Sektoren-Ansicht (VERSION-CHECK-713)
 
 **Nutzer:** *„diese Varianten vom hellen Modus sehe ich nicht … die aktuellen Indikatoren als Main Dinger behalten aber ich will umschalten können und dann sollen die 3 Karten Größe werden und richtig gefüllt werden also die Wirtschaft soll in jeden Sektor auseinander genommen werden … setz das als Platzhalter um … treiberband unter dem Chart mach auch mal Beispiel rein und drei Optionen … die leisten sollen mitwachsen also Alles wächst“*
