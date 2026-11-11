@@ -6614,6 +6614,10 @@ falsch-positiv.
 
 ---
 
+## 2026-11-11 — Nachlauf zu 710: Breitbild-Prüfung rechnet im Maßstab der Seite
+
+- **CI nach 710:** 1 rot (`breit`): `.histp-evt.histp-age` „1 leere Spalte, 193 px“ bei 2560 px. Das ist eine Ausrichtungsspalte der History-Zeile (117 px im Seitenmaß); die Schwelle 120 px wuchs nicht mit `--pg-zoom`. Schwelle jetzt × Maßstab. Kein App-Fehler. Gegenprobe weiter rot wie erwartet.
+
 ## 2026-11-10 — Alle Seiten wachsen wie das Dashboard; drei Reihen ohne Quelle entfernt (VERSION-CHECK-710, SCORE_MODEL_VERSION 31 → 32)
 
 **Nutzer:** *„Rate prob. So lassen wenn die Daten nicht verfügbar sind dann rausnehmen … starte danach damit das es sich alles gleich vergrößert auch am pc dann mach den Rest“*
