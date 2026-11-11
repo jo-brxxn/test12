@@ -1632,3 +1632,9 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **Neue Seite:** nichts zu tun, die Regel hängt an `#pageArea>.pc`. Neue Überlagerung außerhalb von `.modal`: Maßstab selbst übernehmen.
 - **Grenzen in `vh`/`dvh` an skalierten Elementen** durch `var(--pg-zoom,1)` teilen.
 - Geprüft von `check/breit.js` C.
+
+## Price-Karte: Biggest moves (2026-11-11)
+
+- **Spalte links ohne Auswahl:** *Next up* | *Biggest moves* (8 größte Bewegungen im sichtbaren Zeitraum).
+- **Nur Fakten des Tages:** Bewegung, Releases mit Beat/Miss, S&P 500, Rendite. Kein „weil“.
+- Geprüft von `check/moves.js`.

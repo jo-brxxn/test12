@@ -50,6 +50,7 @@ import {IND_DATA_FEED} from './data-feeds.js';
 // Pfeile (research.notes).
 let pkSel=null;            // {a:Asset, k:Tag oder Wochenanfang}
 let pkAdd=false;           // Hinzufuegen-Modus
+let pkModus='next';        // Spalte ohne Auswahl: 'next' (Next up) | 'moves' (Biggest moves)
 let pkForm=null;           // {a,d,t,b} offenes Popover
 const pkVgl={};            // {Asset:[Kurs-Schluessel]}
 let pkVglSkala='band';     // 'band' (0-100 je Linie) | 'bruch' (echte Kurse)
@@ -199,13 +200,65 @@ function karteHtml(e,untenHtml){
   const c=e.col==='act-good'?BC.bull:e.col==='act-bad'?BC.bear:'';
   return`<div class="pk-ev"${c?` style="--c:${c}"`:''}><div class="pk-ev-o"><span class="pk-ev-n">${escH(e.n)}</span><b class="pk-ev-a">${wert(e.a)}</b></div><div class="pk-ev-u">${untenHtml?`<span>${untenHtml}</span>`:''}<span>Forecast <b>${wert(e.f)}</b></span><span>Previous <b>${wert(e.p)}</b></span></div></div>`;
 }
+// ── BIGGEST MOVES (2026-11-11) ──────────────────────────────────────────
+// Nutzer 2026-11-10: "was fuer eine Loesung gibt es bei den Assets auf einen
+// Blick zu haben warum die sich in der Vergangenheit bewegt haben". Die Pfeile
+// zeigen nur Datentage, und jeden muss man einzeln antippen. Hier: die
+// groessten Bewegungen im SICHTBAREN Zeitraum (je Tag, bei Wochen-Pfeilen je
+// Woche) als Liste - je Zeile die Bewegung und was an dem Tag veroeffentlicht
+// wurde; Tipp waehlt den Tag (auch ohne Release), die Tageskarte nennt dazu
+// S&P 500 und die Rendite. ⚠ Gleichzeitigkeit, keine Ursache: die Liste sagt,
+// was an dem Tag war - "Why" behauptet nur eine eigene Markierung.
+const PK_MOVES_N=8;
+const PK_RENDITE={USD:'USYIELD',EUR:'DEYIELD',GBP:'GBYIELD',CHF:'CHYIELD',JPY:'JPYIELD',CAD:'CAYIELD',AUD:'AUYIELD',NZD:'NZYIELD'};
+function pkBewegungen(id,L){
+  if(!L||!L.tage||!L.tage.length)return[];
+  const k=pkSchluesse(id);if(k.length<2)return[];
+  const idx=new Map(k.map((x,i)=>[x.d,i])),G=new Map();
+  L.tage.forEach((d,i)=>{const key=L.woche?wocheVon(d):d;let g=G.get(key);if(!g){g={k:key,i0:i,i1:i,d0:d,d1:d};G.set(key,g);}g.i1=i;g.d1=d;});
+  const out=[];
+  G.forEach(g=>{const a=idx.get(g.d0),e=idx.get(g.d1);if(a==null||e==null||a<1)return;const vor=k[a-1].c;if(!vor)return;
+    out.push(Object.assign(g,{v:k[e].c/vor-1,b:L.B.get(g.k)||null}));});
+  return out.filter(x=>isFinite(x.v)&&x.v!==0).sort((x,y)=>Math.abs(y.v)-Math.abs(x.v)).slice(0,PK_MOVES_N);
+}
+// Was am selben Tag sonst lief: S&P 500 und die eigene Rendite (verknuepfte
+// Waehrung; Nicht-FX = USD). Nur wo beide Schlusskurse da sind.
+function pkUmfeld(id,d0,d1){
+  const out=[];
+  if(id!=='SP500'){const b=pkBewegung('SP500',d0,d1);if(b.tag!=null)out.push(['S&P 500',pct(b.tag),b.tag]);}
+  const ry=PK_RENDITE[macroCcyFor(id)]||'USYIELD';
+  if(ry!==id){const k=pkSchluesse(ry),i0=naechsterTag(k.map(x=>x.d),d0);
+    if(i0>0&&k[i0].d===d0){let i1=i0;while(i1+1<k.length&&k[i1+1].d<=d1)i1++;const bp=(k[i1].c-k[i0-1].c)*100;
+      if(isFinite(bp)){const nm=(syms.find(x=>x.id===ry)||{}).name||ry;out.push([nm,(bp>0?'+':'')+bp.toFixed(1)+' bp',bp]);}}}
+  return out;
+}
+function pkModusSetzen(m){pkModus=m==='moves'?'moves':'next';pkSpalteNeu();}
+function pkMoveWaehle(k){
+  const c=getSym();if(!c)return;
+  const lid=Object.keys(_pkReg).filter(x=>_pkReg[x].a===c.id).pop(),L=lid?_pkReg[lid]:null;if(!L)return;
+  if(!L.B.has(k)){   // Tag ohne Release: leerer Eimer, damit Band und Tageskarte greifen
+    let i0=1e9,i1=-1;L.tage.forEach((d,i)=>{if((L.woche?wocheVon(d):d)===k){i0=Math.min(i0,i);i1=Math.max(i1,i);}});
+    if(i1<0)return;
+    L.B.set(k,{k,ev:[],eig:[],i0,i1,g:0,s:0,n:0,bias:'neu'});
+  }
+  pkWaehle(k);
+}
 function pkSpalteHtml(id){
   if(pkForm&&pkForm.a===id&&pkForm.spalte)return'';
   const lid=Object.keys(_pkReg).filter(k=>_pkReg[k].a===id).pop(),L=lid?_pkReg[lid]:null;
   const b=pkSel&&pkSel.a===id&&L?L.B.get(pkSel.k):null;
+  const tabs=`<span class="ctyp pk-modus" role="group" aria-label="Column view">${[['next','Next up'],['moves','Biggest moves']].map(([v,t])=>`<button type="button" class="ind-hist-range-btn ctyp-b${pkModus===v?' on':''}" onclick="pkModusSetzen('${v}')" title="${v==='next'?'Upcoming releases for this asset':'Largest moves in the visible range and what was released on those days'}">${t}</button>`).join('')}</span>`;
+  if(!b&&pkModus==='moves'){
+    const m=pkBewegungen(id,L);
+    return`<div class="pk-col-hd">${tabs}</div>
+      <div class="pk-list">${m.length?m.map(x=>{const col=x.v>0?BC.bull:BC.bear,bb=x.b;
+        return`<button type="button" class="pk-ev pk-mv" style="--c:${col}" onclick="pkMoveWaehle('${escJH(x.k)}')" title="Show this ${L.woche?'week':'day'} in the chart">
+          <span class="pk-ev-o"><span class="pk-ev-n">${escH(L.woche?'Week of '+tagKurz(x.k):tagJahr(x.d0))}</span><b class="pk-mv-v" style="color:${col}">${pct(x.v)}</b></span>
+          <span class="pk-mv-u">${bb&&bb.ev.length?`<b style="color:${BC.bull}">▲${bb.g}</b> <b style="color:${BC.bear}">▼${bb.s}</b> <b>◆${bb.n}</b> <i>${escH(bb.ev.slice(0,2).map(e=>e.n).join(' · '))}${bb.ev.length>2?' +'+(bb.ev.length-2):''}</i>`:(bb&&bb.eig.length?`<i>${escH(bb.eig[0].title||'Own mark')}</i>`:'<i>No tracked release</i>')}</span></button>`;}).join(''):'<div class="pk-leer">No price history in this range.</div>'}</div>`;
+  }
   if(!b){
     const l=pkKommend(id);
-    return`<div class="pk-col-hd"><span class="pk-col-t">Next up</span>${l.length?`<span class="pk-pill">${l.length}</span>`:''}</div>
+    return`<div class="pk-col-hd">${tabs}${l.length?`<span class="pk-pill">${l.length}</span>`:''}</div>
       <div class="pk-list">${l.length?l.map(ev=>karteHtml({n:ev.name,a:ev.actual,f:ev.forecast,p:ev.previous,col:''},wann(ev.d,ev.time))).join(''):`<div class="pk-leer">Nothing ${calHighOnly?'high-impact ':''}scheduled in the published window.</div>`}</div>`;
   }
   const d0=L.tage[b.i0],d1=L.tage[b.i1],bw=pkBewegung(id,d0,d1);
@@ -213,7 +266,7 @@ function pkSpalteHtml(id){
   const titel=L.woche?`Week of ${tagKurz(b.k)}`:tagJahr(d0);
   const ev=b.ev.slice().sort((x,y)=>x.d.localeCompare(y.d));
   return`<div class="pk-col-hd"><span class="pk-col-t">${escH(titel)}</span>${ev.length?`<span class="pk-pill">${ev.length}</span>`:''}<button type="button" class="pk-x" onclick="pkWaehle(null)" title="Back to next up" aria-label="Back to next up">✕</button></div>
-    <div class="pk-stat"><span>${L.woche?'Week':'Day'} ${f(bw.tag)}</span>${bw.nach!=null?`<span>Next 5D ${f(bw.nach)}</span>`:''}${ev.length?`<span><b style="color:${BC.bull}">▲${b.g}</b> <b style="color:${BC.bear}">▼${b.s}</b> <b>◆${b.n}</b></span>`:''}</div>
+    <div class="pk-stat"><span>${L.woche?'Week':'Day'} ${f(bw.tag)}</span>${bw.nach!=null?`<span>Next 5D ${f(bw.nach)}</span>`:''}${pkUmfeld(id,d0,d1).map(u=>`<span>${escH(u[0])} <b style="color:${u[2]>0?BC.bull:u[2]<0?BC.bear:'var(--t1)'}">${escH(u[1])}</b></span>`).join('')}${ev.length?`<span><b style="color:${BC.bull}">▲${b.g}</b> <b style="color:${BC.bear}">▼${b.s}</b> <b>◆${b.n}</b></span>`:''}</div>
     <div class="pk-list">${ev.map(e=>karteHtml(e,L.woche?escH(tagKurz(e.d)):'')).join('')}${b.eig.map(n=>`<div class="pk-ev pk-ev-eig" style="--c:${bcol(n.bias)}"><div class="pk-ev-o"><span class="pk-mine">Mine</span><span class="pk-ev-n">${escH(n.title||'')}</span><button type="button" class="pk-del" onclick="pkEigenWeg('${escJH(n.id)}')" title="Delete this mark" aria-label="Delete this mark">✕</button></div><div class="pk-ev-u"><span style="color:${bcol(n.bias)};font-weight:800">${(BIAS.find(z=>z[0]===n.bias)||BIAS[1])[1]}</span>${L.woche?`<span>${escH(tagKurz(n.pm.d))}</span>`:''}</div></div>`).join('')}
       <button type="button" class="pk-neu" onclick="pkFormAuf('${escJH(d1)}')">＋ Mark this day</button></div>`;
 }
@@ -457,4 +510,4 @@ export {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSk
 function pkAddAktiv(){return pkAdd;}
 // Inline-Handler (onclick) brauchen die Funktionen am window.
 Object.assign(window,{pkWaehle,pkMarkenSchalter,pkAddUmschalten,pkFormAuf,pkFormText,pkFormBias,pkFormZu,pkSpeichern,pkEigenWeg,
-  pkVglAuf,pkVglAsset,pkVglGruppe,pkVglUmschalten,pkVglWeg,pkVglSkalaSetzen,pkZustand,pkReleases});
+  pkModusSetzen,pkMoveWaehle,pkBewegungen,pkVglAuf,pkVglAsset,pkVglGruppe,pkVglUmschalten,pkVglWeg,pkVglSkalaSetzen,pkZustand,pkReleases});

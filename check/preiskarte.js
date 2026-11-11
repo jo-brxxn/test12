@@ -62,7 +62,8 @@ const gruen = m => console.log('  ✓ ' + m);
     await p.evaluate(a => { showTab('cur'); selSym(a); window.scrollTo(0, 0); }, asset); await p.waitForTimeout(1200);
     return { p, ctx };
   }
-  const titel = p => p.evaluate(() => (document.querySelector('.pk-col-t') || {}).textContent || '');
+  // 2026-11-11: ohne Auswahl traegt der Spaltenkopf den Umschalter Next up | Biggest moves - Titel = aktiver Reiter
+  const titel = p => p.evaluate(() => ((document.querySelector('.pk-col-t') || document.querySelector('.pk-col .pk-modus .on')) || {}).textContent || '');
   {
     console.log('── 1366 px, EUR');
     const { p, ctx } = await seite(1366, 1024, 'EUR');

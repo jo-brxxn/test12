@@ -6614,6 +6614,17 @@ falsch-positiv.
 
 ---
 
+## 2026-11-11 — Price-Karte: Biggest moves (VERSION-CHECK-711)
+
+**Nutzer 2026-11-10:** *„was für eine Lösung gibt es bei den Assets auf einen Blick zu haben warum die sich in der Vergangenheit bewegt haben“* — Vorschlag angenommen (*„mach alles“*).
+
+- **Spalte links:** Umschalter **Next up | Biggest moves**. Liste = die 8 größten Bewegungen im sichtbaren Zeitraum (je Tag, bei Wochen-Pfeilen je Woche), je Zeile Datum, Bewegung in Bias-Farbe, ▲ Beat ▼ Miss ◆ neutral und die ersten zwei Releases; ohne Release *No tracked release*.
+- **Tipp** wählt den Tag im Chart — auch Tage ohne Release (leerer Eimer on demand). **Tageskarte** neu mit **S&P 500** und der **eigenen Rendite** (verknüpfte Währung, Nicht-FX = USD) in bp.
+- **Grenze (Regel 4):** Gleichzeitigkeit, keine Ursache. Ursache behauptet nur eine eigene Markierung.
+- **Gemessen USD 3M:** −0,90 % (19.08., kein Release; S&P +0,21 %, US Yield −6,0 bp), +0,73 % (06.11., ▲3 ▼1, NFP), +0,68 % (23.09.), −0,66 % (03.09.) …
+- **Noch offen:** das Treiber-Band unter dem Chart (Kategorie je Woche) — braucht Regeln, was „dominant“ heißt.
+- **Wächter:** `check/moves.js` + Gegenprobe; `check/preiskarte.js` C liest den aktiven Reiter.
+
 ## 2026-11-11 — Nachlauf zu 710: Breitbild-Prüfung rechnet im Maßstab der Seite
 
 - **CI nach 710:** 1 rot (`breit`): `.histp-evt.histp-age` „1 leere Spalte, 193 px“ bei 2560 px. Das ist eine Ausrichtungsspalte der History-Zeile (117 px im Seitenmaß); die Schwelle 120 px wuchs nicht mit `--pg-zoom`. Schwelle jetzt × Maßstab. Kein App-Fehler. Gegenprobe weiter rot wie erwartet.
