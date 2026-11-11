@@ -563,7 +563,9 @@ function makroZeichnen(box){
       // = 23 Tage, 20 px) ueberlappten trotzdem (gemessen 1 px, check/makro.js).
       // Deshalb nur die betroffenen Werte auseinanderschieben - erst nach
       // rechts, dann vom rechten Rand zurueck; die Schrift bleibt fuer alle gleich.
-      const hw=breite.map(b=>b*wf/22),xx=xs.map((x,i)=>Math.max(padL+hw[i],Math.min(W-1-hw[i],x)));
+      // 2026-11-11: +8 % - die gemessene Breite (mkTextBreite) liegt bei 700er Schrift
+      // knapp unter der gezeichneten; NFP/ADP ueberlappten bei 1180 px wieder um 1 px.
+      const hw=breite.map(b=>b*wf/22*1.08),xx=xs.map((x,i)=>Math.max(padL+hw[i],Math.min(W-1-hw[i],x)));
       if(!senk){
         for(let i=1;i<xx.length;i++){const m=xx[i-1]+hw[i-1]+hw[i]+1.5;if(xx[i]<m)xx[i]=m;}
         for(let i=xx.length-1;i>=0;i--){const m=i===xx.length-1?W-1-hw[i]:xx[i+1]-hw[i+1]-hw[i]-1.5;if(xx[i]>m)xx[i]=m;}

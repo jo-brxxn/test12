@@ -1920,7 +1920,7 @@ function symScoreCmp(sym){
 // 30 -> 31 (2026-11-01, Nutzer-Entscheid): Money Supply in Inflation bei allen
 // acht Waehrungen (EUR/CHF/JPY/AUD/NZD M3, GBP M4, USD M2, CAD M2++), im Score
 // GEGEN die Messung (EUR M3 Release-Tag t 0,93, GBP M4 t -0,19).
-const SCORE_MODEL_VERSION=31;
+const SCORE_MODEL_VERSION=32;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.

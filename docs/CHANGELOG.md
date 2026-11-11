@@ -6614,6 +6614,18 @@ falsch-positiv.
 
 ---
 
+## 2026-11-10 — Alle Seiten wachsen wie das Dashboard; drei Reihen ohne Quelle entfernt (VERSION-CHECK-710, SCORE_MODEL_VERSION 31 → 32)
+
+**Nutzer:** *„Rate prob. So lassen wenn die Daten nicht verfügbar sind dann rausnehmen … starte danach damit das es sich alles gleich vergrößert auch am pc dann mach den Rest“*
+
+- **Rate Probabilities:** bleibt bei den Links (Entscheid 06.09. bestätigt).
+- **Maßstab:** `seitenZoomSetzen()` setzt `--pg-zoom` = Breite / 1480 (höchstens 1,8, dieselbe Formel wie das Dashboard); CSS `zoom` an jeder Seite außer dem Dashboard und an `.modal` (Höhengrenze durch den Maßstab geteilt).
+  - Gemessen 2560 px: Maßstab 1,649 auf allen Seiten. Schrift Asset-Seite vorher 70 % in 11 px → jetzt 18–19 px; Trends 18–20, Journal 19–20, Set-ups 18–19. Fenster 1780 px breit, 18–1422 px hoch (im Bild).
+  - Unter ~1560 px Breite unverändert (Maßstab 1).
+- **Entfernt** (TradingView führt sie nicht mehr, Sonde 10.11.): EUR *Negotiated Wage Growth* (Avg Hourly Earnings), JPY *Retail Sales m/m*, NZD *ANZ Roy Morgan Consumer Confidence* — einmalig per `indOhneQuelleEntfernen` (auch verbundene Assets, z. B. DAX), Stammdaten `applicable:false`.
+- **Wächter:** `check/breit.js` C (jede Seite = Maßstab des Dashboards) + Gegenprobe.
+- **Nebenbefund (mit heutigen Daten rot, unabhängig von dieser Änderung):** Makro-Charts 1180 px — bei NFP und ADP überlappten zwei Werte um 1 px. Halbe Textbreite +8 % (die gemessene Breite liegt bei 700er Schrift knapp unter der gezeichneten). `check/geldmenge.js` D verlangt Modell ≥ 31 statt genau 31.
+
 ## 2026-11-10 — Nachlauf zu 708: ⓘ-Abstand fest, Data-Prüfung zählt die Legende (VERSION-CHECK-709)
 
 - **CI nach 708:** 3 rot (`einheit`, `filterfest`, `datalayout`) statt 9.

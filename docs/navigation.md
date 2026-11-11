@@ -1625,3 +1625,10 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **Große Bildschirme (2026-11-08):** Das Dashboard hat ein 1480-px-Raster; ist mehr Platz da, wird es als Ganzes hochskaliert (`zoom` über `--dx-zoom`, `dashZoomSetzen`, höchstens 1,8), statt nur breiter zu werden - Schrift, Karten und Kugel wachsen mit. Wer im Dashboard misst (`getBoundingClientRect`) und Pixel setzt, muss durch den Zoom teilen (Beispiel `lgKarte`). Die Kugel rechnet den Zoom in ihre Auflösung ein. Geprüft: `check/dashboard.js` bis 2560 px.
 - Market overview 1D (2026-11-07, Wahl 2026-11-08 „Outline“): Länder-Umriss statt Tageskerze (kein Verlauf im Tag). Paar = Basis (Farbe der Tagesveränderung) / Quote (neutral), Index = sein Land, Gold/Silber/Öl/Krypto = eigenes Symbol. Daten `country_shapes.json` (`tools/laender-umrisse.mjs`, Natural Earth 1:50m, EUR = Euro-Raum vereinigt). Code `js/kachelbild.js`. Globe/Logo-Varianten entfernt.
 - Watchlist-Seite: Papierkorb im Kartenkopf; Dashboard Market overview: × nur auf Kacheln, die auf der Watchlist stehen. Beide rufen `watchEntfernen()` (Undo über den Pfeil oben). Kein Bearbeitungsmodus - der Knopf ist immer sichtbar.
+
+## Große Bildschirme: ein Maßstab für alles (2026-11-10)
+
+- **Jede Seite und jedes Fenster wächst im selben Maßstab wie das Dashboard** (Breite / 1480, höchstens 1,8; `--pg-zoom`, `seitenZoomSetzen`).
+- **Neue Seite:** nichts zu tun, die Regel hängt an `#pageArea>.pc`. Neue Überlagerung außerhalb von `.modal`: Maßstab selbst übernehmen.
+- **Grenzen in `vh`/`dvh` an skalierten Elementen** durch `var(--pg-zoom,1)` teilen.
+- Geprüft von `check/breit.js` C.

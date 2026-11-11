@@ -92,6 +92,7 @@ const JR_MODELL_NOTIZ={
   27:'trend rows removed from the score (inflation, unemployment and consumer confidence trend over 3 months): the level block keeps inflation vs target, unemployment and wages vs normal',
   28:'rebuild after measuring 2016–2026 (currencies only): level block removed, COT counts against the speculators, 10Y trend replaced by the yield curve (10Y−2Y), 2Y trend + gap capped at ±1.25, jobs report at ±1, consumer confidence at ±0.5, PPI and claims half, PCE/ZEW/EUR GDP/EUR+GBP retail shown only, CAD oil weight 0.5',
   31:'new row Money Supply in Inflation for all eight currencies (EUR/CHF/JPY/AUD/NZD M3, GBP M4, USD M2, CAD M2++), counted in the score',
+  32:'removed three indicators the data source no longer publishes: EUR negotiated wages, JPY retail sales m/m, NZD ANZ consumer confidence',
   30:'new row OIL Oil Inventories (weekly EIA crude stocks, half weight, a draw is bullish); GBP MPC Vote Split (hike-cut-hold) is shown only and counts 0',
   29:'NZD drivers: ANZ Business Confidence, Global Dairy Trade, terms of trade, building consents and business inflation expectations added; consumer confidence is ANZ-Roy Morgan (monthly) instead of Westpac; core CPI is the non-tradables CPI from Stats NZ; labour cost index and PPI output now live',
 };

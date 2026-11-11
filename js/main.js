@@ -3435,7 +3435,7 @@ const IND_RESEARCH_DATA={
     {rubric:'Labour Market',indicator:'Unemployment Rate',applicable:true,actual:'6.3%',forecast:'6.3%',previous:'6.3%',releaseDate:'2026-06-01',interval:'monthly',source:'https://www.investing.com/economic-calendar/unemployment-rate-299'},
     {rubric:'Labour Market',indicator:'ADP Employment',applicable:false},
     {rubric:'Labour Market',indicator:'JOLTS Job Openings',applicable:true,actual:'2.2% (Job Vacancy Rate)',forecast:null,previous:'2.1%',releaseDate:'2026-03-18',interval:'quarterly',source:'https://tradingeconomics.com/euro-area/job-vacancy-rate'},
-    {rubric:'Labour Market',indicator:'Avg Hourly Earnings',applicable:true,actual:'2.46% (Negotiated Wage Growth y/y)',forecast:null,previous:'2.95%',releaseDate:'2026-05-22',interval:'quarterly',source:'https://tradingeconomics.com/euro-area/negotiated-wage-growth',period:null},
+    {rubric:'Labour Market',indicator:'Avg Hourly Earnings',applicable:false,actual:'2.46% (Negotiated Wage Growth y/y)',forecast:null,previous:'2.95%',releaseDate:'2026-05-22',interval:'quarterly',source:'https://tradingeconomics.com/euro-area/negotiated-wage-growth',period:null},
     {rubric:'Labour Market',indicator:'Unemployment Claims',applicable:false},
     {rubric:'Economic Growth',indicator:'GDP Growth QoQ',applicable:true,actual:'-0.2% (Eurostat, revised)',forecast:null,previous:'0.2% (Q4 2025)',releaseDate:'2026-06-05',interval:'quarterly',source:'https://www.investing.com/economic-calendar/european-gross-domestic-product-(gdp)-qoq-120'},
     {rubric:'Economic Growth',indicator:'Manufacturing PMI',applicable:true,actual:'51.6 (HCOB)',forecast:'51.2',previous:'52.2',releaseDate:'2026-06-02',interval:'monthly',source:'https://www.investing.com/economic-calendar/european-manufacturing-purchasing-managers-index-(pmi)-201'},
@@ -3523,7 +3523,7 @@ const IND_RESEARCH_DATA={
     // (Netzwerk in dieser Sandbox eingeschraenkt). Der Wert selbst (1.3%) sieht
     // nach der m/m-Aenderung aus (METI), daher period:'M/M' schon gesetzt -
     // bitte Link bei Gelegenheit mit der korrekten investing.com-ID ersetzen.
-    {rubric:'Economic Growth',indicator:'Retail Sales',period:'M/M',applicable:true,actual:'1.3% (METI, April 2026)',forecast:'1.3%',previous:'1.0% (rev.)',releaseDate:'2026-05-28',interval:'monthly',source:'https://www.investing.com/economic-calendar/retail-sales-261'},
+    {rubric:'Economic Growth',indicator:'Retail Sales',period:'M/M',applicable:false,actual:'1.3% (METI, April 2026)',forecast:'1.3%',previous:'1.0% (rev.)',releaseDate:'2026-05-28',interval:'monthly',source:'https://www.investing.com/economic-calendar/retail-sales-261'},
     {rubric:'Economic Growth',indicator:'Consumer Confidence',applicable:true,actual:'32.2 (Cabinet Office, April 2026)',forecast:null,previous:'33.3 (March 2026)',releaseDate:'2026-05-13',interval:'monthly',source:'https://www.investing.com/economic-calendar/household-confidence-148'},
   ]},
   CAD:{entries:[
@@ -3607,7 +3607,7 @@ const IND_RESEARCH_DATA={
     // - Nutzer-Entscheid nach Messung, siehe docs/score-model.md. Ohne eigenen
     // Startwert: den Wert liefert der Feed; der Eintrag traegt nur Takt und
     // Quellen-Link (der alte zeigte auf die Westpac-Seite).
-    {rubric:'Economic Growth',indicator:'Consumer Confidence',applicable:true,interval:'monthly',source:'https://www.roymorgan.com/'},
+    {rubric:'Economic Growth',indicator:'Consumer Confidence',applicable:false,interval:'monthly',source:'https://www.roymorgan.com/'},
     // Neue NZD-Treiber (Nutzer-Entscheid 2026-10-27) - Werte nur aus dem Feed.
     {rubric:'Economic Growth',indicator:'Business Confidence',applicable:true,interval:'monthly',source:'https://www.anz.co.nz/'},
     {rubric:'Economic Growth',indicator:'GDT Price Index',applicable:true,interval:'every 2 weeks',source:'https://www.globaldairytrade.info/'},
@@ -3982,7 +3982,22 @@ function researchBias(name,actual,forecast,previous){
 // fehlende High-Impact-Indikatoren und trägt bei gefundenen Daten den
 // letzten bekannten Wert (Akt/Forecast/Previous) + Intervall-Badge ein.
 // Läuft pro Symbol nur einmal.
+// Reihen, die TradingView seit 11/2026 nicht mehr fuehrt (Sonde
+// probe-tv-titel.yml): EUR Negotiated Wage Growth, JPY Retail Sales MoM, NZD
+// ANZ Roy Morgan Consumer Confidence. Nutzer 2026-11-10: "wenn die Daten nicht
+// verfuegbar sind dann rausnehmen". Einmalig, auch bei verbundenen Assets.
+const IND_OHNE_QUELLE={EUR:['Avg Hourly Earnings'],JPY:['Retail Sales'],NZD:['Consumer Confidence']};
+function indOhneQuelleEntfernen(sym){
+  if(!sym||sym._ohneQuelle1)return false;
+  let weg=false;
+  try{const w=IND_OHNE_QUELLE[effLinkCcy(sym)];
+    if(w)(sym.rubrics||[]).forEach(r=>{if(!r.indicators)return;const n=r.indicators.length;r.indicators=r.indicators.filter(i=>!w.includes(stripPeriodSuffix(i.name).base));if(r.indicators.length!==n)weg=true;});
+  }catch(e){}
+  sym._ohneQuelle1=true;
+  return weg;
+}
 function applyIndResearch(sym){
+  indOhneQuelleEntfernen(sym);
   if(sym._researchV25)return;
   // Aufräumen: alte "Letzter Wert: ..."-Stichpunkte aus v2 entfernen
   (sym.rubrics||[]).forEach(rub=>{
@@ -17610,7 +17625,23 @@ function dashZoomSetzen(){
   if(z===1)w.style.removeProperty('--dx-zoom');else w.style.setProperty('--dx-zoom',z.toFixed(3));
   if(curPage==='dash'&&document.querySelector('#dashGlobeHost svg'))startGlobes({neu:true});
 }
-try{let _dzT;window.addEventListener('resize',()=>{clearTimeout(_dzT);_dzT=setTimeout(()=>{if(curPage==='dash')dashZoomSetzen();},120);});}catch(e){}
+// Alle anderen Seiten wachsen im SELBEN Massstab mit (Nutzer 2026-11-10:
+// "starte danach damit das es sich alles gleich vergroessert auch am pc").
+// Gemessen 2560 px vorher: Dashboard 18-22 px Schrift, Asset-Seite 70 % des
+// Texts in 11 px. Gleiche Formel wie dashZoomSetzen (Breite / 1480, hoechstens
+// 1,8); gesetzt als --pg-zoom am #pageArea, CSS zoom an jeder Seite ausser
+// dem Dashboard (das skaliert sein Raster selbst) und an den Fenstern.
+function seitenZoomSetzen(){
+  const pa=document.getElementById('pageArea');if(!pa||!pa.clientWidth)return;
+  const pd=document.getElementById('pgDash');let rand=40;
+  try{if(pd){const cs=getComputedStyle(pd);const r=parseFloat(cs.paddingLeft||0)+parseFloat(cs.paddingRight||0);if(r>0)rand=r;}}catch(e){}
+  const verf=pa.clientWidth-rand,z=verf>DASH_BASIS_PX?Math.min(1.8,verf/DASH_BASIS_PX):1;
+  const R=document.documentElement,alt=parseFloat(R.style.getPropertyValue('--pg-zoom'))||1;
+  if(Math.abs(alt-z)<0.004)return;
+  if(z===1)R.style.removeProperty('--pg-zoom');else R.style.setProperty('--pg-zoom',z.toFixed(3));
+}
+try{let _dzT;window.addEventListener('resize',()=>{clearTimeout(_dzT);_dzT=setTimeout(()=>{seitenZoomSetzen();if(curPage==='dash')dashZoomSetzen();},120);});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',seitenZoomSetzen);else setTimeout(seitenZoomSetzen,0);}catch(e){}
 function renderDash(){
   beginRenderPass();
   updateAuroraColors();
@@ -17651,6 +17682,7 @@ function renderDash(){
   if(_evN)_evL.scrollTop=Math.max(0,_evN.offsetTop-_evL.offsetTop-68);
   // Kugel: beim Betreten startet showTab sie; hier nur, falls das Geruest neu ist
   // und renderDash ohne Seitenwechsel lief (z. B. erster Aufbau beim Laden).
+  seitenZoomSetzen();
   if(curPage==='dash')dashZoomSetzen();
   if(neu&&curPage==='dash')requestAnimationFrame(()=>{if(curPage==='dash'&&!document.querySelector('#dashGlobeHost svg'))startGlobes();});
   dashUhrStarten();

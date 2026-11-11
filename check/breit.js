@@ -10,6 +10,7 @@ const PW=process.env.PW_PATH||'/opt/node22/lib/node_modules/playwright';
 // Prueft bei 1600/1920/2560 px auf allen Seiten (+ Asset-Seite FX und Gold):
 //   A) kein Raster mit einer Spalte, in der nichts steht (>= 120 px breit)
 //   B) die Karten reichen bis an den rechten Rand des Inhaltsbereichs (<= 60 px)
+//   C) alle Seiten im selben Massstab wie das Dashboard (2026-11-10)
 // Gegenprobe --gegenprobe: die alte Kompakt-Regel wieder eingespielt -> rot.
 const {chromium}=require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
@@ -27,6 +28,7 @@ const KARTEN='.dw,.dx-card,.cot-card,.rub-card,.tr-card,.ov-card,.pov-card,.aaii
     await p.evaluate(()=>{const l=document.getElementById('lockScreen');if(l)l.remove();document.querySelectorAll('.ov').forEach(o=>o.style.display='none');});
     await wartenBisDatenDa(p);
     await p.evaluate(()=>{document.querySelectorAll('.mov,.mov2').forEach(m=>m.style.display='none');try{['EUR/USD','GBP/USD','USD/JPY'].forEach(n=>toggleWatch(n));}catch(e){}});
+    if(GP)await p.addStyleTag({content:'#pageArea>.pc:not(#pgDash),#pageArea>.body{zoom:1!important}'});
     if(GP)await p.addStyleTag({content:'@media(min-width:1500px){body.dense-mode .ab-cards>.ab-orow{grid-template-columns:repeat(4,minmax(0,1fr))}}'});
     for(const t of TABS){
       const [tab,sym]=t.split(':');
@@ -55,10 +57,17 @@ const KARTEN='.dw,.dx-card,.cot-card,.rub-card,.tr-card,.ov-card,.pov-card,.aaii
       },{t,KARTEN});
       r.forEach(x=>F.push(w+'x'+h+' '+x));
     }
+    // C) 2026-11-10 ("alles gleich vergroessert auch am pc"): jede Seite traegt
+    //    denselben Massstab wie das Dashboard (Breite / 1480), Fenster ebenso.
+    const z=await p.evaluate(()=>{showTab('dash');const d=parseFloat(getComputedStyle(document.getElementById('dashWidgets')).zoom)||1;
+      const o={dash:d,seiten:{}};['mx','cot','cal','journal'].forEach(t=>{showTab(t);const pg=[...document.getElementById('pageArea').children].find(c=>c.offsetParent);o.seiten[t]=parseFloat(getComputedStyle(pg).zoom)||1;});
+      gotoSym('USD');const pg=[...document.getElementById('pageArea').children].find(c=>c.offsetParent);o.seiten.cur=parseFloat(getComputedStyle(pg).zoom)||1;return o;});
+    if(w>=1900&&z.dash<1.02)F.push(w+'x'+h+' C MASSSTAB: Dashboard waechst nicht ('+z.dash+')');
+    Object.entries(z.seiten).forEach(([t,v])=>{if(Math.abs(v-z.dash)>0.02)F.push(w+'x'+h+' C MASSSTAB: '+t+' '+v.toFixed(2)+' statt '+z.dash.toFixed(2)+' (Dashboard)');});
     await p.close();
   }
   await b.close();
-  if(GP){const ok=F.some(f=>/cur:USD: Raster \.ab-orow\.ab-prow hat 3 leere/.test(f))&&F.some(f=>/cur:USD: Raster \.ab-orow\.ab-orow3 hat 1 leere/.test(f));
+  if(GP){const ok=F.some(f=>/C MASSSTAB: cur/.test(f))&&F.some(f=>/cur:USD: Raster \.ab-orow\.ab-prow hat 3 leere/.test(f))&&F.some(f=>/cur:USD: Raster \.ab-orow\.ab-orow3 hat 1 leere/.test(f));
     console.log(ok?'breit --gegenprobe: ok (alte Kompakt-Regel = leere Spalten in Price- und Dreierzeile)':'breit --gegenprobe: FEHLER - nicht gemeldet\n  '+F.join('\n  '));process.exit(ok?0:1);}
   if(F.length){console.log('breit: '+F.length+' Befund(e)\n  '+F.join('\n  '));process.exit(1);}
   console.log('breit: ok ('+TABS.length+' Seiten x 1600/1920/2560 px: keine leeren Rasterspalten, Karten bis an den rechten Rand)');

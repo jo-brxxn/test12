@@ -87,7 +87,7 @@ fs.readdirSync(path.join(ROOT, 'cal_hist')).filter(f => /^\d{4}\.json$/.test(f))
   ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'NZD'].forEach(c => { if (!new RegExp('\\n  ' + c + ":\\{'Money Supply':'M").test(main)) fail('D', `${c}: Anzeigename fehlt`); });
   if (!em.includes("IND_EVENT_MATCHERS['Money Supply'].nurTermin=true;")) fail('D', 'Kalender-Muster liefert auch den Wert (USD-Bestand!)');
   if (!pk.includes(M_REF)) fail('D', 'Price-Karte: datumArt "ref" setzt Pfeile auf Monatsenden statt auf den Release');
-  if (!/const SCORE_MODEL_VERSION=31;/.test(score) || !/\n\s+31:'new row Money Supply/.test(jr)) fail('D', 'Score-Modell 31 oder Journal-Zeile fehlt');
+  if (!(+(score.match(/const SCORE_MODEL_VERSION=(\d+);/) || [])[1] >= 31) || !/\n\s+31:'new row Money Supply/.test(jr)) fail('D', 'Score-Modell 31 oder Journal-Zeile fehlt');
 }
 
 if (GP) { console.log(F.length ? `geldmenge: Gegenprobe ok - ${F.length} Befund(e) rot, wie erwartet:\n  ` + F.join('\n  ') : 'geldmenge: Gegenprobe FEHLGESCHLAGEN - Waechter bleibt gruen'); process.exit(F.length ? 0 : 1); }
