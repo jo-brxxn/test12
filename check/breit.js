@@ -47,7 +47,7 @@ const KARTEN='.dw,.dx-card,.cot-card,.rub-card,.tr-card,.ov-card,.pov-card,.aaii
           if(!kinder.length)return;
           // 2026-11-11: die Seite waechst mit (--pg-zoom) - die 120 px gelten im Massstab der Seite,
           // sonst wird eine Ausrichtungsspalte der History-Zeile (117 px, bei 2560 px 193 px) zum Befund.
-          const zf=parseFloat(getComputedStyle(pa.querySelector(':scope > *')||pa).zoom)||parseFloat(getComputedStyle(g.closest('#pageArea>*')||pa).zoom)||1;
+          const zf=parseFloat(getComputedStyle(g.closest('#pageArea>*')||pa).zoom)||1;
           const leer=spuren.filter(([a,e])=>e-a>=120*zf&&!kinder.some(c=>{const q=c.getBoundingClientRect();return Math.min(q.right,e)-Math.max(q.left,a)>(e-a)*0.5;}));
           if(leer.length){const n=(g.id?'#'+g.id:'')+(typeof g.className==='string'&&g.className?'.'+g.className.trim().split(/\s+/).slice(0,2).join('.'):g.tagName.toLowerCase());
             out.push(`${t}: Raster ${n} hat ${leer.length} leere Spalte(n) von ${sp.length} (${Math.round(leer[0][1]-leer[0][0])} px breit)`);}
@@ -63,8 +63,8 @@ const KARTEN='.dw,.dx-card,.cot-card,.rub-card,.tr-card,.ov-card,.pov-card,.aaii
     // C) 2026-11-10 ("alles gleich vergroessert auch am pc"): jede Seite traegt
     //    denselben Massstab wie das Dashboard (Breite / 1480), Fenster ebenso.
     const z=await p.evaluate(()=>{showTab('dash');const d=parseFloat(getComputedStyle(document.getElementById('dashWidgets')).zoom)||1;
-      const o={dash:d,seiten:{}};['mx','cot','cal','journal'].forEach(t=>{showTab(t);const pg=[...document.getElementById('pageArea').children].find(c=>c.offsetParent);o.seiten[t]=parseFloat(getComputedStyle(pg).zoom)||1;});
-      gotoSym('USD');const pg=[...document.getElementById('pageArea').children].find(c=>c.offsetParent);o.seiten.cur=parseFloat(getComputedStyle(pg).zoom)||1;return o;});
+      const o={dash:d,seiten:{}};['mx','cot','cal','journal'].forEach(t=>{showTab(t);const pg=[...document.getElementById('pageArea').children].find(c=>c.offsetParent&&/^pg/.test(c.id));o.seiten[t]=parseFloat(getComputedStyle(pg).zoom)||1;});
+      gotoSym('USD');const pg=[...document.getElementById('pageArea').children].find(c=>c.offsetParent&&/^pg/.test(c.id));o.seiten.cur=parseFloat(getComputedStyle(pg).zoom)||1;return o;});
     if(w>=1900&&z.dash<1.02)F.push(w+'x'+h+' C MASSSTAB: Dashboard waechst nicht ('+z.dash+')');
     Object.entries(z.seiten).forEach(([t,v])=>{if(Math.abs(v-z.dash)>0.02)F.push(w+'x'+h+' C MASSSTAB: '+t+' '+v.toFixed(2)+' statt '+z.dash.toFixed(2)+' (Dashboard)');});
     await p.close();

@@ -17625,6 +17625,27 @@ function dashZoomSetzen(){
   if(z===1)w.style.removeProperty('--dx-zoom');else w.style.setProperty('--dx-zoom',z.toFixed(3));
   if(curPage==='dash'&&document.querySelector('#dashGlobeHost svg'))startGlobes({neu:true});
 }
+// ── Heller Modus: Varianten zur Wahl (VORUEBERGEHEND, 2026-11-11) ─────────
+// Siehe CSS-Block "HELLER MODUS: VARIANTEN". Nur Vorschau: localStorage,
+// kein Sync. Nach der Wahl des Nutzers fest einbauen und das hier loeschen.
+const HELL_VAR=[['','Now'],['a','A'],['b','B'],['ab','A+B'],['c','C']];   // A = dark anchors, B = tinted canvas, C = colour in the data
+function hellVorschauSetzen(v){
+  v=HELL_VAR.some(x=>x[0]===v)?v:'';
+  try{v?localStorage.setItem('fxpro_hell_vorschau',v):localStorage.removeItem('fxpro_hell_vorschau');}catch(e){}
+  if(v)document.documentElement.setAttribute('data-hell',v);else document.documentElement.removeAttribute('data-hell');
+  hellWahlZeichnen();
+}
+function hellWahlZeichnen(){
+  const el=document.getElementById('hellBtn');if(!el)return;
+  const akt=document.documentElement.getAttribute('data-hell')||'';
+  el.textContent='Style: '+((HELL_VAR.find(x=>x[0]===akt)||HELL_VAR[0])[1]);
+}
+function hellVorschauWeiter(){
+  const akt=document.documentElement.getAttribute('data-hell')||'',i=HELL_VAR.findIndex(x=>x[0]===akt);
+  hellVorschauSetzen(HELL_VAR[(i+1)%HELL_VAR.length][0]);
+}
+try{const _hv=localStorage.getItem('fxpro_hell_vorschau')||'';if(_hv)document.documentElement.setAttribute('data-hell',_hv);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',hellWahlZeichnen);else setTimeout(hellWahlZeichnen,0);}catch(e){}
 // Alle anderen Seiten wachsen im SELBEN Massstab mit (Nutzer 2026-11-10:
 // "starte danach damit das es sich alles gleich vergroessert auch am pc").
 // Gemessen 2560 px vorher: Dashboard 18-22 px Schrift, Asset-Seite 70 % des
@@ -27483,7 +27504,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

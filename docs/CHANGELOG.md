@@ -6614,6 +6614,15 @@ falsch-positiv.
 
 ---
 
+## 2026-11-11 — Heller Modus: vier Varianten zur Wahl (Vorschau, vorübergehend) (VERSION-CHECK-712)
+
+**Nutzer 2026-11-10:** *„im light Mode was kann man da im Design ändern um es nicht so komplett weis aussehen zu lassen“* — gemessen 72–95 % der Inhaltsfläche sehr hell, 0–5 % klar farbig; Seite `#E9F0F8` gegen Karte `#F8FAFD`.
+
+- **Knopf „Style: …“ in der Kopfzeile** (nur heller Modus, ab 1100 px) schaltet durch: *Now* → **A** (dunkle Anker: Asset-Kopf + Price-Karte in Navy) → **B** (getönte Fläche `#CFDBEA`, Kartenköpfe als Band) → **A+B** → **C** (Beat/Miss-Zellen getönt, farbige Oberkante).
+- **Nur Vorschau:** `localStorage['fxpro_hell_vorschau']`, bewusst nicht synchronisiert (`check/rules.js` LOKAL_ERLAUBT: `vorschau`).
+- **Zwei Fehlversuche beim Umschalter:** schwebend unten rechts überdeckte Bedienelemente (`designregeln` F, 18 Befunde); als Leiste im Seitenbereich störte er Seitenwechsel und Data-Raster (`uebergang`, `datalayout`). Ein Knopf in der Kopfzeile ändert kein Seitenlayout.
+- **Nach der Wahl:** gewählte Fassung fest einbauen, Knopf und übrige Blöcke löschen.
+
 ## 2026-11-11 — Price-Karte: Biggest moves (VERSION-CHECK-711)
 
 **Nutzer 2026-11-10:** *„was für eine Lösung gibt es bei den Assets auf einen Blick zu haben warum die sich in der Vergangenheit bewegt haben“* — Vorschlag angenommen (*„mach alles“*).
