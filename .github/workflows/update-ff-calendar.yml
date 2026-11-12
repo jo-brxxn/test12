@@ -6342,6 +6342,7 @@ jobs:
           [ -f news_data.json ] && git add news_data.json
           [ -f country_data.json ] && git add country_data.json
           [ -f sektor_data.json ] && git add sektor_data.json
+          [ -d sektor_hist ] && git add sektor_hist
           if ! git diff --staged --quiet; then
             git commit -m "Update FF calendar + indicator data"
             # Retry mit Rebase bei Push-Kollision (Nutzer-Wunsch 2026-07-13:

@@ -22082,3 +22082,13 @@ Nutzer: *„Zeig die Reihen nur an und lösche den Code zu der Chart Ansicht und
 - **`infoKnoepfeEinordnen`**: messen-dann-schreiben. **`syncNavExpanded`**: `--nav-top` per ResizeObserver. **`triggerFlipGlow`**: ein Timer. **Länderumrisse**: nur `.dx-mkt-grid` tauschen, früh anfordern. **`rerenderBald`**: Startphase 700 ms bündeln.
 - Wächter `check/leerlauf.js` (Gegenprobe `__gpGlobusJedesBild`).
 - **Offen (gemessen, nicht behoben):** Score-Neuberechnung beim Laden (`recomputeAuto` 3× ≈ 660 ms, `recordScoreHist` 6× ≈ 300 ms), `doSave` je Speichern ≈ 130 ms (Score-Historie + Journal), `renderDash` ≈ 300 ms je Aufbau (`symScoreCmp` ohne Zwischenspeicher).
+
+## 2026-11-12 — Sectors wie die Haupt-Karten, volle Historie (VERSION-CHECK-717)
+
+Nutzer (iPad-Foto, Sectors USD): *„Das muss ich nach unten erweitern und dann Logo wie bei den anderen Karten und ich will das so haben wie bei den Main Indikatoren das wenn ich drauf klicke sich das alles ausklappt und mit Historie. Und statt Datum will ich den previous wert … Oder zieht das zu viel Speicherplatz wenn man die ganze Historie hat?“*
+
+- **Speicher gemessen:** volle Historie = 33.660 Werte; als `sektor_hist/<CCY>.json` 658 KB roh für alle 8 Währungen, USD 218 KB → 47 KB über das Netz (gzip). Geladen erst beim Aufklappen, je Währung einmal je Sitzung; nichts in localStorage. → umgesetzt.
+- **Aufbau:** `.ind-table` mit derselben Spaltenaufteilung wie die Haupt-Karten (26/16/15/15/13/15 %), Prev statt Datum, Next aus dem Kalender, Trd = letzte vier Werte. Tipp → Quellenzeile + `indHistChart` (Niveau-Reihen als Linie, Raten als Balken).
+- **Karten gleich hoch** (`height:100%`), Logo in der freien Fläche (gemessen 1366 px: 1534/1534/1534 px, Logo in Karte 1 und 2).
+- **Fund beim Prüfen:** Aufklapp-Zustand galt über alle Währungen (USD offen → bei NZD schon offen, Tipp schloss). Jetzt je Währung.
+- Wächter `check/sektoren.js` erweitert (6 Spalten, Prev, Aufklappen mit Chart, gleiche Höhe).

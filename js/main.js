@@ -23,7 +23,7 @@ import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 // Hero-Zeichnung des Dashboards (Nutzer 2026-11-06, siehe Kopf von heroart.js).
 import {heroArtSvg} from './heroart.js';
 // Sektoren-Katalog der MACRO-Zeile (2026-11-12, nur Anzeige) - dieselbe Liste baut sektor_data.json.
-import {SEKTOREN,SEKTOR_FRISCH_TAGE} from './sektoren-katalog.js';
+import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.js';
 import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './kachelbild.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
@@ -11589,6 +11589,44 @@ function sektorDatenHolen(){
     .finally(()=>{skLaden=null;if(makroSektorenAn&&curPage==='cur')renderDetail();});
 }
 function sektorAnzeigeName(r,w){return r.n+(w&&w.per?' '+w.per:'');}
+// Aufbau wie die drei Haupt-Karten (Nutzer 2026-11-12: "statt Datum will ich
+// den previous wert also komplett gleicher Aufbau wie die 3 Main Karten"):
+// Indicator | Act | Fc | Prev | Next | Trd, Tipp klappt Quelle + Verlauf auf.
+// Volle Historie je Waehrung: sektor_hist/<CCY>.json, erst beim Aufklappen.
+const SK_HIST={},SK_HIST_LADEN={},skOffen=new Set();
+function sektorHistHolen(ccy){
+  if(SK_HIST[ccy])return Promise.resolve(SK_HIST[ccy]);
+  if(!SK_HIST_LADEN[ccy])SK_HIST_LADEN[ccy]=fetch(DATA_BASE+'sektor_hist/'+ccy+'.json?t='+Math.floor(Date.now()/3e5),{signal:AbortSignal.timeout(FEED_TIMEOUT_MS),cache:'no-store'})
+    .then(r=>r.ok?r.json():null).then(d=>{if(d&&d.reihen){SK_HIST[ccy]=d.reihen;return d.reihen;}throw new Error('empty');})
+    .finally(()=>{delete SK_HIST_LADEN[ccy];});
+  return SK_HIST_LADEN[ccy];
+}
+function sektorNaechste(ccy){
+  // naechster Termin je Titel (ohne Prel/Final ...) aus dem Kalender
+  const m={},heute=todayStr();
+  (calEvts||[]).forEach(ev=>{if(!ev||!ev.date||ev.date<heute||!ev.name||!evtMatchesSym(ev,ccy))return;const k=sektorTitelBasis(ev.name);if(!m[k]||ev.date<m[k].date)m[k]=ev;});
+  return m;
+}
+function sektorZeileHtml(r,w,c,naechst){
+  const farbe=w.f!=null?actualColor({name:w.t,actual:w.a,forecast:w.f,previous:w.p},c.id):'';
+  const vh=(w.h||[]).slice(-4).map(x=>parseNumLike(x[1])).filter(v=>v!=null&&isFinite(v));
+  const spark=indSparklineSvg({valHist:vh},farbe==='act-good'?BC.bull:farbe==='act-bad'?BC.bear:'var(--t2)');
+  const ev=naechst[sektorTitelBasis(w.t)];
+  let next='<span class="ir-dash" title="No scheduled release in the calendar window">–</span>';
+  if(ev){const d=daysUntil(ev.date),soon=d<=IND_NEXT_SOON_D;next=`<span class="ir-next${soon?' soon':''}" title="Next release: ${escH(ev.name)} — ${escH(fmtDayHdr(ev.date))}">${d<=0?'!':d+'d'}</span>`;}
+  const offen=skOffen.has(macroCcyFor(c.id)+':'+r.k);
+  return`<tr class="ind-row sk-zeile" data-sk="${escH(r.k)}" onclick="sektorZeile(event,'${escJH(r.k)}')" title="${escH(w.t)} — tap for source and history">
+    <td class="ir-name"><span class="ir-name-txt">${escH(sektorAnzeigeName(r,w))}</span>${w.est?'<span class="ir-await">EST</span>':''}</td>
+    <td class="ir-act${farbe?' '+farbe:''}">${escH(w.a)}</td>
+    <td class="ir-fc">${w.f!=null?escH(w.f):'–'}</td>
+    <td class="ir-prev">${w.p!=null?escH(w.p):'–'}</td>
+    <td class="ir-nextc">${next}</td>
+    <td class="ir-trend">${spark||'<span class="ir-dash">–</span>'}</td></tr>
+  <tr class="ind-detail-row" id="skDetail-${escH(r.k)}" style="${offen?'':'display:none'}"><td colspan="6"><div class="ind-data-body">
+    <div class="ind-data-src"><span class="ind-data-lbl">As of:</span> ${escH(fmtDayHdr(w.d))} · <i>${escH(w.t)}</i> · TradingView calendar · <i>display only, not in the score</i></div>
+    <div class="ind-hist-holder" data-sk="${escH(r.k)}"></div></div></td></tr>`;
+}
+const SK_KOPF=`<colgroup><col style="width:26%"><col style="width:16%"><col style="width:15%"><col style="width:15%"><col style="width:13%"><col style="width:15%"></colgroup>`;
 function sektorenHtml(c){
   const ccy=macroCcyFor(c.id);
   if(!SK_DATA){
@@ -11596,33 +11634,55 @@ function sektorenHtml(c){
     return`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note">${skFehler?'<b>Sector data unavailable</b><span>sektor_data.json could not be loaded</span><button class="sk-retry" onclick="sektorNeuLaden()">Retry</button>':'<b>Loading sector data</b>'}</div></div>`;
   }
   const W=(SK_DATA.ccy&&SK_DATA.ccy[ccy])||{};
+  const naechst=sektorNaechste(ccy);
   let gesamt=0;
   const karten=SEKTOREN.map(sek=>{
+    let erste=true,n=0;
     const gruppen=sek.gruppen.map(g=>{
-      const zeilen=g.reihen.filter(r=>W[r.k]).map(r=>{
-        const w=W[r.k];gesamt++;
-        const farbe=w.f!=null?actualColor({name:w.t,actual:w.a,forecast:w.f,previous:w.p},c.id):'';
-        return`<button type="button" class="sk-row" onclick="sektorDetail('${escJH(r.k)}')" title="${escH(w.t)}">
-          <span class="sk-row-n">${escH(sektorAnzeigeName(r,w))}${w.est?' <span class="ir-await">EST</span>':''}</span>
-          <b class="sk-row-w ${farbe}">${escH(w.a)}</b>
-          <span class="sk-row-f">${w.f!=null?`<i>fc</i> ${escH(w.f)}`:''}</span>
-          <span class="sk-row-d">${escH(fmtDayShort(w.d,true))}</span></button>`;}).join('');
-      return zeilen?`<div class="sk-gr"><div class="sk-gr-t">${escH(g.titel)}</div>${zeilen}</div>`:'';}).join('');
-    const n=(gruppen.match(/class="sk-row"/g)||[]).length;
+      const zeilen=g.reihen.filter(r=>W[r.k]).map(r=>{gesamt++;n++;return sektorZeileHtml(r,W[r.k],c,naechst);}).join('');
+      if(!zeilen)return'';
+      const kopf=erste?`<thead><tr><th class="iht-name">Indicator</th><th title="Actual — the released value">Act</th><th title="Forecast — what the market expected">Fc</th><th title="Previous — the value before this release">Prev</th><th class="iht-next" title="Next — days until the next release (calendar)">Next</th><th class="iht-trend" title="Trend — the last four readings">Trd</th></tr></thead>`:'';
+      erste=false;
+      return`<div class="sk-gr"><div class="sk-gr-t">${escH(g.titel)}</div><table class="ind-table sk-table">${SK_KOPF}${kopf}<tbody>${zeilen}</tbody></table></div>`;}).join('');
     return gruppen?`<div class="ab-col" data-mkreihe="1"><div class="sk-card" style="--sk:var(--a-${sek.akz})">
       <div class="sk-hd"><span class="sk-t">${escH(sek.titel)}</span><span class="sk-n">${n} series · ${escH(ccy)}</span></div>${gruppen}</div></div>`:'';}).join('');
-  const kopf=`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note"><b>Display only</b><span>not part of the score</span><span><b>${gesamt}</b> series for ${escH(ccy)}</span><span><i>Tap a row for its history</i></span></div></div>`;
+  const kopf=`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note"><b>Display only</b><span>not part of the score</span><span><b>${gesamt}</b> series for ${escH(ccy)}</span><span><i>Tap a row for source and history</i></span></div></div>`;
+  if(skOffen.size)setTimeout(()=>sektorOffeneFuellen(ccy),0);
   return gesamt?kopf+karten:`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note"><b>No sector data for ${escH(ccy)}</b><span>no release in the last ${SK_DATA.frischTage||SEKTOR_FRISCH_TAGE} days</span></div></div>`;
 }
 function sektorNeuLaden(){skFehler=false;SK_DATA=null;renderDetail();}
-function sektorDetail(k){
+function sektorChartHtml(k,ccy,reihen){
+  const w=SK_DATA&&SK_DATA.ccy[ccy]&&SK_DATA.ccy[ccy][k];
+  const roh=reihen&&reihen[k];
+  const pts=(roh||[]).map(x=>[x[0],parseNumLike(x[1]),x[2]!=null?parseNumLike(x[2]):null]).filter(p=>p[1]!=null&&isFinite(p[1])).map(p=>p[2]!=null&&isFinite(p[2])?p:[p[0],p[1]]);
+  const unit=w&&w.taeglich?(/bp/.test(w.a)?' bp':'%'):null;
+  let r=null;SEKTOREN.forEach(s=>s.gruppen.forEach(g=>g.reihen.forEach(x=>{if(x.k===k)r=x;})));
+  // Niveau-Reihen (Zinsen, PMI, Vertrauen, Hauspreis-Index ...) als Linie wie
+  // in den Haupt-Karten; Veraenderungsraten (m/m, q/q) bleiben Balken ab 0.
+  const v=pts.map(p=>p[1]),mn=Math.min(...v),mx=Math.max(...v);
+  const linie=!!unit||(w&&!w.per&&v.length>2&&mn>0&&(mx-mn)/mx<0.6);
+  return indHistChart({id:'sk-'+k,name:r?r.n:k,chartHist:pts,chartUnit:unit},undefined,{group:'ind',linie});
+}
+function sektorFuellen(holder,ccy){
+  const k=holder.dataset.sk;
+  if(SK_HIST[ccy]){holder.innerHTML=sektorChartHtml(k,ccy,SK_HIST[ccy]);holder.dataset.filled='1';try{attachChartHovers(holder);}catch(e){}return;}
+  holder.innerHTML='<div class="ind-hist-empty"><i>Loading history</i></div>';
+  sektorHistHolen(ccy).then(()=>{if(holder.isConnected)sektorFuellen(holder,ccy);})
+    .catch(()=>{if(holder.isConnected)holder.innerHTML='<div class="ind-hist-empty"><b>History unavailable</b> · <i>sektor_hist/'+escH(ccy)+'.json could not be loaded</i></div>';});
+}
+function sektorOffeneFuellen(ccy){
+  document.querySelectorAll('#detail .ind-hist-holder[data-sk]').forEach(h=>{if(skOffen.has(ccy+':'+h.dataset.sk)&&!h.dataset.filled)sektorFuellen(h,ccy);});
+}
+function sektorZeile(ev,k){
   try{
-    const c=getSym();const ccy=macroCcyFor(c.id);const w=SK_DATA&&SK_DATA.ccy[ccy]&&SK_DATA.ccy[ccy][k];if(!w)return;
-    let r=null;SEKTOREN.forEach(s=>s.gruppen.forEach(g=>g.reihen.forEach(x=>{if(x.k===k)r=x;})));
-    const farbe=w.f!=null?actualColor({name:w.t,actual:w.a,forecast:w.f,previous:w.p},c.id):'';
-    const zeilen=[['Actual',`<b class="${farbe}">${escH(w.a)}</b>`],['Forecast',w.f!=null?escH(w.f):'<i>none published</i>'],['Previous',w.p!=null?escH(w.p):'–'],['Released',escH(fmtDayHdr(w.d))],['Source',`<i>${escH(w.t)}</i>`],['Score','<i>display only</i>']];
-    const liste=(w.h||[]).slice().reverse().map(([d,v])=>[fmtDayShort(d,true),`<b>${escH(v)}</b>`]);
-    faktenFenster(sektorAnzeigeName(r||{n:w.t},w)+' · '+ccy,[{zeilen,hinweis:w.taeglich?'<i>Daily series, history shows one value per week</i>':''},{kopf:'History',zeilen:liste}]);
+    if(ev&&ev.target&&ev.target.closest('button,a'))return;
+    const tr=document.getElementById('skDetail-'+k);if(!tr)return;
+    const auf=tr.style.display==='none';
+    tr.style.display=auf?'table-row':'none';
+    const sk=macroCcyFor(getSym().id)+':'+k;
+    if(auf)skOffen.add(sk);else{skOffen.delete(sk);return;}
+    const body=tr.querySelector('.ind-data-body');if(body){body.classList.remove('ind-data-reveal');void body.offsetWidth;body.classList.add('ind-data-reveal');}
+    const h=tr.querySelector('.ind-hist-holder');if(h&&!h.dataset.filled)sektorFuellen(h,macroCcyFor(getSym().id));
   }catch(e){console.error('[sektoren]',e);}
 }
 function makroSektorenSchalterHtml(){
@@ -27305,7 +27365,7 @@ try{new MutationObserver(ms=>{if(!nurTextMutation(ms))kartenIconsNachtragen();})
 // Die Karte wird dafuer (nur dann) Bezugsrahmen (.lg-host) - gemessen
 // 2026-09-24: kein absolut platziertes Kind richtet sich an etwas ausserhalb
 // seiner Karte aus, es verschiebt sich also nichts.
-const LG_KARTEN='.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.ab-ktile,.abc-cal,.rub-card,.dw,.cot-card';
+const LG_KARTEN='.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.ab-ktile,.abc-cal,.rub-card,.dw,.cot-card,.sk-card';
 const LG_MIN_FREI=84;
 const LG_MEDIEN=/^(svg|canvas|img|textarea|input|button|select|video)$/i;
 function lgFreiraum(card){
@@ -27624,7 +27684,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{sektorDetail,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

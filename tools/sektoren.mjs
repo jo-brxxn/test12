@@ -35,7 +35,7 @@ function ausArchiv(ccy,re){
     const tag=new Map();for(const x of alle)tag.set(x.d,x);
     const reihe=[...tag.values()],l=reihe[reihe.length-1];
     if(l.t<grenze)continue;
-    return{t:l.titel,d:l.d,a:l.a,f:l.f,p:l.p,h:reihe.slice(-12).map(x=>[x.d,x.a])};
+    return{t:l.titel,d:l.d,a:l.a,f:l.f,p:l.p,h:reihe.slice(-12).map(x=>[x.d,x.a]),voll:reihe.map(x=>[x.d,x.a,x.f])};
   }
   return null;
 }
@@ -45,6 +45,8 @@ function ausInd(ccy,name){
   const h=Array.isArray(e.history)?e.history.slice(-12).map(x=>[x[0],x[1]]):[];
   const o={t:e.event||name,d:e.date,a:String(e.actual),f:e.forecast!=null&&e.forecast!==''?String(e.forecast):null,p:e.previous!=null&&e.previous!==''?String(e.previous):null,h,ind:name};
   if(e.est)o.est=true;
+  const hv=Array.isArray(e.historyFull)&&e.historyFull.length>=h.length?e.historyFull:(e.history||[]);
+  o.voll=hv.map(x=>[x[0],x[1],x[2]!=null&&x[2]!==''?x[2]:null]);
   return o;
 }
 function ausAnleihe(ccy,art){
@@ -60,11 +62,12 @@ function ausAnleihe(ccy,art){
   const ein=art==='kurve'?' bp':'%';
   // Verlauf: ein Wert je Woche (12 Wochen), sonst waere es nur die letzten 12 Tage
   const h=[];for(let i=reihe.length-1;i>=0&&h.length<12;i-=5)h.unshift([reihe[i][0],reihe[i][1]+ein]);
-  return{t:art==='kurve'?'10Y Bond Yield minus 2Y Bond Yield':art+' Bond Yield',d:l[0],a:l[1]+ein,f:null,p:v[1]+ein,h,taeglich:true};
+  const voll=[];for(let i=reihe.length-1;i>=0;i-=5)voll.unshift([reihe[i][0],reihe[i][1]+ein,null]);
+  return{t:art==='kurve'?'10Y Bond Yield minus 2Y Bond Yield':art+' Bond Yield',d:l[0],a:l[1]+ein,f:null,p:v[1]+ein,h,taeglich:true,voll};
 }
 const per=t=>/yoy|\(3mo\/yr\)|annual growth|y\/y/i.test(t)?'y/y':/mom|m\/m/i.test(t)?'m/m':/qoq|q\/q/i.test(t)?'q/q':null;
 const out={updated:new Date().toISOString(),source:'TradingView calendar archive (cal_hist), ind_data.json, bond_data.json',frischTage:SEKTOR_FRISCH_TAGE,ccy:{}};
-const zahl={};
+const zahl={},hist={};
 for(const ccy of CCYS){
   const o={};
   for(const s of SEKTOREN)for(const g of s.gruppen)for(const r of g.reihen){
@@ -75,7 +78,17 @@ for(const ccy of CCYS){
     if(w&&Object.values(o).some(x=>x.t===w.t))w=null;   // dieselbe Veroeffentlichung steht schon in einer anderen Zeile
     if(w){const z=per(w.t)||(r.ind&&ind[ccy]&&ind[ccy][r.ind]&&per(String(ind[ccy][r.ind].period||'')))||null;if(z)w.per=z;o[r.k]=w;}
   }
+  // Volle Historie je Waehrung in eine eigene Datei (sektor_hist/<CCY>.json),
+  // geladen erst beim Aufklappen einer Zeile (Nutzer 2026-11-12: "wie bei
+  // den Main Indikatoren ... mit Historie"). sektor_data.json bleibt klein.
+  const H={};for(const k in o){if(o[k].voll&&o[k].voll.length)H[k]=o[k].voll;delete o[k].voll;}
+  hist[ccy]=H;
   out.ccy[ccy]=o;zahl[ccy]=Object.keys(o).length;
 }
 console.log('sektor_data: '+CCYS.map(c=>c+' '+zahl[c]).join(', '));
-if(!process.argv.includes('--pruefen'))fs.writeFileSync('sektor_data.json',JSON.stringify(out));
+if(!process.argv.includes('--pruefen')){
+  fs.writeFileSync('sektor_data.json',JSON.stringify(out));
+  fs.mkdirSync('sektor_hist',{recursive:true});
+  let kb=0;for(const c in hist){const t=JSON.stringify({updated:out.updated,ccy:c,reihen:hist[c]});kb+=t.length/1024;fs.writeFileSync('sektor_hist/'+c+'.json',t);}
+  console.log('sektor_hist: '+Math.round(kb)+' KB in '+Object.keys(hist).length+' Dateien');
+}

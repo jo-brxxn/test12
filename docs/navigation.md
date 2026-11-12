@@ -1635,8 +1635,9 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 
 ## MACRO-Zeile: Sectors (2026-11-12, nur Anzeige)
 
-- **Schalter „Sectors“** links neben *Data*: drei Karten *Prices & money*, *Jobs & households*, *Business, trade & government*; je Gruppe Zeilen Name | Ist (fett, Beat/Miss-Farbe) | Prognose | Datum.
-- **Tipp auf eine Zeile** → Fakten-Fenster mit Ist, Prognose, Vorwert, Quelle und Verlauf (12 Werte).
+- **Schalter „Sectors“** links neben *Data*: drei Karten *Prices & money*, *Jobs & households*, *Business, trade & government*.
+- **Aufbau = Haupt-Karten** (seit 717, Nutzer: *„komplett gleicher Aufbau wie die 3 Main Karten“*): je Gruppe eine `.ind-table` Indicator | Act | Fc | Prev | Next | Trd; Tipp klappt Quellenzeile + Chart der vollen Historie auf (`sektor_hist/<CCY>.json`, erst beim Aufklappen geladen). Aufgeklappt bleibt je Waehrung (GOLD = USD).
+- **Karten gleich hoch**, freie Flaeche traegt das Logo (`.sk-card` in `LG_KARTEN`).
 - **Nicht im Score**, nicht gespeichert (Sitzungszustand). Daten: `sektor_data.json` (`docs/data-sources.md`).
 
 ## MACRO-Zeile: Data (2026-11-12)

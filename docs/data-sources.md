@@ -968,4 +968,5 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
 - **Nie geschätzt:** ohne Veröffentlichung in `SEKTOR_FRISCH_TAGE` (200) gibt es die Zeile nicht. Dieselbe Veröffentlichung nie in zwei Zeilen.
 - **EUR nur Eurozone** (Länderzeilen mit Vorsatz German/French/Italian/Spanish ausgeschlossen).
 - **Zeitraum** (y/y, m/m, q/q) steht nicht im Katalognamen, er kommt aus dem Titel der Quelle (NZD-CPI ist q/q).
+- **Volle Historie** je Währung in `sektor_hist/<CCY>.json` (seit 717): Archiv-Reihen ab 2016 (`cal_hist`), Haupt-Indikatoren aus `historyFull`, Renditen wöchentlich. Gemessen 2026-11-12: 658 KB roh für alle 8, USD 218 KB (47 KB gzip). Geladen nur beim Aufklappen, kein localStorage.
 - Wächter: `check/sektoren.js`.
