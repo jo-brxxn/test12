@@ -15,17 +15,16 @@ import {scoreJournal,loadScoreJournal,jrErfassen,jrBootFertig,jrSperren,jrFreige
 // Kalender-Event ↔ Score-Indikator-Muster: eigene Datei ohne Browser-Bezug,
 // damit der Kalender-Workflow dieselben Muster laden kann (2026-10-06).
 import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL_RESEARCH_MATCHERS,isScoreDrivingEvent,periodLabel} from './event-matchers.js';
-// Makro-Charts + Analyse-Einstufungen je Makro-Karte (Nutzer-Auftrag
-// 2026-10-20, siehe Kopf von makro.js). Zirkulaerer Import wie bei journal.js.
 // Trading Journal: eigene Trades im Monatskalender (Nutzer-Wunsch 2026-10-24,
-// siehe Kopf von trades.js). Zirkulaerer Import wie bei makro.js.
+// siehe Kopf von trades.js). Zirkulaerer Import wie bei journal.js.
 import {trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 // Hero-Zeichnung des Dashboards (Nutzer 2026-11-06, siehe Kopf von heroart.js).
 import {heroArtSvg} from './heroart.js';
+// Sektoren-Katalog der MACRO-Zeile (2026-11-12, nur Anzeige) - dieselbe Liste baut sektor_data.json.
+import {SEKTOREN,SEKTOR_FRISCH_TAGE} from './sektoren-katalog.js';
 import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './kachelbild.js';
-import {makroKartenSchalterHtml,makroReihenSchalterHtml,makroTabKarteHtml,makroAnsichtSetzen,makroAnsichtWert,makroTabSetzen,makroTabWert,makroOptSetzen,makroOptWert,makroZeichnenAlle,makroRenderStart} from './makro.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
@@ -56,10 +55,11 @@ export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScor
   bondSeriesPts,bondSpreadPts,ohneWochenende,SENTIMENT_DATA,
   // Was js/journal.js von hier liest (zirkulaerer Import, siehe dort).
   scoreLog,trendAssets,indName,saveQuotaFail,
-  // Was js/makro.js von hier liest (zirkulaerer Import, siehe dort).
+  // Frueher fuer js/makro.js (Charts-Ansicht, 2026-11-12 geloescht); von
+  // Pruefskripten und anderen Modulen weiter genutzt.
   indChartSeries,fmtIndVal,achsenTicks,INFL_ZIEL,nivAlle,nivEintrag,nivReihe,indNextTermin,indNextExpected,
   researchAnalysis,chartLeisteHtml,markUserEditTs,
-  indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,kartenIcon,preisReiheAnzeige,makroReiheNeu,saveSoon,
+  indZeilenWerte,indNextReleaseCell,biasCss,abGoToHtml,kartenIcon,preisReiheAnzeige,saveSoon,
   // Was js/profil.js (Country Profile, zirkulaerer Import) von hier liest.
   COMMODITY_DATA,rohstoffReihe,rohstoffTrend,korbReihe,zinsdiffFuer,ROHSTOFF_KORB,
   // ... und fuer sein Chart-Fenster (2026-10-25: dieselben Charts wie Data).
@@ -5960,7 +5960,7 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,mkAnsicht:makroAnsichtWert(),mkTab:makroTabWert(),mkOpt:makroOptWert(),zbQuittung,zbEntscheid},SNAP_REPLACER);}
+function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid},SNAP_REPLACER);}
 // Banner-Quittungen der Zentralbank-Karte: nur Waehrung -> Datum, alles andere faellt raus.
 function zbEntscheidRein(v){
   const o={};
@@ -6189,7 +6189,7 @@ function applySnapRoh(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);makroAnsichtSetzen(d.mkAnsicht);makroTabSetzen(d.mkTab);makroOptSetzen(d.mkOpt);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6673,7 +6673,6 @@ function loadState(){
       researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];
       research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);
       researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};
-      makroAnsichtSetzen(d.mkAnsicht);makroTabSetzen(d.mkTab);makroOptSetzen(d.mkOpt);
       calEvts=d.calEvts||mkCalEvts();
       widgets=d.widgets||mkWidgets();
       // "No Direction"-Widget wurde entfernt (in "Possible Set-ups" zusammengeführt).
@@ -7254,9 +7253,9 @@ let _appVeraltet=false;
 function neueFelderBehalten(fremd,lokal){
   if(!fremd||typeof fremd!=='object'||!lokal||typeof lokal!=='object')return fremd;
   if(window.__gpKeinBehalten)return fremd;   // nur check/altgeraet.js --gegenprobe
-  // Makro-Ansicht Table|Charts (seit 614), aktiver Reiter (seit 620), Analyse-Werkzeuge (seit 622)
-  // Banner-Quittungen der Zentralbank-Karte (seit 2026-10-27)
-  ['mkAnsicht','mkTab','mkOpt','zbQuittung','zbEntscheid'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
+  // Banner-Quittungen der Zentralbank-Karte (seit 2026-10-27). Bis 715 auch
+  // mkAnsicht/mkTab/mkOpt/mkInds/mkRange der Charts-Ansicht (2026-11-12 geloescht).
+  ['zbQuittung','zbEntscheid'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
   const fa=fremd.researchAnalysis,la=lokal.researchAnalysis;
@@ -7267,15 +7266,6 @@ function neueFelderBehalten(fremd,lokal){
         const l=lc[rub],f=fc[rub];if(!l||typeof l!=='object'||!f||typeof f!=='object')return;
         ['tags','hist'].forEach(k=>{if(l[k]!==undefined&&!(k in f))f[k]=l[k];});
       });
-    });
-  }
-  // Gezeigte Spuren und Zeitraum je Makro-Karte (seit 614): rub.mkInds/.mkRange
-  if(Array.isArray(fremd.syms)&&Array.isArray(lokal.syms)){
-    const L=new Map(lokal.syms.map(x=>[x&&x.id,x]));
-    fremd.syms.forEach(fs=>{
-      const ls=fs&&L.get(fs.id);if(!ls||!Array.isArray(fs.rubrics)||!Array.isArray(ls.rubrics))return;
-      const LR=new Map(ls.rubrics.map(r=>[r&&r.id,r]));
-      fs.rubrics.forEach(fr=>{const lr=fr&&LR.get(fr.id);if(!lr)return;['mkInds','mkRange'].forEach(k=>{if(lr[k]!==undefined&&!(k in fr))fr[k]=lr[k];});});
     });
   }
   return fremd;
@@ -8226,11 +8216,6 @@ function renderDetail(){
     ${renderSpecTab(c)}
   </div>`;
   arAlle(document.querySelectorAll('.rtxt,.rub-summary-txt,.nt-item-tx'));
-  // Makro-Charts SYNCHRON zeichnen, bevor der Scrollstand zurueckkommt: im
-  // rAF danach wuchsen die leeren Chart-Kaesten erst nachtraeglich (bis
-  // ~1700px), Chromium schob scrollTop per Scroll-Anker mit, das iPad
-  // verschob den Inhalt (check/scrollhalt.js, 22 Befunde, 2026-10-20).
-  try{makroZeichnenAlle();}catch(e){console.error('[makro]',e);}
   // scrollZurueck() passt vorher Asset-Kopf und i-Knoepfe ein (siehe
   // scrollHalten, 2026-09-30) - sonst aenderten sie ihre Hoehe erst im
   // naechsten Frame, und auf dem iPad sprang der Inhalt um 53px.
@@ -10726,9 +10711,9 @@ const NIV={
   // Confidence Trend 3M seit Modell 26) sind aus dem Score entfernt - Nutzer:
   // "das mit Trend und so das ist doch egal", auf Rueckfrage ausdruecklich
   // "auch aus dem Score nehmen". Hingewiesen war: im Backtest hob gerade
-  // confT den Block-IC (0,052 -> 0,070). Die Richtung bleibt SICHTBAR in den
-  // Makro-Charts (js/makro.js, Einstufung "Trend") - nivWerte rechnet sie
-  // weiter, sie zaehlt nur nicht mehr.
+  // confT den Block-IC (0,052 -> 0,070). nivWerte rechnet die Richtung
+  // weiter (frueher in den Makro-Charts sichtbar, 2026-11-12 geloescht), sie
+  // zaehlt nur nicht mehr.
 };
 // ⚠ BACKTEST (tools/niveau_backtest.py, 2018-2026, 8 Waehrungen, Korb-Rendite
 // 1/3 Monate, point-in-time): "Real Rate vs Peers" (Rang-IC -0,045) und
@@ -11572,7 +11557,7 @@ function abReihenTitel(txt,extra){
   return`<div class="ab-rtitel${extra?' ab-rtitel-x':''}"><span>${escH(txt)}</span>${extra||''}</div>`;
 }
 // Makro-Reihe der Asset-Seite: drei Tabellen-Karten oder EINE Reiter-Karte.
-// Eigene Funktion, damit makroReiheNeu() sie allein austauschen kann.
+// Eigene Funktion fuer die Makro-Reihe (Tabellen, Data, Sectors).
 // ── SEKTOREN-ANSICHT: PLATZHALTER (VORUEBERGEHEND, 2026-11-11) ────────────
 // Nutzer: "Ich will die aktuellen Indikatoren als Main Dinger behalten aber
 // ich will umschalten koennen und dann sollen die 3 Karten Groesse werden und
@@ -11586,38 +11571,62 @@ function abReihenTitel(txt,extra){
 // (To check). Schalter "Sectors" in der Macro-Zeile, nicht gespeichert.
 let makroSektorenAn=false;
 function makroSektorenSchalten(an){makroSektorenAn=!!an;if(makroSektorenAn)makroDatenAn=false;renderDetail();}
-const SEKTOREN_VORSCHAU=[
-  ['Prices & money','infl',[
-    ['Consumer prices',[['CPI y/y','l'],['Core CPI y/y','l'],['PCE y/y','l'],['Core PCE y/y','l']]],
-    ['Producer & trade prices',[['PPI y/y','l'],['Core PPI y/y','l'],['Import prices','a'],['Export prices','a']]],
-    ['Wages & labour cost',[['Avg hourly earnings y/y','l'],['Employment cost index q/q','a'],['Unit labour costs q/q','a']]],
-    ['Inflation expectations',[['Michigan expectations','l'],['NY Fed 1-year expectations','a']]],
-    ['Money & credit',[['M2 money supply y/y','l'],['Consumer credit','c'],['Bank lending','c']]],
-    ['Rates & yields',[['Policy rate','l'],['2Y yield','l'],['10Y yield','l'],['Yield curve 10Y–2Y','l'],['Real policy rate','l'],['5Y TIPS auction','a']]]]],
-  ['Jobs & households','lab',[
-    ['Jobs',[['Nonfarm payrolls','l'],['Unemployment rate','l'],['ADP employment','l'],['Initial jobless claims','l'],['JOLTS job openings','l'],['Participation rate','c'],['Continuing claims','c']]],
-    ['Income & spending',[['Retail sales m/m','l'],['Real consumer spending q/q','a'],['Personal income','c'],['Personal spending','c']]],
-    ['Confidence',[['CB consumer confidence','l'],['Michigan sentiment','a']]],
-    ['Housing',[['Housing starts','a'],['Building permits','a'],['Existing home sales','a'],['New home sales','a'],['Pending home sales m/m','a'],['House price index y/y','a'],['Mortgage rate','a']]]]],
-  ['Business, trade & government','grow',[
-    ['Output',[['GDP q/q','l'],['Industrial production m/m','a'],['Manufacturing production m/m','a'],['Capacity utilisation','c']]],
-    ['Orders & investment',[['Durable goods orders m/m','a'],['Factory orders m/m','a'],['Business inventories','c']]],
-    ['Surveys',[['ISM Manufacturing PMI','l'],['ISM Services PMI','l'],['Regional Fed surveys','a']]],
-    ['Trade & external',[['Trade balance','a'],['Goods trade balance','a'],['Exports','a'],['Imports','a'],['Current account (quarterly)','a']]],
-    ['Government & supply',[['Budget balance','c'],['Treasury auctions','a']]],
-    ['Energy',[['EIA crude oil inventories','l']]]]]
-];
-const SEKTOR_STATUS={l:['Live','Already in the app with values and score'],a:['Available','The data source carries this series'],c:['To check','Source not confirmed yet']};
-function sektorenVorschauHtml(c){
-  const zahl=k=>SEKTOREN_VORSCHAU.reduce((n,x)=>n+x[2].reduce((m,g)=>m+g[1].filter(r=>r[1]===k).length,0),0);
-  const kopf=`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note"><b>Preview</b><span>Layout only, no values yet</span><span class="sk-chip sk-l">Live ${zahl('l')}</span><span class="sk-chip sk-a">Available ${zahl('a')}</span><span class="sk-chip sk-c">To check ${zahl('c')}</span></div></div>`;
-  return kopf+SEKTOREN_VORSCHAU.map(([titel,akz,gruppen])=>`<div class="ab-col" data-mkreihe="1"><div class="sk-card" style="--sk:var(--a-${akz})">
-      <div class="sk-hd"><span class="sk-t">${escH(titel)}</span><span class="sk-n">${gruppen.reduce((n,g)=>n+g[1].length,0)} series</span></div>
-      ${gruppen.map(([g,zeilen])=>`<div class="sk-gr"><div class="sk-gr-t">${escH(g)}</div>${zeilen.map(([n,k])=>`<div class="sk-row"><span class="sk-row-n">${escH(n)}</span><span class="sk-row-w" aria-hidden="true">–</span><span class="sk-chip sk-${k}" title="${escH(SEKTOR_STATUS[k][1])}">${SEKTOR_STATUS[k][0]}</span></div>`).join('')}</div>`).join('')}
-    </div></div>`).join('');
+// ── SECTORS: die Wirtschaft nach Sektoren (2026-11-12, NUR ANZEIGE) ─────
+// Nutzer 2026-11-11: "die Wirtschaft soll in jeden Sektor auseinander
+// genommen werden das man jedes Investment sieht jede Nachfrage jeden Markt
+// egal ob Haus oder yields"; Platzhalter freigegeben ("so umsetzen"),
+// 2026-11-12: "Mach nur anzeigen" - nichts hiervon zaehlt in den Score.
+// Katalog: js/sektoren-katalog.js (dieselbe Liste baut im Workflow
+// sektor_data.json, tools/sektoren.mjs). Nichts geschaetzt: ohne frische
+// Veroeffentlichung gibt es die Zeile nicht.
+let SK_DATA=null,skLaden=null,skFehler=false;
+function sektorDatenHolen(){
+  if(SK_DATA||skLaden)return;
+  skLaden=fetch(DATA_BASE+'sektor_data.json?t='+Math.floor(Date.now()/3e5),{signal:AbortSignal.timeout(FEED_TIMEOUT_MS),cache:'no-store'})
+    .then(r=>r.ok?r.json():null)
+    .then(d=>{if(d&&d.ccy&&typeof d.ccy==='object'){SK_DATA=d;skFehler=false;}else skFehler=true;})
+    .catch(()=>{skFehler=true;})
+    .finally(()=>{skLaden=null;if(makroSektorenAn&&curPage==='cur')renderDetail();});
+}
+function sektorAnzeigeName(r,w){return r.n+(w&&w.per?' '+w.per:'');}
+function sektorenHtml(c){
+  const ccy=macroCcyFor(c.id);
+  if(!SK_DATA){
+    if(!skFehler)sektorDatenHolen();
+    return`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note">${skFehler?'<b>Sector data unavailable</b><span>sektor_data.json could not be loaded</span><button class="sk-retry" onclick="sektorNeuLaden()">Retry</button>':'<b>Loading sector data</b>'}</div></div>`;
+  }
+  const W=(SK_DATA.ccy&&SK_DATA.ccy[ccy])||{};
+  let gesamt=0;
+  const karten=SEKTOREN.map(sek=>{
+    const gruppen=sek.gruppen.map(g=>{
+      const zeilen=g.reihen.filter(r=>W[r.k]).map(r=>{
+        const w=W[r.k];gesamt++;
+        const farbe=w.f!=null?actualColor({name:w.t,actual:w.a,forecast:w.f,previous:w.p},c.id):'';
+        return`<button type="button" class="sk-row" onclick="sektorDetail('${escJH(r.k)}')" title="${escH(w.t)}">
+          <span class="sk-row-n">${escH(sektorAnzeigeName(r,w))}${w.est?' <span class="ir-await">EST</span>':''}</span>
+          <b class="sk-row-w ${farbe}">${escH(w.a)}</b>
+          <span class="sk-row-f">${w.f!=null?`<i>fc</i> ${escH(w.f)}`:''}</span>
+          <span class="sk-row-d">${escH(fmtDayShort(w.d,true))}</span></button>`;}).join('');
+      return zeilen?`<div class="sk-gr"><div class="sk-gr-t">${escH(g.titel)}</div>${zeilen}</div>`:'';}).join('');
+    const n=(gruppen.match(/class="sk-row"/g)||[]).length;
+    return gruppen?`<div class="ab-col" data-mkreihe="1"><div class="sk-card" style="--sk:var(--a-${sek.akz})">
+      <div class="sk-hd"><span class="sk-t">${escH(sek.titel)}</span><span class="sk-n">${n} series · ${escH(ccy)}</span></div>${gruppen}</div></div>`:'';}).join('');
+  const kopf=`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note"><b>Display only</b><span>not part of the score</span><span><b>${gesamt}</b> series for ${escH(ccy)}</span><span><i>Tap a row for its history</i></span></div></div>`;
+  return gesamt?kopf+karten:`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note"><b>No sector data for ${escH(ccy)}</b><span>no release in the last ${SK_DATA.frischTage||SEKTOR_FRISCH_TAGE} days</span></div></div>`;
+}
+function sektorNeuLaden(){skFehler=false;SK_DATA=null;renderDetail();}
+function sektorDetail(k){
+  try{
+    const c=getSym();const ccy=macroCcyFor(c.id);const w=SK_DATA&&SK_DATA.ccy[ccy]&&SK_DATA.ccy[ccy][k];if(!w)return;
+    let r=null;SEKTOREN.forEach(s=>s.gruppen.forEach(g=>g.reihen.forEach(x=>{if(x.k===k)r=x;})));
+    const farbe=w.f!=null?actualColor({name:w.t,actual:w.a,forecast:w.f,previous:w.p},c.id):'';
+    const zeilen=[['Actual',`<b class="${farbe}">${escH(w.a)}</b>`],['Forecast',w.f!=null?escH(w.f):'<i>none published</i>'],['Previous',w.p!=null?escH(w.p):'–'],['Released',escH(fmtDayHdr(w.d))],['Source',`<i>${escH(w.t)}</i>`],['Score','<i>display only</i>']];
+    const liste=(w.h||[]).slice().reverse().map(([d,v])=>[fmtDayShort(d,true),`<b>${escH(v)}</b>`]);
+    faktenFenster(sektorAnzeigeName(r||{n:w.t},w)+' · '+ccy,[{zeilen,hinweis:w.taeglich?'<i>Daily series, history shows one value per week</i>':''},{kopf:'History',zeilen:liste}]);
+  }catch(e){console.error('[sektoren]',e);}
 }
 function makroSektorenSchalterHtml(){
-  return`<label class="sk-rsw" title="${makroSektorenAn?'Back to the main indicators':'Preview: the economy split into sectors'}"><span class="sk-rsw-l">Sectors</span><span class="tgl tgl-s"><input type="checkbox"${makroSektorenAn?' checked':''} aria-label="Preview the sector view" onchange="makroSektorenSchalten(this.checked)"><span class="tgl-track"></span></span></label>`;
+  return`<label class="sk-rsw" title="${makroSektorenAn?'Back to the main indicators':'The economy split into sectors (display only)'}"><span class="sk-rsw-l">Sectors</span><span class="tgl tgl-s"><input type="checkbox"${makroSektorenAn?' checked':''} aria-label="Show the sector view" onchange="makroSektorenSchalten(this.checked)"><span class="tgl-track"></span></span></label>`;
 }
 // ── DATA DIREKT IN DER MACRO-ZEILE (2026-11-12) ───────────────────────────
 // Nutzer 2026-11-11: "entfern den Charts Umschalter bei den Assets bei macro
@@ -11652,38 +11661,12 @@ function makroDatenSchalterHtml(){
   return`<label class="mk-rsw" title="${makroDatenAn?'Back to the indicator tables':'Show the Data page right here: charts, compare assets and indicators'}">`
     +`<span class="mk-rsw-l">Data</span><span class="tgl tgl-s"><input type="checkbox"${makroDatenAn?' checked':''} aria-label="Show the Data page in the macro row" onchange="makroDatenSchalten(this.checked)"><span class="tgl-track"></span></span></label>`;
 }
-function abMakroReiheHtml(c,teil){
+function abMakroReiheHtml(c){
   makroDatenZurueck();
-  if(makroSektorenAn)return sektorenVorschauHtml(c);
+  if(makroSektorenAn)return sektorenHtml(c);
   if(makroDatenAn)return`<div class="ab-col mk-col mk-data-slot" data-mkreihe="1"></div>`;
-  // Voller Seitenaufbau (jede Datenaenderung) leert die Zwischenspeicher der
-  // Makro-Charts; ein Teil-Aufbau (makroReiheNeu) behaelt sie.
-  makroRenderStart(!teil);
   const rubs=c.rubrics||[];
-  const tk=null;   // 2026-11-12: Charts-Ansicht entfernt (ersetzt durch Data an Ort und Stelle)
-  if(tk)return`<div class="ab-col mk-col" data-mkreihe="1">${tk}</div>`;
   return ASSET_CARDS.map(n=>{const i=rubs.findIndex(r=>r&&r.name===n);return`<div class="ab-col" data-mkreihe="1">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('');
-}
-// ⚠ SCHNELLER WEG fuer jede Makro-Bedienung (Nutzer 2026-10-24: "Mach es
-// maximal schnell"). GEMESSEN, CPU 4x gedrosselt (~iPad): jeder Klick auf
-// Reiter/Chip/Compare/Zeitraum baute ueber renderDetail die GANZE Asset-Seite
-// neu - 595-717 ms, das Zeichnen der Charts selbst nur 84-137 ms; bis zum
-// fertigen Bild 0,9-1,9 s. Jetzt wird nur die Makro-Reihe getauscht. Der
-// Scrollstand bleibt (WebKit, siehe scrollHalten), Symbole und i-Knoepfe
-// ordnen die MutationObserver wie bei jedem anderen Austausch ein.
-function makroReiheNeu(){
-  const c=getSym(),det=document.getElementById('detail');
-  const alt=det?[...det.querySelectorAll('[data-mkreihe]')]:[];
-  if(!c||!alt.length||curPage!=='cur'){renderDetail();return;}
-  const se=document.scrollingElement,st0=det.scrollTop,st1=se?se.scrollTop:0;
-  const t=document.createElement('template');t.innerHTML=abMakroReiheHtml(c,true);
-  const neu=[...t.content.children];
-  if(!neu.length){renderDetail();return;}
-  alt[0].replaceWith(...neu);alt.slice(1).forEach(x=>x.remove());
-  try{makroZeichnenAlle();}catch(e){console.error('[makro]',e);}
-  neu.forEach(n=>{try{attachChartHovers(n);}catch(e){}});
-  if(det.scrollTop!==st0)det.scrollTop=st0;
-  if(se&&se.scrollTop!==st1)se.scrollTop=st1;
 }
 function renderAssetBoard(c){
   const rubs=c.rubrics||[];
@@ -11751,8 +11734,7 @@ function renderAssetBoard(c){
            2026-10-27: "mach da noch einen Button names country profile in
            die Zeile ... entfern die Karte vom normalen Bildschirm"). */''}
       ${abReihenTitel('Macro',makroSektorenSchalterHtml()+(makroSektorenAn?'':makroDatenSchalterHtml()))}
-      ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE
-           breite Karte mit Reitern (Nutzer 2026-10-21, siehe Kopf von makro.js). */''}
+      ${/* Makro-Reihe: drei Tabellen-Karten, Data an Ort und Stelle oder Sectors. */''}
       ${abMakroReiheHtml(c)}
       ${abReihenTitel('Positioning')}
       ${ASSET_GRAPHS.map(a=>`<div class="ab-col">${abGrafikHtml(a,c)}</div>`).join('')}
@@ -11963,8 +11945,6 @@ function renderRub(rub,ri,total){
     </div>
     <div class="rub-body">
       ${MAKRO_OHNE_SUMMARY.includes(rub.name)?'':rubSummaryHtml(rub,ri,bco)}
-      <!-- INDICATORS (Makro-Karten: Schalter Table | Charts darueber, makro.js) -->
-      ${makroKartenSchalterHtml(rub)}
       ${renderIndsTable(rub,ri)}
     </div>
     ${abGoToHtml('data')}
@@ -12039,10 +12019,9 @@ function renderIndsTable(rub,ri){
 // der Dual-Source-Exklusivitaet - siehe CLAUDE.md "EUR-Score flippte..." -
 // und der Revisions-Faerbung).
 // Werte einer Indikator-Zeile (Act/Fc/Prev, Farben, Quellenzeile) - EINE
-// Rechnung fuer die Tabelle UND die Spurkoepfe der Makro-Charts (makro.js,
-// Nutzer 2026-10-21: "Ja aber alles muss abgetrennt und uebersichtlich sein").
-// Zwei Kopien waeren die bekannte Dual-Source-Falle: Tabelle und Chart zeigten
-// irgendwann zwei verschiedene Zahlen fuer denselben Release.
+// Rechnung fuer die Tabelle (bis 2026-11-12 auch fuer die Spurkoepfe der
+// Makro-Charts). Zwei Kopien waeren die bekannte Dual-Source-Falle: zwei
+// Ansichten zeigten irgendwann zwei verschiedene Zahlen fuer denselben Release.
 function indZeilenWerte(ind,rub){
   const ev=(ind.research&&ind.research.feed)?null:findIndEvent(getSym().id,ind.name);
   // Was der Indikator ist und wie er zaehlt: als ⓘ ganz rechts in der
@@ -13208,9 +13187,20 @@ function queueScoreFlipAlert(sym,oldB,newB){
 // Sidebar (siehe renderSidebar). Raeumt sich nach der Animationsdauer selbst
 // wieder auf; kein Sync-Zustand, rein visuelles Ereignis pro Geraet/Tab.
 let _flipGlowIds=new Set();
+// ⚠ EIN Timer fuer alle (2026-11-12, Performance): vorher je Asset ein
+// eigener setTimeout mit eigenem renderSidebar() - beim Laden wechselten
+// 9 Assets kurz nacheinander den Bias, gemessen 9 volle Seitenleisten in
+// 450 ms (CPU 4x, je ~25 ms). Jetzt raeumt ein Timer alle faelligen ab.
+const _flipGlowBis=new Map();let _flipGlowT=null;
 function triggerFlipGlow(symId){
-  _flipGlowIds.add(symId);
-  setTimeout(()=>{_flipGlowIds.delete(symId);renderSidebar();},1500);
+  _flipGlowIds.add(symId);_flipGlowBis.set(symId,performance.now()+1500);
+  if(!_flipGlowT)_flipGlowT=setTimeout(flipGlowAbraeumen,1500);
+}
+function flipGlowAbraeumen(){
+  _flipGlowT=null;const jetzt=performance.now();let naechst=Infinity,weg=false;
+  _flipGlowBis.forEach((t,id)=>{if(t<=jetzt+20){_flipGlowBis.delete(id);_flipGlowIds.delete(id);weg=true;}else naechst=Math.min(naechst,t);});
+  if(weg)renderSidebar();
+  if(isFinite(naechst))_flipGlowT=setTimeout(flipGlowAbraeumen,Math.max(30,naechst-jetzt));
 }
 // Setzte bis 2026-09-24 setScoreMode() waehrend eines classic/normalized-
 // Wechsels (den Schalter gibt es nicht mehr). Bleibt als Werkzeug: ein
@@ -17573,7 +17563,12 @@ function dashSparkSvg(pts,col,uid){
 // js/kachelbild.js
 function dashMarktHtml(){
   const win=DASH_MKT_WIN.find(w=>w[0]===dashMktWin)||DASH_MKT_WIN[0];
-  if(win[1]===1&&!kachelFormenDa())kachelFormenLaden(()=>{if(curPage==='dash'&&dashMktWin==='1D')renderDash();});
+  // Umrisse kommen nach: nur das Kachelraster tauschen, nicht das ganze
+  // Dashboard (2026-11-12, gemessen CPU 4x: ~290 ms je renderDash beim Laden).
+  if(win[1]===1&&!kachelFormenDa())kachelFormenLaden(()=>{if(curPage!=='dash'||dashMktWin!=='1D')return;
+    const g=document.querySelector('#dbMarket .dx-mkt-grid');
+    if(!g){renderDash();return;}
+    const t=document.createElement('template');t.innerHTML=dashMarktHtml();const n=t.content.firstElementChild;if(n)g.replaceWith(n);});
   const kach=dashMktListe().map((m,i)=>{
     const s=(m.s||[]).filter(p=>isFinite(+p[1])&&+p[1]>0);
     const weg=m.wl?`<button class="dx-mkt-weg" onclick="event.stopPropagation();watchEntfernen('${escJH(m.n)}')" title="Remove ${escH(m.lbl)} from the watchlist" aria-label="Remove ${escH(m.lbl)} from the watchlist">${icn('x',14)}</button>`:'';
@@ -25934,6 +25929,13 @@ function syncNavActive(){
   // nachgefuehrt und blieb beim Verlassen der Asset-Seite stehen.
   updateSidebarSelection();
 }
+let _navTopRo=null;
+function navTopSetzen(bar){try{const t=Math.round(bar.getBoundingClientRect().top)+'px';if(bar.__navTop!==t){bar.__navTop=t;bar.style.setProperty('--nav-top',t);}}catch(e){}}
+function navTopBeobachten(bar){
+  if(_navTopRo||typeof ResizeObserver==='undefined'){if(!_navTopRo)navTopSetzen(bar);return;}
+  _navTopRo=new ResizeObserver(()=>navTopSetzen(bar));
+  _navTopRo.observe(bar);const h=document.querySelector('.hdr');if(h)_navTopRo.observe(h);
+}
 // Schaltet NUR die .open-Klassen an der bestehenden Leiste um, statt sie neu
 // zu bauen - ein Neuaufbau wuerde jeden Uebergang verschlucken. renderTabBar()
 // selbst baut weiterhin mit dem richtigen Zustand auf (beim Tabwechsel also
@@ -25945,7 +25947,12 @@ function syncNavExpanded(){
   // CSS-Regel schlagen, die Untereintraege dort ausblendet (Inline-Stile
   // gewinnen gegen jeden Selektor).
   // Oberkante der Leiste = Oberkante des Asset-Panels (position:fixed).
-  try{bar.style.setProperty('--nav-top',Math.round(bar.getBoundingClientRect().top)+'px');}catch(e){}
+  // ⚠ 2026-11-12 (Performance, CPU 4x): hier gemessen erzwang die Messung
+  // direkt nach dem Aufbau jeder Seite das komplette Layout - 310 ms beim
+  // Oeffnen eines Assets, 13 Aufrufe beim Laden. Jetzt misst ein
+  // ResizeObserver nach dem Layout (navTopBeobachten), nur wenn sich die
+  // Kopfzeile oder die Leiste in der Groesse aendert.
+  navTopBeobachten(bar);
   // ⚠ Seit 2026-09-23 ist JEDER Stapel ein Ausklapp-PANEL neben der Leiste
   // (Nutzer: "Mach bei insights den Drop out bitte genau so wie bei Assets
   // also der Stapel") - position:fixed, Hoehe per CSS. Keine Inline-Hoehe
@@ -26226,6 +26233,10 @@ function rerender(){
 // nurSeite: nur einplanen, wenn gerade diese Seite offen ist (News/Risk
 // betreffen nur das Dashboard).
 const RERENDER_BUENDEL_MS=150;
+// In den ersten Sekunden nach dem Start kommen die Feeds dicht hintereinander
+// (gemessen CPU 4x: drei volle Neuaufbauten des Dashboards bei 2,9 s, 3,7 s
+// und 5,2 s, je 160-340 ms). Dort laenger buendeln (2026-11-12).
+const RERENDER_BUENDEL_START_MS=700,RERENDER_STARTPHASE_MS=9000;
 let _rerenderBaldT=null,_rerenderBaldSeite=null;
 function rerenderBald(nurSeite){
   if(nurSeite&&curPage!==nurSeite)return;
@@ -26235,7 +26246,7 @@ function rerenderBald(nurSeite){
     _rerenderBaldT=null;
     if(curPage!==_rerenderBaldSeite)return;
     try{rerender();}catch(e){console.error('[rerenderBald]',e);}
-  },RERENDER_BUENDEL_MS);
+  },performance.now()<RERENDER_STARTPHASE_MS?RERENDER_BUENDEL_START_MS:RERENDER_BUENDEL_MS);
 }
 // ══ CARRY TRADE SCANNER ═══════════════════════════════════════════
 // Liest die Leitzins-Werte (Central Bank Rate) je Waehrung aus den
@@ -26836,6 +26847,9 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 // ══ INIT ══════════════════════════════════════════════════════════
+// Laender-Umrisse der 1D-Kacheln frueh anfordern (2026-11-12): sie kommen dann
+// meist mit dem ersten Feed statt einen eigenen Aufbau auszuloesen.
+try{kachelFormenLaden();}catch(e){}
 loadState();
 // Gemeinsamer Stand fuer den Drei-Wege-Abgleich (syncMerge3): nur wenn der
 // letzte Schritt ein Abgleich war. Stehen noch nicht hochgeladene Aenderungen
@@ -27367,7 +27381,13 @@ function lgKarte(card,m){
 // Wert und erzwingt dafuer ein Layout - nach jedem anker.after() neu. In der
 // alten Reihenfolge lief das fuer JEDES Kind jeder Titelzeile (gemessen
 // 2026-10-03: 45-52 ms auf Trends, auch im scrollHalten-Pfad).
+// ⚠ ERST MESSEN, DANN VERSCHIEBEN (2026-11-12, Performance): vorher wurde je
+// Titelzeile gemessen und sofort verschoben - nach jedem after() erzwang die
+// naechste Messung ein neues Layout der ganzen Seite. Gemessen (CPU 4x,
+// Asset-Seite oeffnen): 316 ms. Die Lage innerhalb einer Titelzeile haengt
+// nicht an anderen Titelzeilen; die Messungen bleiben gueltig.
 function infoKnoepfeEinordnen(root){
+  const plan=[];
   (root||document).querySelectorAll('.dw-hdr,.cot-card-title,.ab-tile-hd,.mx-card-title,.tr-card-head,.data-row,.data-ph,.rub-hdr').forEach(h=>{
     const i=h.querySelector(':scope>.rinfo,:scope>.info-b,:scope>.dw-t>.rinfo,:scope>.dw-t>.info-b');
     if(!i||i.classList.contains('ii-nach'))return;
@@ -27388,8 +27408,9 @@ function infoKnoepfeEinordnen(root){
       const r=n.getBoundingClientRect();
       if(r.width&&r.top<ar.bottom-1&&r.bottom>ar.top+1)ziel=n;
     }
-    ziel.after(i);i.classList.add('ii-nach');
+    plan.push([ziel,i]);
   });
+  plan.forEach(([ziel,i])=>{ziel.after(i);i.classList.add('ii-nach');});
 }
 // ── Asset-Titel passt sich an, statt die Leiste umzubrechen ─────────────
 // Nutzer 2026-09-26: "wenn der Asset Name zu lang ist rutschen die Knoepfe
@@ -27603,7 +27624,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{sektorDetail,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

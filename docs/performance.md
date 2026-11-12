@@ -231,3 +231,20 @@ Kalender-Abgleich 131 → ~0, FF-Abgleich 93 → ~0, `indOverdueCycles` 63 → 2
   `clip()` 23 ms, `source-atop` 5 ms je Bild). Viele kleine Umrisse ohne
   `closePath()` (+2 ms). Wächter `check/kugelland.js` C, `check/webkitkugel.js`.
 
+
+## 14. Im Leerlauf keine Schleife je Bild im Hauptthread (2026-11-12, VERSION-CHECK-716)
+
+*Anlass:* Nutzer: *„find selber die Performance Probleme sie sind überall wenn man iwas neulädt oder öffnet"*. Gemessen (CPU 4x, 1180 px): Dashboard im Leerlauf **70 %** Hauptthread, Asset-Seite 5 %, Kalender 3 %.
+
+- **Ursache:** Die Kugel-Schleife (`js/globe.js`, `frame`) lief per `requestAnimationFrame` in JEDEM Bild, obwohl der Worker mit eigener Uhr zeichnet. Jedes Hauptthread-Bild rechnet die Stile ALLER laufenden CSS-Animationen nach — auch der auf die GPU ausgelagerten (55 Symbol-Filme). Beleg: eine einzelne Testanimation im Dashboard → 241 Stilberechnungen je 4 s; an `body` mit derselben Schleife 0; ohne Schleife auch im Dashboard 0–1.
+- **Regel:** Eine Dauer-Schleife im Hauptthread nur, solange sich etwas bewegt, das nur der Hauptthread bewegen kann (Ziehen, Boost, Regler, Jet-Reise). Sonst ruhiger Takt (`GLOBE_RUHIG_MS` = 250 ms) und **sofort wecken** bei Eingabe (`globeWecken()`).
+- **Ergebnis:** Dashboard-Leerlauf 70 % → 24 % (der Rest ist der Kugel-Worker im eigenen Thread), Stilberechnungen ~240 → 0 je 4 s.
+- **Wächter:** `check/leerlauf.js` (höchstens 40 Stilberechnungen je 4 s; Gegenprobe `__gpGlobusJedesBild`).
+
+## 15. Erst messen, dann schreiben — auch in Einordnungs-Helfern (2026-11-12)
+
+- `infoKnoepfeEinordnen`: je Titelzeile messen und sofort verschieben erzwang nach jedem `after()` ein Layout der ganzen Seite. Jetzt alle messen, dann alle verschieben. Asset öffnen (CPU 4x): 1.096 → 855 ms.
+- `syncNavExpanded`: `--nav-top` per `getBoundingClientRect` direkt nach jedem Seitenaufbau = erzwungenes Layout (310 ms beim Asset-Öffnen, 13× beim Laden). Jetzt ein `ResizeObserver` auf Kopfzeile und Leiste.
+- **Timer je Element bündeln:** `triggerFlipGlow` hatte je Asset einen eigenen Timer mit eigenem `renderSidebar()` (9 volle Leisten beim Laden). Jetzt ein Timer.
+- **Nachgeladene Teile tauschen nur ihren Teil:** Länderumrisse der 1D-Kacheln ersetzen nur `.dx-mkt-grid`, nicht das Dashboard (vorher ein voller `renderDash`, ~290 ms bei CPU 4x).
+- **Startphase länger bündeln:** `rerenderBald` bündelt in den ersten 9 s 700 ms statt 150 ms (vorher drei volle Dashboard-Aufbauten zwischen 2,9 und 5,2 s).

@@ -22055,3 +22055,30 @@ komplett gleich ist nur halt an den Ort“*.
 - **Höhe:** `.mk-data-slot` `clamp(520px,78vh,860px)`; `dataRasterFuellen` nimmt den Slot als Höhengeber.
 - **Nicht gespeichert:** `makroDatenAn` ist reiner Sitzungszustand (nach dem Neuladen aus). *Sectors* an schaltet Data aus.
 - **Wächter:** `check/makro.js` neu geschrieben (A Schalter, B eingehängt + Chart + Breite, C Vergleich, D Data-Seite und zurück, E Asset-Wechsel; Gegenprobe: nicht eingehängt = rot).
+
+## 2026-11-12 — Charts-Code gelöscht, Sectors echt (nur Anzeige), Performance beim Laden/Öffnen (VERSION-CHECK-716)
+
+Nutzer: *„Zeig die Reihen nur an und lösche den Code zu der Chart Ansicht und find selber die Performance Probleme sie sind überall wenn man iwas neulädt oder öffnet"*; vorher *„Mach nur anzeigen und Style so lassen"*.
+
+**Charts-Ansicht gelöscht**
+- `js/makro.js` (659 Zeilen), Aufrufe in `js/main.js`, Sync-Felder `mkAnsicht`/`mkTab`/`mkOpt` (+ `rub.mkInds`/`mkRange` aus `neueFelderBehalten`), CSS `.mk-tk/.mk-spur/.mk-kv/…`.
+- **Eigener Fehler beim Löschen, vom Wächter gefunden:** `applySnap()` rief noch `makroAnsichtSetzen()`. Gemessen (`check/altgeraet.js` D, nachgestellte Cloud): jeder Cloud-Abgleich warf `ReferenceError: makroAnsichtSetzen is not defined`, `cloudPullRoh` schluckte ihn still, der Cloud-Stand stand halb übernommen da, die offene Eingabe (Zinsentscheid offline gesetzt) war nach dem Neuladen weg. Behoben; Fehlerklasse = Wege, die nur bei Sync/Undo/Tab-Wechsel laufen → neuer Wächter `check/snaprunde.js` (Gegenprobe: eingeschleuster Aufruf → rot). `check/structure.js` fand ihn nicht (prüft nur Handler und Modul-Importe).
+- `check/altgeraet.js` prüft jetzt `zbEntscheid` statt der Charts-Felder; `check/structure.js` Gegenprobe auf `preiskarte.js`.
+
+**Sectors mit echten Werten**
+- `js/sektoren-katalog.js`, `tools/sektoren.mjs` → `sektor_data.json` (Workflow-Schritt *Build sector view*). Stand heute: USD 93, GBP 50, AUD 47, CAD 45, JPY 41, NZD 36, EUR 31, CHF 24 Reihen.
+- Productivity: USD *Nonfarm Productivity QoQ* (zuletzt 3,6 %, fc 2,8 %), GBP/CAD *Labour Productivity QoQ*, Gruppe *Wages & labour cost*.
+- Wächter `check/sektoren.js`.
+
+**Performance (alle Werte CPU 4x gedrosselt, 1180 px, headless Chromium)**
+| Messung | vorher | nachher |
+|---|---|---|
+| Dashboard Leerlauf, Hauptthread | 70 % | 24 % (Rest = Kugel-Worker) |
+| Stilberechnungen je 4 s Dashboard-Leerlauf | ~240 | 0 |
+| Asset öffnen (gotoSym USD, synchron) | 1.096 ms | 855 ms |
+| Dashboard-Aufbauten beim Laden | 5 | 3 |
+| Seitenleisten-Aufbauten beim Laden | 13 | 6 |
+- **Kugel:** Hauptthread-Schleife lief in jedem Bild, obwohl der Worker selbst zeichnet → jedes Bild Stilberechnung aller CSS-Animationen (Beleg: Testanimation im Dashboard 241 Neuberechnungen je 4 s, an `body` 0, ohne Schleife 0–1). Jetzt ruhiger Takt 250 ms, `globeWecken()` bei Ziehen/Boost/Regler/Jet-Reise; Marker-Treffer aus der Bahn (`globeLonJetzt`).
+- **`infoKnoepfeEinordnen`**: messen-dann-schreiben. **`syncNavExpanded`**: `--nav-top` per ResizeObserver. **`triggerFlipGlow`**: ein Timer. **Länderumrisse**: nur `.dx-mkt-grid` tauschen, früh anfordern. **`rerenderBald`**: Startphase 700 ms bündeln.
+- Wächter `check/leerlauf.js` (Gegenprobe `__gpGlobusJedesBild`).
+- **Offen (gemessen, nicht behoben):** Score-Neuberechnung beim Laden (`recomputeAuto` 3× ≈ 660 ms, `recordScoreHist` 6× ≈ 300 ms), `doSave` je Speichern ≈ 130 ms (Score-Historie + Journal), `renderDash` ≈ 300 ms je Aufbau (`symScoreCmp` ohne Zwischenspeicher).

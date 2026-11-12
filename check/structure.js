@@ -271,7 +271,7 @@ const importFehlt=[];
   const ohneZK=t=>t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/[^\n]*/g,'');
   const mods={};
   try{fs.readdirSync(jsDir).filter(f=>f.endsWith('.js')).forEach(f=>{mods[f]=fs.readFileSync(path.join(jsDir,f),'utf8');});}catch(e){}
-  if(process.argv.includes('--gegenprobe')&&mods['makro.js'])mods['makro.js']="import {gibtEsNicht} from './main.js';\n"+mods['makro.js'];
+  if(process.argv.includes('--gegenprobe')&&mods['preiskarte.js'])mods['preiskarte.js']="import {gibtEsNicht} from './main.js';\n"+mods['preiskarte.js'];
   const exporte={};
   Object.entries(mods).forEach(([f,t])=>{
     const e=new Set();

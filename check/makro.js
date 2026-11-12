@@ -7,7 +7,7 @@ const PW=process.env.PW_PATH||'/opt/node22/lib/node_modules/playwright';
 // (Bis 2026-11-12 pruefte diese Datei die Charts-Ansicht mit Reiter-Karte -
 //  die gibt es nicht mehr.)
 //   A) genau EIN Schalter "Data" rechts in der MACRO-Zeile (neben "Sectors");
-//      aus = drei Tabellen-Karten, auch wenn frueher "charts" gespeichert war
+//      aus = drei Tabellen-Karten, keine Reste der geloeschten Charts-Ansicht
 //   B) an = die EINE Data-Seite (#dataBody) haengt in der Macro-Reihe: Reiter
 //      der Data-Seite, mindestens ein Chart des offenen Assets, volle Breite
 //   C) Vergleichen dort: zweites Asset -> zwei Felder
@@ -32,11 +32,11 @@ const PORT=process.env.PORT||8935,GP=process.argv.includes('--gegenprobe');
       return{sw:sw.length,lbl:sw[0]?sw[0].querySelector('.mk-rsw-l').textContent.trim():'',an:sw[0]?sw[0].querySelector('input').checked:null,
         ort:d.parentElement.id||d.parentElement.className,imSlot:!!(slot&&slot.contains(d)),
         karten:document.querySelectorAll('#detail [data-mkreihe] .rub-card').length,
-        reiterKarte:!!document.querySelector('#detail #mkTabKarte, #detail .mk-tk'),
+        reiterKarte:!!document.querySelector('#detail #mkTabKarte, #detail .mk-tk, #detail .mk-spur')||typeof window.makroSicht==='function',
         panels:d.querySelectorAll('.data-panel').length,charts:d.querySelectorAll('.data-pc svg').length,reiter:[...d.querySelectorAll('.data-head button, .data-head [role=tab]')].map(x=>x.textContent.trim()).filter(Boolean).slice(0,5).join('|'),
         assets:dataAssets.join(','),breit:slot&&reihe?Math.round(slot.getBoundingClientRect().width/reihe.getBoundingClientRect().width*100):0,ueber:document.documentElement.scrollWidth-innerWidth};});
     // A) aus - auch mit altem gespeicherten "charts"
-    await p.evaluate(()=>{gotoSym('USD');try{makroSicht('charts');}catch(e){}});await p.waitForTimeout(1200);
+    await p.evaluate(()=>{gotoSym('USD');});await p.waitForTimeout(1200);
     let L=await lage();
     if(L.sw!==1||L.lbl!=='Data')F.push(`${o} A: MACRO-Zeile mit ${L.sw} Schalter(n) "${L.lbl}" statt genau einem "Data"`);
     if(L.reiterKarte)F.push(o+' A: die alte Charts-Reiter-Karte wird noch gezeigt');

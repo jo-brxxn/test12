@@ -3,7 +3,7 @@
 //
 // Nutzer 2026-10-21: "es gab auch bugs das wenn man was anklickt das es dann
 // nach ein paar Sekunden wieder umspringt ich will dass da keine bugs sind".
-// GEMESSEN (zwei Browser, eine nachgestellte Cloud): Geraet A (618) stellt
+// GEMESSEN (zwei Browser, eine nachgestellte Cloud): Geraet A (618) stellte
 // Makro-Charts, 10Y und "Below target" ein; Geraet B, noch mit der vorher
 // geoeffneten App 613, laedt beim naechsten automatischen Speichern hoch und
 // laesst mkAnsicht und die Einstufungen weg - 613 kennt sie nicht. Beim
@@ -12,10 +12,13 @@
 // Das alte Geraet wird hier OHNE alten Code nachgestellt: es schickt genau
 // den Stand, den eine App ohne diese Felder schickt (Schluessel fehlen).
 // Geprueft:
-//   A) fremder Stand ohne mkAnsicht / tags / hist / mkInds / mkRange kommt an
-//      -> A behaelt Charts, Zeitraum, Spuren und Einstufung, Anzeige inklusive
+// Pruefobjekt seit 2026-11-12 (Charts-Ansicht samt mkAnsicht/mkRange/mkInds
+// geloescht): die von Hand gewaehlten Zinsentscheide (zbEntscheid, oberste
+// Ebene, in neueFelderBehalten) und die gespeicherten Einstufungen (tags/hist).
+//   A) fremder Stand ohne zbEntscheid / zbQuittung / tags / hist kommt an
+//      -> A behaelt Zinsentscheid und Einstufung
 //   B) eine BEWUSSTE Aenderung eines Geraets, das die Felder kennt (Schluessel
-//      da: mkAnsicht null, tags {}), kommt weiter an
+//      da: zbEntscheid {}, tags {}), kommt weiter an
 //   C) traegt die Cloud eine hoehere App-Nummer, laedt diese App nichts mehr
 //      hoch und laedt neu (ohne offene Eingaben) bzw. zeigt "Reload"
 //   D) Basis ueberlebt ein Neuladen: offene Eingabe, Neuladen, ein anderes
@@ -33,12 +36,11 @@ const FAKE = 'https://waechter-cloud.invalid';
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 const ok = m => { if (!GP) console.log('  ✓ ' + m); };
 
-// Was eine App ohne die Makro-Felder (<= 613) hochlaedt.
+// Was eine App ohne die neueren Felder hochlaedt (Schluessel fehlen ganz).
 function altStand(d) {
   const o = JSON.parse(JSON.stringify(d));
-  delete o.mkAnsicht; delete o.mkTab; delete o.appVer;
+  delete o.zbEntscheid; delete o.zbQuittung; delete o.appVer;
   Object.values(o.researchAnalysis || {}).forEach(c => Object.values(c || {}).forEach(r => { if (r && typeof r === 'object') { delete r.tags; delete r.hist; } }));
-  (o.syms || []).forEach(s => (s.rubrics || []).forEach(r => { delete r.mkInds; delete r.mkRange; }));
   return o;
 }
 
@@ -66,27 +68,16 @@ function altStand(d) {
     localStorage.setItem('fxpro_cloud_seen', T); localStorage.setItem('fxpro_updated', T); localStorage.removeItem('fxpro_user_pending'); }, [FAKE, cloud.updated_at]);
   await p.reload(); await wartenBisDatenDa(p); await weg(); await p.waitForTimeout(1500);
 
-  // Einstellen wie ein Nutzer: Gold, Charts, 10Y, eine Spur aus, eine Einstufung
-  await p.evaluate(() => gotoSym('GOLD')); await p.waitForTimeout(600);
+  // Einstellen wie ein Nutzer: Zinsentscheid von Hand, eine Einstufung
   const klick = (sel, txt) => p.evaluate(([sel, txt]) => { const x = [...document.querySelectorAll(sel)].find(y => y.textContent.trim() === txt); if (!x) return false; x.click(); return true; }, [sel, txt]);
-  const zustand = () => p.evaluate(() => { const inf = getSym().rubrics.find(r => r.name === 'Inflation'); const a = ((researchAnalysis.USD || {}).Inflation || {});
-    return { ui: makroGross() ? 'Charts' : 'Table', charts: makroGross(), range: inf.mkRange, inds: JSON.stringify(inf.mkInds || null),
-      tab: (typeof makroTabWert === 'function' ? makroTabWert() : (JSON.parse(localStorage.getItem(SK)) || {}).mkTab) || '', tags: JSON.stringify(a.tags || {}), hist: (a.hist || []).length }; });
-  // Seit 2026-10-25 ein Kippschalter rechts in der MACRO-Zeile (statt Table|Charts je Karte)
-  // 2026-11-12: die Charts-Ansicht hat keinen Schalter mehr (ersetzt durch Data an Ort und Stelle);
-  // der gespeicherte Zustand mkAnsicht/mkRange/mkInds/Reiter bleibt das Pruefobjekt fuer "neue Felder".
-  await p.evaluate(() => { if (!makroGross()) makroSicht('charts'); }); await p.waitForTimeout(300);
-  await p.evaluate(() => makroRange(getSym().rubrics.findIndex(r => r.name === 'Inflation'), 120)); await p.waitForTimeout(300);
-  await p.evaluate(() => { const ri = getSym().rubrics.findIndex(r => r.name === 'Inflation'), ind = getSym().rubrics[ri].indicators[0]; if (ind) makroSpur(ri, ind.id); }); await p.waitForTimeout(300);
-  // Reiter Labour Market, dann zurueck auf Inflation-Spuren ist nicht noetig: der Reiter selbst wird geprueft
-  await p.evaluate(() => makroTab('Labour Market')); await p.waitForTimeout(300);
-  await p.evaluate(() => makroTab('Inflation')); await p.waitForTimeout(300);
-  await p.evaluate(() => makroTab('Labour Market')); await p.waitForTimeout(300);
+  const zustand = () => p.evaluate(() => { const d = JSON.parse(snap()); const a = ((researchAnalysis.USD || {}).Inflation || {});
+    return { ent: JSON.stringify((d.zbEntscheid || {}).USD || null), tags: JSON.stringify(a.tags || {}), hist: (a.hist || []).length }; });
+  await p.evaluate(() => zbEntscheidSetzen('USD', '2026-09-16', 0.5)); await p.waitForTimeout(300);
   // Einstufungen haben seit 620 keine Oberflaeche mehr - gespeicherte (aus 614-619) muessen trotzdem bleiben
   await p.evaluate(() => { researchAnalysis.USD = researchAnalysis.USD || {}; researchAnalysis.USD.Inflation = Object.assign(researchAnalysis.USD.Inflation || { bias: null, text: '' }, { tags: { level: 'below' }, hist: [{ d: '2026-10-20', k: 'level', v: 'below' }] }); markUserEditTs(); save(); });
   await p.waitForTimeout(2500);
   const soll = await zustand();
-  if (soll.ui !== 'Charts' || soll.range !== 120 || soll.tags === '{}' || soll.tab !== 'Labour Market') fail('Aufbau', 'Einstellungen kamen nicht an: ' + JSON.stringify(soll));
+  if (!/2026-09-16/.test(soll.ent) || soll.tags === '{}') fail('Aufbau', 'Einstellungen kamen nicht an: ' + JSON.stringify(soll));
 
   // ── A: das alte Geraet laedt hoch ──
   console.log('A) alte App laedt ohne die neuen Felder hoch');
@@ -94,21 +85,21 @@ function altStand(d) {
   cloud.data = altStand(cloud.data); cloud.updated_at = neu();
   await p.evaluate(() => cloudSyncNow()); await p.waitForTimeout(2500);
   const nachA = await zustand();
-  for (const k of ['ui', 'charts', 'range', 'inds', 'tab', 'tags', 'hist']) {
+  for (const k of ['ent', 'tags', 'hist']) {
     if (JSON.stringify(nachA[k]) !== JSON.stringify(soll[k])) fail('A ALTES GERAET LOESCHT', `${k}: vorher ${JSON.stringify(soll[k])}, nach dem Abgleich ${JSON.stringify(nachA[k])}`);
   }
-  if (JSON.stringify(nachA) === JSON.stringify(soll)) ok('Charts, Reiter, 10Y, Spuren und gespeicherte Einstufung bleiben');
+  if (JSON.stringify(nachA) === JSON.stringify(soll)) ok('Zinsentscheid und gespeicherte Einstufung bleiben');
 
   // ── B: bewusste Aenderung eines Geraets, das die Felder kennt ──
   console.log('B) bewusste Aenderung eines aktuellen Geraets kommt an');
-  const d = JSON.parse(JSON.stringify(cloud.data.mkAnsicht !== undefined ? cloud.data : JSON.parse(await p.evaluate(() => snap()))));
-  d.mkAnsicht = null; ((d.researchAnalysis.USD || {}).Inflation || {}).tags = {};
+  const d = JSON.parse(JSON.stringify(cloud.data.zbEntscheid !== undefined ? cloud.data : JSON.parse(await p.evaluate(() => snap()))));
+  d.zbEntscheid = {}; ((d.researchAnalysis.USD || {}).Inflation || {}).tags = {};
   cloud.data = d; cloud.updated_at = neu();
   await p.evaluate(() => cloudSyncNow()); await p.waitForTimeout(2500);
   const nachB = await zustand();
-  if (nachB.ui !== 'Table') fail('B BEWUSSTE AENDERUNG', `Table vom anderen Geraet kam nicht an (steht ${nachB.ui})`);
+  if (nachB.ent !== 'null') fail('B BEWUSSTE AENDERUNG', `geleerter Zinsentscheid vom anderen Geraet kam nicht an (steht ${nachB.ent})`);
   if (nachB.tags !== '{}') fail('B BEWUSSTE AENDERUNG', `geleerte Einstufung kam nicht an (${nachB.tags})`);
-  if (nachB.ui === 'Table' && nachB.tags === '{}') ok('Table und geleerte Einstufung vom anderen Geraet kommen an');
+  if (nachB.ent === 'null' && nachB.tags === '{}') ok('geleerter Zinsentscheid und geleerte Einstufung vom anderen Geraet kommen an');
 
   // ── C: hoehere App-Nummer in der Cloud ──
   console.log('C) neuere App in der Cloud: diese laedt nichts mehr hoch');
@@ -125,7 +116,7 @@ function altStand(d) {
   // mit offener Eingabe: kein Neuladen, kein Upload, Hinweis sichtbar
   await p.evaluate(() => { sessionStorage.removeItem('fxpro_ver_reload'); gotoSym('GOLD'); });
   await p.waitForTimeout(500);
-  await klick('#detail .ind-hist-range-btn', '3Y'); await p.waitForTimeout(200);
+  await p.evaluate(() => zbEntscheidSetzen('USD', '2026-06-17', 0.75)); await p.waitForTimeout(200);
   const n1 = pushes.length;
   cloud.updated_at = neu();
   await p.evaluate(() => cloudSyncNow()); await p.waitForTimeout(2500);
@@ -147,14 +138,11 @@ function altStand(d) {
   await p2.evaluate(gp => { if (gp) window.__gpKeinBehalten = true; ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); sessionStorage.clear(); }, GP);
   await p2.waitForTimeout(2500);
   await p2.evaluate(() => gotoSym('GOLD')); await p2.waitForTimeout(500);
-  // Charts an und hochgeladen (B hatte Table gesetzt). Seit 2026-10-25 EIN Schalter
-  // fuer alle Karten - er oeffnet den zuletzt gewaehlten Reiter; D liest Inflation.
-  await p2.evaluate(() => { if (!makroGross()) makroSicht('charts'); makroTab('Inflation'); });
-  await p2.waitForTimeout(3000);
+  await p2.waitForTimeout(1000);
   // Eingabe, dann SOFORT neu laden (Push kommt nicht mehr durch: Netz weg)
   const sperre = r => r.abort();
   await ctx.route(FAKE + '/**', sperre);
-  await p2.evaluate(() => { makroRange(getSym().rubrics.findIndex(r => r.name === 'Inflation'), 60); flushAndSave(); });
+  await p2.evaluate(() => { zbEntscheidSetzen('USD', '2026-07-29', 1); flushAndSave(); });
   await p2.waitForTimeout(2000);
   await ctx.unroute(FAKE + '/**', sperre);
   // anderes Geraet aendert woanders (JPY-Indikator-Notiz)
@@ -163,25 +151,25 @@ function altStand(d) {
   cloud.data = d2; cloud.updated_at = neu();
   await p2.reload(); await wartenBisDatenDa(p2); await p2.evaluate(gp => { if (gp) window.__gpKeinBehalten = true; ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); }, GP);
   // Der Start-Abgleich laeuft erst nach den Boot-Feeds: bis zu 15 s warten.
-  const lies = () => p2.evaluate(() => { const inf = syms.find(s => s.id === 'GOLD').rubrics.find(r => r.name === 'Inflation'); const jpy = syms.find(s => s.id === 'JPY');
-    return { range: inf.mkRange, fremd: JSON.stringify(jpy).includes('WAECHTER altgeraet fremd') }; });
+  const lies = () => p2.evaluate(() => { const e = (JSON.parse(snap()).zbEntscheid || {}).USD || {}; const jpy = syms.find(s => s.id === 'JPY');
+    return { range: e['2026-07-29'] === 1 ? 60 : JSON.stringify(e), fremd: JSON.stringify(jpy).includes('WAECHTER altgeraet fremd') }; });
   let dz = await lies();
   for (let i = 0; i < 30 && !(dz.range === 60 && dz.fremd); i++) { await p2.waitForTimeout(500); dz = await lies(); }
-  if (dz.range !== 60) fail('D BASIS NACH NEULADEN', `eigene Eingabe 5Y nach dem Neuladen weg (steht ${dz.range})`);
+  if (dz.range !== 60) fail('D BASIS NACH NEULADEN', `eigener Zinsentscheid nach dem Neuladen weg (steht ${dz.range})`);
   if (!dz.fremd) fail('D BASIS NACH NEULADEN', 'Aenderung des anderen Geraets wurde ueberschrieben');
   if (dz.range === 60 && dz.fremd) ok('eigene Eingabe und fremde Aenderung bleiben beide');
 
   // ── E: aelterer Tab desselben Geraets ──
   console.log('E) aelterer Tab schreibt localStorage ohne die neuen Felder');
-  await p2.evaluate(() => { if (!makroGross()) makroSicht('charts'); });
+  const entE = () => p2.evaluate(() => ((JSON.parse(snap()).zbEntscheid || {}).USD || {})['2026-07-29'] === 1);
   await p2.waitForTimeout(3500);
-  const vorE = await p2.evaluate(() => makroGross());
-  await p2.evaluate(() => { const o = JSON.parse(localStorage.getItem(SK)); delete o.mkAnsicht; localStorage.setItem(SK, JSON.stringify(o)); localStorage.setItem('fxpro_updated', new Date().toISOString()); adoptExternalState(); });
+  const vorE = await entE();
+  await p2.evaluate(() => { const o = JSON.parse(localStorage.getItem(SK)); delete o.zbEntscheid; localStorage.setItem(SK, JSON.stringify(o)); localStorage.setItem('fxpro_updated', new Date().toISOString()); adoptExternalState(); });
   await p2.waitForTimeout(500);
-  const nachE = await p2.evaluate(() => makroGross());
-  if (vorE && !nachE) fail('E ALTER TAB', 'Charts -> Table, nachdem ein alter Tab ohne mkAnsicht gespeichert hat');
-  else if (vorE && nachE) ok('Charts bleibt');
-  else fail('E', 'Aufbau: Charts war nicht an');
+  const nachE = await entE();
+  if (vorE && !nachE) fail('E ALTER TAB', 'Zinsentscheid weg, nachdem ein alter Tab ohne zbEntscheid gespeichert hat');
+  else if (vorE && nachE) ok('Zinsentscheid bleibt');
+  else fail('E', 'Aufbau: Zinsentscheid war nicht gesetzt');
 
   perr.forEach(e => fail('JS-Fehler', e));
   await b.close();

@@ -215,7 +215,7 @@ der Eingabe mit allem durch, was dort gespeichert wird.
 
 *Anlass:* Makro-Schalter sprang nach Sekunden von Charts auf Table zurück. Gemessen: ein noch offenes Gerät mit App 613 lud ohne `mkAnsicht`/Einstufungen hoch.
 
-- **Neues synchronisiertes Feld → in `neueFelderBehalten()` (`js/main.js`) eintragen.** Stand 620: `mkAnsicht`, `mkTab`, `researchAnalysis[ccy][karte].tags/.hist`, `rub.mkInds`, `rub.mkRange`. Fehlt der Schlüssel im fremden Stand *ganz*, kannte der Schreiber ihn nicht → eigener Wert bleibt.
+- **Neues synchronisiertes Feld → in `neueFelderBehalten()` (`js/main.js`) eintragen.** Stand 716: `zbQuittung`, `zbEntscheid`, `researchAnalysis[ccy][karte].tags/.hist` (`mkAnsicht`/`mkTab`/`mkOpt`/`rub.mkInds`/`rub.mkRange` mit der Charts-Ansicht 2026-11-12 gelöscht). Fehlt der Schlüssel im fremden Stand *ganz*, kannte der Schreiber ihn nicht → eigener Wert bleibt.
 - **Zurücksetzen nie per `delete`** eines dort gelisteten Schlüssels — `null` bzw. `{}` schreiben, sonst wirkt das Zurücksetzen auf anderen Geräten nicht.
 - **`APP_VER`** (= VERSION-CHECK-Nummer) reist mit jedem Upload (`appVer`). Höhere Nummer in der Cloud bzw. in `fxpro_app_ver` → diese App lädt nicht hoch, lädt neu (mit offener Eingabe: Hinweis *Reload*).
 - **Basis überlebt Neuladen:** `fxpro_sync_basis` = {seen, Stand}; gilt nur, wenn `seen` = `fxpro_cloud_seen`.
@@ -335,3 +335,10 @@ Frage: *Ginge etwas verloren, das der Nutzer selbst getan hat?* Bei
 Reihen mit 10 746 Punkten wieder da (`reapplyLiveFeeds()`), und kein Score
 ändert sich. Was der Nutzer an mitgelieferten Notizen getan hat, steht dagegen
 in `seedNoteFlags` — winzig, aber gespeichert.
+
+## Wege, die nur bei Sync/Undo/Tab-Wechsel laufen (2026-11-12, VERSION-CHECK-716)
+
+*Anlass:* Beim Löschen der Makro-Charts blieb in `applySnap()` ein Aufruf `makroAnsichtSetzen()` stehen. Die Seite lud fehlerfrei; erst jeder Cloud-Abgleich warf `ReferenceError`, der Fehler wurde still geschluckt, die offene Eingabe des Geräts war weg (gemessen mit `check/altgeraet.js` D).
+
+- **Beim Löschen eines Moduls/Feldes alle Übernahme-Wege mitprüfen:** `applySnap`, `loadState`, `adoptExternalState`, `snap`, `neueFelderBehalten`.
+- Wächter `check/snaprunde.js`: spielt den eigenen Stand über alle drei Wege wieder ein.

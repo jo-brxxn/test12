@@ -1633,6 +1633,12 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **Grenzen in `vh`/`dvh` an skalierten Elementen** durch `var(--pg-zoom,1)` teilen.
 - Geprüft von `check/breit.js` C.
 
+## MACRO-Zeile: Sectors (2026-11-12, nur Anzeige)
+
+- **Schalter „Sectors“** links neben *Data*: drei Karten *Prices & money*, *Jobs & households*, *Business, trade & government*; je Gruppe Zeilen Name | Ist (fett, Beat/Miss-Farbe) | Prognose | Datum.
+- **Tipp auf eine Zeile** → Fakten-Fenster mit Ist, Prognose, Vorwert, Quelle und Verlauf (12 Werte).
+- **Nicht im Score**, nicht gespeichert (Sitzungszustand). Daten: `sektor_data.json` (`docs/data-sources.md`).
+
 ## MACRO-Zeile: Data (2026-11-12)
 
 - **Ein Schalter „Data“** rechts in der MACRO-Zeile der Asset-Seite; kein Charts-Schalter mehr.

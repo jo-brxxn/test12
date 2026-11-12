@@ -6159,6 +6159,15 @@ jobs:
           node cal_hist_build.js
           rm -f cal_hist_build.js
 
+      # ── SECTORS (sektor_data.json, Nutzer 2026-11-12: "Mach nur anzeigen") ──
+      # Die Wirtschaft je Waehrung nach Sektoren fuer den Sectors-Schalter der
+      # MACRO-Zeile. Kein Netz: liest cal_hist/ (eben aktualisiert),
+      # ind_data.json und bond_data.json. Katalog: js/sektoren-katalog.js.
+      # KEIN Score-Teil. Scheitert der Schritt, bleibt der alte Stand.
+      - name: Build sector view -> sektor_data.json
+        continue-on-error: true
+        run: node tools/sektoren.mjs
+
       # ── COUNTRY PROFILE (country_data.json, Nutzer 2026-10-25) ──────────
       # Nur Anzeige in der Karte "Country profile" der acht Waehrungen, KEIN
       # Score-Teil. Vier Quellen, jede fuer sich (eine fehlende kippt die
@@ -6332,6 +6341,7 @@ jobs:
           [ -f risk_index.json ] && git add risk_index.json
           [ -f news_data.json ] && git add news_data.json
           [ -f country_data.json ] && git add country_data.json
+          [ -f sektor_data.json ] && git add sektor_data.json
           if ! git diff --staged --quiet; then
             git commit -m "Update FF calendar + indicator data"
             # Retry mit Rebase bei Push-Kollision (Nutzer-Wunsch 2026-07-13:

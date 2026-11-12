@@ -167,6 +167,23 @@ if(typeof window!=='undefined'&&!window.__globeEingabeHorcher){
 // einer angeklickten Waehrung unterwegs ist, pausiert globeUpdateVehicle()
 // die normale Land/Wasser-Ruheposition-Aktualisierung.
 let _globeVehicleBusy=false;
+// ── RUHIGER TAKT IM HAUPTTHREAD (2026-11-12, Nutzer: "find selber die
+// Performance Probleme sie sind ueberall wenn man iwas neulaedt oder oeffnet").
+// GEMESSEN (CPU 4x, Dashboard im Leerlauf, 1180 px): Hauptthread zu 70 %
+// belegt - Stilberechnung 1.322 ms und PrePaint 856 ms je 5 s. Ursache: diese
+// Schleife lief per requestAnimationFrame in JEDEM Bild, obwohl der Worker
+// die Kugel laengst selbst zeichnet (eigene Uhr, Bahn). Jedes Hauptthread-Bild
+// rechnet dabei die Stile aller laufenden CSS-Animationen nach (55 Symbol-
+// Filme, Live-Punkte) - mit einer einzigen Testanimation im Dashboard
+// 241 Neuberechnungen in 4 s, ohne die Schleife 0-1.
+// Jetzt: im Normaltempo ohne Eingabe (Worker mit eigenem Takt) nur noch alle
+// GLOBE_RUHIG_MS ein Durchgang (Beschriftung, Marker-Daten); jede Eingabe
+// (Ziehen, Boost, Regler, Jet-Reise) weckt sofort auf (globeWecken).
+const GLOBE_RUHIG_MS=250;
+let _globeTakt=null,_globeFrameFn=null,_globeReise=0;
+function globeWecken(){
+  if(_globeTakt&&_globeFrameFn){clearTimeout(_globeTakt);_globeTakt=null;_globeRAF=requestAnimationFrame(_globeFrameFn);}
+}
 // Boost (Nutzer-Wunsch 2026-07-28): einmaliger Beschleunigungs-Stoss - der
 // Globus dreht kurz auf eine Geschwindigkeit hoch, bei der Details nicht
 // mehr zu erkennen sind, danach langsames Abbremsen zurueck auf Normal-
@@ -184,7 +201,7 @@ let _globeBoostT0=0;
 function startGlobeBoost(){
   if(_globeMode==='boost')return; // schon aktiv, kein Doppel-Trigger
   if(_throttleFrac>0.02)return; // Schubregler hat Vorrang, siehe setGlobeThrust()
-  _globeMode='boost';_globeBoostT0=performance.now();
+  _globeMode='boost';_globeBoostT0=performance.now();globeWecken();
   document.querySelectorAll('.globe-vehicle').forEach(g=>g.classList.add('boosting'));
   document.querySelectorAll('.globe-host').forEach(h=>h.classList.add('boosting'));
   const btn=document.querySelector('.boost-btn');
@@ -231,7 +248,7 @@ function throttleUpdateFromEvent(ev,track){
   setGlobeThrust(frac);
 }
 function setGlobeThrust(frac){
-  _throttleFrac=frac;
+  _throttleFrac=frac;globeWecken();
   const fill=document.getElementById('globeThrottleFill'),handle=document.getElementById('globeThrottleHandle'),pct=document.getElementById('globeThrottlePct');
   if(fill)fill.style.height=(frac*100).toFixed(1)+'%';
   if(handle)handle.style.bottom=(frac*100).toFixed(1)+'%';
@@ -293,7 +310,8 @@ function globeWorkerTakt(st,an){
   st.laeuft=an;if(st.worker&&st.workerRaf)st.worker.postMessage({typ:an?'start':'stop'});
 }
 function stopGlobe(){
-  if(_globeRAF){cancelAnimationFrame(_globeRAF);_globeRAF=null;}
+  if(_globeTakt){clearTimeout(_globeTakt);_globeTakt=null;}
+  if(_globeRAF){if(_globeRAF>0)cancelAnimationFrame(_globeRAF);_globeRAF=null;}
   _globeHosts.forEach(st=>globeWorkerTakt(st,false));
   _globeHosts.forEach(st=>{try{st.io&&st.io.disconnect();}catch(e){}});
   if(_globeHosts.length)_globeParked=_globeHosts;
@@ -671,18 +689,21 @@ function globeZeichnen(st){
 }
 // Marker unter dem Zeiger (Klick/Mauszeiger) aus Drehwinkel und Projektion -
 // keine Marker-Elemente im Dokument, die je Bild verschoben werden muessten.
+// Winkel JETZT aus der Bahn - im ruhigen Takt steht _globeLon bis zu
+// GLOBE_RUHIG_MS hinter dem, was der Worker gerade zeigt.
+function globeLonJetzt(){return _globeBahn&&_globeMode!=='drag'?bahnWinkel(_globeBahn,globeT(performance.now())):_globeLon;}
 function globeMarkerAt(ev,host){
   const st=_globeHosts.find(x=>x.host===host)||(_globeParked||[]).find(x=>x.host===host);if(!st)return null;
   const svg=host.querySelector('svg');if(!svg)return null;
   const rc=svg.getBoundingClientRect(),k=rc.width/(st.groesse||rc.width);
-  let best=null,bd=13*13;
-  Object.keys(GLOBE_GEO).forEach(id=>{const q=globeProject(GLOBE_GEO[id][0],GLOBE_GEO[id][1],_globeLon,st.R);if(!q.vis)return;
+  let best=null,bd=13*13;const lonJ=globeLonJetzt();
+  Object.keys(GLOBE_GEO).forEach(id=>{const q=globeProject(GLOBE_GEO[id][0],GLOBE_GEO[id][1],lonJ,st.R);if(!q.vis)return;
     const dx=ev.clientX-(rc.left+(st.cx+q.x)*k),dy=ev.clientY-(rc.top+(st.cy+q.y)*k),d=dx*dx+dy*dy;if(d<bd){bd=d;best=id;}});
   return best;
 }
 // Nur fuer Pruefskripte: Bildschirmlage der sichtbaren Marker.
-window.__globeMarkerPositionen=()=>{const st=_globeHosts[0];if(!st)return[];const svg=st.host.querySelector('svg'),rc=svg.getBoundingClientRect(),k=rc.width/st.groesse;
-  return Object.keys(GLOBE_GEO).map(id=>{const q=globeProject(GLOBE_GEO[id][0],GLOBE_GEO[id][1],_globeLon,st.R);return q.vis?{id,x:rc.left+(st.cx+q.x)*k,y:rc.top+(st.cy+q.y)*k}:null;}).filter(Boolean);};
+window.__globeMarkerPositionen=()=>{const st=_globeHosts[0];if(!st)return[];const lonJ=globeLonJetzt();const svg=st.host.querySelector('svg'),rc=svg.getBoundingClientRect(),k=rc.width/st.groesse;
+  return Object.keys(GLOBE_GEO).map(id=>{const q=globeProject(GLOBE_GEO[id][0],GLOBE_GEO[id][1],lonJ,st.R);return q.vis?{id,x:rc.left+(st.cx+q.x)*k,y:rc.top+(st.cy+q.y)*k}:null;}).filter(Boolean);};
 function globeCollectRefs(host,size){
   const svg=host.querySelector('svg');if(!svg)return null;
   const markers={};
@@ -747,13 +768,14 @@ function globeVehicleTravel(st,x1,y1,dur,onDone){
   const h1=Math.atan2(x1-x0,-(y1-y0))*180/Math.PI;
   const dh=((h1-h0+540)%360)-180; // kuerzester Drehweg, kein Ueberdrehen
   const t0=performance.now();
+  _globeReise++;globeWecken();
   function step(now){
     const t=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-t,3);
     const x=x0+(x1-x0)*e,y=y0+(y1-y0)*e,h=h0+dh*e;
     st.vehiclePos.x=x;st.vehiclePos.y=y;
     groupEl.setAttribute('transform','translate('+x.toFixed(1)+','+y.toFixed(1)+') rotate('+h.toFixed(1)+')');
     if(t<1)requestAnimationFrame(step);
-    else{st.vehicleHeading=((h1%360)+360)%360;if(onDone)onDone();}
+    else{_globeReise=Math.max(0,_globeReise-1);st.vehicleHeading=((h1%360)+360)%360;if(onDone)onDone();}
   }
   requestAnimationFrame(step);
 }
@@ -797,7 +819,7 @@ function globeOnPointerDown(ev,host){
   if(_globeDrag)return; // schon ein Dreh-Drag aktiv, weitere gleichzeitige Finger ignorieren
   try{host.setPointerCapture(ev.pointerId);}catch(e){}
   closeGlobeTip();
-  _globeMode='drag';
+  _globeMode='drag';globeWecken();
   const t0=performance.now();
   _globeDrag={lastX:ev.clientX,lastY:ev.clientY,lastT:t0,pid:ev.pointerId,host,verlauf:[[t0,0]],summe:0};
   _globeBahn={typ:'ziel',lon0:_globeLon,t0:globeT(t0)};
@@ -1053,8 +1075,17 @@ function startGlobes(opt){
         st.lonGez=_globeLon;globeUpdateOne(st);
       });
     }
-    _globeRAF=requestAnimationFrame(frame);
+    // Ruhiger Takt (siehe GLOBE_RUHIG_MS): nur wenn JEDE Kugel im Worker mit
+    // eigener Uhr zeichnet - der Rueckfall im Hauptthread braucht jedes Bild.
+    // window.__gpGlobusJedesBild: Gegenprobe check/performance.js (K).
+    const ruhig=!window.__gpGlobusJedesBild&&_globeMode==='auto'&&_throttleFrac<=0.002&&!_globeDrag&&!_globeVehicleBusy&&!_globeReise&&_globeFuel>=100
+      &&_globeHosts.length&&_globeHosts.every(st=>st.worker&&st.workerRaf);
+    if(ruhig){_globeRAF=-1;_globeTakt=setTimeout(()=>{_globeTakt=null;_globeRAF=requestAnimationFrame(frame);},GLOBE_RUHIG_MS);}
+    else _globeRAF=requestAnimationFrame(frame);
   };
+  if(_globeTakt){clearTimeout(_globeTakt);_globeTakt=null;}
+  if(_globeRAF>0)cancelAnimationFrame(_globeRAF);
+  _globeFrameFn=frame;
   _globeRAF=requestAnimationFrame(frame);
 }
 

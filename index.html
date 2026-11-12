@@ -2016,108 +2016,45 @@ body.compact-view .rub-summary{display:block}
 .br-chip{display:inline-flex;align-items:center;gap:4px;height:var(--h-s,28px);padding:0 2px 0 10px;border-radius:var(--rss);background:var(--ui-act);color:var(--ui-act-fg);font:600 var(--fs-xs)/1 var(--ff-text);white-space:nowrap;box-shadow:0 2px 8px rgba(var(--ui-act-rgb),.25)}
 .br-x{border:0;background:transparent;color:inherit;font:700 16px/1 var(--ff-text);min-width:26px;height:26px;border-radius:50%;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 @media (hover:hover){.br-x:hover{background:rgba(255,255,255,.18)}}
-/* ── Makro-Karten: Table | Charts (js/makro.js, Umbau 2026-10-21) ──
-   Schalter je Karte in der Zeile unter dem Kopf (im Kopf gemessen kein Platz:
-   frei 15 px bei 1024, 29 px bei 390). Charts = EINE breite Karte mit Reitern.
-   Jede Spur ein eigener, durch eine Linie getrennter Block mit Kopfzeile
-   Act | Fc | Prev | Next | Score (Nutzer: "abgetrennt und uebersichtlich"). */
-.mk-kz{display:flex;justify-content:flex-end;margin:0 0 8px}
-/* Ein schmaler Kippschalter rechts in der MACRO-Zeile (Nutzer 2026-10-25:
-   "ganz rechts ganz schmal einfach ein Schalter") - schaltet alle drei
-   Makro-Karten zwischen Tabelle und Charts. Die Linie der Zeile (::after)
-   steht zwischen Titel und Schalter; die Beschriftung ist Teil der
-   Trefferflaeche, der Rand nach oben/unten vergroessert sie ohne Versatz. */
+/* ── MACRO-Zeile: Kippschalter rechts (Data, Sectors) ──
+   Seit 715 kein Charts-Schalter mehr (Code der Charts-Ansicht 2026-11-12
+   geloescht). Die Linie der Zeile (::after) steht zwischen Titel und
+   Schaltern; die Beschriftung ist Teil der Trefferflaeche. */
 .ab-rtitel-x::after{order:1}
 .mk-rsw{order:2;flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;padding:6px 0;margin:-6px 0;user-select:none}
 .mk-rsw-l{font:700 var(--fs-2xs)/1 var(--ff-text);color:var(--t3);text-transform:uppercase;letter-spacing:.09em}
-/* Sektoren-Ansicht: PLATZHALTER (2026-11-11, voruebergehend) - nur Aufbau, keine Werte */
+@media(hover:hover){.mk-rsw:hover .mk-rsw-l,.sk-rsw:hover .sk-rsw-l{color:var(--t1)}}
+.ab-cards .ab-col.mk-col{grid-column:1 / -1}
+/* Data an Ort und Stelle (2026-11-12): das Feld gibt der Data-Seite ihre Hoehe */
 .sk-rsw{order:1;margin-right:16px;flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;padding:6px 0;margin-top:-6px;margin-bottom:-6px;user-select:none}
 .sk-rsw-l{font:700 var(--fs-2xs)/1 var(--ff-text);color:var(--t3);text-transform:uppercase;letter-spacing:.09em}
-/* Data an Ort und Stelle (2026-11-12): das Feld gibt der Data-Seite ihre Hoehe */
 .mk-data-slot{grid-column:1/-1;height:clamp(520px,78vh,860px);overflow-y:auto;overscroll-behavior:contain;background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:12px 14px}
 .mk-data-slot .pg-titel,.mk-data-slot .pg-sub{display:none}
+/* Sectors (2026-11-12, nur Anzeige): je Zeile Name | Ist | Prognose | Datum, Tipp = Verlauf */
 .sk-hinweis{grid-column:1/-1}
-.sk-note{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:8px 12px;border:1px dashed var(--bd2);border-radius:var(--rs);background:var(--bg3);font:600 var(--fs-xs)/1.3 var(--ff-text);color:var(--t2)}
+.sk-note{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:8px 12px;border:1px solid var(--bd);border-radius:var(--rs);background:var(--bg3);font:600 var(--fs-xs)/1.3 var(--ff-text);color:var(--t2)}
 .sk-note b{font-weight:800;color:var(--t0)}
+.sk-note i{color:var(--t3)}
+.sk-retry{height:28px;padding:0 12px;border:1px solid var(--bd2);border-radius:var(--rss);background:var(--card);color:var(--t1);font:700 var(--fs-xs)/1 var(--ff-text);cursor:pointer}
 .sk-card{background:var(--card);border:1px solid var(--bd);border-top:3px solid var(--sk,var(--bd2));border-radius:var(--r);box-shadow:var(--shadow-card);overflow:hidden}
 .sk-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--bd)}
 .sk-t{font:700 var(--fs-kt)/1.2 var(--ff-text);color:var(--t0)}
 .sk-n{font:600 var(--fs-2xs)/1 var(--ff-text);color:var(--t3);white-space:nowrap}
 .sk-gr{padding:10px 16px 6px;border-bottom:1px solid var(--bd)}
 .sk-gr:last-child{border-bottom:none}
-.sk-gr-t{font:800 var(--fs-2xs)/1 var(--ff-text);letter-spacing:.09em;text-transform:uppercase;color:var(--sk,var(--t3));margin-bottom:6px}
-.sk-row{display:flex;align-items:center;gap:10px;min-height:28px;border-top:1px solid var(--bd)}
+.sk-gr-t{font:800 var(--fs-2xs)/1 var(--ff-text);letter-spacing:.09em;text-transform:uppercase;color:var(--sk,var(--t3));margin-bottom:4px}
+.sk-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;column-gap:10px;width:100%;min-height:34px;padding:0;border:0;border-top:1px solid var(--bd);background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .sk-gr-t+.sk-row{border-top:none}
-.sk-row-n{flex:1 1 auto;min-width:0;font:600 var(--fs-xs)/1.25 var(--ff-text);color:var(--t1);overflow-wrap:anywhere}
-.sk-row-w{flex:0 0 auto;font:700 var(--fs-xs)/1 var(--ff-num);color:var(--t3)}
-.sk-chip{flex:0 0 auto;display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:10px;font:700 var(--fs-2xs)/1 var(--ff-text);white-space:nowrap;border:1px solid var(--bd2);color:var(--t2);background:transparent}
-.sk-chip.sk-l{background:rgba(var(--blue-rgb),.12);border-color:rgba(var(--blue-rgb),.35);color:var(--blue)}
-.sk-chip.sk-a{background:var(--bg4)}
-.sk-chip.sk-c{border-style:dashed}
+@media (hover:hover){.sk-row:hover{background:var(--bg3)}}
+.sk-row-n{min-width:0;font:600 var(--fs-xs)/1.25 var(--ff-text);color:var(--t1);overflow-wrap:anywhere}
+.sk-row-w{font:700 var(--fs-xs)/1 var(--ff-num);color:var(--t0);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.sk-row-w.act-good{color:var(--green)}.sk-row-w.act-bad{color:var(--red)}
+.sk-row-f{font:500 var(--fs-2xs)/1 var(--ff-num);color:var(--t2);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:52px;text-align:right}
+.sk-row-f i{color:var(--t3)}
+.sk-row-d{font:500 var(--fs-2xs)/1 var(--ff-text);color:var(--t3);white-space:nowrap;min-width:46px;text-align:right}
 .tgl.tgl-s{width:28px;height:16px}
 .tgl-s .tgl-track::after{top:2px;left:2px;width:10px;height:10px}
 .tgl-s input:checked+.tgl-track::after{transform:translateX(12px)}
-@media(hover:hover){.mk-rsw:hover .mk-rsw-l{color:var(--t1)}}
-.ab-cards .ab-col.mk-col{grid-column:1 / -1}
-.mk-tk-hdr{flex-wrap:wrap;row-gap:6px}
-.mk-tabs{display:flex;flex-wrap:wrap;gap:2px 18px;flex:1 1 0;min-width:min(180px,100%)}
-.mk-tab{height:34px;padding:0;border:0;border-bottom:2.5px solid transparent;background:none;color:var(--t2);font:600 var(--fs-kt)/1 var(--ff-text);letter-spacing:.2px;cursor:pointer;white-space:nowrap}
-.mk-tab.on{color:var(--t0);font-weight:700;border-bottom-color:var(--ui-act)}
-@media (hover:hover){.mk-tab:not(.on):hover{color:var(--t0)}}
-.mk-tk-ctl{display:flex;align-items:center;gap:8px;margin-left:auto;flex:0 0 auto}
-.mk-tk .rub-body{display:flex;flex-direction:column;gap:8px}
-.mk-chips{display:flex;flex-wrap:wrap;gap:4px}
-.mk-chart{min-width:0;width:100%}
-.mk-spuren{display:flex;flex-direction:column}
-.mk-spur{border-top:1px solid var(--bd);padding-top:5px;margin-top:3px}
-.mk-spur:first-child{border-top:0;margin-top:0;padding-top:0}
-.mk-spur-kopf{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding:0 0 2px}
-.mk-spur-name{font-size:var(--fs-sm);font-weight:700;color:var(--t0)}
-.mk-kvs{display:grid;grid-template-columns:repeat(5,auto);gap:4px 0;margin-left:auto}
-.mk-kv{display:inline-flex;align-items:baseline;gap:5px;padding:0 12px;font-size:var(--fs-sm);font-variant-numeric:tabular-nums;white-space:nowrap}
-.mk-kv:not(:first-child){border-left:1px solid var(--bd)}
-.mk-kv:last-child{padding-right:0}
-.mk-kv i{font-style:normal;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3)}
-.mk-kv b{font-weight:700;color:var(--t0)}
-.mk-kv.act-good b{color:var(--green)}.mk-kv.act-bad b{color:var(--red)}
-.mk-kv-sc{min-width:0}
-.mk-svg{display:block;touch-action:pan-y}
-/* Analyse-Werkzeuge (2026-10-24): Vergleich, Kurs-Spur, Statistik je Spur */
-.mk-tools{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
-.mk-tools-l{font-size:var(--fs-2xs);font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3)}
-.mk-tools-g{display:flex;flex-wrap:wrap;gap:4px}
-.mk-cc{display:inline-flex;align-items:center;gap:5px}
-.mk-cc-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:0 0 auto}
-.mk-spur-cmp,.mk-spur-stat{display:flex;flex-wrap:wrap;gap:2px 14px;padding:0 0 1px}
-/* Bezugslinie im Spurkopf (2026-10-25): im Chart stiess ihre Beschriftung mit
-   den Werten ueber den Balken zusammen. Ziel blau wie die Linie, sonst grau. */
-.mk-ref{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-xs);font-weight:700;color:var(--t2);white-space:nowrap}
-.mk-ref-ziel{color:var(--blue)}
-.mk-st{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xs);font-variant-numeric:tabular-nums;white-space:nowrap}
-.mk-st i{font-style:normal;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)}
-.mk-st b{font-weight:700;color:var(--t1)}
-.mk-st-nd i{text-transform:none;letter-spacing:0;font-style:italic;font-weight:400}
-.mk-read-z{display:inline-flex;align-items:center;gap:4px}
-.mk-achse{display:block;border-top:1px solid var(--bd)}
-.mk-leer{font-size:var(--fs-sm);color:var(--t3);padding:12px 0}
-.mk-read{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:var(--fs-xs);color:var(--t1);min-height:18px}
-.mk-read i{color:var(--t2)}
-/* Handy: drei Felder je Zeile, Trennstrich nie am Zeilenanfang (gemessen
-   2026-10-21: "| SCORE" begann die zweite Zeile). */
-@media (max-width:520px){
-  .mk-kvs{grid-template-columns:repeat(3,auto);margin-left:0;justify-content:start;row-gap:6px}
-  .mk-kv{padding:0 10px}.mk-kv:nth-child(3n+1){border-left:0;padding-left:0}
-  /* Statistik am Handy einzeilig zum Wischen statt drei Zeilen (2026-10-25,
-     "kompakter"): gemessen 179 px je Spur, davon ~45 px Statistik. */
-  .mk-spur-stat{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:none;scrollbar-width:none}
-  .mk-spur-stat::-webkit-scrollbar{display:none}
-  /* Zeitraumleiste einzeilig (vorher "Max" allein in Zeile 2), aber nie breiter
-     als die Karte: bei 360 px ragte sie mit nowrap 18 px heraus (gemessen).
-     Volle Breite, sonst blieben 1Y/3Y/5Y 23 px schmal (zu klein zum Tippen). */
-  .mk-tk .chart-leiste-r{flex:1 1 auto;margin-left:0}
-  .mk-tk .ind-hist-range-bar{flex-wrap:nowrap;gap:3px;width:100%;max-width:100%}
-  .mk-tk .ind-hist-range-bar>.ind-hist-range-btn{flex:1 1 auto;min-width:0;padding-left:4px;padding-right:4px}
-}
 .rub-summary-lbl{font-size:var(--fs-2xs);letter-spacing:2px;color:var(--t3);font-weight:700;font-family:var(--ff-num);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
 .rub-summary-txt{width:100%;background:transparent;border:none;color:var(--t1);font-size:var(--fs-sm);line-height:1.6;outline:none;font-family:var(--ff-text);resize:none;overflow:hidden;min-height:30px}
 .rub-summary-view{color:var(--t1);font:400 var(--fs-sm)/1.5 var(--ff-text);cursor:text}
@@ -7674,11 +7611,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-715 - Asset-Seite, MACRO-Zeile: Schalter Data statt Charts - die Data-Seite an Ort und Stelle (Vergleich direkt dort); vorher 705-714: siehe docs/CHANGELOG.md; vorher 704: Asset-Seite am PC fuellt die Breite (Kompakt-Regel ab 1500 px gab Price 1/4 Breite und der Dreierzeile eine leere Spalte), Watchlist-Schnellzugriff ohne leere Spalte; vorher 703: Dashboard-Begruessung: Logo frei (Kerzen im unteren Drittel, enden unter dem Logo), Linie ueber den Kerzen entfernt; vorher 702: Weltkugel: Farbschema Atlas fest im hellen Modus (Schalter und andere Schemata entfernt), Viereck-Raster fest auf der Kugel - dreht mit dem Land, reicht bis an die Kueste; vorher 701: Dashboard am PC: fuellt die Breite und skaliert als Ganzes mit (Schrift, Karten, Kugel), Kugel scharf; vorher 700: Dashboard: Karten gleich breit (ein Spaltenmass fuer Begruessung|Kennzahlen, Market overview|World map, Bias|Insights); vorher 699: Weltkugel im hellen Modus: 5 Farbschemata zur Wahl (Panel, Atlas, Ink, Slate, Day) + bisheriges, Schalter in der Karte; vorher 698: Bias scores: Neutral-Spalte eingeklappt so lang wie die laengere Bull-/Bear-Spalte, Show all / Show less; vorher 697: Bias scores: Podium (je 3 staerkste Long/Short) + darunter Bull/Neutral/Bear fuer alle uebrigen (Nutzer-Wahl), Schalter und andere Varianten entfernt; vorher 696: Bias scores: 5 Darstellungen zur Wahl (Ranking, Scale, Heatmap, Bull/Bear, Podium) + bisherige Tiles, Schalter in der Karte; vorher 695: Weltkugel: Schwung nach dem Wischen als Bahn im Worker (kein Haken/Ruecksprung beim schnellen Drehen), Ziehen geglaettet; vorher 694: Filter-✕ versteckt ohne Platz und links vom Feld: keine Luecke mehr (COT, Kalender, News, Trends, Stimmung), Feld steht weiter fest; vorher 693: 1D-Bild der Market overview: Laender-Umriss fest (Nutzer-Wahl Outline), Schalter und Globe/Logo entfernt; vorher 692: Kugel-Selbsttest misst zusaetzlich den Hauptthread-Takt (Tippen/Scrollen); vorher 691: Kugel-Selbsttest auf dem Geraet: Adresse mit #globetest zeigt Bildtakt, Drehtempo, Rueckwaerts-Schritte und Seiten-Ladungen; vorher 690: Kennzahl-Karten oben rechts: Symbol als grosse getoente Plakette (56 px statt 22 px); vorher 689: Weltkugel: kein Keil/Vollkreis am Rand mehr (verdeckte Kuesten am Kugelrand entlang wie d3-geo, keine selbstkreuzenden Ringe), Kuesten je Kugelgroesse vereinfacht (halb so viele Pfadpunkte je Bild), Randschatten in die Land-Textur eingebacken (eine Kopie ueber die ganze Flaeche je Bild weniger), beides ohne sichtbaren Unterschied; Kugel-Takt haelt vor dem Seitenwechsel an; vorher 688: Entfernen-Knoepfe (Watchlist, Market overview) mit Seitenschrift statt Browser-Standard 13,33 px; vorher 687: 1D-Kacheln der Market overview: Bild statt Tageskerze, drei Varianten zur Wahl (Outline, Globe, Logo); vorher 686: Weltkugel dreht gleichmaessig (Winkel aus Zeitformel statt Hochrechnung aus altem Stand, kein Vor-und-Zurueck); vorher 685: Weltkugel in WebKit belegt (eine Flaeche, Radar im Canvas, Flamme flackert nur beim Boost); Kalender ohne Speicher-Explosion in Safari; vorher 684: Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-716 - Charts-Ansicht der MACRO-Zeile geloescht (Code, Sync-Felder, CSS); Sectors mit echten Werten (nur Anzeige, sektor_data.json); Performance: Kugel-Schleife im Leerlauf 4x/s statt jedes Bild (Dashboard-Hauptthread 70 -> 24 %, CPU 4x), Asset oeffnen ohne doppeltes Layout, Seitenleiste/Leuchten gebuendelt; vorher 715: Asset-Seite, MACRO-Zeile: Schalter Data statt Charts - die Data-Seite an Ort und Stelle (Vergleich direkt dort); vorher 705-714: siehe docs/CHANGELOG.md; vorher 704: Asset-Seite am PC fuellt die Breite (Kompakt-Regel ab 1500 px gab Price 1/4 Breite und der Dreierzeile eine leere Spalte), Watchlist-Schnellzugriff ohne leere Spalte; vorher 703: Dashboard-Begruessung: Logo frei (Kerzen im unteren Drittel, enden unter dem Logo), Linie ueber den Kerzen entfernt; vorher 702: Weltkugel: Farbschema Atlas fest im hellen Modus (Schalter und andere Schemata entfernt), Viereck-Raster fest auf der Kugel - dreht mit dem Land, reicht bis an die Kueste; vorher 701: Dashboard am PC: fuellt die Breite und skaliert als Ganzes mit (Schrift, Karten, Kugel), Kugel scharf; vorher 700: Dashboard: Karten gleich breit (ein Spaltenmass fuer Begruessung|Kennzahlen, Market overview|World map, Bias|Insights); vorher 699: Weltkugel im hellen Modus: 5 Farbschemata zur Wahl (Panel, Atlas, Ink, Slate, Day) + bisheriges, Schalter in der Karte; vorher 698: Bias scores: Neutral-Spalte eingeklappt so lang wie die laengere Bull-/Bear-Spalte, Show all / Show less; vorher 697: Bias scores: Podium (je 3 staerkste Long/Short) + darunter Bull/Neutral/Bear fuer alle uebrigen (Nutzer-Wahl), Schalter und andere Varianten entfernt; vorher 696: Bias scores: 5 Darstellungen zur Wahl (Ranking, Scale, Heatmap, Bull/Bear, Podium) + bisherige Tiles, Schalter in der Karte; vorher 695: Weltkugel: Schwung nach dem Wischen als Bahn im Worker (kein Haken/Ruecksprung beim schnellen Drehen), Ziehen geglaettet; vorher 694: Filter-✕ versteckt ohne Platz und links vom Feld: keine Luecke mehr (COT, Kalender, News, Trends, Stimmung), Feld steht weiter fest; vorher 693: 1D-Bild der Market overview: Laender-Umriss fest (Nutzer-Wahl Outline), Schalter und Globe/Logo entfernt; vorher 692: Kugel-Selbsttest misst zusaetzlich den Hauptthread-Takt (Tippen/Scrollen); vorher 691: Kugel-Selbsttest auf dem Geraet: Adresse mit #globetest zeigt Bildtakt, Drehtempo, Rueckwaerts-Schritte und Seiten-Ladungen; vorher 690: Kennzahl-Karten oben rechts: Symbol als grosse getoente Plakette (56 px statt 22 px); vorher 689: Weltkugel: kein Keil/Vollkreis am Rand mehr (verdeckte Kuesten am Kugelrand entlang wie d3-geo, keine selbstkreuzenden Ringe), Kuesten je Kugelgroesse vereinfacht (halb so viele Pfadpunkte je Bild), Randschatten in die Land-Textur eingebacken (eine Kopie ueber die ganze Flaeche je Bild weniger), beides ohne sichtbaren Unterschied; Kugel-Takt haelt vor dem Seitenwechsel an; vorher 688: Entfernen-Knoepfe (Watchlist, Market overview) mit Seitenschrift statt Browser-Standard 13,33 px; vorher 687: 1D-Kacheln der Market overview: Bild statt Tageskerze, drei Varianten zur Wahl (Outline, Globe, Logo); vorher 686: Weltkugel dreht gleichmaessig (Winkel aus Zeitformel statt Hochrechnung aus altem Stand, kein Vor-und-Zurueck); vorher 685: Weltkugel in WebKit belegt (eine Flaeche, Radar im Canvas, Flamme flackert nur beim Boost); Kalender ohne Speicher-Explosion in Safari; vorher 684: Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-715</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-716</span>
     </span>
   </div>
   <div class="hdr-r">

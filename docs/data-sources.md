@@ -959,3 +959,13 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
 - **Ort:** `feed_zusatz.json` — Wert, Prognose, Datum, Rechnung mit Spanne. Eingespielt von `tools/feed-zusatz.mjs` (Workflow).
 - **Sichtbar:** Marke **EST** in der Indikatorzeile, Rechnung im Tooltip. Zählt voll im Score.
 - **Befristet:** ein jüngerer oder gleich alter echter Release ersetzt ihn automatisch. Erledigte Einträge aus der Datei löschen.
+
+## sektor_data.json — Sectors der MACRO-Zeile (seit 2026-11-12, nur Anzeige)
+
+- **Nutzer:** *„die Wirtschaft soll in jeden Sektor auseinander genommen werden … jedes Investment … jede Nachfrage jeden Markt egal ob Haus oder yields"*; 2026-11-12 *„Mach nur anzeigen"* → **kein Score-Teil**.
+- **Katalog:** `js/sektoren-katalog.js` (EINE Liste für Feed und App). Je Zeile Titel-Muster des TradingView-Kalenders in Rangfolge, oder `ind` (Wert aus `ind_data.json`, damit Haupt-Tabelle und Sectors dieselbe Zahl zeigen), oder `anl` (Rendite aus `bond_data.json`).
+- **Feed:** Workflow-Schritt *Build sector view* → `node tools/sektoren.mjs`; kein Netz, liest `cal_hist/`, `ind_data.json`, `bond_data.json`.
+- **Nie geschätzt:** ohne Veröffentlichung in `SEKTOR_FRISCH_TAGE` (200) gibt es die Zeile nicht. Dieselbe Veröffentlichung nie in zwei Zeilen.
+- **EUR nur Eurozone** (Länderzeilen mit Vorsatz German/French/Italian/Spanish ausgeschlossen).
+- **Zeitraum** (y/y, m/m, q/q) steht nicht im Katalognamen, er kommt aus dem Titel der Quelle (NZD-CPI ist q/q).
+- Wächter: `check/sektoren.js`.
