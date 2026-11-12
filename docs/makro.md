@@ -2,6 +2,11 @@
 
 Referenziert von `CLAUDE.md`. Code: `js/makro.js`. Wächter: `check/makro.js` (I: Balken, Werte, Farbe, Forecast-Linie, kompakt), `check/altgeraet.js`.
 
+> ⚠ **Seit 2026-11-12 (715) nicht mehr auf der Oberfläche.** Der Table|Charts-Schalter
+> ist entfernt; in der MACRO-Zeile sitzt stattdessen der Schalter **Data**
+> (`docs/navigation.md` „MACRO-Zeile: Data“). Der Code unten lebt weiter
+> (`js/makro.js`, Zustand im Sync), wird aber nicht mehr gezeichnet.
+
 ## Auftrag
 
 > 2026-10-20: „einen Schalter haben zum wechseln also wenn ich Wechsel soll da drei

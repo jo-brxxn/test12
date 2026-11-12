@@ -1633,6 +1633,14 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **Grenzen in `vh`/`dvh` an skalierten Elementen** durch `var(--pg-zoom,1)` teilen.
 - Geprüft von `check/breit.js` C.
 
+## MACRO-Zeile: Data (2026-11-12)
+
+- **Ein Schalter „Data“** rechts in der MACRO-Zeile der Asset-Seite; kein Charts-Schalter mehr.
+- **An:** die Data-Seite an Ort und Stelle, vorbelegt mit dem offenen Asset; Vergleichen wie auf der Data-Seite.
+- **Dieselbe Seite:** `#dataBody` wird umgehängt, nie kopiert. Neue Funktion der Data-Seite = automatisch auch hier.
+- **Aus / Sectors an / Seitenwechsel:** `makroDatenZurueck()` hängt sie zurück nach `#pgData`.
+- **Nicht gespeichert** (Sitzungszustand). Wächter: `check/makro.js`.
+
 ## Price-Karte: Biggest moves (2026-11-11)
 
 - **Spalte links ohne Auswahl:** *Next up* | *Biggest moves* (8 größte Bewegungen im sichtbaren Zeitraum).

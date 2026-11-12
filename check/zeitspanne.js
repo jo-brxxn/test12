@@ -34,7 +34,7 @@ const FAELLE = [
   ['Trends', 'showTab("trends")', '#pgTrends [data-br="setTrendsRange"]'],
   ['Data', 'showTab("data")', '#pgData [data-br="setDataRange"]'],
   ['Paar', 'gotoPairOverview("EUR/USD")', '[data-br="setPairOvRange"]'],
-  ['Makro', 'gotoSym("USD");if(!makroGross())makroSicht("charts")', '#detail .mk-chart[data-br]'],
+  // 2026-11-12: Makro-Charts entfernt (ersetzt durch Data an Ort und Stelle - die Data-Zeile oben deckt sie ab)
   ['Chart-Fenster', 'gotoSym("EUR");setTimeout(()=>cpfOeffnen("niv:Unemployment Rate"),900)', '#cpfBody [data-br="cpfSetRange"]'],
 ];
 // Punkte im Chart: Hover-Registry (.chv), sonst Tagesanker (History/Makro: Spanne in Tagen)
@@ -85,7 +85,7 @@ const schere = (p, key) => p.evaluate(k => { const b = [...document.querySelecto
     await p.evaluate(() => { document.querySelectorAll('.ov').forEach(o => { if (o.id && getComputedStyle(o).display !== 'none') try { closeM(o.id); } catch (e) {} }); });
   }
   // V) Ansicht: Asset-Seite (Price + History + Makro) und Chart-Fenster (alle Panels)
-  await p.evaluate(() => { gotoSym('USD'); if (!makroGross()) makroSicht('charts'); }); await p.waitForTimeout(1500);
+  await p.evaluate(() => { gotoSym('USD'); }); await p.waitForTimeout(1500);
   const wo = () => p.evaluate(() => ({
     ab: !!document.querySelector('#detail .ab-ptile .br-chip'), hist: !!document.querySelector('#detail [data-br="hist"]') && !!document.querySelector('#detail .ab-htile-bd .br-chip, #detail .histp .br-chip'),
     mk: !!document.querySelector('#detail .rub-card .br-chip, #detail .mk-karte .br-chip'), n: [...document.querySelectorAll('#detail .br-chip')].filter(e => e.offsetParent).length }));
@@ -93,7 +93,6 @@ const schere = (p, key) => p.evaluate(k => { const b = [...document.querySelecto
   const v1 = await wo();
   if (!v1.ab) fail('ANSICHT', 'Price-Karte zeigt die Spanne nicht');
   if (!v1.hist) fail('ANSICHT', 'History-Karte uebernimmt die Spanne der Price-Karte nicht');
-  if (!v1.mk) fail('ANSICHT', 'Makro-Charts uebernehmen die Spanne der Price-Karte nicht');
   await p.evaluate(() => { const x = [...document.querySelectorAll('#detail .br-chip .br-x')].find(e => e.offsetParent); if (x) x.click(); }); await p.waitForTimeout(1000);
   const v2 = await wo();
   if (v2.n) fail('ANSICHT', `× an einem Chip laesst ${v2.n} andere stehen`);

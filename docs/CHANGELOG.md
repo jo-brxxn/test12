@@ -22040,3 +22040,18 @@ nach rechts weiterverlängert“*.
   rechten Rand; Gegenprobe (alte Kompakt-Regel) → rot.
 - Offen (nicht beauftragt): Asset- und andere Seiten skalieren am großen
   Bildschirm nicht mit wie das Dashboard (Schrift bleibt klein).
+
+## 2026-11-12 — MACRO-Zeile: Schalter „Data“ statt „Charts“ (VERSION-CHECK-715)
+
+Nutzer: *„entfern den Charts Umschalter bei den Assets bei macro und mach
+stattdessen dort direkt einen data Umschalter hin mit dem man Sachen
+vergleichen kann direkt dort also das sich sozusagen dort die data Seite
+komplett gleich ist nur halt an den Ort“*.
+
+- **Weg:** Table|Charts-Schalter je Makro-Karte und die Reiter-Karte werden nicht mehr gezeigt (`const tk=null` in `abMakroReiheHtml`). Der Code in `js/makro.js` bleibt (Zustand `mkAnsicht` im Sync, `check/altgeraet.js`/`check/zeitspanne.js` rufen die Funktionen direkt).
+- **Neu:** ein Schalter **Data** rechts in der MACRO-Zeile (neben *Sectors*). An = die Data-Seite steht in der Reihe, vorbelegt mit dem offenen Asset.
+- **Eine Data-Seite, nicht zwei:** `#dataBody` wird umgehängt (`makroDatenEinhaengen` → `.mk-data-slot`, `makroDatenZurueck` → `#pgData`), nicht nachgebaut. Sonst gäbe es doppelte IDs und zwei Zustände, die auseinanderlaufen.
+- **Zurückhängen** vor jedem Neuaufbau der Reihe und in `showTab` — sonst verschwindet die Data-Seite mit dem alten Asset-HTML.
+- **Höhe:** `.mk-data-slot` `clamp(520px,78vh,860px)`; `dataRasterFuellen` nimmt den Slot als Höhengeber.
+- **Nicht gespeichert:** `makroDatenAn` ist reiner Sitzungszustand (nach dem Neuladen aus). *Sectors* an schaltet Data aus.
+- **Wächter:** `check/makro.js` neu geschrieben (A Schalter, B eingehängt + Chart + Breite, C Vergleich, D Data-Seite und zurück, E Asset-Wechsel; Gegenprobe: nicht eingehängt = rot).

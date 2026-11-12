@@ -70,12 +70,14 @@ function altStand(d) {
   await p.evaluate(() => gotoSym('GOLD')); await p.waitForTimeout(600);
   const klick = (sel, txt) => p.evaluate(([sel, txt]) => { const x = [...document.querySelectorAll(sel)].find(y => y.textContent.trim() === txt); if (!x) return false; x.click(); return true; }, [sel, txt]);
   const zustand = () => p.evaluate(() => { const inf = getSym().rubrics.find(r => r.name === 'Inflation'); const a = ((researchAnalysis.USD || {}).Inflation || {});
-    return { ui: (i => i ? (i.checked ? 'Charts' : 'Table') : '')(document.querySelector('#detail .mk-rsw input')), charts: !!document.querySelector('#detail .mk-chart svg'), range: inf.mkRange, inds: JSON.stringify(inf.mkInds || null),
-      tab: (document.querySelector('#mkTabKarte .mk-tab.on') || {}).textContent || '', tags: JSON.stringify(a.tags || {}), hist: (a.hist || []).length }; });
+    return { ui: makroGross() ? 'Charts' : 'Table', charts: makroGross(), range: inf.mkRange, inds: JSON.stringify(inf.mkInds || null),
+      tab: (typeof makroTabWert === 'function' ? makroTabWert() : (JSON.parse(localStorage.getItem(SK)) || {}).mkTab) || '', tags: JSON.stringify(a.tags || {}), hist: (a.hist || []).length }; });
   // Seit 2026-10-25 ein Kippschalter rechts in der MACRO-Zeile (statt Table|Charts je Karte)
-  if (!await p.evaluate(() => { const i = document.querySelector('#detail .mk-rsw input'); if (!i) return false; if (!i.checked) i.click(); return true; })) fail('Aufbau', 'kein Charts-Schalter'); await p.waitForTimeout(300);
-  await klick('#detail .ind-hist-range-btn', '10Y'); await p.waitForTimeout(300);
-  await p.evaluate(() => { const c = document.querySelector('#detail .mk-chip.on'); if (c) c.click(); }); await p.waitForTimeout(300);
+  // 2026-11-12: die Charts-Ansicht hat keinen Schalter mehr (ersetzt durch Data an Ort und Stelle);
+  // der gespeicherte Zustand mkAnsicht/mkRange/mkInds/Reiter bleibt das Pruefobjekt fuer "neue Felder".
+  await p.evaluate(() => { if (!makroGross()) makroSicht('charts'); }); await p.waitForTimeout(300);
+  await p.evaluate(() => makroRange(getSym().rubrics.findIndex(r => r.name === 'Inflation'), 120)); await p.waitForTimeout(300);
+  await p.evaluate(() => { const ri = getSym().rubrics.findIndex(r => r.name === 'Inflation'), ind = getSym().rubrics[ri].indicators[0]; if (ind) makroSpur(ri, ind.id); }); await p.waitForTimeout(300);
   // Reiter Labour Market, dann zurueck auf Inflation-Spuren ist nicht noetig: der Reiter selbst wird geprueft
   await p.evaluate(() => makroTab('Labour Market')); await p.waitForTimeout(300);
   await p.evaluate(() => makroTab('Inflation')); await p.waitForTimeout(300);
@@ -147,12 +149,12 @@ function altStand(d) {
   await p2.evaluate(() => gotoSym('GOLD')); await p2.waitForTimeout(500);
   // Charts an und hochgeladen (B hatte Table gesetzt). Seit 2026-10-25 EIN Schalter
   // fuer alle Karten - er oeffnet den zuletzt gewaehlten Reiter; D liest Inflation.
-  await p2.evaluate(() => { const i = document.querySelector('#detail .mk-rsw input'); if (i && !i.checked) i.click(); makroTab('Inflation'); });
+  await p2.evaluate(() => { if (!makroGross()) makroSicht('charts'); makroTab('Inflation'); });
   await p2.waitForTimeout(3000);
   // Eingabe, dann SOFORT neu laden (Push kommt nicht mehr durch: Netz weg)
   const sperre = r => r.abort();
   await ctx.route(FAKE + '/**', sperre);
-  await p2.evaluate(() => { const b = [...document.querySelectorAll('#detail .ind-hist-range-btn')].find(x => x.textContent.trim() === '5Y'); b.click(); flushAndSave(); });
+  await p2.evaluate(() => { makroRange(getSym().rubrics.findIndex(r => r.name === 'Inflation'), 60); flushAndSave(); });
   await p2.waitForTimeout(2000);
   await ctx.unroute(FAKE + '/**', sperre);
   // anderes Geraet aendert woanders (JPY-Indikator-Notiz)
@@ -171,7 +173,7 @@ function altStand(d) {
 
   // ── E: aelterer Tab desselben Geraets ──
   console.log('E) aelterer Tab schreibt localStorage ohne die neuen Felder');
-  await p2.evaluate(() => { const i = document.querySelector('#detail .mk-rsw input'); if (i && !i.checked) i.click(); });
+  await p2.evaluate(() => { if (!makroGross()) makroSicht('charts'); });
   await p2.waitForTimeout(3500);
   const vorE = await p2.evaluate(() => makroGross());
   await p2.evaluate(() => { const o = JSON.parse(localStorage.getItem(SK)); delete o.mkAnsicht; localStorage.setItem(SK, JSON.stringify(o)); localStorage.setItem('fxpro_updated', new Date().toISOString()); adoptExternalState(); });

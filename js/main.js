@@ -11585,7 +11585,7 @@ function abReihenTitel(txt,extra){
 // probe-tv-themen.yml vom 11.11., USD) oder ob die Quelle noch zu pruefen ist
 // (To check). Schalter "Sectors" in der Macro-Zeile, nicht gespeichert.
 let makroSektorenAn=false;
-function makroSektorenSchalten(an){makroSektorenAn=!!an;renderDetail();}
+function makroSektorenSchalten(an){makroSektorenAn=!!an;if(makroSektorenAn)makroDatenAn=false;renderDetail();}
 const SEKTOREN_VORSCHAU=[
   ['Prices & money','infl',[
     ['Consumer prices',[['CPI y/y','l'],['Core CPI y/y','l'],['PCE y/y','l'],['Core PCE y/y','l']]],
@@ -11619,13 +11619,48 @@ function sektorenVorschauHtml(c){
 function makroSektorenSchalterHtml(){
   return`<label class="sk-rsw" title="${makroSektorenAn?'Back to the main indicators':'Preview: the economy split into sectors'}"><span class="sk-rsw-l">Sectors</span><span class="tgl tgl-s"><input type="checkbox"${makroSektorenAn?' checked':''} aria-label="Preview the sector view" onchange="makroSektorenSchalten(this.checked)"><span class="tgl-track"></span></span></label>`;
 }
+// ── DATA DIREKT IN DER MACRO-ZEILE (2026-11-12) ───────────────────────────
+// Nutzer 2026-11-11: "entfern den Charts Umschalter bei den Assets bei macro
+// und mach stattdessen dort direkt einen data Umschalter hin mit dem man
+// Sachen vergleichen kann direkt dort also das sich sozusagen dort die data
+// Seite komplett gleich ist nur halt an den Ort".
+// Es gibt nur EINE Data-Seite (#dataBody, renderDataTab). Schalter an: genau
+// dieses Element wird in die Macro-Reihe gehaengt - dieselben Reiter, Filter,
+// Vergleiche, kein zweiter Aufbau. Vor jedem Neuaufbau der Asset-Seite und
+// beim Seitenwechsel haengt es zurueck nach #pgData (sonst wuerde es mit dem
+// innerHTML der Asset-Seite verworfen). Nicht gespeichert: reine Ansicht.
+let makroDatenAn=false;
+function makroDatenZurueck(){
+  const b=document.getElementById('dataBody'),pg=document.getElementById('pgData');
+  if(b&&pg&&b.parentElement!==pg)pg.appendChild(b);
+}
+function makroDatenEinhaengen(){
+  if(!makroDatenAn||curPage!=='cur')return;
+  const slot=document.querySelector('#detail .mk-data-slot'),b=document.getElementById('dataBody');
+  if(!slot||!b)return;
+  if(b.parentElement!==slot)slot.appendChild(b);
+  try{renderDataTab();}catch(e){console.error('[data]',e);}
+}
+function makroDatenSchalten(an){
+  try{
+    makroDatenAn=!!an;
+    if(makroDatenAn){const c=getSym();if(c&&!(dataAssets.length===1&&dataAssets[0]===c.id)){if(dataMode==='vs'||dataMode==='preis')dataMode='assets';dataAssets=[c.id];}}
+    renderDetail();
+  }catch(e){console.error(e);alert('Could not switch the view: '+(e&&e.message||e));}
+}
+function makroDatenSchalterHtml(){
+  return`<label class="mk-rsw" title="${makroDatenAn?'Back to the indicator tables':'Show the Data page right here: charts, compare assets and indicators'}">`
+    +`<span class="mk-rsw-l">Data</span><span class="tgl tgl-s"><input type="checkbox"${makroDatenAn?' checked':''} aria-label="Show the Data page in the macro row" onchange="makroDatenSchalten(this.checked)"><span class="tgl-track"></span></span></label>`;
+}
 function abMakroReiheHtml(c,teil){
+  makroDatenZurueck();
   if(makroSektorenAn)return sektorenVorschauHtml(c);
+  if(makroDatenAn)return`<div class="ab-col mk-col mk-data-slot" data-mkreihe="1"></div>`;
   // Voller Seitenaufbau (jede Datenaenderung) leert die Zwischenspeicher der
   // Makro-Charts; ein Teil-Aufbau (makroReiheNeu) behaelt sie.
   makroRenderStart(!teil);
   const rubs=c.rubrics||[];
-  const tk=makroTabKarteHtml(c);
+  const tk=null;   // 2026-11-12: Charts-Ansicht entfernt (ersetzt durch Data an Ort und Stelle)
   if(tk)return`<div class="ab-col mk-col" data-mkreihe="1">${tk}</div>`;
   return ASSET_CARDS.map(n=>{const i=rubs.findIndex(r=>r&&r.name===n);return`<div class="ab-col" data-mkreihe="1">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('');
 }
@@ -11715,7 +11750,7 @@ function renderAssetBoard(c){
            Fenster ueber den Knopf in der Schnellzugriffszeile (Nutzer
            2026-10-27: "mach da noch einen Button names country profile in
            die Zeile ... entfern die Karte vom normalen Bildschirm"). */''}
-      ${abReihenTitel('Macro',makroSektorenSchalterHtml()+(makroSektorenAn?'':makroReihenSchalterHtml(c)))}
+      ${abReihenTitel('Macro',makroSektorenSchalterHtml()+(makroSektorenAn?'':makroDatenSchalterHtml()))}
       ${/* Makro-Reihe: drei Tabellen-Karten oder - im Charts-Modus - EINE
            breite Karte mit Reitern (Nutzer 2026-10-21, siehe Kopf von makro.js). */''}
       ${abMakroReiheHtml(c)}
@@ -11887,6 +11922,7 @@ function assetPreisKarteHtml(c){
   // vorher") - also steht der Streifen wieder hier, wo er herkam.
   // Spalte NACH dem Chart bauen: sie liest die Pfeil-Ebene, die er anlegt.
   setTimeout(pkNachAufbau,0);
+  setTimeout(makroDatenEinhaengen,0);
   return`<div class="ab-ptile pk${pkAddAktiv()?' pk-add':''}">
     ${kopf}
     <div class="pk-body">
@@ -22553,7 +22589,8 @@ function renderDataTabRoh(){
 }
 // Raster setzen, Zellen messen, dann jeden Chart in seine Flaeche zeichnen.
 function dataRasterFuellen(el,n,jobs){
-  const grid=el.querySelector('.data-grid'),pg=document.getElementById('pgData');
+  // 2026-11-12: #dataBody kann in der Macro-Reihe der Asset-Seite haengen - dann gibt deren Feld die Hoehe vor
+  const grid=el.querySelector('.data-grid'),pg=el.closest('.mk-data-slot')||document.getElementById('pgData');
   if(!grid||!pg)return;
   const {c,r}=dataRaster(n,grid.clientWidth,dataMode==='vs'?2:0);
   const gap=parseFloat(getComputedStyle(grid).rowGap)||10;
@@ -22615,7 +22652,7 @@ function dataRasterFuellen(el,n,jobs){
   });
 }
 let _dataRz=0;
-try{window.addEventListener('resize',()=>{clearTimeout(_dataRz);_dataRz=setTimeout(()=>{const pg=document.getElementById('pgData');if(pg&&pg.style.display!=='none'&&pg.offsetParent)renderDataTab();},150);});}catch(e){}
+try{window.addEventListener('resize',()=>{clearTimeout(_dataRz);_dataRz=setTimeout(()=>{const pg=document.getElementById('pgData'),b=document.getElementById('dataBody');if((pg&&pg.style.display!=='none'&&pg.offsetParent)||(b&&b.closest('.mk-data-slot')&&b.offsetParent))renderDataTab();},150);});}catch(e){}
 function sentReadBadge(ev){
   if(!ev)return`<span style="color:var(--t3);font-size:var(--fs-sm)">no data</span>`;
   // Veralteter Stand: sichtbar bleiben, aber ausdruecklich nicht gezaehlt.
@@ -26048,6 +26085,7 @@ function triggerEnterAnim(){
 // einem Seitenwechsel sind die alten Referenzen tot, weil die Seite auf
 // display:none stand und ihre Masse dabei 0 meldet.
 function showTab(tab,btn,fxMode){
+  makroDatenZurueck();
   // Overview gibt es seit 2026-11-06 nicht mehr (Weltkugel lebt im Dashboard);
   // gespeicherte/alte Spruenge dorthin landen auf dem Dashboard.
   if(tab==='over')tab='dash';
@@ -27565,7 +27603,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
