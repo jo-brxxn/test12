@@ -1,0 +1,15 @@
+# Welche Quellen liefern BTC-Sentiment-Daten (ETF-Flows, Funding, OI, On-chain ...)? (2026-11-13)
+# Laeuft auf dem Runner (die Claude-Umgebung erreicht die Hosts nicht). Schreibt NICHTS.
+# Ausgabe: tools/btc-sonde.mjs, Ergebnis: SOURCES.md.
+name: Probe BTC sentiment sources
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: BTC-Sentiment-Quellen pruefen
+        run: node tools/btc-sonde.mjs
