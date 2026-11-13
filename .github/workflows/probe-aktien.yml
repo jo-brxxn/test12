@@ -13,3 +13,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Quellen fuer Aktien-Kennzahlen pruefen
         run: node tools/aktien-sonde.mjs
+      - name: Werkzeug tools/aktien.mjs im Pruefmodus (schreibt nichts)
+        run: node tools/aktien.mjs --pruefen
