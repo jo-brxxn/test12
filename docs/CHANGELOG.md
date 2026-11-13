@@ -22119,3 +22119,10 @@ CI-Lauf 733 (Version 719), drei Befunde – alle durch die Aktien ausgelöst ode
 - **cotpreis „OHNE KURS“:** Prüfzeitpunkt vor dem Feed-Lauf; nach dem Lauf haben alle 13 Aktien Kurse.
 - **designregeln Trends (5 statt 6 Linien):** Aktien aus `trendAssets()` – ihr Score ist praktisch der des S&P 500 (dieselben USD-Karten), deckungsgleiche Linien.
 - **designregeln Mindestschrift Set-ups (neu sichtbar):** gemessen 390 px: Zeile 23 px zu breit → Schrift auf 9,68 bzw. 10,56 px verkleinert. Ursachen: „CoreWeave“ +12 px Namensspalte; Kurs-Chip „2.3896 ▲ +0.11%“ 115 px – auch mit dem Code von 717 und heutigen Kursen schon zu breit (Gegenmessung im Worktree). Behoben: Aktien nicht in den Set-ups (wie Trends), Chip ohne doppeltes „+“ (Pfeil trägt die Richtung; vorher „▲ +0.11%“ aber „▼ 0.01%“, Chip 115 → 107 px), Spaltenabstand 4 → 3 px nur bis 420 px Breite (breiter ragte die Score-Trefferfläche in den Stern, designregeln F). Ergebnis 390 px: 0 px Überstand, 11 px Schrift. ⚠ Ohne Reserve – ein breiterer Kurs verkleinert wieder (Nutzer-Regel 2026-10-20 „einzeilig, sonst kleiner“ gegen Mindestschrift 11 px).
+
+## 2026-11-13 — Crypto Fear & Greed im Vollbild mit BTC (VERSION-CHECK-721)
+
+Nutzer: *„Mach mal ganz schnell bei fear and Fred Index das wenn man draufdrückt vollbil ist und man vs btc Preis machen kann.“*
+- Tipp auf die Karte *Crypto Fear & Greed* (Sentiment › Fear & Greed) → Vollbild (`.fg-voll`, 100vw × 100dvh): Index links (0–100, Zonen ≤ 25 / ≥ 75), Schalter *vs BTC price* (rechte Achse, price_data.json), Zeitraum 1M–Max, Werte beim Zeigen.
+- `dashFensterGross()` nimmt `fg-voll` wieder ab – andere Fenster bleiben normal (geprüft).
+- Gemessen 1440 × 900 und 390 × 844: volle Fläche, kein Überlauf, keine JS-Fehler.

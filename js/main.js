@@ -17601,7 +17601,7 @@ function dashStatsHtml(z){
 // Inhalt 560 px fest in einem 538-px-Fenster). Jetzt: fast seitenbreit, der
 // Inhalt bricht um, gescrollt wird nur senkrecht. Andere Erklaer-Fenster
 // setzen die Klasse zurueck (openCardInfo/faktenFenster).
-function dashFensterGross(an){const m=document.querySelector('#mCardInfo .modal');if(m)m.classList.toggle('dx-gross',!!an);}
+function dashFensterGross(an){const m=document.querySelector('#mCardInfo .modal');if(m){m.classList.toggle('dx-gross',!!an);m.classList.remove('fg-voll');}}
 function dashPositionenFenster(){
   dashFensterGross(true);
   const t=document.getElementById('mCardInfoTitle');if(t)t.textContent='Open positions';
@@ -24681,7 +24681,7 @@ function legende(paare){
 }
 function absAaiiH(){return 220;}
 function renderFearGreedCards(D){
-  const card=(title,key,sub,inner)=>`<div class="cot-card"><div class="cot-card-title">${title}${iBtn(key)}<span style="font-weight:500;color:var(--t2);font-size:var(--fs-xs);margin-left:auto">${sub}</span></div><div style="padding:12px 14px">${inner}</div></div>`;
+  const card=(title,key,sub,inner)=>`<div class="cot-card${title.startsWith('Crypto Fear')?' fg-tippbar" onclick="fgVollAuf(event)" title="Open full screen · compare with the BTC price':''}"><div class="cot-card-title">${title}${iBtn(key)}<span style="font-weight:500;color:var(--t2);font-size:var(--fs-xs);margin-left:auto">${sub}</span></div><div style="padding:12px 14px">${inner}</div></div>`;
   // Tiefe = die laengste der drei Reihen (jede Stufe soll mindestens einen Chart kuerzen).
   const fgAb=[D.cryptoFng,D.vix,D.stockFng].map(x=>x&&Array.isArray(x.series)&&x.series.length?String(x.series[0][0]):null).filter(Boolean).sort()[0]||null;
   const rangeBar=`<div class="pc-inchart-range">${timeRangeBarHtml(fearGreedRange,'setFearGreedRange',null,fgAb)}${timeRangeCustomHtml(fearGreedRange,fearGreedCustomFrom,fearGreedCustomTo,'setFearGreedRange',fgAb)}</div>`;
@@ -24690,6 +24690,8 @@ function renderFearGreedCards(D){
   const cfFiltered=cf&&cf.series?filterDatesByRange(cf.series.map(e=>e[0]),fearGreedRange,fearGreedCustomFrom,fearGreedCustomTo):[];
   const cfFilteredSet=new Set(cfFiltered);
   const cfFilteredSeries=cf&&cf.series?cf.series.filter(e=>cfFilteredSet.has(e[0])):null;
+  // Tipp auf die Karte = Vollbild mit BTC-Kurs (Nutzer 2026-11-13: "wenn man
+  // draufdrückt vollbild ist und man vs btc Preis machen kann").
   html+=card('Crypto Fear &amp; Greed','feargreed',cf?escH(cf.label||''):'',
     `<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
       <div style="flex:1;min-width:180px">${cf?sentGauge(Math.round(cf.value),0,100,'','','sentCryptoFG'):'<div style=\"color:var(--t3);font-size:var(--fs-sm)\">no data</div>'}</div>
@@ -24713,6 +24715,68 @@ function renderFearGreedCards(D){
     :`<div style="color:var(--t3);font-size:var(--fs-sm);line-height:1.5">CNN blocks datacenter IPs (HTTP 418) from the hourly job, so this is usually empty here. VIX covers index sentiment for the score. Source: <a href="${SENT_SOURCE.stockFng}" target="_blank" rel="noopener" style="color:var(--blue)">CNN ↗</a></div>`);
   html+=`</div>`;
   return html;
+}
+// ── Crypto Fear & Greed im Vollbild, wahlweise gegen den BTC-Kurs ─────────
+// Nutzer 2026-11-13: "bei fear and greed Index das wenn man draufdrückt
+// vollbild ist und man vs btc Preis machen kann". Index links (0-100, Zonen
+// <=25 Angst / >=75 Gier), BTC rechts (eigene Achse, price_data.json).
+let fgVollR=12,fgVsBtc=true;
+function fgVollAuf(ev){
+  if(ev&&ev.target&&ev.target.closest('a,button,input,label'))return;
+  dashFensterGross(true);
+  const m=document.querySelector('#mCardInfo .modal');if(m)m.classList.add('fg-voll');
+  const t=document.getElementById('mCardInfoTitle');if(t)t.textContent='Crypto Fear & Greed'+(fgVsBtc?' vs BTC':'');
+  fgVollZeichnen();openM('mCardInfo');
+}
+function fgVollSetz(r,vs){if(r!=null)fgVollR=r;if(vs!=null)fgVsBtc=vs;const t=document.getElementById('mCardInfoTitle');if(t)t.textContent='Crypto Fear & Greed'+(fgVsBtc?' vs BTC':'');fgVollZeichnen();}
+function fgVollZeichnen(){
+  const b=document.getElementById('mCardInfoBody');if(!b)return;
+  const cf=SENTIMENT_DATA&&SENTIMENT_DATA.cryptoFng;
+  const alle=(cf&&cf.series||[]).filter(e=>e&&isFinite(+e[1]));
+  const btcAlle=(priceSeriesFor('BTC')||[]).map(e=>[e[0],+e[1]]).filter(e=>isFinite(e[1])&&e[1]>0);
+  const ab=fgVollR==='MAX'?'':isoMinusDays(todayStr(),Math.round(fgVollR*30.44));
+  const fg=alle.filter(e=>!ab||e[0]>=ab);
+  const von=fg.length?fg[0][0]:ab,bis=fg.length?fg[fg.length-1][0]:todayStr();
+  const btc=btcAlle.filter(e=>e[0]>=von&&e[0]<=bis);
+  const knoepfe=[[1,'1M'],[3,'3M'],[6,'6M'],[12,'1Y'],['MAX','Max']].map(([v,l])=>`<button class="ind-hist-range-btn${String(v)===String(fgVollR)?' on':''}" onclick="fgVollSetz(${typeof v==='string'?`'${v}'`:v})">${l}</button>`).join('');
+  const leiste=`<div class="fg-v-leiste"><div class="ind-hist-range-bar">${knoepfe}</div>
+    <label class="mk-rsw fg-v-sw"><span class="mk-rsw-l">vs BTC price</span><span class="tgl tgl-s"><input type="checkbox"${fgVsBtc?' checked':''} aria-label="Compare with the BTC price" onchange="fgVollSetz(null,this.checked)"><span class="tgl-track"></span></span></label></div>`;
+  if(fg.length<2){b.innerHTML=leiste+'<div class="ab-nodata">Not enough Fear &amp; Greed history in this range.</div>';return;}
+  const W=Math.max(320,Math.round((b.clientWidth||window.innerWidth)-8)),H=Math.max(260,Math.round(window.innerHeight-230)),pl=34,pr=fgVsBtc?64:12,pt=12,pb=26;
+  const t0=new Date(von).getTime(),t1=Math.max(new Date(bis).getTime(),t0+864e5);
+  const xOf=d=>pl+(new Date(d).getTime()-t0)/(t1-t0)*(W-pl-pr);
+  const yFg=v=>pt+(1-v/100)*(H-pt-pb);
+  let bLo=Infinity,bHi=-Infinity;btc.forEach(e=>{bLo=Math.min(bLo,e[1]);bHi=Math.max(bHi,e[1]);});
+  const bPad=(bHi-bLo)*0.06||1;bLo-=bPad;bHi+=bPad;
+  const yB=v=>pt+(1-(v-bLo)/(bHi-bLo))*(H-pt-pb);
+  const pfad=(l,y)=>l.map((e,i)=>(i?'L':'M')+xOf(e[0]).toFixed(1)+' '+y(+e[1]).toFixed(1)).join(' ');
+  let g='';
+  g+=`<rect x="${pl}" y="${yFg(100)}" width="${W-pl-pr}" height="${(yFg(75)-yFg(100)).toFixed(1)}" fill="rgba(var(--red-rgb),.07)"/><rect x="${pl}" y="${yFg(25)}" width="${W-pl-pr}" height="${(yFg(0)-yFg(25)).toFixed(1)}" fill="rgba(var(--green-rgb),.07)"/>`;
+  [0,25,50,75,100].forEach(v=>{g+=`<line x1="${pl}" x2="${W-pr}" y1="${yFg(v)}" y2="${yFg(v)}" stroke="var(--bd)" stroke-dasharray="${v===25||v===75?'4 4':'2 4'}"/><text x="${pl-6}" y="${yFg(v)+4}" text-anchor="end" font-size="11" fill="var(--t3)">${v}</text>`;});
+  if(fgVsBtc&&btc.length>1){
+    const ticks=achsenTicks(bLo,bHi,5);
+    ticks.forEach(v=>{if(v<bLo||v>bHi)return;g+=`<text x="${W-pr+6}" y="${yB(v)+4}" font-size="11" fill="#E8A13A">${(v>=1000?Math.round(v/1000)+'k':Math.round(v))}</text>`;});
+    g+=`<path d="${pfad(btc,yB)}" fill="none" stroke="#E8A13A" stroke-width="1.6" stroke-linejoin="round" opacity=".9"/>`;
+  }
+  g+=`<path d="${pfad(fg,yFg)}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/>`;
+  const n=5;for(let i=0;i<=n;i++){const t=t0+(t1-t0)*i/n;const d=new Date(t).toISOString().slice(0,10);g+=`<text x="${(pl+(W-pl-pr)*i/n).toFixed(1)}" y="${H-6}" text-anchor="${i===0?'start':i===n?'end':'middle'}" font-size="11" fill="var(--t3)">${escH(fmtDayHdr(d))}</text>`;}
+  g+=`<line class="fg-v-cur" x1="0" x2="0" y1="${pt}" y2="${H-pb}" stroke="var(--t2)" stroke-dasharray="3 3" style="display:none"/>`;
+  const l=fg[fg.length-1],lb=btc[btc.length-1];
+  const legende=`<div class="fg-v-leg"><span class="stk-lg"><i style="background:var(--blue)"></i>Fear &amp; Greed <b>${Math.round(+l[1])}</b> <em>${escH(cf.label||'')}</em></span>${fgVsBtc&&lb?`<span class="stk-lg"><i style="background:#E8A13A"></i>BTC <b>${fmtPriceTick(lb[1])}</b></span>`:''}<span class="fg-v-read"></span></div>`;
+  b.innerHTML=leiste+legende+`<div class="fg-v-chart"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="fg-v-svg" onpointermove="fgVollHover(event)" onpointerleave="fgVollHover(null)">${g}</svg></div>
+    <div class="fg-v-fuss"><span><b>≤25</b> extreme fear · contrarian bullish</span><span><b>≥75</b> extreme greed · contrarian bearish</span><span><i>alternative.me · BTC from price_data.json</i></span></div>`;
+  const svg=b.querySelector('.fg-v-svg');if(svg)svg.__fg={fg,btc,xOf,t0,t1,pl,pr,W};
+}
+function fgVollHover(ev){
+  const svg=document.querySelector('#mCardInfoBody .fg-v-svg');if(!svg||!svg.__fg)return;
+  const m=svg.__fg,cur=svg.querySelector('.fg-v-cur'),rd=document.querySelector('#mCardInfoBody .fg-v-read');
+  if(!ev){if(cur)cur.style.display='none';if(rd)rd.textContent='';return;}
+  const r=svg.getBoundingClientRect(),x=(ev.clientX-r.left)*m.W/r.width;
+  const t=m.t0+(x-m.pl)/(m.W-m.pl-m.pr)*(m.t1-m.t0);const d=new Date(t).toISOString().slice(0,10);
+  const nah=l=>{let b=null;for(const e of l){if(e[0]<=d)b=e;else break;}return b;};
+  const f=nah(m.fg),bt=fgVsBtc?nah(m.btc):null;if(!f)return;
+  const xx=m.xOf(f[0]);if(cur){cur.setAttribute('x1',xx);cur.setAttribute('x2',xx);cur.style.display='';}
+  if(rd)rd.innerHTML=`<i>${escH(fmtDayHdr(f[0]))}</i> F&amp;G <b>${Math.round(+f[1])}</b>${bt?` · BTC <b>${fmtPriceTick(bt[1])}</b>`:''}`;
 }
 // ── COT-3-Jahres-Perzentil (cot_data.json.pct3y, Workflow-Enrich) ──
 // Einordnung der AKTUELLEN Netto-Positionierung in die eigenen letzten
@@ -27711,7 +27775,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
