@@ -87,6 +87,7 @@ const PRUEFUNGEN = [
   { n: 'snaprunde', s: 12,  d: 'Eigener Stand laesst sich wieder einspielen (applySnap, adoptExternalState, loadState) - kein toter Aufruf auf Sync-/Undo-Wegen', f: 'check/snaprunde.js', args: [], browser: true },
   { n: 'sektoren',  s: 40,  d: 'Sectors der MACRO-Zeile: drei Karten, je Reihe eine Zeile = sektor_data.json, Haupt-Indikatoren = ind_data.json, Verlauf per Tipp, Score unveraendert', f: 'check/sektoren.js', args: [], browser: true },
   { n: 'leerlauf',  s: 25,  d: 'Dashboard im Leerlauf: keine Schleife je Bild im Hauptthread (Kugel im ruhigen Takt), hoechstens 40 Stilberechnungen je 4 s', f: 'check/leerlauf.js', args: [], browser: true },
+  { n: 'aktien',    s: 40,  d: 'Kategorie Stocks: 5 Aktien, Makro wie S&P 500 (USD), Company/Valuation/Growth & quality, Analysts/Earnings/Seasonality, kein COT/Retail', f: 'check/aktien.js', args: [], browser: true },
   { n: 'zeitspanne', s: 71, d: 'Schere: Auswahl nur nach Klick auf die Schere, Spanne gilt fuer alle Charts der Ansicht (Asset-Seite, Chart-Fenster), ein × fuer alle, Touch nur mit Schere', f: 'check/zeitspanne.js', args: [], browser: true },
   { n: 'kartentitel', s: 32, d: 'Kartentitel einheitlich 17 px, Info-i blau und kleiner, Notizen in Bias-Farbe', f: 'check/kartentitel.js', args: [], browser: true },
   { n: 'kalender',  s: 24,  d: 'Kalender-Karte: vergangene Tage blass mit Punkt, Releases aus der Historie; Next-Termine inkl. gleicher Veroeffentlichung', f: 'check/kalender.js', args: [], browser: true },

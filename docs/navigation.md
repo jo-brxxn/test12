@@ -1653,3 +1653,12 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **Spalte links ohne Auswahl:** *Next up* | *Biggest moves* (8 größte Bewegungen im sichtbaren Zeitraum).
 - **Nur Fakten des Tages:** Bewegung, Releases mit Beat/Miss, S&P 500, Rendite. Kein „weil“.
 - Geprüft von `check/moves.js`.
+
+## Kategorie Stocks (2026-11-13)
+
+- **Assets:** NVDA, AMD, INTC, AAPL, GOOGL (`js/aktien.js`, `STOCK_IDS`), Klasse `stock`, Makro = USD.
+- **Score:** wie der S&P 500 — dieselben Ableitungsregeln (`MACRO_DERIVE_RULES`), VIX/AAII (`SENT_MAP`). Kennzahlen zählen NICHT.
+- **Seite:** wie jedes Asset, plus
+  - Reihe **Company**: Company (festes Profil: Geschäft, Erlösquellen, Vorteile, Partner & Abhängigkeiten, Risiken, Kurstreiber) | Valuation (Now | 3Y avg | vs own history, P/E-Verlauf 5 Jahre) | Growth & quality.
+  - Band **Analysts & earnings** statt Positioning: Analysts | Earnings | Seasonality (kein COT, kein Retail).
+- **Symbol:** Kursverlauf im Rahmen wie die Indizes, eigene Akzentfarbe (`STOCK_ACCENT`, kein Rot).

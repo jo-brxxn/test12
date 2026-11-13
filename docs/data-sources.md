@@ -970,3 +970,20 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
 - **Zeitraum** (y/y, m/m, q/q) steht nicht im Katalognamen, er kommt aus dem Titel der Quelle (NZD-CPI ist q/q).
 - **Volle Historie** je Währung in `sektor_hist/<CCY>.json` (seit 717): Archiv-Reihen ab 2016 (`cal_hist`), Haupt-Indikatoren aus `historyFull`, Renditen wöchentlich. Gemessen 2026-11-12: 658 KB roh für alle 8, USD 218 KB (47 KB gzip). Geladen nur beim Aufklappen, kein localStorage.
 - Wächter: `check/sektoren.js`.
+
+## stock_data.json — Kategorie Stocks (seit 2026-11-13, nur Anzeige)
+
+- **Nutzer:** *„neue Kategorie … stocks also Aktien … nvidia, amd, Intel, Apple, Google … neue Karten zu wichtigen Indikatoren also ich kenne zB PE“*.
+- **Werkzeug:** `tools/aktien.mjs` (Workflow-Schritt *Fetch stock fundamentals*). Quellen geprüft mit `tools/aktien-sonde.mjs` (Workflow *Probe stock fundamentals sources*):
+  - **Yahoo quoteSummary** (Cookie + Crumb): Forward/TTM P/E, P/S, EV/EBITDA, PEG, Margen, Wachstum, ROE, Debt/Equity (Yahoo liefert % → `/100`), Dividende, Analysten-Verteilung, Kursziele, nächste Zahlen, institutioneller Anteil, Insider.
+  - **SEC EDGAR companyfacts** (UA ohne persönliche Angaben): Quartalsumsatz, Gewinn, operativer Cashflow, Capex, Aktienzahl → TTM-Reihen, P/E-/P/S-/P/FCF-Verlauf, 3-Jahres-Schnitt.
+  - **Yahoo chart 10y/1wk (adjclose):** Wochenkurse für den Verlauf.
+- **Regeln:**
+  - 10-Q-Cashflows sind Jahr-bis-heute → Quartal = Differenz zweier YTD-Werte mit gleichem Start; Q4 = Jahr − 9 Monate.
+  - Ein Quartal zählt erst ab seinem Meldedatum (`filed`) — keine Vorausschau.
+  - Mehrere Aktienklassen (Alphabet A/B/C) mit gleichem Stichtag in derselben Meldung werden addiert.
+  - Splits: gemeldete Aktienzahl vor dem Split × Faktor (Sprung zur nächsten Meldung nahe einer ganzen Zahl ≥ 2).
+  - 3-Jahres-Schnitt nur, wenn die Kennzahl in ≥ 60 % der Wochen existierte (Intel: meist Verlust → kein P/E-Schnitt statt 266).
+  - Kein Branchen-Durchschnitt: keine freie, verlässliche Quelle.
+- **Nicht übernommen (bewusst):** COT (die CFTC führt keine Einzelaktien), Retail-Positionierung (kein Broker-Feed), Institutional Activity aus 13F (quartalsweise, 45 Tage verzögert — nur der Anteil institutioneller Halter), Momentum/Overextension (Price-Karte und Trend zeigen das schon), eigener Gesamt-Score à la StockBox (proprietär).
+- Wächter: `check/aktien.js` (mit Testdaten `check/fixtures/stock_test.json`).

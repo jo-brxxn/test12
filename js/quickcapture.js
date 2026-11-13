@@ -40,6 +40,7 @@ const QC_WORT = {
   BTC: ['btc', 'bitcoin'],
   SP500: ['sp500', 's&p', 'spx', 's&p500'],
   NAS: ['nas', 'nasdaq', 'ndx'],
+  NVDA: ['nvda', 'nvidia'], AMD: ['amd'], INTC: ['intc', 'intel'], AAPL: ['aapl', 'apple'], GOOGL: ['googl', 'goog', 'google', 'alphabet'],
   DAX: ['dax', 'ger40'],
 };
 // Notenbank -> Waehrung. Ein Text ueber die Fed handelt vom Dollar, auch

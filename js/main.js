@@ -22,6 +22,8 @@ import {trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenH
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 // Hero-Zeichnung des Dashboards (Nutzer 2026-11-06, siehe Kopf von heroart.js).
 import {heroArtSvg} from './heroart.js';
+// Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
+import {STOCK_IDS,STOCK_ACCENT,STOCK_DEF,aktienHelfer,aktienDatenHolen,karteProfil,karteBewertung,karteQualitaet,karteAnalysten,karteZahlen} from './aktien.js';
 // Sektoren-Katalog der MACRO-Zeile (2026-11-12, nur Anzeige) - dieselbe Liste baut sektor_data.json.
 import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.js';
 import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './kachelbild.js';
@@ -595,6 +597,7 @@ const FX_PAIRS_AZ=FX_PAIRS.slice().sort();
 // Kontrollmenue (Option C): Menue-Bauer je Seite + offenes Menue - frueh deklariert, weil Seiten
 // an verschiedenen Stellen der Datei ihren Eintrag beim Laden setzen. Baustein: kmReiterHtml/kmKnopfHtml.
 const KM_MENUES={};   // schluessel -> ()=>[{lbl,hinweis,kacheln:[{fn,arg,on,titel,sub,vorne,aus}],chips:[{fn,arg,on,txt}]}]
+Object.assign(AI_INDEX_ACCENT,STOCK_ACCENT);   // Aktien-Symbole wie die Indizes, eigene Akzentfarbe
 let _kmOffen=null;
 
 const SB_CATS=[
@@ -603,6 +606,8 @@ const SB_CATS=[
   {l:'Metals',ids:['GOLD','SILVER']},
   {l:'Energy',ids:['OIL']},
   {l:'Indices',ids:['SP500','NAS','DAX']},
+  // Nutzer-Wunsch 2026-11-13: "neue Kategorie ... stocks also Aktien" (js/aktien.js).
+  {l:'Stocks',ids:STOCK_IDS},
   // Nutzer-Wunsch 2026-08-24: "Fueg bitte yields als neue Asset Kategorie
   // hinzu... Mach auch schon die Assets darein" - ein Yield-Asset pro FX-
   // Major, in derselben Reihenfolge wie SB_CATS.FX (siehe YIELD_CCY).
@@ -950,7 +955,7 @@ import {
 // daher gelten USD-Nachrichten/Makro-Rubriken auch für sie.
 // GER100 am 2026-09-27 entfernt (Nutzer: "Entfern ger100" - "Germany 100"
 // ist kein echter Index, es gab keine Kursreihe dafuer).
-const NONFX_IDS=['BTC','GOLD','SILVER','OIL','SP500','NAS','DAX'];
+const NONFX_IDS=['BTC','GOLD','SILVER','OIL','SP500','NAS','DAX',...STOCK_IDS];
 // Kategorie eines Symbols ('fx','crypto','metal','energy','index','stock'): für
 // eingebaute Symbole aus ASSET_CLASS, für selbst hinzugefügte aus der beim
 // Hinzufügen gewählten Kategorie (customIds[].cls).
@@ -4495,6 +4500,7 @@ function cbName(id){return CB_MAP[id]||'the Fed (Federal Reserve)';}
 function cbDat(id){return cbName(id).replace(/^die /,'der ');}
 const ASSET_CLASS={USD:'fx',EUR:'fx',GBP:'fx',CHF:'fx',JPY:'fx',CAD:'fx',AUD:'fx',NZD:'fx',BTC:'crypto',GOLD:'metal',SILVER:'metal',OIL:'energy',SP500:'index',NAS:'index',DAX:'index',
   USYIELD:'yield',DEYIELD:'yield',GBYIELD:'yield',CHYIELD:'yield',JPYIELD:'yield',CAYIELD:'yield',AUYIELD:'yield',NZYIELD:'yield'};
+STOCK_IDS.forEach(id=>{ASSET_CLASS[id]='stock';});
 
 // ── Info texts for the 5 standard rubrics (Specific tab) ──
 function enrichRubrics(id,rubrics,name){
@@ -4636,6 +4642,9 @@ const DEF=[
     genBull:mkR(['RBNZ has historically run one of the highest policy rates in G10, keeping yields elevated'],'bull'),
     genBear:mkR(['Small, open economy – RBNZ cuts aggressively and early when growth slows'],'bear'),
     rubrics:mkRubs(),noteRubs:[],notes:''},
+  // Aktien (Nutzer 2026-11-13): Makro wie S&P 500 (USD), Argumente aus dem
+  // festen Firmenprofil (js/aktien.js).
+  ...STOCK_DEF.map(d=>({...d,genBull:mkR(d.genBull,'bull'),genBear:mkR(d.genBear,'bear'),rubrics:mkRubs(),noteRubs:[],notes:''})),
 ];
 
 // ══ RISK ENVIRONMENT: NUR NOCH ALS AUFRAEUM-LISTE ═══════════════════════
@@ -4661,6 +4670,8 @@ const MACRO_DERIVE_RULES={
   SP500:{Inflation:'inverse','Interest Rates':'inverse','Labour Market':'same','Economic Growth':'same'},
   NAS:{Inflation:'inverse','Interest Rates':'inverse','Labour Market':'same','Economic Growth':'same'},
 };
+// Aktien: dieselben Regeln wie der S&P 500 (Nutzer 2026-11-13: "die Indikatoren sollen die gleichen wie bei sp500 sein also ... so gewertet werden").
+STOCK_IDS.forEach(id=>{MACRO_DERIVE_RULES[id]={...MACRO_DERIVE_RULES.SP500};});
 // Yields-Kategorie (Nutzer-Wunsch 2026-08-24, woertlich: "mach interest
 // rates bullish, inflation bullish, labourmarket bullish, economic groth
 // bullish") - alle vier Makro-Rubriken 'same': starke Daten (heisse
@@ -11730,6 +11741,8 @@ function abMakroReiheHtml(c){
 }
 function renderAssetBoard(c){
   const rubs=c.rubrics||[];
+  const aktie=assetCls(c.id)==='stock';
+  if(aktie)aktienDatenHolen();
   // ⚠ GEMESSEN 2026-09-13: als zwei getrennte Rasterreihen war die Karten-
   // Reihe so hoch wie die HOECHSTE Karte (526px), waehrend die beiden
   // anderen 407 und 381 hoch waren - unter ihnen standen 145px tote Flaeche,
@@ -11784,6 +11797,8 @@ function renderAssetBoard(c){
            darunter - nur so sitzt sie garantiert buendig zwischen den beiden
            Reihen und nimmt denselben Spaltenabstand mit. */''}
       <div class="ab-col ab-qrow">${abQuickZeileHtml(c)}</div>
+      ${/* Aktien (Nutzer 2026-11-13): feste Firmenkarte + Kennzahlen-Karten. */''}
+      ${aktie?`${abReihenTitel('Company')}<div class="ab-orow ab-orow3 stk-row"><div class="ab-col">${karteProfil(c)}</div><div class="ab-col">${karteBewertung(c)}</div><div class="ab-col">${karteQualitaet(c)}</div></div>`:''}
       ${/* Zentralbank-Karte volle Breite unter den Schnellzugriffen (Nutzer
            2026-10-27, VERSION-CHECK-642: "die 4 Buttons ... wieder als Zeile
            dadrueber und mach dafuer die central bank Karte maximal breit";
@@ -11796,8 +11811,11 @@ function renderAssetBoard(c){
       ${abReihenTitel('Macro',makroSektorenSchalterHtml()+(makroSektorenAn?'':makroDatenSchalterHtml()))}
       ${/* Makro-Reihe: drei Tabellen-Karten, Data an Ort und Stelle oder Sectors. */''}
       ${abMakroReiheHtml(c)}
-      ${abReihenTitel('Positioning')}
-      ${ASSET_GRAPHS.map(a=>`<div class="ab-col">${abGrafikHtml(a,c)}</div>`).join('')}
+      ${aktie?abReihenTitel('Analysts & earnings'):abReihenTitel('Positioning')}
+      ${/* Aktien: kein COT (die CFTC fuehrt keine Einzelaktien) und kein Retail
+           (kein Broker-Positionsfeed) - stattdessen Analysten und Quartalszahlen;
+           Seasonality gibt es (Yahoo-Monatskurse). */''}
+      ${(aktie?['ana','zahlen','seas']:ASSET_GRAPHS).map(a=>`<div class="ab-col">${a==='ana'?karteAnalysten(c):a==='zahlen'?karteZahlen(c):abGrafikHtml(a,c)}</div>`).join('')}
     </div>
     ${/* Die Notizen-Karte ist hier weg (Nutzer: "entfern die Notes Karte
          sodass dann die Charts da fetter hinpassen") - angepinnt stehen sie
@@ -18225,7 +18243,7 @@ function trendAssets(){
   // Yields-Kategorie ergaenzt (Nutzer-Wunsch 2026-08-24) - vorher hier gar
   // nicht auswaehlbar, obwohl jedes Yield-Asset ganz normal einen
   // scoreHist-Verlauf hat wie jedes andere Asset.
-  return [...FX,'GOLD','SILVER','OIL','BTC','SP500','NAS','DAX',...Object.keys(YIELD_CCY)].filter(id=>present.has(id));
+  return [...FX,'GOLD','SILVER','OIL','BTC','SP500','NAS','DAX',...STOCK_IDS,...Object.keys(YIELD_CCY)].filter(id=>present.has(id));
 }
 // Taeglicher Score-Schnappschuss je FX-Waehrung. Pro Tag ein Eintrag:
 // [Datum, Gesamt-Score, Inflation, Labour Market, Economic Growth]. Wird beim
@@ -18772,6 +18790,7 @@ function renderMatrixRoh(){
 // Lightness/Saettigung ueber alle 14 Werte, nur der Hue unterscheidet -
 // wirkt als zusammenhaengende Palette statt als bunte Ansammlung.
 const TREND_COLORS={USD:'#7c9cba',EUR:'#c9a26a',GBP:'#7fa88a',JPY:'#b97e7e',CHF:'#9788ad',CAD:'#6fa3a3',AUD:'#b5a571',NZD:'#bd8aa0',GOLD:'#c2a869',SILVER:'#98a0ab',OIL:'#957f6c',BTC:'#6f9aa8',SP500:'#a17690',NAS:'#8482ab'};
+STOCK_IDS.forEach(id=>{if(!TREND_COLORS[id])TREND_COLORS[id]=STOCK_ACCENT[id];});
 // Yields-Kategorie: dieselbe Linienfarbe wie die zugrundeliegende Waehrung
 // (US Yield teilt sich USDs Farbton usw.) - die Legende unterscheidet ueber
 // den Text ohnehin, eine achte eigene Farbfamilie waere hier kein Mehrwert.
@@ -24900,7 +24919,7 @@ function autoFetchSeasonality(){
 function setSeasAsset(v){seasAsset=v||'';renderSeasonality();}
 const SEAS_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 // Anzeige-Reihenfolge = Reihenfolge der App-Listung (FX-Majors, dann Non-FX)
-const SEAS_ORDER=['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD','GOLD','SILVER','OIL','BTC','ETH','SP500','NAS','DAX','USYIELD'];
+const SEAS_ORDER=['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD','GOLD','SILVER','OIL','BTC','ETH','SP500','NAS','DAX',...STOCK_IDS,'USYIELD'];
 // Seit 2026-10-27: Renditen (US 10Y) als Monatsaenderung in Basispunkten -
 // eine Rendite hat keinen Prozent-Return. Alles andere in Prozent.
 function seasFmt(v,unit){return(+v>0?'+':'')+(unit==='bp'?(+v).toFixed(1)+' bp':(+v).toFixed(2)+'%');}
@@ -26907,6 +26926,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 // ══ INIT ══════════════════════════════════════════════════════════
+try{aktienHelfer({escH,biasCss,fmtDayHdr,daysUntil,abTile,AB_LEER,DATA_BASE,FEED_TIMEOUT_MS,renderDetail,curPage:()=>curPage,getSym});}catch(e){}
 // Laender-Umrisse der 1D-Kacheln frueh anfordern (2026-11-12): sie kommen dann
 // meist mit dem ersten Feed statt einen eigenen Aufbau auszuloesen.
 try{kachelFormenLaden();}catch(e){}

@@ -14,6 +14,7 @@ const CAL_ALIASES={
   BTC:['BTC','BITCOIN','BTCUSD'],
   SP500:['SP500','SPX','S&P','S&P500','S&P 500','US500'],
   NAS:['NAS','NASDAQ','NDX','US100','NAS100'],
+  NVDA:['NVDA','NVIDIA'],AMD:['AMD'],INTC:['INTC','INTEL'],AAPL:['AAPL','APPLE'],GOOGL:['GOOGL','GOOG','ALPHABET','GOOGLE'],
   DAX:['DAX','DAX40','GER40','DE40','GERMANY40'],
 };
 function evtMatchesSym(ev,id){

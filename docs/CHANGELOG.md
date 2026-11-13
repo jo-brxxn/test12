@@ -22092,3 +22092,13 @@ Nutzer (iPad-Foto, Sectors USD): *„Das muss ich nach unten erweitern und dann 
 - **Karten gleich hoch** (`height:100%`), Logo in der freien Fläche (gemessen 1366 px: 1534/1534/1534 px, Logo in Karte 1 und 2).
 - **Fund beim Prüfen:** Aufklapp-Zustand galt über alle Währungen (USD offen → bei NZD schon offen, Tipp schloss). Jetzt je Währung.
 - Wächter `check/sektoren.js` erweitert (6 Spalten, Prev, Aufklappen mit Chart, gleiche Höhe).
+
+## 2026-11-13 — Kategorie Stocks (VERSION-CHECK-718)
+
+Nutzer (mit Fotos von A1 StockBox *Stock Scorecard* und *Top Stocks*): *„Ok ich will eine neue Kategorie hinzufügen: stocks also Aktien. Für direkt mal nvidia, amd, Intel, Apple, Google hinzu. Die Asset Seite dazu soll erstmal komplett gleich aufgebaut sein. Und die Indikatoren sollen die gleichen wie bei sp500 sein … und das sind dann die vom usd. Und mach da eine feste Karte in der übersichtlich das Unternehmen erklärt wird … Entscheid selber welche du reinnimmst aber sag auch warum du manche Sachen vielleicht nicht benutzt“*.
+
+- **Quellen geprüft auf dem Runner** (`tools/aktien-sonde.mjs`, Lauf 2026-11-13): Yahoo quoteSummary vollständig (z. B. NVDA P/E 21,0, Forward 10,5, 53 Analysten 10/38/13/0/0), SEC EDGAR 200 mit neutralem UA, TradingView-Scanner als Gegenprobe (NVDA P/E 21,0, P/FCF 31,8 gegen 31,6 aus SEC).
+- **3-Jahres-Schnitte aus SEC** (Prüflauf): NVDA P/E 52,1 · AMD 220,3 (GAAP mit Xilinx-Abschreibungen) · AAPL 33,7 · GOOGL 24,0 · INTC keiner (meist Verlust).
+- **Zwei Funde beim Prüflauf:** Alphabet meldet die Aktienzahl je Klasse → addiert; Intels 3J-P/E aus wenigen Gewinnwochen (266) → nur bei ≥ 60 % Abdeckung.
+- Feed: TradingView-Kurse, Yahoo 3y/10y/4h, Saisonalität um die 5 Aktien erweitert; neuer Schritt *Fetch stock fundamentals*.
+- Wächter `check/aktien.js` (Gegenprobe: ohne Company-Reihe → rot).

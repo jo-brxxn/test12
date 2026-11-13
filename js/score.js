@@ -164,6 +164,10 @@ const SENT_MAP={
   // Erwartung von Privatanlegern - halbes Gewicht haben ohnehin beide.
   SP500:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],
   NAS:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],
+  // Aktien (2026-11-13): wie der S&P 500 (Nutzer: "die Indikatoren sollen die gleichen wie bei sp500 sein").
+  NVDA:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],AMD:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],
+  INTC:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],AAPL:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],
+  GOOGL:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],
 };
 // Alle Sentiment-Indikator-Basisnamen (fuers Seeding + Halbgewicht).
 const SENT_IND_NAMES=[...new Set(Object.values(SENT_MAP).flat().map(p=>p[0]))];
