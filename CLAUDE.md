@@ -53,6 +53,7 @@ betrifft.
 | **Makro-Charts** (⚠ GELÖSCHT 716, nur Historie — MACRO-Zeile hat die Schalter **Data** und **Sectors**, siehe `docs/navigation.md`; früher: Table\|Charts-Schalter je Makro-Karte, Charts = eine Karte mit Reitern, jede Spur eigener Block mit Act\|Fc\|Prev\|Next\|Score aus derselben Rechnung wie die Tabelle, **Balken wie Mini-Charts mit ALLEN Werten in Beat/Miss/Neutral-Farbe + Forecast-Linie**, Zielband/Normal/nächster Termin, ~115 px je Spur, keine Surprise-Zeile/Zinsstriche/Einstufungen) | `docs/makro.md` |
 | **Performance** (Endlos-Animationen nur transform/opacity, Gruppen- statt Einzel-Animation, Ticker nur Text, eine Seite = ein Aufbau, erst messen dann schreiben; große mitwachsende Scroll-Container = eigene Ebene, kein erzwungenes Layout beim Seitenwechsel, Hintergrund-Feeds gebündelt per `rerenderBald()`) | `docs/performance.md` |
 | Prüfskripte (`check/*.js`), was sie prüfen und warum | `check/README.md` |
+| **BTC Sentiment** — Quellenprüfung (Endpunkte, Historie, Limits, Urteil je Indikator) | `docs/SOURCES.md` |
 | Volle Änderungshistorie (jeder Bugfix/jede Iteration mit Datum) | `docs/CHANGELOG.md` |
 
 Bei einem Bugreport, der nach einem bekannten Muster riecht, oder um zu
