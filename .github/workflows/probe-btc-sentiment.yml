@@ -12,4 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: BTC-Sentiment-Quellen pruefen
-        run: node tools/btc-sonde.mjs
+        run: node tools/btc-sonde.mjs || true
+      - name: Runde 2 (Detailfragen)
+        run: node tools/btc-sonde2.mjs
