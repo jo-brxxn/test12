@@ -24720,25 +24720,35 @@ function renderFearGreedCards(D){
 // Nutzer 2026-11-13: "bei fear and greed Index das wenn man draufdrückt
 // vollbild ist und man vs btc Preis machen kann". Index links (0-100, Zonen
 // <=25 Angst / >=75 Gier), BTC rechts (eigene Achse, price_data.json).
-let fgVollR=12,fgVsBtc=true;
+// Volle Historie (Nutzer 2026-11-13: "Ja maximale Historie"): fng_hist.json
+// (seit 2018) und das 10-Jahres-Kursarchiv fuer BTC - beide erst beim Oeffnen.
+let fgVollR='MAX',fgVsBtc=true,FNG_HIST=null,fngHistLaden=null;
+function fgVollDatenHolen(){
+  const offen=()=>{const m=document.querySelector('#mCardInfo .modal');return m&&m.classList.contains('fg-voll');};
+  if(!FNG_HIST&&!fngHistLaden)fngHistLaden=fetch(DATA_BASE+'fng_hist.json?t='+Math.floor(Date.now()/3e5),{signal:AbortSignal.timeout(FEED_TIMEOUT_MS),cache:'no-store'})
+    .then(r=>r.ok?r.json():null).then(d=>{if(d&&Array.isArray(d.bloecke)){const l=[];d.bloecke.forEach(([st,w])=>{const t0=Date.parse(st+'T00:00:00Z');(w||[]).forEach((v,i)=>l.push([new Date(t0+i*864e5).toISOString().slice(0,10),v]));});FNG_HIST=l;}}).catch(()=>{})
+    .finally(()=>{fngHistLaden=null;if(offen())fgVollZeichnen();});
+  if(!PRICE_HIST){const v=ladePreisArchiv();if(v&&v.then)v.then(()=>{if(offen())fgVollZeichnen();}).catch(()=>{});}
+}
 function fgVollAuf(ev){
   if(ev&&ev.target&&ev.target.closest('a,button,input,label'))return;
   dashFensterGross(true);
   const m=document.querySelector('#mCardInfo .modal');if(m)m.classList.add('fg-voll');
   const t=document.getElementById('mCardInfoTitle');if(t)t.textContent='Crypto Fear & Greed'+(fgVsBtc?' vs BTC':'');
-  fgVollZeichnen();openM('mCardInfo');
+  fgVollZeichnen();openM('mCardInfo');fgVollDatenHolen();
 }
 function fgVollSetz(r,vs){if(r!=null)fgVollR=r;if(vs!=null)fgVsBtc=vs;const t=document.getElementById('mCardInfoTitle');if(t)t.textContent='Crypto Fear & Greed'+(fgVsBtc?' vs BTC':'');fgVollZeichnen();}
 function fgVollZeichnen(){
   const b=document.getElementById('mCardInfoBody');if(!b)return;
   const cf=SENTIMENT_DATA&&SENTIMENT_DATA.cryptoFng;
-  const alle=(cf&&cf.series||[]).filter(e=>e&&isFinite(+e[1]));
-  const btcAlle=(priceSeriesFor('BTC')||[]).map(e=>[e[0],+e[1]]).filter(e=>isFinite(e[1])&&e[1]>0);
+  const zus=new Map();(FNG_HIST||[]).forEach(e=>{if(e&&isFinite(+e[1]))zus.set(e[0],+e[1]);});(cf&&cf.series||[]).forEach(e=>{if(e&&isFinite(+e[1]))zus.set(e[0],+e[1]);});
+  const alle=[...zus.entries()].sort((a,b)=>a[0]<b[0]?-1:1);
+  const btcAlle=(preisReiheLang('BTC')||[]).map(e=>[e[0],+e[1]]).filter(e=>isFinite(e[1])&&e[1]>0);
   const ab=fgVollR==='MAX'?'':isoMinusDays(todayStr(),Math.round(fgVollR*30.44));
   const fg=alle.filter(e=>!ab||e[0]>=ab);
   const von=fg.length?fg[0][0]:ab,bis=fg.length?fg[fg.length-1][0]:todayStr();
   const btc=btcAlle.filter(e=>e[0]>=von&&e[0]<=bis);
-  const knoepfe=[[1,'1M'],[3,'3M'],[6,'6M'],[12,'1Y'],['MAX','Max']].map(([v,l])=>`<button class="ind-hist-range-btn${String(v)===String(fgVollR)?' on':''}" onclick="fgVollSetz(${typeof v==='string'?`'${v}'`:v})">${l}</button>`).join('');
+  const knoepfe=[[1,'1M'],[3,'3M'],[6,'6M'],[12,'1Y'],[36,'3Y'],[60,'5Y'],['MAX','Max']].map(([v,l])=>`<button class="ind-hist-range-btn${String(v)===String(fgVollR)?' on':''}" onclick="fgVollSetz(${typeof v==='string'?`'${v}'`:v})">${l}</button>`).join('');
   const leiste=`<div class="fg-v-leiste"><div class="ind-hist-range-bar">${knoepfe}</div>
     <label class="mk-rsw fg-v-sw"><span class="mk-rsw-l">vs BTC price</span><span class="tgl tgl-s"><input type="checkbox"${fgVsBtc?' checked':''} aria-label="Compare with the BTC price" onchange="fgVollSetz(null,this.checked)"><span class="tgl-track"></span></span></label></div>`;
   if(fg.length<2){b.innerHTML=leiste+'<div class="ab-nodata">Not enough Fear &amp; Greed history in this range.</div>';return;}
@@ -24747,24 +24757,28 @@ function fgVollZeichnen(){
   const xOf=d=>pl+(new Date(d).getTime()-t0)/(t1-t0)*(W-pl-pr);
   const yFg=v=>pt+(1-v/100)*(H-pt-pb);
   let bLo=Infinity,bHi=-Infinity;btc.forEach(e=>{bLo=Math.min(bLo,e[1]);bHi=Math.max(bHi,e[1]);});
-  const bPad=(bHi-bLo)*0.06||1;bLo-=bPad;bHi+=bPad;
-  const yB=v=>pt+(1-(v-bLo)/(bHi-bLo))*(H-pt-pb);
+  // Grosse Spanne (2018: 3k, 2026: 100k+) logarithmisch, sonst waeren die
+  // fruehen Jahre eine flache Linie am Boden.
+  const logB=bHi/bLo>4;
+  const tb=v=>logB?Math.log(v):v;
+  let qLo=tb(bLo),qHi=tb(bHi);const bPad=(qHi-qLo)*0.06||1;qLo-=bPad;qHi+=bPad;
+  const yB=v=>pt+(1-(tb(v)-qLo)/(qHi-qLo))*(H-pt-pb);
   const pfad=(l,y)=>l.map((e,i)=>(i?'L':'M')+xOf(e[0]).toFixed(1)+' '+y(+e[1]).toFixed(1)).join(' ');
   let g='';
   g+=`<rect x="${pl}" y="${yFg(100)}" width="${W-pl-pr}" height="${(yFg(75)-yFg(100)).toFixed(1)}" fill="rgba(var(--red-rgb),.07)"/><rect x="${pl}" y="${yFg(25)}" width="${W-pl-pr}" height="${(yFg(0)-yFg(25)).toFixed(1)}" fill="rgba(var(--green-rgb),.07)"/>`;
   [0,25,50,75,100].forEach(v=>{g+=`<line x1="${pl}" x2="${W-pr}" y1="${yFg(v)}" y2="${yFg(v)}" stroke="var(--bd)" stroke-dasharray="${v===25||v===75?'4 4':'2 4'}"/><text x="${pl-6}" y="${yFg(v)+4}" text-anchor="end" font-size="11" fill="var(--t3)">${v}</text>`;});
   if(fgVsBtc&&btc.length>1){
-    const ticks=achsenTicks(bLo,bHi,5);
-    ticks.forEach(v=>{if(v<bLo||v>bHi)return;g+=`<text x="${W-pr+6}" y="${yB(v)+4}" font-size="11" fill="#E8A13A">${(v>=1000?Math.round(v/1000)+'k':Math.round(v))}</text>`;});
+    const ticks=logB?[1e3,2e3,5e3,1e4,2e4,5e4,1e5,2e5].filter(v=>v>=Math.exp(qLo)&&v<=Math.exp(qHi)):achsenTicks(bLo,bHi,5);
+    ticks.forEach(v=>{if(tb(v)<qLo||tb(v)>qHi)return;g+=`<text x="${W-pr+6}" y="${yB(v)+4}" font-size="11" fill="#E8A13A">${(v>=1000?Math.round(v/1000)+'k':Math.round(v))}</text>`;});
     g+=`<path d="${pfad(btc,yB)}" fill="none" stroke="#E8A13A" stroke-width="1.6" stroke-linejoin="round" opacity=".9"/>`;
   }
   g+=`<path d="${pfad(fg,yFg)}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/>`;
   const n=5;for(let i=0;i<=n;i++){const t=t0+(t1-t0)*i/n;const d=new Date(t).toISOString().slice(0,10);g+=`<text x="${(pl+(W-pl-pr)*i/n).toFixed(1)}" y="${H-6}" text-anchor="${i===0?'start':i===n?'end':'middle'}" font-size="11" fill="var(--t3)">${escH(fmtDayHdr(d))}</text>`;}
   g+=`<line class="fg-v-cur" x1="0" x2="0" y1="${pt}" y2="${H-pb}" stroke="var(--t2)" stroke-dasharray="3 3" style="display:none"/>`;
   const l=fg[fg.length-1],lb=btc[btc.length-1];
-  const legende=`<div class="fg-v-leg"><span class="stk-lg"><i style="background:var(--blue)"></i>Fear &amp; Greed <b>${Math.round(+l[1])}</b> <em>${escH(cf.label||'')}</em></span>${fgVsBtc&&lb?`<span class="stk-lg"><i style="background:#E8A13A"></i>BTC <b>${fmtPriceTick(lb[1])}</b></span>`:''}<span class="fg-v-read"></span></div>`;
+  const legende=`<div class="fg-v-leg"><span class="stk-lg"><i style="background:var(--blue)"></i>Fear &amp; Greed <b>${Math.round(+l[1])}</b> <em>${escH(cf.label||'')}</em></span>${fgVsBtc&&lb?`<span class="stk-lg"><i style="background:#E8A13A"></i>BTC <b>${fmtPriceTick(lb[1])}</b></span>`:''}${fgVsBtc&&logB?'<em>BTC on a log scale</em>':''}${!FNG_HIST&&fngHistLaden?'<em>loading full history …</em>':''}<span class="fg-v-read"></span></div>`;
   b.innerHTML=leiste+legende+`<div class="fg-v-chart"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="fg-v-svg" onpointermove="fgVollHover(event)" onpointerleave="fgVollHover(null)">${g}</svg></div>
-    <div class="fg-v-fuss"><span><b>≤25</b> extreme fear · contrarian bullish</span><span><b>≥75</b> extreme greed · contrarian bearish</span><span><i>alternative.me · BTC from price_data.json</i></span></div>`;
+    <div class="fg-v-fuss"><span><b>≤25</b> extreme fear · contrarian bullish</span><span><b>≥75</b> extreme greed · contrarian bearish</span><span><i>alternative.me (full history since 2018) · BTC from price_data.json + 10-year archive</i></span></div>`;
   const svg=b.querySelector('.fg-v-svg');if(svg)svg.__fg={fg,btc,xOf,t0,t1,pl,pr,W};
 }
 function fgVollHover(ev){

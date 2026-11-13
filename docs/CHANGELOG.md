@@ -22126,3 +22126,11 @@ Nutzer: *„Mach mal ganz schnell bei fear and Fred Index das wenn man draufdrü
 - Tipp auf die Karte *Crypto Fear & Greed* (Sentiment › Fear & Greed) → Vollbild (`.fg-voll`, 100vw × 100dvh): Index links (0–100, Zonen ≤ 25 / ≥ 75), Schalter *vs BTC price* (rechte Achse, price_data.json), Zeitraum 1M–Max, Werte beim Zeigen.
 - `dashFensterGross()` nimmt `fg-voll` wieder ab – andere Fenster bleiben normal (geprüft).
 - Gemessen 1440 × 900 und 390 × 844: volle Fläche, kein Überlauf, keine JS-Fehler.
+
+## 2026-11-13 — Fear & Greed: maximale Historie (VERSION-CHECK-722)
+
+Nutzer: *„Ja maximale Historie“*.
+- Workflow holt alternative.me mit `limit=0` (alles seit 02/2018) und schreibt die volle Reihe kompakt in `fng_hist.json` (Blöcke aufeinanderfolgender Tage, ~12 KB statt ~55 KB). `sentiment_data.json` bleibt bei 120 Tagen (Start).
+- Vollbild lädt `fng_hist.json` und das 10-Jahres-Kursarchiv erst beim Öffnen; BTC bei großer Spanne logarithmisch; Zeiträume 1M–5Y + Max (Standard Max).
+- Feed-Budget (`check/feedgroesse.js`): `stock_data.json` und `fng_hist.json` jetzt mitgezählt; dafür in `stock_data.json` die ungenutzten P/S- und P/FCF-Verläufe entfernt und den P/E-Verlauf auf jede zweite Woche ausgedünnt (186 → 44 KB). Gesamt 3568 KB (+ ~12 KB fng_hist) von 3600.
+- Testfund: im Browsertest fing der Service Worker den Abruf vor der Test-Umleitung ab (404) – Tests mit `serviceWorkers:'block'`.

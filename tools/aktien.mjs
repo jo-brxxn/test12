@@ -196,7 +196,10 @@ for(const t of Object.keys(AKTIEN)){
     splitFaktoren(sec.aktien,wochen);
     const v=verlauf(wochen,sec);
     const seit=new Date(Date.now()-3*365*TAG).toISOString().slice(0,10),seit5=new Date(Date.now()-5*365*TAG).toISOString().slice(0,10);
-    o.verlauf={pe:v.pe.filter(p=>p[0]>=seit5),ps:v.ps.filter(p=>p[0]>=seit5),pfcf:v.pfcf.filter(p=>p[0]>=seit5)};
+    // Nur der P/E-Verlauf wird gezeichnet; P/S und P/FCF gehen nur in den 3J-Schnitt
+    // (2026-11-13: 114 KB eingespart, check/feedgroesse.js).
+    // Jede zweite Woche reicht fuer die ~480 px breite Karte (130 statt 260 Punkte).
+    o.verlauf={pe:v.pe.filter(p=>p[0]>=seit5).filter((p,i,l)=>(l.length-1-i)%2===0)};
     o.schnitt3j={tpe:mittel(v.pe,seit,wochen),ps:mittel(v.ps,seit,wochen),pfcf:mittel(v.pfcf,seit,wochen)};
     // aktuelle P/FCF aus SEC-FCF (dieselbe Rechnung wie der Verlauf)
     const lf=v.F[v.F.length-1];if(o.mcap&&lf&&lf.val>0)o.pfcf=r2(o.mcap/lf.val,1);else if(lf&&lf.val<=0)o.pfcf=null;
