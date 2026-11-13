@@ -15,7 +15,12 @@
 import fs from 'node:fs';
 const UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 const SEC_UA='FXAnalystPro research tool';   // ohne persoenliche Angaben (Datenschutz)
-export const AKTIEN={NVDA:{cik:1045810},AMD:{cik:2488},INTC:{cik:50863},AAPL:{cik:320193},GOOGL:{cik:1652044}};
+// Reihenfolge = Seitenleiste. CIK wird zusaetzlich aus der SEC-Tickerliste
+// aufgeloest (company_tickers.json); die Zahl hier ist nur der Rueckfall.
+// 2026-11-13 (Nutzer: "alle großen Aktien ... wie diese big 7 ... und auch corewieve"):
+// die "Magnificent 7" + Broadcom, Oracle, AMD, Intel, Palantir, CoreWeave.
+export const AKTIEN={AAPL:{cik:320193},MSFT:{cik:789019},GOOGL:{cik:1652044},AMZN:{cik:1018724},NVDA:{cik:1045810},META:{cik:1326801},TSLA:{cik:1318605},
+  AVGO:{cik:1730168},ORCL:{cik:1341439},AMD:{cik:2488},INTC:{cik:50863},PLTR:{cik:1321655},CRWV:{cik:1769628}};
 const PRUEFEN=process.argv.includes('--pruefen');
 const TAG=864e5;
 const warte=ms=>new Promise(r=>setTimeout(r,ms));
@@ -51,6 +56,7 @@ async function yahooStand(t,Y){
     gm:pct(raw(fd.grossMargins)),om:pct(raw(fd.operatingMargins)),nm:pct(raw(fd.profitMargins)),
     roe:pct(raw(fd.returnOnEquity)),de:raw(fd.debtToEquity)!=null?r2(raw(fd.debtToEquity)/100):null,
     divY:pct(raw(sd.dividendYield)),beta:r2(raw(sd.beta)),
+    schulden:raw(fd.totalDebt),cash:raw(fd.totalCash),ebitda:raw(fd.ebitda),
     ana:{sb:rt?rt.strongBuy:null,b:rt?rt.buy:null,h:rt?rt.hold:null,s:rt?rt.sell:null,ss:rt?rt.strongSell:null,
       n:raw(fd.numberOfAnalystOpinions),mittel:r2(raw(fd.targetMeanPrice)),median:r2(raw(fd.targetMedianPrice)),
       hoch:r2(raw(fd.targetHighPrice)),tief:r2(raw(fd.targetLowPrice)),urteil:fd.recommendationKey||null,note:r2(raw(fd.recommendationMean))},
@@ -103,6 +109,14 @@ function factEintraege(f,tags,einheit){
   for(const t of tags){const u=f[t]&&f[t].units&&f[t].units[einheit];if(u)alle=alle.concat(u.filter(x=>/^10-[QK]/.test(x.form||'')));}
   return alle;
 }
+let _tickerCik=null;
+async function cikFuer(t,rueckfall){
+  if(_tickerCik===null){
+    const d=await holeJson('https://www.sec.gov/files/company_tickers.json',{'User-Agent':SEC_UA,Accept:'application/json'});
+    _tickerCik={};if(d)for(const k in d){const x=d[k];if(x&&x.ticker)_tickerCik[String(x.ticker).toUpperCase()]=x.cik_str;}
+  }
+  return _tickerCik[t]||rueckfall;
+}
 async function secQuartale(cik){
   const d=await holeJson(`https://data.sec.gov/api/xbrl/companyfacts/CIK${String(cik).padStart(10,'0')}.json`,{'User-Agent':SEC_UA,Accept:'application/json'});
   const g=d&&d.facts&&d.facts['us-gaap'];if(!g)return null;
@@ -112,12 +126,14 @@ async function secQuartale(cik){
   const ocf=quartale(factEintraege(g,['NetCashProvidedByUsedInOperatingActivities'],'USD'));
   const capex=quartale(factEintraege(g,['PaymentsToAcquirePropertyPlantAndEquipment','PaymentsToAcquireProductiveAssets'],'USD'));
   const ek=augenblick(factEintraege(g,['StockholdersEquity'],'USD'));
+  const ebit=quartale(factEintraege(g,['OperatingIncomeLoss'],'USD'));
+  const zinsen=quartale(factEintraege(g,['InterestExpense','InterestExpenseNonoperating','InterestExpenseDebt','InterestExpenseOperating'],'USD'));
   let aktien=augenblick(factEintraege(dei,['EntityCommonStockSharesOutstanding'],'shares'));
   // Rueckfall: verwaesserte Durchschnitts-Aktienzahl des Quartals (nur direkte
   // 3-Monats-Werte - Durchschnitte lassen sich nicht aus YTD differenzieren)
   if(aktien.length<8)aktien=factEintraege(g,['WeightedAverageNumberOfDilutedSharesOutstanding'],'shares').filter(x=>x.start&&tage(x.start,x.end)>=80&&tage(x.start,x.end)<=100)
     .reduce((m,x)=>{const a=m.find(y=>y.end===x.end);if(!a)m.push({end:x.end,val:x.val,filed:x.filed});return m;},[]).sort((a,b)=>a.end<b.end?-1:1);
-  return{umsatz,gewinn,ocf,capex,ek,aktien};
+  return{umsatz,gewinn,ocf,capex,ek,aktien,ebit,zinsen};
 }
 // TTM-Reihe: Summe der letzten 4 lueckenlosen Quartale, gueltig ab Meldedatum
 function ttm(q){
@@ -172,7 +188,8 @@ const Y=await yahooSitzung();
 for(const t of Object.keys(AKTIEN)){
   const o={};
   const y=await yahooStand(t,Y);
-  const sec=await secQuartale(AKTIEN[t].cik);await warte(300);
+  const cik=await cikFuer(t,AKTIEN[t].cik);
+  const sec=await secQuartale(cik);await warte(300);
   const wochen=await yahooWochen(t);
   if(y)Object.assign(o,y);
   if(sec&&wochen.length){
@@ -184,6 +201,15 @@ for(const t of Object.keys(AKTIEN)){
     // aktuelle P/FCF aus SEC-FCF (dieselbe Rechnung wie der Verlauf)
     const lf=v.F[v.F.length-1];if(o.mcap&&lf&&lf.val>0)o.pfcf=r2(o.mcap/lf.val,1);else if(lf&&lf.val<=0)o.pfcf=null;
     o.fcfTtm=lf?lf.val:null;
+    // Risiko-Kennzahlen (Nutzer 2026-11-13: "wenn es große Risikos wie hohe
+    // Verschuldung gibt dann das kennzeichnen"):
+    //  Zinsdeckung = operatives Ergebnis TTM / Zinsaufwand TTM
+    //  Verwaesserung = Aktienzahl jetzt gegen vor einem Jahr (in %)
+    const E=ttm(sec.ebit),Z=ttm(sec.zinsen);const le=E[E.length-1],lz=Z[Z.length-1];
+    o.zinsdeckung=le&&lz&&lz.val>0&&le.end===lz.end?r2(le.val/lz.val,1):null;
+    const A=sec.aktien,la=A[A.length-1],va=la?[...A].reverse().find(x=>{const d=tage(x.end,la.end);return d>330&&d<400;}):null;
+    o.verwaesserung=la&&va&&va.val>0?r2((la.val*(la.splitFaktor||1)/(va.val*(va.splitFaktor||1))-1)*100,1):null;
+    o.borsengang=sec.umsatz.length?sec.umsatz[0].end:null;
     // Quartale fuer die Earnings-Karte: Umsatz, Gewinn, Umsatzwachstum y/y
     const uw=new Map(wachstumYoY(sec.umsatz).map(x=>[x.end,x.val]));
     const gm=new Map(sec.gewinn.map(x=>[x.end,x.val]));
@@ -203,7 +229,7 @@ for(const t of Object.keys(AKTIEN)){
   out.stocks[t]=o;
   console.log('stock_data '+t+': yahoo '+(y?'ok':'FEHLT')+', sec '+(sec?sec.umsatz.length+' Quartale':'FEHLT')+', wochen '+wochen.length+
     (o.schnitt3j?', 3J P/E '+o.schnitt3j.tpe+' P/S '+o.schnitt3j.ps+' P/FCF '+o.schnitt3j.pfcf+' revG '+o.schnitt3j.revG:'')+
-    (y?', jetzt P/E '+o.tpe+' fwd '+o.fpe+' P/S '+o.ps+' P/FCF '+o.pfcf:''));
+    (y?', jetzt P/E '+o.tpe+' fwd '+o.fpe+' P/S '+o.ps+' P/FCF '+o.pfcf+' D/E '+o.de+' NetDebt/EBITDA '+(o.ebitda?r2(((o.schulden||0)-(o.cash||0))/o.ebitda,1):null)+' Zinsdeckung '+o.zinsdeckung+' Verw. '+o.verwaesserung:''));
   await warte(400);
 }
 if(PRUEFEN){console.log(JSON.stringify(out).slice(0,3000));process.exit(0);}
