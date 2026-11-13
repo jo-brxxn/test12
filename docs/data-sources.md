@@ -986,4 +986,7 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
   - 3-Jahres-Schnitt nur, wenn die Kennzahl in ≥ 60 % der Wochen existierte (Intel: meist Verlust → kein P/E-Schnitt statt 266).
   - Kein Branchen-Durchschnitt: keine freie, verlässliche Quelle.
 - **Nicht übernommen (bewusst):** COT (die CFTC führt keine Einzelaktien), Retail-Positionierung (kein Broker-Feed), Institutional Activity aus 13F (quartalsweise, 45 Tage verzögert — nur der Anteil institutioneller Halter), Momentum/Overextension (Price-Karte und Trend zeigen das schon), eigener Gesamt-Score à la StockBox (proprietär).
+- **Risiko-Schwellen** (`STK_RISIKO_REGELN`, js/aktien.js): High debt = D/E > 1,5 oder Nettoschulden > 3× EBITDA · Weak interest coverage = EBIT/Zinsen < 3 (SEC, TTM) · Loss-making = Nettomarge < 0 · Burning cash = FCF TTM < 0 · Heavy dilution = Aktienzahl > +5 % y/y (SEC) · Extreme valuation = P/E > 100 oder P/S > 25 · Very volatile = Beta > 2.
+- **Nicht aufgenommen:** TSMC und andere ausländische Werte (melden per 20-F/6-K, keine Quartals-XBRL bei der SEC → keine Historie, keine 3J-Schnitte).
+- CIK je Ticker aus `https://www.sec.gov/files/company_tickers.json` (Rückfall: Zahl in `AKTIEN`).
 - Wächter: `check/aktien.js` (mit Testdaten `check/fixtures/stock_test.json`).

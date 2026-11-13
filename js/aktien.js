@@ -17,10 +17,13 @@
 let H=null;
 export function aktienHelfer(h){H=h;}
 
-export const STOCK_IDS=['NVDA','AMD','INTC','AAPL','GOOGL'];
+// 2026-11-13 zweiter Schritt (Nutzer: "Füg auch noch alle großen Aktien hinzu
+// wie diese big 7 oder so und auch corewieve"): Magnificent 7 zuerst, dann
+// grosse KI-/Tech-Werte. Reihenfolge = Seitenleiste.
+export const STOCK_IDS=['AAPL','MSFT','GOOGL','AMZN','NVDA','META','TSLA','AVGO','ORCL','AMD','INTC','PLTR','CRWV'];
 // Akzentfarbe des Symbols (Kursverlauf im Rahmen wie bei den Indizes).
 // ⚠ Kein Rot (Design-Regel: Rot nur bearish/Warnung).
-export const STOCK_ACCENT={NVDA:'#76B900',AMD:'#F08A24',INTC:'#2A8DE0',AAPL:'#A9B3BD',GOOGL:'#5B8DEF'};
+export const STOCK_ACCENT={NVDA:'#76B900',AMD:'#F08A24',INTC:'#2A8DE0',AAPL:'#A9B3BD',GOOGL:'#5B8DEF',MSFT:'#00A4EF',AMZN:'#FF9900',META:'#0866FF',TSLA:'#B8C0C8',AVGO:'#CC9A32',ORCL:'#C77A4E',PLTR:'#9AA4B0',CRWV:'#6E5BFF'};
 
 // ── Feste Firmenprofile ──────────────────────────────────────────────────
 // Struktur, keine Tageszahlen: was die Firma macht, womit sie Geld verdient,
@@ -34,6 +37,62 @@ export const STOCK_PROFIL={
     partner:[['Customers','Hyperscalers: Microsoft, Meta, Alphabet, Amazon, Oracle; AI labs and sovereign AI projects'],['Manufacturing','TSMC (chips and CoWoS advanced packaging)'],['Memory','SK Hynix, Micron, Samsung (HBM)'],['Systems','Foxconn, Dell, Supermicro, HPE build the servers']],
     risiko:['Customer concentration: a handful of hyperscalers buy most data-center chips','US export controls on AI chips to China','Single foundry: TSMC in Taiwan (geopolitics)','In-house chips of its customers (Google TPU, Amazon Trainium, Microsoft Maia) and AMD'],
     treiber:['Data-center revenue and guidance at quarterly results','Hyperscaler capex plans','Export-rule changes']},
+  MSFT:{name:'Microsoft',full:'Microsoft Corporation',ticker:'NASDAQ: MSFT',
+    was:'Software and cloud platform for businesses and consumers.',
+    geld:[['Intelligent Cloud','Azure cloud and AI services, server products – the main growth engine'],['Productivity & Business','Microsoft 365, Teams, LinkedIn, Dynamics'],['Personal Computing','Windows, Surface, Xbox and Activision Blizzard, search ads (Bing)']],
+    vorteil:['Enterprise distribution: almost every company already runs Microsoft software','Recurring subscription revenue','Early AI position through the OpenAI partnership (Copilot)'],
+    partner:[['AI','OpenAI (large shareholder and cloud partner, models in Copilot and Azure)'],['Chips','NVIDIA and AMD GPUs, own Maia and Cobalt chips'],['Capacity','neoclouds such as CoreWeave and Nebius rent GPU capacity to Microsoft']],
+    risiko:['Very high AI data-center capex – has to pay off','Dependence on OpenAI, whose structure and partnerships keep changing','Antitrust: cloud licensing, Teams bundling (EU)'],
+    treiber:['Azure growth rate at quarterly results','Capex guidance','Copilot adoption']},
+  AMZN:{name:'Amazon',full:'Amazon.com, Inc.',ticker:'NASDAQ: AMZN',
+    was:'Online retail, marketplace and logistics plus the largest cloud provider (AWS).',
+    geld:[['AWS','cloud infrastructure – the majority of operating profit'],['Online & physical stores','own retail, Whole Foods'],['Third-party seller services','marketplace fees, fulfillment'],['Advertising, subscriptions','sponsored products, Prime, Prime Video']],
+    vorteil:['AWS scale','Logistics network and Prime membership','Fast-growing high-margin ad business'],
+    partner:[['AI','Anthropic (large investment, AWS as main cloud), own Trainium and Inferentia chips'],['Chips','NVIDIA GPUs; TSMC builds the own chips'],['Sellers','millions of third-party sellers – a large share sourced from China']],
+    risiko:['Very high capex for AI data centers','Antitrust (US FTC case)','Tariffs on goods from China hit sellers and prices','Consumer spending cycle'],
+    treiber:['AWS growth and margin','Retail operating margin','Capex guidance']},
+  META:{name:'Meta',full:'Meta Platforms, Inc.',ticker:'NASDAQ: META',
+    was:'Social networks financed by advertising, plus long-term bets on AI and AR/VR.',
+    geld:[['Family of Apps','Facebook, Instagram, WhatsApp, Messenger – nearly all revenue (ads)'],['Reality Labs','Quest headsets, Ray-Ban Meta glasses – large losses']],
+    vorteil:['More than three billion daily users across its apps','Ad targeting at scale, increasingly AI-driven','Own AI models (Llama) and research'],
+    partner:[['Chips','NVIDIA GPUs, AMD; own MTIA chips'],['Data centers','large new campuses, partly financed with outside investors'],['Hardware','EssilorLuxottica (Ray-Ban, Oakley glasses)'],['Distribution','Apple and Google app stores (privacy rules affect ad tracking)']],
+    risiko:['Very high AI capex and off-balance-sheet data-center financing','Regulation: EU Digital Markets Act, privacy, youth-safety lawsuits','Reality Labs keeps losing billions per year','Ad revenue depends on the economic cycle'],
+    treiber:['Ad revenue growth and pricing','Capex and expense guidance','AI product launches']},
+  TSLA:{name:'Tesla',full:'Tesla, Inc.',ticker:'NASDAQ: TSLA',
+    was:'Electric cars and energy storage; the valuation rests largely on autonomy and robotics.',
+    geld:[['Automotive','Model 3/Y and other EVs, regulatory credits'],['Energy','Megapack and Powerwall battery storage – fast-growing'],['Services & other','charging, insurance, software (FSD)']],
+    vorteil:['Scale and cost in EV production','Real-world driving data for self-driving','Energy storage business'],
+    partner:[['Batteries','Panasonic, LG Energy Solution, CATL, own cells'],['Factories','Fremont, Texas, Shanghai, Berlin'],['Chips','own AI chips built by TSMC and Samsung'],['Key person','CEO Elon Musk – attention split across several companies']],
+    risiko:['Falling car sales and margins, price competition (BYD and others)','Valuation depends on robotaxi and Optimus promises','Loss of US EV tax credits','Key-person and governance risk'],
+    treiber:['Quarterly deliveries','Robotaxi and FSD progress','Auto gross margin']},
+  AVGO:{name:'Broadcom',full:'Broadcom Inc.',ticker:'NASDAQ: AVGO',
+    was:'Chip designer (networking, custom AI accelerators) and infrastructure software company (VMware).',
+    geld:[['Semiconductor solutions','custom AI chips (XPUs), Ethernet switching, wireless, broadband'],['Infrastructure software','VMware, mainframe and security software']],
+    vorteil:['Designs custom AI chips for hyperscalers (Google TPU and others)','Leader in data-center networking chips','High-margin recurring software'],
+    partner:[['Customers','Google, Meta, ByteDance, OpenAI (custom accelerators), Apple (wireless chips)'],['Manufacturing','TSMC'],['Software','VMware customers moved to subscriptions']],
+    risiko:['High debt from the VMware acquisition','Customer concentration in AI and with Apple','China exposure','Customers may design chips fully in-house'],
+    treiber:['AI semiconductor revenue','Custom-chip customer wins','Debt reduction']},
+  ORCL:{name:'Oracle',full:'Oracle Corporation',ticker:'NYSE: ORCL',
+    was:'Database and business software, now building one of the largest AI cloud infrastructures (OCI).',
+    geld:[['Cloud & license','databases, Fusion and NetSuite business applications'],['Cloud infrastructure (OCI)','renting AI compute – fastest-growing part'],['Services, hardware','support and engineered systems']],
+    vorteil:['Database standard in large enterprises','Huge contracted backlog (remaining performance obligations) from AI customers'],
+    partner:[['Customers','OpenAI (multi-year compute contract, Stargate project), Meta, other AI labs'],['Chips','NVIDIA and AMD GPUs'],['Clouds','Oracle databases also run inside Azure, AWS and Google Cloud']],
+    risiko:['Very high and rising debt to finance data centers','Negative free cash flow during the build-out','Heavy dependence on OpenAI as a customer','Execution: building capacity on time'],
+    treiber:['Backlog (RPO) and OCI growth','Debt and financing news','Capex guidance']},
+  PLTR:{name:'Palantir',full:'Palantir Technologies Inc.',ticker:'NASDAQ: PLTR',
+    was:'Data integration and AI software for governments and companies.',
+    geld:[['Government','US defense and intelligence, allied governments (Gotham, Maven)'],['Commercial','Foundry and AIP (AI platform) for companies – fastest-growing in the US']],
+    vorteil:['Deep integration in US defense workflows','AIP boot camps drive quick commercial adoption','High gross margins'],
+    partner:[['Customers','US Army, Department of Defense, NATO, large companies'],['Cloud','runs on AWS, Azure, Google Cloud, Oracle'],['Defense partners','defense contractors and drone makers']],
+    risiko:['Extremely high valuation – priced for many years of growth','Dependence on government budgets and politics','Stock-based compensation dilutes shareholders'],
+    treiber:['US commercial growth','Government contract awards','Profitability (Rule of 40)']},
+  CRWV:{name:'CoreWeave',full:'CoreWeave, Inc.',ticker:'NASDAQ: CRWV',
+    was:'"Neocloud": rents out large NVIDIA GPU clusters for AI training and inference. Listed since March 2025.',
+    geld:[['AI cloud','GPU capacity under multi-year take-or-pay contracts – almost all revenue']],
+    vorteil:['Early access to the newest NVIDIA GPUs','Large contracted backlog'],
+    partner:[['Customers','Microsoft (the largest customer), OpenAI (multi-year contracts), Meta'],['Supplier and investor','NVIDIA (GPUs, shareholder, capacity agreement)'],['Financing','GPU-backed loans and bonds from banks and private credit'],['Data centers','leased sites, partly from former crypto miners']],
+    risiko:['Very high debt, secured by GPUs','Few customers make up most revenue','GPUs lose value fast – depreciation and refinancing risk','Share dilution and lock-up expiries; short track record'],
+    treiber:['Backlog and new contracts','Financing terms and interest costs','Data-center capacity coming online']},
   AMD:{name:'AMD',full:'Advanced Micro Devices, Inc.',ticker:'NASDAQ: AMD',
     was:'Designs CPUs, GPUs and adaptive chips (FPGAs). Fabless since spinning off its fabs (GlobalFoundries).',
     geld:[['Data Center','EPYC server CPUs and Instinct AI GPUs (MI300/MI350 series)'],['Client','Ryzen PC processors'],['Gaming','Radeon GPUs and custom chips for PlayStation and Xbox'],['Embedded','Xilinx FPGAs and adaptive SoCs']],
@@ -73,7 +132,7 @@ export function aktienDatenHolen(){
   if(ST||stLaden||!H)return;
   stLaden=fetch(H.DATA_BASE+'stock_data.json?t='+Math.floor(Date.now()/3e5),{signal:AbortSignal.timeout(H.FEED_TIMEOUT_MS),cache:'no-store'})
     .then(r=>r.ok?r.json():null).then(d=>{if(d&&d.stocks){ST=d;stFehler=false;}else stFehler=true;})
-    .catch(()=>{stFehler=true;}).finally(()=>{stLaden=null;try{if(H.curPage()==='cur'&&STOCK_IDS.includes(H.getSym().id))H.renderDetail();}catch(e){}});
+    .catch(()=>{stFehler=true;}).finally(()=>{stLaden=null;try{if(H.nachDaten)H.nachDaten();}catch(e){}try{if(H.curPage()==='cur'&&STOCK_IDS.includes(H.getSym().id))H.renderDetail();}catch(e){}});
 }
 const e=s=>H.escH(s==null?'':String(s));
 const zahl=(v,n=1,suf='')=>v==null||!isFinite(v)?'–':(Math.round(v*10**n)/10**n).toFixed(n)+suf;
@@ -96,6 +155,34 @@ function gegenHistorie(wert,schnitt,niedrigerBesser){
 }
 const farbe=b=>b?`style="color:${H.biasCss(b)}"`:'';
 
+// ── Risiko-Markierungen (Nutzer 2026-11-13: "wenn es große Risikos wie hohe
+// Verschuldung gibt dann das kennzeichnen") ─────────────────────────────
+// Aus den echten Zahlen, feste Schwellen (in docs/data-sources.md):
+export const STK_RISIKO_REGELN=[
+  ['schulden','High debt','Debt to equity above 1.5 or net debt above 3x EBITDA',s=>{const nd=s.ebitda>0&&s.schulden!=null?((s.schulden||0)-(s.cash||0))/s.ebitda:null;
+    return (s.de!=null&&s.de>1.5)||(nd!=null&&nd>3)?[s.de!=null?'D/E '+zahl(s.de,2):null,nd!=null?'net debt '+zahl(nd,1)+'x EBITDA':null].filter(Boolean).join(' · '):null;}],
+  ['zinsen','Weak interest coverage','Operating profit covers interest less than 3 times',s=>s.zinsdeckung!=null&&s.zinsdeckung<3?'EBIT / interest '+zahl(s.zinsdeckung,1)+'x':null],
+  ['verlust','Loss-making','Net margin below zero',s=>s.nm!=null&&s.nm<0?'net margin '+zahl(s.nm,1,'%'):null],
+  ['cash','Burning cash','Free cash flow of the last 12 months below zero',s=>s.fcfTtm!=null&&s.fcfTtm<0?'FCF '+geld(s.fcfTtm):null],
+  ['verwaesserung','Heavy dilution','Share count up more than 5 % in a year',s=>s.verwaesserung!=null&&s.verwaesserung>5?'shares +'+zahl(s.verwaesserung,1,'%')+' y/y':null],
+  ['bewertung','Extreme valuation','P/E above 100 or price to sales above 25',s=>(s.tpe!=null&&s.tpe>100)||(s.ps!=null&&s.ps>25)?[s.tpe>100?'P/E '+zahl(s.tpe,0):null,s.ps>25?'P/S '+zahl(s.ps,1):null].filter(Boolean).join(' · '):null],
+  ['volatil','Very volatile','Beta above 2 – moves more than twice as much as the market',s=>s.beta!=null&&s.beta>2?'beta '+zahl(s.beta,2):null],
+];
+export function aktieRisiken(id){
+  const s=ST&&ST.stocks&&ST.stocks[id];if(!s)return[];
+  return STK_RISIKO_REGELN.map(([k,t,regel,f])=>{let w=null;try{w=f(s);}catch(x){}return w?{k,t,regel,w}:null;}).filter(Boolean);
+}
+// Schwere Warnung fuer die Seitenleiste: Schulden, Zinsdeckung, Verlust, Cash-Abfluss
+const STK_SCHWER=['schulden','zinsen','verlust','cash'];
+export function aktieWarnHtml(id){
+  const l=aktieRisiken(id).filter(r=>STK_SCHWER.includes(r.k));if(!l.length)return'';
+  return`<span class="np-risk" title="${e(l.map(r=>r.t+': '+r.w).join(' · '))}" aria-label="${l.length} risk flag${l.length>1?'s':''}">!</span>`;
+}
+function risikoHtml(id){
+  const l=aktieRisiken(id);if(!ST)return'';
+  if(!l.length)return`<div class="stk-risk stk-risk-ok"><b>No major financial red flags</b> <i>debt, cash flow, dilution, valuation checked</i></div>`;
+  return`<div class="stk-risk"><div class="stk-risk-t">${l.length} risk flag${l.length>1?'s':''}</div>${l.map(r=>`<div class="stk-risk-z" title="${e(r.regel)}"><span class="stk-risk-b">${e(r.t)}</span><span class="stk-risk-w">${e(r.w)}</span></div>`).join('')}</div>`;
+}
 // ── Karte: Company (fest) ────────────────────────────────────────────────
 export function karteProfil(c){
   const p=STOCK_PROFIL[c.id];if(!p)return'';
@@ -106,9 +193,9 @@ export function karteProfil(c){
   const kv=l=>`<table class="kv stk-kv">${l.map(([k,v])=>`<tr><th>${e(k)}</th><td>${e(v)}</td></tr>`).join('')}</table>`;
   const punkte=(l,b)=>`<ul class="stk-ul">${l.map(x=>`<li${b?` ${farbe(b)}`:''}><span>${e(x)}</span></li>`).join('')}</ul>`;
   const fakten=s?kv([['Market cap',geld(s.mcap)],['Employees',s.mitarbeiter?s.mitarbeiter.toLocaleString('en-US'):'–'],['Next results',s.naechsteZahlen?H.fmtDayHdr(s.naechsteZahlen):'–']]):'';
-  const inhalt=kopf+fakten+abschnitt('How it makes money',kv(p.geld))+abschnitt('Edge',punkte(p.vorteil))
+  const inhalt=kopf+risikoHtml(c.id)+fakten+abschnitt('How it makes money',kv(p.geld))+abschnitt('Edge',punkte(p.vorteil))
     +abschnitt('Partners & dependencies',kv(p.partner))+abschnitt('Key risks',punkte(p.risiko,'bear'))+abschnitt('Moves the stock',punkte(p.treiber));
-  return H.abTile('Company','',inhalt,' ab-aktie stk-profil',null,['Fixed profile: what the company does, where the money comes from, who it depends on.','Figures (market cap, employees, next results) come from stock_data.json; the text is curated and does not change daily.']);
+  return H.abTile('Company','',inhalt,' ab-aktie stk-profil',null,['Fixed profile: what the company does, where the money comes from, who it depends on.','Risk flags are calculated from the latest figures: debt (D/E > 1.5 or net debt > 3x EBITDA), interest coverage < 3x, losses, negative free cash flow, dilution > 5 % a year, P/E > 100 or P/S > 25, beta > 2.','Figures come from stock_data.json; the text is curated and does not change daily.']);
 }
 
 // ── Karte: Valuation ─────────────────────────────────────────────────────

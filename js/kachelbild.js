@@ -24,7 +24,7 @@ export const kachelFormenDa = () => !!FORM;
 
 // Welche Laender gehoeren zu einer Kachel? FX-Paar: beide Waehrungsraeume;
 // Index: sein Land; sonst keins.
-const ASSET_LAND = { SP500: 'USD', NAS: 'USD', DAX: 'DE', NVDA: 'USD', AMD: 'USD', INTC: 'USD', AAPL: 'USD', GOOGL: 'USD' };
+const ASSET_LAND = { SP500: 'USD', NAS: 'USD', DAX: 'DE', NVDA: 'USD', AMD: 'USD', INTC: 'USD', AAPL: 'USD', GOOGL: 'USD', MSFT: 'USD', AMZN: 'USD', META: 'USD', TSLA: 'USD', AVGO: 'USD', ORCL: 'USD', PLTR: 'USD', CRWV: 'USD' };
 export function kachelLaender(n, assetId) {
   const fx = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'NZD'];
   const t = String(n || '').split('/');

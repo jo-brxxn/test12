@@ -22102,3 +22102,12 @@ Nutzer (mit Fotos von A1 StockBox *Stock Scorecard* und *Top Stocks*): *„Ok ic
 - **Zwei Funde beim Prüflauf:** Alphabet meldet die Aktienzahl je Klasse → addiert; Intels 3J-P/E aus wenigen Gewinnwochen (266) → nur bei ≥ 60 % Abdeckung.
 - Feed: TradingView-Kurse, Yahoo 3y/10y/4h, Saisonalität um die 5 Aktien erweitert; neuer Schritt *Fetch stock fundamentals*.
 - Wächter `check/aktien.js` (Gegenprobe: ohne Company-Reihe → rot).
+
+## 2026-11-13 — 13 Aktien + Risiko-Markierung (VERSION-CHECK-719)
+
+Nutzer: *„Füg auch noch alle großen Aktien hinzu wie diese big 7 oder so und auch corewieve und so und wenn es große Risikos wie hohe Verschuldung gibt dann das kennzeichnen“*.
+
+- Neu: MSFT, AMZN, META, TSLA (Magnificent 7 komplett), AVGO, ORCL, PLTR, CRWV — je festes Profil (Geschäft, Erlösquellen, Partner/Abhängigkeiten, Risiken, Kurstreiber).
+- Risiko-Markierung aus den Zahlen (Schwellen in `docs/data-sources.md`); neue Kennzahlen im Feed: Gesamtschulden, Cash, EBITDA (Yahoo), Zinsdeckung und Verwässerung (SEC).
+- Nicht aufgenommen: TSMC (ausländischer Emittent, keine Quartals-XBRL).
+- Wächter `check/aktien.js` erweitert (F: Markierung; Gegenprobe `--gegenprobe-risiko`).

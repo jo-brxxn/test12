@@ -23,7 +23,7 @@ import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 // Hero-Zeichnung des Dashboards (Nutzer 2026-11-06, siehe Kopf von heroart.js).
 import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
-import {STOCK_IDS,STOCK_ACCENT,STOCK_DEF,aktienHelfer,aktienDatenHolen,karteProfil,karteBewertung,karteQualitaet,karteAnalysten,karteZahlen} from './aktien.js';
+import {STOCK_IDS,STOCK_ACCENT,STOCK_DEF,aktienHelfer,aktienDatenHolen,aktieWarnHtml,karteProfil,karteBewertung,karteQualitaet,karteAnalysten,karteZahlen} from './aktien.js';
 // Sektoren-Katalog der MACRO-Zeile (2026-11-12, nur Anzeige) - dieselbe Liste baut sektor_data.json.
 import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.js';
 import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './kachelbild.js';
@@ -8115,6 +8115,7 @@ function renderSidebar(){
         <button data-sym="${id}" class="np ab np-asset${on?' on':''}" onclick="sbClick('${escJs(id)}')" onpointerdown="sbPressStart('${escJs(id)}')" onpointerup="sbPressEnd()" onpointerleave="sbPressEnd()" onpointercancel="sbPressEnd()" data-tip="${escH(c.name)} ${escH(scTxt)}" aria-label="${escH(c.name)} ${escH(scTxt)}">
           ${sbSymbolHtml(id,on)}
           <span class="an np-lbl"${bv?` data-bv="${bv}"`:''}>${escH(c.name)}</span>
+          ${/* Aktien: Warnzeichen bei schweren Finanzrisiken (Nutzer 2026-11-13) */''}${assetCls(id)==='stock'?aktieWarnHtml(id):''}
           <span class="np-score">${escH(scTxt)}</span>
         </button>
         ${bearb?`<span class="np-asset-edit">
@@ -26926,7 +26927,9 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 // ══ INIT ══════════════════════════════════════════════════════════
-try{aktienHelfer({escH,biasCss,fmtDayHdr,daysUntil,abTile,AB_LEER,DATA_BASE,FEED_TIMEOUT_MS,renderDetail,curPage:()=>curPage,getSym});}catch(e){}
+try{aktienHelfer({escH,biasCss,fmtDayHdr,daysUntil,abTile,AB_LEER,DATA_BASE,FEED_TIMEOUT_MS,renderDetail,curPage:()=>curPage,getSym,nachDaten:()=>renderSidebar()});}catch(e){}
+// Aktien-Kennzahlen frueh laden: die Seitenleiste zeigt Warnzeichen fuer Finanzrisiken.
+try{setTimeout(aktienDatenHolen,2500);}catch(e){}
 // Laender-Umrisse der 1D-Kacheln frueh anfordern (2026-11-12): sie kommen dann
 // meist mit dem ersten Feed statt einen eigenen Aufbau auszuloesen.
 try{kachelFormenLaden();}catch(e){}

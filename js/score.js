@@ -10,6 +10,7 @@
 // aufgehoert, Score-Aenderungen zu erkennen. Erst nach deren Reparatur +
 // bestandenem Regressionstest freigegeben.
 // Bidirektional mit js/main.js verbunden (Muster: docs/module-split.md).
+import {STOCK_IDS} from './aktien.js';
 import {BC,FX} from './constants.js';
 import {IND_DATA_FEED,PRICE_DATA_FEED,priceSeriesFor,BOND_DATA_FEED} from './data-feeds.js';
 import {DATA_LIVE_OK,IND_AUTO_RUBS,IND_EVENT_MATCHERS,calEvts,cloudAutoSync,escH,evtMatchesSym,getSym,macroCcyFor,markLsUpdatedSeen,markPrefEdit,openM,parseNumLike,parsePolicyRate,periodLabel,rateInfo,recomputeAuto,indName,resolvePairPriceSeries,SENTIMENT_DATA,rerender,save,scoreHist,selId,setSuppressBiasFlipAlerts,stripPeriodSuffix,syms,todayStr} from './main.js';
@@ -165,10 +166,8 @@ const SENT_MAP={
   SP500:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],
   NAS:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],
   // Aktien (2026-11-13): wie der S&P 500 (Nutzer: "die Indikatoren sollen die gleichen wie bei sp500 sein").
-  NVDA:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],AMD:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],
-  INTC:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],AAPL:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],
-  GOOGL:[['VIX (Volatility)','vix'],['AAII Bull-Bear Spread','aaii']],
 };
+STOCK_IDS.forEach(id=>{SENT_MAP[id]=SENT_MAP.SP500.map(x=>x.slice());});
 // Alle Sentiment-Indikator-Basisnamen (fuers Seeding + Halbgewicht).
 const SENT_IND_NAMES=[...new Set(Object.values(SENT_MAP).flat().map(p=>p[0]))];
 const SENT_HALF=new Set(SENT_IND_NAMES);

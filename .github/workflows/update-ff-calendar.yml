@@ -2971,7 +2971,7 @@ jobs:
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
           curl -sL -A "$UA" -H "Origin: https://www.tradingview.com" -H "Content-Type: application/json" \
-            --data '{"symbols":{"tickers":["TVC:DXY","FX:EURUSD","FX:GBPUSD","FX:USDCHF","FX:USDJPY","FX:USDCAD","FX:AUDUSD","FX:NZDUSD","TVC:GOLD","TVC:SILVER","NYMEX:CL1!","COINBASE:BTCUSD","COINBASE:ETHUSD","SP:SPX","NASDAQ:NDX","TVC:DEU40","NASDAQ:NVDA","NASDAQ:AMD","NASDAQ:INTC","NASDAQ:AAPL","NASDAQ:GOOGL"],"query":{"types":[]}},"columns":["close","open","high","low"]}' \
+            --data '{"symbols":{"tickers":["TVC:DXY","FX:EURUSD","FX:GBPUSD","FX:USDCHF","FX:USDJPY","FX:USDCAD","FX:AUDUSD","FX:NZDUSD","TVC:GOLD","TVC:SILVER","NYMEX:CL1!","COINBASE:BTCUSD","COINBASE:ETHUSD","SP:SPX","NASDAQ:NDX","TVC:DEU40","NASDAQ:NVDA","NASDAQ:AMD","NASDAQ:INTC","NASDAQ:AAPL","NASDAQ:GOOGL","NASDAQ:MSFT","NASDAQ:AMZN","NASDAQ:META","NASDAQ:TSLA","NASDAQ:AVGO","NYSE:ORCL","NASDAQ:PLTR","NASDAQ:CRWV"],"query":{"types":[]}},"columns":["close","open","high","low"]}' \
             "https://scanner.tradingview.com/global/scan" -o price_tv.json || true
           echo "=== TradingView scanner response (first 500 chars) ==="
           head -c 500 price_tv.json 2>/dev/null || echo "(missing)"
@@ -2999,7 +2999,8 @@ jobs:
               "TVC:DEU40":{id:"DAX",invert:false},
               // Aktien (Nutzer 2026-11-13: Kategorie Stocks)
               "NASDAQ:NVDA":{id:"NVDA",invert:false},"NASDAQ:AMD":{id:"AMD",invert:false},"NASDAQ:INTC":{id:"INTC",invert:false},
-              "NASDAQ:AAPL":{id:"AAPL",invert:false},"NASDAQ:GOOGL":{id:"GOOGL",invert:false}
+              "NASDAQ:AAPL":{id:"AAPL",invert:false},"NASDAQ:GOOGL":{id:"GOOGL",invert:false},
+              "NASDAQ:MSFT":{id:"MSFT",invert:false},"NASDAQ:AMZN":{id:"AMZN",invert:false},"NASDAQ:META":{id:"META",invert:false},"NASDAQ:TSLA":{id:"TSLA",invert:false},"NASDAQ:AVGO":{id:"AVGO",invert:false},"NYSE:ORCL":{id:"ORCL",invert:false},"NASDAQ:PLTR":{id:"PLTR",invert:false},"NASDAQ:CRWV":{id:"CRWV",invert:false}
             };
             const SRC={
               USD:"https://www.tradingview.com/symbols/TVC-DXY/",
@@ -3019,7 +3020,8 @@ jobs:
               NAS:"https://www.tradingview.com/symbols/NDX/",
               DAX:"https://www.tradingview.com/symbols/TVC-DEU40/",
               NVDA:"https://www.tradingview.com/symbols/NASDAQ-NVDA/",AMD:"https://www.tradingview.com/symbols/NASDAQ-AMD/",INTC:"https://www.tradingview.com/symbols/NASDAQ-INTC/",
-              AAPL:"https://www.tradingview.com/symbols/NASDAQ-AAPL/",GOOGL:"https://www.tradingview.com/symbols/NASDAQ-GOOGL/"
+              AAPL:"https://www.tradingview.com/symbols/NASDAQ-AAPL/",GOOGL:"https://www.tradingview.com/symbols/NASDAQ-GOOGL/",
+              MSFT:"https://www.tradingview.com/symbols/NASDAQ-MSFT/",AMZN:"https://www.tradingview.com/symbols/NASDAQ-AMZN/",META:"https://www.tradingview.com/symbols/NASDAQ-META/",TSLA:"https://www.tradingview.com/symbols/NASDAQ-TSLA/",AVGO:"https://www.tradingview.com/symbols/NASDAQ-AVGO/",ORCL:"https://www.tradingview.com/symbols/NYSE-ORCL/",PLTR:"https://www.tradingview.com/symbols/NASDAQ-PLTR/",CRWV:"https://www.tradingview.com/symbols/NASDAQ-CRWV/"
             };
             const today=new Date().toISOString().slice(0,10);
             let resp;
@@ -4056,7 +4058,7 @@ jobs:
           CRUMB=$(curl -sL --max-time 15 -A "$UA" -b ypc.txt -c ypc.txt "https://query2.finance.yahoo.com/v1/test/getcrumb")
           echo "[debug] price backfill crumb: len=${#CRUMB}"
           # Asset -> Yahoo-Symbol (Underlying identisch zum TradingView-Schritt)
-          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI NVDA:NVDA AMD:AMD INTC:INTC AAPL:AAPL GOOGL:GOOGL"
+          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI NVDA:NVDA AMD:AMD INTC:INTC AAPL:AAPL GOOGL:GOOGL MSFT:MSFT AMZN:AMZN META:META TSLA:TSLA AVGO:AVGO ORCL:ORCL PLTR:PLTR CRWV:CRWV"
           rm -f pbf_meta.txt
           for PAIR in $MAPS; do
             ASSET="${PAIR%%:*}"; SYM="${PAIR#*:}"
@@ -4167,7 +4169,7 @@ jobs:
             echo "[debug] price archive: fresh (< 7 days), skipping"; exit 0
           fi
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI NVDA:NVDA AMD:AMD INTC:INTC AAPL:AAPL GOOGL:GOOGL"
+          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI NVDA:NVDA AMD:AMD INTC:INTC AAPL:AAPL GOOGL:GOOGL MSFT:MSFT AMZN:AMZN META:META TSLA:TSLA AVGO:AVGO ORCL:ORCL PLTR:PLTR CRWV:CRWV"
           for PAIR in $MAPS; do
             ASSET="${PAIR%%:*}"; SYM="${PAIR#*:}"
             ENC=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$SYM")
@@ -4219,7 +4221,7 @@ jobs:
         continue-on-error: true
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI NVDA:NVDA AMD:AMD INTC:INTC AAPL:AAPL GOOGL:GOOGL"
+          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI NVDA:NVDA AMD:AMD INTC:INTC AAPL:AAPL GOOGL:GOOGL MSFT:MSFT AMZN:AMZN META:META TSLA:TSLA AVGO:AVGO ORCL:ORCL PLTR:PLTR CRWV:CRWV"
           for PAIR in $MAPS; do
             ASSET="${PAIR%%:*}"; SYM="${PAIR#*:}"
             ENC=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$SYM")
@@ -4234,7 +4236,7 @@ jobs:
             const r7=v=>Number(v.toPrecision(7));
             let alt={};try{alt=JSON.parse(fs.readFileSync("trend_data.json","utf8")).assets||{};}catch(e){}
             const out={};let ok=0;
-            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","BTC","SP500","NAS","DAX","NVDA","AMD","INTC","AAPL","GOOGL"];
+            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","BTC","SP500","NAS","DAX","NVDA","AMD","INTC","AAPL","GOOGL","MSFT","AMZN","META","TSLA","AVGO","ORCL","PLTR","CRWV"];
             const FXL=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD"],NU=FXL.filter(c=>c!=="USD");
             // 1. Durchgang: je Asset die geschlossenen 4h-Bloecke.
             const KZ={},SYM={};
@@ -4374,7 +4376,7 @@ jobs:
           export SEAS_PAIRS="$PAIRS"
           # Nur ueberspringen, wenn heute schon geholt UND jedes Asset und jedes
           # Paar drinsteht - sonst wartete ein neu aufgenommenes bis morgen.
-          if node -e 'try{const d=JSON.parse(require("fs").readFileSync("seasonality_data.json","utf8"));const alle=["USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD","GOLD","SILVER","OIL","BTC","ETH","SP500","NAS","DAX","USYIELD","NVDA","AMD","INTC","AAPL","GOOGL"].every(k=>d.assets&&d.assets[k]);const paare=process.env.SEAS_PAIRS.split(" ").every(p=>d.pairs&&d.pairs[p.slice(0,3)+"/"+p.slice(3)]);process.exit(String(d.updated||"").slice(0,10)==="'"$TODAY"'"&&alle&&paare?0:1);}catch(e){process.exit(1);}'; then
+          if node -e 'try{const d=JSON.parse(require("fs").readFileSync("seasonality_data.json","utf8"));const alle=["USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD","GOLD","SILVER","OIL","BTC","ETH","SP500","NAS","DAX","USYIELD","NVDA","AMD","INTC","AAPL","GOOGL","MSFT","AMZN","META","TSLA","AVGO","ORCL"].every(k=>d.assets&&d.assets[k]);const paare=process.env.SEAS_PAIRS.split(" ").every(p=>d.pairs&&d.pairs[p.slice(0,3)+"/"+p.slice(3)]);process.exit(String(d.updated||"").slice(0,10)==="'"$TODAY"'"&&alle&&paare?0:1);}catch(e){process.exit(1);}'; then
             echo "[debug] seasonality: already fetched today, skipping"
             exit 0
           fi
@@ -4384,7 +4386,7 @@ jobs:
           echo "[debug] seasonality Yahoo crumb: len=${#CRUMB}"
           # Nicht-FX-Assets: ETF/Index/Kurs selbst. NZD/DAX/BTC (2026-09-25):
           # ^GDAXI ist der DAX, BTC-USD der Kurs (IBIT erst seit 01/2024).
-          declare -A PROXY=( [GOLD]=GLD [SILVER]=SLV [OIL]=USO [BTC]=BTC-USD [ETH]=ETH-USD [SP500]=SPY [NAS]=QQQ [DAX]=%5EGDAXI [USYIELD]=%5ETNX [NVDA]=NVDA [AMD]=AMD [INTC]=INTC [AAPL]=AAPL [GOOGL]=GOOGL )
+          declare -A PROXY=( [GOLD]=GLD [SILVER]=SLV [OIL]=USO [BTC]=BTC-USD [ETH]=ETH-USD [SP500]=SPY [NAS]=QQQ [DAX]=%5EGDAXI [USYIELD]=%5ETNX [NVDA]=NVDA [AMD]=AMD [INTC]=INTC [AAPL]=AAPL [GOOGL]=GOOGL [MSFT]=MSFT [AMZN]=AMZN [META]=META [TSLA]=TSLA [AVGO]=AVGO [ORCL]=ORCL [PLTR]=PLTR [CRWV]=CRWV )
           export SEAS_ALLE="USD EUR GBP JPY CHF CAD AUD NZD ${!PROXY[*]}"
           hole(){  # $1 Dateiname, $2 Yahoo-Symbol (URL-kodiert)
             HCODE=$(curl -sL --max-time 30 -A "$UA" -b yscookies.txt -H "Accept: application/json" -w "%{http_code}" "https://query1.finance.yahoo.com/v8/finance/chart/${2}?range=20y&interval=1mo&crumb=${CRUMB}" -o "$1" || echo "000")
@@ -6171,7 +6173,7 @@ jobs:
       # KEIN Score-Teil. Scheitert der Schritt, bleibt der alte Stand.
       # ── AKTIEN (stock_data.json, Nutzer 2026-11-13: Kategorie Stocks) ──
       # Bewertung, Wachstum, Qualitaet, Analysten und Quartalszahlen fuer
-      # NVDA/AMD/INTC/AAPL/GOOGL. Yahoo quoteSummary (aktueller Stand) + SEC
+      # 13 Aktien (Liste: tools/aktien.mjs AKTIEN). Yahoo quoteSummary (aktueller Stand) + SEC
       # EDGAR (Quartalshistorie aus den Pflichtmeldungen) + Yahoo-Wochenkurse.
       # Nur Anzeige, kein Score-Teil. Geprueft mit tools/aktien-sonde.mjs.
       # Scheitert eine Quelle, bleibt der alte Stand je Aktie (als veraltet markiert).

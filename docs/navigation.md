@@ -1656,7 +1656,8 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 
 ## Kategorie Stocks (2026-11-13)
 
-- **Assets:** NVDA, AMD, INTC, AAPL, GOOGL (`js/aktien.js`, `STOCK_IDS`), Klasse `stock`, Makro = USD.
+- **Assets** (seit 719, Nutzer: *„alle großen Aktien … wie diese big 7 … und auch corewieve“*): AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA (Magnificent 7), AVGO, ORCL, AMD, INTC, PLTR, CRWV (`js/aktien.js`, `STOCK_IDS`), Klasse `stock`, Makro = USD.
+- **Risiko-Markierung** (seit 719, Nutzer: *„wenn es große Risikos wie hohe Verschuldung gibt dann das kennzeichnen“*): oben in der Firmenkarte jede Flagge mit Wert (`STK_RISIKO_REGELN`); in der Seitenleiste ein rotes „!“ nur bei schweren Finanzrisiken (Schulden, Zinsdeckung, Verlust, Cash-Abfluss).
 - **Score:** wie der S&P 500 — dieselben Ableitungsregeln (`MACRO_DERIVE_RULES`), VIX/AAII (`SENT_MAP`). Kennzahlen zählen NICHT.
 - **Seite:** wie jedes Asset, plus
   - Reihe **Company**: Company (festes Profil: Geschäft, Erlösquellen, Vorteile, Partner & Abhängigkeiten, Risiken, Kurstreiber) | Valuation (Now | 3Y avg | vs own history, P/E-Verlauf 5 Jahre) | Growth & quality.
