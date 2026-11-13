@@ -1,0 +1,15 @@
+# Welche Aktien-Kennzahlen liefern Yahoo, TradingView und SEC? (2026-11-13)
+# Yahoo/TradingView sind aus der Claude-Umgebung gesperrt - die Sonde laeuft
+# deshalb auf dem Runner. Schreibt NICHTS in die Daten. Ausgabe: tools/aktien-sonde.mjs.
+name: Probe stock fundamentals sources
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Quellen fuer Aktien-Kennzahlen pruefen
+        run: node tools/aktien-sonde.mjs
