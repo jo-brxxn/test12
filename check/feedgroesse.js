@@ -34,7 +34,12 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
 const DECKEL_KB = 900;
-const GESAMT_KB = 3500;
+// 2026-11-13: 3500 -> 3600 (Kategorie Stocks). Gemessen: 13 Aktien mit 3 Jahren
+// Tageskursen in price_data.json = 213 KB; ohne sie 3300 KB, mit 3513 KB. Aus dem
+// 10-Jahres-Archiv (price_hist.json, sonst 1064 KB > 900) und dem 4h-Trend
+// (+259 KB) sind die Aktien bewusst herausgenommen. 3600 KB liegt weiter klar
+// unter den 4 MB, die bei FEED_TIMEOUT_MS theoretisch durchgehen.
+const GESAMT_KB = 3600;
 // Die Live-Dateien, die der Browser beim Start holt. Muss die DATA_BASE-
 // Abrufe in js/main.js + js/data-feeds.js spiegeln.
 const FEEDS = ['ind_data.json', 'bond_data.json', 'price_data.json', 'cot_data.json',

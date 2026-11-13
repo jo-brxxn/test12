@@ -22111,3 +22111,11 @@ Nutzer: *„Füg auch noch alle großen Aktien hinzu wie diese big 7 oder so und
 - Risiko-Markierung aus den Zahlen (Schwellen in `docs/data-sources.md`); neue Kennzahlen im Feed: Gesamtschulden, Cash, EBITDA (Yahoo), Zinsdeckung und Verwässerung (SEC).
 - Nicht aufgenommen: TSMC (ausländischer Emittent, keine Quartals-XBRL).
 - Wächter `check/aktien.js` erweitert (F: Markierung; Gegenprobe `--gegenprobe-risiko`).
+
+## 2026-11-13 — CI 719 rot: Feed-Größe, Trends, Set-ups (VERSION-CHECK-720)
+
+CI-Lauf 733 (Version 719), drei Befunde – alle durch die Aktien ausgelöst oder sichtbar geworden:
+- **feedgroesse:** alle Live-Feeds 3288 → 4192 KB (price_data +213, trend_data +259, price_hist +426; price_hist 1064 KB > 900 je Datei). Aktien aus dem 10J-Archiv und dem 4h-Trend genommen (nur 3 Jahre Tageskurse in price_data.json). Danach 3513 KB → Gesamtgrenze bewusst 3500 → 3600 KB (`check/feedgroesse.js`, Begründung dort).
+- **cotpreis „OHNE KURS“:** Prüfzeitpunkt vor dem Feed-Lauf; nach dem Lauf haben alle 13 Aktien Kurse.
+- **designregeln Trends (5 statt 6 Linien):** Aktien aus `trendAssets()` – ihr Score ist praktisch der des S&P 500 (dieselben USD-Karten), deckungsgleiche Linien.
+- **designregeln Mindestschrift Set-ups (neu sichtbar):** gemessen 390 px: Zeile 23 px zu breit → Schrift auf 9,68 bzw. 10,56 px verkleinert. Ursachen: „CoreWeave“ +12 px Namensspalte; Kurs-Chip „2.3896 ▲ +0.11%“ 115 px – auch mit dem Code von 717 und heutigen Kursen schon zu breit (Gegenmessung im Worktree). Behoben: Aktien nicht in den Set-ups (wie Trends), Chip ohne doppeltes „+“ (Pfeil trägt die Richtung; vorher „▲ +0.11%“ aber „▼ 0.01%“, Chip 115 → 107 px), Spaltenabstand 4 → 3 px nur bis 420 px Breite (breiter ragte die Score-Trefferfläche in den Stern, designregeln F). Ergebnis 390 px: 0 px Überstand, 11 px Schrift. ⚠ Ohne Reserve – ein breiterer Kurs verkleinert wieder (Nutzer-Regel 2026-10-20 „einzeilig, sonst kleiner“ gegen Mindestschrift 11 px).

@@ -15157,7 +15157,9 @@ function renderPairsRoh(){
     // auseinanderlaufen koennen. Non-FX-Assets werden ueber ihren
     // kanonischen Paarnamen ('GOLD' -> 'XAU/USD') gefuehrt.
     ...pairs.filter(p=>{if(isWatchlistPlaceholder(p))return false;if(seenPair.has(p.name))return false;seenPair.add(p.name);return true;}).map(p=>({kind:'pair',id:p.id,name:p.name,bias:p.bias,marked:isWatched(p.name),score:pairScore(p.name)})),
-    ...syms.filter(s=>!FX.includes(s.id)).map(s=>({kind:'asset',id:s.id,name:s.name,bias:s.bias,marked:isWatched(watchPairNameForAsset(s.id)),score:symScoreCmp(s)})),
+    // Aktien nicht (2026-11-13): ihr Score ist fast der des S&P 500 (dieselben USD-Karten) -
+    // 13 nahezu doppelte Zeilen; dazu sprengte "CoreWeave" bei 390 px die Zeilenbreite (gemessen +12 px).
+    ...syms.filter(s=>!FX.includes(s.id)&&assetCls(s.id)!=='stock').map(s=>({kind:'asset',id:s.id,name:s.name,bias:s.bias,marked:isWatched(watchPairNameForAsset(s.id)),score:symScoreCmp(s)})),
   ];
   // Filterleiste: einzelne Währungen auswählen -> nur Paare mit dieser Währung.
   const active=setupCcyFilter.length>0;
@@ -18244,7 +18246,9 @@ function trendAssets(){
   // Yields-Kategorie ergaenzt (Nutzer-Wunsch 2026-08-24) - vorher hier gar
   // nicht auswaehlbar, obwohl jedes Yield-Asset ganz normal einen
   // scoreHist-Verlauf hat wie jedes andere Asset.
-  return [...FX,'GOLD','SILVER','OIL','BTC','SP500','NAS','DAX',...STOCK_IDS,...Object.keys(YIELD_CCY)].filter(id=>present.has(id));
+  // Aktien bewusst NICHT (2026-11-13): ihr Score ist fast der des S&P 500 (dieselben USD-Karten);
+  // 13 nahezu deckungsgleiche Linien verdeckten in Trends die Fokus-Linien (check/designregeln.js L).
+  return [...FX,'GOLD','SILVER','OIL','BTC','SP500','NAS','DAX',...Object.keys(YIELD_CCY)].filter(id=>present.has(id));
 }
 // Taeglicher Score-Schnappschuss je FX-Waehrung. Pro Tag ein Eintrag:
 // [Datum, Gesamt-Score, Inflation, Labour Market, Economic Growth]. Wird beim

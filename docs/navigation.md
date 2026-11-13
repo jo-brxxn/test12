@@ -1663,3 +1663,4 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
   - Reihe **Company**: Company (festes Profil: Geschäft, Erlösquellen, Vorteile, Partner & Abhängigkeiten, Risiken, Kurstreiber) | Valuation (Now | 3Y avg | vs own history, P/E-Verlauf 5 Jahre) | Growth & quality.
   - Band **Analysts & earnings** statt Positioning: Analysts | Earnings | Seasonality (kein COT, kein Retail).
 - **Symbol:** Kursverlauf im Rahmen wie die Indizes, eigene Akzentfarbe (`STOCK_ACCENT`, kein Rot).
+- **Nicht in Trends und Set-ups** (seit 720): Score praktisch = S&P 500 (dieselben USD-Karten) – 13 deckungsgleiche Linien/Zeilen. Nicht im 10-Jahres-Kursarchiv und 4h-Trend (Feed-Größe); 3 Jahre Tageskurse in price_data.json.

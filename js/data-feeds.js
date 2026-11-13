@@ -524,7 +524,9 @@ function tickerInfoForItem(kind,idOrName){
 function tickerChipHtml(info){
   if(!info)return'';
   const col=BC[info.bias];
-  const pctTxt=info.changePct==null?'':(info.changePct>0?'▲ +':info.changePct<0?'▼ ':'· ')+Math.abs(info.changePct).toFixed(2)+'%';
+  // Pfeil traegt die Richtung, kein zusaetzliches "+" (2026-11-13: war doppelt und
+  // uneinheitlich - "▲ +0.11%" aber "▼ 0.01%"; kostete in den Set-ups bei 390 px die Breite).
+  const pctTxt=info.changePct==null?'':(info.changePct>0?'▲ ':info.changePct<0?'▼ ':'· ')+Math.abs(info.changePct).toFixed(2)+'%';
   return`<span class="ticker-chip" style="color:${col};border-color:${col}44;background:${col}14" title="Live price, updates every 10 min${info.prevDate?' · vs. '+fmtDayHdr(info.prevDate):''}">${fmtPriceTick(info.price)}${pctTxt?`<span class="ticker-chip-pct">${pctTxt}</span>`:''}</span>`;
 }
 // Die groessten FX-Gewinner/-Verlierer seit dem letzten verfuegbaren

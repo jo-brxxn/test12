@@ -4169,7 +4169,7 @@ jobs:
             echo "[debug] price archive: fresh (< 7 days), skipping"; exit 0
           fi
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI NVDA:NVDA AMD:AMD INTC:INTC AAPL:AAPL GOOGL:GOOGL MSFT:MSFT AMZN:AMZN META:META TSLA:TSLA AVGO:AVGO ORCL:ORCL PLTR:PLTR CRWV:CRWV"
+          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI"
           for PAIR in $MAPS; do
             ASSET="${PAIR%%:*}"; SYM="${PAIR#*:}"
             ENC=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$SYM")
@@ -4221,7 +4221,7 @@ jobs:
         continue-on-error: true
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI NVDA:NVDA AMD:AMD INTC:INTC AAPL:AAPL GOOGL:GOOGL MSFT:MSFT AMZN:AMZN META:META TSLA:TSLA AVGO:AVGO ORCL:ORCL PLTR:PLTR CRWV:CRWV"
+          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI"
           for PAIR in $MAPS; do
             ASSET="${PAIR%%:*}"; SYM="${PAIR#*:}"
             ENC=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$SYM")
@@ -4236,7 +4236,7 @@ jobs:
             const r7=v=>Number(v.toPrecision(7));
             let alt={};try{alt=JSON.parse(fs.readFileSync("trend_data.json","utf8")).assets||{};}catch(e){}
             const out={};let ok=0;
-            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","BTC","SP500","NAS","DAX","NVDA","AMD","INTC","AAPL","GOOGL","MSFT","AMZN","META","TSLA","AVGO","ORCL","PLTR","CRWV"];
+            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","BTC","SP500","NAS","DAX"];   // Aktien bewusst nicht (2026-11-13: Feed-Groesse, siehe check/feedgroesse.js)
             const FXL=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD"],NU=FXL.filter(c=>c!=="USD");
             // 1. Durchgang: je Asset die geschlossenen 4h-Bloecke.
             const KZ={},SYM={};
