@@ -91,8 +91,12 @@ function quartale(eintraege){
   return[...best.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([end,v])=>({end,val:v.val,filed:v.filed}));
 }
 function augenblick(eintraege){   // Stichtagswerte (Eigenkapital, Aktienzahl)
-  const m=new Map();for(const e of eintraege){if(!e.end||e.val==null||e.start)continue;const a=m.get(e.end);if(!a||e.filed<a.filed)m.set(e.end,{val:e.val,filed:e.filed});}
-  return[...m.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([end,v])=>({end,val:v.val,filed:v.filed}));
+  // ⚠ Mehrere Aktienklassen (Alphabet: A, B, C) stehen als getrennte Eintraege
+  // mit demselben Stichtag in DERSELBEN Meldung (accn) - sie werden addiert.
+  const proMeldung=new Map();
+  for(const e of eintraege){if(!e.end||e.val==null||e.start)continue;const k=e.end+'|'+(e.accn||e.filed);const a=proMeldung.get(k);if(a)a.val+=e.val;else proMeldung.set(k,{end:e.end,val:e.val,filed:e.filed});}
+  const m=new Map();for(const v of proMeldung.values()){const a=m.get(v.end);if(!a||v.filed<a.filed)m.set(v.end,v);}
+  return[...m.values()].sort((a,b)=>a.end<b.end?-1:1);
 }
 function factEintraege(f,tags,einheit){
   let alle=[];
@@ -108,7 +112,11 @@ async function secQuartale(cik){
   const ocf=quartale(factEintraege(g,['NetCashProvidedByUsedInOperatingActivities'],'USD'));
   const capex=quartale(factEintraege(g,['PaymentsToAcquirePropertyPlantAndEquipment','PaymentsToAcquireProductiveAssets'],'USD'));
   const ek=augenblick(factEintraege(g,['StockholdersEquity'],'USD'));
-  const aktien=augenblick(factEintraege(dei,['EntityCommonStockSharesOutstanding'],'shares'));
+  let aktien=augenblick(factEintraege(dei,['EntityCommonStockSharesOutstanding'],'shares'));
+  // Rueckfall: verwaesserte Durchschnitts-Aktienzahl des Quartals (nur direkte
+  // 3-Monats-Werte - Durchschnitte lassen sich nicht aus YTD differenzieren)
+  if(aktien.length<8)aktien=factEintraege(g,['WeightedAverageNumberOfDilutedSharesOutstanding'],'shares').filter(x=>x.start&&tage(x.start,x.end)>=80&&tage(x.start,x.end)<=100)
+    .reduce((m,x)=>{const a=m.find(y=>y.end===x.end);if(!a)m.push({end:x.end,val:x.val,filed:x.filed});return m;},[]).sort((a,b)=>a.end<b.end?-1:1);
   return{umsatz,gewinn,ocf,capex,ek,aktien};
 }
 // TTM-Reihe: Summe der letzten 4 lueckenlosen Quartale, gueltig ab Meldedatum
@@ -150,7 +158,10 @@ function splitFaktoren(aktien,wochen){
   }
   if(aktien.length)aktien[aktien.length-1].splitFaktor=aktien[aktien.length-1].splitFaktor||1;
 }
-const mittel=(l,seitDatum)=>{const v=l.filter(p=>p[0]>=seitDatum).map(p=>p[1]).filter(x=>x!=null&&isFinite(x));return v.length>=20?r2(v.reduce((s,x)=>s+x,0)/v.length,1):null;};
+// Schnitt nur, wenn die Kennzahl in mindestens 60 % der Wochen existierte -
+// sonst (Intel 2023-2026: meist Verlust) waere ein P/E-Schnitt aus den paar
+// Gewinnwochen eine Zufallszahl (gemessen: 266).
+const mittel=(l,seitDatum,wochen)=>{const v=l.filter(p=>p[0]>=seitDatum).map(p=>p[1]).filter(x=>x!=null&&isFinite(x));const n=wochen.filter(p=>p[0]>=seitDatum).length;return v.length>=20&&v.length>=0.6*n?r2(v.reduce((s,x)=>s+x,0)/v.length,1):null;};
 function wachstumYoY(q){   // Quartal gegen Vorjahresquartal, in %
   return q.map((x,i)=>{const v=q.slice(0,i).reverse().find(y=>{const d=tage(y.end,x.end);return d>350&&d<380;});return v&&v.val>0?{end:x.end,val:(x.val/v.val-1)*100}:null;}).filter(Boolean);
 }
@@ -169,7 +180,7 @@ for(const t of Object.keys(AKTIEN)){
     const v=verlauf(wochen,sec);
     const seit=new Date(Date.now()-3*365*TAG).toISOString().slice(0,10),seit5=new Date(Date.now()-5*365*TAG).toISOString().slice(0,10);
     o.verlauf={pe:v.pe.filter(p=>p[0]>=seit5),ps:v.ps.filter(p=>p[0]>=seit5),pfcf:v.pfcf.filter(p=>p[0]>=seit5)};
-    o.schnitt3j={tpe:mittel(v.pe,seit),ps:mittel(v.ps,seit),pfcf:mittel(v.pfcf,seit)};
+    o.schnitt3j={tpe:mittel(v.pe,seit,wochen),ps:mittel(v.ps,seit,wochen),pfcf:mittel(v.pfcf,seit,wochen)};
     // aktuelle P/FCF aus SEC-FCF (dieselbe Rechnung wie der Verlauf)
     const lf=v.F[v.F.length-1];if(o.mcap&&lf&&lf.val>0)o.pfcf=r2(o.mcap/lf.val,1);else if(lf&&lf.val<=0)o.pfcf=null;
     o.fcfTtm=lf?lf.val:null;
