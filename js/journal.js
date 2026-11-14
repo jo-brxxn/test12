@@ -48,7 +48,7 @@ import {indScoreParts,indScore,indNormBreakdown,symScore,symCmpFactor,symScoreCm
   SCORE_MODEL_TAG,SCORE_MODEL_VERSION,IND_STALE_CYCLES,indCycleDays,BOND_HALF_PT,DECAY_HALFLIFE_CYCLES} from './score.js';
 import {todayStr,dateAddStr,fmtDayShort} from './calendar.js';
 import {BC,FX} from './constants.js';
-import {syms,escH,scoreLog,trendAssets,indName,saveQuotaFail,isNonFx,macroCcyFor,effDeriveRules,MACRO_DERIVE_RUBS} from './main.js';
+import {syms,escH,scoreLog,trendAssets,scoreAssets,indName,saveQuotaFail,isNonFx,macroCcyFor,effDeriveRules,MACRO_DERIVE_RUBS} from './main.js';
 
 // ── Konstanten ─────────────────────────────────────────────────────────────
 const JOURNAL_KEY='fxpro_scorejournal';
@@ -358,7 +358,7 @@ function jrErfassen(){
     const txt=s=>{s=String(s==null?'':s);let i=textIdx.get(s);if(i==null){i=texte.length;texte.push(s);textIdx.set(s,i);}return i;};
     const lauf={id:Math.random().toString(36).slice(2,10),t:jetzt,tag,a:{}};
     if(_jrAnlass&&Date.now()-_jrAnlassT<120000){lauf.q=_jrAnlass;}
-    trendAssets().forEach(id=>{
+    scoreAssets().forEach(id=>{
       const sym=(syms||[]).find(s=>s.id===id);if(!sym)return;
       const basis=scoreJournal.base[id];
       // ⚠ Die Zeit eines Eintrags ist nie frueher als seine Basis: zwei

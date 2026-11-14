@@ -30,7 +30,7 @@ import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.j
 import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './kachelbild.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
-export {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
+export {scoreAssets,closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
   // Was js/zentralbank.js von hier braucht (Notizen = research.notes, Banner-Quittung = zbQuittung).
   research,resNotes,trashResNote,assetIconHtml,invertBias,zbQuittung,zbEntscheid,resZbNeu,openResNote,abNoteHl,
   // Was js/trades.js (Journal) fuer seine Charts von hier braucht.
@@ -18260,6 +18260,11 @@ function trendAssets(){
   // 13 nahezu deckungsgleiche Linien verdeckten in Trends die Fokus-Linien (check/designregeln.js L).
   return [...FX,'GOLD','SILVER','OIL','BTC','SP500','NAS','DAX',...Object.keys(YIELD_CCY)].filter(id=>present.has(id));
 }
+// Alle Assets MIT Score (Score-Journal, Score-Verlauf) - Trends-Assets PLUS Aktien.
+// ⚠ Nicht trendAssets() dafuer nehmen: dort fehlen die Aktien bewusst (Anzeige).
+// Gemessen 2026-11-14 (CI 725 rot, check/journal.js A): 11 Aktien bewegten den Score
+// ohne Journal-Eintrag, und recordScoreHist schrieb fuer sie seit 720 keinen Verlauf.
+function scoreAssets(){const present=new Set(syms.map(s=>s.id));return [...trendAssets(),...STOCK_IDS.filter(id=>present.has(id))];}
 // Taeglicher Score-Schnappschuss je FX-Waehrung. Pro Tag ein Eintrag:
 // [Datum, Gesamt-Score, Inflation, Labour Market, Economic Growth]. Wird beim
 // Laden und nach jeder Datenaktualisierung aufgerufen; aendert sich der Score
@@ -18326,7 +18331,7 @@ function scoreHistAufzeichenbar(){
 function recordScoreHist(){
   if(!scoreHistAufzeichenbar())return;
   const t=todayStr();let changed=false;
-  trendAssets().forEach(id=>{
+  scoreAssets().forEach(id=>{
     const sym=syms.find(s=>s.id===id);if(!sym)return;
     const tot=symScoreCmp(sym);
     // 8. und 9. Feld (ab 2026-08-23): der Fairness-Faktor und der ROHE

@@ -22179,3 +22179,10 @@ Nutzer: *„Ja maximale Historie“*.
 **Nachher:** alle Aktionen scrollTop und Kartenlage unveraendert (±0), Leiste klebt (y −1 / 1 px), Liste bleibt offen.
 
 **Waechter:** `check/btcsentiment.js` Abschnitt I; `--gegenprobe-sprung` (Zustand vorher) → rot.
+
+## 2026-11-14 — CI 725 rot: Aktien ohne Score-Journal und ohne Score-Verlauf (VERSION-CHECK-726)
+
+**Befund CI 725 (Teil 5/6):** `journal` A: *21 Assets bewegt, 11 OHNE Journal-Eintrag (AAPL 4.6→4.5, MSFT, GOOGL, AMZN, NVDA, META …)*; `display`: DAX-Kopf 1.1 statt 1 (lokal gruen, nicht reproduzierbar).
+**Gegenprobe:** derselbe Fehler mit dem Code von 722 + heutigen Daten → nicht BTC Sentiment, sondern 720: Aktien aus `trendAssets()` genommen (Trends-Anzeige). Journal (`jrLauf`) und `recordScoreHist` benutzten dieselbe Liste als "alle Assets mit Score". Sichtbar erst, seit der Feed Aktienkurse liefert und ihre Scores sich bewegen.
+**Behoben:** `scoreAssets()` = `trendAssets()` + Aktien, fuer Journal und Score-Verlauf. Trends/Korrelation bleiben bei `trendAssets()`.
+**Nachher:** journal A *22 bewegte Assets, alle mit Eintrag*; scorediff Symbol-Score unveraendert; historie, score, scorenachrechnung, display, designregeln, aktien gruen.
