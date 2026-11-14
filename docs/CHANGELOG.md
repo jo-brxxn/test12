@@ -22151,3 +22151,5 @@ Nutzer: *„Ja maximale Historie“*.
 - Browser (Testdaten): 13 Charts, Backtest MVRV > 90. Perz. = 82 Signale (unabhaengig nachgerechnet), Handy: Backtest-Tabelle lief ueber → zwei Tabellen untereinander.
 
 **Waechter:** `check/btcsentiment.js` (A–H), Gegenprobe Look-ahead → D rot. `check/feedgroesse.js`: `EINZELN`-Liste (eigener Deckel, nicht in der Summe).
+
+**Nachtrag 724 (erster echter Feed-Lauf 2026-11-14 13:32):** 218 KB. Hyperliquid **HTTP 429** (Erstabruf ~64 Anfragen ohne Pause) → 400 ms Abstand + 3 Versuche mit Wartezeit. bitbo-ETF: neuester Tag 11.11. fast nur Nullen (IBIT 0, nur MSBT 26,1) = Emittenten melden spaet → Kopf zeigt *latest day preliminary*, der Feed ueberschreibt den Tag in spaeteren Laeufen. Einheit Mio. USD plausibel (IBIT −432,7 am 02.11.). Score: am letzten Tag nur 2 von 7 Komponenten (Wert 17 = "180-day low" aus zu wenig Daten) → letztes Perzentil je Komponente hoechstens 7 Tage weiter, mind. 3 Komponenten.

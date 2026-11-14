@@ -142,10 +142,19 @@ function perz180(a) {
 function gewichte() { const g = (H && H.gewichte && H.gewichte()) || {}; const o = {}; SCORE_IND.forEach(i => { o[i.k] = g[i.k] != null && isFinite(+g[i.k]) ? +g[i.k] : 1; }); return o; }
 export function scoreReihe(DD = D, g = gewichte()) {
   if (!DD) return [];
-  const m = new Map();
-  SCORE_IND.forEach(i => { const w = g[i.k]; if (!(w > 0)) return; const a = DD.S[i.k] || [], p = DD.roll[i.k].pct;
-    a.forEach(([t], j) => { if (p[j] == null) return; const x = m.get(t) || [0, 0, 0]; x[0] += w * p[j]; x[1] += w; x[2]++; m.set(t, x); }); });
-  return [...m.entries()].filter(([, x]) => x[2] >= 2).sort((a, b) => a[0] - b[0]).map(([t, x]) => [t, x[0] / x[1], x[2]]);
+  // Echte Daten 2026-11-14: STH-Werte kommen ~7 Tage verzoegert, Binance-Funding monatlich -
+  // am letzten Tag lagen nur 2 von 7 Komponenten vor. Deshalb zaehlt je Komponente ihr
+  // letztes Perzentil hoechstens 7 Tage weiter (kein Schaetzwert, der zuletzt gemeldete),
+  // und ein Tag braucht mind. 3 Komponenten.
+  const komp = SCORE_IND.filter(i => g[i.k] > 0).map(i => { const a = DD.S[i.k] || [], p = DD.roll[i.k].pct; return { w: g[i.k], a: a.map((e, j) => [e[0], p[j]]).filter(e => e[1] != null) }; }).filter(k => k.a.length);
+  const tage = new Set(); komp.forEach(k => k.a.forEach(e => tage.add(e[0])));
+  const out = [];
+  [...tage].sort((x, y) => x - y).forEach(t => {
+    let s = 0, w = 0, n = 0;
+    komp.forEach(k => { const j = naechster(k.a, t); if (j >= 0 && t - k.a[j][0] <= 7 * TAG) { s += k.w * k.a[j][1]; w += k.w; n++; } });
+    if (n >= 3) out.push([t, s / w, n]);
+  });
+  return out;
 }
 /** Fuer das bestehende Score-System: letzter Gesamtwert 0-100 (hoch = heiss/euphorisch). */
 export function btcSentimentScore() {
@@ -235,15 +244,18 @@ function kopfHtml(i, a) {
   if (i.k === 'sth_prem' && D.extra.sthRp.length) zusatz = ` · STH cost <b>$${Math.round(D.extra.sthRp[D.extra.sthRp.length - 1][1]).toLocaleString('en-US')}</b>`;
   if (i.k === 'oi_agg' && D.extra.oiAggBtc.length) zusatz = ` · <b>${Math.round(D.extra.oiAggBtc[D.extra.oiAggBtc.length - 1][1]).toLocaleString('en-US')} BTC</b>`;
   const st = D.stand[i.stand];
+  // bitbo: der neueste Tag ist oft unvollstaendig (Emittenten melden spaet; Feed 2026-11-14:
+  // 11.11. fast nur Nullen). Der Feed ueberschreibt ihn in spaeteren Laeufen.
+  const vorl = i.k === 'etf' && l[0] >= Date.now() - 4 * TAG ? ` · <b class="bs-bear">latest day preliminary</b> <i>issuers report late</i>` : '';
   return `<div class="bs-kopf"><span class="bs-wert">${esc(i.fmt(l[1]))}</span>${zusatz ? `<span class="bs-zus">${zusatz}</span>` : ''}
     <span class="bs-pz">180d percentile <b>${p == null ? '–' : Math.round(p)}</b></span></div>
     <div class="bs-ein">${ein}</div>
-    <div class="bs-meta"><i>Data to ${esc(fmtTag(l[0]))} · updated ${esc(fmtZeit(st))} · ${esc(i.quelle)}</i>${D.fehler[i.stand] ? ` · <b class="bs-bear">source issue</b> <i>${esc(D.fehler[i.stand])}</i>` : ''}</div>`;
+    <div class="bs-meta"><i>Data to ${esc(fmtTag(l[0]))} · updated ${esc(fmtZeit(st))} · ${esc(i.quelle)}</i>${vorl}${D.fehler[i.stand] ? ` · <b class="bs-bear">source issue</b> <i>${esc(D.fehler[i.stand])}</i>` : ''}</div>`;
 }
 function badges(i, a) {
   let s = '';
   if (i.sammelt && a.length && a[0][0] > Date.now() - 365 * TAG) s += `<span class="bs-badge">Collecting since ${esc(fmtTag(a[0][0]))} · ${a.length} day${a.length === 1 ? '' : 's'}</span>`;
-  else if (i.sammelt && !a.length) s += `<span class="bs-badge">Collecting · first value after the next feed run</span>`;
+  else if (i.sammelt && !a.length) s += `<span class="bs-badge">Collecting · first value within a day</span>`;
   return s;
 }
 function karteHtml(i) {
@@ -270,14 +282,14 @@ function scoreKarteHtml() {
     return `<tr><td>${esc(i.n)}</td><td class="bs-num">${pz == null ? '–' : Math.round(pz)}</td><td><select data-bs="gewicht" data-k="${i.k}" aria-label="Weight for ${esc(i.n)}">${[0, 0.5, 1, 1.5, 2, 3].map(w => `<option value="${w}"${w === g[i.k] ? ' selected' : ''}>${w}×</option>`).join('')}</select></td></tr>`; }).join('');
   const sc = { k: 'score', n: 'Sentiment score', hi: ['Score near a 180-day high', 'euphoric', 'bear'], lo: ['Score near a 180-day low', 'fearful', 'bull'], fmt: v => v.toFixed(0), quelle: 'percentile average of the core indicators', stand: 'coinmetrics' };
   return `<div class="bs-karte bs-score" data-k="score">
-    <div class="bs-titel">Sentiment score <span class="bs-einheit">0–100 · high = hot</span>${l ? `<span class="bs-badge">${l[2]} of ${SCORE_IND.length} components today</span>` : ''}</div>
+    <div class="bs-titel">Sentiment score <span class="bs-einheit">0–100 · high = hot</span>${l ? `<span class="bs-badge">${l[2]} of ${SCORE_IND.length} components</span>` : ''}</div>
     ${kopfHtml(sc, a)}
     ${chartLeiste('score', o)}
     <div class="bs-chart" data-k="score"></div>
     ${btHtml({ k: 'score', n: 'Sentiment score' }, o)}
     <details class="bs-gew"><summary>Weights · current percentile per component</summary>
     <table class="bs-tab"><thead><tr><th>Component</th><th class="bs-num">Pct</th><th>Weight</th></tr></thead><tbody>${zeilen}</tbody></table>
-    <div class="bs-ein"><i>Percentile vs. the prior 365 days · score needs at least 2 components on a day</i></div></details></div>`;
+    <div class="bs-ein"><i>Percentile vs. the prior 365 days · a component counts up to 7 days after its last value · at least 3 components per day</i></div></details></div>`;
 }
 function btHtml(i, o) {
   if (!o.btOffen) return '';

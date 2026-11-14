@@ -122,7 +122,13 @@ await schritt('funding_hyperliquid', async () => {
   let ab = Date.parse((letzter('fund_hl') || '2023-05-01') + 'T00:00:00Z') - 2 * TAG;
   const tag = {};
   while (ab < Date.now() && Date.now() < STOPP) {
-    const j = await holen('https://api.hyperliquid.xyz/info', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'fundingHistory', coin: 'BTC', startTime: ab }) });
+    // Feed-Lauf 2026-11-14: Erstabruf ohne Pause -> HTTP 429. Jetzt 400 ms Abstand + 3 Versuche.
+    let j = null;
+    for (let v = 0; v < 3 && !j; v++) {
+      try { j = await holen('https://api.hyperliquid.xyz/info', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'fundingHistory', coin: 'BTC', startTime: ab }) }); }
+      catch (e) { if (!/429/.test(e.message) || v === 2) throw e; await new Promise(r => setTimeout(r, 4000 * (v + 1))); }
+    }
+    await new Promise(r => setTimeout(r, 400));
     if (!j.length) break;
     j.forEach(z => { (tag[iso(z.time)] ||= []).push(+z.fundingRate * 8); }); // stuendlich -> je 8 h
     const neu = j[j.length - 1].time + 1; if (neu <= ab) break; ab = neu;

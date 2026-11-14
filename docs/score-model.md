@@ -761,5 +761,5 @@ ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
 
 - Eigener Wert 0–100 im Fenster BTC Sentiment (`js/btc-sentiment.js`, `scoreReihe`).
 - Formel: gewichtetes Mittel der **rollierenden Perzentile** (365 Tage VOR dem Tag) von ETF-Flows, Funding, OI Binance, Stablecoin-30T, MVRV, STH-SOPR, Preis vs. STH-Kosten; hoch = heiss/euphorisch.
-- Ein Tag zaehlt erst ab **2 Komponenten mit Wert**; Gewichte `bsGewichte` (synchronisiert, Standard 1).
+- Ein Tag zaehlt erst ab **3 Komponenten**; jede Komponente zaehlt ihr letztes Perzentil hoechstens **7 Tage** weiter (STH ~7 Tage verzoegert, Binance-Funding monatlich - echte Daten 2026-11-14: sonst nur 2 von 7 am letzten Tag); Gewichte `bsGewichte` (synchronisiert, Standard 1).
 - **Andocken**: `btcSentimentScore()` (auch `window.btcSentimentScore`) → `{datum, wert, komponenten, gewichte}`. Fliesst bewusst NICHT in `SCORE_MODEL_VERSION`/BTC-Bias ein — das waere eine Score-Formel-Aenderung mit eigenem OK + Versions-Bump.
