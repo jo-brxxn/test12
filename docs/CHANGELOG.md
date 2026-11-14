@@ -22134,3 +22134,20 @@ Nutzer: *„Ja maximale Historie“*.
 - Vollbild lädt `fng_hist.json` und das 10-Jahres-Kursarchiv erst beim Öffnen; BTC bei großer Spanne logarithmisch; Zeiträume 1M–5Y + Max (Standard Max).
 - Feed-Budget (`check/feedgroesse.js`): `stock_data.json` und `fng_hist.json` jetzt mitgezählt; dafür in `stock_data.json` die ungenutzten P/S- und P/FCF-Verläufe entfernt und den P/E-Verlauf auf jede zweite Woche ausgedünnt (186 → 44 KB). Gesamt 3568 KB (+ ~12 KB fng_hist) von 3600.
 - Testfund: im Browsertest fing der Service Worker den Abruf vor der Test-Umleitung ab (404) – Tests mit `serviceWorkers:'block'`.
+
+## 2026-11-14 — BTC Sentiment (VERSION-CHECK-723)
+
+**Auftrag (Nutzer 2026-11-13):** neues Modul "BTC Sentiment", Phase 1 Quellen pruefen (`docs/SOURCES.md`), Phase 2 Platzhalter mit Demo-Daten, Charts mit *vs BTC*, Backtest, Gesamt-Score. Auf die Kritik hin (*„Mach alles so wie du es sagst“*, 2026-11-14) umgesetzt:
+- **Keine Demo-Daten** (Regel 4), nutzbare Quellen direkt echt, fehlende Historie = *Collecting since*.
+- Funding-Backtest nur Binance (gleiche Zusammensetzung seit 2020), Chart = Mittel der Boersen.
+- Perzentil-Baender 365 Tage rollierend, nur Daten VOR dem Tag.
+- Score aus den Komponenten, die an einem Tag Daten haben (mind. 2).
+- Eigene SVG-Charts (kein Chart-Paket).
+- Eigene Datei mit eigenem Deckel statt Startsumme (25 KB frei).
+
+**Messwerte:**
+- Sonde (Runner): Binance-API 451 und Bybit 403 (US-IP), Farside 403 (Cloudflare), CoinGecko 401 ohne Key; Coin Metrics Community frei mit PriceUSD/CapMVRVCur/FlowIn/OutExNtv ab 2010/2011.
+- Feed-Pruefmodus: 1. Lauf Deribit seriell **8 min** → Zeitbudget fuer alle aufgebraucht; danach je Quelle 90 s + Deribit parallel: Deribit **11,7 s**, gesamt ~2 min, 222 KB, 0 Fehler.
+- Browser (Testdaten): 13 Charts, Backtest MVRV > 90. Perz. = 82 Signale (unabhaengig nachgerechnet), Handy: Backtest-Tabelle lief ueber → zwei Tabellen untereinander.
+
+**Waechter:** `check/btcsentiment.js` (A–H), Gegenprobe Look-ahead → D rot. `check/feedgroesse.js`: `EINZELN`-Liste (eigener Deckel, nicht in der Summe).

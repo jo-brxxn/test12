@@ -757,3 +757,9 @@ muss dasselbe nehmen — nie `new Date().toISOString().slice(0,10)` (UTC). Bis
 Berlin zählte die Stärke-Note den heutigen Live-Tag als Vergangenheit und
 ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
 
+## BTC Sentiment Score — NICHT Teil des Asset-Scores (2026-11-14, 723)
+
+- Eigener Wert 0–100 im Fenster BTC Sentiment (`js/btc-sentiment.js`, `scoreReihe`).
+- Formel: gewichtetes Mittel der **rollierenden Perzentile** (365 Tage VOR dem Tag) von ETF-Flows, Funding, OI Binance, Stablecoin-30T, MVRV, STH-SOPR, Preis vs. STH-Kosten; hoch = heiss/euphorisch.
+- Ein Tag zaehlt erst ab **2 Komponenten mit Wert**; Gewichte `bsGewichte` (synchronisiert, Standard 1).
+- **Andocken**: `btcSentimentScore()` (auch `window.btcSentimentScore`) → `{datum, wert, komponenten, gewichte}`. Fliesst bewusst NICHT in `SCORE_MODEL_VERSION`/BTC-Bias ein — das waere eine Score-Formel-Aenderung mit eigenem OK + Versions-Bump.

@@ -68,3 +68,11 @@ Claude-Umgebung erreicht keinen der Hosts — alles hier ist Runner-Messung.
 - **Glassnode / CryptoQuant** (STH-Kennzahlen mit voller Historie, Exchange-Flows) — Key + Abo.
 - **SoSoValue** (ETF-Flows mit Historie seit 2024-01) — Key, laut Anbieter kostenlos (nicht verifiziert).
 - **BGeometrics** (STH-Historie vor 2022-11, ohne Verzug) — Abo.
+
+## Umsetzung (Phase 2, 2026-11-14, VERSION-CHECK-723)
+
+- **Feed**: `tools/btc-sentiment.mjs` im stuendlichen Workflow → `btc_sentiment.json` (~222 KB, nur beim Oeffnen geladen, eigener Deckel 900 KB, nicht in der Startsumme).
+- **Inkrementell**: alte Datei wird ergaenzt; Quellen ohne Historie wachsen ab dem ersten Lauf. BGeometrics hoechstens 1 Abruf je Reihe und Tag (Limit 15/Tag). Jede Quelle 90 s Zeitfenster.
+- **Gemessen im Pruefmodus** (Lauf 2026-11-14, Runner): alle 15 Schritte ohne Fehler; Binance-OI-Backfill 1809 Tage in 60 s; Funding Binance bis Vormonatsende (Monatsarchiv).
+- **Keine Demo-Daten** (Regel 4). Statt Platzhaltern: echte Werte, bei fehlender Historie Badge *Collecting since*.
+- **Offen**: Einheit der bitbo-Tabelle (Mio. USD angenommen, im Feed-Log `etf bitbo Einheit:` pruefen); Nutzungsbedingungen aller Quellen manuell lesen.

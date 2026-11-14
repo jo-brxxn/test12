@@ -23,6 +23,7 @@ import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 // Hero-Zeichnung des Dashboards (Nutzer 2026-11-06, siehe Kopf von heroart.js).
 import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
+import {bsHelfer,bsAuf,btcSentimentScore} from './btc-sentiment.js';
 import {STOCK_IDS,STOCK_ACCENT,STOCK_DEF,aktienHelfer,aktienDatenHolen,aktieWarnHtml,karteProfil,karteBewertung,karteQualitaet,karteAnalysten,karteZahlen} from './aktien.js';
 // Sektoren-Katalog der MACRO-Zeile (2026-11-12, nur Anzeige) - dieselbe Liste baut sektor_data.json.
 import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.js';
@@ -5971,7 +5972,7 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid},SNAP_REPLACER);}
+function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte},SNAP_REPLACER);}
 // Banner-Quittungen der Zentralbank-Karte: nur Waehrung -> Datum, alles andere faellt raus.
 function zbEntscheidRein(v){
   const o={};
@@ -6200,7 +6201,7 @@ function applySnapRoh(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6453,6 +6454,11 @@ let zbQuittung={};
 // ueberschreibt den Wert aus dem Zins-Feed ({USD:{'2026-09-16':0.25}}). Ohne
 // Eintrag zeigt die Zentralbank-Karte den Feed-Wert.
 let zbEntscheid={};
+// bsGewichte (seit 2026-11-14, VERSION-CHECK-723): Gewichte der Komponenten im
+// BTC-Sentiment-Score ({etf:1, funding:2, ...}, fehlend = 1). Laeuft ueber
+// snap()/applySnap() + neueFelderBehalten() wie zbEntscheid - auf allen Geraeten gleich.
+let bsGewichte={};
+function bsGewichteRein(v){const o={};if(v&&typeof v==='object')Object.keys(v).forEach(k=>{const w=+v[k];if(/^[a-z0-9_]{1,20}$/.test(k)&&isFinite(w)&&w>=0&&w<=5)o[k]=w;});return o;}
 let syms,pairCats,pairs,noteCats,research,researchFolders=[],researchAnalysis={},calEvts,widgets,customIds=[],rubOrder=[],sbOrder={},catOrder=[],rateWatchCustom={},indLinkCustom={},btReasons={},seedNoteFlags={},dashV=0,eventAlerts=[],priceAlerts=[],dashRemovedTypes=[];
 // Risk-Sentiment-Regler im Dashboard (Nutzer-Wunsch 2026-07-13): riskEnvLevel
 // 0=keine/1=halbe/2=volle Risiko-Umgebung, riskEnvCfg={assetId:'bullish'|
@@ -6726,7 +6732,7 @@ function loadState(){
       // Wert ist gespeichert, kommt aber nie an. Genau so ging der Test
       // 2026-09-07 aus (angepinnte Seed-Notiz nach dem Neuladen ohne Pin).
       btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};
-      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);
+      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);
       seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};
       eventAlerts=pruneEventAlerts(d.eventAlerts||[]);
       priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];
@@ -6734,7 +6740,7 @@ function loadState(){
       recomputeAuto();
       return;}
   }catch(e){}
-  syms=DEF.map(d=>({...d}));pairCats=mkPairCats();pairs=[];noteCats=mkNCs();research=mkResearch();researchFolders=[];researchAnalysis={};zbQuittung={};zbEntscheid={};calEvts=mkCalEvts();widgets=mkWidgets();dashRemovedTypes=[];customIds=[];rubOrder=mkRubOrder();sbOrder={};catOrder=[];rateWatchCustom={};indLinkCustom={};btReasons={};seedNoteFlags={};eventAlerts=[];priceAlerts=[];
+  syms=DEF.map(d=>({...d}));pairCats=mkPairCats();pairs=[];noteCats=mkNCs();research=mkResearch();researchFolders=[];researchAnalysis={};zbQuittung={};zbEntscheid={};bsGewichte={};calEvts=mkCalEvts();widgets=mkWidgets();dashRemovedTypes=[];customIds=[];rubOrder=mkRubOrder();sbOrder={};catOrder=[];rateWatchCustom={};indLinkCustom={};btReasons={};seedNoteFlags={};eventAlerts=[];priceAlerts=[];
   syms.forEach(addMacroRub);applyRubOrder();
   // Ein brandneuer Nutzer (kein gespeicherter Zustand) durchlaeuft
   // migrateResearch() nie (mkResearch() liefert bereits einen frischen,
@@ -7266,7 +7272,8 @@ function neueFelderBehalten(fremd,lokal){
   if(window.__gpKeinBehalten)return fremd;   // nur check/altgeraet.js --gegenprobe
   // Banner-Quittungen der Zentralbank-Karte (seit 2026-10-27). Bis 715 auch
   // mkAnsicht/mkTab/mkOpt/mkInds/mkRange der Charts-Ansicht (2026-11-12 geloescht).
-  ['zbQuittung','zbEntscheid'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
+  // bsGewichte: Gewichte des BTC-Sentiment-Scores (seit 2026-11-14, 723).
+  ['zbQuittung','zbEntscheid','bsGewichte'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
   const fa=fremd.researchAnalysis,la=lokal.researchAnalysis;
@@ -11519,7 +11526,10 @@ function abQuickZeileHtml(c){
   // Country profile nur bei den acht Waehrungen (wie die Karte selbst) -
   // bei Non-FX gaebe es nichts zu oeffnen, der Knopf faellt weg.
   const cpKnopf=FX.includes(c.id)?`<button class="aql" onclick="cpFensterAuf()" title="Country profile — central bank, economy and what moves ${escH(c.id)}, in a window">${icn('globe',14)}<span>Country profile</span></button>`:'';
-  return`<div class="ab-qzeile${cpKnopf?' q5':''}">${links}${notizKnopf}${cpKnopf}</div>`;
+  // BTC Sentiment (Nutzer 2026-11-13): eigenes Vollbild mit ETF-Flows, Funding,
+  // Open Interest, On-chain usw. (js/btc-sentiment.js) - nur auf der BTC-Seite.
+  const bsKnopf=c.id==='BTC'?`<button class="aql" onclick="bsAuf()" title="BTC Sentiment — ETF flows, funding, open interest, on-chain, in a full-screen window">${icn('gauge',14)}<span>BTC Sentiment</span></button>`:'';
+  return`<div class="ab-qzeile${cpKnopf||bsKnopf?' q5':''}">${links}${notizKnopf}${cpKnopf}${bsKnopf}</div>`;
 }
 // Angepinnte Notizen. Bewusst NUR die angepinnten: die vollstaendige Liste
 // steht eine Taste weiter unter "All notes", und eine zweite vollstaendige
@@ -17601,7 +17611,7 @@ function dashStatsHtml(z){
 // Inhalt 560 px fest in einem 538-px-Fenster). Jetzt: fast seitenbreit, der
 // Inhalt bricht um, gescrollt wird nur senkrecht. Andere Erklaer-Fenster
 // setzen die Klasse zurueck (openCardInfo/faktenFenster).
-function dashFensterGross(an){const m=document.querySelector('#mCardInfo .modal');if(m){m.classList.toggle('dx-gross',!!an);m.classList.remove('fg-voll');}}
+function dashFensterGross(an){const m=document.querySelector('#mCardInfo .modal');if(m){m.classList.toggle('dx-gross',!!an);m.classList.remove('fg-voll','bs-voll');}}
 function dashPositionenFenster(){
   dashFensterGross(true);
   const t=document.getElementById('mCardInfoTitle');if(t)t.textContent='Open positions';
@@ -27009,6 +27019,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 // ══ INIT ══════════════════════════════════════════════════════════
+try{bsHelfer({DATA_BASE,FEED_TIMEOUT_MS,openM,dashFensterGross,gewichte:()=>bsGewichte,setGewichte:g=>{pushU();bsGewichte=bsGewichteRein(g);save();},meldung:t=>alert(t)});}catch(e){}
 try{aktienHelfer({escH,biasCss,fmtDayHdr,daysUntil,abTile,AB_LEER,DATA_BASE,FEED_TIMEOUT_MS,renderDetail,curPage:()=>curPage,getSym,nachDaten:()=>renderSidebar()});}catch(e){}
 // Aktien-Kennzahlen frueh laden: die Seitenleiste zeigt Warnzeichen fuer Finanzrisiken.
 try{setTimeout(aktienDatenHolen,2500);}catch(e){}
@@ -27789,7 +27800,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

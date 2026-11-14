@@ -1664,3 +1664,11 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
   - Band **Analysts & earnings** statt Positioning: Analysts | Earnings | Seasonality (kein COT, kein Retail).
 - **Symbol:** Kursverlauf im Rahmen wie die Indizes, eigene Akzentfarbe (`STOCK_ACCENT`, kein Rot).
 - **Nicht in Trends und Set-ups** (seit 720): Score praktisch = S&P 500 (dieselben USD-Karten) – 13 deckungsgleiche Linien/Zeilen. Nicht im 10-Jahres-Kursarchiv und 4h-Trend (Feed-Größe); 3 Jahre Tageskurse in price_data.json.
+
+## BTC Sentiment (2026-11-14, VERSION-CHECK-723)
+
+- **Einstieg**: Knopf **BTC Sentiment** in der Schnellzugriffszeile der BTC-Seite (`abQuickZeileHtml`, nur `c.id==='BTC'`), oeffnet ein Vollbild im Fenster `mCardInfo` (Klasse `bs-voll`, `dashFensterGross` raeumt sie ab).
+- **Aufbau**: Werkzeugleiste (30D/90D/1Y/3Y/Max, Zoom +/−, klebt oben) · Sentiment score · Core indicators · Optional indicators.
+- **Je Chart**: Titel 17 px + Einheit, Kopf (Wert, 180-Tage-Perzentil, Einordnung, Datenstand/Quelle), *vs BTC price* (Lin/Log, BTC ueberall `#E8A13A`), Backtest-Knopf.
+- **Gemeinsam**: ein Zeitfenster fuer alle Charts, Ziehen = verschieben, Pinch / Strg+Rad = Zoom, Fadenkreuz + Werte in allen Charts gleichzeitig.
+- Modul `js/btc-sentiment.js`, Daten `btc_sentiment.json`, Quellen `docs/SOURCES.md`, Waechter `check/btcsentiment.js`.

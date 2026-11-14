@@ -6189,6 +6189,16 @@ jobs:
         continue-on-error: true
         run: node tools/aktien.mjs
 
+      # ── BTC SENTIMENT (btc_sentiment.json, Nutzer 2026-11-13) ─────────────
+      # ETF-Flows, Funding, Open Interest, Stablecoins, MVRV, STH, Coinbase-
+      # Premium, Optionen, Boersenfluesse. Quellen + Urteile: docs/SOURCES.md,
+      # geprueft mit tools/btc-sonde*.mjs. Inkrementell (alte Datei wird ergaenzt),
+      # nur beim Oeffnen des Fensters geladen. Kein Score-Teil der Assets.
+      - name: Fetch BTC sentiment -> btc_sentiment.json
+        continue-on-error: true
+        timeout-minutes: 15
+        run: node tools/btc-sentiment.mjs
+
       - name: Build sector view -> sektor_data.json
         continue-on-error: true
         run: node tools/sektoren.mjs
@@ -6370,6 +6380,7 @@ jobs:
           [ -d sektor_hist ] && git add sektor_hist
           [ -f stock_data.json ] && git add stock_data.json
           [ -f fng_hist.json ] && git add fng_hist.json
+          [ -f btc_sentiment.json ] && git add btc_sentiment.json
           if ! git diff --staged --quiet; then
             git commit -m "Update FF calendar + indicator data"
             # Retry mit Rebase bei Push-Kollision (Nutzer-Wunsch 2026-07-13:

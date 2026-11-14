@@ -258,6 +258,8 @@ await schritt('etf_bitbo', async () => {
     if (Object.keys(zeile).length) { etf.tage[d] = zeile; n++; probe ||= [d, z.join(' | ')]; }
   }
   etf.fonds = kopf.slice(1).filter(k => /^[A-Z]{2,5}$/.test(k));
+  const einheit = (html.replace(/<[^>]+>/g, ' ').match(/[^.]{0,80}(in millions|US\$ ?m|\$M|millions of)[^.]{0,40}/i) || ['(keine Einheit im Text gefunden)'])[0].replace(/\s+/g, ' ');
+  log('etf bitbo Einheit:', einheit);
   log('etf bitbo Zeilen', n, 'Kopf', kopf.join(','), 'Beispiel', JSON.stringify(probe));
 });
 

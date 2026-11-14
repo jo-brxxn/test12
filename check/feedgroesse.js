@@ -51,17 +51,21 @@ const FEEDS = ['ind_data.json', 'bond_data.json', 'price_data.json', 'cot_data.j
   'country_data.json',
   // seit 2026-11-13: Aktien (bei Bedarf) und volle Fear-&-Greed-Historie (nur Vollbild)
   'stock_data.json', 'fng_hist.json'];
+// Nur beim Oeffnen EINES Fensters geladen, nie beim Start und nie parallel zu den
+// Start-Feeds -> eigener Deckel je Datei (900 KB), aber NICHT in der Gesamtsumme.
+// Seit 2026-11-14: BTC Sentiment (js/btc-sentiment.js, gemessen 222 KB).
+const EINZELN = ['btc_sentiment.json'];
 
 const F = [];
 const fail = (t, x) => F.push(`${t}: ${x}`);
 
 let gesamt = 0;
 const zeilen = [];
-FEEDS.forEach(n => {
+[...FEEDS, ...EINZELN].forEach(n => {
   const p = path.join(ROOT, n);
   if (!fs.existsSync(p)) { zeilen.push(`${n}: fehlt`); return; }
   const kb = fs.statSync(p).size / 1024;
-  gesamt += kb;
+  if (!EINZELN.includes(n)) gesamt += kb;
   zeilen.push(`${n} ${kb.toFixed(0)}KB`);
   if (kb > DECKEL_KB) fail('ZU GROSS',
     `${n} ist ${kb.toFixed(1)} KB, erlaubt sind ${DECKEL_KB}. Eine Datei, die beim Nutzer nicht mehr ankommt, sieht aus wie fehlende Daten, nicht wie ein Fehler - genau der am 2026-09-14 gemeldete Bug.`);
@@ -119,11 +123,11 @@ try {
 // ── Eine Frist, nicht zwoelf ───────────────────────────────────────────
 // Vor dem 2026-09-14 stand an jeder Abrufstelle eine eigene 8000. Wer die
 // Frist anpasst, uebersieht dann elf Stellen.
-['js/main.js', 'js/data-feeds.js'].forEach(f => {
+['js/main.js', 'js/data-feeds.js', 'js/btc-sentiment.js'].forEach(f => {
   const s = fs.readFileSync(path.join(ROOT, f), 'utf8');
   const treffer = [...s.matchAll(/DATA_BASE\s*\+\s*'([a-z_]+\.json)[\s\S]{0,140}?AbortSignal\.timeout\(([^)]+)\)/g)];
   treffer.forEach(m => {
-    if (m[2].trim() !== 'FEED_TIMEOUT_MS') fail('EIGENE FRIST',
+    if (m[2].trim().replace(/^H\./, '') !== 'FEED_TIMEOUT_MS') fail('EIGENE FRIST',
       `${f}: der Abruf von ${m[1]} benutzt AbortSignal.timeout(${m[2]}) statt der gemeinsamen Konstante FEED_TIMEOUT_MS.`);
   });
   if (f === 'js/main.js') {
