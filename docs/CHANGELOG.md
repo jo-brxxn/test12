@@ -22153,3 +22153,29 @@ Nutzer: *„Ja maximale Historie“*.
 **Waechter:** `check/btcsentiment.js` (A–H), Gegenprobe Look-ahead → D rot. `check/feedgroesse.js`: `EINZELN`-Liste (eigener Deckel, nicht in der Summe).
 
 **Nachtrag 724 (erster echter Feed-Lauf 2026-11-14 13:32):** 218 KB. Hyperliquid **HTTP 429** (Erstabruf ~64 Anfragen ohne Pause) → 400 ms Abstand + 3 Versuche mit Wartezeit. bitbo-ETF: neuester Tag 11.11. fast nur Nullen (IBIT 0, nur MSBT 26,1) = Emittenten melden spaet → Kopf zeigt *latest day preliminary*, der Feed ueberschreibt den Tag in spaeteren Laeufen. Einheit Mio. USD plausibel (IBIT −432,7 am 02.11.). Score: am letzten Tag nur 2 von 7 Komponenten (Wert 17 = "180-day low" aus zu wenig Daten) → letztes Perzentil je Komponente hoechstens 7 Tage weiter, mind. 3 Komponenten.
+
+## 2026-11-14 — BTC Sentiment: Bedienung ohne Springen (VERSION-CHECK-725)
+
+**Nutzer:** *„wenn ich was aendere dann ist es auf einmal weg wenn ich einen Button druecke springt die Seite nach oben“*.
+
+**Gemessen (Playwright, echte btc_sentiment.json):**
+
+| Aktion | 1440 px | 390 px |
+|---|---|---|
+| Backtest auf | scrollTop 1226 → 1443, MVRV-Karte y 41 → −176 | — |
+| Lin | 1443 → 941 | — |
+| 3Y | 941 → **0** | 2444 → **0** |
+| Gewicht aendern | Liste klappt zu | Liste klappt zu |
+| vs BTC aus | Lin/Log verschwinden | Lin/Log verschwinden |
+
+**Ursachen:**
+1. Jede Bedienung baute das ganze Fenster neu (`zeichnen()`), Charts erst danach.
+2. Zeitraum-Leiste `position:sticky` klebte nicht: `.dx-gross .ci-body{overflow-x:hidden}` macht den Fenster-Inhalt zum Scroll-Container → Leiste gemessen bei −1143 px; der Tipp auf 3Y scrollte zur Leiste = Seitenanfang.
+
+**Behoben an der Wurzel:**
+- `karteNeu(k)` baut nur die betroffene Karte, Zeitraum/Zoom nur die Charts; `<details>`-Zustand gemerkt; Lin/Log immer sichtbar (schaltet vs BTC mit an); Chart mit Mindesthoehe.
+- **Fehlerklasse:** `.dx-gross .ci-body` jetzt `overflow-x:clip` (gleiches Abschneiden, kein Scroll-Container) fuer ALLE grossen Fenster; Sonderregel `.fg-voll .ci-body` entfaellt. Andere sticky-Elemente liegen in keinem `.dx-gross`-Fenster (geprueft per Grep).
+
+**Nachher:** alle Aktionen scrollTop und Kartenlage unveraendert (±0), Leiste klebt (y −1 / 1 px), Liste bleibt offen.
+
+**Waechter:** `check/btcsentiment.js` Abschnitt I; `--gegenprobe-sprung` (Zustand vorher) → rot.

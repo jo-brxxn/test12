@@ -271,7 +271,7 @@ function karteHtml(i) {
 function chartLeiste(k, o) {
   return `<div class="bs-cl">
     <label class="mk-rsw"><span class="mk-rsw-l">vs BTC price</span><span class="tgl tgl-s"><input type="checkbox" data-bs="btc" data-k="${k}"${o.btc ? ' checked' : ''} aria-label="Overlay the BTC price"><span class="tgl-track"></span></span></label>
-    ${o.btc ? `<span class="ind-hist-range-bar"><button class="ind-hist-range-btn${o.log ? '' : ' on'}" data-bs="log" data-k="${k}" data-w="0">Lin</button><button class="ind-hist-range-btn${o.log ? ' on' : ''}" data-bs="log" data-k="${k}" data-w="1">Log</button></span>` : ''}
+    <span class="ind-hist-range-bar${o.btc ? '' : ' bs-matt'}" title="Scale of the BTC price"><button class="ind-hist-range-btn${o.btc && !o.log ? ' on' : ''}" data-bs="log" data-k="${k}" data-w="0">Lin</button><button class="ind-hist-range-btn${o.btc && o.log ? ' on' : ''}" data-bs="log" data-k="${k}" data-w="1">Log</button></span>
     <button class="ind-hist-range-btn${o.btOffen ? ' on' : ''}" data-bs="btauf" data-k="${k}">Backtest</button>
     <span class="bs-read" data-k="${k}"></span></div>`;
 }
@@ -287,7 +287,7 @@ function scoreKarteHtml() {
     ${chartLeiste('score', o)}
     <div class="bs-chart" data-k="score"></div>
     ${btHtml({ k: 'score', n: 'Sentiment score' }, o)}
-    <details class="bs-gew"><summary>Weights · current percentile per component</summary>
+    <details class="bs-gew"${gewOffen ? ' open' : ''}><summary>Weights · current percentile per component</summary>
     <table class="bs-tab"><thead><tr><th>Component</th><th class="bs-num">Pct</th><th>Weight</th></tr></thead><tbody>${zeilen}</tbody></table>
     <div class="bs-ein"><i>Percentile vs. the prior 365 days · a component counts up to 7 days after its last value · at least 3 components per day</i></div></details></div>`;
 }
@@ -312,9 +312,28 @@ function btHtml(i, o) {
     <div class="bs-ein"><i>Percentile = rank vs. the prior 365 days only (no look-ahead) · signals marked on the BTC line</i></div></div>`;
 }
 
+// ── Nur eine Karte neu (Nutzer 2026-11-14: "wenn ich einen Button druecke springt die
+// Seite nach oben" / "wenn ich was aendere ist es auf einmal weg"). Gemessen vorher: jede
+// Bedienung baute das ganze Fenster neu -> Backtest auf +217 px, Lin −502 px, 3Y auf 0,
+// Gewichts-Liste klappte zu. Jetzt: nur die betroffene Karte, Scroll-Stand bleibt.
+let gewOffen = false;
+function karteNeu(k) {
+  const alt = document.querySelector(`#mCardInfoBody .bs-karte[data-k="${k}"]`); if (!alt) return;
+  const m = document.querySelector('#mCardInfo .modal'), st = m ? m.scrollTop : 0;
+  const i = IND.find(x => x.k === k);
+  const t = document.createElement('div'); t.innerHTML = k === 'score' ? scoreKarteHtml() : karteHtml(i);
+  const neu = t.firstElementChild; alt.replaceWith(neu);
+  const c = neu.querySelector('.bs-chart'); if (c) c.innerHTML = chartSvg(c.dataset.k, c);
+  if (m) m.scrollTop = st;
+  if (hoverT != null) fadenkreuz(hoverT);
+}
+function leisteAktiv() { document.querySelectorAll('#mCardInfoBody .bs-leiste [data-bs="bereich"]').forEach(b => b.classList.toggle('on', b.dataset.w === V.bereich)); }
+
 // ── Charts ───────────────────────────────────────────────────────────────
 function chartsNeu() {
+  const m = document.querySelector('#mCardInfo .modal'), st = m ? m.scrollTop : 0;
   document.querySelectorAll('#mCardInfoBody .bs-chart').forEach(el => { el.innerHTML = chartSvg(el.dataset.k, el); });
+  if (m) m.scrollTop = st;
   if (hoverT != null) fadenkreuz(hoverT);
 }
 let rafId = 0;
@@ -413,21 +432,23 @@ function anbinden(w) {
   w.addEventListener('click', ev => {
     const b = ev.target.closest('[data-bs]'); if (!b || b.tagName === 'SELECT' || b.tagName === 'INPUT') return;
     const art = b.dataset.bs, k = b.dataset.k;
-    if (art === 'bereich') { bereichSetzen(b.dataset.w); zeichnen(); }
+    if (art === 'bereich') { bereichSetzen(b.dataset.w); leisteAktiv(); chartsNeu(); }
     else if (art === 'zoom') zoom(+b.dataset.w, null);
-    else if (art === 'log') { ans(k).log = b.dataset.w === '1'; zeichnen(); }
-    else if (art === 'btauf') { const o = ans(k); o.btOffen = !o.btOffen; if (o.btOffen) o.btc = true; zeichnen(); }
+    else if (art === 'log') { const o = ans(k); o.log = b.dataset.w === '1'; o.btc = true; karteNeu(k); }
+    else if (art === 'btauf') { const o = ans(k); o.btOffen = !o.btOffen; if (o.btOffen) o.btc = true; karteNeu(k); }
   });
   w.addEventListener('change', ev => {
     const el = ev.target, art = el.dataset.bs, k = el.dataset.k; if (!art) return;
-    if (art === 'btc') { ans(k).btc = el.checked; zeichnen(); }
-    else if (art === 'bt') { const c = ans(k).bt, f = el.dataset.f; c[f] = f === 'seite' || f === 'modus' ? el.value : (+el.value || 0); if (f === 'abstand') c.abstand = Math.max(1, Math.round(c.abstand)); zeichnen(); }
+    if (art === 'btc') { ans(k).btc = el.checked; karteNeu(k); }
+    else if (art === 'bt') { const c = ans(k).bt, f = el.dataset.f; c[f] = f === 'seite' || f === 'modus' ? el.value : (+el.value || 0); if (f === 'abstand') c.abstand = Math.max(1, Math.round(c.abstand)); karteNeu(k); }
     else if (art === 'gewicht') {
       const g = gewichte(); g[k] = +el.value;
       try { H.setGewichte(g); } catch (e) { H.meldung && H.meldung('Could not save the weights: ' + (e.message || e)); }
-      D._score = null; D._scoreRoll = null; zeichnen();
+      D._score = null; D._scoreRoll = null; karteNeu('score');
     }
   });
+  // <details> der Gewichte: offen/zu merken (toggle blubbert nicht -> capture)
+  w.addEventListener('toggle', ev => { if (ev.target.classList && ev.target.classList.contains('bs-gew')) gewOffen = ev.target.open; }, true);
   w.addEventListener('pointermove', ev => {
     const el = ev.target.closest('.bs-chart'); if (finger.has(ev.pointerId)) finger.set(ev.pointerId, ev.clientX);
     if (finger.size === 2) { pinch(); return; }

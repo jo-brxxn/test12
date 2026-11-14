@@ -11,11 +11,17 @@
 //  F) Zeitraum 30D -> sichtbare Spanne ~30 Tage; Zoom-Knopf halbiert
 //  G) 390 px: kein Seitenueberlauf, keine Schrift < 11 px im Fenster
 //  H) Gewicht aendern -> bsGewichte in snap() (geraeteuebergreifend)
+//  I) Bedienen ohne Springen (Nutzer 2026-11-14 "wenn ich einen Button druecke springt die
+//     Seite nach oben", "wenn ich was aendere ist es auf einmal weg"): Backtest/Lin/vs BTC/3Y
+//     lassen Scroll-Stand und Kartenlage gleich, Gewichts-Liste bleibt offen, Lin/Log bleiben
+//     sichtbar, die Zeitraum-Leiste klebt oben (sticky wirkt nur ohne overflow:hidden-Elter).
+// --gegenprobe-sprung: der gemessene Zustand vorher (Komplett-Neuaufbau, overflow-x:hidden am
+//   Fenster-Inhalt, Chart ohne Mindesthoehe) -> I muss rot werden.
 // --gegenprobe: Perzentil MIT dem eigenen Tag (Look-ahead) -> D muss rot werden.
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const { chromium } = require(PW); const path = require('path'); const fs = require('fs');
 const { wartenBisDatenDa } = require('./warten.js');
-const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe');
+const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'), GPS = process.argv.includes('--gegenprobe-sprung');
 const FIX = path.join(__dirname, 'fixtures', 'btc_sentiment_test.json');
 const TAG = 864e5;
 
@@ -42,6 +48,8 @@ function referenzSignale() {
     const o = W + 'px';
     const ctx = await b.newContext({ viewport: { width: W, height: H }, serviceWorkers: 'block' });
     await ctx.route(/btc_sentiment\.json/, r => r.fulfill({ path: FIX, contentType: 'application/json' }));
+    if (GPS) await ctx.route(/index\.html/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('.dx-gross .ci-body{overflow-x:clip}', '.dx-gross .ci-body{overflow-x:hidden}').replace('.bs-chart{min-height:170px;', '.bs-chart{'); r.fulfill({ response: res, body: t }); });
+    if (GPS) await ctx.route(/\/js\/btc-sentiment\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('function karteNeu(k) {', 'function karteNeu(k) { return zeichnen();'); r.fulfill({ response: res, body: t }); });
     if (GP) await ctx.route(/\/js\/btc-sentiment\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('    if (s.length >= minN) {', '    ein(a[i][1]); if (s.length >= minN) {'); r.fulfill({ response: res, body: t }); });
     const p = await ctx.newPage(); const err = []; p.on('pageerror', e => err.push(e.message));
     await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) { } });
@@ -102,6 +110,20 @@ function referenzSignale() {
     if (G.ueber > 1) F.push(o + ' G: Seite laeuft ' + G.ueber + ' px ueber');
     if (G.kartenUeber.length) F.push(o + ' G: Karten laufen ueber: ' + G.kartenUeber.join(', '));
     if (G.klein.length) F.push(o + ' G: Schrift < 11 px: ' + G.klein.slice(0, 5).join(', '));
+    // I) Bedienen ohne Springen
+    const mod = () => p.evaluate(() => { const m = document.querySelector('#mCardInfo .modal'), k = document.querySelector('.bs-karte[data-k="oi_bn"]'), l = document.querySelector('.bs-leiste');
+      return { st: m.scrollTop, y: Math.round(k.getBoundingClientRect().top), leiste: Math.round(l.getBoundingClientRect().top - m.getBoundingClientRect().top) }; });
+    await p.evaluate(() => { const m = document.querySelector('#mCardInfo .modal'); m.scrollTop = document.querySelector('.bs-karte[data-k="oi_bn"]').offsetTop - 120; }); await p.waitForTimeout(150);
+    for (const [sel, name] of [['[data-bs="btauf"][data-k="oi_bn"]', 'Backtest'], ['[data-bs="log"][data-k="oi_bn"][data-w="0"]', 'Lin'], ['.bs-karte[data-k="oi_bn"] .tgl', 'vs BTC'], ['[data-bs="bereich"][data-w="3Y"]', '3Y']]) {
+      const a = await mod(); await p.locator(sel).first().click(); await p.waitForTimeout(250); const z = await mod();
+      if (Math.abs(z.st - a.st) > 2 || Math.abs(z.y - a.y) > 2) F.push(`${o} I: "${name}" springt (scrollTop ${a.st} -> ${z.st}, Karte y ${a.y} -> ${z.y})`);
+      if (z.leiste > 40 || z.leiste < -5) F.push(`${o} I: Zeitraum-Leiste klebt nicht oben (y ${z.leiste} im Fenster)`);
+    }
+    const linDa = await p.evaluate(() => !!document.querySelector('[data-bs="log"][data-k="oi_bn"]'));
+    if (!linDa) F.push(o + ' I: Lin/Log weg, nachdem vs BTC aus ist');
+    await p.evaluate(() => { document.querySelector('#mCardInfo .modal').scrollTop = 0; }); await p.locator('.bs-gew summary').click(); await p.waitForTimeout(150);
+    await p.locator('[data-bs="gewicht"][data-k="funding"]').selectOption('1.5'); await p.waitForTimeout(250);
+    if (!await p.evaluate(() => { const d = document.querySelector('.bs-gew'); return d && d.open; })) F.push(o + ' I: Gewichts-Liste klappt nach dem Aendern zu');
     // H) Gewicht -> snap
     await p.evaluate(() => { const s = document.querySelector('[data-bs="gewicht"][data-k="mvrv"]'); s.value = '2'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await p.waitForTimeout(200);
     const Hh = await p.evaluate(() => { try { return JSON.parse(snap()).bsGewichte; } catch (e) { return 'snap: ' + e.message; } });
@@ -110,7 +132,8 @@ function referenzSignale() {
     await ctx.close();
   }
   await b.close();
+  if (GPS) { const ok = F.some(f => / I: .* springt| I: Zeitraum-Leiste/.test(f)); console.log(ok ? 'btcsentiment --gegenprobe-sprung: ok (Springen gemeldet)' : 'btcsentiment --gegenprobe-sprung: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (GP) { const ok = F.some(f => / D: \d+ Signale/.test(f)); console.log(ok ? 'btcsentiment --gegenprobe: ok (Look-ahead gemeldet)' : 'btcsentiment --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (F.length) { console.log('btcsentiment: ' + F.length + ' Befund(e)\n  ' + F.slice(0, 30).join('\n  ')); process.exit(1); }
-  console.log(`btcsentiment: ok (Knopf nur BTC, 13 Charts mit vs BTC, Kopf = Datei, Backtest ${REF.n} Signale ohne Look-ahead + Warnung < 20, Fadenkreuz in allen Charts, 30D/Zoom, 390 px, Gewicht in snap())`);
+  console.log(`btcsentiment: ok (Knopf nur BTC, 13 Charts mit vs BTC, Kopf = Datei, Backtest ${REF.n} Signale ohne Look-ahead + Warnung < 20, Fadenkreuz in allen Charts, 30D/Zoom, 390 px, Gewicht in snap(), Bedienen ohne Springen + Leiste klebt)`);
 })().catch(e => { console.log('btcsentiment: ABBRUCH ' + e.message); process.exit(1); });

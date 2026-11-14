@@ -1998,3 +1998,8 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 - Neutral eingeklappt nur so lang wie die längere Bull-/Bear-Spalte (mind. 3), stärkster Ausschlag zuerst; „Show all N“ / „Show less“ (Nutzer 2026-11-08).
 - Getestet und verworfen: Tiles (alt), Ranking, Scale, Heatmap, Podium mit Chips. Geprüft von `check/dashboard.js` (je Asset 1×, Score = `symScoreCmp`, Sortierung, Spalte = Bias, kein Schalter).
 
+## Fenster: kein Neuaufbau beim Bedienen, kein overflow:hidden am Inhalt (2026-11-14, 725)
+
+- **Bedienen = nur das Betroffene neu zeichnen** (eine Karte, nur Charts). Ein Komplett-Neuaufbau springt (Scroll-Stand) und klappt Offenes zu.
+- **`overflow-x:clip` statt `hidden`** an scrollenden Fenster-Inhalten: `hidden` macht einen Scroll-Container, `position:sticky` darin klebt dann nicht mehr.
+- Geprueft: `check/btcsentiment.js` I.
