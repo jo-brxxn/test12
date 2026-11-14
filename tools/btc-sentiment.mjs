@@ -23,7 +23,11 @@ const UA = { 'User-Agent': 'FXAnalystPro research tool', Accept: 'application/js
 const TAG = 864e5;
 const iso = t => new Date(t).toISOString().slice(0, 10);
 const heute = iso(Date.now());
-const STOPP = Date.now() + 8 * 60e3; // Gesamtbudget, Rest im naechsten Lauf
+const GESAMT_STOPP = Date.now() + 12 * 60e3; // Gesamtbudget
+// Jede Quelle hat ein eigenes Zeitfenster (90 s): eine langsame Quelle darf die
+// anderen nicht aushungern (Pruefung 2026-11-14: Deribit-Backfill seriell = 8 min).
+// Was nicht fertig wird, holt der naechste Lauf nach (inkrementell).
+let STOPP = GESAMT_STOPP;
 const log = (...a) => console.log('[btc]', ...a);
 
 const alt = (() => { try { return JSON.parse(fs.readFileSync(DATEI, 'utf8')); } catch { return {}; } })();
@@ -51,8 +55,10 @@ function zipCsv(b) {
   return (meth === 0 ? roh.subarray(0, b.readUInt32LE(18)) : zlib.inflateRawSync(roh)).toString();
 }
 async function schritt(name, fn) {
-  if (Date.now() > STOPP) { fehler[name] = 'time budget used up, next run'; log(name, 'uebersprungen (Zeit)'); return; }
-  try { await fn(); stand[name] = new Date().toISOString(); }
+  if (Date.now() > GESAMT_STOPP) { fehler[name] = 'time budget used up, next run'; log(name, 'uebersprungen (Zeit)'); return; }
+  STOPP = Math.min(GESAMT_STOPP, Date.now() + 90e3);
+  const t0 = Date.now();
+  try { await fn(); if (Date.now() > STOPP) fehler[name] = 'partial, continues next run'; log(name, 'fertig in', ((Date.now() - t0) / 1000).toFixed(1), 's'); stand[name] = new Date().toISOString(); }
   catch (e) { fehler[name] = String(e.message || e).slice(0, 160); log(name, 'FEHLER', fehler[name]); }
 }
 async function parallel(liste, n, fn) {
@@ -100,14 +106,15 @@ await schritt('funding_binance', async () => {
   log('funding binance Monate', monate.length, 'Tage', Object.keys(tag).length);
 });
 await schritt('funding_deribit', async () => {
-  let ab = Date.parse((letzter('fund_dr') || '2019-05-01') + 'T00:00:00Z') - 2 * TAG;
-  const tag = {};
-  while (ab < Date.now() && Date.now() < STOPP) {
+  const ab0 = Date.parse((letzter('fund_dr') || '2019-05-01') + 'T00:00:00Z') - 2 * TAG;
+  const tag = {}, fenster = [];
+  for (let ab = ab0; ab < Date.now(); ab += 20 * TAG) fenster.push(ab);
+  // 20 Tage = 480 Stundenwerte je Abruf (Deribit liefert bis ~700); 6 parallel.
+  await parallel(fenster, 6, async ab => {
     const bis = Math.min(ab + 20 * TAG, Date.now());
     const j = await holen(`https://www.deribit.com/api/v2/public/get_funding_rate_history?instrument_name=BTC-PERPETUAL&start_timestamp=${ab}&end_timestamp=${bis}`);
-    (j.result || []).forEach(z => { (tag[iso(z.timestamp)] ||= []).push(z.interest_8h); });
-    ab = bis;
-  }
+    (j.result || []).forEach(z => { if (z.timestamp >= ab && z.timestamp < bis) (tag[iso(z.timestamp)] ||= []).push(z.interest_8h); });
+  });
   Object.entries(tag).forEach(([d, a]) => setze('fund_dr', d, a.reduce((x, y) => x + y, 0) / a.length * 100, 4));
   log('funding deribit Tage', Object.keys(tag).length);
 });
