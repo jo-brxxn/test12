@@ -25,6 +25,7 @@ import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
 import {bsHelfer,bsAuf,btcSentimentScore} from './btc-sentiment.js';
 import {AI_MARKEN,aiMarkeMono} from './marken-icons.js';
+import {sprungLog,sprungtestStart} from './sprungtest.js';
 import {STOCK_IDS,STOCK_ACCENT,STOCK_DEF,aktienHelfer,aktienDatenHolen,aktieWarnHtml,karteProfil,karteBewertung,karteQualitaet,karteAnalysten,karteZahlen} from './aktien.js';
 // Sektoren-Katalog der MACRO-Zeile (2026-11-12, nur Anzeige) - dieselbe Liste baut sektor_data.json.
 import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.js';
@@ -6172,7 +6173,7 @@ function reapplyLiveFeeds(){
 // passiven Abgleich ist der Ergebnis-Stand der neue Vergleichsstand; nach
 // Undo/Redo/Import/Backup bewusst NICHT - der naechste snap() haelt deren
 // Loeschungen und Wiederherstellungen als eigene Aenderung fest.
-function applySnap(s){
+function applySnap(s){sprungLog('applySnap');
   geloeschtFesthalten();
   _gelRuhe=true;
   try{applySnapRoh(s);}
@@ -6762,7 +6763,7 @@ function loadState(){
 // bfcache-/Suspend-Aufwachen) in DIESEN Tab uebernehmen, statt ihn zu
 // ueberschreiben. Bewusst OHNE pushU(): das laeuft potenziell bei jedem
 // fremden Save und wuerde sonst den Undo-Stack fluten.
-function adoptExternalState(){
+function adoptExternalState(){sprungLog('adoptExternalState','other tab / stored state');
   try{
     // Nutzer-Bugreport 2026-09-01 (per Playwright reproduziert): der Marker
     // fxpro_updated wurde bisher am ENDE dieser Funktion frisch neu gelesen,
@@ -7661,6 +7662,7 @@ async function cloudPullRoh(manual,forceOverwrite){
         // vollem Speicher still und brach den Abgleich mittendrin ab
         // (Cloud-Stand im Speicher, alter auf der Platte, "gesehen" nicht
         // gesetzt). Scheitert auch die Leiter, sagt es die Leiste.
+        sprungLog('cloudPull applies cloud state',cloudUpdated);
         try{schreibeSnapshot(snap());}catch(e){saveQuotaFail(e);throw e;}
         localStorage.setItem('fxpro_updated',cloudUpdated);
       };
@@ -8157,7 +8159,7 @@ let sbEditMode=false;
 function setSbEdit(v){sbEditMode=!!v;renderSidebar();}
 
 // ══ DETAIL ═════════════════════════════════════════════════════════
-function renderDetail(){
+function renderDetail(){sprungLog('renderDetail');
   beginRenderPass();
   const c=getSym();if(!c)return;
   const{events:symEvts,nextHighDate}=getSymEventsCompact(c.id);
@@ -11533,8 +11535,9 @@ function abQuickZeileHtml(c){
   const cpKnopf=FX.includes(c.id)?`<button class="aql" onclick="cpFensterAuf()" title="Country profile — central bank, economy and what moves ${escH(c.id)}, in a window">${icn('globe',14)}<span>Country profile</span></button>`:'';
   // BTC Sentiment (Nutzer 2026-11-13): eigenes Vollbild mit ETF-Flows, Funding,
   // Open Interest, On-chain usw. (js/btc-sentiment.js) - nur auf der BTC-Seite.
+  const mkKnopf=assetCls(c.id)==='stock'?`<button class="aql${stkMakroOffen?' on':''}" onclick="stkMakroAuf()" title="Macro — inflation, labour market, growth and the Fed for ${escH(c.name)}, in a window">${icn('layers',14)}<span>Macro</span></button>`:'';
   const bsKnopf=c.id==='BTC'?`<button class="aql" onclick="bsAuf()" title="BTC Sentiment — ETF flows, funding, open interest, on-chain, in a full-screen window">${icn('gauge',14)}<span>BTC Sentiment</span></button>`:'';
-  return`<div class="ab-qzeile${cpKnopf||bsKnopf?' q5':''}">${links}${notizKnopf}${cpKnopf}${bsKnopf}</div>`;
+  return`<div class="ab-qzeile${cpKnopf||bsKnopf||mkKnopf?' q5':''}">${links}${notizKnopf}${cpKnopf}${bsKnopf}${mkKnopf}</div>`;
 }
 // Angepinnte Notizen. Bewusst NUR die angepinnten: die vollstaendige Liste
 // steht eine Taste weiter unter "All notes", und eine zweite vollstaendige
@@ -11673,7 +11676,8 @@ function sektorenHtml(c){
       return`<div class="sk-gr"><div class="sk-gr-t">${escH(g.titel)}</div><table class="ind-table sk-table">${SK_KOPF}${kopf}<tbody>${zeilen}</tbody></table></div>`;}).join('');
     return gruppen?`<div class="ab-col" data-mkreihe="1"><div class="sk-card" style="--sk:var(--a-${sek.akz})">
       <div class="sk-hd"><span class="sk-t">${escH(sek.titel)}</span><span class="sk-n">${n} series · ${escH(ccy)}</span></div>${gruppen}</div></div>`:'';}).join('');
-  const kopf=`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note"><b>Display only</b><span>not part of the score</span><span><b>${gesamt}</b> series for ${escH(ccy)}</span><span><i>Tap a row for source and history</i></span></div></div>`;
+  // Hinweiszeile entfernt (Nutzer 2026-11-15, eingekreist: "unter dem Schalter macro sectors entfern das").
+  const kopf='';
   if(skOffen.size)setTimeout(()=>sektorOffeneFuellen(ccy),0);
   return gesamt?kopf+karten:`<div class="ab-col sk-hinweis" data-mkreihe="1"><div class="sk-note"><b>No sector data for ${escH(ccy)}</b><span>no release in the last ${SK_DATA.frischTage||SEKTOR_FRISCH_TAGE} days</span></div></div>`;
 }
@@ -11755,6 +11759,28 @@ function abMakroReiheHtml(c){
   const rubs=c.rubrics||[];
   return ASSET_CARDS.map(n=>{const i=rubs.findIndex(r=>r&&r.name===n);return`<div class="ab-col" data-mkreihe="1">${i<0?'':renderRub(rubs[i],i,rubs.length)}</div>`;}).join('');
 }
+// ── Macro-Fenster der Aktien (Nutzer 2026-11-15: "in der Kategorie Stocks die drei
+// makrokarten ... nicht da ... sondern ... quicklink namens Macro ... Fenster wo dann
+// die Karten drinne sind mit allen Funktionen" + "darein soll auch die Bank kommen").
+// Groesse nach der Fenster-Regel vom selben Tag: ~2/3 des Bildschirms.
+// Offen/zu ist Sitzung (eine Ansicht, wie andere Fenster); Scroll-Stand im Fenster
+// ueberlebt den Neuaufbau von #detail (stkMakroScroll).
+let stkMakroOffen=false,stkMakroScroll=0;
+function stkMakroFensterHtml(c){
+  if(!stkMakroOffen)return'';
+  return`<div class="stk-mk-bg" onclick="stkMakroZu()"></div><section class="stk-mk-fenster" role="dialog" aria-modal="true" aria-label="Macro — ${escH(c.name)}">
+    <div class="stk-mk-kopf"><h2 class="stk-mk-t">Macro · ${escH(c.name)}</h2><button class="btn stk-mk-zu" onclick="stkMakroZu()">Done</button></div>
+    <div class="stk-mk-inhalt" onscroll="stkMakroMerk(this)">
+      ${zentralbankKarteHtml(c)}
+      ${abReihenTitel('Macro',makroSektorenSchalterHtml()+(makroSektorenAn?'':makroDatenSchalterHtml()))}
+      ${abMakroReiheHtml(c)}
+    </div></section>`;
+}
+function stkMakroAuf(){stkMakroOffen=true;stkMakroScroll=0;renderDetail();}
+function stkMakroZu(){stkMakroOffen=false;renderDetail();}
+function stkMakroMerk(el){stkMakroScroll=el.scrollTop;}
+function stkMakroNachAufbau(){const i=document.querySelector('#detail .stk-mk-inhalt');if(i&&stkMakroScroll)i.scrollTop=stkMakroScroll;}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&stkMakroOffen&&document.querySelector('#detail .stk-mk-fenster'))stkMakroZu();});
 function renderAssetBoard(c){
   const rubs=c.rubrics||[];
   const aktie=assetCls(c.id)==='stock';
@@ -11819,14 +11845,17 @@ function renderAssetBoard(c){
            2026-10-27, VERSION-CHECK-642: "die 4 Buttons ... wieder als Zeile
            dadrueber und mach dafuer die central bank Karte maximal breit";
            639-641 standen die Knoepfe als Spalte daneben). */''}
-      ${zentralbankKarteHtml(c)}
+      ${aktie?'':zentralbankKarteHtml(c)}
       ${/* Country Profile seit 643 nicht mehr auf der Seite, sondern als
            Fenster ueber den Knopf in der Schnellzugriffszeile (Nutzer
            2026-10-27: "mach da noch einen Button names country profile in
            die Zeile ... entfern die Karte vom normalen Bildschirm"). */''}
-      ${abReihenTitel('Macro',makroSektorenSchalterHtml()+(makroSektorenAn?'':makroDatenSchalterHtml()))}
-      ${/* Makro-Reihe: drei Tabellen-Karten, Data an Ort und Stelle oder Sectors. */''}
-      ${abMakroReiheHtml(c)}
+      ${/* Aktien (Nutzer 2026-11-15): Makro-Reihe + Zentralbank NICHT auf der Seite, sondern im
+           Fenster ueber den Quicklink "Macro" (stkMakroAuf). Das Fenster liegt IN #detail
+           (position:fixed), damit alle Funktionen der Karten (Aufklappen, Data, Sectors,
+           Zentralbank), die #detail neu aufbauen oder dort suchen, unveraendert wirken. */''}
+      ${aktie?stkMakroFensterHtml(c):`${abReihenTitel('Macro',makroSektorenSchalterHtml()+(makroSektorenAn?'':makroDatenSchalterHtml()))}
+      ${abMakroReiheHtml(c)}`}
       ${aktie?abReihenTitel('Analysts & earnings'):abReihenTitel('Positioning')}
       ${/* Aktien: kein COT (die CFTC fuehrt keine Einzelaktien) und kein Retail
            (kein Broker-Positionsfeed) - stattdessen Analysten und Quartalszahlen;
@@ -11999,6 +12028,7 @@ function assetPreisKarteHtml(c){
   // Spalte NACH dem Chart bauen: sie liest die Pfeil-Ebene, die er anlegt.
   setTimeout(pkNachAufbau,0);
   setTimeout(makroDatenEinhaengen,0);
+  setTimeout(stkMakroNachAufbau,0);
   return`<div class="ab-ptile pk${pkAddAktiv()?' pk-add':''}">
     ${kopf}
     <div class="pk-body">
@@ -17845,7 +17875,7 @@ function seitenZoomSetzen(){
 }
 try{let _dzT;window.addEventListener('resize',()=>{clearTimeout(_dzT);_dzT=setTimeout(()=>{seitenZoomSetzen();if(curPage==='dash')dashZoomSetzen();},120);});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',seitenZoomSetzen);else setTimeout(seitenZoomSetzen,0);}catch(e){}
-function renderDash(){
+function renderDash(){sprungLog('renderDash');
   beginRenderPass();
   updateAuroraColors();
   const el=document.getElementById('dashWidgets');if(!el)return;
@@ -26410,7 +26440,7 @@ function showTab(tab,btn,fxMode){
   else if(tab==='cal')renderCalendar();
   else if(tab==='notes')rerenderNotesHost();
 }
-function rerender(){
+function rerender(){sprungLog('rerender');
   if(curPage==='dash')renderDash();
   else if(curPage==='cur'){renderSidebar();renderDetail();}
   else if(curPage==='mx')renderMatrix();
@@ -26998,7 +27028,7 @@ setInterval(flushAndSave,15000);
 //     Hintergrund-Save statt es zu ueberschreiben,
 // (c) Aufwachen (Tab wieder sichtbar/bfcache-Restore): erst fremden lokalen
 //     Stand uebernehmen, dann Cloud-Abgleich (Push-vor-Pull wie beim Boot).
-window.addEventListener('storage',e=>{
+window.addEventListener('storage',e=>{sprungLog('storage event',e&&e.key||'');
   if(e.key!==SK&&e.key!=='fxpro_updated')return;
   const cur=localStorage.getItem('fxpro_updated');
   if(cur===_lsUpdatedSeen)return;
@@ -27055,6 +27085,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 // ══ INIT ══════════════════════════════════════════════════════════
+try{sprungtestStart();}catch(e){}
 try{bsHelfer({DATA_BASE,FEED_TIMEOUT_MS,openM,dashFensterGross,gewichte:()=>bsGewichte,setGewichte:g=>{pushU();bsGewichte=bsGewichteRein(g);save();},meldung:t=>alert(t)});}catch(e){}
 try{aktienHelfer({escH,biasCss,fmtDayHdr,daysUntil,abTile,AB_LEER,DATA_BASE,FEED_TIMEOUT_MS,renderDetail,curPage:()=>curPage,getSym,nachDaten:()=>renderSidebar()});}catch(e){}
 // Aktien-Kennzahlen frueh laden: die Seitenleiste zeigt Warnzeichen fuer Finanzrisiken.
@@ -27836,7 +27867,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

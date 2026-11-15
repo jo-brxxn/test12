@@ -2008,3 +2008,9 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 
 - Jeder Index und jede Aktie hat ein **eigenes** Symbol (`js/marken-icons.js`): Kerngeschaeft in Firmenfarbe auf dunkler Plakette, viewBox 36×24. **Nie Firmenlogos nachbauen.**
 - Neue Aktie → eigenes Symbol in `AI_MARKEN` + in `check/markenicons.js` (IDS) eintragen.
+
+## ⚠ Dauerregeln vom 2026-11-15 (Nutzer, ausdruecklich "neue Regel")
+
+1. **Jeder Zeitreihen-Chart hat ein Fadenkreuz mit Info-Karte.** Wortlaut: *„in jedem Chart oder Diagramm oder Schaubild wo Daten drinne stehen ueber einen Zeitraum soll es so sein das wenn man drueber hovert das ein Strich von oben nach unten geht und eine kleine Karte daran erscheint wo die wichtigen Daten stehen also Datum Tag Preis forecast und so Sachen“*. Senkrechte Linie ueber die ganze Hoehe + kleine Karte an der Linie (Datum, Wochentag, Wert, je nach Chart Forecast/Previous/Preis). Neuer Chart ohne das = nicht fertig.
+2. **Karte antippen = Fenster mit ~2/3 des Bildschirms** (Handy: fast voll). Wortlaut: *„wenn man Karten anklickt sollen immer Fenster aufgehen die nicht den ganzen Bildschirm nehmen sondern so 2/3 das einfach die Karte groesser ist und man mehr Optionen zum einstellen und analysieren hat“*. Was das Fenster je Karte ZUSAETZLICH zeigt, wird je Karte vorgeschlagen und vom Nutzer bestaetigt (nur vergroessern ist zu wenig). Erstes Fenster dieser Art: Macro-Fenster der Aktien (`stkMakroFensterHtml`, 67 % Breite).
+3. **Keine Fuellflaeche statt Inhalt.** Leere Kartenflaeche nicht mit dem Logo (`lg-frei`) fuellen, sondern das Layout loesen (Varianten C1-C3 / H1-H3 zur Wahl gestellt 2026-11-15).

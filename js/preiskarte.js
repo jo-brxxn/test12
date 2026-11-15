@@ -170,8 +170,11 @@ const PK_BAND_KAT=[
   ['rate','Interest rate','var(--a-rate)',['Central Bank Rate']],
   ['own','Own events','var(--tb-own)',[]]];
 const _pkBandVon=new Map();PK_BAND_KAT.forEach(k=>k[3].forEach(b=>_pkBandVon.set(b,k[0])));
+// ⚠ Seit 2026-11-15 AUS (Nutzer: "Dieser Balken unten ist bloed und muss weg"). Die Funktion
+// bleibt fuer die Historie, liefert aber nichts mehr; Legende ebenso. check/moves.js D prueft das.
+const PK_BAND_AN=false;
 function pkBandHtml(id,api,tage,B,woche){
-  if(tage.length<2)return'';
+  if(!PK_BAND_AN||tage.length<2)return'';
   const dx=tage.length>1?api.x(1)-api.x(0):0.02;
   let h='';
   B.forEach(b=>{
@@ -187,6 +190,7 @@ function pkBandHtml(id,api,tage,B,woche){
   return`<span class="pk-tb">${h}</span>`;
 }
 function pkBandLegende(){
+  if(!PK_BAND_AN)return'';
   return`<span class="pk-tb-leg">${PK_BAND_KAT.map(k=>`<span class="pk-tb-lg"><i style="background:${k[2]}"></i>${k[1]}</span>`).join('')}</span>`;
 }
 function pkLageHtml(id,api){

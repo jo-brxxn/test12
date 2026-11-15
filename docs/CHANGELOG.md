@@ -22203,3 +22203,13 @@ Nutzer: *„Ja maximale Historie“*.
 - Einfarbige Fassung ueber `aiMarkeMono`; kein Kurs-Strich-Film mehr fuer diese 16 (`aiFilmArt` null).
 - Dabei gefunden (eigener Fehler aus 727): mit Filter Stocks stand CoreWeave **+4.2** unter "Strongest short" → Spalten heissen "Weakest"/"Strongest", wenn nicht alle drei negativ/positiv; geprueft in `check/dashfilter.js` C.
 - Waechter: `check/markenicons.js` (Gegenprobe alte Karte → A rot).
+
+## 2026-11-15 — Sammelauftrag: Zurueckspringen, Band weg, Aktien-Macro-Fenster, Vorschauen (VERSION-CHECK-729)
+
+**Nutzer (2 iPad-Fotos):** Balken unter dem Price-Chart weg; Hover = Tages-News links; 3 Optionen Spalten-Design; Notizen in den Chart schreiben (3 Optionen); Aktien: Makro-Karten + Zentralbank in Quicklink-Fenster "Macro"; App springt nach Sekunden auf fruehere Staende/nach oben; History-Karte und andere Stellen zu viel Weiss (3 Optionen); Infozeile unter MACRO | SECTORS weg; zwei Dauerregeln (Fadenkreuz-Karte, 2/3-Fenster).
+- **Zurueckspringen — NICHT nachstellbar (Regel 8, nicht geraten):** Asset-Seite NVDA 1366 px, scrollTop 1500; (a) ohne Cloud, (b) Cloud-Nachbau mit 800 ms Antwortzeit, (c) Feeds 1,5-5,5 s verzoegert, je 25 s beobachtet: kein Sprung. (d) 7 Speicher-Aktionen (setPxChartTyp, setAbChartRange, toggleCotVsPrice, toggleCalHighOnly, toggleAbTrendLinie …) je 17 s ueber den 15-s-Speichertakt: kein Neuaufbau, scrollTop unveraendert. Statt Raten: **Sprung-Rekorder** `js/sprungtest.js` (protokolliert applySnap, adoptExternalState, cloudPull-Uebernahme, storage-Events, renderDetail/renderDash/rerender; meldet jeden Scroll-Sprung > 200 px ohne Eingabe in den 600 ms davor mit den Ereignissen der 3 s davor). Anzeige mit `#sprungtest` hinter der Adresse.
+- **Treiber-Band** (`pkBandHtml`, 2026-11-11) aus, Legende aus; `check/moves.js` D prueft jetzt das Fehlen.
+- **Sectors-Infozeile** ("Display only · not part of the score · 93 series · Tap a row") entfernt.
+- **Aktien:** Zentralbank + Macro-Reihe nicht mehr auf der Seite; Quicklink **Macro** oeffnet ein Fenster (67 % Breite, in #detail, damit alle Kartenfunktionen wirken). Waechter `check/stkmakro.js`.
+- **Gemessen fuer die Weissraum-Frage:** NVDA Valuation 960 px Karte / 516 px leer, Growth & quality 960 / 639, Earnings 411 / 144; Dashboard Your insights 469 / 269, Biggest movers 325 / 244, Open trades 221 / 128 (leere Flaeche mit Logo `lg-frei` gefuellt). History-Karte: Score-Linie der Aktien beginnt erst 2026-11-15 (Verlauf fehlte bis 726), Achse ab August → ~90 % leere Flaeche.
+- **Vorschauen** (Bilder im Chat): A1-A3 Spalte neben dem Chart, B1-B3 Notizen im Chart, H1-H3 History-Karte, C1-C3 gestreckte Reihen. Hover-News und Chart-Notizen werden nach der Wahl gebaut.
