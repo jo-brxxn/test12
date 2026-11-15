@@ -1672,3 +1672,9 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **Je Chart**: Titel 17 px + Einheit, Kopf (Wert, 180-Tage-Perzentil, Einordnung, Datenstand/Quelle), *vs BTC price* (Lin/Log, BTC ueberall `#E8A13A`), Backtest-Knopf.
 - **Gemeinsam**: ein Zeitfenster fuer alle Charts, Ziehen = verschieben, Pinch / Strg+Rad = Zoom, Fadenkreuz + Werte in allen Charts gleichzeitig.
 - Modul `js/btc-sentiment.js`, Daten `btc_sentiment.json`, Quellen `docs/SOURCES.md`, Waechter `check/btcsentiment.js`.
+
+## Dashboard: Bias scores + Performance mit Kategorie-Filter (2026-11-15, 727)
+
+- Chip-Zeile **All · FX · Crypto · Metals · Energy · Indices · Stocks · Yields**, je Karte eigener Filter, umbrechend (nie abgeschnitten). Performance: Chips links, Zeitraum rechts.
+- Bias scores: Podium (Top 3 long/short) + Bullish | Neutral | Bearish **je 3**, "Show all N" je Spalte.
+- Geprueft: `check/dashfilter.js`, `check/dashboard.js`.

@@ -22186,3 +22186,12 @@ Nutzer: *„Ja maximale Historie“*.
 **Gegenprobe:** derselbe Fehler mit dem Code von 722 + heutigen Daten → nicht BTC Sentiment, sondern 720: Aktien aus `trendAssets()` genommen (Trends-Anzeige). Journal (`jrLauf`) und `recordScoreHist` benutzten dieselbe Liste als "alle Assets mit Score". Sichtbar erst, seit der Feed Aktienkurse liefert und ihre Scores sich bewegen.
 **Behoben:** `scoreAssets()` = `trendAssets()` + Aktien, fuer Journal und Score-Verlauf. Trends/Korrelation bleiben bei `trendAssets()`.
 **Nachher:** journal A *22 bewegte Assets, alle mit Eintrag*; scorediff Symbol-Score unveraendert; historie, score, scorenachrechnung, display, designregeln, aktien gruen.
+
+## 2026-11-15 — Dashboard: Kategorie-Filter + Bias-Spalten eingeklappt (VERSION-CHECK-727)
+
+**Nutzer (iPad-Fotos):** *„Arbeite bei dem Score Ranking auch mit einem extend Button ... auch fuer bullish und bearish begrenzen“*, *„bei dem Ranking und bei der Performance Karte die Auswahl nach all und den ganzen Kategorien also Forex crypto usw“* (Stelle in der Performance-Karte markiert: unter dem Titel, links).
+**Rueckfrage-Antworten:** je Spalte 3 unter den Top 3 · Chip-Zeile · auf allen Geraeten merken.
+- Bias scores: Bullish/Neutral/Bearish je 3, "Show all N" je Spalte (ersetzt die Neutral-Regel vom 2026-11-08: vorher Bullish 17 voll sichtbar).
+- Chips All · FX · Crypto · Metals · Energy · Indices · Stocks · Yields in beiden Karten, je Karte eigener Filter (`dashBiasKat`, `dashPerfKat`), Podium/Spalten bzw. Leaders/Laggards nur aus der Kategorie.
+- Chips brechen um statt zu wischen: beim ersten Entwurf (waagerecht wischbar) meldete designregeln F bei 820/1180/1440 px abgeschnittene, nicht antippbare Chips.
+- Waechter: neu `check/dashfilter.js` (Gegenprobe Filter wirkungslos → C rot); `check/dashboard.js` auf die neue Einklapp-Regel umgestellt.

@@ -6971,14 +6971,14 @@ function saveSoon(){
 function exportData(){
   const data=JSON.parse(snap());
   data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.scoreMode=scoreMode;
-  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
+  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.dashBiasKat=dashBiasKat;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
   a.download='fx-analyst-'+todayStr()+'.json';a.click();
 }
 function importData(input){
   const f=input.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=normFxTheme(_imp.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.pkMarkenAn!==undefined){setPkMarkenAnVal(_imp.pkMarkenAn);try{localStorage.setItem('fxpro_pk_marken',pkMarkenAn?'1':'0');}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
+  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=normFxTheme(_imp.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.dashBiasKat!==undefined){dashBiasKat=dashKatOk(_imp.dashBiasKat);localStorage.setItem('fxpro_dash_bias_kat',dashBiasKat);}if(_imp.dashPerfKat!==undefined){dashPerfKat=dashKatOk(_imp.dashPerfKat);localStorage.setItem('fxpro_dash_perf_kat',dashPerfKat);}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.pkMarkenAn!==undefined){setPkMarkenAnVal(_imp.pkMarkenAn);try{localStorage.setItem('fxpro_pk_marken',pkMarkenAn?'1':'0');}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
   r.readAsText(f);input.value='';
 }
 
@@ -7418,7 +7418,7 @@ async function cloudPushRoh(manual){
     // zuruecksetzen - siehe cloudPull-Kommentar).
     const z0=_userEditZaehler;
     const gesendet=snap();
-    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
+    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.dashBiasKat=dashBiasKat;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
     if(APP_VER)data.appVer=APP_VER;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
@@ -7630,6 +7630,8 @@ async function cloudPullRoh(manual,forceOverwrite){
       if(!prefPending){
         if(Array.isArray(cd.setupCcyFilter)){setupCcyFilter=cd.setupCcyFilter.filter(c=>FX.includes(c));try{localStorage.setItem('fxpro_setup_ccy',JSON.stringify(setupCcyFilter));}catch(e){}}
         if(cd.setupFxOnly!==undefined){setupFxOnly=cd.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}
+        if(cd.dashBiasKat!==undefined){dashBiasKat=dashKatOk(cd.dashBiasKat);try{localStorage.setItem('fxpro_dash_bias_kat',dashBiasKat);}catch(e){}}
+        if(cd.dashPerfKat!==undefined){dashPerfKat=dashKatOk(cd.dashPerfKat);try{localStorage.setItem('fxpro_dash_perf_kat',dashPerfKat);}catch(e){}}
         if(cd.setupNonFxOnly!==undefined){setupNonFxOnly=cd.setupNonFxOnly;try{localStorage.setItem('fxpro_setup_nonfxonly',setupNonFxOnly?'1':'0');}catch(e){}}
         if(cd.setupYieldsOnly!==undefined){setupYieldsOnly=cd.setupYieldsOnly;try{localStorage.setItem('fxpro_setup_yieldsonly',setupYieldsOnly?'1':'0');}catch(e){}}
         if(cd.abChartRange!==undefined){setAbChartRangeVal(cd.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}
@@ -17868,11 +17870,11 @@ function renderDash(){
     ins:dashSek('dbInsight','insights','Your insights',dashInsightsHtml(),{link:['Journal',"showTab('journal')"],
       erkl:['Only facts from your data: latest score changes, widest score gap, retail extremes, next high-impact release.','Tap a line to open it.']}),
     bias:dashSek('dbBias','bias_scores','Bias scores',dashBiasHtml(),{link:['All assets',"showTab('cur')"],
-      erkl:['Top: the 3 strongest long and short scores.','Below: every other asset by bias — bullish | neutral | bearish, strongest first.','Neutral shows as many as the longer side — Show all for the rest.','Tap an asset to open it, the number for the score breakdown.']}),
+      erkl:['Top: the 3 strongest long and short scores.','Below: every other asset by bias — bullish | neutral | bearish, strongest first.','Filter by category above · each column shows 3 — Show all for the rest.','Tap an asset to open it, the number for the score breakdown.']}),
     mover:dashSek('dbMover','movers_fx','Biggest movers',dashMoverHtml(),{link:['Trends',"showTab('trends')"],
       erkl:['FX pairs with the largest move since the previous close.','Tap a pair for its overview.']}),
-    perf:dashSek('dbPerf','perf_ranking','Performance',`<div class="dx-zf">${perfBar}</div>`+dashPerfHtml(),{link:[dashPerfAlle?'Show less':'Show all','dashPerfUmschalten()'],
-      erkl:['Actual price performance over '+win[0]+' — compare it with the score to spot where the market disagrees.']}),
+    perf:dashSek('dbPerf','perf_ranking','Performance',`<div class="dx-zf dx-zf-perf">${dashKatLeiste('perf',dashPerfKat)}${perfBar}</div>`+dashPerfHtml(),{link:[dashPerfAlle?'Show less':'Show all','dashPerfUmschalten()'],
+      erkl:['Actual price performance over '+win[0]+' — compare it with the score to spot where the market disagrees.','Filter by category on the left · window on the right.']}),
   };
   Object.keys(slot).forEach(k=>{const s=el.querySelector('[data-slot="'+k+'"]');if(s)s.innerHTML=slot[k];});
   if(_dashScroll)_dashScroll.scrollTop=_scrollY;
@@ -17921,11 +17923,32 @@ const DASH_KLASSEN=[['fx','Currencies'],['metal','Metals'],['energy','Energy'],[
 // Bias (bullish | neutral | bearish), staerkste zuerst. Je Asset genau ein
 // .db-bias[data-id] mit vollem Namen (.db-bias-n) und exaktem Score
 // (.db-bias-v, Tipp = Aufschluesselung) - check/dashboard.js.
-let dashBiasNeutralAlle=false;
-function dashBiasNeutralUmschalten(){dashBiasNeutralAlle=!dashBiasNeutralAlle;renderDash();}
+// Nutzer 2026-11-15 ("Arbeite bei dem Score Ranking auch mit einem extend Button ... auch
+// fuer bullish und bearish begrenzen", Antwort: "ganz oben sind ja die top 3 und dadrunter
+// dann nochmal 3"): JEDE Spalte zeigt eingeklappt 3, "Show all" je Spalte.
+const DASH_BIAS_KURZ=3;
+let dashBiasAlle={bull:false,neu:false,bear:false};
+function dashBiasSpalteUmschalten(b){dashBiasAlle[b]=!dashBiasAlle[b];renderDash();}
+// Kategorie-Filter fuer Bias scores und Performance (Nutzer 2026-11-15: "die Auswahl nach
+// all und den ganzen Kategorien also Forex crypto usw"). Je Karte eigener Filter, auf allen
+// Geraeten gemerkt (cloudPush/cloudPull/export/import wie setupFxOnly).
+const DASH_KATS=[['ALL','All'],['fx','FX'],['crypto','Crypto'],['metal','Metals'],['energy','Energy'],['index','Indices'],['stock','Stocks'],['yield','Yields']];
+function dashKatOk(k){return DASH_KATS.some(x=>x[0]===k)?k:'ALL';}
+let dashBiasKat=dashKatOk(localStorage.getItem('fxpro_dash_bias_kat')),dashPerfKat=dashKatOk(localStorage.getItem('fxpro_dash_perf_kat'));
+function dashKatPasst(id,k){return k==='ALL'||assetCls(id)===k;}
+function dashKatSetzen(karte,k){
+  k=dashKatOk(k);
+  try{
+    if(karte==='bias'){dashBiasKat=k;dashBiasAlle={bull:false,neu:false,bear:false};localStorage.setItem('fxpro_dash_bias_kat',k);}
+    else{dashPerfKat=k;localStorage.setItem('fxpro_dash_perf_kat',k);}
+    syncSetupFilterPref();
+  }catch(e){alert('Could not save the filter: '+(e&&e.message||e));}
+  renderDash();
+}
+function dashKatLeiste(karte,akt){return`<div class="db-kat" role="group" aria-label="Filter by category">${DASH_KATS.map(([k,l])=>`<button class="perf-win db-kat-b${k===akt?' on':''}" aria-pressed="${k===akt}" onclick="dashKatSetzen('${karte}','${k}')">${l}</button>`).join('')}</div>`;}
 function dashBiasDaten(){
   const sc=s=>symScoreCmp(s);
-  const alle=syms.filter(s=>DASH_KLASSEN.some(([k])=>assetCls(s.id)===k)).sort((a,b)=>sc(b)-sc(a));
+  const alle=syms.filter(s=>DASH_KLASSEN.some(([k])=>assetCls(s.id)===k)&&dashKatPasst(s.id,dashBiasKat)).sort((a,b)=>sc(b)-sc(a));
   return{sc,alle,mx:Math.max(1,...alle.map(s=>Math.abs(sc(s))))};
 }
 const dashBiasN=(s,ic)=>`<span class="db-bias-n">${assetIconHtml(s.id,ic||14)}<span>${escH(s.name)}</span></span>`;
@@ -17934,7 +17957,8 @@ const dashBiasKnopf=(s,cls,inhalt)=>`<button class="db-bias ${cls}" data-id="${e
 const dashBiasBalken=(s,v,mx)=>`<span class="db-bias-bar"><span style="width:${Math.max(4,Math.round(Math.abs(v)/mx*100))}%;background:${BC[s.bias]}"></span></span>`;
 function dashBiasHtml(){
   const D=dashBiasDaten();
-  if(!D.alle.length)return`<div class="dw-empty">No assets yet.</div>`;
+  const filter=`<div class="dx-zf dx-zf-l">${dashKatLeiste('bias',dashBiasKat)}</div>`;
+  if(!D.alle.length)return filter+`<div class="dw-empty">No assets in this category.</div>`;
   const n=Math.min(3,Math.floor(D.alle.length/2)),oben=D.alle.slice(0,n),unten=n?D.alle.slice(-n).reverse():[];
   const rest=D.alle.filter(s=>!oben.includes(s)&&!unten.includes(s));
   const karte=(s,i)=>{const v=D.sc(s);return dashBiasKnopf(s,'dbv-p',`<span class="dbv-p-nr">${i+1}</span>${dashBiasN(s,18)}${dashBiasV(s,v,'dbv-p-v')}${dashBiasBalken(s,v,D.mx)}`);};
@@ -17946,12 +17970,13 @@ function dashBiasHtml(){
   // Dokument (hidden), damit jedes Asset genau einmal da ist.
   const bull=rest.filter(s=>s.bias==='bull'),bear=rest.filter(s=>s.bias==='bear').reverse();
   const neu=rest.filter(s=>s.bias!=='bull'&&s.bias!=='bear').sort((a,b)=>Math.abs(D.sc(b))-Math.abs(D.sc(a)));
-  const grenze=Math.max(bull.length,bear.length,3),kuerzen=neu.length>grenze;
+  const grenze=DASH_BIAS_KURZ;
   const sp=[['bull','Bullish',bull],['neu','Neutral',neu],['bear','Bearish',bear]];
-  const zeile=(s,i,b)=>{const v=D.sc(s),weg=b==='neu'&&kuerzen&&!dashBiasNeutralAlle&&i>=grenze;return dashBiasKnopf(s,'dbv-l',`${dashBiasN(s)}${dashBiasV(s,v)}${dashBiasBalken(s,v,D.mx)}`).replace('<button ',weg?'<button hidden ':'<button ');};
-  const knopf=b=>b==='neu'&&kuerzen?`<button class="dbv-mehr" onclick="dashBiasNeutralUmschalten()" aria-expanded="${dashBiasNeutralAlle}">${dashBiasNeutralAlle?`Show less${icn('chevronUp',14)}`:`Show all ${neu.length}${icn('chevronDown',14)}`}</button>`:'';
+  const zeile=(s,i,b)=>{const v=D.sc(s),weg=!dashBiasAlle[b]&&i>=grenze;return dashBiasKnopf(s,'dbv-l',`${dashBiasN(s)}${dashBiasV(s,v)}${dashBiasBalken(s,v,D.mx)}`).replace('<button ',weg?'<button hidden ':'<button ');};
+  const anz={bull:bull.length,neu:neu.length,bear:bear.length};
+  const knopf=b=>anz[b]>grenze?`<button class="dbv-mehr" onclick="dashBiasSpalteUmschalten('${b}')" aria-expanded="${dashBiasAlle[b]}">${dashBiasAlle[b]?`Show less${icn('chevronUp',14)}`:`Show all ${anz[b]}${icn('chevronDown',14)}`}</button>`:'';
   const spalten=rest.length?`<div class="dbv-lang">${sp.map(([b,l,arr])=>`<div class="dbv-sp" data-bias="${b}"><div class="db-gr-lbl" style="color:${biasCss(b)}">${l} <b>${arr.length}</b></div>${arr.length?arr.map((s,i)=>zeile(s,i,b)).join(''):'<div class="db-leer"><i>None</i></div>'}${knopf(b)}</div>`).join('')}</div>`:'';
-  return podest+spalten;
+  return filter+podest+spalten;
 }
 // Heute: High + Medium, chronologisch; vergangene mit Ist-Wert in Beat/Miss-Farbe.
 function dashHeuteListe(){
@@ -17977,9 +18002,9 @@ let dashPerfAlle=false;
 function dashPerfUmschalten(){dashPerfAlle=!dashPerfAlle;renderDash();}
 function dashPerfHtml(){
   const win=PERF_WINDOWS.find(w=>w[0]===perfWindow)||PERF_WINDOWS[1];
-  const rows=syms.map(s=>{const r=perfReturn(s.id,win[1]);return r?{id:s.id,name:s.name,pct:r.pct,from:r.from}:null;})
+  const rows=syms.filter(s=>dashKatPasst(s.id,dashPerfKat)).map(s=>{const r=perfReturn(s.id,win[1]);return r?{id:s.id,name:s.name,pct:r.pct,from:r.from}:null;})
     .filter(Boolean).sort((a,b)=>b.pct-a.pct);
-  if(!rows.length)return`<div class="db-leer"><i>Not enough price history yet</i></div>`;
+  if(!rows.length)return`<div class="db-leer"><i>${dashPerfKat==='ALL'?'Not enough price history yet':'No price history in this category yet'}</i></div>`;
   const mx=Math.max(...rows.map(r=>Math.abs(r.pct)))||1;
   const zeile=(r,i)=>{const col=r.pct>0?BC.bull:r.pct<0?BC.bear:'var(--t3)';return`<div class="db-row perf-row" role="button" tabindex="0" onclick="gotoSym('${escJH(r.id)}')" title="${escH(r.name)} · since ${escH(r.from)}">
       <span class="perf-rank">${i+1}</span><span class="perf-name">${escH(r.name)}</span>
@@ -27805,7 +27830,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,dashBiasNeutralUmschalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
