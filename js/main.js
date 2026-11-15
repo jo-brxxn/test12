@@ -6975,14 +6975,14 @@ function saveSoon(){
 function exportData(){
   const data=JSON.parse(snap());
   data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.scoreMode=scoreMode;
-  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.dashBiasKat=dashBiasKat;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
+  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupKlasse=setupKlasse;data.dashBiasKat=dashBiasKat;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
   a.download='fx-analyst-'+todayStr()+'.json';a.click();
 }
 function importData(input){
   const f=input.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=normFxTheme(_imp.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.dashBiasKat!==undefined){dashBiasKat=dashKatOk(_imp.dashBiasKat);localStorage.setItem('fxpro_dash_bias_kat',dashBiasKat);}if(_imp.dashPerfKat!==undefined){dashPerfKat=dashKatOk(_imp.dashPerfKat);localStorage.setItem('fxpro_dash_perf_kat',dashPerfKat);}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.pkMarkenAn!==undefined){setPkMarkenAnVal(_imp.pkMarkenAn);try{localStorage.setItem('fxpro_pk_marken',pkMarkenAn?'1':'0');}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
+  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=normFxTheme(_imp.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.setupKlasse!==undefined){setupKlasse=setupKlasseOk(_imp.setupKlasse);setupKlasseSpeichern();}if(_imp.dashBiasKat!==undefined){dashBiasKat=dashKatOk(_imp.dashBiasKat);localStorage.setItem('fxpro_dash_bias_kat',dashBiasKat);}if(_imp.dashPerfKat!==undefined){dashPerfKat=dashKatOk(_imp.dashPerfKat);localStorage.setItem('fxpro_dash_perf_kat',dashPerfKat);}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.pkMarkenAn!==undefined){setPkMarkenAnVal(_imp.pkMarkenAn);try{localStorage.setItem('fxpro_pk_marken',pkMarkenAn?'1':'0');}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
   r.readAsText(f);input.value='';
 }
 
@@ -7422,7 +7422,7 @@ async function cloudPushRoh(manual){
     // zuruecksetzen - siehe cloudPull-Kommentar).
     const z0=_userEditZaehler;
     const gesendet=snap();
-    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.dashBiasKat=dashBiasKat;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
+    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupKlasse=setupKlasse;data.dashBiasKat=dashBiasKat;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
     if(APP_VER)data.appVer=APP_VER;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
@@ -7638,6 +7638,7 @@ async function cloudPullRoh(manual,forceOverwrite){
         if(cd.dashPerfKat!==undefined){dashPerfKat=dashKatOk(cd.dashPerfKat);try{localStorage.setItem('fxpro_dash_perf_kat',dashPerfKat);}catch(e){}}
         if(cd.setupNonFxOnly!==undefined){setupNonFxOnly=cd.setupNonFxOnly;try{localStorage.setItem('fxpro_setup_nonfxonly',setupNonFxOnly?'1':'0');}catch(e){}}
         if(cd.setupYieldsOnly!==undefined){setupYieldsOnly=cd.setupYieldsOnly;try{localStorage.setItem('fxpro_setup_yieldsonly',setupYieldsOnly?'1':'0');}catch(e){}}
+        if(cd.setupKlasse!==undefined){setupKlasse=setupKlasseOk(cd.setupKlasse);setupKlasseSpeichern();}
         if(cd.abChartRange!==undefined){setAbChartRangeVal(cd.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}
         if(cd.abTrendLinien!==undefined){setAbTrendLinienVal(cd.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}
         if(cd.kontextSlots!==undefined){setKontextSlotsVal(cd.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}
@@ -14455,6 +14456,7 @@ function clearSetupQuickScopes(){
   if(setupFxOnly){setupFxOnly=false;localStorage.setItem('fxpro_setup_fxonly','0');}
   if(setupNonFxOnly){setupNonFxOnly=false;localStorage.setItem('fxpro_setup_nonfxonly','0');}
   if(setupYieldsOnly){setupYieldsOnly=false;localStorage.setItem('fxpro_setup_yieldsonly','0');}
+  if(setupKlasse){setupKlasse='';try{localStorage.setItem('fxpro_setup_klasse','');}catch(e){}}
 }
 function toggleSetupCcy(c){
   const i=setupCcyFilter.indexOf(c);
@@ -14489,13 +14491,26 @@ function toggleSetupNonFxOnly(){
   renderPairs();
 }
 let setupYieldsOnly=localStorage.getItem('fxpro_setup_yieldsonly')==='1';
-function toggleSetupYieldsOnly(){
-  const was=setupYieldsOnly;clearSetupQuickScopes();setupYieldsOnly=!was;
-  localStorage.setItem('fxpro_setup_yieldsonly',setupYieldsOnly?'1':'0');
-  if(setupYieldsOnly&&setupCcyFilter.length){setupCcyFilter=[];saveSetupCcy();}
-  syncSetupFilterPref();
-  renderPairs();
+// Kategorie-Filter je Asset-Klasse (Nutzer 2026-11-15: "Einmal fehlt da Stocks also jede
+// neue Asset Kategorie muss da drinne sein"). Die Chips kommen aus SB_CATS (Seitenleiste)
+// - eine neue Kategorie dort bekommt hier automatisch ihren Chip. Yields laeuft jetzt
+// hierueber; setupYieldsOnly bleibt als Alias fuer aeltere Geraete synchron.
+function setupKlassenListe(){
+  const seen=new Set(),out=[];
+  SB_CATS.forEach(c=>{const k=c.ids.length?assetCls(c.ids[0]):null;if(!k||k==='fx'||seen.has(k))return;seen.add(k);out.push([k,c.l]);});
+  // Klassen eigener Assets ohne SB_CATS-Eintrag (z.B. selbst angelegte) nicht verlieren
+  syms.forEach(s=>{const k=assetCls(s.id);if(k&&k!=='fx'&&!seen.has(k)){seen.add(k);out.push([k,k.charAt(0).toUpperCase()+k.slice(1)]);}});
+  return out;
 }
+function setupKlasseOk(k){return typeof k==='string'&&/^[a-z]{2,12}$/.test(k)?k:'';}
+let setupKlasse=setupKlasseOk(localStorage.getItem('fxpro_setup_klasse')||'')||(setupYieldsOnly?'yield':'');
+function setupKlasseSpeichern(){try{localStorage.setItem('fxpro_setup_klasse',setupKlasse);}catch(e){}setupYieldsOnly=setupKlasse==='yield';try{localStorage.setItem('fxpro_setup_yieldsonly',setupYieldsOnly?'1':'0');}catch(e){}}
+function toggleSetupKlasse(k){
+  const was=setupKlasse===k;clearSetupQuickScopes();setupKlasse=was?'':setupKlasseOk(k);setupKlasseSpeichern();
+  if(setupKlasse&&setupCcyFilter.length){setupCcyFilter=[];saveSetupCcy();}
+  syncSetupFilterPref();renderPairs();
+}
+function toggleSetupYieldsOnly(){toggleSetupKlasse('yield');}
 function isPureFxPair(name){const p=(name||'').split('/');return p.length===2&&FX.includes(p[0])&&FX.includes(p[1]);}
 // Enthält ein Paar(name) eine der gewählten Währungen (als Basis ODER Kurs)?
 function pairHasCcy(name,ccys){const parts=(name||'').split('/').map(s=>s.trim().toUpperCase());return ccys.some(c=>parts.includes(c));}
@@ -15202,20 +15217,23 @@ function renderPairsRoh(){
     // auseinanderlaufen koennen. Non-FX-Assets werden ueber ihren
     // kanonischen Paarnamen ('GOLD' -> 'XAU/USD') gefuehrt.
     ...pairs.filter(p=>{if(isWatchlistPlaceholder(p))return false;if(seenPair.has(p.name))return false;seenPair.add(p.name);return true;}).map(p=>({kind:'pair',id:p.id,name:p.name,bias:p.bias,marked:isWatched(p.name),score:pairScore(p.name)})),
-    // Aktien nicht (2026-11-13): ihr Score ist fast der des S&P 500 (dieselben USD-Karten) -
-    // 13 nahezu doppelte Zeilen; dazu sprengte "CoreWeave" bei 390 px die Zeilenbreite (gemessen +12 px).
-    ...syms.filter(s=>!FX.includes(s.id)&&assetCls(s.id)!=='stock').map(s=>({kind:'asset',id:s.id,name:s.name,bias:s.bias,marked:isWatched(watchPairNameForAsset(s.id)),score:symScoreCmp(s)})),
+    // Alle Assets (Nutzer 2026-11-15: "generell muessen da alle Assets angezeigt werden die
+    // die Webseite hat wenn all ausgewaehlt ist") - die Aktien-Ausnahme von 2026-11-13 ist weg.
+    ...syms.filter(s=>!FX.includes(s.id)).map(s=>({kind:'asset',id:s.id,name:s.name,bias:s.bias,marked:isWatched(watchPairNameForAsset(s.id)),score:symScoreCmp(s)})),
   ];
   // Filterleiste: einzelne Währungen auswählen -> nur Paare mit dieser Währung.
   const active=setupCcyFilter.length>0;
   const chip=c=>`<button class="cmp-chip${setupCcyFilter.includes(c)?' on':''}" onclick="toggleSetupCcy('${c}')">${c}</button>`;
+  // "All" ist NUR an, wenn wirklich nichts gefiltert ist (Nutzer 2026-11-15: "wenn nur fx oder
+  // yields ausgewaehlt ist dann kann nicht auch all in schwarz sein"; vorher hing es nur an den Waehrungs-Chips).
+  const alleAn=!active&&!setupFxOnly&&!setupNonFxOnly&&!setupKlasse;
   const filterBar=cloudNotConnectedNoticeHtml()+`<div class="cmp-filter" style="margin-bottom:11px">
     <div class="cmp-filter-grp"><span class="cmp-filter-lbl">Filter by currency</span>${FX.map(chip).join('')}</div>
     <div class="cmp-filter-grp">
-      <button class="cmp-quick${active?'':' on'}" onclick="clearSetupCcy()" title="Show all pairs &amp; assets">All</button>
+      <button class="cmp-quick${alleAn?' on':''}" aria-pressed="${alleAn}" onclick="clearSetupCcy()" title="Show every pair &amp; asset">All</button>
       <button class="cmp-quick${setupFxOnly?' on':''}" onclick="toggleSetupFxOnly()" title="Only FX currency pairs - hides Gold/Oil/BTC/indices/stocks and any cross pairs with them">FX</button>
       <button class="cmp-quick${setupNonFxOnly?' on':''}" onclick="toggleSetupNonFxOnly()" title="Only non-FX assets (Gold/Oil/BTC/indices/Yields/...) and cross pairs with a non-FX leg">Non-FX</button>
-      <button class="cmp-quick${setupYieldsOnly?' on':''}" onclick="toggleSetupYieldsOnly()" title="Only the Yields asset category">Yields</button>
+      ${setupKlassenListe().map(([k,l])=>`<button class="cmp-quick${setupKlasse===k?' on':''}" aria-pressed="${setupKlasse===k}" onclick="toggleSetupKlasse('${k}')" title="Only ${escH(l)}">${escH(l)}</button>`).join('')}
     </div>
   </div>`;
   if(items.length===0){
@@ -15228,7 +15246,7 @@ function renderPairsRoh(){
   let shown=active?items.filter(it=>it.kind==='pair'&&pairHasCcy(it.name,setupCcyFilter)):items;
   if(setupFxOnly)shown=shown.filter(it=>it.kind==='pair'&&isPureFxPair(it.name));
   if(setupNonFxOnly)shown=shown.filter(it=>it.kind==='asset'||(it.kind==='pair'&&!isPureFxPair(it.name)));
-  if(setupYieldsOnly)shown=shown.filter(it=>it.kind==='asset'&&assetCls(it.id)==='yield');
+  if(setupKlasse)shown=shown.filter(it=>it.kind==='asset'&&assetCls(it.id)===setupKlasse);
   // Zins-Differenz je FX-Paar: 2-jaehrige Rendite Basis minus Kurswaehrung.
   // Positiv = Carry beguenstigt die Long-Seite des Paars.
   // ⚠ Bis 2026-10-07 stand hier die LEITZINS-Differenz, waehrend der Carry im
@@ -15267,7 +15285,7 @@ function renderPairsRoh(){
     ${list.length?`<div class="setups-col-rows">${list.map(row).join('')}</div>`:`<div class="dw-empty" style="font-size:var(--fs-xs);padding:6px 0">–</div>`}
   </div>`;
   if(shown.length===0){
-    const why=[active?setupCcyFilter.join(', '):'',setupFxOnly?'FX-only':'',setupNonFxOnly?'Non-FX-only':'',setupYieldsOnly?'Yields-only':''].filter(Boolean).join(' · ');
+    const why=[active?setupCcyFilter.join(', '):'',setupFxOnly?'FX-only':'',setupNonFxOnly?'Non-FX-only':'',setupKlasse?(setupKlassenListe().find(x=>x[0]===setupKlasse)||[0,setupKlasse])[1]+'-only':''].filter(Boolean).join(' · ');
     el.innerHTML=filterBar+`<div style="color:var(--t3);font-size:var(--fs-sm);padding:8px 4px;font-family:var(--ff-num)">No pairs with ${escH(why)}. Add one via "＋ Add Pair" or adjust the filter.</div>`;
     return;
   }
@@ -27867,7 +27885,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,hellVorschauSetzen,hellVorschauWeiter,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

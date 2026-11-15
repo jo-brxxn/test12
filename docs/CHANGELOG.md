@@ -22213,3 +22213,13 @@ Nutzer: *„Ja maximale Historie“*.
 - **Aktien:** Zentralbank + Macro-Reihe nicht mehr auf der Seite; Quicklink **Macro** oeffnet ein Fenster (67 % Breite, in #detail, damit alle Kartenfunktionen wirken). Waechter `check/stkmakro.js`.
 - **Gemessen fuer die Weissraum-Frage:** NVDA Valuation 960 px Karte / 516 px leer, Growth & quality 960 / 639, Earnings 411 / 144; Dashboard Your insights 469 / 269, Biggest movers 325 / 244, Open trades 221 / 128 (leere Flaeche mit Logo `lg-frei` gefuellt). History-Karte: Score-Linie der Aktien beginnt erst 2026-11-15 (Verlauf fehlte bis 726), Achse ab August → ~90 % leere Flaeche.
 - **Vorschauen** (Bilder im Chat): A1-A3 Spalte neben dem Chart, B1-B3 Notizen im Chart, H1-H3 History-Karte, C1-C3 gestreckte Reihen. Hover-News und Chart-Notizen werden nach der Wahl gebaut.
+
+## 2026-11-15 — Set-ups: Filterleiste repariert (VERSION-CHECK-730)
+
+**Nutzer (Foto: All UND Non-FX schwarz, kein Stocks):** *„jede neue Asset Kategorie muss da drinne sein ... alle Assets ... wenn all ausgewaehlt ist ... all zeigt immer alles und kann so nur alleine an sein“*.
+**Ursachen (Code + Messung):**
+1. `All` hing nur an den Waehrungs-Chips (`active?'':' on'`) - FX / Non-FX / Yields aendern daran nichts → zwei Chips gleichzeitig an.
+2. Aktien bewusst ausgeschlossen (2026-11-13, 720: Score ~S&P 500, CoreWeave +12 px bei 390 px) → All zeigte nicht alles.
+3. Gruppen fest verdrahtet (nur FX/Non-FX/Yields) → neue Kategorie ohne Chip.
+**Behoben:** `alleAn` = nichts gefiltert; Gruppen-Chips aus `SB_CATS` (`setupKlassenListe`, neue Kategorie = automatisch neuer Chip), Filter `setupKlasse` (synchronisiert; `setupYieldsOnly` bleibt Alias fuer aeltere Geraete); Aktien wieder in Set-ups.
+**Waechter:** `check/setupfilter.js` (Gegenprobe Zustand vorher → C rot).

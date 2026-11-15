@@ -31,7 +31,7 @@ Nach diesem Muster angebundene Felder: `greenDismissed`, `tabStacks`,
 `compactLevel` (+Legacy-Boolean `compactView`), `pinEnabled`, `designHue`
 (Designer/🎨: null = Auto-Risk-Sentiment-Färbung der Aurora, Zahl 0–360 =
 Nutzer-Farbton; beim Pull `!==undefined`-Check, damit auch "zurück auf
-Auto" = null ankommt), `dashBiasKat`/`dashPerfKat` (Kategorie-Filter der Dashboard-Karten Bias scores / Performance, `'ALL'`/`'fx'`/`'stock'`…, `fxpro_dash_bias_kat`/`fxpro_dash_perf_kat`, seit 2026-11-15), `setupCcyFilter`/`setupFxOnly`
+Auto" = null ankommt), `setupKlasse` (Set-ups-Filter je Asset-Klasse, `'stock'`/`'yield'`…, `fxpro_setup_klasse`, seit 2026-11-15; `setupYieldsOnly` als Alias), `dashBiasKat`/`dashPerfKat` (Kategorie-Filter der Dashboard-Karten Bias scores / Performance, `'ALL'`/`'fx'`/`'stock'`…, `fxpro_dash_bias_kat`/`fxpro_dash_perf_kat`, seit 2026-11-15), `setupCcyFilter`/`setupFxOnly`
 (Set-ups-Waehrungsfilter/FX-Quick-Filter), `calHighOnly`/`calCcyFilter`
 (Kalender-Filter), `abTrendLinien` (EMA20-Linien 1D/4H im Price-Chart,
 `'d,h'`, seit 2026-09-25), `pxChartTyp` (Candles | Line fuer ALLE
