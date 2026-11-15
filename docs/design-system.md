@@ -2003,3 +2003,8 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 - **Bedienen = nur das Betroffene neu zeichnen** (eine Karte, nur Charts). Ein Komplett-Neuaufbau springt (Scroll-Stand) und klappt Offenes zu.
 - **`overflow-x:clip` statt `hidden`** an scrollenden Fenster-Inhalten: `hidden` macht einen Scroll-Container, `position:sticky` darin klebt dann nicht mehr.
 - Geprueft: `check/btcsentiment.js` I.
+
+## Asset-Symbole fuer Indizes und Aktien (2026-11-15, 728)
+
+- Jeder Index und jede Aktie hat ein **eigenes** Symbol (`js/marken-icons.js`): Kerngeschaeft in Firmenfarbe auf dunkler Plakette, viewBox 36×24. **Nie Firmenlogos nachbauen.**
+- Neue Aktie → eigenes Symbol in `AI_MARKEN` + in `check/markenicons.js` (IDS) eintragen.

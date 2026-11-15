@@ -24,6 +24,7 @@ import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
 import {bsHelfer,bsAuf,btcSentimentScore} from './btc-sentiment.js';
+import {AI_MARKEN,aiMarkeMono} from './marken-icons.js';
 import {STOCK_IDS,STOCK_ACCENT,STOCK_DEF,aktienHelfer,aktienDatenHolen,aktieWarnHtml,karteProfil,karteBewertung,karteQualitaet,karteAnalysten,karteZahlen} from './aktien.js';
 // Sektoren-Katalog der MACRO-Zeile (2026-11-12, nur Anzeige) - dieselbe Liste baut sektor_data.json.
 import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.js';
@@ -168,7 +169,7 @@ const AI_GLYPH_INDEX = '<rect x="2.8" y="3.2" width="30.4" height="17.6" rx="2.6
 // Ein einfarbiges Icon. `size` ist die HOEHE in px, Breite 3:2 wie beim
 // farbigen Satz - dadurch bleiben Flaggen und Symbole gleich gross.
 function assetGlyphHtml(id, size) {
-  const d = AI_GLYPHS[id] || (AI_INDEX_ACCENT[id] ? AI_GLYPH_INDEX : null);
+  const d = AI_GLYPHS[id] || (AI_MARKEN[id] ? aiMarkeMono(AI_MARKEN[id]) : AI_INDEX_ACCENT[id] ? AI_GLYPH_INDEX : null);
   if (!d) return '';
   const h = size || 17, w = Math.round(h * 1.5 * 10) / 10;
   return `<span class="np-glyph" style="width:${w}px;height:${h}px" aria-hidden="true">`
@@ -210,7 +211,8 @@ function aiDefsSvg() {
   // Gezeichnete Fassung je Flagge (#ai-USD-g ...) fuer Wisch und Kopf-Band.
   for (const id in AI_FLAGS) syms.push(`<symbol id="ai-${id}-g" viewBox="0 0 36 24">${aiGezeichnet(aiTint(AI_FLAGS[id]))}</symbol>`);
   for (const id in AI_SYMBOLS) syms.push(`<symbol id="ai-${id}" viewBox="0 0 36 24">${AI_SYMBOLS[id]}</symbol>`);
-  for (const id in AI_INDEX_ACCENT) syms.push(`<symbol id="ai-${id}" viewBox="0 0 36 24">${aiIndex(AI_INDEX_ACCENT[id])}</symbol>`);
+  // Eigene Symbole je Index/Aktie (js/marken-icons.js, 2026-11-15); sonst die gemeinsame Index-Karte.
+  for (const id in AI_INDEX_ACCENT) syms.push(`<symbol id="ai-${id}" viewBox="0 0 36 24">${AI_MARKEN[id] || aiIndex(AI_INDEX_ACCENT[id])}</symbol>`);
   return `<svg id="aiDefs" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
     <defs>
       <clipPath id="aiUjA"><path d="M18,0 H36 V12 H18Z M0,12 H18 V24 H0Z"/></clipPath>
@@ -353,6 +355,7 @@ function aiFilmTabellen() {
 }
 function aiFilmArt(id) {
   if (AI_FLAG_IDS.indexOf(id) !== -1) return 'flagge';
+  if (AI_MARKEN[id]) return null;   // eigene Symbole stehen still (kein Kurs-Strich zum Animieren)
   if (AI_INDEX_ACCENT[id]) return 'index';
   const sym = AI_SYMBOLS[id] || '';
   if (sym.indexOf('ai-drip') !== -1) return 'oel';
@@ -17961,8 +17964,11 @@ function dashBiasHtml(){
   if(!D.alle.length)return filter+`<div class="dw-empty">No assets in this category.</div>`;
   const n=Math.min(3,Math.floor(D.alle.length/2)),oben=D.alle.slice(0,n),unten=n?D.alle.slice(-n).reverse():[];
   const rest=D.alle.filter(s=>!oben.includes(s)&&!unten.includes(s));
+  // Mit Kategorie-Filter koennen alle Assets bullish sein (Stocks 2026-11-15: CoreWeave +4.2
+  // stand unter "Strongest short") - dann heisst die Spalte ehrlich "Weakest" bzw. "Strongest".
+  const lblOben=oben.every(s=>D.sc(s)>0)?'Strongest long':'Strongest',lblUnten=unten.every(s=>D.sc(s)<0)?'Strongest short':'Weakest';
   const karte=(s,i)=>{const v=D.sc(s);return dashBiasKnopf(s,'dbv-p',`<span class="dbv-p-nr">${i+1}</span>${dashBiasN(s,18)}${dashBiasV(s,v,'dbv-p-v')}${dashBiasBalken(s,v,D.mx)}`);};
-  const podest=n?`<div class="dbv-podest"><div class="dbv-p-sp"><div class="db-gr-lbl">Strongest long</div>${oben.map(karte).join('')}</div><div class="dbv-p-sp"><div class="db-gr-lbl">Strongest short</div>${unten.map(karte).join('')}</div></div>`:'';
+  const podest=n?`<div class="dbv-podest"><div class="dbv-p-sp"><div class="db-gr-lbl">${lblOben}</div>${oben.map(karte).join('')}</div><div class="dbv-p-sp"><div class="db-gr-lbl">${lblUnten}</div>${unten.map(karte).join('')}</div></div>`:'';
   // Neutral: staerkster Ausschlag zuerst (egal welche Richtung) und eingeklappt
   // nur so lang wie die laengere Bull-/Bear-Spalte (Nutzer 2026-11-08: "die
   // neutralen Assets sollen nur so lang sein wie die laengsten bullish oder

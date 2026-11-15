@@ -22195,3 +22195,11 @@ Nutzer: *„Ja maximale Historie“*.
 - Chips All · FX · Crypto · Metals · Energy · Indices · Stocks · Yields in beiden Karten, je Karte eigener Filter (`dashBiasKat`, `dashPerfKat`), Podium/Spalten bzw. Leaders/Laggards nur aus der Kategorie.
 - Chips brechen um statt zu wischen: beim ersten Entwurf (waagerecht wischbar) meldete designregeln F bei 820/1180/1440 px abgeschnittene, nicht antippbare Chips.
 - Waechter: neu `check/dashfilter.js` (Gegenprobe Filter wirkungslos → C rot); `check/dashboard.js` auf die neue Einklapp-Regel umgestellt.
+
+## 2026-11-15 — Eigene Symbole fuer Indizes und Aktien (VERSION-CHECK-728)
+
+**Nutzer:** iPad-Foto Bias scores, bei allen Aktien ein leeres dunkles Kaestchen; *„Ich will zu jedem indice und jeder Aktie ein eigenes das zur Firma oder so passt zeig mir die Symbole hier im Chat“* → Vorschau (16 Entwuerfe, gross + 18 px hell/dunkel) → *„Ja setz das so um“*.
+- `js/marken-icons.js` (`AI_MARKEN`): S&P 500 Streifen + Balken, Nasdaq Leiterbahn, DAX Schwarz-Rot-Gold, Apple Smartphone, Microsoft Wolke + Code, Alphabet Lupe, Amazon Paket, NVIDIA Grafikkarte, Meta VR-Brille, Tesla Akku + Blitz, Broadcom Netzwerk-Chip, Oracle Datenbank, AMD Prozessor, Intel Wafer, Palantir Datennetz, CoreWeave Server-Rack. **Keine Firmenlogos** (Markenrecht).
+- Einfarbige Fassung ueber `aiMarkeMono`; kein Kurs-Strich-Film mehr fuer diese 16 (`aiFilmArt` null).
+- Dabei gefunden (eigener Fehler aus 727): mit Filter Stocks stand CoreWeave **+4.2** unter "Strongest short" → Spalten heissen "Weakest"/"Strongest", wenn nicht alle drei negativ/positiv; geprueft in `check/dashfilter.js` C.
+- Waechter: `check/markenicons.js` (Gegenprobe alte Karte → A rot).

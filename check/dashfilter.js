@@ -68,6 +68,8 @@ const KATS = ['All', 'FX', 'Crypto', 'Metals', 'Energy', 'Indices', 'Stocks', 'Y
       if (!L.ids.length) F.push(`${o} C: Bias scores bei ${chip} leer`);
       if (fremdB.length) F.push(`${o} C: Bias scores bei ${chip} mit fremden Assets: ${fremdB.slice(0, 5).join(', ')}`);
       if (fremdP.length) F.push(`${o} C: Performance bei ${chip} mit fremden Assets: ${fremdP.slice(0, 5).join(', ')}`);
+      const kurz = await p.evaluate(() => { const sp = [...document.querySelectorAll('#dbBias .dbv-p-sp')][1]; if (!sp) return null; return { lbl: sp.querySelector('.db-gr-lbl').textContent.trim(), w: [...sp.querySelectorAll('.db-bias[data-id]')].map(z => symScoreCmp(syms.find(s => s.id === z.dataset.id))) }; });
+      if (kurz && kurz.lbl === 'Strongest short' && kurz.w.some(v => v >= 0)) F.push(`${o} C: "Strongest short" bei ${chip} mit nicht negativem Score (${kurz.w.join(', ')})`);
     }
     // D) gemerkt
     const ls = await p.evaluate(() => [localStorage.getItem('fxpro_dash_bias_kat'), localStorage.getItem('fxpro_dash_perf_kat')]);
