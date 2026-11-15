@@ -2021,3 +2021,9 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 - **Background** (`data-hg`): Mist, Slate, Steel (einfarbig, heller → dunkler), Dot grid, Marble, Deep marble (Muster, leicht → stark). Marmor = SVG-Turbulenz mit Adern (`feComponentTransfer`), kein Bild.
 - **Cards & contours** (`data-el`): Crisp, Defined, Framed, Ink, Bold, Extreme — Raender (`--bd/--bd2`), Schatten, ab 3 getoente, ab 5 dunkle Kartenkoepfe.
 - Beide Gruppen frei kombinierbar, **nur heller Modus**, synchronisiert (`stilHg`/`stilEl`). Fruehe Anwendung im `<head>` (kein Aufblitzen).
+
+## Price-Karte (Stand 2026-11-15, 732)
+
+- Spalte links = weisse erhoehte Karte (A2); Fahren ueber den Chart zeigt den Tag, Tipp waehlt fest.
+- Eigene Notizen = Flagge mit Text im Chart (B1), keine hohlen Pfeile mehr.
+- History-Karte: kein Ageing-Schalter (Nutzer 2026-11-15), Achse ab dem ersten echten Wert.

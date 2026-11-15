@@ -193,6 +193,21 @@ function pkBandLegende(){
   if(!PK_BAND_AN)return'';
   return`<span class="pk-tb-leg">${PK_BAND_KAT.map(k=>`<span class="pk-tb-lg"><i style="background:${k[2]}"></i>${k[1]}</span>`).join('')}</span>`;
 }
+// ── Eigene Notizen als Flagge im Chart (B1, Nutzerwahl 2026-11-15: "in den Chart reinschreiben
+// ... zB bei nvidia ceo affairs, he resigns as ceo"). Gestrichelte Linie ueber die ganze Hoehe,
+// oben eine Flagge mit Datum + Titel + erster Zeile, Farbe = Bias der Notiz. Nah beieinander
+// liegende Flaggen weichen in eine zweite/dritte Reihe aus; rechts klappen sie nach links.
+function pkFlaggenHtml(id,api,tage,B){
+  const liste=[];
+  B.forEach(b=>{if(!b.eig.length||b.i1<0)return;let x=0,n=0;for(let i=b.i0;i<=b.i1;i++){x+=api.x(i);n++;}x/=n;b.eig.forEach(nt=>liste.push({x,nt,d:tage[b.i0],k:b.k}));});
+  liste.sort((a,c)=>a.x-c.x);
+  const reihenEnde=[];
+  return liste.map(({x,nt,d,k})=>{
+    let r=0;while(reihenEnde[r]!=null&&x-reihenEnde[r]<0.22)r++;reihenEnde[r]=x;
+    const links=x>0.72,txt=String(nt.title||'').trim()||'Note',unter=String(nt.body||'').replace(/\s+/g,' ').trim().slice(0,60);
+    return`<span class="pk-flagge${links?' links':''}" style="left:${(x*100).toFixed(3)}%;--c:${bcol(nt.bias)};--r:${Math.min(r,3)}" title="${escH(tagKurz(d)+' · '+txt+(unter?' · '+unter:''))}"><span class="pk-fl-l"></span><button type="button" class="pk-fl-t" onclick="pkWaehle('${escJH(k)}')"><b>${escH(tagKurz(d).replace(/^\w+, /,'').toUpperCase())} · ${escH(txt)}</b>${unter?`<i>${escH(unter)}</i>`:''}</button></span>`;
+  }).join('');
+}
 function pkLageHtml(id,api){
   const lid='pk'+(++_pkSeq),tage=api.tage||[];
   if(tage.length<2)return'';
@@ -201,7 +216,7 @@ function pkLageHtml(id,api){
   _pkReg[lid]={a:id,tage,x:api.x,y:api.y,B,woche};
   // Alte Lagen abraeumen (gleiche Idee wie chvAufraeumen)
   Object.keys(_pkReg).forEach(k=>{if(k!==lid&&+k.slice(2)<_pkSeq-6)delete _pkReg[k];});
-  if(!pkMarkenAn)return`<div class="pk-lage pk-aus" data-pk="${lid}">${pkBandHtml(id,api,tage,B,woche)}</div>`;
+  if(!pkMarkenAn)return`<div class="pk-lage pk-aus" data-pk="${lid}">${pkBandHtml(id,api,tage,B,woche)}${pkFlaggenHtml(id,api,tage,B)}</div>`;
   // Knopfbreite = Abstand zweier Pfeile minus 1 px, hoechstens 22 px - sonst
   // ueberdecken sich Nachbartage (gemessen 2026-11-01, check/designregeln.js F:
   // 1180 px = ~12 px je Tag, Knopf 22 px). Nach dem Aufbau mit der echten
@@ -216,11 +231,12 @@ function pkLageHtml(id,api){
     if(!n)return;
     x/=n;
     const tip=b.ev.map(e=>e.n).concat(b.eig.map(n=>'Mine: '+(n.title||''))).join(' · ');
-    const teile=(b.eig.map(n=>`<span class="pk-pf-i pk-eig" style="--c:${bcol(n.bias)}">${PFEIL}</span>`).join(''))
-      +(b.ev.length?`${b.ev.length>1?`<i class="pk-n">${b.ev.length}</i>`:''}<span class="pk-pf-i" style="--c:${bcol(b.bias)}">${PFEIL}</span>`:'');
+    // Eigene Notizen stehen seit 2026-11-15 als Flagge (pkFlaggenHtml), nicht mehr als hohler Pfeil.
+    if(!b.ev.length)return;
+    const teile=(b.ev.length?`${b.ev.length>1?`<i class="pk-n">${b.ev.length}</i>`:''}<span class="pk-pf-i" style="--c:${bcol(b.bias)}">${PFEIL}</span>`:'');
     h+=`<button type="button" class="pk-pf${pkSel&&pkSel.a===id&&pkSel.k===b.k?' on':''}" data-b="${escH(b.k)}" style="left:${(x*100).toFixed(3)}%;top:${(y*100).toFixed(3)}%" title="${escH(tagKurz(tage[b.i0])+' · '+tip)}" aria-label="${escH((woche?'Week of ':'')+tagKurz(tage[b.i0])+': '+tip)}">${teile}</button>`;
   });
-  return`<div class="pk-lage${pkSel&&pkSel.a===id?' sel':''}" data-pk="${lid}" style="--pk-w:${kw}px"><span class="pk-band" aria-hidden="true"></span>${pkBandHtml(id,api,tage,B,woche)}${h}<span class="pk-tipp" aria-hidden="true">Tap a day</span></div>`;
+  return`<div class="pk-lage${pkSel&&pkSel.a===id?' sel':''}" data-pk="${lid}" style="--pk-w:${kw}px"><span class="pk-band" aria-hidden="true"></span>${pkBandHtml(id,api,tage,B,woche)}${h}${pkFlaggenHtml(id,api,tage,B)}<span class="pk-tipp" aria-hidden="true">Tap a day</span></div>`;
 }
 
 function pkKnopfBreite(breite,n,woche){const px=(breite||600)/Math.max(1,n)*(woche?5:1);return Math.max(8,Math.min(22,Math.floor(px-1)));}
@@ -278,6 +294,35 @@ function pkUmfeld(id,d0,d1){
   return out;
 }
 function pkModusSetzen(m){pkModus=m==='moves'?'moves':'next';pkSpalteNeu();}
+// ── Fahren ueber den Chart (Nutzer 2026-11-15: "wenn man ueber den Chart hovert das links in
+// dem Kasten die News Events von dem Tag stehen"). Nur Maus (auf Touch waehlt der Tipp den Tag).
+// Tage ohne Release bekommen einen leeren Eimer wie in pkMoveWaehle - die Karte zeigt dann
+// die Tagesbewegung und "no releases". Verlassen = zurueck zu Next up / Biggest moves.
+let pkHover=null;
+function pkEimerFuer(L,k){
+  if(!L.B.has(k)){let i0=1e9,i1=-1;L.tage.forEach((d,i)=>{if((L.woche?wocheVon(d):d)===k){i0=Math.min(i0,i);i1=Math.max(i1,i);}});if(i1<0)return false;L.B.set(k,{k,ev:[],eig:[],i0,i1,g:0,s:0,n:0,bias:'neu'});}
+  return true;
+}
+function pkHoverSetzen(a,k){
+  if((pkHover&&pkHover.a)===a&&(pkHover&&pkHover.k)===k)return;
+  if(!a&&!pkHover)return;
+  pkHover=a&&k?{a,k}:null;
+  if(!pkSel)pkSpalteNeu();
+}
+function pkHoverAnbinden(){
+  const el=pkLage();if(!el||el.__hov)return;el.__hov=1;
+  const box=el.closest('.ab-pk-chart')||el.parentElement;
+  box.addEventListener('pointermove',e=>{
+    if(e.pointerType&&e.pointerType!=='mouse')return;
+    const lage=pkLage();if(!lage)return;const L=_pkReg[lage.dataset.pk];if(!L||!L.tage.length)return;
+    const r=lage.getBoundingClientRect();if(!r.width)return;const f=(e.clientX-r.left)/r.width;
+    if(f<0||f>1){pkHoverSetzen(null);return;}
+    let bi=0,bd=1e9;for(let i=0;i<L.tage.length;i++){const d=Math.abs(L.x(i)-f);if(d<bd){bd=d;bi=i;}}
+    const k=L.woche?wocheVon(L.tage[bi]):L.tage[bi];
+    if(pkEimerFuer(L,k))pkHoverSetzen(L.a,k);
+  });
+  box.addEventListener('pointerleave',()=>pkHoverSetzen(null));
+}
 function pkMoveWaehle(k){
   const c=getSym();if(!c)return;
   const lid=Object.keys(_pkReg).filter(x=>_pkReg[x].a===c.id).pop(),L=lid?_pkReg[lid]:null;if(!L)return;
@@ -291,7 +336,9 @@ function pkMoveWaehle(k){
 function pkSpalteHtml(id){
   if(pkForm&&pkForm.a===id&&pkForm.spalte)return'';
   const lid=Object.keys(_pkReg).filter(k=>_pkReg[k].a===id).pop(),L=lid?_pkReg[lid]:null;
-  const b=pkSel&&pkSel.a===id&&L?L.B.get(pkSel.k):null;
+  // Fahren ueber den Chart zeigt den Tag (pkHover), eine Auswahl per Tipp hat Vorrang.
+  const selK=pkSel&&pkSel.a===id?pkSel.k:(pkHover&&pkHover.a===id?pkHover.k:null);
+  const b=selK&&L?L.B.get(selK):null;
   const tabs=`<span class="ctyp pk-modus" role="group" aria-label="Column view">${[['next','Next up'],['moves','Biggest moves']].map(([v,t])=>`<button type="button" class="ind-hist-range-btn ctyp-b${pkModus===v?' on':''}" onclick="pkModusSetzen('${v}')" title="${v==='next'?'Upcoming releases for this asset':'Largest moves in the visible range and what was released on those days'}">${t}</button>`).join('')}</span>`;
   if(!b&&pkModus==='moves'){
     const m=pkBewegungen(id,L);
@@ -530,6 +577,7 @@ function pkNachAufbau(){
   }
   pkBreiteSetzen();
   pkMarkiere();
+  pkHoverAnbinden();
   // Ein Neuaufbau (Feed-Update) ersetzt die Karte - ein offenes Popover kommt
   // mit dem schon Getippten (pkForm.t) wieder.
   if(pkForm&&pkForm.a===c.id&&!document.getElementById('pkPop'))pkPopZeichnen();

@@ -247,29 +247,18 @@ const gruen = (m) => console.log('  ✓ ' + m);
   if (angezeigt.length && !cGeprueft)
     rot(`${angezeigt.length} Alterungs-Wechsel gemeldet, aber KEINER nachgerechnet — die Pruefung waere leer-gruen`);
   else if (cGeprueft) gruen(`${cGeprueft} von ${angezeigt.length} Alterungs-Zeilen unabhaengig nachgerechnet (Zyklus, Release, Grenze, Wechseltag)`);
-  console.log('\n── D) Alterungs-Schalter ──');
-  // Ein Asset waehlen, bei dem es ueberhaupt eine Alterungszeile gibt.
-  const mitAlterung = angezeigt.length ? angezeigt[0].sym : 'EUR';
+  console.log('\n── D) Kein Alterungs-Schalter mehr (Nutzer 2026-11-15), Alterungszeilen stehen immer da ──');
   const schalter = await p.evaluate(async (id) => {
     closeM('mHist'); await new Promise(r => setTimeout(r, 200));
     gotoSym(id); await new Promise(r => setTimeout(r, 400));
     openHistModal(id); await new Promise(r => setTimeout(r, 700));
     setHistRange(90); await new Promise(r => setTimeout(r, 700));
-    const knopf = document.querySelector('#mHist .histp-agebtn');
-    const an = document.querySelectorAll('#mHist .histp-age').length;
-    if (!knopf) return { keinKnopf: true, an };
-    knopf.click(); await new Promise(r => setTimeout(r, 600));
-    const aus = document.querySelectorAll('#mHist .histp-age').length;
-    document.querySelector('#mHist .histp-agebtn').click();
-    await new Promise(r => setTimeout(r, 600));
-    const wieder = document.querySelectorAll('#mHist .histp-age').length;
-    return { an, aus, wieder };
-  }, mitAlterung);
-  if (schalter.keinKnopf) rot('Kein Alterungs-Schalter (.histp-agebtn) im Fenster');
-  else if (!schalter.an) rot(`${mitAlterung}: keine Alterungszeile im 3M-Bereich, obwohl Abschnitt C dort einen Wechsel ausgibt — der Schalter ist damit ungeprueft`);
-  else if (schalter.aus !== 0) rot(`Schalter aus: es stehen weiter ${schalter.aus} Alterungszeilen da`);
-  else if (schalter.wieder !== schalter.an) rot(`Schalter wieder an: ${schalter.wieder} statt ${schalter.an} Alterungszeilen`);
-  else gruen(`${mitAlterung}: ${schalter.an} → 0 → ${schalter.wieder} Alterungszeilen (Regel 6: der Knopf tut etwas)`);
+    return { knopf: document.querySelectorAll('.histp-agebtn').length, an: document.querySelectorAll('#mHist .histp-age').length, hinweis: /switch on "Ageing"/.test(document.body.textContent) };
+  }, angezeigt.length ? angezeigt[0].sym : 'EUR');
+  if (schalter.knopf) rot(`Ageing-Schalter steht noch da (${schalter.knopf}x)`);
+  if (schalter.hinweis) rot('Text "switch on Ageing" steht noch da');
+  if (angezeigt.length && !schalter.an) rot('Alterungszeilen fehlen, obwohl Abschnitt C Wechsel ausgibt');
+  if (!schalter.knopf && !schalter.hinweis) gruen(`kein Ageing-Schalter, kein Verweis darauf; ${schalter.an} Alterungszeilen sichtbar`);
 
   // ── E) Jeden Tag einzeln, "No data released" statt Sammelzeile ────────
   console.log('\n── E) Jeden Tag einzeln, leere Tage benannt ──');

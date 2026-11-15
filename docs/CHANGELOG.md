@@ -22231,3 +22231,13 @@ Nutzer: *„Ja maximale Historie“*.
 - Im Browser gemessen und korrigiert: Stufe Bold machte die Zahl im Pinned-notes-Zaehler unsichtbar (Regel fuer helle Kopfschrift traf auch Zaehler) → nur Titel; erster Marmor sah wie Wolken aus → Adern per `feComponentTransfer`.
 - Waechter `check/stil.js`.
 - Nebenbei: CI 730 rot in `zurueck` C (Eingabe waehrend Push), lokal 7x gruen (4x parallel unter Last). Der Test wartete hoechstens 4 s auf den Beginn des Push; jetzt 10 s und "untauglich" statt Datenverlust, falls der Push nicht beginnt. CI-Teil neu gestartet.
+
+## 2026-11-15 — Price-Karte A2 + Hover, Notizen als Flagge (B1), History H1 (VERSION-CHECK-732)
+
+**Nutzerwahl:** A2, B1, H1, C bleibt; *„bei der history entfern diesen aging Hinweis komplett“*.
+- **Hover:** Fahren ueber den Price-Chart (Maus) zeigt links den Tag unter der Maus (Releases, Tag/5T-Bewegung, S&P 500, Rendite), Verlassen = Next up. Ein Tipp waehlt weiter fest (Vorrang). Gemessen: 50 % → "Fri, Oct 2" mit 3 Releases, 80 % → "Fri, Oct 30" −4,22 %, aus dem Chart → "Next up".
+- **A2:** Spalte weisse Karte mit blauer Oberkante + Schatten, Chart auf grauer Flaeche (#F1F4F9).
+- **B1:** eigene Notizen (Notiz mit `pm`) als gestrichelte Linie + Flagge "OCT 26 · CEO resigns / Affair — stepped down as CEO" in Bias-Farbe, rechts nach links geklappt, nahe Flaggen in Reihen; statt hohler Pfeil.
+- **H1:** History kompakt (Chart 150 px statt 100, Werkzeugzeile einzeilig, Liste dichter); **Ageing-Schalter + Verweise darauf entfernt**, die Alterungszeilen bleiben (sie erklaeren Score-Bewegungen ohne Release).
+- **History-Achse beginnt beim ersten echten Wert** (NVIDIA: Werte erst ab 15.11., Achse ab August → ~90 % leer).
+- Waechter: `check/preiskarte.js` C (erst aus dem Chart, dann Next up), E (Flagge statt hohler Pfeil), neu H (Hover zeigt den Tag); `check/historie.js` D (kein Ageing-Schalter mehr).

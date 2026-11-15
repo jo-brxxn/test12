@@ -14,11 +14,12 @@
 //      und ueber einem Tag mit Kurs (nicht schwebend in der Mitte)
 //   C) SPALTE: zuerst "Next up"; Tipp auf einen Pfeil -> Datum als Titel,
 //      so viele Karten wie der Pfeil Releases zaehlt, jede mit Forecast und
-//      Previous; Tipp ins Leere -> wieder "Next up"
+//      Previous; Tipp ins Leere -> wieder "Next up" (nach Verlassen des Charts - Fahren
+//      ueber den Chart zeigt seit 2026-11-15 den Tag unter der Maus)
 //   D) AUSBLENDEN: Knopf Markers -> 0 Pfeile, aria-pressed false, Einstellung
 //      gespeichert (fxpro_pk_marken = 0); wieder an -> Pfeile da
 //   E) EIGENER PFEIL: + Mark -> Tag -> Popover; leer speichern geht nicht;
-//      gespeichert = Notiz mit pm, hohler Pfeil, "Mine" in der Spalte;
+//      gespeichert = Notiz mit pm, Flagge mit Text im Chart (seit 2026-11-15), "Mine" in der Spalte;
 //      loeschen -> aus den Notizen, im Papierkorb
 //   F) VERGLEICH: Gruppen-Fenster; 1 Kurs dazu -> 2 Linien, keine Kerzen,
 //      Display "Lines ..."; 2 dazu -> 3 Linien, Fenster zu, ein dritter geht
@@ -98,6 +99,13 @@ const gruen = m => console.log('  ✓ ' + m);
     const c1 = await p.evaluate(() => ({ t: (document.querySelector('.pk-col-t') || {}).textContent || '', k: [...document.querySelectorAll('.pk-col .pk-ev:not(.pk-ev-eig)')].map(e => /Forecast/.test(e.textContent) && /Previous/.test(e.textContent)), on: document.querySelectorAll('.pk-pf.on').length }));
     const box = await p.locator('.ab-ptile.pk .pk-chart .chv').boundingBox();
     await p.mouse.click(box.x + box.width * 0.5, box.y + box.height - 6); await p.waitForTimeout(400);
+    // Seit 2026-11-15 zeigt die Spalte beim Fahren ueber den Chart den Tag unter der Maus -
+    // nach dem Tipp ins Leere also erst aus dem Chart heraus, dann muss Next up kommen.
+    await p.mouse.move(box.x + box.width * 0.62, box.y + box.height * 0.5); await p.waitForTimeout(400);
+    const tH = await titel(p);
+    if (!/\d/.test(tH)) rot(`H: Fahren ueber den Chart zeigt keinen Tag in der Spalte ("${tH}")`);
+    else gruen(`H: Fahren ueber den Chart -> Spalte zeigt "${tH}"`);
+    await p.mouse.move(2, 2); await p.waitForTimeout(400);
     const t2 = await titel(p);
     if (t0 !== 'Next up') rot(`C: Spalte startet mit "${t0}"`);
     else if (!/\d/.test(c1.t) || c1.k.length !== ziel.n || c1.k.some(x => !x) || c1.on !== 1) rot(`C: nach Tipp Titel "${c1.t}", ${c1.k.length} Karten (Pfeil zaehlt ${ziel.n}), gewaehlt ${c1.on}`);
@@ -119,7 +127,7 @@ const gruen = m => console.log('  ✓ ' + m);
       await p.click('#pkPop .pk-ok'); await p.waitForTimeout(200);
       const leer = await p.evaluate(() => ({ pop: !!document.getElementById('pkPop'), n: resNotes().filter(n => n.pm).length }));
       await p.fill('#pkIn', 'Waechter-Pfeil'); await p.click('#pkPop .pk-rund[aria-label="Bullish"]'); await p.click('#pkPop .pk-ok'); await p.waitForTimeout(800);
-      e1 = await p.evaluate(() => { const n = resNotes().find(x => x.pm && x.title === 'Waechter-Pfeil'); return { leer: null, n: !!n, bias: n && n.bias, a: n && n.pm.a, hohl: document.querySelectorAll('.pk-pf-i.pk-eig').length, mine: document.querySelectorAll('.pk-col .pk-ev-eig').length, id: n && n.id }; });
+      e1 = await p.evaluate(() => { const n = resNotes().find(x => x.pm && x.title === 'Waechter-Pfeil'); return { leer: null, n: !!n, bias: n && n.bias, a: n && n.pm.a, hohl: [...document.querySelectorAll('.pk-flagge')].filter(f => /Waechter-Pfeil/.test(f.textContent)).length, mine: document.querySelectorAll('.pk-col .pk-ev-eig').length, id: n && n.id }; });
       e1.leer = leer;
       if (e1.id) { await p.locator('.pk-col .pk-ev-eig .pk-del').first().click(); await p.waitForTimeout(600); }
       e1.weg = await p.evaluate(id => ({ n: resNotes().some(x => x.id === id), trash: (research.trash || []).some(t => t.data && t.data.id === id) }), e1.id);

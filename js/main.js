@@ -2006,6 +2006,9 @@ function chartPunkteHtml(pkte){
 }
 const HIST_LINE_H=182;
 function histScoreLineChart(items,aktivDatum){
+  // Achse beginnt beim ersten echten Wert (Nutzer 2026-11-15, "so viel weiss": NVIDIA hatte
+  // Werte erst ab dem 15.11., die Achse ab August -> ~90 % leere Flaeche).
+  {const i0=items.findIndex(i=>i.score!=null);if(i0>0)items=items.slice(i0);}
   const mitWert=items.filter(i=>i.score!=null);
   if(mitWert.length<2)return`<div class="histl-empty">Not enough recorded days in this range to draw a line yet — the series builds up day by day.</div>`;
   const padT=14,padB=26,padL=34,padR=10,H=HIST_LINE_H,W=Math.max(320,items.length*13+padL+padR);
@@ -2106,6 +2109,8 @@ function histJumpDay(datum){
 // Fensters, kein Zustand des Assets - dieselbe Behandlung wie beim
 // Zeitregler direkt daneben (CLAUDE.md Regel 1 greift fuer Zustand, der
 // erhalten bleiben SOLL).
+// Ageing-Schalter entfernt (Nutzer 2026-11-15: "bei der history entfern diesen aging Hinweis
+// komplett"); die Alterungs-Zeilen stehen immer da.
 let histAgeShow=true,histAktivTag=null,histLinienDaten=[];
 function toggleHistAge(){
   histAgeShow=!histAgeShow;
@@ -2384,7 +2389,6 @@ function renderSymHistoryPanelRoh(id){
         // auch die laufend gemessenen Zeilen - alle MOEGLICHEN Quellen.
         leer=hwZeile('No release',`moved ${dTxt}`,[dz].concat(exaktZeilen,
           parts.length?[['Split','<i>see the card split below</i>']]
-            :!histAgeShow?[['Ageing','<i>switch on "Ageing" above to check the age limit</i>']]
             :zerlegbar?[['Cards','<i>no card moved by 0.1 or more</i>']]:[['Cards','<i>one day lacks the card values to split</i>']],
           histAgeShow?[['Age limit','<i>nothing crossed it</i>']]:[],
           [['Possible sources','<i>ageing · market relevance · comparability factor · COT · retail · trend · yields</i>'],jrFakt]));
@@ -2435,14 +2439,14 @@ function renderSymHistoryPanelRoh(id){
   // gelesen - die beiden bauen die Kopfzeile, nicht diese Funktion.
   _histErkl=['One row per day: the score at the end of that day, the change against the previous recorded day, and what moved it.',
     'Since the score journal (from '+(jrBeginn(id)?fmtDayShort(jrTagVon(jrBeginn(id))):'the first start of this version')+'), every change of the shown score — even 0.1 — is recorded with its exact cause: new releases, rule inputs (COT, retail, trend, yields), ageing of releases, market relevance, the comparability factor, model changes and rounding. The amounts always add up to the change of the day.',
-    'The line above is the same series. Days before the journal show what was recorded then: releases, the card split and the ageing edge — switch on "Ageing" to see which indicator crossed it.'];
+    'The line above is the same series. Days before the journal show what was recorded then: releases, the card split and the ageing edge — the ageing rows show which indicator crossed it.'];
   if(tageAltesModell)_histErkl.push(`* ${tageAltesModell} ${tageAltesModell===1?'day was':'days were'} recorded under an earlier version of the score model and cannot be compared with today’s value. The numbers are shown unchanged; the series rebuilds itself day by day.`);
 
   const nAlterung=histAgeShow?dayCards.filter(c=>/histp-age/.test(c.detail)).length:0;
   // Werkzeugzeile nach der Dauerregel 2026-09-26: Ansicht links (Ageing),
   // Zeitfilter rechts.
   const bar=`<div class="histp-bar chart-leiste">
-    <div class="chart-leiste-l"><button class="histp-agebtn${histAgeShow?' on':''}" onclick="toggleHistAge()" title="The score also moves on days with nothing published: a release more than ${IND_STALE_CYCLES} of its own cycles overdue stops counting (see the score model). With this on, every day that crossed that edge names the indicator and the contribution it lost.">${histAgeShow?'✓ ':''}Ageing${nAlterung?` · ${nAlterung}`:''}</button></div>
+    <div class="chart-leiste-l"></div>
     <div class="chart-leiste-r"><div class="histp-range">${brushSchereHtml('hist')}${histZoom?brushChipHtml('hist',histZoom.von,histZoom.bis):(()=>{const mx=histMaxTage(id),l=HIST_RANGES.filter(([,dd])=>dd==='MAX'||dd<mx),an=l.some(([,dd])=>dd===histRange)?histRange:'MAX';
       return l.map(([lbl,dd])=>`<button class="histp-rbtn${an===dd?' on':''}" onclick="setHistRange('${dd}')">${lbl}</button>`).join('');})()}</div></div>
   </div>`;
