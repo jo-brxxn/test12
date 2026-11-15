@@ -2014,3 +2014,10 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 1. **Jeder Zeitreihen-Chart hat ein Fadenkreuz mit Info-Karte.** Wortlaut: *„in jedem Chart oder Diagramm oder Schaubild wo Daten drinne stehen ueber einen Zeitraum soll es so sein das wenn man drueber hovert das ein Strich von oben nach unten geht und eine kleine Karte daran erscheint wo die wichtigen Daten stehen also Datum Tag Preis forecast und so Sachen“*. Senkrechte Linie ueber die ganze Hoehe + kleine Karte an der Linie (Datum, Wochentag, Wert, je nach Chart Forecast/Previous/Preis). Neuer Chart ohne das = nicht fertig.
 2. **Karte antippen = Fenster mit ~2/3 des Bildschirms** (Handy: fast voll). Wortlaut: *„wenn man Karten anklickt sollen immer Fenster aufgehen die nicht den ganzen Bildschirm nehmen sondern so 2/3 das einfach die Karte groesser ist und man mehr Optionen zum einstellen und analysieren hat“*. Was das Fenster je Karte ZUSAETZLICH zeigt, wird je Karte vorgeschlagen und vom Nutzer bestaetigt (nur vergroessern ist zu wenig). Erstes Fenster dieser Art: Macro-Fenster der Aktien (`stkMakroFensterHtml`, 67 % Breite).
 3. **Keine Fuellflaeche statt Inhalt.** Leere Kartenflaeche nicht mit dem Logo (`lg-frei`) fuellen, sondern das Layout loesen (Varianten C1-C3 / H1-H3 zur Wahl gestellt 2026-11-15).
+
+## Style-Menue: Hintergrund + Karten/Konturen (2026-11-15, 731)
+
+- Knopf **Style** oben in der Kopfleiste oeffnet das Menue (ersetzt die Vorschau A/B/C vom 2026-11-11).
+- **Background** (`data-hg`): Mist, Slate, Steel (einfarbig, heller → dunkler), Dot grid, Marble, Deep marble (Muster, leicht → stark). Marmor = SVG-Turbulenz mit Adern (`feComponentTransfer`), kein Bild.
+- **Cards & contours** (`data-el`): Crisp, Defined, Framed, Ink, Bold, Extreme — Raender (`--bd/--bd2`), Schatten, ab 3 getoente, ab 5 dunkle Kartenkoepfe.
+- Beide Gruppen frei kombinierbar, **nur heller Modus**, synchronisiert (`stilHg`/`stilEl`). Fruehe Anwendung im `<head>` (kein Aufblitzen).

@@ -87,6 +87,7 @@ const PRUEFUNGEN = [
   { n: 'snaprunde', s: 12,  d: 'Eigener Stand laesst sich wieder einspielen (applySnap, adoptExternalState, loadState) - kein toter Aufruf auf Sync-/Undo-Wegen', f: 'check/snaprunde.js', args: [], browser: true },
   { n: 'sektoren',  s: 40,  d: 'Sectors der MACRO-Zeile: drei Karten, je Reihe eine Zeile = sektor_data.json, Haupt-Indikatoren = ind_data.json, Verlauf per Tipp, Score unveraendert', f: 'check/sektoren.js', args: [], browser: true },
   { n: 'leerlauf',  s: 25,  d: 'Dashboard im Leerlauf: keine Schleife je Bild im Hauptthread (Kugel im ruhigen Takt), hoechstens 40 Stilberechnungen je 4 s', f: 'check/leerlauf.js', args: [], browser: true },
+  { n: 'stil', s: 15, d: 'Style-Menue: 7+7 Optionen, Wahl gesetzt + gemerkt, Hintergrund dunkler/Muster, Rand je Stufe dunkler, kombinierbar, Titel lesbar, nur hell, synchronisiert', f: 'check/stil.js', args: [], browser: true },
   { n: 'setupfilter', s: 30, d: 'Set-ups-Filter: Chip je Asset-Klasse, All zeigt jedes Asset, immer nur ein Gruppen-Chip an, Stocks = 13', f: 'check/setupfilter.js', args: [], browser: true },
   { n: 'stkmakro', s: 30, d: 'Aktien: Makro-Karten + Zentralbank nicht auf der Seite, Quicklink Macro -> Fenster ~2/3 mit allen Funktionen, FX unveraendert', f: 'check/stkmakro.js', args: [], browser: true },
   { n: 'markenicons', s: 12, d: 'Eigene Symbole fuer S&P 500, Nasdaq, DAX und 13 Aktien: alle verschieden, keins die alte Index-Karte, im Dashboard sichtbar, einfarbige Fassung', f: 'check/markenicons.js', args: [], browser: true },

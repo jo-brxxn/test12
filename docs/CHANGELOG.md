@@ -22223,3 +22223,11 @@ Nutzer: *„Ja maximale Historie“*.
 3. Gruppen fest verdrahtet (nur FX/Non-FX/Yields) → neue Kategorie ohne Chip.
 **Behoben:** `alleAn` = nichts gefiltert; Gruppen-Chips aus `SB_CATS` (`setupKlassenListe`, neue Kategorie = automatisch neuer Chip), Filter `setupKlasse` (synchronisiert; `setupYieldsOnly` bleibt Alias fuer aeltere Geraete); Aktien wieder in Set-ups.
 **Waechter:** `check/setupfilter.js` (Gegenprobe Zustand vorher → C rot).
+
+## 2026-11-15 — Style-Menue fuer Kontrast im hellen Modus (VERSION-CHECK-731)
+
+**Nutzer:** *„mehr Kontrast und weniger weiss ueberschwemmt ... im light Mode ... wenig vom Hintergrund abhebt ... 6 fuer andere hintergrundfarbe 3 einfarbig und 3 mit einem modernen Muster wie zB Marmor ... 6 fuer designelemente ... Konturen ... leicht und dann immer extremer ... umschaltbar ganz oben ueber ein Button mit menue ... Hintergrund und nicht Hintergrund gleichzeitig“*. Wahl der Vorschauen: A2, B1, H1 (+ Ageing-Hinweis weg), C bleibt wie jetzt.
+- Menue am vorhandenen Style-Knopf (statt eines zweiten Knopfs); Vorschau A/B/C (2026-11-11, nie gewaehlt) ersetzt.
+- Im Browser gemessen und korrigiert: Stufe Bold machte die Zahl im Pinned-notes-Zaehler unsichtbar (Regel fuer helle Kopfschrift traf auch Zaehler) → nur Titel; erster Marmor sah wie Wolken aus → Adern per `feComponentTransfer`.
+- Waechter `check/stil.js`.
+- Nebenbei: CI 730 rot in `zurueck` C (Eingabe waehrend Push), lokal 7x gruen (4x parallel unter Last). Der Test wartete hoechstens 4 s auf den Beginn des Push; jetzt 10 s und "untauglich" statt Datenverlust, falls der Push nicht beginnt. CI-Teil neu gestartet.

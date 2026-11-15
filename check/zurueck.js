@@ -277,7 +277,11 @@ function flach(o, pre, out) {
   await p.evaluate(() => { markUserSynced(); showTab('pairs'); });
   pushWartet = true;
   const pushLauf = p.evaluate(() => { pushU(); save(); return cloudPush(false); });
-  for (let i = 0; i < 40 && !pushFrei; i++) await p.waitForTimeout(100);
+  // bis 10 s auf den Beginn des Push warten (CI 730 rot, lokal 7x gruen: auf dem langsameren
+  // Runner kam die Eingabe womoeglich VOR dem Push - dann misst C etwas anderes)
+  for (let i = 0; i < 100 && !pushFrei; i++) await p.waitForTimeout(100);
+  const imPush = !!pushFrei;
+  if (!imPush) rot('C untauglich: der Push hat nach 10 s nicht begonnen - die Eingabe lag NICHT im Push (kein Datenverlust gemessen)');
   await p.evaluate(() => { toggleWatch('AUD/NZD'); });
   pushWartet = false; if (pushFrei) pushFrei();
   await pushLauf;
@@ -289,8 +293,8 @@ function flach(o, pre, out) {
   await p.evaluate(() => cloudPush(false));
   await p.waitForTimeout(500);
   const bleibtC = await p.evaluate(() => isWatched('AUD/NZD'));
-  if (!markiertC) rot('eine Eingabe waehrend des Push gilt danach als schon hochgeladen (Markierung geloescht)');
-  if (!bleibtC) rot('Watchlist-Eintrag, gesetzt waehrend eines Push, ist nach dem naechsten automatischen Push WEG');
+  if (imPush && !markiertC) rot('eine Eingabe waehrend des Push gilt danach als schon hochgeladen (Markierung geloescht)');
+  if (imPush && !bleibtC) rot('Watchlist-Eintrag, gesetzt waehrend eines Push, ist nach dem naechsten automatischen Push WEG');
   if (markiertC && bleibtC) gruen('Eingabe waehrend des Push: bleibt markiert, der naechste Push nimmt sie mit');
 
   // ── D: ohne eigene Eingabe kommt der fremde Stand vollstaendig an ─────────
