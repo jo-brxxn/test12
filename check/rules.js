@@ -601,7 +601,11 @@ const FRISCHE = [
   ['seasonality_data.json',     30, 'stuendlicher Workflow',                null],
   // COT erscheint freitags ~21:30 UTC fuer den Dienstag davor. Neun Tage
   // lassen einen ausgefallenen Freitag durchgehen, zwei nicht.
-  ['cot_data.json',           9*24, 'woechentlich (CFTC, freitags)',        null],
+  // 11 Tage statt 9 (2026-11-16): in Wochen mit US-Feiertag erscheint der CFTC-Bericht erst am
+  // Montag danach - gemessen: CFTC-API lieferte am 2026-11-16 als neuesten Bericht den 03.11.
+  // (Veterans Day 11.11.), der Feed war also richtig, nicht ausgefallen. Ein ganz fehlender
+  // Wochenbericht (>= 14 Tage) faellt weiter auf.
+  ['cot_data.json',          11*24, 'woechentlich (CFTC, freitags; Feiertagswoche: montags)', null],
 ];
 FRISCHE.forEach(([datei, maxStd, takt, quittungBis]) => {
   let roh;

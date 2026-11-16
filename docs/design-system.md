@@ -2027,3 +2027,8 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 - Spalte links = weisse erhoehte Karte (A2); Fahren ueber den Chart zeigt den Tag, Tipp waehlt fest.
 - Eigene Notizen = Flagge mit Text im Chart (B1), keine hohlen Pfeile mehr.
 - History-Karte: kein Ageing-Schalter (Nutzer 2026-11-15), Achse ab dem ersten echten Wert.
+
+## Kartenkopf: immer 34 px (2026-11-16, 733)
+
+- Jeder Kartenkopf (`.ab-tile-hd`, `.abc-hd`) hat min. 34 px (`--h-m`) — so stehen die Titel nebeneinanderliegender Karten auf einer Linie, egal ob ein Kopf Knoepfe hat. Geprueft: `check/titelzeile.js`.
+- Karten-Look **Crisp** fest im hellen Modus (`--bd #C9D6E8`, `--bd2 #B3C3DA`).

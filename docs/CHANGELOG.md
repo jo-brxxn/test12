@@ -22241,3 +22241,12 @@ Nutzer: *„Ja maximale Historie“*.
 - **H1:** History kompakt (Chart 150 px statt 100, Werkzeugzeile einzeilig, Liste dichter); **Ageing-Schalter + Verweise darauf entfernt**, die Alterungszeilen bleiben (sie erklaeren Score-Bewegungen ohne Release).
 - **History-Achse beginnt beim ersten echten Wert** (NVIDIA: Werte erst ab 15.11., Achse ab August → ~90 % leer).
 - Waechter: `check/preiskarte.js` C (erst aus dem Chart, dann Next up), E (Flagge statt hohler Pfeil), neu H (Hover zeigt den Tag); `check/historie.js` D (kein Ageing-Schalter mehr).
+
+## 2026-11-16 — Kartentitel auf einer Linie, Crisp fest, Style-Menue weg (VERSION-CHECK-733)
+
+**Nutzer (Foto CHF):** *„History muss auf die gleiche Hoehe wie die Ueberschriften links daneben und rechts. Setz bei background nichts um und bei cards nur crisp.“*
+- **Gemessen:** Titeltext History 6-7 px hoeher als Pinned notes / November (1366: 753 vs 759; 1180: 695 vs 702; 1024: 677 vs 683). Ursache: Kartenkopf ohne Knopf 21 px, mit Knopf 34 px (Kalender bei 1024: 28 px), Titel jeweils mittig. **Wurzel:** jeder Kartenkopf (`.ab-tile-hd`, `.abc-hd`) min. 34 px (`--h-m`). Danach alle drei bei 771/713/695.
+- **Fehlerklasse:** `check/titelzeile.js` prueft 18 Kartenreihen (EUR, NVDA, Dashboard; 1366/1180/1024) — alle auf einer Linie; Gegenprobe ohne Mindesthoehe → 6 Befunde.
+- **Zeitraum-Leiste History:** brach bei 1180/1024 um (61 px) → einzeilig ab 1000 px (28 px); bei 820 px schnitt einzeilig Schere + Max ab (designregeln F) → darunter Umbruch.
+- **Crisp fest:** `--bd #C9D6E8`, `--bd2 #B3C3DA` im hellen Grundton, Kartenrand `--bd2`; der dreilagige Kartenschatten bleibt (ein einfacher Crisp-Schatten hatte ihn ueberschrieben → kartenlook rot → zurueckgenommen). Style-Menue, Hintergrund-Varianten, Vorschau A/B/C und Sync-Felder stilHg/stilEl entfernt.
+- **Nebenbefund rules.js:** cot_data.json 230 h alt. Messung: CFTC-API lieferte am 16.11. als neuesten Bericht den 03.11. (Veterans Day 11.11. → Veroeffentlichung montags). Feed korrekt; Grenze 9 → 11 Tage.

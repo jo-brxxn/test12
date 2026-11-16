@@ -22,11 +22,8 @@
   /* Hintergrund-Auswahl entfernt 2026-10-24 ("background soll immer bei
      current sein") - der gemerkte Wert wird geloescht. */
   localStorage.removeItem('fxpro_bg');
-  /* Style-Menue (2026-11-15): Hintergrund (data-hg 1-6) und Elemente (data-el 1-6),
-     nur heller Modus, gemerkt + synchronisiert (stilHg/stilEl in js/main.js). */
-  var hg=localStorage.getItem('fxpro_stil_hg'),el=localStorage.getItem('fxpro_stil_el');
-  if(/^[1-6]$/.test(hg||''))document.documentElement.setAttribute('data-hg',hg);
-  if(/^[1-6]$/.test(el||''))document.documentElement.setAttribute('data-el',el);
+  /* Style-Menue entfernt 2026-11-16 (Wahl: Hintergrund wie bisher, Karten Crisp fest). */
+  localStorage.removeItem('fxpro_stil_hg');localStorage.removeItem('fxpro_stil_el');
   localStorage.removeItem('fxpro_hell_vorschau');
 }catch(e){}})();
 </script>
@@ -253,7 +250,7 @@ body{font-family:var(--ff-text);background-image:linear-gradient(180deg,rgba(27,
      Schatten als EIGENE Untergrenze dazugekommen - sonst wuerde das
      Absenken des Kartentons die Pruefung leer laufen lassen. */
   --card:#F8FAFD;
-  --bd:#DBE5F3;--bd2:#C9D6E8;
+  --bd:#C9D6E8;--bd2:#B3C3DA;   /* Crisp (2026-11-16), vorher #DBE5F3 / #C9D6E8 */
   /* ⚠ --t2 und --accent sind am 2026-09-04 MINIMAL nachgedunkelt worden.
      Der neue Waechter check/theme.js rechnet jede Textstufe gegen jede
      Flaeche - und fand das im BESTAND, nicht in einer neuen Vorlage:
@@ -732,7 +729,12 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
 /* H1 (Nutzerwahl 2026-11-15): kompakt - Werkzeugzeile einzeilig, Chart hoeher, Liste dichter */
 .ab-htile{--histl-h:150px}
 .ab-htile .chart-leiste-l:empty{display:none}
-.ab-htile .histp-bar{flex-wrap:nowrap;margin-bottom:6px;justify-content:flex-end}
+.ab-htile .histp-bar{margin-bottom:6px;justify-content:flex-end}
+.ab-htile .histp-range{gap:4px}
+/* einzeilig ab 1000 px (gemessen passend bei 1024/1180/1366); darunter umbrechen - bei 820 px
+   schnitt nowrap Schere + Max ab (designregeln F) */
+@media (min-width:1000px){.ab-htile .histp-bar,.ab-htile .histp-range{flex-wrap:nowrap}}
+.ab-htile .histp-rbtn{padding:7px 9px;flex:0 0 auto}
 .ab-htile .hw-day{padding-top:5px;padding-bottom:5px}
 /* ⚠ Die History-Karte FUELLT ihre Reihe, bestimmt sie aber nicht (Nutzer
    2026-10-10: "die karte history erweitert sich nicht perfekt bis ganz nach
@@ -6274,6 +6276,11 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 .ab-tile,.ab-ktile,.ab-ntile,.ab-ptile,.abc-cal{padding:14px 16px}
 /* Kartenkopf: Symbol + Titel, KEIN eigener Hintergrund, keine Trennlinie */
 .ab-tile-hd{gap:10px;margin-bottom:12px;padding-bottom:0;border-bottom:none}
+/* Gleiche Kopfhoehe fuer jede Karte (Nutzer 2026-11-15, Foto: "History muss auf die gleiche
+   Hoehe wie die Ueberschriften links daneben und rechts"). Gemessen: Kopf 21 px (History, ohne
+   Knopf) vs 34 px (Pinned notes, Kalender) bzw. 28 px (Kalender bei 1024) -> Titel 6-7 px hoeher.
+   34 px = --h-m, die Hoehe der Kopf-Knoepfe; der Titel ist darin mittig. */
+.ab-tile-hd,.abc-hd{min-height:var(--h-m)}
 .ab-tile-ic{flex:none;display:inline-flex;color:var(--t1)}
 .ab-tile-t{font:700 var(--fs-md)/1.2 var(--ff-text);color:var(--t0);letter-spacing:0}
 /* Das Preis-Symbol ist im Bild blau, alle anderen Kopf-Symbole dunkel. */
@@ -7303,44 +7310,7 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
    Raster und wird als Ganzes hochskaliert, bis es die Breite fuellt (--dx-zoom,
    dashZoomSetzen in js/main.js) - Schrift, Karten und Kugel wachsen mit. */
 
-/* ══ HELLER MODUS: VARIANTEN ZUR WAHL (2026-11-11, VORUEBERGEHEND) ═══════════
-   Nutzer 2026-11-10: "im light Mode was kann man da im Design aendern um es
-   nicht so komplett weis aussehen zu lassen". Gemessen: 72-95 % der
-   Inhaltsflaeche sehr hell, 0-5 % klar farbig; Seite #E9F0F8 gegen Karte
-   #F8FAFD. Knopf "Style: …" in der Kopfzeile schaltet der Reihe nach durch (nur heller Modus, ab 1100 px - darunter fehlt der Versionsnummer der Platz), Wahl in localStorage
-   'fxpro_hell_vorschau' - NICHT synchronisiert, weil es eine Vorschau ist.
-   Nach der Wahl: die gewaehlte Fassung fest einbauen, Umschalter und die
-   anderen Bloecke loeschen.
-   a = dunkle Anker (Asset-Kopf + Price-Karte in Navy)
-   b = getoente Flaeche (Seite dunkler, Kartenkoepfe als Band)
-   ab = beides        c = Farbe in den Daten (Beat/Miss-Zellen getoent) */
-html:not([data-fx-theme])[data-hell="b"],html:not([data-fx-theme])[data-hell="ab"]{--bg0:#CFDBEA;--bd:#C6D3E6;--bd2:#B3C3DA}
-html:not([data-fx-theme])[data-hell="b"] body,html:not([data-fx-theme])[data-hell="ab"] body{background:#CFDBEA linear-gradient(rgba(27,39,70,.07),rgba(0,0,0,0) 320px) no-repeat}
-html:not([data-fx-theme])[data-hell="b"] :is(.cot-card-title,.rub-hdr,.dw-hdr),html:not([data-fx-theme])[data-hell="ab"] :is(.cot-card-title,.rub-hdr,.dw-hdr){background:#E2EBF7}
-html:not([data-fx-theme])[data-hell="a"] :is(.ahead,.ab-ptile.pk),html:not([data-fx-theme])[data-hell="ab"] :is(.ahead,.ab-ptile.pk){
-  --bias-bull:#3E8BEE;--bias-bear:#EB5D66;--bias-neu:#758CBC;
-  
-  --cndl-up:#7BA4F8;--cndl-dn:#E4E9F3;
-  --chrome-bg:#060B16;--chrome-bd:#1B2740;--chrome-line:#2A3A5C;--chrome-quick:#122036;
-  --bg0:#0A101C;--bg1:#111A2B;--bg2:#16223A;--bg3:#131D31;--bg4:#1B2740;--bg5:#22304C;--bg6:#2C3D5E;
-  --bd:rgba(150,180,225,.18);--bd2:rgba(150,180,225,.32);
-  --t0:#EEF3FB;--t1:#D5DFEF;--t2:#BCC8DA;--t3:#A3B2CB;--t3-rgb:163,178,203;
-  --green:#7DBBFF;--red:#FF8C87;--amber:#A2B0C6;--due:#F0913A;--cotl:#FFCB52;--due-rgb:240,145,58;--star:#A2B0C6;--blue:#7DBBFF;--purple:#BCA2FF;--success:#5ACF92;--live:#FF9A93;
-  --green-rgb:125,187,255;--red-rgb:255,140,135;--amber-rgb:162,176,198;--star-rgb:162,176,198;--blue-rgb:125,187,255;--purple-rgb:188,162,255;--success-rgb:90,207,146;
-  --accent:#6FCBE8;--accent-rgb:111,203,232;
-  --a-infl:#EBBA55;--a-rate:#B49CFF;--a-lab:#4FD3BF;--a-grow:#F59B5C;--a-cot:#5FC0E0;
-  --on-accent:#04121B;
-  --green-lt:#7DBBFF;--red-dk:#FF8C87;
-  --card:#111A2B;
-  --rail-bg:var(--chrome-bg);--rail-edge:var(--chrome-bd);--rail-on:var(--chrome-line);--ctl-bg:var(--bg4);--ctl-bd:var(--bd);--ui-act:var(--accent);--ui-act-rgb:var(--accent-rgb);--ui-act-fg:var(--on-accent);
-  background:var(--card);color:var(--t0);border-color:var(--bd)}
-html:not([data-fx-theme])[data-hell="c"] .ind-table td.ir-act.act-good{background:rgba(var(--blue-rgb),.10)}
-html:not([data-fx-theme])[data-hell="c"] .ind-table td.ir-act.act-bad{background:rgba(var(--red-rgb),.10)}
-html:not([data-fx-theme])[data-hell="c"] .rub-card{border-top:3px solid var(--blue)}
-html:not([data-fx-theme])[data-hell="c"] .cot-card{border-top:3px solid var(--blue)}
-html[data-fx-theme] .hell-btn{display:none}
-@media(max-width:699px){.hell-btn{display:none}}
-@media(max-width:1099px){.hell-pre{display:none}.hell-btn{padding-left:8px;padding-right:8px}.hdr{gap:9px}}
+/* Vorschau "HELLER MODUS: VARIANTEN" (2026-11-11) und Style-Menue entfernt 2026-11-16. */
 #dashWidgets{zoom:var(--dx-zoom,1)}
 /* 2026-11-10: alle anderen Seiten und die Fenster im selben Massstab (seitenZoomSetzen in js/main.js) */
 #pageArea>.pc:not(#pgDash),#pageArea>.body{zoom:var(--pg-zoom,1)}
@@ -7597,51 +7567,9 @@ html[data-fx-theme] .hell-btn{display:none}
 .stk-mk-inhalt{flex:1 1 auto;overflow-y:auto;overflow-x:clip;padding:14px 18px 18px;overscroll-behavior:contain}
 @media (max-width:700px){.stk-mk-fenster{width:calc(100vw - 16px);height:calc(100dvh - 16px)}}
 
-/* ══ STYLE-MENUE: HINTERGRUND + ELEMENTE (Nutzer 2026-11-15) ═══════════════
-   "mehr Kontrast und weniger weiss ... im light Mode ... wenig vom Hintergrund abhebt":
-   je 6 Stufen, leicht -> extrem, frei kombinierbar (data-hg / data-el auf <html>).
-   NUR heller Modus (html:not([data-fx-theme])). Gewaehlt im Menue am Style-Knopf. */
-html:not([data-fx-theme])[data-hg]{--bg-st:var(--bg0)}
-html:not([data-fx-theme])[data-hg="1"]{--bg0:#DDE6F1}
-html:not([data-fx-theme])[data-hg="2"]{--bg0:#CBD6E5}
-html:not([data-fx-theme])[data-hg="3"]{--bg0:#B3C1D5}
-html:not([data-fx-theme])[data-hg="4"]{--bg0:#D9E2EE}
-html:not([data-fx-theme])[data-hg="5"]{--bg0:#E1E7EF}
-html:not([data-fx-theme])[data-hg="6"]{--bg0:#A9B8CC}
-html:not([data-fx-theme])[data-hg="1"] body,html:not([data-fx-theme])[data-hg="2"] body,html:not([data-fx-theme])[data-hg="3"] body{background-image:none;background-color:var(--bg0)}
-html:not([data-fx-theme])[data-hg="4"] body{background-color:var(--bg0);background-image:radial-gradient(rgba(27,39,70,.16) 1px,transparent 1.2px);background-size:14px 14px;background-repeat:repeat;background-position:0 0}
-html:not([data-fx-theme])[data-hg="5"] body{background-color:var(--bg0);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1100'%3E%3Cfilter id='w' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.0018 .0042' numOctaves='4' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -0.45'/%3E%3C/filter%3E%3Cfilter id='a' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.0022 .0065' numOctaves='6' seed='11'/%3E%3CfeColorMatrix type='luminanceToAlpha'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0 0 0 0 0 .05 .85 .05 0 0 0 0 0 0 0'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='SourceGraphic' operator='in'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' fill='%23E1E7EF'/%3E%3Crect width='100%25' height='100%25' filter='url%28%23w%29'/%3E%3Crect width='100%25' height='100%25' fill='%237F8FA8' filter='url%28%23a%29'/%3E%3C/svg%3E");background-size:1600px 1100px;background-repeat:repeat;background-position:0 0}
-html:not([data-fx-theme])[data-hg="6"] body{background-color:var(--bg0);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1100'%3E%3Cfilter id='w' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.0018 .0042' numOctaves='4' seed='23'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.3 -0.65'/%3E%3C/filter%3E%3Cfilter id='a' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.0024 .007' numOctaves='6' seed='23'/%3E%3CfeColorMatrix type='luminanceToAlpha'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0 0 0 0 0 .05 .95 .05 0 0 0 0 0 0 0'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='SourceGraphic' operator='in'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' fill='%23A9B8CC'/%3E%3Crect width='100%25' height='100%25' filter='url%28%23w%29'/%3E%3Crect width='100%25' height='100%25' fill='%231B2A4A' filter='url%28%23a%29'/%3E%3C/svg%3E");background-size:1600px 1100px;background-repeat:repeat;background-position:0 0}
-/* Elemente: Stufe 1-3 Konturen + Schatten, 4-6 dazu dunkle Koepfe und dicke Raender */
-html:not([data-fx-theme])[data-el="1"]{--bd:#C9D6E8;--bd2:#B3C3DA}
-html:not([data-fx-theme])[data-el="2"]{--bd:#B6C6DC;--bd2:#9DB0CB;--card:#FBFCFE}
-html:not([data-fx-theme])[data-el="3"]{--bd:#A2B4CD;--bd2:#8B9FBD;--card:#FFFFFF}
-html:not([data-fx-theme])[data-el="4"]{--bd:#8396B2;--bd2:#6D82A3;--card:#FFFFFF}
-html:not([data-fx-theme])[data-el="5"]{--bd:#6F84A4;--bd2:#5A7096;--card:#FFFFFF}
-html:not([data-fx-theme])[data-el="6"]{--bd:#33405C;--bd2:#1B2A4A;--card:#FFFFFF}
-html:not([data-fx-theme])[data-el] :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.rub-card,.cot-card,.dw,.mx-card,.bs-karte,.sk-card,.cmp-filter,.stk-mk-fenster){border-color:var(--bd2)!important}
-html:not([data-fx-theme])[data-el="1"] :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.rub-card,.cot-card,.dw,.mx-card,.bs-karte,.sk-card){box-shadow:0 1px 3px rgba(20,27,46,.08)}
-html:not([data-fx-theme])[data-el="2"] :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.rub-card,.cot-card,.dw,.mx-card,.bs-karte,.sk-card){box-shadow:0 2px 8px rgba(20,27,46,.11)}
-html:not([data-fx-theme]):is([data-el="3"],[data-el="4"],[data-el="5"],[data-el="6"]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.rub-card,.cot-card,.dw,.mx-card,.bs-karte,.sk-card){box-shadow:0 3px 12px rgba(20,27,46,.14)}
-html:not([data-fx-theme]):is([data-el="2"],[data-el="3"]) :is(.ab-tile-hd,.dw-hdr,.cot-card-title,.rub-hdr,.sk-hd){border-bottom:1px solid var(--bd);padding-bottom:8px}
-html:not([data-fx-theme])[data-el="3"] :is(.ab-tile-hd,.dw-hdr,.cot-card-title,.rub-hdr,.sk-hd){background:#E6EDF7;border-radius:8px;padding:6px 10px}
-html:not([data-fx-theme]):is([data-el="4"],[data-el="5"],[data-el="6"]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.rub-card,.cot-card,.dw,.mx-card,.bs-karte,.sk-card){border-width:1.5px!important}
-html:not([data-fx-theme])[data-el="4"] :is(.ab-tile-hd,.dw-hdr,.cot-card-title,.rub-hdr,.sk-hd){background:#DCE5F2;border-radius:8px;padding:6px 10px;box-shadow:inset 3px 0 0 var(--ui-act,#1B2A4A)}
-html:not([data-fx-theme]):is([data-el="5"],[data-el="6"]) :is(.ab-tile-hd,.dw-hdr,.cot-card-title,.rub-hdr,.sk-hd){background:#1B2A4A;border-radius:8px;padding:7px 10px}
-html:not([data-fx-theme]):is([data-el="5"],[data-el="6"]) :is(.ab-tile-hd,.dw-hdr,.cot-card-title,.rub-hdr,.sk-hd) :is(.ab-tile-t,.dw-t-txt,.sk-t,.rub-name){color:#F3F6FB}
-html:not([data-fx-theme]):is([data-el="5"],[data-el="6"]) .cot-card-title{color:#F3F6FB}
-html:not([data-fx-theme]):is([data-el="5"],[data-el="6"]) :is(.ab-tile-hd,.dw-hdr,.cot-card-title,.rub-hdr,.sk-hd) :is(svg){color:#C9D6EA}
-html:not([data-fx-theme])[data-el="6"] :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.rub-card,.cot-card,.dw,.mx-card,.bs-karte,.sk-card){border-width:2px!important;box-shadow:0 4px 0 rgba(27,42,74,.18),0 6px 16px rgba(20,27,46,.16)}
-html:not([data-fx-theme])[data-el="6"] :is(.cmp-chip,.cmp-quick,.perf-win,.ind-hist-range-btn,.aql){border:1.5px solid var(--bd)!important}
-/* Menue */
-.stil-menu{position:fixed;z-index:9000;width:min(560px,calc(100vw - 16px));background:var(--bg1);border:1px solid var(--bd2);border-radius:14px;box-shadow:var(--shadow-pop);padding:12px 14px}
-.stil-menu h3{margin:0 0 6px;font:700 var(--fs-sm)/1.3 var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--t2)}
-.stil-gr{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px;margin-bottom:12px}
-.stil-opt{display:flex;align-items:center;gap:8px;min-height:40px;padding:4px 8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg2);color:var(--t0);font:600 var(--fs-sm)/1.2 var(--ff-text);cursor:pointer;text-align:left}
-.stil-opt.on{border-color:var(--ui-act);box-shadow:inset 0 0 0 1px var(--ui-act)}
-.stil-sw{flex:0 0 auto;width:26px;height:26px;border-radius:6px;border:1px solid rgba(20,27,46,.25)}
-.stil-sub{display:block;font-weight:500;color:var(--t3);font-size:var(--fs-xs)}
-.stil-hinweis{font:500 var(--fs-xs)/1.3 var(--ff-text);color:var(--t3)}
+/* Karten-Look "Crisp" fest (Nutzerwahl 2026-11-16 aus dem Style-Menue): schaerfere Raender
+   (--bd/--bd2 im hellen :root); der vorhandene dreilagige Kartenschatten bleibt (check/kartenlook.js). */
+html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.rub-card,.cot-card,.dw,.mx-card,.bs-karte,.sk-card,.cmp-filter,.stk-mk-fenster){border-color:var(--bd2)}
 /* Sprung-Rekorder, nur mit #sprungtest (2026-11-15) */
 #sprungtest{position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;max-height:42vh;overflow:auto;background:var(--bg1);border:2px solid var(--blue);border-radius:10px;padding:8px 10px;font:500 12px/1.4 var(--ff-text);color:var(--t1);box-shadow:var(--shadow-pop)}
 #sprungtest .spt-k{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
@@ -7778,16 +7706,14 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-732 - Price-Karte: Fahren ueber den Chart zeigt links die Ereignisse des Tages, Spalte als weisse erhoehte Karte (A2), eigene Notizen als Flagge mit Text im Chart (B1); History: kompakt (H1), Ageing-Schalter entfernt; vorher 731: Style-Menue oben (Style-Knopf): 6 Hintergruende (3 einfarbig, 3 Muster: Punktraster, Marmor, dunkler Marmor) und 6 Stufen fuer Karten/Konturen, leicht bis extrem, frei kombinierbar, nur heller Modus, auf allen Geraeten gemerkt; Waechter zurueck C eindeutig; vorher 730: Set-ups-Filter: All nur allein an, Gruppen-Chip je Asset-Kategorie (auch Stocks, neue Kategorien automatisch), All zeigt jedes Asset; vorher 729: Aktien: Quicklink Macro oeffnet Fenster (2/3) mit Zentralbank + Makro-Karten statt auf der Seite; Ereignis-Band unter dem Price-Chart entfernt; Sectors-Infozeile entfernt; Sprung-Rekorder (#sprungtest) fuer das Zurueckspringen; vorher 728: Eigene Symbole fuer S&P 500, Nasdaq, DAX und die 13 Aktien (Kerngeschaeft in Firmenfarbe, keine Logos) statt der leeren dunklen Karte; Bias-Podium mit Filter: Weakest/Strongest statt falschem Short/Long; vorher 727: Dashboard: Bias scores und Performance mit Kategorie-Filter (All, FX, Crypto, Metals, Energy, Indices, Stocks, Yields - auf allen Geraeten gemerkt); Bias-Spalten Bullish/Neutral/Bearish eingeklappt je 3, Show all je Spalte; vorher 726: Score-Journal und Score-Verlauf auch fuer die 13 Aktien (seit 720 fehlten sie - scoreAssets() statt trendAssets()); vorher 725: BTC Sentiment: Bedienung baut nur noch die betroffene Karte neu - kein Springen beim Tippen, Gewichts-Liste bleibt offen, Lin/Log immer sichtbar; vorher 724: BTC Sentiment: neuester ETF-Tag als vorlaeufig markiert (bitbo meldet spaet), Hyperliquid-Funding mit Pause/Wiederholung (HTTP 429); vorher 723: BTC Sentiment: neues Vollbild-Fenster ueber den Knopf auf der BTC-Seite - ETF-Flows, Funding, Open Interest, Stablecoins, MVRV, STH-SOPR/-Einstandskurs, Coinbase-Premium, Put/Call, 25-Delta-Skew, Boersenfluesse; je Chart vs BTC (Lin/Log), Zeitraum, Zoom/Ziehen, gemeinsames Fadenkreuz, 10/90-Baender, Backtest; Gesamt-Score mit Gewichten (btc_sentiment.json); vorher 722: Fear & Greed Vollbild: volle Historie seit 2018 (fng_hist.json, erst beim Oeffnen), BTC aus dem 10J-Archiv auf Log-Achse, 3Y/5Y; stock_data.json verkleinert; vorher 721: Crypto Fear & Greed: Tipp = Vollbild mit BTC-Kurs (eigene Achse, Zeitraum, Werte beim Zeigen); vorher 720: CI 719 rot behoben: Aktien nicht im 10J-Archiv/4h-Trend (Feed-Groesse), nicht in Trends/Set-ups (Score = S&P 500), Kurs-Chip ohne doppeltes Plus, Set-ups-Abstand 3 px; vorher 719: Stocks: 13 Aktien (Magnificent 7 + Broadcom, Oracle, AMD, Intel, Palantir, CoreWeave), Risiko-Markierungen aus den Zahlen (Firmenkarte + Warnzeichen in der Seitenleiste); vorher 718: Neue Kategorie Stocks (NVDA, AMD, INTC, AAPL, GOOGL): Makro wie S&P 500, Firmenkarte, Valuation, Growth & quality, Analysts, Earnings (stock_data.json, Yahoo + SEC); vorher 717: Sectors wie die Haupt-Karten: Tabelle Act|Fc|Prev|Next|Trd, Tipp klappt Quelle + volle Historie auf (sektor_hist/<CCY>.json), Karten gleich hoch mit Logo; vorher 716: Charts-Ansicht der MACRO-Zeile geloescht (Code, Sync-Felder, CSS); Sectors mit echten Werten (nur Anzeige, sektor_data.json); Performance: Kugel-Schleife im Leerlauf 4x/s statt jedes Bild (Dashboard-Hauptthread 70 -> 24 %, CPU 4x), Asset oeffnen ohne doppeltes Layout, Seitenleiste/Leuchten gebuendelt; vorher 715: Asset-Seite, MACRO-Zeile: Schalter Data statt Charts - die Data-Seite an Ort und Stelle (Vergleich direkt dort); vorher 705-714: siehe docs/CHANGELOG.md; vorher 704: Asset-Seite am PC fuellt die Breite (Kompakt-Regel ab 1500 px gab Price 1/4 Breite und der Dreierzeile eine leere Spalte), Watchlist-Schnellzugriff ohne leere Spalte; vorher 703: Dashboard-Begruessung: Logo frei (Kerzen im unteren Drittel, enden unter dem Logo), Linie ueber den Kerzen entfernt; vorher 702: Weltkugel: Farbschema Atlas fest im hellen Modus (Schalter und andere Schemata entfernt), Viereck-Raster fest auf der Kugel - dreht mit dem Land, reicht bis an die Kueste; vorher 701: Dashboard am PC: fuellt die Breite und skaliert als Ganzes mit (Schrift, Karten, Kugel), Kugel scharf; vorher 700: Dashboard: Karten gleich breit (ein Spaltenmass fuer Begruessung|Kennzahlen, Market overview|World map, Bias|Insights); vorher 699: Weltkugel im hellen Modus: 5 Farbschemata zur Wahl (Panel, Atlas, Ink, Slate, Day) + bisheriges, Schalter in der Karte; vorher 698: Bias scores: Neutral-Spalte eingeklappt so lang wie die laengere Bull-/Bear-Spalte, Show all / Show less; vorher 697: Bias scores: Podium (je 3 staerkste Long/Short) + darunter Bull/Neutral/Bear fuer alle uebrigen (Nutzer-Wahl), Schalter und andere Varianten entfernt; vorher 696: Bias scores: 5 Darstellungen zur Wahl (Ranking, Scale, Heatmap, Bull/Bear, Podium) + bisherige Tiles, Schalter in der Karte; vorher 695: Weltkugel: Schwung nach dem Wischen als Bahn im Worker (kein Haken/Ruecksprung beim schnellen Drehen), Ziehen geglaettet; vorher 694: Filter-✕ versteckt ohne Platz und links vom Feld: keine Luecke mehr (COT, Kalender, News, Trends, Stimmung), Feld steht weiter fest; vorher 693: 1D-Bild der Market overview: Laender-Umriss fest (Nutzer-Wahl Outline), Schalter und Globe/Logo entfernt; vorher 692: Kugel-Selbsttest misst zusaetzlich den Hauptthread-Takt (Tippen/Scrollen); vorher 691: Kugel-Selbsttest auf dem Geraet: Adresse mit #globetest zeigt Bildtakt, Drehtempo, Rueckwaerts-Schritte und Seiten-Ladungen; vorher 690: Kennzahl-Karten oben rechts: Symbol als grosse getoente Plakette (56 px statt 22 px); vorher 689: Weltkugel: kein Keil/Vollkreis am Rand mehr (verdeckte Kuesten am Kugelrand entlang wie d3-geo, keine selbstkreuzenden Ringe), Kuesten je Kugelgroesse vereinfacht (halb so viele Pfadpunkte je Bild), Randschatten in die Land-Textur eingebacken (eine Kopie ueber die ganze Flaeche je Bild weniger), beides ohne sichtbaren Unterschied; Kugel-Takt haelt vor dem Seitenwechsel an; vorher 688: Entfernen-Knoepfe (Watchlist, Market overview) mit Seitenschrift statt Browser-Standard 13,33 px; vorher 687: 1D-Kacheln der Market overview: Bild statt Tageskerze, drei Varianten zur Wahl (Outline, Globe, Logo); vorher 686: Weltkugel dreht gleichmaessig (Winkel aus Zeitformel statt Hochrechnung aus altem Stand, kein Vor-und-Zurueck); vorher 685: Weltkugel in WebKit belegt (eine Flaeche, Radar im Canvas, Flamme flackert nur beim Boost); Kalender ohne Speicher-Explosion in Safari; vorher 684: Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-733 - Kartentitel einer Reihe auf einer Linie (jeder Kartenkopf 34 px), History-Zeitraumleiste einzeilig; Style-Menue entfernt, Karten-Look Crisp fest; vorher 732: Price-Karte: Fahren ueber den Chart zeigt links die Ereignisse des Tages, Spalte als weisse erhoehte Karte (A2), eigene Notizen als Flagge mit Text im Chart (B1); History: kompakt (H1), Ageing-Schalter entfernt; vorher 731: Style-Menue oben (Style-Knopf): 6 Hintergruende (3 einfarbig, 3 Muster: Punktraster, Marmor, dunkler Marmor) und 6 Stufen fuer Karten/Konturen, leicht bis extrem, frei kombinierbar, nur heller Modus, auf allen Geraeten gemerkt; Waechter zurueck C eindeutig; vorher 730: Set-ups-Filter: All nur allein an, Gruppen-Chip je Asset-Kategorie (auch Stocks, neue Kategorien automatisch), All zeigt jedes Asset; vorher 729: Aktien: Quicklink Macro oeffnet Fenster (2/3) mit Zentralbank + Makro-Karten statt auf der Seite; Ereignis-Band unter dem Price-Chart entfernt; Sectors-Infozeile entfernt; Sprung-Rekorder (#sprungtest) fuer das Zurueckspringen; vorher 728: Eigene Symbole fuer S&P 500, Nasdaq, DAX und die 13 Aktien (Kerngeschaeft in Firmenfarbe, keine Logos) statt der leeren dunklen Karte; Bias-Podium mit Filter: Weakest/Strongest statt falschem Short/Long; vorher 727: Dashboard: Bias scores und Performance mit Kategorie-Filter (All, FX, Crypto, Metals, Energy, Indices, Stocks, Yields - auf allen Geraeten gemerkt); Bias-Spalten Bullish/Neutral/Bearish eingeklappt je 3, Show all je Spalte; vorher 726: Score-Journal und Score-Verlauf auch fuer die 13 Aktien (seit 720 fehlten sie - scoreAssets() statt trendAssets()); vorher 725: BTC Sentiment: Bedienung baut nur noch die betroffene Karte neu - kein Springen beim Tippen, Gewichts-Liste bleibt offen, Lin/Log immer sichtbar; vorher 724: BTC Sentiment: neuester ETF-Tag als vorlaeufig markiert (bitbo meldet spaet), Hyperliquid-Funding mit Pause/Wiederholung (HTTP 429); vorher 723: BTC Sentiment: neues Vollbild-Fenster ueber den Knopf auf der BTC-Seite - ETF-Flows, Funding, Open Interest, Stablecoins, MVRV, STH-SOPR/-Einstandskurs, Coinbase-Premium, Put/Call, 25-Delta-Skew, Boersenfluesse; je Chart vs BTC (Lin/Log), Zeitraum, Zoom/Ziehen, gemeinsames Fadenkreuz, 10/90-Baender, Backtest; Gesamt-Score mit Gewichten (btc_sentiment.json); vorher 722: Fear & Greed Vollbild: volle Historie seit 2018 (fng_hist.json, erst beim Oeffnen), BTC aus dem 10J-Archiv auf Log-Achse, 3Y/5Y; stock_data.json verkleinert; vorher 721: Crypto Fear & Greed: Tipp = Vollbild mit BTC-Kurs (eigene Achse, Zeitraum, Werte beim Zeigen); vorher 720: CI 719 rot behoben: Aktien nicht im 10J-Archiv/4h-Trend (Feed-Groesse), nicht in Trends/Set-ups (Score = S&P 500), Kurs-Chip ohne doppeltes Plus, Set-ups-Abstand 3 px; vorher 719: Stocks: 13 Aktien (Magnificent 7 + Broadcom, Oracle, AMD, Intel, Palantir, CoreWeave), Risiko-Markierungen aus den Zahlen (Firmenkarte + Warnzeichen in der Seitenleiste); vorher 718: Neue Kategorie Stocks (NVDA, AMD, INTC, AAPL, GOOGL): Makro wie S&P 500, Firmenkarte, Valuation, Growth & quality, Analysts, Earnings (stock_data.json, Yahoo + SEC); vorher 717: Sectors wie die Haupt-Karten: Tabelle Act|Fc|Prev|Next|Trd, Tipp klappt Quelle + volle Historie auf (sektor_hist/<CCY>.json), Karten gleich hoch mit Logo; vorher 716: Charts-Ansicht der MACRO-Zeile geloescht (Code, Sync-Felder, CSS); Sectors mit echten Werten (nur Anzeige, sektor_data.json); Performance: Kugel-Schleife im Leerlauf 4x/s statt jedes Bild (Dashboard-Hauptthread 70 -> 24 %, CPU 4x), Asset oeffnen ohne doppeltes Layout, Seitenleiste/Leuchten gebuendelt; vorher 715: Asset-Seite, MACRO-Zeile: Schalter Data statt Charts - die Data-Seite an Ort und Stelle (Vergleich direkt dort); vorher 705-714: siehe docs/CHANGELOG.md; vorher 704: Asset-Seite am PC fuellt die Breite (Kompakt-Regel ab 1500 px gab Price 1/4 Breite und der Dreierzeile eine leere Spalte), Watchlist-Schnellzugriff ohne leere Spalte; vorher 703: Dashboard-Begruessung: Logo frei (Kerzen im unteren Drittel, enden unter dem Logo), Linie ueber den Kerzen entfernt; vorher 702: Weltkugel: Farbschema Atlas fest im hellen Modus (Schalter und andere Schemata entfernt), Viereck-Raster fest auf der Kugel - dreht mit dem Land, reicht bis an die Kueste; vorher 701: Dashboard am PC: fuellt die Breite und skaliert als Ganzes mit (Schrift, Karten, Kugel), Kugel scharf; vorher 700: Dashboard: Karten gleich breit (ein Spaltenmass fuer Begruessung|Kennzahlen, Market overview|World map, Bias|Insights); vorher 699: Weltkugel im hellen Modus: 5 Farbschemata zur Wahl (Panel, Atlas, Ink, Slate, Day) + bisheriges, Schalter in der Karte; vorher 698: Bias scores: Neutral-Spalte eingeklappt so lang wie die laengere Bull-/Bear-Spalte, Show all / Show less; vorher 697: Bias scores: Podium (je 3 staerkste Long/Short) + darunter Bull/Neutral/Bear fuer alle uebrigen (Nutzer-Wahl), Schalter und andere Varianten entfernt; vorher 696: Bias scores: 5 Darstellungen zur Wahl (Ranking, Scale, Heatmap, Bull/Bear, Podium) + bisherige Tiles, Schalter in der Karte; vorher 695: Weltkugel: Schwung nach dem Wischen als Bahn im Worker (kein Haken/Ruecksprung beim schnellen Drehen), Ziehen geglaettet; vorher 694: Filter-✕ versteckt ohne Platz und links vom Feld: keine Luecke mehr (COT, Kalender, News, Trends, Stimmung), Feld steht weiter fest; vorher 693: 1D-Bild der Market overview: Laender-Umriss fest (Nutzer-Wahl Outline), Schalter und Globe/Logo entfernt; vorher 692: Kugel-Selbsttest misst zusaetzlich den Hauptthread-Takt (Tippen/Scrollen); vorher 691: Kugel-Selbsttest auf dem Geraet: Adresse mit #globetest zeigt Bildtakt, Drehtempo, Rueckwaerts-Schritte und Seiten-Ladungen; vorher 690: Kennzahl-Karten oben rechts: Symbol als grosse getoente Plakette (56 px statt 22 px); vorher 689: Weltkugel: kein Keil/Vollkreis am Rand mehr (verdeckte Kuesten am Kugelrand entlang wie d3-geo, keine selbstkreuzenden Ringe), Kuesten je Kugelgroesse vereinfacht (halb so viele Pfadpunkte je Bild), Randschatten in die Land-Textur eingebacken (eine Kopie ueber die ganze Flaeche je Bild weniger), beides ohne sichtbaren Unterschied; Kugel-Takt haelt vor dem Seitenwechsel an; vorher 688: Entfernen-Knoepfe (Watchlist, Market overview) mit Seitenschrift statt Browser-Standard 13,33 px; vorher 687: 1D-Kacheln der Market overview: Bild statt Tageskerze, drei Varianten zur Wahl (Outline, Globe, Logo); vorher 686: Weltkugel dreht gleichmaessig (Winkel aus Zeitformel statt Hochrechnung aus altem Stand, kein Vor-und-Zurueck); vorher 685: Weltkugel in WebKit belegt (eine Flaeche, Radar im Canvas, Flamme flackert nur beim Boost); Kalender ohne Speicher-Explosion in Safari; vorher 684: Von der Watchlist entfernen: Papierkorb auf jeder Watchlist-Karte, x auf Watchlist-Kacheln im Dashboard; vorher 683: Handy-Kopfzeile passt (360-414 px), Feed+App ohne s.a/NSA-Zweitfassungen; vorher 682: Weltkugel zeichnet im Web Worker mit eigenem Bildtakt: 60 Bilder/s auch bei 4x/6x CPU, Dokument je Bild unveraendert; vorher 681: Kugel-Marker wieder antippbar (Ebene ueber dem SVG); vorher 680: Weltkugel: Land auf Canvas je Bild, Marker per transform, Radar per CSS - dreht jedes Bild, SVG still; vorher 679: Market overview: Chart = gewaehltes Intervall, 1D = Tageskerze; vorher 678: Kugel fuellt die Karte, dreht durchgehend, kein Neuaufbau beim Zurueckkehren; Open trades auf dem Dashboard; vorher 677: Fenster-Regel an .ci-modal gebunden; vorher 676: Dashboard-Kopf kompakt (150 px), Meldungs-Fenster seitenbreit ohne Seitenscroll, Seiten federn wieder nativ; vorher 675: Dashboard: Zeitfilter in eigener Zeile, Europa-Labels der Kugel ohne Ueberlappung; vorher 674: Dashboard nach Referenzbild: Hero mit Zeichnung + Logo, Kennzahlen, Market overview, World map (Overview entfernt), Key events, Sentiment & COT, Insights; vorher 673: Dashboard: Ideen-Leiste unter dem Kopf, Movers-Namen nie gequetscht; vorher 672: Dashboard: 4 Design-Ideen zum Umschalten (Bento, Terminal, Hero, Mix); vorher 671: Dashboard: Info-i-Trefferflaeche in der Sektion, Naechster-Termin-Marke ohne Schatten, Titel buendig; vorher 670: Dashboard-Neuaufbau."><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-732</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-733</span>
     </span>
   </div>
   <div class="hdr-r">
-    <!-- VORUEBERGEHEND (2026-11-11): Vorschau der Varianten fuer den hellen Modus, siehe CSS "HELLER MODUS: VARIANTEN" -->
-    <button class="btn hell-btn" id="hellBtn" onclick="stilMenuAuf(event)" aria-haspopup="true" title="Background and contrast of the light mode"><span class="hell-pre">Style: </span>Now</button>
     <button class="btn" id="undoBtn" onclick="doUndo()" disabled title="Back (Undo)">←</button>
     <button class="btn" id="redoBtn" onclick="doRedo()" disabled title="Forward (Redo)">→</button>
     <input type="file" id="impFile" accept=".json" style="display:none" onchange="importData(this)">
