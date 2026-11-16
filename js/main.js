@@ -9430,7 +9430,8 @@ function renditePreisReihe(id){
 }
 function preisReiheLang(id){
   if(YIELD_CCY[id])return renditePreisReihe(id);
-  const s=priceSeriesFor(id);
+  // Anzeige-Reihe: Schluesse + (falls geladen) die alten Kerzen aus price_ohlc.json
+  const s=priceSeriesAnzeige(id);
   const a=PRICE_HIST&&PRICE_HIST[id];
   if(!Array.isArray(s)||!s.length||!Array.isArray(a)||!a.length)return s;
   const inv=!!(PRICE_DATA_FEED&&PRICE_DATA_FEED[id]&&PRICE_DATA_FEED[id].invert);
@@ -12035,6 +12036,8 @@ function assetPreisKarteHtml(c){
   const tage=(AB_RANGES.find(x=>x[0]===abChartRange)||[])[1];
   const warten=preisArchivNoetig(c.id,tage===undefined?90:tage);
   if(warten)ladePreisArchiv();
+  // Alte Kerzen (price_ohlc.json) erst, wenn der Zeitraum vor die erste Kerze der Datei reicht
+  if(!FX.includes(c.id)){const f=abFenster();kerzenArchivBei(c.id,f.max?null:f.von);}
   const reihe=preisReiheAnzeige(c.id);
   const linien=abTrendLinien.split(',').filter(Boolean);
   // Vergleich (js/preiskarte.js): bis zu 2 Kurse dazu -> alle als Linien in
@@ -15918,7 +15921,7 @@ import {
   isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
-  tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
+  tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
   _ccyEditWidgetId,openCcyCfgM,renderCcyCfgBody,toggleCcyAsset,updFFLastUpd,
 } from './data-feeds.js';
 // ══ NOTE CATS ════════════════════════════════════════════════════
@@ -22138,6 +22141,7 @@ function preisNamen(){
 }
 function preisDaten(k,von,bis,typ){
   const q=abKontextReihe(k,'USD');
+  if(q.feed==='price'&&!FX.includes(q.quelle))kerzenArchivBei(q.quelle,von||null);
   const roh=(Array.isArray(q.reihe)?q.reihe:[]).filter(e=>e&&e[1]!=null&&isFinite(+e[1])).map(e=>[String(e[0]).slice(0,10)].concat(e.slice(1)));
   // ein Schluss VOR dem Fenster, damit die erste Kerze ihren Vortagesschluss hat
   let a=von?roh.findIndex(e=>e[0]>=von):0;if(a<0)a=roh.length;

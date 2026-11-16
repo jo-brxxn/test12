@@ -543,6 +543,16 @@ statt etwas zu zeichnen.
   gezeichnet wechselten 352 von 710 EUR-Kerzen ihre Farbe, weil die beiden
   Quellen den Handelstag verschieden schneiden.
 
+## Alte Kerzen in `price_ohlc.json` (seit 2026-11-16, 735)
+
+- **`price_data.json`**: Schluss **jedes** Tages (1100-Punkte-Fenster); Open/High/Low **nur die letzten 183 Tage** (`KERZEN_TAGE`)
+- **`price_ohlc.json`**: Open/High/Low davor, `[Datum, Open, High, Low]`, Rohnotierung wie `price_data.json`
+- **Schreiber**: `tools/kerzen-auslagern.mjs` — Workflow-Schritt *Move old candles* nach beiden Preis-Schreibern; `backfill-ohlc.yml` holt vorher mit `--einlesen` zurück
+- **App**: `priceSeriesFor()` (Score, 1D-Trend, Marktrelevanz, Ranglisten) **nie mit Archiv**; `priceSeriesAnzeige()` → `preisReiheLang`, Trades = Anzeige mit Archiv
+- **Laden**: `kerzenArchivBei(id, von)` — nur wenn ein Chart vor die 183-Tage-Grenze zeigt (Price-Karte 1Y+, Data-Seite, Trades)
+- *Warum*: 896/900 KB, hochgerechnet 1167 KB; Score braucht nur den Schluss (100 Tage reichen nicht: Marktrelevanz ≥ 5 Release-Tage)
+- Geprüft von `check/kerzenarchiv.js`
+
 ## ⚠️ Wie groß darf ein Live-Feed werden? (Regel seit 2026-09-14)
 
 **Ein Feed, der beim Nutzer nicht mehr ankommt, sieht nicht nach einem Fehler

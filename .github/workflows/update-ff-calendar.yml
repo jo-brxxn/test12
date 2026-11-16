@@ -4165,6 +4165,17 @@ jobs:
           '
           rm -f pbf_*.json pbf_meta.txt ypc.txt
 
+      # ── ALTE KERZEN AUSLAGERN (price_ohlc.json, seit 2026-11-16) ─────────
+      # Nutzer 2026-11-16: "nur die letzt 100 Tage oder so an Preis gebraucht
+      # fuer Score der Rest kann ja in eine andere Datei und bei Bedarf geladen
+      # werden". price_data.json lag bei 896/900 KB (hochgerechnet 1167 KB).
+      # Der Score braucht nur den Schluss -> Open/High/Low aelter als 183 Tage
+      # wandern nach price_ohlc.json, das die App erst fuer lange Charts laedt.
+      # Laeuft NACH beiden Schreibern oben (TradingView + Yahoo-Backfill).
+      - name: Move old candles -> price_ohlc.json
+        continue-on-error: true
+        run: node tools/kerzen-auslagern.mjs
+
       # ── LANGE KURSHISTORIE (price_hist.json + price_hist_meta.json) ──────
       # Nutzer 2026-09-25: "pack die Daten fuer die grossen Zeitintervalle in
       # eine Datei wo dann drauf zugegriffen wird bei Bedarf". price_data.json
@@ -6377,6 +6388,7 @@ jobs:
           [ -f cot_hist.json ] && git add cot_hist.json
           [ -d cal_hist ] && git add cal_hist
           [ -f price_data.json ] && git add price_data.json
+          [ -f price_ohlc.json ] && git add price_ohlc.json
           [ -f commodity_data.json ] && git add commodity_data.json
           [ -f trend_data.json ] && git add trend_data.json
           [ -f price_hist.json ] && git add price_hist.json

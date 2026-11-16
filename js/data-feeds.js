@@ -559,7 +559,73 @@ function computeFxMovers(n){
 function priceSeriesFor(id){
   const p=PRICE_DATA_FEED&&PRICE_DATA_FEED[id];
   if(!p||!Array.isArray(p.series)||!p.series.length)return null;
-  if(!p.invert)return p.series;
+  return reiheInRichtung(p.series,p.invert);
+}
+// ── ALTE KERZEN BEI BEDARF (price_ohlc.json, seit 2026-11-16) ──────────────
+// Nutzer 2026-11-16: "Es werden ja nur die letzt 100 Tage oder so an Preis
+// gebraucht fuer Score der Rest kann ja in eine andere Datei und bei Bedarf
+// geladen werden". price_data.json lag bei 896/900 KB und waere aufs volle
+// 1100-Punkte-Fenster auf 1167 KB gewachsen. Gemessen: 100 Tage reichen nicht
+// (Marktrelevanz braucht >= 5 Release-Tage je Indikator), der Score braucht
+// aber nur den SCHLUSS. Seitdem (tools/kerzen-auslagern.mjs):
+//   price_data.json  Schluss jedes Tages, Open/High/Low nur die letzten 183 Tage
+//   price_ohlc.json  Open/High/Low davor - laedt erst, wenn ein Chart dorthin zeigt
+// ⚠ NUR fuer die Darstellung (priceSeriesAnzeige -> preisReiheLang, Trades).
+// priceSeriesFor() bleibt ohne Archiv: sonst haengen Score und 1D-Trend davon
+// ab, ob jemand einen langen Chart geoeffnet hat. Gemessen beim Umbau: alle
+// 38 Scores + Marktrelevanz identisch, 1D-ATR bei 7 Assets ~1e-4 relativ
+// verschoben (Punkte und Richtung gleich).
+let PRICE_OHLC=null,_kerzenVersprechen=null,kerzenArchivFehler=false;
+const _kerzenMerk=new Map();
+function ladeKerzenArchiv(){
+  if(PRICE_OHLC)return Promise.resolve(PRICE_OHLC);
+  if(_kerzenVersprechen)return _kerzenVersprechen;
+  _kerzenVersprechen=fetch(DATA_BASE+'price_ohlc.json?t='+Date.now(),{signal:AbortSignal.timeout(FEED_TIMEOUT_MS),cache:'no-store'})
+    .then(r=>r.ok?r.json():null)
+    .then(d=>{if(d&&d.assets&&typeof d.assets==='object'){PRICE_OHLC=d.assets;kerzenArchivFehler=false;_kerzenMerk.clear();}else kerzenArchivFehler=true;})
+    .catch(()=>{kerzenArchivFehler=true;})
+    .then(()=>{_kerzenVersprechen=null;try{rerenderBald();}catch(e){}return PRICE_OHLC;});
+  return _kerzenVersprechen;
+}
+// Grenze wie in tools/kerzen-auslagern.mjs (KERZEN_TAGE): davor stehen in
+// price_data.json nur Schluesse. ⚠ NICHT aus der Reihe ablesen (erster Tag mit
+// Kerze): einzelne juengere Tage ohne Kerze (Quelle lieferte kein Hoch/Tief)
+// hielten die Grenze sonst falsch fest - gemessen: GOLD lud bei 3M das Archiv.
+const KERZEN_TAGE=183;
+function kerzenAb(id){
+  const s=PRICE_DATA_FEED&&PRICE_DATA_FEED[id]&&PRICE_DATA_FEED[id].series;
+  if(!Array.isArray(s)||!s.length)return null;
+  const ab=new Date(Date.now()-KERZEN_TAGE*864e5).toISOString().slice(0,10);
+  return s[0][0]<ab?ab:null;
+}
+// Zeigt ein Chart ab `von` (YYYY-MM-DD, null = ganze Reihe) vor diese Grenze,
+// und ist das Archiv noch nicht da? Dann laden (einmal je Sitzung).
+function kerzenArchivBei(id,von){
+  if(PRICE_OHLC||kerzenArchivFehler)return false;
+  const ab=kerzenAb(id);
+  if(!ab||(von&&von>=ab))return false;
+  ladeKerzenArchiv();
+  return true;
+}
+function priceSeriesAnzeige(id){
+  const p=PRICE_DATA_FEED&&PRICE_DATA_FEED[id];
+  if(!p||!Array.isArray(p.series)||!p.series.length)return null;
+  const a=PRICE_OHLC&&PRICE_OHLC[id];
+  if(!Array.isArray(a)||!a.length)return reiheInRichtung(p.series,p.invert);
+  const m=_kerzenMerk.get(id);
+  if(m&&m.s===p.series&&m.a===a)return m.r;
+  const k=new Map(a.map(e=>[e[0],e]));
+  const roh=p.series.map(e=>{
+    if(!Array.isArray(e)||e.length>=5)return e;
+    const x=k.get(e[0]);return x?[e[0],e[1],x[1],x[2],x[3]]:e;
+  });
+  const r=reiheInRichtung(roh,p.invert);
+  _kerzenMerk.set(id,{s:p.series,a,r});
+  return r;
+}
+function reiheInRichtung(series,invert){
+  const p={series};
+  if(!invert)return p.series;
   // ⚠ BEIM KEHRWERT TAUSCHEN HOCH UND TIEF DIE ROLLE. USD/JPY steht als
   // "invert" in der Datei, weil der Kurs FAELLT, wenn der Yen staerker wird.
   // Der Tageshoechstkurs von USD/JPY ist also der TIEFSTE Yen-Kurs des Tages.
@@ -654,7 +720,7 @@ export {
   isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,NEWS_AI,fetchNewsAi,mergeNewsAi,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
-  tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
+  tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,ladeKerzenArchiv,kerzenArchivBei,kerzenAb,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
   _ccyEditWidgetId,openCcyCfgM,renderCcyCfgBody,toggleCcyAsset,updFFLastUpd,
 };
 // Kompatibilitaets-Bruecke: openCcyCfgM/toggleCcyAsset per inline onclick=/

@@ -43,7 +43,7 @@
 // zum Verschieben gedacht, kein Wert, der still im Hintergrund entsteht.
 import {escH,escJH,openM,closeM,uid,cloudAutoSync,markLsUpdatedSeen,markPrefEdit,curPage,syms,pairs,getCloudCfg,
   icn,achsenTicks,chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn} from './main.js';
-import {PRICE_DATA_FEED,priceSeriesFor,pairPriceSeries,autoFetchPriceData} from './data-feeds.js';
+import {PRICE_DATA_FEED,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,autoFetchPriceData} from './data-feeds.js';
 import {fmtDayHdr,fmtDayShort,fmtStamp} from './calendar.js';
 import {FX,BC} from './constants.js';
 
@@ -244,15 +244,17 @@ function tjReihe(asset){
   const roh=String(asset||'').toUpperCase().replace(/\s+/g,'');
   if(!roh)return null;
   const ali=TJ_ALIAS[roh.replace('/','')];
-  if(ali){const s=priceSeriesFor(ali);return s?{s,id:ali}:null;}
+  // Anzeige-Reihe (mit alten Kerzen aus price_ohlc.json, sobald geladen)
+  const ps=id=>{kerzenArchivBei(id,null);return priceSeriesAnzeige(id);};
+  if(ali){const s=ps(ali);return s?{s,id:ali}:null;}
   const m=/^([A-Z]{3})\/?([A-Z]{3})$/.exec(roh);
   if(m&&FX.includes(m[1])&&FX.includes(m[2])&&m[1]!==m[2]){
     const b=m[1],q=m[2];
-    if(q==='USD'){const s=priceSeriesFor(b);return s?{s,id:b}:null;}
-    if(b==='USD'){const s=priceSeriesFor(q);return s?{s:s.map(tjKehr).filter(Boolean),id:q}:null;}
+    if(q==='USD'){const s=ps(b);return s?{s,id:b}:null;}
+    if(b==='USD'){const s=ps(q);return s?{s:s.map(tjKehr).filter(Boolean),id:q}:null;}
     const s=pairPriceSeries(b,q);return s?{s,id:b}:null;
   }
-  const s=priceSeriesFor(roh);return s?{s,id:roh}:null;
+  const s=ps(roh);return s?{s,id:roh}:null;
 }
 let _tjLaedt=false;
 function tjPreiseLaden(){if(_tjLaedt)return;_tjLaedt=true;try{autoFetchPriceData();}catch(e){}}

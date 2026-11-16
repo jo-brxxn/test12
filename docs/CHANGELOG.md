@@ -22256,3 +22256,17 @@ Nutzer: *„Ja maximale Historie“*.
 **Nutzer:** *„Fueg bitte Naturalgas und Copper hinzu. Bei Copper ist der Score gleich wie bei den anderen Metallen. Bei Naturalgas ist es gleich wie bei Oel.“* + Dauerregel „alles automatisch anbinden, eigenes Symbol“ → `docs/neues-asset.md`.
 **Sonde (Runner, tools/rohstoff-sonde.mjs):** TradingView COMEX:HG1! / NYMEX:NG1! ✓; Yahoo HG=F / NG=F 10 J ✓; COT COPPER- #1 (085692) / NAT GAS NYME (023651) ✓; Optionen CPER duenn (162 Calls/Tag), UNG ✓; **Myfxbook: weder Kupfer noch Erdgas** (88 Symbole, Nicht-FX nur Edelmetalle/Krypto) → kein Retail; Kalender: EIA Natural Gas Stocks Change (TV, Donnerstag), FF "Natural Gas Storage".
 **Umsetzung:** COPPER (Metals) uebernimmt beim Anlegen die Zahnrad-Regeln von SILVER, NATGAS (Energy) die von OIL + eigene Zeile **Gas Storage** (EIA, halbes Gewicht, Abbau bullish) → SCORE_MODEL_VERSION 33. Kurse live/3J/4h-Trend, COT, Saisonalitaet (HG=F/NG=F), Put/Call (CPER/UNG), News, Kalender-Muster, Set-ups (XCU/USD, XNG/USD), Trends, eigene Symbole (Drahtspule, Flamme) + Kopfbilder. Nicht im 10-J-Archiv (863/900 KB). Feed-Gesamtgrenze 3600 → 3700 KB.
+
+## 2026-11-16 — Kursdatei geteilt: alte Kerzen bei Bedarf (VERSION-CHECK-735)
+
+**Anlass:** `price_data.json` 918 032 B = **896/900 KB** nach Copper + Natural Gas; +~1,5 KB/Tag; hochgerechnet aufs volle 1100-Punkte-Fenster **1167 KB** (FX/Aktien handeln 5 Tage/Woche → 1100 Punkte ≈ 4,2 J, die Datei wuchs weiter).
+**Nutzer:** *„Man kann doch für alles eigene Dateien haben die erst geladen werden wenn auch gebraucht“* → *„Es werden ja nur die letzt 100 Tage ode so an Preis gebraucht für Score der Rest kann ja in eine andere Datei und bei Bedarf geladen werden“* → Wahl *Schluss sofort, Kerzen bei Bedarf*.
+**Gemessen:**
+- 100 Tage reichen **nicht**: Marktrelevanz braucht `NORM_MIN_OBS=5` Release-Tage, ein Monats-Indikator hat in 100 Tagen 3
+- Runden des Schlusses (10 Stellen) spart nur 1 KB → kein Hebel
+- Kerzen (O/H/L) = Hauptgewicht: Teilen bei 183 Tagen → **896 → 640 KB**, voll hochgerechnet **817 KB**; `price_ohlc.json` **416 KB** (10 849 Kerzen)
+- Scores vorher/nachher (Playwright, 38 Assets): **alle identisch**, Marktrelevanz identisch; 1D-ATR bei 7 Assets ~1e-4 relativ verschoben, Punkte/Richtung gleich
+- Rundreise auslagern + `--einlesen` **bitgenau** = Original
+- Erster Entwurf las die Grenze aus der Reihe (erster Tag mit Kerze) → GOLD lud schon bei 3M das Archiv (einzelne jüngere Tage ohne Kerze); jetzt feste Grenze `KERZEN_TAGE` wie im Werkzeug
+**Umsetzung:** `tools/kerzen-auslagern.mjs`, Workflow-Schritt *Move old candles* (+ `backfill-ohlc.yml`), `priceSeriesAnzeige`/`kerzenArchivBei`/`ladeKerzenArchiv` in `js/data-feeds.js`, `preisReiheLang` + Price-Karte + Data-Seite + Trades. `check/feedgroesse.js`: `price_ohlc.json` als Einzeldatei.
+**Wächter:** `check/kerzenarchiv.js` (A–E), Gegenprobe ohne Ausloeser der Price-Karte → D rot.

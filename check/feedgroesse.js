@@ -57,7 +57,9 @@ const FEEDS = ['ind_data.json', 'bond_data.json', 'price_data.json', 'cot_data.j
 // Nur beim Oeffnen EINES Fensters geladen, nie beim Start und nie parallel zu den
 // Start-Feeds -> eigener Deckel je Datei (900 KB), aber NICHT in der Gesamtsumme.
 // Seit 2026-11-14: BTC Sentiment (js/btc-sentiment.js, gemessen 222 KB).
-const EINZELN = ['btc_sentiment.json'];
+// Seit 2026-11-16: alte Kerzen (price_ohlc.json, tools/kerzen-auslagern.mjs) - nur fuer
+// Charts, die weiter als 183 Tage zurueck zeigen (gemessen 416 KB).
+const EINZELN = ['btc_sentiment.json', 'price_ohlc.json'];
 
 const F = [];
 const fail = (t, x) => F.push(`${t}: ${x}`);

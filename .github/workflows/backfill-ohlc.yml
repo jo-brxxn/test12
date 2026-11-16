@@ -45,6 +45,9 @@ jobs:
             curl -sL -A "$UA" --max-time 45 -o "y_$ID.json" \
               "https://query1.finance.yahoo.com/v8/finance/chart/$SYM?range=5y&interval=1d" || true
           done
+          # Seit 2026-11-16 liegen Kerzen aelter als 183 Tage in price_ohlc.json -
+          # erst zurueckholen, sonst wuerden sie hier noch einmal geholt.
+          node tools/kerzen-auslagern.mjs --einlesen
           node -e '
             const fs=require("fs");
             const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","BTC","SP500","NAS","DAX"];
@@ -227,14 +230,18 @@ jobs:
           '
           rm -f tnx.json
 
+      - name: Alte Kerzen wieder auslagern (price_ohlc.json)
+        run: node tools/kerzen-auslagern.mjs
+
       - name: Committen, falls sich etwas geaendert hat
         run: |
-          if git diff --quiet -- price_data.json bond_data.json; then
+          if git diff --quiet -- price_data.json price_ohlc.json bond_data.json; then
             echo "Nichts geaendert - kein Commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add price_data.json bond_data.json
+          [ -f price_ohlc.json ] && git add price_ohlc.json
           git commit -m "Backfill: Open/High/Low aus Yahoo (Dochte fuer Preise und die US-10Y)"
           git push
