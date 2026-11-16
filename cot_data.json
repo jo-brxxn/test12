@@ -1,6 +1,6 @@
 {
  "report_date": "2026-11-03",
- "updated": "2026-11-07T00:13:04.846Z",
+ "updated": "2026-11-16T15:20:55.373Z",
  "symbols": {
   "EUR": {
    "long": 229383,
@@ -1850,6 +1850,342 @@
    "contract": "SILVER - COMMODITY EXCHANGE INC.",
    "code": "084691"
   },
+  "COPPER": {
+   "long": 85660,
+   "short": 47950,
+   "dLong": -5983,
+   "dShort": 4624,
+   "oi": 327850,
+   "dOi": -9169,
+   "history": [
+    {
+     "date": "2026-05-12",
+     "long": 108768,
+     "short": 32459,
+     "oi": 259808
+    },
+    {
+     "date": "2026-05-19",
+     "long": 107483,
+     "short": 31597,
+     "oi": 257964
+    },
+    {
+     "date": "2026-05-26",
+     "long": 105673,
+     "short": 32633,
+     "oi": 266243
+    },
+    {
+     "date": "2026-06-02",
+     "long": 111525,
+     "short": 32692,
+     "oi": 276892
+    },
+    {
+     "date": "2026-06-09",
+     "long": 108035,
+     "short": 33585,
+     "oi": 274331
+    },
+    {
+     "date": "2026-06-16",
+     "long": 106794,
+     "short": 31444,
+     "oi": 270752
+    },
+    {
+     "date": "2026-06-23",
+     "long": 104205,
+     "short": 32585,
+     "oi": 268800
+    },
+    {
+     "date": "2026-06-30",
+     "long": 97411,
+     "short": 32623,
+     "oi": 254335
+    },
+    {
+     "date": "2026-07-07",
+     "long": 96440,
+     "short": 32168,
+     "oi": 250948
+    },
+    {
+     "date": "2026-07-14",
+     "long": 99236,
+     "short": 34851,
+     "oi": 259873
+    },
+    {
+     "date": "2026-07-21",
+     "long": 108034,
+     "short": 34057,
+     "oi": 270048
+    },
+    {
+     "date": "2026-07-28",
+     "long": 103023,
+     "short": 35742,
+     "oi": 274552
+    },
+    {
+     "date": "2026-08-04",
+     "long": 114304,
+     "short": 37181,
+     "oi": 289395
+    },
+    {
+     "date": "2026-08-11",
+     "long": 114462,
+     "short": 34074,
+     "oi": 297047
+    },
+    {
+     "date": "2026-08-18",
+     "long": 111399,
+     "short": 31651,
+     "oi": 281563
+    },
+    {
+     "date": "2026-08-25",
+     "long": 121419,
+     "short": 36153,
+     "oi": 283299
+    },
+    {
+     "date": "2026-09-01",
+     "long": 119686,
+     "short": 38817,
+     "oi": 282640
+    },
+    {
+     "date": "2026-09-08",
+     "long": 129500,
+     "short": 37024,
+     "oi": 297491
+    },
+    {
+     "date": "2026-09-15",
+     "long": 117165,
+     "short": 42031,
+     "oi": 289463
+    },
+    {
+     "date": "2026-09-22",
+     "long": 129398,
+     "short": 38876,
+     "oi": 301657
+    },
+    {
+     "date": "2026-09-29",
+     "long": 123305,
+     "short": 37894,
+     "oi": 301201
+    },
+    {
+     "date": "2026-10-06",
+     "long": 108820,
+     "short": 39386,
+     "oi": 304033
+    },
+    {
+     "date": "2026-10-13",
+     "long": 107559,
+     "short": 39039,
+     "oi": 313832
+    },
+    {
+     "date": "2026-10-20",
+     "long": 98535,
+     "short": 41138,
+     "oi": 327119
+    },
+    {
+     "date": "2026-10-27",
+     "long": 91643,
+     "short": 43326,
+     "oi": 337019
+    },
+    {
+     "date": "2026-11-03",
+     "long": 85660,
+     "short": 47950,
+     "oi": 327850
+    }
+   ],
+   "contract": "COPPER- #1 - COMMODITY EXCHANGE INC.",
+   "code": "085692"
+  },
+  "NATGAS": {
+   "long": 279879,
+   "short": 538742,
+   "dLong": 10425,
+   "dShort": 14124,
+   "oi": 1678554,
+   "dOi": -2489,
+   "history": [
+    {
+     "date": "2026-05-12",
+     "long": 241540,
+     "short": 417846,
+     "oi": 1628279
+    },
+    {
+     "date": "2026-05-19",
+     "long": 230391,
+     "short": 422587,
+     "oi": 1599429
+    },
+    {
+     "date": "2026-05-26",
+     "long": 230515,
+     "short": 433696,
+     "oi": 1640082
+    },
+    {
+     "date": "2026-06-02",
+     "long": 239308,
+     "short": 425423,
+     "oi": 1664003
+    },
+    {
+     "date": "2026-06-09",
+     "long": 240948,
+     "short": 434905,
+     "oi": 1637740
+    },
+    {
+     "date": "2026-06-16",
+     "long": 242337,
+     "short": 415813,
+     "oi": 1644546
+    },
+    {
+     "date": "2026-06-23",
+     "long": 247406,
+     "short": 424095,
+     "oi": 1613059
+    },
+    {
+     "date": "2026-06-30",
+     "long": 258667,
+     "short": 429470,
+     "oi": 1634535
+    },
+    {
+     "date": "2026-07-07",
+     "long": 273556,
+     "short": 438863,
+     "oi": 1669775
+    },
+    {
+     "date": "2026-07-14",
+     "long": 287255,
+     "short": 465867,
+     "oi": 1663336
+    },
+    {
+     "date": "2026-07-21",
+     "long": 295206,
+     "short": 466344,
+     "oi": 1679435
+    },
+    {
+     "date": "2026-07-28",
+     "long": 291343,
+     "short": 482142,
+     "oi": 1672441
+    },
+    {
+     "date": "2026-08-04",
+     "long": 287918,
+     "short": 485464,
+     "oi": 1705908
+    },
+    {
+     "date": "2026-08-11",
+     "long": 300711,
+     "short": 497846,
+     "oi": 1692411
+    },
+    {
+     "date": "2026-08-18",
+     "long": 310806,
+     "short": 514309,
+     "oi": 1727378
+    },
+    {
+     "date": "2026-08-25",
+     "long": 313777,
+     "short": 511709,
+     "oi": 1747730
+    },
+    {
+     "date": "2026-09-01",
+     "long": 301642,
+     "short": 510553,
+     "oi": 1807497
+    },
+    {
+     "date": "2026-09-08",
+     "long": 304203,
+     "short": 523970,
+     "oi": 1823243
+    },
+    {
+     "date": "2026-09-15",
+     "long": 307535,
+     "short": 529122,
+     "oi": 1820003
+    },
+    {
+     "date": "2026-09-22",
+     "long": 306362,
+     "short": 522892,
+     "oi": 1837146
+    },
+    {
+     "date": "2026-09-29",
+     "long": 276192,
+     "short": 507212,
+     "oi": 1782129
+    },
+    {
+     "date": "2026-10-06",
+     "long": 272279,
+     "short": 508718,
+     "oi": 1815990
+    },
+    {
+     "date": "2026-10-13",
+     "long": 277328,
+     "short": 510906,
+     "oi": 1741163
+    },
+    {
+     "date": "2026-10-20",
+     "long": 264475,
+     "short": 505747,
+     "oi": 1710685
+    },
+    {
+     "date": "2026-10-27",
+     "long": 269454,
+     "short": 524618,
+     "oi": 1681043
+    },
+    {
+     "date": "2026-11-03",
+     "long": 279879,
+     "short": 538742,
+     "oi": 1678554
+    }
+   ],
+   "contract": "NAT GAS NYME - NEW YORK MERCANTILE EXCHANGE",
+   "code": "023651"
+  },
   "OIL": {
    "long": 324523,
    "short": 244234,
@@ -2357,60 +2693,68 @@
  },
  "pct3y": {
   "report_date": "2026-11-03",
-  "contracts": "EUR=EURO FX - CHICAGO MERCANTILE EXCHANGE|GBP=BRITISH POUND - CHICAGO MERCANTILE EXCHANGE|JPY=JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE|CHF=SWISS FRANC - CHICAGO MERCANTILE EXCHANGE|CAD=CANADIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE|AUD=AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE|NZD=NZ DOLLAR - CHICAGO MERCANTILE EXCHANGE|USD=USD INDEX - ICE FUTURES U.S.|BTC=BITCOIN - CHICAGO MERCANTILE EXCHANGE|GOLD=GOLD - COMMODITY EXCHANGE INC.|SILVER=SILVER - COMMODITY EXCHANGE INC.|OIL=WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE|SP500=E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE|NAS=NASDAQ-100 CONSOLIDATED - CHICAGO MERCANTILE EXCHANGE",
-  "updated": "2026-11-07T00:13:06.695Z",
+  "contracts": "EUR=EURO FX - CHICAGO MERCANTILE EXCHANGE|GBP=BRITISH POUND - CHICAGO MERCANTILE EXCHANGE|JPY=JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE|CHF=SWISS FRANC - CHICAGO MERCANTILE EXCHANGE|CAD=CANADIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE|AUD=AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE|NZD=NZ DOLLAR - CHICAGO MERCANTILE EXCHANGE|USD=USD INDEX - ICE FUTURES U.S.|BTC=BITCOIN - CHICAGO MERCANTILE EXCHANGE|GOLD=GOLD - COMMODITY EXCHANGE INC.|SILVER=SILVER - COMMODITY EXCHANGE INC.|COPPER=COPPER- #1 - COMMODITY EXCHANGE INC.|NATGAS=NAT GAS NYME - NEW YORK MERCANTILE EXCHANGE|OIL=WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE|SP500=E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE|NAS=NASDAQ-100 CONSOLIDATED - CHICAGO MERCANTILE EXCHANGE",
+  "updated": "2026-11-16T15:21:07.591Z",
   "data": {
    "EUR": {
     "pct": 1,
-    "n": 183
+    "n": 181
    },
    "GBP": {
-    "pct": 17,
-    "n": 183
+    "pct": 18,
+    "n": 181
    },
    "JPY": {
     "pct": 81,
-    "n": 183
+    "n": 181
    },
    "CHF": {
     "pct": 91,
-    "n": 183
+    "n": 181
    },
    "CAD": {
-    "pct": 84,
-    "n": 183
+    "pct": 83,
+    "n": 181
    },
    "AUD": {
     "pct": 45,
-    "n": 183
+    "n": 181
    },
    "NZD": {
     "pct": 23,
-    "n": 183
+    "n": 181
    },
    "USD": {
-    "pct": 70,
-    "n": 183
+    "pct": 71,
+    "n": 181
    },
    "BTC": {
     "pct": 87,
-    "n": 183
+    "n": 181
    },
    "GOLD": {
     "pct": 68,
-    "n": 183
+    "n": 181
    },
    "SILVER": {
-    "pct": 27,
-    "n": 183
+    "pct": 26,
+    "n": 181
+   },
+   "COPPER": {
+    "pct": 65,
+    "n": 181
+   },
+   "NATGAS": {
+    "pct": 2,
+    "n": 181
    },
    "OIL": {
     "pct": 8,
-    "n": 183
+    "n": 181
    },
    "SP500": {
-    "pct": 40,
-    "n": 183
+    "pct": 39,
+    "n": 181
    }
   }
  }
