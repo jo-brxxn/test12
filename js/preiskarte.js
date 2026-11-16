@@ -216,27 +216,12 @@ function pkLageHtml(id,api){
   _pkReg[lid]={a:id,tage,x:api.x,y:api.y,B,woche};
   // Alte Lagen abraeumen (gleiche Idee wie chvAufraeumen)
   Object.keys(_pkReg).forEach(k=>{if(k!==lid&&+k.slice(2)<_pkSeq-6)delete _pkReg[k];});
-  if(!pkMarkenAn)return`<div class="pk-lage pk-aus" data-pk="${lid}">${pkBandHtml(id,api,tage,B,woche)}${pkFlaggenHtml(id,api,tage,B)}</div>`;
-  // Knopfbreite = Abstand zweier Pfeile minus 1 px, hoechstens 22 px - sonst
-  // ueberdecken sich Nachbartage (gemessen 2026-11-01, check/designregeln.js F:
-  // 1180 px = ~12 px je Tag, Knopf 22 px). Nach dem Aufbau mit der echten
-  // Breite nachgezogen (pkBreiteSetzen).
-  const kw=pkKnopfBreite(api.breite,tage.length,woche);
-  let h='';
-  B.forEach(b=>{
-    if(!b.ev.length&&!b.eig.length)return;
-    // gemessen 2026-11-01: ohne diese Pruefung schwebte der Pfeil des ersten
-    // Fenstertags mitten im Chart (Tag ohne Kerze -> y 0,5)
-    let x=0,y=Infinity,n=0;for(let i=b.i0;i<=b.i1;i++){const yy=api.y(tage[i]);if(yy==null)continue;x+=api.x(i);y=Math.min(y,yy);n++;}
-    if(!n)return;
-    x/=n;
-    const tip=b.ev.map(e=>e.n).concat(b.eig.map(n=>'Mine: '+(n.title||''))).join(' · ');
-    // Eigene Notizen stehen seit 2026-11-15 als Flagge (pkFlaggenHtml), nicht mehr als hohler Pfeil.
-    if(!b.ev.length)return;
-    const teile=(b.ev.length?`${b.ev.length>1?`<i class="pk-n">${b.ev.length}</i>`:''}<span class="pk-pf-i" style="--c:${bcol(b.bias)}">${PFEIL}</span>`:'');
-    h+=`<button type="button" class="pk-pf${pkSel&&pkSel.a===id&&pkSel.k===b.k?' on':''}" data-b="${escH(b.k)}" style="left:${(x*100).toFixed(3)}%;top:${(y*100).toFixed(3)}%" title="${escH(tagKurz(tage[b.i0])+' · '+tip)}" aria-label="${escH((woche?'Week of ':'')+tagKurz(tage[b.i0])+': '+tip)}">${teile}</button>`;
-  });
-  return`<div class="pk-lage${pkSel&&pkSel.a===id?' sel':''}" data-pk="${lid}" style="--pk-w:${kw}px"><span class="pk-band" aria-hidden="true"></span>${pkBandHtml(id,api,tage,B,woche)}${h}${pkFlaggenHtml(id,api,tage,B)}<span class="pk-tipp" aria-hidden="true">Tap a day</span></div>`;
+  // ⚠ Release-Pfeile ENTFERNT (Nutzer 2026-11-16: "die Marker komplett entfernst aus der
+  // Preiskarte ... wenn man ueber den Preis drueber hovert oder mit dem Finger drueber geht
+  // ... dass dann links in dem Kasten die Nachrichten von genau diesem Tag drinne stehen").
+  // Die Ebene bleibt: sie traegt die Tages-Eimer (pkEimer) fuer Hover/Finger, das Band
+  // ueber dem gewaehlten Tag und die eigenen Notizen.
+  return`<div class="pk-lage${pkSel&&pkSel.a===id?' sel':''}" data-pk="${lid}"><span class="pk-band" aria-hidden="true"></span>${pkBandHtml(id,api,tage,B,woche)}${pkFlaggenHtml(id,api,tage,B)}<span class="pk-tipp" aria-hidden="true">Tap a day</span></div>`;
 }
 
 function pkKnopfBreite(breite,n,woche){const px=(breite||600)/Math.max(1,n)*(woche?5:1);return Math.max(8,Math.min(22,Math.floor(px-1)));}
@@ -293,7 +278,7 @@ function pkUmfeld(id,d0,d1){
       if(isFinite(bp)){const nm=(syms.find(x=>x.id===ry)||{}).name||ry;out.push([nm,(bp>0?'+':'')+bp.toFixed(1)+' bp',bp]);}}}
   return out;
 }
-function pkModusSetzen(m){pkModus=m==='moves'?'moves':'next';pkSpalteNeu();}
+function pkModusSetzen(m){pkModus=m==='moves'?'moves':'next';pkSel=null;pkHover=null;pkMarkiere();pkSpalteNeu();}
 // ── Fahren ueber den Chart (Nutzer 2026-11-15: "wenn man ueber den Chart hovert das links in
 // dem Kasten die News Events von dem Tag stehen"). Nur Maus (auf Touch waehlt der Tipp den Tag).
 // Tage ohne Release bekommen einen leeren Eimer wie in pkMoveWaehle - die Karte zeigt dann
@@ -309,19 +294,27 @@ function pkHoverSetzen(a,k){
   pkHover=a&&k?{a,k}:null;
   if(!pkSel)pkSpalteNeu();
 }
+function pkTagAn(e){
+  const lage=pkLage();if(!lage)return null;const L=_pkReg[lage.dataset.pk];if(!L||!L.tage.length)return null;
+  const r=lage.getBoundingClientRect();if(!r.width)return null;const f=(e.clientX-r.left)/r.width;
+  if(f<0||f>1)return null;
+  let bi=0,bd=1e9;for(let i=0;i<L.tage.length;i++){const d=Math.abs(L.x(i)-f);if(d<bd){bd=d;bi=i;}}
+  const k=L.woche?wocheVon(L.tage[bi]):L.tage[bi];
+  return pkEimerFuer(L,k)?{L,k}:null;
+}
+// Maus: Fahren zeigt den Tag. Finger: Ziehen ueber den Chart zeigt den Tag (touch-action
+// pan-y: waagrecht = Tag, senkrecht = Seite scrollen), Loslassen laesst ihn stehen.
 function pkHoverAnbinden(){
   const el=pkLage();if(!el||el.__hov)return;el.__hov=1;
   const box=el.closest('.ab-pk-chart')||el.parentElement;
   box.addEventListener('pointermove',e=>{
-    if(e.pointerType&&e.pointerType!=='mouse')return;
-    const lage=pkLage();if(!lage)return;const L=_pkReg[lage.dataset.pk];if(!L||!L.tage.length)return;
-    const r=lage.getBoundingClientRect();if(!r.width)return;const f=(e.clientX-r.left)/r.width;
-    if(f<0||f>1){pkHoverSetzen(null);return;}
-    let bi=0,bd=1e9;for(let i=0;i<L.tage.length;i++){const d=Math.abs(L.x(i)-f);if(d<bd){bd=d;bi=i;}}
-    const k=L.woche?wocheVon(L.tage[bi]):L.tage[bi];
-    if(pkEimerFuer(L,k))pkHoverSetzen(L.a,k);
+    if(pkAdd)return;
+    const t=pkTagAn(e);
+    if(!t){if(e.pointerType==='mouse')pkHoverSetzen(null);return;}
+    if(e.pointerType==='mouse')pkHoverSetzen(t.L.a,t.k);
+    else{pkHover=null;if(!(pkSel&&pkSel.k===t.k))pkWaehle(t.k,true);}
   });
-  box.addEventListener('pointerleave',()=>pkHoverSetzen(null));
+  box.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')pkHoverSetzen(null);});
 }
 function pkMoveWaehle(k){
   const c=getSym();if(!c)return;
@@ -386,13 +379,13 @@ function pkMarkiere(){
     band.style.left=(x0*100).toFixed(3)+'%';band.style.width=(Math.max(dx,x1-x0)*100).toFixed(3)+'%';
   }
 }
-function pkWaehle(k){
+function pkWaehle(k,still){
   const c=getSym();if(!c)return;
   const neu=k?{a:c.id,k:String(k)}:null;
   if(!neu&&!pkSel)return;
   if(neu&&pkSel&&pkSel.a===neu.a&&pkSel.k===neu.k)return;
   const rein=!!neu;pkSel=neu;pkForm=null;pkPopZu();
-  pkMarkiere();pkSpalteNeu(rein);
+  pkMarkiere();pkSpalteNeu(still?undefined:rein);
 }
 // Pfeile ein/aus (Einstellung, synchronisiert - pkMarkenUmschalten in main.js)
 function pkMarkenSchalter(){
@@ -479,8 +472,10 @@ document.addEventListener('click',e=>{
     let best=0,bd=Infinity;L.tage.forEach((d,i)=>{const dd=Math.abs(L.x(i)-fx);if(dd<bd){bd=dd;best=i;}});
     pkFormAuf(L.tage[best]);return;
   }
-  const pf=t.closest('.pk-pf');
-  if(pf){e.stopPropagation();pkWaehle(pf.dataset.b);return;}
+  if(t.closest('.pk-flagge'))return;
+  // Tipp/Klick auf einen Tag haelt ihn fest; derselbe Tag nochmal = zurueck zu Next up
+  const tg=L?pkTagAn(e):null;
+  if(tg&&!(pkSel&&pkSel.a===tg.L.a&&pkSel.k===tg.k&&e.pointerType!=='touch'&&!e.__pkFinger)){pkWaehle(tg.k);return;}
   if(pkSel)pkWaehle(null);
 },true);
 // Geist-Pfeil im Hinzufuegen-Modus
@@ -571,7 +566,7 @@ function pkNachAufbau(){
     const keys=['p:'+c.id].concat(pkVglListe(c.id));
     const W=Math.max(240,Math.round(ph.clientWidth)),H=Math.max(240,Math.round(ph.clientHeight)||300);
     const f=abFenster();
-    ph.innerHTML=preisChartHtml(keys,W,H,{typ:'linie',skala:pkVglSkala,fenster:{von:f.max?null:f.von,bis:f.bis},weg:'pkVglWeg',fest:['p:'+c.id],zoom:'ab',kopf:pkMarkenAn?30:10,lage:api=>pkLageHtml(c.id,api)});
+    ph.innerHTML=preisChartHtml(keys,W,H,{typ:'linie',skala:pkVglSkala,fenster:{von:f.max?null:f.von,bis:f.bis},weg:'pkVglWeg',fest:['p:'+c.id],zoom:'ab',kopf:10,lage:api=>pkLageHtml(c.id,api)});
     try{attachChartHovers(ph);}catch(e){}
     ph.removeAttribute('data-pk-vgl');
   }
@@ -597,7 +592,7 @@ window.addEventListener('resize',()=>{clearTimeout(_pkRt);_pkRt=setTimeout(()=>{
 
 function pkVergleichAktiv(id){return pkVglListe(id).length>0;}
 function pkVglSkalaWert(){return pkVglSkala;}
-function pkZustand(){return{sel:pkSel,add:pkAdd,form:pkForm,vgl:JSON.parse(JSON.stringify(pkVgl)),skala:pkVglSkala};}
+function pkZustand(){return{sel:pkSel,hover:pkHover,add:pkAdd,form:pkForm,vgl:JSON.parse(JSON.stringify(pkVgl)),skala:pkVglSkala};}
 
 export {pkBandLegende,pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkReleases,pkEimer,PFEIL,pkAddAktiv};
 function pkAddAktiv(){return pkAdd;}

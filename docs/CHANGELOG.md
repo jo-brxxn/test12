@@ -22285,3 +22285,12 @@ Nutzer: *„Ja maximale Historie“*.
 **Umsetzung:** `js/gameplan.js` (Zustand `gameplans` je Asset, Seite G2, Leiste K1, `gpNiveaus`), Seite `#pgGameplan` (Seitenleiste nach Watchlist), Leiste in `renderAssetBoard` vor der Price-Reihe, Preis-Level als gestrichelte Linie in `abKerzenBlock` (`opt.niveaus`, außerhalb der Spanne nur Randhinweis, Skala ungedehnt). FX-Währungen: kein Abstand/keine Linie — der Chart zeigt den Korb, das Level gilt fürs Paar.
 **Sync:** `snap()`/`applySnap()`/Laden/Zurücksetzen + `neueFelderBehalten`; beim Cloud-Abgleich je Asset die jüngere Änderung (`gpVereinen`, Feld `t`). Ansicht (gewähltes Asset, aufgeklappte Leiste) nur Sitzung.
 **Wächter:** `check/gameplan.js` (A–H), Gegenprobe ohne Leiste → C rot.
+
+## 2026-11-16 — Price-Karte: Marker entfernt, Tag per Maus/Finger (VERSION-CHECK-738)
+
+**Nutzer:** *„dass du die Marker komplett entfernst aus der Preiskarte von Assets. Aber … wenn man über den Preis drüber hovert oder mit dem Finger drüber geht … dass dann links in dem Kasten die Nachrichten von genau diesem Tag drinne stehen.“*
+- Release-Pfeile + Knopf *Markers* weg; Kopfraum über den Kerzen weg (`kopf:0`); `+ Mark` immer sichtbar. Die Ebene `.pk-lage` bleibt (Tages-Eimer, Band, eigene Notizen). `pkMarkenAn` bleibt gespeichert, wirkt nicht mehr.
+- **Maus:** Fahren = Tag in der Spalte; Klick hält fest; derselbe Tag nochmal = *Next up*.
+- **Finger:** waagrecht ziehen (`touch-action:pan-y`) = Tag in der Spalte, Loslassen lässt ihn stehen; senkrecht = Seite scrollen. Reiter *Next up / Biggest moves* hebt die Auswahl auf.
+- Gemessen (`check/preiskarte.js`): Maus über 2026-09-17 → „Thu, Sep 17, 26“ mit genau den 2 Releases des Tages; Finger (CDP-Touch) → Tag bleibt nach dem Loslassen.
+- **Offen:** neues Notiz-Design (Punkt → Linie → Textkasten) — Screenshot des Nutzers kam nicht an.

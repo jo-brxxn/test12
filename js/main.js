@@ -12067,7 +12067,7 @@ function assetPreisKarteHtml(c){
   const det=document.getElementById('detail'),dw=det?det.clientWidth:1000;
   const breite=Math.max(200,dw>760?dw-268-14-90:dw-70);
   const kb=warten?{leer:true,html:ladeLogoHtml('Loading long price history…')}:abKerzenBlock(reihe,FX.includes(c.id)?KORB_NAME[c.id]:YIELD_CCY[c.id]?(c.full||c.name||c.id):(c.name||c.id),YIELD_CCY[c.id]?'%':'',c.id,null,YIELD_CCY[c.id]?'bond':'price',
-    vergleich?{trend:[]}:{trend:linien,lage:api=>pkLageHtml(c.id,api),kopf:pkMarkenAn?0.16:0,breite,niveaus:gpNiveaus(c.id)});
+    vergleich?{trend:[]}:{trend:linien,lage:api=>pkLageHtml(c.id,api),kopf:0,breite,niveaus:gpNiveaus(c.id)});
   const ch=vergleich&&!kb.leer?Object.assign({},kb,{html:`<div class="pk-vgl pk-chart" data-pk-vgl="1"></div>`}):kb;
   const w=trendWerte(c.id);
   // Kurz "EMA 1D"/"EMA 4H" (Nutzerwahl 2026-10-05 "Kompakt, max. 2 Zeilen"):
@@ -12094,8 +12094,8 @@ function assetPreisKarteHtml(c){
     ${FX.includes(c.id)?`<div class="ab-tile-sub ab-korb" title="${escH(KORB_NAME[c.id]+': '+c.id+' against the other seven major currencies, equal weight (geometric mean). Not the rate against the US dollar - a dollar move alone does not move it. Closes only, so the candles have no wicks.')}">${escH(KORB_NAME[c.id])}</div>`:''}
     ${chartLeisteHtml((vergleich?kmKnopfHtml('abPreis',pkVglTeile(),'',true):YIELD_CCY[c.id]?kmKnopfHtml('abPreisRendite',[pxTypTeil()],'',true):kmKnopfHtml('abPreis',[pxTypTeil(),abTrendTeil()],'',true))
       +`<button type="button" id="pkVglBtn" class="km-klein pk-knopf${vergleich?' an':''}" onclick="pkVglAuf()" aria-haspopup="true" title="Add up to 2 prices to this chart - it switches to lines">${vergleich?`Compare <em>${pkVglListe(c.id).length}/2</em>`:'＋ Compare'}</button>`
-      +`<button type="button" class="km-klein pk-knopf pk-mk-btn${pkMarkenAn?' an':''}" onclick="pkMarkenSchalter()" aria-pressed="${pkMarkenAn}" title="${pkMarkenAn?'Hide':'Show'} the release arrows in the chart">${PFEIL}<span>Markers</span></button>`
-      +(pkMarkenAn?`<button type="button" class="km-klein pk-knopf pk-add-btn${pkAddAktiv()?' on':''}" onclick="pkAddUmschalten()" aria-pressed="${pkAddAktiv()}" title="Add your own arrow: tap a day in the chart">${pkAddAktiv()?'✕ Cancel':'＋ Mark'}</button>`:''),
+      // Markers-Knopf + Release-Pfeile entfernt (Nutzer 2026-11-16, VERSION-CHECK-738); + Mark immer da
+      +`<button type="button" class="km-klein pk-knopf pk-add-btn${pkAddAktiv()?' on':''}" onclick="pkAddUmschalten()" aria-pressed="${pkAddAktiv()}" title="Write a note into the chart: tap a day">${pkAddAktiv()?'✕ Cancel':'＋ Mark'}</button>`,
       `<span class="ab-rgs">${regler}</span>`)}`;
   // Kerzen-Zaehler ("N daily candles · M with a measured high/low") am
   // 2026-10-06 auf Nutzer-Wunsch entfernt ("die Anzeige beim Preis wie viele

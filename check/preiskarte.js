@@ -80,44 +80,49 @@ const gruen = m => console.log('  ✓ ' + m);
     else if (ord !== 'Pinned|History|Calendar' || new Set(a.r3.map(x => x.t)).size !== 1) rot(`A: zweite Reihe ${ord}, Oberkanten ${a.r3.map(x => x.t).join('/')}`);
     else if (a.knopf) rot('A: Knopf "Price chart" steht noch in der Kopfleiste');
     else gruen('A: Price volle Breite, darunter Pinned notes · History · Calendar in einer Reihe, kein "Price chart"');
-    // B
-    const bb = await p.evaluate(() => {
-      const ch = document.querySelector('.ab-ptile.pk .pk-chart .chv').getBoundingClientRect();
-      return [...document.querySelectorAll('.pk-pf')].map(pf => {
-        const r = pf.getBoundingClientRect(), i = pf.querySelector('.pk-pf-i:not(.pk-eig)');
-        return { x: r.left + r.width / 2 - ch.left, y: r.bottom - ch.top, w: ch.width, h: ch.height, col: i ? getComputedStyle(i).color : null };
-      });
-    });
-    const schlecht = bb.filter(z => !BC.includes(z.col) || z.x < 0 || z.x > z.w || z.y < -2 || z.y > z.h * 0.92);
-    if (bb.length < 10) rot(`B: nur ${bb.length} Pfeile auf EUR 3M`);
-    else if (schlecht.length) rot(`B: ${schlecht.length} Pfeil(e) ausserhalb/ohne Bias-Farbe, z. B. ${JSON.stringify(schlecht[0])}`);
-    else gruen(`B: ${bb.length} Pfeile, alle in Bias-Farbe und ueber einem Kurs im Chart`);
-    // C
+    // B (seit 2026-11-16, 738: Release-Pfeile und Markers-Knopf entfernt)
+    const bb = await p.evaluate(() => ({ pf: document.querySelectorAll('.pk-pf').length, mk: !!document.querySelector('.pk-mk-btn'), add: !!document.querySelector('.pk-add-btn') }));
+    if (bb.pf || bb.mk || !bb.add) rot(`B: ${bb.pf} Pfeile, Markers-Knopf ${bb.mk}, + Mark ${bb.add} (erwartet 0 / false / true)`);
+    else gruen('B: keine Release-Pfeile, kein Markers-Knopf, + Mark da');
+    // C/H: Maus ueber einer Kerze -> Spalte zeigt GENAU diesen Tag mit seinen Releases
     const t0 = await titel(p);
-    const ziel = await p.evaluate(() => { const l = [...document.querySelectorAll('.pk-pf')].filter(x => x.querySelector('.pk-pf-i:not(.pk-eig)')); const pf = l[Math.floor(l.length / 2)]; const n = pf.querySelector('.pk-n'); return { b: pf.dataset.b, n: n ? +n.textContent : 1 }; });
-    await p.locator(`.pk-pf[data-b="${ziel.b}"]`).click(); await p.waitForTimeout(400);
-    const c1 = await p.evaluate(() => ({ t: (document.querySelector('.pk-col-t') || {}).textContent || '', k: [...document.querySelectorAll('.pk-col .pk-ev:not(.pk-ev-eig)')].map(e => /Forecast/.test(e.textContent) && /Previous/.test(e.textContent)), on: document.querySelectorAll('.pk-pf.on').length }));
     const box = await p.locator('.ab-ptile.pk .pk-chart .chv').boundingBox();
-    await p.mouse.click(box.x + box.width * 0.5, box.y + box.height - 6); await p.waitForTimeout(400);
-    // Seit 2026-11-15 zeigt die Spalte beim Fahren ueber den Chart den Tag unter der Maus -
-    // nach dem Tipp ins Leere also erst aus dem Chart heraus, dann muss Next up kommen.
-    await p.mouse.move(box.x + box.width * 0.62, box.y + box.height * 0.5); await p.waitForTimeout(400);
-    const tH = await titel(p);
-    if (!/\d/.test(tH)) rot(`H: Fahren ueber den Chart zeigt keinen Tag in der Spalte ("${tH}")`);
-    else gruen(`H: Fahren ueber den Chart -> Spalte zeigt "${tH}"`);
-    await p.mouse.move(2, 2); await p.waitForTimeout(400);
-    const t2 = await titel(p);
+    let treffer = null, fx = 0;
+    for (let f = 0.35; f < 0.98 && !treffer; f += 0.02) {
+      await p.mouse.move(box.x + box.width * f, box.y + box.height * 0.5); await p.waitForTimeout(120);
+      const z = await p.evaluate(() => { const h = pkZustand().hover; if (!h) return null; const rel = (pkReleases('EUR') || {})[h.k] || []; return { k: h.k, soll: rel.length, ist: document.querySelectorAll('.pk-col .pk-ev:not(.pk-ev-eig)').length, t: (document.querySelector('.pk-col-t') || {}).textContent || '' }; });
+      if (z && z.soll > 0) { treffer = z; fx = f; }
+    }
     if (t0 !== 'Next up') rot(`C: Spalte startet mit "${t0}"`);
-    else if (!/\d/.test(c1.t) || c1.k.length !== ziel.n || c1.k.some(x => !x) || c1.on !== 1) rot(`C: nach Tipp Titel "${c1.t}", ${c1.k.length} Karten (Pfeil zaehlt ${ziel.n}), gewaehlt ${c1.on}`);
-    else if (t2 !== 'Next up') rot(`C: Tipp ins Leere -> "${t2}" statt Next up`);
-    else gruen(`C: Next up -> Tipp "${c1.t}" mit ${ziel.n} Karte(n) (Forecast/Previous) -> ins Leere -> Next up`);
-    // D
-    await p.click('.pk-mk-btn'); await p.waitForTimeout(500);
-    const d1 = await p.evaluate(() => ({ n: document.querySelectorAll('.pk-pf').length, pr: document.querySelector('.pk-mk-btn').getAttribute('aria-pressed'), ls: localStorage.getItem('fxpro_pk_marken'), add: !!document.querySelector('.pk-add-btn') }));
-    await p.click('.pk-mk-btn'); await p.waitForTimeout(500);
-    const d2 = await p.evaluate(() => document.querySelectorAll('.pk-pf').length);
-    if (d1.n || d1.pr !== 'false' || d1.ls !== '0' || d1.add || !d2) rot(`D: aus -> ${d1.n} Pfeile, pressed ${d1.pr}, gespeichert ${d1.ls}, + Mark ${d1.add}; wieder an -> ${d2}`);
-    else gruen(`D: Markers aus -> 0 Pfeile, gespeichert (fxpro_pk_marken=0), wieder an -> ${d2}`);
+    else if (!treffer) rot('H: Fahren ueber den Chart findet keinen Tag mit Releases');
+    else if (treffer.ist !== treffer.soll || !/\d/.test(treffer.t)) rot(`H: ${treffer.k}: Spalte "${treffer.t}" mit ${treffer.ist} Karten, der Tag hat ${treffer.soll} Releases`);
+    else gruen(`H: Maus ueber ${treffer.k} -> Spalte "${treffer.t}" mit genau ${treffer.soll} Release(s) des Tages`);
+    // Klick haelt fest, Maus weg -> bleibt; derselbe Tag nochmal geklickt -> Next up
+    const px = box.x + box.width * fx, py = box.y + box.height * 0.5;
+    await p.mouse.click(px, py); await p.waitForTimeout(400);
+    await p.mouse.move(2, 2); await p.waitForTimeout(400);
+    const c1 = await p.evaluate(() => ({ sel: pkZustand().sel, t: (document.querySelector('.pk-col-t') || {}).textContent || '' }));
+    await p.mouse.click(px, py); await p.waitForTimeout(400);
+    await p.mouse.move(2, 2); await p.waitForTimeout(400);
+    const c2 = await titel(p);
+    if (!c1.sel || !/\d/.test(c1.t)) rot(`C: Klick haelt den Tag nicht fest (Auswahl ${JSON.stringify(c1.sel)}, Titel "${c1.t}")`);
+    else if (c2 !== 'Next up') rot(`C: derselbe Tag nochmal geklickt -> "${c2}" statt Next up`);
+    else gruen(`C: Klick haelt ${c1.sel.k} fest (Maus weg -> bleibt "${c1.t}"), nochmal -> Next up`);
+    await p.evaluate(() => pkModusSetzen('next')); await p.waitForTimeout(300);
+    const t2 = await titel(p);
+    if (t2 !== 'Next up') rot(`C: Reiter Next up -> "${t2}"`);
+    // D: Finger (Touch) ueber den Chart -> Tag in der Spalte, bleibt nach dem Loslassen
+    const cdp = await ctx.newCDPSession(p);
+    const yy = box.y + box.height * 0.5, x0 = box.x + box.width * 0.5, x1 = box.x + box.width * 0.8;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: yy }] });
+    for (let i = 1; i <= 6; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + (x1 - x0) * i / 6, y: yy }] }); await p.waitForTimeout(40); }
+    const d1 = await p.evaluate(() => ({ sel: pkZustand().sel, t: (document.querySelector('.pk-col-t') || {}).textContent || '' }));
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await p.waitForTimeout(400);
+    const d2 = await p.evaluate(() => ({ sel: pkZustand().sel, t: (document.querySelector('.pk-col-t') || {}).textContent || '' }));
+    if (!d1.sel || !/\d/.test(d1.t)) rot(`D: Finger ueber dem Chart zeigt keinen Tag (${JSON.stringify(d1)})`);
+    else if (!d2.sel || d2.t !== d1.t) rot(`D: nach dem Loslassen weg (${JSON.stringify(d2)})`);
+    else gruen(`D: Finger zieht ueber den Chart -> Spalte "${d1.t}", bleibt nach dem Loslassen`);
+    await p.evaluate(() => pkModusSetzen('next')); await p.waitForTimeout(300);
     // E
     await p.click('.pk-add-btn'); await p.waitForTimeout(150);
     await p.mouse.click(box.x + box.width * 0.62, box.y + box.height * 0.5); await p.waitForTimeout(350);
@@ -150,7 +155,7 @@ const gruen = m => console.log('  ✓ ' + m);
     const f3 = await p.evaluate(() => pkZustand().vgl.EUR.length);
     for (let i = 0; i < 2; i++) { const x = p.locator('.pk-vgl .pv-x').first(); if (await x.count()) { await x.click(); await p.waitForTimeout(800); } }
     const f4 = await p.evaluate(() => ({ vgl: !!document.querySelector('.pk-vgl'), k: document.querySelectorAll('.ab-ptile.pk .ab-chart rect').length, d: (document.querySelector('[data-km="abPreis"] em') || {}).textContent || '' }));
-    if (f1.l !== 2 || f1.k || !/^Lines/.test(f1.d) || !f1.pf) rot(`F: 1 dazu -> ${f1.l} Linien, ${f1.k} Kerzengruppen, Display "${f1.d}", ${f1.pf} Pfeile`);
+    if (f1.l !== 2 || f1.k || !/^Lines/.test(f1.d)) rot(`F: 1 dazu -> ${f1.l} Linien, ${f1.k} Kerzengruppen, Display "${f1.d}", ${f1.pf} Pfeile`);
     else if (f2.l !== 3 || f2.offen || f2.vgl !== 2 || f3 !== 2) rot(`F: 2 dazu -> ${f2.l} Linien, Fenster offen ${f2.offen}; dritter -> ${f3} statt 2`);
     else if (f4.vgl || f4.k < 20 || !/^Candles/.test(f4.d)) rot(`F: alle weg -> Vergleich ${f4.vgl}, ${f4.k} Kerzen, Display "${f4.d}"`);
     else gruen('F: 1 Kurs dazu -> 2 Linien (Display "Lines"), 2 -> 3 Linien + Fenster zu, kein dritter, alle weg -> Kerzen');
@@ -164,8 +169,8 @@ const gruen = m => console.log('  ✓ ' + m);
       const pf = [...document.querySelectorAll('.pk-pf')];
       return { unter: col.top >= ch.bottom - 1, n: pf.length, woche: pf.length && pf.every(x => /^Week of/.test(x.getAttribute('aria-label'))), rechts: Math.max(...[...document.querySelectorAll('.ab-ptile.pk *')].map(e => e.getBoundingClientRect().right)) - innerWidth };
     });
-    if (!g.unter || !g.n || !g.woche || g.rechts > 1) rot(`G: Spalte unter dem Chart ${g.unter}, ${g.n} Pfeile, je Woche ${g.woche}, ueber den Rand ${g.rechts.toFixed(1)} px`);
-    else gruen(`G: Spalte unter dem Chart, ${g.n} Pfeile je Woche, nichts ragt ueber den Rand`);
+    if (!g.unter || g.n || g.rechts > 1) rot(`G: Spalte unter dem Chart ${g.unter}, ${g.n} Pfeile (erwartet 0), ueber den Rand ${g.rechts.toFixed(1)} px`);
+    else gruen('G: Spalte unter dem Chart, keine Pfeile, nichts ragt ueber den Rand');
     await ctx.close();
   }
   await b.close();
