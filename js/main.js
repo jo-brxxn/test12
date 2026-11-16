@@ -138,6 +138,10 @@ const AI_GLYPHS = {
   // Ein einzelner Barren - so bleibt Silber von Gold unterscheidbar.
   SILVER: '<g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">'
     + '<path d="M10.4 9.4h15.2l2.4 8.6H8Z"/><path d="M12.6 13.4h13.4" stroke-width="1.1" opacity=".6"/></g>',
+  // Kupfer: Drahtspule (2026-11-16).
+  COPPER: '<g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M9 4.4h18M9 19.6h18"/><rect x="10.6" y="6.8" width="14.8" height="10.4"/><path d="M10.6 10.4h14.8M10.6 13.8h14.8" stroke-width="1" opacity=".6"/><path d="M25.4 15.6c3.6 0 4.6 2.4 6.2 4.8" stroke-linecap="round"/></g>',
+  // Erdgas: Flamme (2026-11-16).
+  NATGAS: '<path d="M18 2.8c4.6 4.8 7.4 8.2 7.4 11.8a7.4 7.4 0 0 1-14.8 0c0-2.8 1.8-5 3.6-6.8.2 2.6 1.2 3.8 2.4 4.2-.4-3.4.2-6.4 1.4-9.2Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M11.6 21.8h12.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
   // Tropfen.
   OIL: '<path d="M18 3.2c4.8 6 7.7 9.8 7.7 13.1a7.7 7.7 0 0 1-15.4 0c0-3.3 2.9-7.1 7.7-13.1Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'
     + '<path d="M14.6 16.4a3.4 3.4 0 0 0 2.2 3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".55"/>',
@@ -587,7 +591,7 @@ const ALL_PAIRS=[
   'NZD/JPY','NZD/CAD','NZD/CHF',
   'CAD/JPY','CAD/CHF',
   'CHF/JPY',
-  'XAU/USD','XAG/USD','WTI/USD','BTC/USD','ETH/USD','SP500/USD','NAS/USD'
+  'XAU/USD','XAG/USD','XCU/USD','WTI/USD','XNG/USD','BTC/USD','ETH/USD','SP500/USD','NAS/USD'
 ];
 
 // The 28 pure FX cross pairs (both legs are G8 currencies) – these are
@@ -608,8 +612,8 @@ let _kmOffen=null;
 const SB_CATS=[
   {l:'FX',ids:['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD']},
   {l:'Crypto',ids:['BTC']},
-  {l:'Metals',ids:['GOLD','SILVER']},
-  {l:'Energy',ids:['OIL']},
+  {l:'Metals',ids:['GOLD','SILVER','COPPER']},
+  {l:'Energy',ids:['OIL','NATGAS']},
   {l:'Indices',ids:['SP500','NAS','DAX']},
   // Nutzer-Wunsch 2026-11-13: "neue Kategorie ... stocks also Aktien" (js/aktien.js).
   {l:'Stocks',ids:STOCK_IDS},
@@ -960,7 +964,7 @@ import {
 // daher gelten USD-Nachrichten/Makro-Rubriken auch für sie.
 // GER100 am 2026-09-27 entfernt (Nutzer: "Entfern ger100" - "Germany 100"
 // ist kein echter Index, es gab keine Kursreihe dafuer).
-const NONFX_IDS=['BTC','GOLD','SILVER','OIL','SP500','NAS','DAX',...STOCK_IDS];
+const NONFX_IDS=['BTC','GOLD','SILVER','COPPER','OIL','NATGAS','SP500','NAS','DAX',...STOCK_IDS];
 // Kategorie eines Symbols ('fx','crypto','metal','energy','index','stock'): für
 // eingebaute Symbole aus ASSET_CLASS, für selbst hinzugefügte aus der beim
 // Hinzufügen gewählten Kategorie (customIds[].cls).
@@ -1035,7 +1039,7 @@ function syncAssetGroup(srcId){
   if(changed&&typeof stampRubOwners==='function')stampRubOwners();
   return changed;
 }
-const PAIR_CODE_TO_ID={'XAU':'GOLD','XAG':'SILVER','WTI':'OIL','BTC':'BTC','ETH':'ETH'};
+const PAIR_CODE_TO_ID={'XAU':'GOLD','XAG':'SILVER','XCU':'COPPER','WTI':'OIL','XNG':'NATGAS','BTC':'BTC','ETH':'ETH'};
 // Dashboard-Watchlist (Nutzer-Wunsch 2026-08-06): ein Non-FX-"Paar" in der
 // Watchlist (z.B. "XAU/USD") soll in der Zeile als das eigentliche Asset
 // (Gold, eigener Score/Bias) erscheinen, nicht als rohe Paar-Notation -
@@ -3397,6 +3401,7 @@ const IND_DISPLAY_NAMES={
   // 'Money Supply' (2026-11-01) steht je Waehrung in deren Zeile unten.
   // Asset-eigene Zeilen (ASSET_EIGENE_IND) stehen unter der Asset-Id.
   OIL:{'Oil Inventories':'EIA Crude Oil Inventories'},
+  NATGAS:{'Gas Storage':'EIA Natural Gas Storage'},
   USD:{'Money Supply':'M2 Money Supply y/y','Central Bank Rate':'Fed Funds Rate','Unemployment Claims':'Initial Jobless Claims','NFP / Employment Change':'Nonfarm Payrolls (NFP)','Consumer Confidence':'CB Consumer Confidence'},
   EUR:{'Money Supply':'M3 Money Supply y/y','Central Bank Rate':'ECB Deposit Facility Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Negotiated Wage Growth','JOLTS Job Openings':'Job Vacancy Rate'},
   GBP:{'Money Supply':'M4 Money Supply m/m','Central Bank Rate':'BoE Bank Rate','Unemployment Claims':'Claimant Count Change','NFP / Employment Change':'Employment Change (3M)','Avg Hourly Earnings':'Average Earnings Index (+Bonus)','Consumer Confidence':'GfK Consumer Confidence'},
@@ -4120,6 +4125,7 @@ const IND_INFO_DEFAULTS={
   'Building Permits':'New residential building consents, month-over-month change in %. A leading indicator for construction activity.',
   'Money Supply':'Growth of the broad money supply of the central bank (EUR/CHF/JPY/AUD/NZD M3, GBP M4, USD M2, CAD M2++), in %. Faster growth than expected or than last time counts as bullish (more inflation pressure, more hawkish).',
   'Oil Inventories':'Weekly change of US commercial crude oil stocks (EIA, Wednesday), in million barrels. A draw (below forecast) is bullish for oil, a build is bearish. Counts half.',
+  'Gas Storage':'Weekly change of US natural gas in storage (EIA, Thursday), in billion cubic feet. A draw or a smaller build than expected is bullish for gas, a bigger build is bearish. Counts half.',
   'MPC Vote Split':'Bank of England MPC votes as hike-cut-hold (same order as the calendar); colour = more or fewer hawkish votes (hike minus cut) than forecast. Shown only: 2017–2026 the pound did not move with a vote surprise on the day (25 surprises, t −0.35).',
   'Inflation Expectations':'Expected inflation from a survey (US: households, 1 year ahead; New Zealand: businesses, 2 years ahead), in %. Higher expectations keep the central bank hawkish.',
   // COT Data
@@ -4364,7 +4370,7 @@ function addSurveyInds(rubrics,sym){
 // NICHT gespiegelt: ihren Bias rechnet applyIndDataFeed (js/data-feeds.js)
 // aus dem Feed der verknuepften Waehrung, resetNonFxIndBias laesst ihn stehen.
 // Score: halbes Gewicht (Nutzer-Wahl, js/score.js ASSET_EIGEN_HALB).
-const ASSET_EIGENE_IND={OIL:{'Economic Growth':['Oil Inventories']}};
+const ASSET_EIGENE_IND={OIL:{'Economic Growth':['Oil Inventories']},NATGAS:{'Economic Growth':['Gas Storage']}};
 function istAssetEigen(symId,name){
   const b=stripPeriodSuffix(name||'').base,m=ASSET_EIGENE_IND[symId];
   return !!m&&Object.values(m).some(l=>l.includes(b));
@@ -4507,7 +4513,7 @@ function mkR(texts,b){return texts.map(t=>({id:uid(),text:t,bias:b,imp:false}));
 const CB_MAP={USD:'the Fed (Federal Reserve)',EUR:'the ECB (European Central Bank)',GBP:'the BoE (Bank of England)',CHF:'the SNB (Swiss National Bank)',JPY:'the BoJ (Bank of Japan)',CAD:'the BoC (Bank of Canada)',AUD:'the RBA (Reserve Bank of Australia)',NZD:'the RBNZ (Reserve Bank of New Zealand)'};
 function cbName(id){return CB_MAP[id]||'the Fed (Federal Reserve)';}
 function cbDat(id){return cbName(id).replace(/^die /,'der ');}
-const ASSET_CLASS={USD:'fx',EUR:'fx',GBP:'fx',CHF:'fx',JPY:'fx',CAD:'fx',AUD:'fx',NZD:'fx',BTC:'crypto',GOLD:'metal',SILVER:'metal',OIL:'energy',SP500:'index',NAS:'index',DAX:'index',
+const ASSET_CLASS={USD:'fx',EUR:'fx',GBP:'fx',CHF:'fx',JPY:'fx',CAD:'fx',AUD:'fx',NZD:'fx',BTC:'crypto',GOLD:'metal',SILVER:'metal',COPPER:'metal',OIL:'energy',NATGAS:'energy',SP500:'index',NAS:'index',DAX:'index',
   USYIELD:'yield',DEYIELD:'yield',GBYIELD:'yield',CHYIELD:'yield',JPYIELD:'yield',CAYIELD:'yield',AUYIELD:'yield',NZYIELD:'yield'};
 STOCK_IDS.forEach(id=>{ASSET_CLASS[id]='stock';});
 
@@ -4589,6 +4595,17 @@ const DEF=[
   {id:'SILVER',name:'Silver',full:'XAG/USD',bias:'bull',
     genBull:mkR(['Dual-use: safe-haven + industrial (solar, EVs, electronics)','Structural supply deficit driven by green energy demand','Cheaper than gold – higher upside potential'],'bull'),
     genBear:mkR(['More volatile than gold – faster, deeper corrections','Industrial demand collapses in recession'],'bear'),
+    rubrics:mkRubs(),noteRubs:[],notes:''},
+  // Nutzer 2026-11-16: "Fueg bitte Naturalgas und Copper hinzu. Bei Copper ist der Score gleich wie bei
+  // den anderen Metallen. Bei Naturalgas ist es gleich wie bei Oel." Beim ersten Anlegen uebernehmen sie
+  // die Zahnrad-Regeln von SILVER bzw. OIL (ensureBuiltinSyms, ROH_VORLAGE).
+  {id:'COPPER',name:'Copper',full:'Copper (COMEX)',bias:'neu',
+    genBull:mkR(['Electrification: grids, EVs, data centres and renewables need far more copper','Mine supply grows slowly – years from discovery to output','China stimulus lifts construction and grid demand'],'bull'),
+    genBear:mkR(['China property slowdown – the largest single demand source','Most cyclical metal: falls hard when global PMIs roll over','Strong USD weighs on dollar-priced metals'],'bear'),
+    rubrics:mkRubs(),noteRubs:[],notes:''},
+  {id:'NATGAS',name:'Natural Gas',full:'Henry Hub Natural Gas',bias:'neu',
+    genBull:mkR(['LNG export capacity keeps growing – US gas priced more globally','Cold winters drain storage fast','Power demand from data centres'],'bull'),
+    genBear:mkR(['Record US production keeps supply heavy','Mild weather can leave storage far above average','Very volatile – seasonal and weather-driven swings'],'bear'),
     rubrics:mkRubs(),noteRubs:[],notes:''},
   {id:'OIL',name:'WTI Oil',full:'WTI Crude Oil',bias:'neu',
     genBull:mkR(['OPEC+ production control creates price floor','Global infrastructure boom = structural energy demand'],'bull'),
@@ -4806,6 +4823,16 @@ const MACRO_DATA={
     ron:{info:'In risk-on phases with strong economic activity, silver benefits strongly – both from rising precious metal prices and from higher industrial demand (solar, electronics, EVs).'},
     roff:{info:'In risk-off phases the effect is mixed: a safe-haven bid (positive) meets concerns about industrial demand in a recession (negative) – silver is therefore more volatile than gold and can swing in both directions.'},
     extraInfo:'Unlike gold, silver is consumed industrially to a considerable extent (solar panels, electronics, e-mobility). Global PMI data (especially China/US manufacturing) is therefore an important leading indicator: rising PMIs signal rising industrial demand and tend to be silver-positive, while falling PMIs are correspondingly negative.'},
+  COPPER:{extra:'China demand & global manufacturing cycle (PMI)',
+    safe:{info:'Copper is not a safe haven: in crises it usually falls with risk assets, because industrial demand is expected to drop.'},
+    ron:{info:'In risk-on phases with strong manufacturing (rising PMIs, China stimulus), copper is one of the strongest beneficiaries – "Dr. Copper" tracks the business cycle.'},
+    roff:{info:'In risk-off phases copper typically falls sharply on recession fears, unless supply disruptions (mine outages) dominate.'},
+    extraInfo:'Copper reacts strongly to Chinese data (property, credit, PMIs) and to global manufacturing PMIs; structurally, electrification (grids, EVs, data centres) supports demand while new mine supply is slow.'},
+  NATGAS:{extra:'Weather, US storage & LNG exports',
+    safe:{info:'Natural gas is not a safe haven. Geopolitical supply shocks can lift prices, but that is a supply effect, not safe-haven demand.'},
+    ron:{info:'Risk appetite plays a minor role – US gas is driven mostly by weather, production and storage.'},
+    roff:{info:'In risk-off phases the effect is small and indirect (weaker industrial demand); weather and storage usually dominate.'},
+    extraInfo:'The weekly EIA storage report (Thursday) is the key data point: a draw larger than expected (or a smaller build) is bullish. Winter heating and summer power demand create strong seasonality; LNG export flows link US prices to Europe and Asia.'},
   OIL:{extra:'OPEC+ supply policy & global inventories',
     safe:{info:'Oil is not a safe haven in the classic sense. In geopolitical crises involving producing regions the price can still rise on supply concerns – but that is a supply effect, not a safe-haven effect.'},
     ron:{info:'In risk-on phases with strong global growth, expected oil demand (industry, transport) rises – which is supportive for the price.'},
@@ -6121,11 +6148,17 @@ function entfernteSymsBereinigen(){
     syms=syms.filter(s=>!(s&&s.id===alt));
   });
 }
+const ROH_VORLAGE={COPPER:'SILVER',NATGAS:'OIL'};
 function ensureBuiltinSyms(){
   if(!Array.isArray(syms))return;
   entfernteSymsBereinigen();
   const have=new Set(syms.map(s=>s&&s.id));
-  DEF.forEach(d=>{if(!have.has(d.id))syms.push({...d});});
+  DEF.forEach(d=>{if(have.has(d.id))return;const n={...d};
+    // Copper/Natural Gas (2026-11-16): "Score gleich wie bei den anderen Metallen / wie bei Oel" -
+    // die eigenen Zahnrad-Regeln der Vorlage mitnehmen (ohne eigene Regeln gilt deren Vorgabe).
+    const v=ROH_VORLAGE[d.id]&&syms.find(s=>s&&s.id===ROH_VORLAGE[d.id]);
+    if(v&&v.deriveRules)n.deriveRules=JSON.parse(JSON.stringify(v.deriveRules));
+    syms.push(n);});
 }
 // ⚠ Nutzer-Bugreport 2026-09-06 ("bei AUD bei GDP steht out of date, aber es
 // gibt schon neue Daten, und es gibt auch keine Historie da"). Per Playwright
@@ -9142,6 +9175,24 @@ bars:`<svg viewBox="0 0 420 170" xmlns="http://www.w3.org/2000/svg">
  <ellipse cx="290" cy="156" rx="130" ry="10" fill="${F1}"/>
  ${[[190,150],[270,150],[350,150],[230,108],[310,108],[270,66]].map(([x,y])=>`<g transform="translate(${x} ${y})"><path d="M-40 0 L40 0 L30 -38 L-30 -38 Z" fill="${F2}" stroke="${ST}" stroke-width="2.2" stroke-linejoin="round"/><path d="M-30 -38 L30 -38 L24 -44 L-24 -44 Z" fill="${F1}" stroke="${ST}" stroke-width="2" stroke-linejoin="round"/><path d="M-18 -12 L18 -12 M-12 -22 L12 -22" stroke="${F3}" stroke-width="3" stroke-linecap="round"/></g>`).join('')}
 </svg>`,
+// Erdgas (2026-11-16): LNG-Kugeltank + Flamme - das Fass passt nicht zu Gas.
+flamme:`<svg viewBox="0 0 420 170" xmlns="http://www.w3.org/2000/svg">
+ <ellipse cx="290" cy="158" rx="118" ry="9" fill="${F1}"/>
+ <path d="M206 150 V118 M246 150 V118 M226 150 V112" stroke="${ST}" stroke-width="5" stroke-linecap="round"/>
+ <circle cx="226" cy="84" r="42" fill="${F2}" stroke="${ST}" stroke-width="2.5"/><path d="M186 84 H266" stroke="${ST}" stroke-width="2.2"/><path d="M200 60 Q226 52 252 60" fill="none" stroke="${W}" stroke-width="4" stroke-linecap="round"/>
+ <path d="M266 136 H318 V112" fill="none" stroke="${ST}" stroke-width="5" stroke-linecap="round"/>
+ <path d="M340 34 C360 56 372 74 372 92 A32 32 0 0 1 308 92 C308 78 316 66 326 56 C327 70 332 77 338 80 C336 63 336 48 340 34 Z" fill="${F3}" stroke="${ST}" stroke-width="2.5" stroke-linejoin="round"/>
+ <path d="M340 70 C350 82 356 90 356 98 A16 16 0 0 1 324 98 C324 90 330 82 340 70 Z" fill="${W}"/>
+ <rect x="312" y="128" width="56" height="10" rx="5" fill="${DK}"/>
+</svg>`,
+// Kupfer (2026-11-16): Kabeltrommel/Drahtspule statt Barren.
+spule:`<svg viewBox="0 0 420 170" xmlns="http://www.w3.org/2000/svg">
+ <ellipse cx="290" cy="158" rx="120" ry="9" fill="${F1}"/>
+ <g transform="translate(272 92)"><circle r="62" fill="${F2}" stroke="${ST}" stroke-width="2.5"/><circle r="50" fill="${F3}" stroke="${ST}" stroke-width="1.6"/>
+ ${[42,34,26].map(r=>`<circle r="${r}" fill="none" stroke="${DK}" stroke-width="1.6" opacity=".55"/>`).join('')}<circle r="14" fill="${W}" stroke="${ST}" stroke-width="2.4"/></g>
+ <path d="M322 128 C346 128 356 140 380 150" fill="none" stroke="${DK}" stroke-width="4" stroke-linecap="round"/>
+ <path d="M190 150 H232" stroke="${ST}" stroke-width="4" stroke-linecap="round"/>
+</svg>`,
 barrel:`<svg viewBox="0 0 420 170" xmlns="http://www.w3.org/2000/svg">
  <ellipse cx="290" cy="158" rx="110" ry="9" fill="${F1}"/>
  <g transform="translate(260 0)"><path d="M-56 30 Q-66 90 -56 150 L56 150 Q66 90 56 30 Z" fill="${F2}" stroke="${ST}" stroke-width="2.5"/><ellipse cy="30" rx="56" ry="13" fill="${F1}" stroke="${ST}" stroke-width="2.5"/><ellipse cy="30" rx="10" ry="3" fill="${F3}" transform="translate(24 0)"/>
@@ -9224,6 +9275,8 @@ const SEITEN_SZENEN=(()=>{const F1=MOTIV_F1,F2=MOTIV_F2,F3=MOTIV_F3,ST=MOTIV_ST,
 // Gruppe -> Motiv. FX: die grosse Flagge der Waehrung (derselbe Baustein wie
 // links neben dem Namen). Aktien und Renditen bekommen Bulle & Baer.
 const MOTIV_JE_KLASSE={crypto:'coin',metal:'bars',energy:'barrel',index:'bullbear',stock:'bullbear',yield:'bullbear'};
+// Eigenes Motiv je Asset, wo das Klassen-Motiv nicht passt (2026-11-16).
+const MOTIV_JE_ASSET={NATGAS:'flamme',COPPER:'spule'};
 // Kopf-Flagge als STATISCHES, breites Band (Nutzer 2026-09-23: "die
 // gezeichnete Flagge also generell die ganzen Bilder oben rechts ohne
 // Animation ... laenglich und dann in den Hintergrund von der Farbe her
@@ -9251,7 +9304,7 @@ function assetMotivHtml(id){
   const cls=assetCls(id);
   let inner='';
   if(cls==='fx'){const f=flaggenBandHtml(id);if(f)inner=f;}
-  else{const k=MOTIV_JE_KLASSE[cls];if(k)inner=ASSET_MOTIVE[k];}
+  else{const k=MOTIV_JE_ASSET[id]||MOTIV_JE_KLASSE[cls];if(k)inner=ASSET_MOTIVE[k];}
   return inner?'<div class="ahead-motif ahead-motif-'+(cls||'x')+'" aria-hidden="true">'+inner+'</div>':'';
 }
 // Icon vor dem Kartennamen (Bild-Design 2026-09-22: jede Karte traegt links
@@ -12348,7 +12401,7 @@ function updateSidebarSelection(){
 // sofort an den neuen Inhalt.
 // 1,0 s (Nutzer 2026-09-23: "Animation mindestens doppelt so lang" - vorher 0,5 s).
 const WISCH_MS=1000;
-const WISCH_VB={coin:'170 8 240 158',bars:'145 15 255 150',barrel:'190 12 215 152',bullbear:'0 8 420 160',szene:'200 10 210 158'};
+const WISCH_VB={coin:'170 8 240 158',bars:'145 15 255 150',barrel:'190 12 215 152',flamme:'170 12 225 152',spule:'190 12 215 152',bullbear:'0 8 420 160',szene:'200 10 210 158'};
 const SEITE_SZENE={dash:'dashboard',pairs:'setups',watch:'watchlist',cal:'calendar',notes:'archive'};
 let _wischOv=null,_wischLaeuft=false,_wischBereit=false;  // _wischOv: gemerkter Stand zwischen wischStart und wischLos
 function wischErlaubt(){
@@ -12407,7 +12460,7 @@ function wischBildHtml(h){
     const c=getSym();if(c){
       const cls=assetCls(c.id);
       if(cls==='fx'){const f=wischFlaggeHtml(c.id,Math.round(h*.96));if(f)return'<div class="wisch-flagge">'+f+'</div>';}
-      const k=MOTIV_JE_KLASSE[cls];
+      const k=MOTIV_JE_ASSET[c.id]||MOTIV_JE_KLASSE[cls];
       if(k)return'<div class="wisch-motiv">'+ASSET_MOTIVE[k].replace('viewBox="0 0 420 170"','viewBox="'+WISCH_VB[k]+'"')+'</div>';
     }
   }
@@ -13185,7 +13238,7 @@ function confirmDelSym(){
 // >=+3 bullish, <=-3 bearish, sonst neutral.
 function autoPairBias(pairName){
   const parts=(pairName||'').split('/');if(parts.length!==2)return'neu';
-  const codeToId={'XAU':'GOLD','XAG':'SILVER','WTI':'OIL','BTC':'BTC','ETH':'ETH'};
+  const codeToId={'XAU':'GOLD','XAG':'SILVER','XCU':'COPPER','WTI':'OIL','XNG':'NATGAS','BTC':'BTC','ETH':'ETH'};
   const bSym=syms.find(s=>s.id===(codeToId[parts[0]]||parts[0]));
   const qSym=syms.find(s=>s.id===(codeToId[parts[1]]||parts[1]));
   if(!bSym||!qSym)return'neu';
@@ -13356,7 +13409,7 @@ function recomputeAllSymBiases(){
 function recomputeAllPairBiases(){
   pairs.forEach(p=>{
     const parts=p.name.split('/');if(parts.length!==2)return;
-    const codeToId={'XAU':'GOLD','XAG':'SILVER','WTI':'OIL','BTC':'BTC','ETH':'ETH'};
+    const codeToId={'XAU':'GOLD','XAG':'SILVER','XCU':'COPPER','WTI':'OIL','XNG':'NATGAS','BTC':'BTC','ETH':'ETH'};
     const bSym=syms.find(s=>s.id===(codeToId[parts[0]]||parts[0]));
     const qSym=syms.find(s=>s.id===(codeToId[parts[1]]||parts[1]));
     if(bSym&&qSym)p.bias=autoPairBias(p.name);
@@ -18324,7 +18377,7 @@ function trendAssets(){
   // scoreHist-Verlauf hat wie jedes andere Asset.
   // Aktien bewusst NICHT (2026-11-13): ihr Score ist fast der des S&P 500 (dieselben USD-Karten);
   // 13 nahezu deckungsgleiche Linien verdeckten in Trends die Fokus-Linien (check/designregeln.js L).
-  return [...FX,'GOLD','SILVER','OIL','BTC','SP500','NAS','DAX',...Object.keys(YIELD_CCY)].filter(id=>present.has(id));
+  return [...FX,'GOLD','SILVER','COPPER','OIL','NATGAS','BTC','SP500','NAS','DAX',...Object.keys(YIELD_CCY)].filter(id=>present.has(id));
 }
 // Alle Assets MIT Score (Score-Journal, Score-Verlauf) - Trends-Assets PLUS Aktien.
 // ⚠ Nicht trendAssets() dafuer nehmen: dort fehlen die Aktien bewusst (Anzeige).
@@ -18875,7 +18928,7 @@ function renderMatrixRoh(){
 // zudem mit dem Bias-Farbcode (z.B. USD-Blau ~ BC.bull-Blau). Gleiche
 // Lightness/Saettigung ueber alle 14 Werte, nur der Hue unterscheidet -
 // wirkt als zusammenhaengende Palette statt als bunte Ansammlung.
-const TREND_COLORS={USD:'#7c9cba',EUR:'#c9a26a',GBP:'#7fa88a',JPY:'#b97e7e',CHF:'#9788ad',CAD:'#6fa3a3',AUD:'#b5a571',NZD:'#bd8aa0',GOLD:'#c2a869',SILVER:'#98a0ab',OIL:'#957f6c',BTC:'#6f9aa8',SP500:'#a17690',NAS:'#8482ab'};
+const TREND_COLORS={USD:'#7c9cba',EUR:'#c9a26a',GBP:'#7fa88a',JPY:'#b97e7e',CHF:'#9788ad',CAD:'#6fa3a3',AUD:'#b5a571',NZD:'#bd8aa0',GOLD:'#c2a869',SILVER:'#98a0ab',COPPER:'#c27a4a',OIL:'#957f6c',NATGAS:'#5b8fd1',BTC:'#6f9aa8',SP500:'#a17690',NAS:'#8482ab'};
 STOCK_IDS.forEach(id=>{if(!TREND_COLORS[id])TREND_COLORS[id]=STOCK_ACCENT[id];});
 // Yields-Kategorie: dieselbe Linienfarbe wie die zugrundeliegende Waehrung
 // (US Yield teilt sich USDs Farbton usw.) - die Legende unterscheidet ueber
@@ -19645,8 +19698,8 @@ function clearCotCcyFilter(){cotCcyFilter=[];cotScope='';renderCot();}
 let cotRefreshing=false;
 let cotRefreshNote='';         // kurzer Status-Hinweis nach manuellem Refresh
 let cotCdTimer=null;           // Countdown-Intervall (laeuft nur auf der COT-Seite)
-const COT_SYMS=['USD','EUR','GBP','JPY','CHF','CAD','AUD','NZD','GOLD','SILVER','OIL','BTC','SP500','NAS'];
-const COT_NAME={USD:'USD',EUR:'EUR',GBP:'GBP',JPY:'JPY',CHF:'CHF',CAD:'CAD',AUD:'AUD',NZD:'NZD',GOLD:'Gold',SILVER:'Silver',OIL:'WTI Oil',BTC:'BTC',SP500:'S&P 500',NAS:'Nasdaq',DAX:'DAX',
+const COT_SYMS=['USD','EUR','GBP','JPY','CHF','CAD','AUD','NZD','GOLD','SILVER','COPPER','OIL','NATGAS','BTC','SP500','NAS'];
+const COT_NAME={USD:'USD',EUR:'EUR',GBP:'GBP',JPY:'JPY',CHF:'CHF',CAD:'CAD',AUD:'AUD',NZD:'NZD',GOLD:'Gold',SILVER:'Silver',COPPER:'Copper',OIL:'WTI Oil',NATGAS:'Natural Gas',BTC:'BTC',SP500:'S&P 500',NAS:'Nasdaq',DAX:'DAX',
   USYIELD:'US Yield',DEYIELD:'DE Yield',GBYIELD:'GB Yield',CHYIELD:'CH Yield',JPYIELD:'JP Yield',CAYIELD:'CA Yield',AUYIELD:'AU Yield',NZYIELD:'NZ Yield'};
 // Lokaler Cache der zuletzt gesehenen Historie. Die stuendlich geschriebene
 // cot_data.json kann (z.B. direkt nach diesem Feature-Rollout, oder wenn der
@@ -19714,6 +19767,8 @@ const COT_MARKETS=[
   {id:'BTC',inc:/BITCOIN/,exc:/(MICRO|YIELD|ETHER|EVENT)/},
   {id:'GOLD',inc:/^GOLD - /,exc:/(MICRO|KILO)/},
   {id:'SILVER',inc:/^SILVER - /,exc:/MICRO/},
+  {id:'COPPER',inc:/^COPPER- #1 - COMMODITY EXCHANGE/,exc:/MICRO/},
+  {id:'NATGAS',inc:/^NAT GAS NYME - NEW YORK MERCANTILE/,exc:/MICRO|ICE/},
   {id:'OIL',inc:/CRUDE OIL, LIGHT SWEET/,exc:/(MICRO|CALENDAR|BULLET|FINANCIAL|NYMEX OTHER|MIDLAND|GULF|WTI AVERAGE)/},
   {id:'SP500',inc:/E-MINI S&P 500/,exc:/(MICRO|ESG|GROWTH|VALUE|DIVIDEND|ANNUAL|QUARTER|CONSU|FINANCIAL|HEALTH|TECH|UTIL|MATERIAL|INDUSTRIAL|ENERGY|REAL|COMMUNICATION)/},
   {id:'NAS',inc:/(NASDAQ-100|E-MINI NASDAQ)/,exc:/MICRO/}
@@ -25083,7 +25138,7 @@ function autoFetchSeasonality(){
 function setSeasAsset(v){seasAsset=v||'';renderSeasonality();}
 const SEAS_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 // Anzeige-Reihenfolge = Reihenfolge der App-Listung (FX-Majors, dann Non-FX)
-const SEAS_ORDER=['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD','GOLD','SILVER','OIL','BTC','ETH','SP500','NAS','DAX',...STOCK_IDS,'USYIELD'];
+const SEAS_ORDER=['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD','GOLD','SILVER','COPPER','OIL','NATGAS','BTC','ETH','SP500','NAS','DAX',...STOCK_IDS,'USYIELD'];
 // Seit 2026-10-27: Renditen (US 10Y) als Monatsaenderung in Basispunkten -
 // eine Rendite hat keinen Prozent-Return. Alles andere in Prozent.
 function seasFmt(v,unit){return(+v>0?'+':'')+(unit==='bp'?(+v).toFixed(1)+' bp':(+v).toFixed(2)+'%');}

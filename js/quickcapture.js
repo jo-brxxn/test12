@@ -36,6 +36,8 @@ const QC_WORT = {
   NZD: ['nzd', 'kiwi', 'neuseeland'],
   GOLD: ['gold', 'xau', 'xauusd'],
   SILVER: ['silver', 'silber', 'xag'],
+  COPPER: ['copper', 'kupfer', 'xcu'],
+  NATGAS: ['natural gas', 'natgas', 'erdgas', 'xng', 'henry hub'],
   OIL: ['oil', 'oel', 'öl', 'wti', 'brent', 'crude'],
   BTC: ['btc', 'bitcoin'],
   SP500: ['sp500', 's&p', 'spx', 's&p500'],

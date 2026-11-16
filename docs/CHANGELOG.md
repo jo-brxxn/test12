@@ -22250,3 +22250,9 @@ Nutzer: *„Ja maximale Historie“*.
 - **Zeitraum-Leiste History:** brach bei 1180/1024 um (61 px) → einzeilig ab 1000 px (28 px); bei 820 px schnitt einzeilig Schere + Max ab (designregeln F) → darunter Umbruch.
 - **Crisp fest:** `--bd #C9D6E8`, `--bd2 #B3C3DA` im hellen Grundton, Kartenrand `--bd2`; der dreilagige Kartenschatten bleibt (ein einfacher Crisp-Schatten hatte ihn ueberschrieben → kartenlook rot → zurueckgenommen). Style-Menue, Hintergrund-Varianten, Vorschau A/B/C und Sync-Felder stilHg/stilEl entfernt.
 - **Nebenbefund rules.js:** cot_data.json 230 h alt. Messung: CFTC-API lieferte am 16.11. als neuesten Bericht den 03.11. (Veterans Day 11.11. → Veroeffentlichung montags). Feed korrekt; Grenze 9 → 11 Tage.
+
+## 2026-11-16 — Copper + Natural Gas (VERSION-CHECK-734, Score-Modell 33)
+
+**Nutzer:** *„Fueg bitte Naturalgas und Copper hinzu. Bei Copper ist der Score gleich wie bei den anderen Metallen. Bei Naturalgas ist es gleich wie bei Oel.“* + Dauerregel „alles automatisch anbinden, eigenes Symbol“ → `docs/neues-asset.md`.
+**Sonde (Runner, tools/rohstoff-sonde.mjs):** TradingView COMEX:HG1! / NYMEX:NG1! ✓; Yahoo HG=F / NG=F 10 J ✓; COT COPPER- #1 (085692) / NAT GAS NYME (023651) ✓; Optionen CPER duenn (162 Calls/Tag), UNG ✓; **Myfxbook: weder Kupfer noch Erdgas** (88 Symbole, Nicht-FX nur Edelmetalle/Krypto) → kein Retail; Kalender: EIA Natural Gas Stocks Change (TV, Donnerstag), FF "Natural Gas Storage".
+**Umsetzung:** COPPER (Metals) uebernimmt beim Anlegen die Zahnrad-Regeln von SILVER, NATGAS (Energy) die von OIL + eigene Zeile **Gas Storage** (EIA, halbes Gewicht, Abbau bullish) → SCORE_MODEL_VERSION 33. Kurse live/3J/4h-Trend, COT, Saisonalitaet (HG=F/NG=F), Put/Call (CPER/UNG), News, Kalender-Muster, Set-ups (XCU/USD, XNG/USD), Trends, eigene Symbole (Drahtspule, Flamme) + Kopfbilder. Nicht im 10-J-Archiv (863/900 KB). Feed-Gesamtgrenze 3600 → 3700 KB.

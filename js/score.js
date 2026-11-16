@@ -79,7 +79,7 @@ function indGroupPartners(ind,rub){
 // konsistent denselben Kreis von Indikatoren trifft.
 // Asset-eigene Zeilen mit halbem Gewicht (Nutzer-Wahl 2026-11-01: Oil
 // Inventories "zaehlt halb" - woechentlich und stark schwankend, wie PPI).
-const ASSET_EIGEN_HALB=new Set(['Oil Inventories']);
+const ASSET_EIGEN_HALB=new Set(['Oil Inventories','Gas Storage']);
 function indIsHalfWeight(ind,rub){
   if(BOND_HALF_PT.has(ind.name))return true;
   if(ASSET_EIGEN_HALB.has(stripPeriodSuffix(ind.name).base))return true;
@@ -1372,7 +1372,7 @@ function countActiveInds(sym){
 }
 function openScoreInfoPair(pairName){
   const parts=(pairName||'').split('/');
-  const codeToId={XAU:'GOLD',XAG:'SILVER',WTI:'OIL',BTC:'BTC',ETH:'ETH'};
+  const codeToId={XAU:'GOLD',XAG:'SILVER',XCU:'COPPER',WTI:'OIL',XNG:'NATGAS',BTC:'BTC',ETH:'ETH'};
   const bSym=syms.find(s=>s.id===(codeToId[parts[0]]||parts[0]));
   const qSym=syms.find(s=>s.id===(codeToId[parts[1]]||parts[1]));
   const row=(l,v,sub)=>`<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:5px 8px;border:1px solid var(--bd2);border-radius:7px;margin-bottom:5px"><span><span style="font-weight:600">${escH(l)}</span>${sub?`<br><span style="color:var(--t3);font-size:var(--fs-xs)">${escH(sub)}</span>`:''}</span><span style="font-weight:700">${fmtScNum(v)}</span></div>`;
@@ -1923,7 +1923,11 @@ function symScoreCmp(sym){
 // 30 -> 31 (2026-11-01, Nutzer-Entscheid): Money Supply in Inflation bei allen
 // acht Waehrungen (EUR/CHF/JPY/AUD/NZD M3, GBP M4, USD M2, CAD M2++), im Score
 // GEGEN die Messung (EUR M3 Release-Tag t 0,93, GBP M4 t -0,19).
-const SCORE_MODEL_VERSION=32;
+// 32 -> 33 (2026-11-16, Nutzer: "Fueg bitte Naturalgas und Copper hinzu ... Copper ... gleich wie bei den
+// anderen Metallen ... Naturalgas ... gleich wie bei Oel"): zwei neue Assets; NATGAS mit eigener Zeile
+// Gas Storage (EIA, woechentlich, halbes Gewicht, Abbau = bullish) wie OIL Oil Inventories. Die Scores der
+// bestehenden Assets aendern sich nicht.
+const SCORE_MODEL_VERSION=33;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.
@@ -1991,7 +1995,7 @@ function symStrengthMissing(sym){
 // Carry-Komponente.
 function pairScore(pairName){
   const parts=(pairName||'').split('/');if(parts.length!==2)return 0;
-  const codeToId={XAU:'GOLD',XAG:'SILVER',WTI:'OIL',BTC:'BTC',ETH:'ETH'};
+  const codeToId={XAU:'GOLD',XAG:'SILVER',XCU:'COPPER',WTI:'OIL',XNG:'NATGAS',BTC:'BTC',ETH:'ETH'};
   const bSym=syms.find(s=>s.id===(codeToId[parts[0]]||parts[0]));
   const qSym=syms.find(s=>s.id===(codeToId[parts[1]]||parts[1]));
   if(!bSym||!qSym)return 0;

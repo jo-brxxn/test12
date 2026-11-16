@@ -195,6 +195,8 @@ const IND_EVENT_MATCHERS={
   // Inventories", TV "EIA Crude Oil Stocks Change" - dieselbe Zahl am selben
   // Mittwoch); NICHT API (Dienstag), Cushing, Imports.
   'Oil Inventories':(n,c)=>c==='USD'&&/^(eia )?crude oil (inventories|stocks change)$/.test((n||'').toLowerCase().trim()),
+  // NATGAS (2026-11-16): woechentliche EIA-Erdgasbestaende (FF "Natural Gas Storage", TV "EIA Natural Gas Stocks Change", Donnerstag).
+  'Gas Storage':(n,c)=>c==='USD'&&/^(eia )?natural gas (storage|stocks change)$/.test((n||'').toLowerCase().trim()),
   // GBP: MPC-Stimmen. Im Kalender stehen die drei TV-Reihen und die FF-Zeile
   // "MPC Official Bank Rate Votes" - alle am Sitzungstag. Das Muster dient NUR
   // dem Termin (nurTermin unten): der Wert der Zeile ist die Netto-Zahl aus dem

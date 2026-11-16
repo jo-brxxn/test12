@@ -91,11 +91,12 @@ fs.readdirSync(path.join(ROOT, 'cal_hist')).filter(f => /^\d{4}\.json$/.test(f))
 }
 // ── D) App-Verdrahtung ──
 {
-  if (!/const ASSET_EIGENE_IND=\{OIL:\{'Economic Growth':\['Oil Inventories'\]\}\};/.test(main)) fail('D', 'ASSET_EIGENE_IND: Oil Inventories nicht (nur) bei OIL / Economic Growth');
+  // seit 2026-11-16 zusaetzlich NATGAS / Gas Storage (Nutzer: "bei Naturalgas ist es gleich wie bei Oel")
+  if (!/const ASSET_EIGENE_IND=\{OIL:\{'Economic Growth':\['Oil Inventories'\]\},NATGAS:\{'Economic Growth':\['Gas Storage'\]\}\};/.test(main)) fail('D', 'ASSET_EIGENE_IND: Oil Inventories nur bei OIL, Gas Storage nur bei NATGAS (Economic Growth)');
   const r = main.indexOf('function resetNonFxIndBias(sym){'), r2 = main.indexOf('\n}\n', r);
   const rs = main.slice(r, r2);
   if (!rs.includes(M_EIG) || rs.indexOf(M_EIG) > rs.indexOf("if(derived&&ind.bias!=='neu')ind.bias='neu';")) fail('D', 'resetNonFxIndBias setzt den Bias der OIL-eigenen Zeile zurueck');
-  if (!/const ASSET_EIGEN_HALB=new Set\(\['Oil Inventories'\]\);/.test(score) || !score.includes('if(ASSET_EIGEN_HALB.has(stripPeriodSuffix(ind.name).base))return true;')) fail('D', 'Oil Inventories zaehlt nicht halb');
+  if (!/const ASSET_EIGEN_HALB=new Set\(\['Oil Inventories','Gas Storage'\]\);/.test(score) || !score.includes('if(ASSET_EIGEN_HALB.has(stripPeriodSuffix(ind.name).base))return true;')) fail('D', 'Oil Inventories / Gas Storage zaehlen nicht halb');
   if (!/\['MPC Vote Split',\['GBP'\]\]/.test(main)) fail('D', 'MPC Vote Split nicht fuer GBP angelegt');
   if (!/const SCORE_ZERO=new Set\(\[[^\]]*'MPC Vote Split'/.test(score)) fail('D', 'MPC Vote Split zaehlt im Score (Nutzer-Entscheid: nur Anzeige)');
   if (!em.includes("IND_EVENT_MATCHERS['MPC Vote Split'].nurTermin=true;") || !main.includes('if(!matcher||matcher.nurTermin)return[];')) fail('D', 'MPC-Kalendermuster liefert auch den Wert (nurTermin fehlt)');

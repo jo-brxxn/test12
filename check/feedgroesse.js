@@ -39,7 +39,10 @@ const DECKEL_KB = 900;
 // 10-Jahres-Archiv (price_hist.json, sonst 1064 KB > 900) und dem 4h-Trend
 // (+259 KB) sind die Aktien bewusst herausgenommen. 3600 KB liegt weiter klar
 // unter den 4 MB, die bei FEED_TIMEOUT_MS theoretisch durchgehen.
-const GESAMT_KB = 3600;
+// 2026-11-16: 3600 -> 3700 (Copper + Natural Gas, Nutzer: "Fueg bitte Naturalgas und Copper hinzu").
+// Vorher 3568/3600; je Asset 3 Jahre Tageskerzen + 4h-Trend. Ins 10-Jahres-Archiv (price_hist.json,
+// 863/900 KB) bewusst NICHT. 3700 KB liegt weiter unter den ~4 MB, die bei FEED_TIMEOUT_MS durchgehen.
+const GESAMT_KB = 3700;
 // Die Live-Dateien, die der Browser beim Start holt. Muss die DATA_BASE-
 // Abrufe in js/main.js + js/data-feeds.js spiegeln.
 const FEEDS = ['ind_data.json', 'bond_data.json', 'price_data.json', 'cot_data.json',

@@ -10,6 +10,8 @@ import {
 const CAL_ALIASES={
   GOLD:['GOLD','XAU','XAUUSD'],
   SILVER:['SILVER','XAG','XAGUSD'],
+  COPPER:['COPPER','XCU','XCUUSD','HG'],
+  NATGAS:['NATGAS','NATURAL GAS','XNG','XNGUSD','NG'],
   OIL:['OIL','WTI','CRUDE','USOIL','BRENT'],
   BTC:['BTC','BITCOIN','BTCUSD'],
   SP500:['SP500','SPX','S&P','S&P500','S&P 500','US500'],
@@ -147,7 +149,7 @@ function fmtStamp(ts){try{const d=new Date(ts);if(!isFinite(d.getTime()))return 
 // Oelbestaende (2026-11-01): ein Abbau (Wert unter der Prognose) ist bullish
 // fuer Oel - nur die Rohoel-BESTAENDE, nicht Business/Wholesale Inventories
 // (dort heissen hoehere Lager mehr Wachstum).
-const LOWER_IS_BETTER_RE=/unemployment|jobless|claim|deficit|crude oil (stock|inventor)|oil inventor/i;
+const LOWER_IS_BETTER_RE=/unemployment|jobless|claim|deficit|crude oil (stock|inventor)|oil inventor|natural gas (stock|storage)|gas storage/i;
 // Merker (2026-10-24, Pruefdurchgang Performance): beim Start 381.000 Aufrufe
 // fuer wenige tausend verschiedene Texte (Score-Kette, Chart-Historien) -
 // gemessen 295 ms bei 4x gedrosselter CPU. Reine Funktion des Textes, also

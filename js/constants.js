@@ -195,6 +195,30 @@ export const AI_SYMBOLS = {
     <g clip-path="url(#aiBarClip)"><path class="ai-sheen-el" d="M2,22 L10,2 L14,2 L6,22Z" fill="#fff" opacity=".5"/></g>
     </g>`,
 
+  // Kupfer (2026-11-16): Drahtspule in Kupferfarbe - eigenes Bild, kein Barren (sonst wie Gold/Silber).
+  COPPER: `
+    <defs>
+      <linearGradient id="aiCuG" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#F2B07A"/><stop offset=".5" stop-color="#C8743A"/><stop offset="1" stop-color="#8A4A1F"/>
+      </linearGradient>
+    </defs>
+    <rect x="9" y="4.2" width="18" height="2.6" rx="1.1" fill="#6B3A18"/>
+    <rect x="9" y="17.2" width="18" height="2.6" rx="1.1" fill="#6B3A18"/>
+    <rect x="10.6" y="6.8" width="14.8" height="10.4" fill="url(#aiCuG)"/>
+    <path d="M10.6,8.6 H25.4 M10.6,10.6 H25.4 M10.6,12.6 H25.4 M10.6,14.6 H25.4" stroke="#7A3F18" stroke-width=".7" opacity=".7"/>
+    <path d="M25.4,15.6 C29,15.6 30,18 31.6,20.4" fill="none" stroke="#C8743A" stroke-width="1.3" stroke-linecap="round"/>`,
+
+  // Erdgas (2026-11-16): blaue Brennerflamme.
+  NATGAS: `
+    <defs>
+      <linearGradient id="aiNgG" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#1F5FD1"/><stop offset=".6" stop-color="#3B8BF0"/><stop offset="1" stop-color="#9FD0FF"/>
+      </linearGradient>
+    </defs>
+    <path d="M18,2.8 C22.6,7.6 25.4,11 25.4,14.6 A7.4,7.4 0 0 1 10.6,14.6 C10.6,11.8 12.4,9.6 14.2,7.8 C14.4,10.4 15.4,11.6 16.6,12 C16.2,8.6 16.8,5.6 18,2.8Z" fill="url(#aiNgG)"/>
+    <path d="M18,10.4 C20.2,12.8 21.4,14.6 21.4,16.2 A3.4,3.4 0 0 1 14.6,16.2 C14.6,14.6 15.8,12.8 18,10.4Z" fill="#CFE7FF"/>
+    <rect x="11.6" y="21" width="12.8" height="1.6" rx=".8" fill="#33405C"/>`,
+
   SILVER: `
     <defs>
       <linearGradient id="aiSilTop" x1="0" y1="0" x2="1" y2="1">
