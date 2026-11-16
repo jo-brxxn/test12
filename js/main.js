@@ -20,6 +20,7 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 import {trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
+import {gameplans,gpRein,gpSetzeAlle,gpVereinen,gpLeisteHtml,gpNiveaus,renderGameplan,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert} from './gameplan.js';
 // Hero-Zeichnung des Dashboards (Nutzer 2026-11-06, siehe Kopf von heroart.js).
 import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
@@ -32,7 +33,9 @@ import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.j
 import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './kachelbild.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
-export {scoreAssets,closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
+export {scoreAssets,closeM,
+  // Was js/gameplan.js von hier braucht (2026-11-16).
+  getSymEventsAll,watchlistedAssetIds,watchlistPairs,watchInvolvedAssets,YIELD_CCY,ar,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
   // Was js/zentralbank.js von hier braucht (Notizen = research.notes, Banner-Quittung = zbQuittung).
   research,resNotes,trashResNote,assetIconHtml,invertBias,zbQuittung,zbEntscheid,resZbNeu,openResNote,abNoteHl,
   // Was js/trades.js (Journal) fuer seine Charts von hier braucht.
@@ -6007,7 +6010,7 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte},SNAP_REPLACER);}
+function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte,gameplans},SNAP_REPLACER);}
 // Banner-Quittungen der Zentralbank-Karte: nur Waehrung -> Datum, alles andere faellt raus.
 function zbEntscheidRein(v){
   const o={};
@@ -6242,7 +6245,7 @@ function applySnapRoh(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(_mergeSync?gpVereinen(gameplans,d.gameplans):d.gameplans);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6773,7 +6776,7 @@ function loadState(){
       // Wert ist gespeichert, kommt aber nie an. Genau so ging der Test
       // 2026-09-07 aus (angepinnte Seed-Notiz nach dem Neuladen ohne Pin).
       btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};
-      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);
+      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(d.gameplans);
       seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};
       eventAlerts=pruneEventAlerts(d.eventAlerts||[]);
       priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];
@@ -6781,7 +6784,7 @@ function loadState(){
       recomputeAuto();
       return;}
   }catch(e){}
-  syms=DEF.map(d=>({...d}));pairCats=mkPairCats();pairs=[];noteCats=mkNCs();research=mkResearch();researchFolders=[];researchAnalysis={};zbQuittung={};zbEntscheid={};bsGewichte={};calEvts=mkCalEvts();widgets=mkWidgets();dashRemovedTypes=[];customIds=[];rubOrder=mkRubOrder();sbOrder={};catOrder=[];rateWatchCustom={};indLinkCustom={};btReasons={};seedNoteFlags={};eventAlerts=[];priceAlerts=[];
+  syms=DEF.map(d=>({...d}));pairCats=mkPairCats();pairs=[];noteCats=mkNCs();research=mkResearch();researchFolders=[];researchAnalysis={};zbQuittung={};zbEntscheid={};bsGewichte={};gpSetzeAlle({});calEvts=mkCalEvts();widgets=mkWidgets();dashRemovedTypes=[];customIds=[];rubOrder=mkRubOrder();sbOrder={};catOrder=[];rateWatchCustom={};indLinkCustom={};btReasons={};seedNoteFlags={};eventAlerts=[];priceAlerts=[];
   syms.forEach(addMacroRub);applyRubOrder();
   // Ein brandneuer Nutzer (kein gespeicherter Zustand) durchlaeuft
   // migrateResearch() nie (mkResearch() liefert bereits einen frischen,
@@ -7314,7 +7317,8 @@ function neueFelderBehalten(fremd,lokal){
   // Banner-Quittungen der Zentralbank-Karte (seit 2026-10-27). Bis 715 auch
   // mkAnsicht/mkTab/mkOpt/mkInds/mkRange der Charts-Ansicht (2026-11-12 geloescht).
   // bsGewichte: Gewichte des BTC-Sentiment-Scores (seit 2026-11-14, 723).
-  ['zbQuittung','zbEntscheid','bsGewichte'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
+  // gameplans: Gameplan je Asset (seit 2026-11-16, 737).
+  ['zbQuittung','zbEntscheid','bsGewichte','gameplans'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
   const fa=fremd.researchAnalysis,la=lokal.researchAnalysis;
@@ -9894,6 +9898,19 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
         +`<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:${col}">Change</span><b style="color:${col}">${diff>0?'+':''}${zahl(diff)}</b></div>`});
   });
   sv+=ovLinien;
+  // Gameplan-Level (js/gameplan.js, Nutzer 2026-11-16: Entry/Break "mit einem
+  // Kalenderdaten oder preislevel verknuepfen"): gestrichelte Linie im Bild,
+  // Beschriftung als HTML (das SVG wird gestreckt). Ausserhalb der Kursspanne:
+  // nur ein Hinweis am Rand - die Skala wird dafuer NICHT gedehnt, sonst
+  // schrumpfen die Kerzen.
+  let nivHtml='';
+  (opt&&opt.niveaus||[]).forEach(nv=>{
+    const fmtN=zahl(nv.v);
+    if(nv.v>=lo&&nv.v<=hiDaten){const yy=y(nv.v);
+      sv+=`<line class="gp-niv-l" x1="0" x2="${W}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="${nv.col}" stroke-width="1.2" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>`;
+      nivHtml+=`<span class="gp-niv" style="--c:${nv.col};top:${(yy/H*100).toFixed(2)}%">${escH(nv.t)} ${fmtN}</span>`;}
+    else nivHtml+=`<span class="gp-niv gp-niv-rand ${nv.v>hiDaten?'oben':'unten'}" style="--c:${nv.col}">${escH(nv.t)} ${fmtN} ${nv.v>hiDaten?'&#8593;':'&#8595;'}</span>`;
+  });
   const kNach={};k.forEach(c=>{kNach[c.d]=c;});
   const pct=k[0].o?((k[k.length-1].c-k[0].o)/Math.abs(k[0].o)*100):0;
   const svg=`<svg class="ab-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${sv}</svg>`;
@@ -9915,7 +9932,7 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
     // dem Chart (Nutzer-Wunsch), check/archiv.js misst daran aber weiter, ob
     // das Archiv wirklich gezeichnet wurde.
     html:`<div class="ab-plot" data-kerzen="${k.length}">
-      <div class="ab-plot-main${opt&&opt.lage?' pk-chart':''}">${chartHoverWrap(svg+(opt&&opt.lage?opt.lage({tage,breite:opt.breite||600,x:i=>(i*fach+fach/2)/W,y:d=>{const c=kNach[d];return c?y(alsLinie?c.c:c.h)/H:null;}}):''),pts,'height:100%',null,null,'ab')}<div class="ab-xax">${achsTxt}</div></div>
+      <div class="ab-plot-main${opt&&opt.lage?' pk-chart':''}">${chartHoverWrap(svg+nivHtml+(opt&&opt.lage?opt.lage({tage,breite:opt.breite||600,x:i=>(i*fach+fach/2)/W,y:d=>{const c=kNach[d];return c?y(alsLinie?c.c:c.h)/H:null;}}):''),pts,'height:100%',null,null,'ab')}<div class="ab-xax">${achsTxt}</div></div>
       ${kopfAnteil>0?`<div class="ab-yax ab-yax-k" style="grid-template-rows:${kopfAnteil.toFixed(4)}fr ${(1-kopfAnteil).toFixed(4)}fr"><i></i><div class="ab-yax-in">${skala}</div></div>`:`<div class="ab-yax">${skala}</div>`}
     </div>`};
 }
@@ -11871,6 +11888,9 @@ function renderAssetBoard(c){
   // aus dem Score ist ein eigener Schritt mit Vorher/Nachher-Vergleich.
   return`<div class="ab-board">
     <div class="ab-cards">
+      ${/* Gameplan-Leiste (Nutzer 2026-11-16): "direkt zwischen Asset Name und der
+           Price Karte", Tipp klappt auf (js/gameplan.js). */''}
+      ${gpLeisteHtml(c)}
       ${abReihenTitel('Overview')}
       ${/* ⚠ EIGENES Unterraster ueber alle Spalten (Nutzer 2026-09-17: die
            Historie "mit in die zeile von price, pinned notes und kalender").
@@ -12047,7 +12067,7 @@ function assetPreisKarteHtml(c){
   const det=document.getElementById('detail'),dw=det?det.clientWidth:1000;
   const breite=Math.max(200,dw>760?dw-268-14-90:dw-70);
   const kb=warten?{leer:true,html:ladeLogoHtml('Loading long price history…')}:abKerzenBlock(reihe,FX.includes(c.id)?KORB_NAME[c.id]:YIELD_CCY[c.id]?(c.full||c.name||c.id):(c.name||c.id),YIELD_CCY[c.id]?'%':'',c.id,null,YIELD_CCY[c.id]?'bond':'price',
-    vergleich?{trend:[]}:{trend:linien,lage:api=>pkLageHtml(c.id,api),kopf:pkMarkenAn?0.16:0,breite});
+    vergleich?{trend:[]}:{trend:linien,lage:api=>pkLageHtml(c.id,api),kopf:pkMarkenAn?0.16:0,breite,niveaus:gpNiveaus(c.id)});
   const ch=vergleich&&!kb.leer?Object.assign({},kb,{html:`<div class="pk-vgl pk-chart" data-pk-vgl="1"></div>`}):kb;
   const w=trendWerte(c.id);
   // Kurz "EMA 1D"/"EMA 4H" (Nutzerwahl 2026-10-05 "Kompakt, max. 2 Zeilen"):
@@ -26042,7 +26062,7 @@ function tabStacksOhneEntfernte(ts){
   (ts||[]).forEach(st=>{if(st&&Array.isArray(st.members)&&st.members.some(m=>ENTFERNTE_TABS.has(m))){st.members=st.members.filter(m=>!ENTFERNTE_TABS.has(m));weg=true;}});
   return weg;
 }
-const PAGE_IDS={regime:'pgRegime',news:'pgNews',dash:'pgDash',cur:'pgCur',mx:'pgMx',trends:'pgTrends',cot:'pgCot',sent:'pgSent',seas:'pgSeas',data:'pgData',rate:'pgRate',carry:'pgCarry',pairs:'pgPairs',watch:'pgWatch',journal:'pgJournal',cal:'pgCal',notes:'pgNotes'};
+const PAGE_IDS={regime:'pgRegime',news:'pgNews',dash:'pgDash',cur:'pgCur',mx:'pgMx',trends:'pgTrends',cot:'pgCot',sent:'pgSent',seas:'pgSeas',data:'pgData',rate:'pgRate',carry:'pgCarry',pairs:'pgPairs',watch:'pgWatch',gameplan:'pgGameplan',journal:'pgJournal',cal:'pgCal',notes:'pgNotes'};
 // ── Tab-Leiste mit Stapeln (Gruppen) ───────────────────────────────
 // Reihenfolge + Definition aller Kategorien. FX und Non-FX sind seit
 // 2026-08-03 EIN gemeinsamer Tab (Nutzer-Wunsch "die beiden Kategorien
@@ -26051,7 +26071,7 @@ const PAGE_IDS={regime:'pgRegime',news:'pgNews',dash:'pgDash',cur:'pgCur',mx:'pg
 // Indices/Stocks), kein Modus-Filter mehr (siehe renderSidebar/moveSbCat).
 // 'over' steht bewusst VOR 'dash' (Nutzer-Wunsch 2026-09-11: "eine neue
 // Kategorie ueber Dashboard").
-const TAB_ORDER=['dash','fx','mx','trends','cot','sent','seas','data','rate','news','carry','pairs','watch','journal','cal','notes'];
+const TAB_ORDER=['dash','fx','mx','trends','cot','sent','seas','data','rate','news','carry','pairs','watch','gameplan','journal','cal','notes'];
 const TABS={
   dash:{label:'Dashboard',tab:'dash'},
   // Label 2026-08-03 von 'FX' auf 'Assets' umbenannt (Nutzer-Wunsch, per Foto):
@@ -26082,6 +26102,8 @@ const TABS={
   watch:{label:'Watchlist',tab:'watch'},
   // Trading Journal (Nutzer-Wunsch 2026-10-24): eigene Trades im Kalender.
   // Steht in keinem Stapel - eigener Eintrag direkt nach der Watchlist.
+  // Gameplan je Asset (Nutzer 2026-11-16): eigener Eintrag nach der Watchlist, in keinem Stapel.
+  gameplan:{label:'Gameplan',tab:'gameplan'},
   journal:{label:'Journal',tab:'journal'},
   cal:{label:'Calendar',tab:'cal'},
   // Label 2026-08-02 von 'Notes' auf 'Research' umbenannt, 2026-09-19 auf
@@ -26191,6 +26213,7 @@ const TAB_ICONS={
   carry:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
   pairs:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
   watch:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  gameplan:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
   journal:'<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>',
   cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   notes:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
@@ -26500,6 +26523,7 @@ function showTab(tab,btn,fxMode){
   else if(tab==='carry')renderCarry();
   else if(tab==='pairs')renderPairs();
   else if(tab==='watch')renderWatchlistTab();
+  else if(tab==='gameplan')renderGameplan();
   else if(tab==='journal')renderJournal();
   else if(tab==='cal')renderCalendar();
   else if(tab==='notes')rerenderNotesHost();
@@ -26518,6 +26542,7 @@ function rerender(){sprungLog('rerender');
   else if(curPage==='carry')renderCarry();
   else if(curPage==='pairs')renderPairs();
   else if(curPage==='watch')renderWatchlistTab();
+  else if(curPage==='gameplan')renderGameplan();
   else if(curPage==='journal')renderJournal();
   else if(curPage==='cal')renderCalendar();
   else if(curPage==='notes')rerenderNotesHost();
@@ -27931,7 +27956,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

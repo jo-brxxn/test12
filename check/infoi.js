@@ -38,7 +38,7 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
         // ein ⓘ ohne erkannte Karte wurde STILL uebergangen, deshalb sah der
         // Waechter den Schnellnotiz-Knopf rechts neben dem ⓘ nie. Jetzt wird
         // ein solches ⓘ gemeldet, statt es zu ueberspringen.
-        const card = bt.closest('.ab-tile,.ab-ptile,.ab-htile,.ab-ntile,.ab-ktile,.rub-card,.cot-card,.dw,.abc-cal,.mx-card');
+        const card = bt.closest('.gp-k1,.ab-tile,.ab-ptile,.ab-htile,.ab-ntile,.ab-ktile,.rub-card,.cot-card,.dw,.abc-cal,.mx-card');
         if (!card) { o.push({ tab, ohneKarte: (bt.parentElement.textContent || '').trim().slice(0, 24) }); return; }
         const titel = hd.querySelector('.ab-tile-t,.dw-t-txt,.rub-inp,.abc-mon,.mx-card-title-t') || [...hd.childNodes].find(x => x.nodeType === 3 && x.textContent.trim());
         let tr;

@@ -68,7 +68,7 @@ const GP_LAGE = process.argv.includes('--gegenprobe-lage');
       const karten = alle.filter(k => !alle.some(o => o !== k && o.contains(k)) && !k.matches('.ahead,.cot-notify') && !k.closest('.ahead'));
       karten.forEach(k => {
         const kr = k.getBoundingClientRect();
-        const blaetter = [...k.querySelectorAll('*')].filter(e => vis(e) && [...e.childNodes].some(c => c.nodeType === 3 && c.textContent.trim().length > 1) && !e.closest('button,select,option,svg,.rinfo,.info-b,.cmp-chip,.bbadge,.score-badge,.ab-tile-s,input,textarea'));
+        const blaetter = [...k.querySelectorAll('*')].filter(e => vis(e) && [...e.childNodes].some(c => c.nodeType === 3 && c.textContent.trim().length > 1) && !e.closest('button,select,option,svg,.rinfo,.info-b,.cmp-chip,.bbadge,.gp-bd,.score-badge,.ab-tile-s,input,textarea'));
         if (!blaetter.length) return;
         // Kartentitel: erster fetter Text im oberen Bereich der Karte
         // nur, was in der Karte steht: eine nach oben weggescrollte Listenzeile liegt

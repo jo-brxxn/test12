@@ -1678,3 +1678,12 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Chip-Zeile **All · FX · Crypto · Metals · Energy · Indices · Stocks · Yields**, je Karte eigener Filter, umbrechend (nie abgeschnitten). Performance: Chips links, Zeitraum rechts.
 - Bias scores: Podium (Top 3 long/short) + Bullish | Neutral | Bearish **je 3**, "Show all N" je Spalte.
 - Geprueft: `check/dashfilter.js`, `check/dashboard.js`.
+
+## Gameplan (seit 2026-11-16, 737)
+
+- **Seitenleiste:** eigener Eintrag *Gameplan* nach *Watchlist* (in keinem Stapel)
+- **Seite (G2):** links Liste — *Pinned · Watchlist* zuerst, dann je `SB_CATS`-Kategorie; rechts Detail: Thesis | Upcoming catalysts | Entry | Break, Bias-Schalter oben
+- **Asset-Seite (K1):** Leiste **zwischen Kopf und Price-Karte** — Bias, *Gameplan*, These, nächstes High-Impact-Event; Tipp klappt auf: **beginnt bei Entry | Break**, darunter Catalysts, unten Bias-Schalter + *All gameplans*
+- **Entry/Break:** freier Text + optional *Date* (Countdown) oder *Price* (Abstand zum letzten Schluss, Linie in der Price-Karte; nicht bei FX-Korb/Renditen)
+- **Hinweis:** *Not reviewed for Nd* nach 14 Tagen ohne Änderung
+- Code: `js/gameplan.js`, Wächter `check/gameplan.js`

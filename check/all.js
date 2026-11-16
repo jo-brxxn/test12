@@ -89,6 +89,7 @@ const PRUEFUNGEN = [
   { n: 'leerlauf',  s: 25,  d: 'Dashboard im Leerlauf: keine Schleife je Bild im Hauptthread (Kugel im ruhigen Takt), hoechstens 40 Stilberechnungen je 4 s', f: 'check/leerlauf.js', args: [], browser: true },
   { n: 'titelzeile', s: 30, d: 'Kartentitel jeder Reihe auf einer Linie (Asset-Seiten + Dashboard, 1366/1180/1024 px)', f: 'check/titelzeile.js', args: [], browser: true },
   { n: 'setupfilter', s: 30, d: 'Set-ups-Filter: Chip je Asset-Klasse, All zeigt jedes Asset, immer nur ein Gruppen-Chip an, Stocks = 13', f: 'check/setupfilter.js', args: [], browser: true },
+  { n: 'gameplan', s: 60, d: 'Gameplan: Seite (jedes Asset, Watchlist oben), Bias faerbt, Leiste vor der Price-Karte, aufgeklappt ab Entry|Break, gespeichert, Preislinie, 14-Tage-Hinweis', f: 'check/gameplan.js', args: [], browser: true },
   { n: 'kerzenarchiv', s: 40, d: 'Alte Kerzen (>183 Tage) in price_ohlc.json, Laden nur fuer lange Charts, Rundreise bitgenau, Scores unveraendert', f: 'check/kerzenarchiv.js', args: [], browser: true },
   { n: 'stkmakro', s: 30, d: 'Aktien: Makro-Karten + Zentralbank nicht auf der Seite, Quicklink Macro -> Fenster ~2/3 mit allen Funktionen, FX unveraendert', f: 'check/stkmakro.js', args: [], browser: true },
   { n: 'markenicons', s: 12, d: 'Eigene Symbole fuer S&P 500, Nasdaq, DAX und 13 Aktien: alle verschieden, keins die alte Index-Karte, im Dashboard sichtbar, einfarbige Fassung', f: 'check/markenicons.js', args: [], browser: true },
