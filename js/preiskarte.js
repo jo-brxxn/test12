@@ -48,6 +48,7 @@ import {IND_DATA_FEED} from './data-feeds.js';
 // gewaehlter Tag, Hinzufuegen-Modus, Vergleichs-Auswahl und ihre Skala - wie
 // die Auswahl in Data. Synchronisiert: pkMarkenAn (main.js) und die eigenen
 // Pfeile (research.notes).
+const pctL=v=>(v*100).toFixed(3)+'%';   // Lage im Chart (left/top)
 let pkSel=null;            // {a:Asset, k:Tag oder Wochenanfang}
 let pkAdd=false;           // Hinzufuegen-Modus
 let pkModus='next';        // Spalte ohne Auswahl: 'next' (Next up) | 'moves' (Biggest moves)
@@ -197,23 +198,41 @@ function pkBandLegende(){
 // ... zB bei nvidia ceo affairs, he resigns as ceo"). Gestrichelte Linie ueber die ganze Hoehe,
 // oben eine Flagge mit Datum + Titel + erster Zeile, Farbe = Bias der Notiz. Nah beieinander
 // liegende Flaggen weichen in eine zweite/dritte Reihe aus; rechts klappen sie nach links.
+// Eigene Notizen als Callout (seit 739, vorher Flagge B1): Punkt auf der Kerzenmitte, Linie,
+// Kasten mit Rahmen in Bias-Farbe. Kasten an Datum pm.bd (+ Versatz pm.bo) und Preis pm.bp;
+// alte Notizen ohne Ort: rechts oberhalb der Kerze. Tipp auf den Kasten = Notiz-Fenster.
 function pkFlaggenHtml(id,api,tage,B){
   const liste=[];
-  B.forEach(b=>{if(!b.eig.length||b.i1<0)return;let x=0,n=0;for(let i=b.i0;i<=b.i1;i++){x+=api.x(i);n++;}x/=n;b.eig.forEach(nt=>liste.push({x,nt,d:tage[b.i0],k:b.k}));});
-  liste.sort((a,c)=>a.x-c.x);
-  const reihenEnde=[];
-  return liste.map(({x,nt,d,k})=>{
-    let r=0;while(reihenEnde[r]!=null&&x-reihenEnde[r]<0.22)r++;reihenEnde[r]=x;
-    const links=x>0.72,txt=String(nt.title||'').trim()||'Note',unter=String(nt.body||'').replace(/\s+/g,' ').trim().slice(0,60);
-    return`<span class="pk-flagge${links?' links':''}" style="left:${(x*100).toFixed(3)}%;--c:${bcol(nt.bias)};--r:${Math.min(r,3)}" title="${escH(tagKurz(d)+' · '+txt+(unter?' · '+unter:''))}"><span class="pk-fl-l"></span><button type="button" class="pk-fl-t" onclick="pkWaehle('${escJH(k)}')"><b>${escH(tagKurz(d).replace(/^\w+, /,'').toUpperCase())} · ${escH(txt)}</b>${unter?`<i>${escH(unter)}</i>`:''}</button></span>`;
-  }).join('');
+  B.forEach(b=>{if(!b.eig.length||b.i1<0)return;b.eig.forEach(nt=>liste.push({nt,b}));});
+  if(!liste.length)return'';
+  let lin='',dots='',boxen='';
+  const ym=d=>api.ym?api.ym(d):api.y(d),kl=(v,a,z)=>Math.max(a,Math.min(z,v));
+  liste.forEach(({nt,b},n)=>{
+    const pm=nt.pm||{};
+    let i=naechsterTag(tage,pm.d);if(i<0)return;
+    const ax=api.x(i),ay=ym(tage[i]);if(ay==null)return;
+    let bx,by;
+    const bi=pm.bd?naechsterTag(tage,pm.bd):-1;
+    if(bi>=0)bx=api.x(bi)+(+pm.bo||0);
+    else if(pm.bd&&tage.length)bx=pm.bd<tage[0]?0.04:0.96;
+    else bx=ax>0.7?ax-0.12:ax+0.12;
+    if(pm.bp!=null&&api.yv)by=api.yv(+pm.bp);else if(pm.by!=null)by=+pm.by;else by=ay-0.22-(n%3)*0.1;
+    bx=kl(bx,0.03,0.97);by=kl(by,0.06,0.94);
+    const txt=String(nt.title||'').trim()||'Note',tip=tagKurz(tage[i])+' · '+txt+(nt.body?' · '+String(nt.body).replace(/\s+/g,' ').slice(0,60):'');
+    lin+=`<line x1="${(ax*100).toFixed(3)}" y1="${(ay*100).toFixed(3)}" x2="${(bx*100).toFixed(3)}" y2="${(by*100).toFixed(3)}" vector-effect="non-scaling-stroke"/>`;
+    dots+=`<span class="pk-nt-dot" style="left:${pctL(ax)};top:${pctL(ay)}" aria-hidden="true"></span>`;
+    boxen+=`<button type="button" class="pk-nt${bx>0.8?' re':bx<0.2?' li':''}" data-nt="${escH(nt.id)}" style="left:${pctL(bx)};top:${pctL(by)};--c:${bcol(nt.bias)}" title="${escH(tip)}" onclick="event.stopPropagation();pkNotizAuf('${escJH(nt.id)}')">${escH(txt)}</button>`;
+  });
+  return`<svg class="pk-nt-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lin}</svg>${dots}${boxen}`;
 }
+// Spaeter tippen: das Notiz-Fenster (Text, Bias, Loeschen - mit Nachfrage bei Ungespeichertem)
+function pkNotizAuf(nid){try{if(typeof window.openResNote==='function')window.openResNote(nid);}catch(e){alert('The note could not be opened: '+(e&&e.message||e));}}
 function pkLageHtml(id,api){
   const lid='pk'+(++_pkSeq),tage=api.tage||[];
   if(tage.length<2)return'';
   const woche=api.breite/tage.length<PK_WOCHE_PX;
   const B=pkEimer(id,tage,woche);
-  _pkReg[lid]={a:id,tage,x:api.x,y:api.y,B,woche};
+  _pkReg[lid]={a:id,tage,x:api.x,y:api.y,ym:api.ym,yv:api.yv,pv:api.pv,B,woche};
   // Alte Lagen abraeumen (gleiche Idee wie chvAufraeumen)
   Object.keys(_pkReg).forEach(k=>{if(k!==lid&&+k.slice(2)<_pkSeq-6)delete _pkReg[k];});
   // ⚠ Release-Pfeile ENTFERNT (Nutzer 2026-11-16: "die Marker komplett entfernst aus der
@@ -391,64 +410,126 @@ function pkWaehle(k,still){
 function pkMarkenSchalter(){
   try{pkMarkenUmschalten();}catch(e){alert('The setting could not be saved: '+(e&&e.message||e));}
 }
-function pkAddUmschalten(){
-  pkAdd=!pkAdd;pkForm=null;pkPopZu();
+// ══ NOTIZ IN DEN CHART SCHREIBEN (Nutzer 2026-11-16, VERSION-CHECK-739) ══════
+// "auf ... Plus, Mark ... drueckt ... dann kommt ein Punkt in die Mitte des Charts, den man
+// bewegen kann. Auf die Mitte einer Kerze immer verschiebt er sich. Dann drueckt man darauf
+// als Bestaetigung ... dann ... zieht sich eine Linie raus und dann waehlt man einen zweiten
+// Ort und dann oeffnet sich ein Textfeld wo man auswaehlt bullish bearish und den Inhalt
+// reinschreibt ... Umrandungsfarbe ... Bias Farbe. Dann drueckt man auf Done ... Wenn man
+// spaeter nochmal auf das Textfeld klickt, oeffnet sich ein Fenster, wo man es bearbeiten
+// kann und loeschen kann." Vorlage: Screenshot (TradingView-Callout: Punkt auf der Kerze,
+// duenne Linie, abgerundeter Kasten).
+// Ablauf in pkForm.phase: 'punkt' (ziehen, rastet auf der Kerzenmitte ein; Tipp = bestaetigen)
+// -> 'linie' (Linie folgt Maus/Finger; Tipp = Ort des Kastens) -> 'text' (Kasten mit
+// Bullish|Bearish, Text, Done). Gespeichert: Notiz mit pm:{a,d,bd,bp} - der Kasten haengt an
+// Datum bd und Preis bp und wandert mit Zeitraum/Zoom mit. Spaeter: Tipp auf den Kasten oeffnet
+// das Notiz-Fenster (Bearbeiten, Bias, Loeschen).
+function pkL(){const el=pkLage();return el?_pkReg[el.dataset.pk]:null;}
+function pkNaechster(L,fx){let bi=0,bd=1e9;for(let i=0;i<L.tage.length;i++){const d=Math.abs(L.x(i)-fx);if(d<bd){bd=d;bi=i;}}return bi;}
+function pkMitte(L,d){const v=L.ym?L.ym(d):L.y(d);return v==null?null:v;}
+function pkAddUmschalten(){if(pkForm)pkMarkAbbruch();else pkFormAuf(null);}
+function pkKnopf(an){
   const k=pkKarte();if(!k)return;
-  k.classList.toggle('pk-add',pkAdd);
-  const b=k.querySelector('.pk-add-btn');if(b){b.classList.toggle('on',pkAdd);b.setAttribute('aria-pressed',String(pkAdd));b.innerHTML=pkAdd?'✕ Cancel':'＋ Mark';}
+  k.classList.toggle('pk-add',an);
+  const b=k.querySelector('.pk-add-btn');if(b){b.classList.toggle('on',an);b.setAttribute('aria-pressed',String(an));b.innerHTML=an?'✕ Cancel':'＋ Mark';}
 }
-// ── Popover fuer einen eigenen Pfeil (an der Kerze) ──
+// Start: Punkt in der Mitte des Charts (oder am uebergebenen Tag)
 function pkFormAuf(d){
-  const c=getSym();if(!c)return;
-  pkForm={a:c.id,d,t:'',b:'neu'};pkAdd=false;
-  const k=pkKarte();if(k){k.classList.remove('pk-add');const b=k.querySelector('.pk-add-btn');if(b){b.classList.remove('on');b.innerHTML='＋ Mark';}}
-  pkPopZeichnen();
+  const c=getSym(),L=pkL();if(!c||!L)return;
+  const i=d?Math.max(0,naechsterTag(L.tage,d)):pkNaechster(L,0.5);
+  pkForm={a:c.id,phase:'punkt',i,d:L.tage[i],fx:null,fy:null,t:'',b:'neu'};
+  pkAdd=true;pkHover=null;pkKnopf(true);pkPopZeichnen();
 }
-function pkPopZu(){const p=document.getElementById('pkPop');if(p)p.remove();}
+function pkMarkAbbruch(){pkForm=null;pkAdd=false;pkPopZu();pkKnopf(false);}
+function pkPopZu(){const el=pkLage();if(el)el.querySelectorAll('.pk-mk').forEach(x=>x.remove());const p=document.getElementById('pkPop');if(p)p.remove();}
 function pkPopZeichnen(){
   pkPopZu();
-  const k=pkKarte(),el=pkLage();if(!k||!el||!pkForm)return;
-  const L=_pkReg[el.dataset.pk];if(!L)return;
-  const i=naechsterTag(L.tage,pkForm.d);
-  const p=document.createElement('div');p.id='pkPop';p.className='pk-pop';p.setAttribute('role','dialog');p.setAttribute('aria-label','New mark');
-  p.innerHTML=`<div class="pk-pop-t">New mark · ${escH(tagJahr(pkForm.d))}</div>
-    <input class="pk-in" id="pkIn" maxlength="80" placeholder="What happened" value="${escH(pkForm.t)}" oninput="pkFormText(this.value)" onkeydown="if(event.key==='Enter')pkSpeichern();if(event.key==='Escape')pkFormZu()">
-    <div class="pk-pop-r">${BIAS.map(([b,l])=>`<button type="button" class="pk-rund${pkForm.b===b?' on':''}" style="--c:${bcol(b)}" onclick="pkFormBias('${b}',this)" title="${l}" aria-label="${l}" aria-pressed="${pkForm.b===b}">${PFEIL}</button>`).join('')}
-      <button type="button" class="btn pk-ab" onclick="pkFormZu()">Cancel</button><button type="button" class="btn pk-ok" onclick="pkSpeichern()">Save</button></div>`;
-  k.appendChild(p);
-  // an die Kerze: ueber dem Tag, in der Karte gehalten
-  const kr=k.getBoundingClientRect(),lr=el.getBoundingClientRect();
-  const yy=i>=0?L.y(L.tage[i]):null,x=lr.left-kr.left+(i>=0?L.x(i):0.5)*lr.width,y=lr.top-kr.top+(yy==null?0.3:yy)*lr.height;
-  const w=p.offsetWidth||290,links=Math.max(8,Math.min(kr.width-w-8,x-w/2));
-  p.style.left=links+'px';
-  const oben=y-p.offsetHeight-22;
-  p.style.top=Math.max(8,oben)+'px';
-  p.classList.toggle('unten',oben<8);
-  p.style.setProperty('--ox',Math.max(18,Math.min(w-18,x-links))+'px');
-  setTimeout(()=>{const inp=document.getElementById('pkIn');if(inp)inp.focus();},40);
+  const el=pkLage(),L=pkL(),f=pkForm;if(!el||!L||!f)return;
+  const i=Math.max(0,Math.min(L.tage.length-1,f.i));f.d=L.tage[i];
+  const ax=L.x(i),ay=pkMitte(L,f.d);if(ay==null)return;
+  const w=document.createElement('div');w.className='pk-mk';
+  let h=`<svg class="pk-nt-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${f.fx!=null?`<line x1="${ax*100}" y1="${ay*100}" x2="${f.fx*100}" y2="${f.fy*100}" vector-effect="non-scaling-stroke"/>`:''}</svg>`;
+  h+=`<span class="pk-nt-dot pk-mk-dot${f.phase==='punkt'?' zieh':''}" id="pkMkDot" style="left:${pctL(ax)};top:${pctL(ay)}" role="button" tabindex="0" aria-label="Candle ${escH(tagKurz(f.d))} - tap to confirm"></span>`;
+  if(f.phase==='punkt')h+=`<span class="pk-mk-hint">Drag to a candle · tap the dot to confirm</span>`;
+  if(f.phase==='linie')h+=`<span class="pk-mk-hint">Tap where the note should go</span>`;
+  w.innerHTML=h;el.appendChild(w);
+  if(f.phase==='text'){
+    const p=document.createElement('div');p.id='pkPop';p.className='pk-nt pk-nt-ed';p.setAttribute('role','dialog');p.setAttribute('aria-label','New note');
+    p.style.cssText=`left:${pctL(f.fx)};top:${pctL(f.fy)};--c:${bcol(f.b)}`;
+    p.innerHTML=`<div class="pk-ed-r"><span class="pk-ed-d">${escH(tagKurz(f.d))}</span>
+      <span class="pk-ed-sw" role="group" aria-label="Bias">${[['bull','Bullish'],['bear','Bearish']].map(([b,l])=>`<button type="button" class="pk-rund${f.b===b?' on':''}" data-b="${b}" style="--c:${bcol(b)}" onclick="pkFormBias('${b}',this)" aria-pressed="${f.b===b}">${l}</button>`).join('')}</span></div>
+      <textarea class="pk-in" id="pkIn" rows="2" maxlength="160" placeholder="What happened" oninput="pkFormText(this.value)" onkeydown="if(event.key==='Escape')pkFormZu()">${escH(f.t)}</textarea>
+      <div class="pk-ed-r"><button type="button" class="btn pk-ab" onclick="pkFormZu()">Cancel</button><button type="button" class="btn pk-ok" onclick="pkSpeichern()">Done</button></div>`;
+    el.appendChild(p);
+    // im Chart halten (Kasten ~ 230 px): Mitte auf den Tipp, an den Raendern eingerueckt
+    const lr=el.getBoundingClientRect(),pw=p.offsetWidth,ph=p.offsetHeight;
+    const lx=Math.max(pw/2+4,Math.min(lr.width-pw/2-4,f.fx*lr.width)),ly=Math.max(ph/2+4,Math.min(lr.height-ph/2-4,f.fy*lr.height));
+    p.style.left=lx+'px';p.style.top=ly+'px';
+    setTimeout(()=>{const inp=document.getElementById('pkIn');if(inp)inp.focus();},40);
+  }
+  pkPunktAnbinden();
 }
+// Punkt ziehen (Maus/Finger), rastet auf die Mitte der naechsten Kerze ein
+function pkPunktAnbinden(){
+  const dot=document.getElementById('pkMkDot');if(!dot||!pkForm||pkForm.phase!=='punkt')return;
+  let start=null,bewegt=false;
+  dot.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();start={x:e.clientX,y:e.clientY};bewegt=false;try{dot.setPointerCapture(e.pointerId);}catch(x){}});
+  dot.addEventListener('pointermove',e=>{
+    if(!start||!pkForm)return;
+    if(Math.abs(e.clientX-start.x)+Math.abs(e.clientY-start.y)>5)bewegt=true;
+    if(!bewegt)return;
+    const el=pkLage(),L=pkL();if(!el||!L)return;const r=el.getBoundingClientRect();
+    const i=pkNaechster(L,(e.clientX-r.left)/r.width);
+    if(i!==pkForm.i){const y=pkMitte(L,L.tage[i]);if(y==null)return;pkForm.i=i;pkForm.d=L.tage[i];dot.style.left=pctL(L.x(i));dot.style.top=pctL(y);dot.setAttribute('aria-label','Candle '+tagKurz(pkForm.d)+' - tap to confirm');}
+  });
+  const ende=e=>{if(!start)return;const war=bewegt;start=null;e.stopPropagation();if(!war)pkPunktOk();};
+  dot.addEventListener('pointerup',ende);
+  dot.addEventListener('pointercancel',()=>{start=null;});
+  dot.addEventListener('click',e=>e.stopPropagation());
+  dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pkPunktOk();}});
+}
+function pkPunktOk(){if(!pkForm||pkForm.phase!=='punkt')return;pkForm.phase='linie';pkPopZeichnen();}
+// Phase 'linie': Ende folgt Maus/Finger, Tipp setzt den Kasten
+function pkLinieZiel(e){
+  const el=pkLage();if(!el||!pkForm)return null;const r=el.getBoundingClientRect();if(!r.width)return null;
+  return{fx:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),fy:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))};
+}
+document.addEventListener('pointermove',e=>{
+  if(!pkForm||pkForm.phase!=='linie')return;
+  const z=pkLinieZiel(e);if(!z)return;
+  const el=pkLage(),L=pkL(),ln=el&&el.querySelector('.pk-mk svg');if(!ln||!L)return;
+  const ax=L.x(pkForm.i),ay=pkMitte(L,pkForm.d);
+  ln.innerHTML=`<line x1="${ax*100}" y1="${ay*100}" x2="${z.fx*100}" y2="${z.fy*100}" vector-effect="non-scaling-stroke"/>`;
+},{passive:true});
 function pkFormText(v){if(pkForm)pkForm.t=v;}
-function pkFormBias(b,btn){if(!pkForm)return;pkForm.b=b;const r=btn&&btn.parentElement;if(r)r.querySelectorAll('.pk-rund').forEach(x=>{const on=x===btn;x.classList.toggle('on',on);x.setAttribute('aria-pressed',String(on));});}
-function pkFormZu(){pkForm=null;pkPopZu();}
+function pkFormBias(b,btn){
+  if(!pkForm)return;pkForm.b=pkForm.b===b?'neu':b;
+  const p=document.getElementById('pkPop');if(!p)return;
+  p.style.setProperty('--c',bcol(pkForm.b));
+  p.querySelectorAll('.pk-rund').forEach(x=>{const on=x.dataset.b===pkForm.b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',String(on));});
+}
+function pkFormZu(){pkMarkAbbruch();}
 // Speichern: eine normale Notiz mit pm (siehe Kopf). Kein Schreibpfad ohne
-// try/catch mit sichtbarer Meldung (Regel 6) - scheitert es, bleibt das
-// Popover mit dem Getippten offen.
+// try/catch mit sichtbarer Meldung (Regel 6) - scheitert es, bleibt der
+// Kasten mit dem Getippten offen.
 function pkSpeichern(){
-  const f=pkForm;if(!f)return;
+  const f=pkForm;if(!f||f.phase!=='text')return;
   const inp=document.getElementById('pkIn');if(inp)f.t=inp.value;
   const t=String(f.t||'').trim();
   if(!t){if(inp){inp.focus();try{inp.animate([{translate:'-4px 0'},{translate:'4px 0'},{translate:'0 0'}],{duration:220});}catch(e){}}return;}
   try{
+    const L=pkL();
+    const pm={a:f.a,d:f.d};
+    if(L){const bi=pkNaechster(L,f.fx);pm.bd=L.tage[bi];pm.bo=+(f.fx-L.x(bi)).toFixed(4);if(L.pv){const v=L.pv(f.fy);if(isFinite(v))pm.bp=+v.toPrecision(7);}if(pm.bp==null)pm.by=+f.fy.toFixed(4);}
     pushU();
     const now=new Date().toISOString(),id=uid();
-    research.notes.push({id,fids:[],title:t,body:'',tags:['chart'],fav:false,pin:false,arch:false,ts:now,up:now,bias:f.b,evt:null,asset:'',pm:{a:f.a,d:f.d}});
+    research.notes.push({id,fids:[],title:t,body:'',tags:['chart'],fav:false,pin:false,arch:false,ts:now,up:now,bias:f.b,evt:null,asset:'',pm});
     save();
-    pkForm=null;pkPopZu();
-    const L=pkLage()&&_pkReg[pkLage().dataset.pk];
+    pkForm=null;pkAdd=false;pkPopZu();pkKnopf(false);
     pkSel={a:f.a,k:L&&L.woche?wocheVon(f.d):f.d};
     pkNeu=id;
     if(typeof window.renderDetail==='function')window.renderDetail();
-  }catch(e){alert('The mark could not be saved: '+(e&&e.message||e));}
+  }catch(e){alert('The note could not be saved: '+(e&&e.message||e));}
 }
 let pkNeu=null;   // gerade angelegt -> faellt einmal ins Bild
 function pkEigenWeg(nid){
@@ -467,34 +548,25 @@ document.addEventListener('click',e=>{
   const lage=t.closest('.pk-chart');if(!lage)return;
   if(t.closest('.pk-pop,.pv-lg'))return;
   const el=lage.querySelector('.pk-lage'),L=el&&_pkReg[el.dataset.pk];
-  if(pkAdd&&L){
-    const r=el.getBoundingClientRect(),fx=(e.clientX-r.left)/r.width;
-    let best=0,bd=Infinity;L.tage.forEach((d,i)=>{const dd=Math.abs(L.x(i)-fx);if(dd<bd){bd=dd;best=i;}});
-    pkFormAuf(L.tage[best]);return;
+  if(pkForm&&L){
+    // ⚠ Erst pruefen, dann stoppen: ein stopPropagation in dieser Capture-Phase schluckte
+    // sonst die Klicks IM Kasten (Bullish/Bearish/Done wirkten nicht - gemessen 2026-11-16).
+    if(t.closest('#pkPop,.pk-mk-dot'))return;
+    e.stopPropagation();
+    if(pkForm.phase==='punkt'){   // Tipp neben den Punkt: Punkt springt auf diese Kerze
+      const r=el.getBoundingClientRect();pkForm.i=pkNaechster(L,(e.clientX-r.left)/r.width);pkPopZeichnen();return;}
+    if(pkForm.phase==='linie'){const z=pkLinieZiel(e);if(z){pkForm.fx=z.fx;pkForm.fy=z.fy;pkForm.phase='text';pkPopZeichnen();}return;}
+    return;
   }
-  if(t.closest('.pk-flagge'))return;
+  if(t.closest('.pk-nt,.pk-nt-dot'))return;
   // Tipp/Klick auf einen Tag haelt ihn fest; derselbe Tag nochmal = zurueck zu Next up
   const tg=L?pkTagAn(e):null;
   if(tg&&!(pkSel&&pkSel.a===tg.L.a&&pkSel.k===tg.k&&e.pointerType!=='touch'&&!e.__pkFinger)){pkWaehle(tg.k);return;}
   if(pkSel)pkWaehle(null);
 },true);
-// Geist-Pfeil im Hinzufuegen-Modus
-document.addEventListener('pointermove',e=>{
-  if(!pkAdd)return;
-  const t=e.target,ch=t&&t.closest&&t.closest('.pk-chart');
-  const k=pkKarte();if(!k)return;
-  let g=k.querySelector('.pk-geist');
-  if(!ch){if(g)g.style.display='none';return;}
-  const el=ch.querySelector('.pk-lage'),L=el&&_pkReg[el.dataset.pk];if(!L)return;
-  const r=el.getBoundingClientRect(),fx=(e.clientX-r.left)/r.width;
-  let best=0,bd=Infinity;L.tage.forEach((d,i)=>{const dd=Math.abs(L.x(i)-fx);if(dd<bd){bd=dd;best=i;}});
-  if(!g){g=document.createElement('span');g.className='pk-geist';g.innerHTML=PFEIL;el.appendChild(g);}
-  const gy=L.y(L.tage[best]);g.style.display=gy==null?'none':'';g.style.left=(L.x(best)*100)+'%';g.style.top=((gy==null?0:gy)*100)+'%';
-},{passive:true});
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   if(pkForm){pkFormZu();return;}
-  if(pkAdd){pkAddUmschalten();return;}
   if(pkSel&&curPage==='cur'&&!document.querySelector('.modal-overlay[style*="flex"]'))pkWaehle(null);
 });
 
@@ -575,12 +647,12 @@ function pkNachAufbau(){
   pkHoverAnbinden();
   // Ein Neuaufbau (Feed-Update) ersetzt die Karte - ein offenes Popover kommt
   // mit dem schon Getippten (pkForm.t) wieder.
-  if(pkForm&&pkForm.a===c.id&&!document.getElementById('pkPop'))pkPopZeichnen();
+  if(pkForm&&pkForm.a===c.id){pkKnopf(true);pkPopZeichnen();}
   // Im Vergleich entsteht die Pfeil-Ebene erst hier - die Spalte danach neu.
   const col=k.querySelector('.pk-col');if(col&&(ph||!col.innerHTML.trim()))col.innerHTML=pkSpalteHtml(c.id);
   if(pkNeu){
-    const el=pkLage(),p=el&&el.querySelector(`.pk-pf.on`);
-    if(p&&p.animate)try{p.animate([{translate:'-50% -140%',opacity:0},{translate:'-50% -100%',opacity:1}],{duration:520,easing:'cubic-bezier(.3,1.7,.5,1)'});}catch(e){}
+    const el=pkLage(),p=el&&el.querySelector(`.pk-nt[data-nt="${pkNeu}"]`);
+    if(p&&p.animate)try{p.animate([{scale:'.85',opacity:0},{scale:'1',opacity:1}],{duration:320,easing:'cubic-bezier(.3,1.5,.5,1)'});}catch(e){}
     pkNeu=null;
   }
 }
@@ -597,5 +669,5 @@ function pkZustand(){return{sel:pkSel,hover:pkHover,add:pkAdd,form:pkForm,vgl:JS
 export {pkBandLegende,pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkReleases,pkEimer,PFEIL,pkAddAktiv};
 function pkAddAktiv(){return pkAdd;}
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window,{pkWaehle,pkMarkenSchalter,pkAddUmschalten,pkFormAuf,pkFormText,pkFormBias,pkFormZu,pkSpeichern,pkEigenWeg,
+Object.assign(window,{pkWaehle,pkMarkenSchalter,pkAddUmschalten,pkFormAuf,pkPunktOk,pkNotizAuf,pkFormText,pkFormBias,pkFormZu,pkSpeichern,pkEigenWeg,
   pkModusSetzen,pkMoveWaehle,pkBewegungen,pkVglAuf,pkVglAsset,pkVglGruppe,pkVglUmschalten,pkVglWeg,pkVglSkalaSetzen,pkZustand,pkReleases});

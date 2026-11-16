@@ -22294,3 +22294,12 @@ Nutzer: *„Ja maximale Historie“*.
 - **Finger:** waagrecht ziehen (`touch-action:pan-y`) = Tag in der Spalte, Loslassen lässt ihn stehen; senkrecht = Seite scrollen. Reiter *Next up / Biggest moves* hebt die Auswahl auf.
 - Gemessen (`check/preiskarte.js`): Maus über 2026-09-17 → „Thu, Sep 17, 26“ mit genau den 2 Releases des Tages; Finger (CDP-Touch) → Tag bleibt nach dem Loslassen.
 - **Offen:** neues Notiz-Design (Punkt → Linie → Textkasten) — Screenshot des Nutzers kam nicht an.
+
+## 2026-11-16 — Notiz im Chart: Punkt → Linie → Kasten (VERSION-CHECK-739)
+
+**Nutzer (mit Screenshot, TradingView-Callout „Wow“):** *„auf … Plus, Mark … drückt … dann kommt ein Punkt in die Mitte des Charts, den man bewegen kann. Auf die Mitte einer Kerze immer verschiebt er sich. Dann drückt man darauf als Bestätigung … dann … zieht sich eine Linie raus und dann wählt man einen zweiten Ort und dann öffnet sich ein Textfeld wo man auswählt bullish bearish und den Inhalt reinschreibt … Umrandungsfarbe … Bias Farbe. Dann drückt man auf Done … Wenn man später nochmal auf das Textfeld klickt, öffnet sich ein Fenster, wo man es bearbeiten kann und löschen kann.“*
+- Ablauf `pkForm.phase`: `punkt` (ziehen mit Maus/Finger, rastet auf die Mitte der nächsten Kerze = (Hoch+Tief)/2; Tipp neben den Punkt springt dorthin; Tipp auf den Punkt bestätigt) → `linie` (Linie folgt, Tipp = Ort) → `text` (Bullish|Bearish, Text, Cancel/Done; Rahmen = Bias-Farbe).
+- Gespeichert als Notiz mit `pm:{a,d,bd,bo,bp}` — Kasten hängt an Datum + Preis, wandert mit Zeitraum/Zoom. Alte Flaggen-Notizen: Kasten rechts oberhalb ihrer Kerze.
+- Später: Tipp auf den Kasten → Notiz-Fenster `mResNote` (Text, Bias, Löschen, Nachfrage bei Ungespeichertem).
+- **Bug beim Bauen, gemessen:** Bullish/Bearish/Done im Kasten wirkten nicht — der Klick-Abfang des Charts (Capture-Phase) rief `stopPropagation()` VOR der Prüfung „Klick im Kasten?“. Reihenfolge getauscht.
+- Wächter `check/preiskarte.js` E neu (Ziehen, Phasen, leer nicht speicherbar, roter Rahmen bei Bearish, Callout mit Linie, Fenster, Papierkorb); Handy per Touch nachgeprüft (iPhone 13).

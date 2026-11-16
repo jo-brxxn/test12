@@ -123,25 +123,51 @@ const gruen = m => console.log('  ✓ ' + m);
     else if (!d2.sel || d2.t !== d1.t) rot(`D: nach dem Loslassen weg (${JSON.stringify(d2)})`);
     else gruen(`D: Finger zieht ueber den Chart -> Spalte "${d1.t}", bleibt nach dem Loslassen`);
     await p.evaluate(() => pkModusSetzen('next')); await p.waitForTimeout(300);
-    // E
-    await p.click('.pk-add-btn'); await p.waitForTimeout(150);
-    await p.mouse.click(box.x + box.width * 0.62, box.y + box.height * 0.5); await p.waitForTimeout(350);
-    const pop = await p.evaluate(() => !!document.getElementById('pkPop'));
-    let e1 = null;
-    if (pop) {
+    // E (seit 739): + Mark -> Punkt (ziehen, rastet auf Kerzenmitte) -> Tipp -> Linie -> zweiter Ort
+    //   -> Kasten mit Bullish/Bearish + Text, Rahmen in Bias-Farbe -> Done -> Callout im Chart;
+    //   Tipp auf den Kasten -> Notiz-Fenster; loeschen -> Papierkorb
+    await p.mouse.move(2, 2); await p.waitForTimeout(200);
+    await p.click('.pk-add-btn'); await p.waitForTimeout(250);
+    const e0 = await p.locator('#pkMkDot').boundingBox();
+    let e1 = { dot: !!e0 };
+    if (e0) {
+      const i0 = await p.evaluate(() => pkZustand().form.i);
+      await p.mouse.move(e0.x + 8, e0.y + 8); await p.mouse.down();
+      for (let i = 1; i <= 8; i++) { await p.mouse.move(e0.x + 8 + i * 22, e0.y + 8); await p.waitForTimeout(20); }
+      await p.mouse.up(); await p.waitForTimeout(200);
+      e1.zieh = await p.evaluate(i0 => { const f = pkZustand().form, d = document.getElementById('pkMkDot'), lage = document.querySelector('.ab-ptile.pk .pk-lage');
+        const r = d.getBoundingClientRect(), lr = lage.getBoundingClientRect(), L = Object.values(window.__pkReg || {}).pop();
+        return { i0, i: f.i, phase: f.phase, dx: lr.width ? (r.left + r.width / 2 - lr.left) / lr.width : null }; }, i0);
+      const e2 = await p.locator('#pkMkDot').boundingBox();
+      await p.mouse.click(e2.x + 8, e2.y + 8); await p.waitForTimeout(200);
+      e1.linie = await p.evaluate(() => pkZustand().form.phase);
+      await p.mouse.click(e2.x - 160, e2.y - 90); await p.waitForTimeout(350);
+      e1.text = await p.evaluate(() => ({ phase: pkZustand().form && pkZustand().form.phase, pop: !!document.getElementById('pkPop') }));
       await p.click('#pkPop .pk-ok'); await p.waitForTimeout(200);
-      const leer = await p.evaluate(() => ({ pop: !!document.getElementById('pkPop'), n: resNotes().filter(n => n.pm).length }));
-      await p.fill('#pkIn', 'Waechter-Pfeil'); await p.click('#pkPop .pk-rund[aria-label="Bullish"]'); await p.click('#pkPop .pk-ok'); await p.waitForTimeout(800);
-      e1 = await p.evaluate(() => { const n = resNotes().find(x => x.pm && x.title === 'Waechter-Pfeil'); return { leer: null, n: !!n, bias: n && n.bias, a: n && n.pm.a, hohl: [...document.querySelectorAll('.pk-flagge')].filter(f => /Waechter-Pfeil/.test(f.textContent)).length, mine: document.querySelectorAll('.pk-col .pk-ev-eig').length, id: n && n.id }; });
-      e1.leer = leer;
-      if (e1.id) { await p.locator('.pk-col .pk-ev-eig .pk-del').first().click(); await p.waitForTimeout(600); }
-      e1.weg = await p.evaluate(id => ({ n: resNotes().some(x => x.id === id), trash: (research.trash || []).some(t => t.data && t.data.id === id) }), e1.id);
+      e1.leer = await p.evaluate(() => ({ pop: !!document.getElementById('pkPop'), n: resNotes().filter(n => n.pm).length }));
+      await p.click('#pkPop .pk-rund[data-b="bear"]'); await p.waitForTimeout(100);
+      e1.rand = await p.evaluate(() => getComputedStyle(document.getElementById('pkPop')).borderTopColor);
+      await p.fill('#pkIn', 'Waechter-Notiz'); await p.click('#pkPop .pk-ok'); await p.waitForTimeout(900);
+      e1.gespeichert = await p.evaluate(() => { const n = resNotes().find(x => x.pm && x.title === 'Waechter-Notiz'); const k = n && document.querySelector(`.pk-nt[data-nt="${n.id}"]`);
+        return n ? { id: n.id, bias: n.bias, a: n.pm.a, bd: !!n.pm.bd, bp: n.pm.bp != null, kasten: !!k, rand: k && getComputedStyle(k).borderTopColor, linie: document.querySelectorAll('.ab-ptile.pk .pk-nt-svg line').length } : null; });
+      if (e1.gespeichert && e1.gespeichert.kasten) {
+        await p.click(`.pk-nt[data-nt="${e1.gespeichert.id}"]`); await p.waitForTimeout(500);
+        e1.fenster = await p.evaluate(() => { const m = document.getElementById('mResNote'); return !!m && getComputedStyle(m).display !== 'none'; });
+        await p.evaluate(() => { try { closeM('mResNote'); } catch (e) { } }); await p.waitForTimeout(300);
+        await p.evaluate(id => pkEigenWeg(id), e1.gespeichert.id); await p.waitForTimeout(600);
+        e1.weg = await p.evaluate(id => ({ n: resNotes().some(x => x.id === id), trash: (research.trash || []).some(t => t.data && t.data.id === id), kasten: !!document.querySelector(`.pk-nt[data-nt="${id}"]`) }), e1.gespeichert.id);
+      }
     }
-    if (!pop) rot('E: kein Popover nach + Mark und Tipp');
-    else if (!e1.leer.pop || e1.leer.n) rot(`E: leer gespeichert (Popover ${e1.leer.pop}, Notizen ${e1.leer.n})`);
-    else if (!e1.n || e1.bias !== 'bull' || e1.a !== 'EUR' || !e1.hohl || !e1.mine) rot(`E: gespeichert ${JSON.stringify(e1)}`);
-    else if (e1.weg.n || !e1.weg.trash) rot(`E: loeschen -> noch in Notizen ${e1.weg.n}, im Papierkorb ${e1.weg.trash}`);
-    else gruen('E: + Mark -> Popover, leer nicht speicherbar, Notiz mit pm (EUR, bull), hohler Pfeil + "Mine"; loeschen -> Papierkorb');
+    const zg = e1.zieh || {};
+    if (!e1.dot) rot('E: + Mark setzt keinen Punkt');
+    else if (zg.i === zg.i0 || zg.phase !== 'punkt') rot(`E: Ziehen bewegt den Punkt nicht (${JSON.stringify(zg)})`);
+    else if (e1.linie !== 'linie' || e1.text.phase !== 'text' || !e1.text.pop) rot(`E: Tipp auf den Punkt -> ${e1.linie}, zweiter Ort -> ${JSON.stringify(e1.text)}`);
+    else if (!e1.leer.pop || e1.leer.n) rot(`E: leer gespeichert (Kasten ${e1.leer.pop}, Notizen ${e1.leer.n})`);
+    else if (e1.rand !== BC[1]) rot(`E: Rahmen nach Bearish ${e1.rand} statt ${BC[1]}`);
+    else if (!e1.gespeichert || e1.gespeichert.bias !== 'bear' || e1.gespeichert.a !== 'EUR' || !e1.gespeichert.bd || !e1.gespeichert.bp || !e1.gespeichert.kasten || e1.gespeichert.rand !== BC[1] || !e1.gespeichert.linie) rot(`E: gespeichert ${JSON.stringify(e1.gespeichert)}`);
+    else if (!e1.fenster) rot('E: Tipp auf den Kasten oeffnet kein Notiz-Fenster');
+    else if (e1.weg.n || !e1.weg.trash || e1.weg.kasten) rot(`E: loeschen -> ${JSON.stringify(e1.weg)}`);
+    else gruen(`E: + Mark -> Punkt gezogen (Kerze ${zg.i0} -> ${zg.i}), Tipp -> Linie -> Kasten; leer nicht speicherbar; Bearish = roter Rahmen; Notiz mit Datum + Preis des Kastens, Callout mit Linie; Tipp -> Notiz-Fenster; loeschen -> Papierkorb`);
     // F
     await p.click('#pkVglBtn'); await p.waitForTimeout(250);
     await p.evaluate(() => pkVglGruppe('Metals')); await p.waitForTimeout(200);

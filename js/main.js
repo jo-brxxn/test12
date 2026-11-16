@@ -9932,7 +9932,7 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
     // dem Chart (Nutzer-Wunsch), check/archiv.js misst daran aber weiter, ob
     // das Archiv wirklich gezeichnet wurde.
     html:`<div class="ab-plot" data-kerzen="${k.length}">
-      <div class="ab-plot-main${opt&&opt.lage?' pk-chart':''}">${chartHoverWrap(svg+nivHtml+(opt&&opt.lage?opt.lage({tage,breite:opt.breite||600,x:i=>(i*fach+fach/2)/W,y:d=>{const c=kNach[d];return c?y(alsLinie?c.c:c.h)/H:null;}}):''),pts,'height:100%',null,null,'ab')}<div class="ab-xax">${achsTxt}</div></div>
+      <div class="ab-plot-main${opt&&opt.lage?' pk-chart':''}">${chartHoverWrap(svg+nivHtml+(opt&&opt.lage?opt.lage({tage,breite:opt.breite||600,x:i=>(i*fach+fach/2)/W,y:d=>{const c=kNach[d];return c?y(alsLinie?c.c:c.h)/H:null;},ym:d=>{const c=kNach[d];return c?y(alsLinie?c.c:(c.h+c.l)/2)/H:null;},yv:v=>y(v)/H,pv:fy=>lo+(1-(fy*H-3)/(H-6))*sp}):''),pts,'height:100%',null,null,'ab')}<div class="ab-xax">${achsTxt}</div></div>
       ${kopfAnteil>0?`<div class="ab-yax ab-yax-k" style="grid-template-rows:${kopfAnteil.toFixed(4)}fr ${(1-kopfAnteil).toFixed(4)}fr"><i></i><div class="ab-yax-in">${skala}</div></div>`:`<div class="ab-yax">${skala}</div>`}
     </div>`};
 }
