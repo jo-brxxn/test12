@@ -342,3 +342,10 @@ in `seedNoteFlags` — winzig, aber gespeichert.
 
 - **Beim Löschen eines Moduls/Feldes alle Übernahme-Wege mitprüfen:** `applySnap`, `loadState`, `adoptExternalState`, `snap`, `neueFelderBehalten`.
 - Wächter `check/snaprunde.js`: spielt den eigenen Stand über alle drei Wege wieder ein.
+
+## Kein Abgleich mitten in die Eingabe (seit 2026-11-16, 740)
+
+- **Automatischer Pull wartet**, solange `nutzerAktiv()` (Fokus in Eingabefeld oder Interaktion < 2 s) → `syncNachEingabe()` holt nach (push/pull, Drei-Wege-Abgleich)
+- **Hintergrund-Neuaufbau** (Feeds `rerenderBald`, Pull `rerenderHintergrund`, Stunden-/Minuten-Takt) wartet ebenso und rettet den Scroll-Stand (`scrollMerken/scrollZurueck`)
+- Neuer Hintergrund-Takt, der neu zeichnet → **immer** über `rerenderHintergrund()` / `nutzerAktiv()`, nie direkt `rerender()`
+- Geprüft von `check/eingabesync.js`

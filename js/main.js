@@ -7587,6 +7587,15 @@ async function cloudPullRoh(manual,forceOverwrite){
       // gepusht hat. Ein MANUELLER Download uebernimmt weiterhin alles.
       // WICHTIG: vor pushU() lesen - pushU() setzt das Flag selbst.
       const prefPending=!forceOverwrite&&(_userEditedSinceSync||localStorage.getItem('fxpro_user_pending')==='1');
+      // ⚠ NICHT MITTEN IN EINE EINGABE (Nutzer 2026-11-16, iPad: "wenn ich was beim gameplan
+      // eingebe werde ich die ganze Zeit aus dem textfeld rausgeschmissen ... die Webseite
+      // [springt] zu einem Zustand von vor ein paar Sekunden zurueck"). GEMESSEN mit
+      // nachgestellter Cloud + zweitem Geraet, das alle 7 s hochlaedt: 24 s Tippen im
+      // Gameplan -> 3x Fokus weg, jedes Mal die gerade getippten Zeichen verloren - der
+      // Abgleich baute die Seite neu, waehrend getippt/gescrollt wurde. Jetzt wartet ein
+      // automatischer Abgleich, bis Feld verlassen und 2 s Ruhe sind (syncNachEingabe);
+      // die eigene Aenderung bleibt markiert und geht danach zusammengefuehrt hoch.
+      if(!manual&&nutzerAktiv()){sprungLog('cloud pull deferred','user is typing/scrolling');syncNachEingabe();return;}
       saveLocalBackup('Before cloud download ('+(manual?'manual':'auto')+')');
       const lokalVorher=snap();
       // Felder, die der Schreiber nicht kannte, behalten (siehe neueFelderBehalten).
@@ -7731,7 +7740,7 @@ async function cloudPullRoh(manual,forceOverwrite){
         _lsUpdatedSeen=localStorage.getItem('fxpro_updated');
         cloudAutoSync();
       }
-      renderSidebar();rerender();updUB();
+      renderSidebar();if(manual)rerender();else rerenderHintergrund();updUB();
       if(manual)setCloudStatus('✓ Downloaded: '+fmtStamp(cloudUpdated));
     }else if(manual){
       setCloudStatus('Already up to date.');
@@ -26565,6 +26574,54 @@ const RERENDER_BUENDEL_MS=150;
 // und 5,2 s, je 160-340 ms). Dort laenger buendeln (2026-11-12).
 const RERENDER_BUENDEL_START_MS=700,RERENDER_STARTPHASE_MS=9000;
 let _rerenderBaldT=null,_rerenderBaldSeite=null;
+// ── Nutzer gerade aktiv? (2026-11-16) ─────────────────────────────────────
+// Hintergrund-Neuaufbau (Feed, Cloud-Abgleich) darf nicht in eine Eingabe oder ein
+// Scrollen fahren: das Feld verliert den Fokus, getippte Zeichen gehen verloren,
+// Listen springen nach oben (gemessen, docs/CHANGELOG.md 2026-11-16, VERSION-CHECK-740).
+let _letzteInteraktion=0;
+['pointerdown','pointermove','touchstart','touchmove','wheel','keydown','input','scroll'].forEach(t=>window.addEventListener(t,e=>{if(t==='pointermove'&&e.pointerType==='mouse'&&!e.buttons)return;_letzteInteraktion=Date.now();},{capture:true,passive:true}));
+function nutzerAktiv(){
+  const a=document.activeElement;
+  if(a&&a!==document.body&&(a.isContentEditable||/^(TEXTAREA|SELECT)$/.test(a.tagName)||(a.tagName==='INPUT'&&!/^(button|checkbox|radio|range|submit|reset|color|file)$/i.test(a.type||'')))&&!a.readOnly&&!a.disabled&&a.getClientRects().length)return true;
+  return Date.now()-_letzteInteraktion<2000;
+}
+let _syncWarteT=null;
+function syncNachEingabe(){
+  if(_syncWarteT)return;
+  _syncWarteT=setInterval(()=>{if(nutzerAktiv())return;clearInterval(_syncWarteT);_syncWarteT=null;try{cloudSyncNow();}catch(e){}},800);
+}
+// Scroll-Stand aller inneren Scroll-Bereiche ueber einen Neuaufbau retten (Listen,
+// Spalten, Fenster-Inhalte): Schluessel = Pfad aus id bzw. erster Klasse + Position.
+function scrollSchluessel(el,root){
+  const t=[];let e=el;
+  while(e&&e!==root&&e.nodeType===1){
+    if(e.id){t.unshift('#'+e.id);break;}
+    const p=e.parentElement,k=e.tagName+'.'+String(e.getAttribute('class')||'').trim().split(/\s+/)[0];
+    const i=p?[...p.children].filter(x=>x.tagName+'.'+String(x.getAttribute('class')||'').trim().split(/\s+/)[0]===k).indexOf(e):0;
+    t.unshift(k+':'+i);e=p;
+  }
+  return t.join('>');
+}
+function scrollMerken(){
+  const root=document.getElementById('pageArea')||document.body,out=[];
+  root.querySelectorAll('*').forEach(el=>{if(el.scrollTop>0||el.scrollLeft>0)out.push({k:scrollSchluessel(el,root),t:el.scrollTop,l:el.scrollLeft});});
+  return{out,y:window.scrollY};
+}
+function scrollZurueck(m){
+  if(!m)return;
+  const root=document.getElementById('pageArea')||document.body;
+  if(m.out.length){const map=new Map(m.out.map(x=>[x.k,x]));
+    root.querySelectorAll('*').forEach(el=>{if(el.scrollHeight<=el.clientHeight&&el.scrollWidth<=el.clientWidth)return;const x=map.get(scrollSchluessel(el,root));if(x){el.scrollTop=x.t;el.scrollLeft=x.l;}});}
+  if(Math.abs(window.scrollY-m.y)>2)window.scrollTo(window.scrollX,m.y);
+}
+// Neuaufbau aus dem Hintergrund: wartet, solange der Nutzer tippt/scrollt, und
+// behaelt danach jeden Scroll-Stand.
+function rerenderHintergrund(){
+  if(nutzerAktiv()){rerenderBald();return;}
+  const m=scrollMerken();
+  rerender();
+  scrollZurueck(m);
+}
 function rerenderBald(nurSeite){
   if(nurSeite&&curPage!==nurSeite)return;
   _rerenderBaldSeite=curPage;
@@ -26572,7 +26629,9 @@ function rerenderBald(nurSeite){
   _rerenderBaldT=setTimeout(()=>{
     _rerenderBaldT=null;
     if(curPage!==_rerenderBaldSeite)return;
-    try{rerender();}catch(e){console.error('[rerenderBald]',e);}
+    // tippt/scrollt der Nutzer gerade: spaeter nochmal (kein Neuaufbau mitten in die Eingabe)
+    if(nutzerAktiv()){rerenderBald();return;}
+    try{const m=scrollMerken();rerender();scrollZurueck(m);}catch(e){console.error('[rerenderBald]',e);}
   },performance.now()<RERENDER_STARTPHASE_MS?RERENDER_BUENDEL_START_MS:RERENDER_BUENDEL_MS);
 }
 // ══ CARRY TRADE SCANNER ═══════════════════════════════════════════
@@ -27912,7 +27971,7 @@ document.addEventListener('pointerdown',ev=>{
 setInterval(()=>{
   bootFetchScoreFeeds();
   if(processCalEvts()){
-    save();renderSidebar();rerender();
+    save();renderSidebar();rerenderHintergrund();   // Fehlerklasse 2026-11-16: nicht in Eingabe/Scrollen
   }
   autoFetchFF();
   autoFetchNewsData();
@@ -27933,9 +27992,16 @@ setInterval(()=>{
   // der visibilitychange-Handler ohnehin neu (adoptExternalState/cloudSyncNow),
   // und der naechste Tick holt die Jetzt-Linie/Countdowns binnen 60 s nach.
   if(document.hidden)return;
-  if(curPage==='cal'){const y=window.scrollY;renderCalendar();window.scrollTo(0,y);}
-  else if(curPage==='dash'){renderDash();}
-  else if(curPage==='mx'){renderMatrix();}
+  // Fehlerklasse 2026-11-16 ("listen ... wo man scrollen kann ... springt zurueck"): dieser
+  // Takt baute Dashboard/Matrix/Kalender auch mitten im Scrollen/Tippen neu und setzte innere
+  // Listen nach oben. Jetzt: bei Aktivitaet diesen Takt auslassen, sonst Scroll-Stand retten.
+  if(nutzerAktiv())return;
+  if(curPage!=='cal'&&curPage!=='dash'&&curPage!=='mx')return;
+  const m=scrollMerken();
+  if(curPage==='cal')renderCalendar();
+  else if(curPage==='dash')renderDash();
+  else renderMatrix();
+  scrollZurueck(m);
 },60*1000);
 // ⚠ Kompatibilitaets-Bruecke fuer die schrittweise Modul-Aufteilung (Nutzer-
 // Wunsch 2026-08-25) - Details/Methodik: docs/module-split.md. Namen per

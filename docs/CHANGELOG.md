@@ -22303,3 +22303,15 @@ Nutzer: *„Ja maximale Historie“*.
 - Später: Tipp auf den Kasten → Notiz-Fenster `mResNote` (Text, Bias, Löschen, Nachfrage bei Ungespeichertem).
 - **Bug beim Bauen, gemessen:** Bullish/Bearish/Done im Kasten wirkten nicht — der Klick-Abfang des Charts (Capture-Phase) rief `stopPropagation()` VOR der Prüfung „Klick im Kasten?“. Reihenfolge getauscht.
 - Wächter `check/preiskarte.js` E neu (Ziehen, Phasen, leer nicht speicherbar, roter Rahmen bei Bearish, Callout mit Linie, Fenster, Papierkorb); Handy per Touch nachgeprüft (iPhone 13).
+
+## 2026-11-16 — Kein Abgleich mitten in die Eingabe + Markieren von überall (VERSION-CHECK-740)
+
+**Nutzer (iPad, 2 Fotos):** *„wenn ich was beim gameplan eingebe werde ich die ganze Zeit aus dem textfeld rausgeschmissen und generell bei neuen Elementen und listen … wo man scrollen kann … springt [die Webseite] zu einem Zustand von vor ein paar Sekunden zurück. Und dann bei dem Marker setzen … ich will den Punkt von überall bewegen ohne das ich meinen Finger auf dem Punkt habe und auch danach das platzieren des Textes muss flüssiger sein und beweglich in alle Richtungen“*.
+**Reproduziert (Regel 8):**
+- Ohne Cloud: 120 Proben Tippen im Gameplan (Seite + Leiste) → 0 Fokusverluste — die Ursache liegt im Abgleich.
+- Nachgestellte Cloud, nur dieses Gerät: 40 Eingaben, 10 Uploads → 0 Abweichungen.
+- Nachgestellte Cloud + **zweites Gerät** lädt alle 7 s hoch: 24 s Tippen → **3× Fokus weg**, jedes Mal die gerade getippten Zeichen verloren („x23“). Der Push sah den fremden Stand → Pull → `applySnap` → `rerender()` baute die Seite neu, während getippt wurde.
+**Wurzel + Fix:** Hintergrund-Neuaufbau (Cloud-Pull, `rerenderBald`, Stunden-Takt, Minuten-Takt Dashboard/Matrix/Kalender) fuhr in Eingabe und Scrollen. Neu: `nutzerAktiv()` (Fokus in Eingabefeld oder Interaktion < 2 s); automatischer Pull wartet (`syncNachEingabe`, danach push/pull zusammengeführt), Hintergrund-Neuaufbau wartet bzw. lässt den Takt aus; `scrollMerken()/scrollZurueck()` retten den Scroll-Stand aller inneren Listen. Manueller Download unverändert.
+**Gemessen danach:** 0 Abweichungen; nach 2 s Ruhe fremde Änderung da, eigener Text lokal + Cloud; Gameplan-Liste behält 300 px Scroll über einen Abgleich.
+**Markieren:** Ziehen **irgendwo** im Chart bewegt den Punkt relativ zum Finger (rastet auf Kerzen), Tipp auf Punkt/„Next“; danach Vorschau-Kasten „Your note“ frei in alle Richtungen ziehen (je Bild einmal gezeichnet, kein Einrasten), Tipp auf Kasten/„Write note“ → Text. `touch-action:none` während des Markierens (vorher scrollte die Seite bei senkrechter Fingerbewegung). Nach dem Speichern kein automatisch gewählter Tag mehr (eingekreister grauer Streifen). iPad-Touch gemessen: Punkt 14 Kerzen per Ziehen 150 px neben ihm, Kasten rechts/unten/links/oben, Seite 0 px gescrollt.
+**Wächter:** `check/eingabesync.js` (A–C, Gegenprobe `nutzerAktiv()` aus → A rot), `check/preiskarte.js` E (Ziehen neben dem Punkt, Kasten nach links oben).

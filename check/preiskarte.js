@@ -132,8 +132,9 @@ const gruen = m => console.log('  ✓ ' + m);
     let e1 = { dot: !!e0 };
     if (e0) {
       const i0 = await p.evaluate(() => pkZustand().form.i);
-      await p.mouse.move(e0.x + 8, e0.y + 8); await p.mouse.down();
-      for (let i = 1; i <= 8; i++) { await p.mouse.move(e0.x + 8 + i * 22, e0.y + 8); await p.waitForTimeout(20); }
+      // seit 740: Ziehen IRGENDWO im Chart bewegt den Punkt (hier 120 px unter ihm)
+      await p.mouse.move(e0.x + 8, e0.y + 128); await p.mouse.down();
+      for (let i = 1; i <= 8; i++) { await p.mouse.move(e0.x + 8 + i * 22, e0.y + 128); await p.waitForTimeout(20); }
       await p.mouse.up(); await p.waitForTimeout(200);
       e1.zieh = await p.evaluate(i0 => { const f = pkZustand().form, d = document.getElementById('pkMkDot'), lage = document.querySelector('.ab-ptile.pk .pk-lage');
         const r = d.getBoundingClientRect(), lr = lage.getBoundingClientRect(), L = Object.values(window.__pkReg || {}).pop();
@@ -141,7 +142,14 @@ const gruen = m => console.log('  ✓ ' + m);
       const e2 = await p.locator('#pkMkDot').boundingBox();
       await p.mouse.click(e2.x + 8, e2.y + 8); await p.waitForTimeout(200);
       e1.linie = await p.evaluate(() => pkZustand().form.phase);
-      await p.mouse.click(e2.x - 160, e2.y - 90); await p.waitForTimeout(350);
+      // Kasten von irgendwo ziehen (alle Richtungen), dann "Write note"
+      const k0 = await p.evaluate(() => ({ ...pkZustand().form }));
+      await p.mouse.move(e2.x + 40, e2.y + 60); await p.mouse.down();
+      for (let i = 1; i <= 8; i++) { await p.mouse.move(e2.x + 40 - i * 20, e2.y + 60 - i * 10); await p.waitForTimeout(20); }
+      await p.mouse.up(); await p.waitForTimeout(200);
+      const k1 = await p.evaluate(() => ({ ...pkZustand().form }));
+      e1.kasten = { dx: +(k1.fx - k0.fx).toFixed(3), dy: +(k1.fy - k0.fy).toFixed(3) };
+      await p.click('.pk-mk-weiter'); await p.waitForTimeout(350);
       e1.text = await p.evaluate(() => ({ phase: pkZustand().form && pkZustand().form.phase, pop: !!document.getElementById('pkPop') }));
       await p.click('#pkPop .pk-ok'); await p.waitForTimeout(200);
       e1.leer = await p.evaluate(() => ({ pop: !!document.getElementById('pkPop'), n: resNotes().filter(n => n.pm).length }));
@@ -161,6 +169,7 @@ const gruen = m => console.log('  ✓ ' + m);
     const zg = e1.zieh || {};
     if (!e1.dot) rot('E: + Mark setzt keinen Punkt');
     else if (zg.i === zg.i0 || zg.phase !== 'punkt') rot(`E: Ziehen bewegt den Punkt nicht (${JSON.stringify(zg)})`);
+    else if (!e1.kasten || !(e1.kasten.dx < -0.03) || !(e1.kasten.dy < -0.03)) rot(`E: Kasten folgt dem Ziehen nicht nach links oben (${JSON.stringify(e1.kasten)})`);
     else if (e1.linie !== 'linie' || e1.text.phase !== 'text' || !e1.text.pop) rot(`E: Tipp auf den Punkt -> ${e1.linie}, zweiter Ort -> ${JSON.stringify(e1.text)}`);
     else if (!e1.leer.pop || e1.leer.n) rot(`E: leer gespeichert (Kasten ${e1.leer.pop}, Notizen ${e1.leer.n})`);
     else if (e1.rand !== BC[1]) rot(`E: Rahmen nach Bearish ${e1.rand} statt ${BC[1]}`);

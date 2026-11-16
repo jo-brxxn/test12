@@ -449,9 +449,15 @@ function pkPopZeichnen(){
   const ax=L.x(i),ay=pkMitte(L,f.d);if(ay==null)return;
   const w=document.createElement('div');w.className='pk-mk';
   let h=`<svg class="pk-nt-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${f.fx!=null?`<line x1="${ax*100}" y1="${ay*100}" x2="${f.fx*100}" y2="${f.fy*100}" vector-effect="non-scaling-stroke"/>`:''}</svg>`;
-  h+=`<span class="pk-nt-dot pk-mk-dot${f.phase==='punkt'?' zieh':''}" id="pkMkDot" style="left:${pctL(ax)};top:${pctL(ay)}" role="button" tabindex="0" aria-label="Candle ${escH(tagKurz(f.d))} - tap to confirm"></span>`;
-  if(f.phase==='punkt')h+=`<span class="pk-mk-hint">Drag to a candle · tap the dot to confirm</span>`;
-  if(f.phase==='linie')h+=`<span class="pk-mk-hint">Tap where the note should go</span>`;
+  h+=`<span class="pk-nt-dot pk-mk-dot${f.phase==='punkt'?' zieh':''}" id="pkMkDot" style="left:${pctL(ax)};top:${pctL(ay)}" role="button" tabindex="0" aria-label="Candle ${escH(tagKurz(f.d))} - tap to confirm" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pkPunktOk();}"></span>`;
+  // Nutzer 2026-11-16: "den Punkt von ueberall bewegen ohne das ich meinen Finger auf dem
+  // Punkt habe ... das platzieren des Textes muss fluessiger sein und beweglich in alle
+  // Richtungen" -> Ziehen irgendwo im Chart bewegt Punkt bzw. Kasten mit (pkGeste).
+  if(f.phase==='punkt')h+=`<span class="pk-mk-hint"><span>Drag anywhere · snaps to candles</span><button type="button" class="pk-mk-weiter" onclick="pkPunktOk()">Next</button></span>`;
+  if(f.phase==='linie'){
+    h+=`<span class="pk-nt pk-mk-box" id="pkMkBox" style="left:${pctL(f.fx)};top:${pctL(f.fy)}">Your note</span>`;
+    h+=`<span class="pk-mk-hint"><span>Drag anywhere to place the note</span><button type="button" class="pk-mk-weiter" onclick="pkLinieOk()">Write note</button></span>`;
+  }
   w.innerHTML=h;el.appendChild(w);
   if(f.phase==='text'){
     const p=document.createElement('div');p.id='pkPop';p.className='pk-nt pk-nt-ed';p.setAttribute('role','dialog');p.setAttribute('aria-label','New note');
@@ -467,40 +473,58 @@ function pkPopZeichnen(){
     p.style.left=lx+'px';p.style.top=ly+'px';
     setTimeout(()=>{const inp=document.getElementById('pkIn');if(inp)inp.focus();},40);
   }
-  pkPunktAnbinden();
 }
-// Punkt ziehen (Maus/Finger), rastet auf die Mitte der naechsten Kerze ein
-function pkPunktAnbinden(){
-  const dot=document.getElementById('pkMkDot');if(!dot||!pkForm||pkForm.phase!=='punkt')return;
-  let start=null,bewegt=false;
-  dot.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();start={x:e.clientX,y:e.clientY};bewegt=false;try{dot.setPointerCapture(e.pointerId);}catch(x){}});
-  dot.addEventListener('pointermove',e=>{
-    if(!start||!pkForm)return;
-    if(Math.abs(e.clientX-start.x)+Math.abs(e.clientY-start.y)>5)bewegt=true;
-    if(!bewegt)return;
-    const el=pkLage(),L=pkL();if(!el||!L)return;const r=el.getBoundingClientRect();
-    const i=pkNaechster(L,(e.clientX-r.left)/r.width);
-    if(i!==pkForm.i){const y=pkMitte(L,L.tage[i]);if(y==null)return;pkForm.i=i;pkForm.d=L.tage[i];dot.style.left=pctL(L.x(i));dot.style.top=pctL(y);dot.setAttribute('aria-label','Candle '+tagKurz(pkForm.d)+' - tap to confirm');}
-  });
-  const ende=e=>{if(!start)return;const war=bewegt;start=null;e.stopPropagation();if(!war)pkPunktOk();};
-  dot.addEventListener('pointerup',ende);
-  dot.addEventListener('pointercancel',()=>{start=null;});
-  dot.addEventListener('click',e=>e.stopPropagation());
-  dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pkPunktOk();}});
+// ── Geste beim Markieren (seit 740): Ziehen IRGENDWO im Chart ─────────────────
+// Phase 'punkt': der Punkt wandert relativ zur Fingerbewegung mit und rastet auf der
+// Kerzenmitte ein (der Finger verdeckt ihn nicht). Tipp auf den Punkt / "Next" = weiter,
+// Tipp daneben = Punkt springt auf diese Kerze.
+// Phase 'linie': der Vorschau-Kasten wandert frei in alle Richtungen mit (kein Einrasten,
+// je Bild einmal gezeichnet). Tipp auf den Kasten / "Write note" = Text, Tipp daneben =
+// Kasten springt dorthin. Waehrend des Markierens scrollt die Seite nicht (touch-action:none).
+function pkPunktOk(){if(!pkForm||pkForm.phase!=='punkt')return;
+  const L=pkL();if(!L)return;const ax=L.x(pkForm.i),ay=pkMitte(L,pkForm.d)||0.5;
+  pkForm.phase='linie';pkForm.fx=Math.max(0.08,Math.min(0.92,ax+(ax>0.65?-0.18:0.18)));pkForm.fy=Math.max(0.1,Math.min(0.9,ay<0.32?ay+0.22:ay-0.22));
+  pkPopZeichnen();}
+function pkLinieOk(){if(!pkForm||pkForm.phase!=='linie')return;pkForm.phase='text';pkPopZeichnen();}
+const pkKl=(v,a,z)=>Math.max(a,Math.min(z,v));
+function pkMarkDom(){
+  const el=pkLage(),L=pkL(),f=pkForm;if(!el||!L||!f)return;
+  const ax=L.x(f.i),ay=pkMitte(L,f.d);if(ay==null)return;
+  const dot=document.getElementById('pkMkDot');if(dot){dot.style.left=pctL(ax);dot.style.top=pctL(ay);dot.setAttribute('aria-label','Candle '+tagKurz(f.d)+' - tap to confirm');}
+  if(f.phase==='linie'){
+    const bx=document.getElementById('pkMkBox');if(bx){bx.style.left=pctL(f.fx);bx.style.top=pctL(f.fy);}
+    const sv=el.querySelector('.pk-mk svg');if(sv)sv.innerHTML=`<line x1="${ax*100}" y1="${ay*100}" x2="${f.fx*100}" y2="${f.fy*100}" vector-effect="non-scaling-stroke"/>`;
+  }
 }
-function pkPunktOk(){if(!pkForm||pkForm.phase!=='punkt')return;pkForm.phase='linie';pkPopZeichnen();}
-// Phase 'linie': Ende folgt Maus/Finger, Tipp setzt den Kasten
-function pkLinieZiel(e){
-  const el=pkLage();if(!el||!pkForm)return null;const r=el.getBoundingClientRect();if(!r.width)return null;
-  return{fx:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),fy:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))};
-}
+let _pkG=null,_pkRaf=0;
+document.addEventListener('pointerdown',e=>{
+  const f=pkForm;if(!f||(f.phase!=='punkt'&&f.phase!=='linie'))return;
+  const t=e.target;if(!t||!t.closest||!t.closest('.ab-ptile.pk .pk-chart')||t.closest('#pkPop,.pk-mk-hint'))return;
+  const el=pkLage(),L=pkL();if(!el||!L)return;
+  const r=el.getBoundingClientRect();if(!r.width)return;
+  e.preventDefault();
+  _pkG={id:e.pointerId,x:e.clientX,y:e.clientY,w:r.width,h:r.height,l:r.left,o:r.top,fx0:f.phase==='punkt'?L.x(f.i):f.fx,fy0:f.fy,
+    aufPunkt:!!t.closest('#pkMkDot'),aufKasten:!!t.closest('#pkMkBox'),bewegt:false};
+},true);
 document.addEventListener('pointermove',e=>{
-  if(!pkForm||pkForm.phase!=='linie')return;
-  const z=pkLinieZiel(e);if(!z)return;
-  const el=pkLage(),L=pkL(),ln=el&&el.querySelector('.pk-mk svg');if(!ln||!L)return;
-  const ax=L.x(pkForm.i),ay=pkMitte(L,pkForm.d);
-  ln.innerHTML=`<line x1="${ax*100}" y1="${ay*100}" x2="${z.fx*100}" y2="${z.fy*100}" vector-effect="non-scaling-stroke"/>`;
-},{passive:true});
+  const g=_pkG,f=pkForm;if(!g||!f||e.pointerId!==g.id)return;
+  const dx=e.clientX-g.x,dy=e.clientY-g.y;
+  if(!g.bewegt&&Math.abs(dx)+Math.abs(dy)<6)return;
+  g.bewegt=true;e.preventDefault();
+  const L=pkL();if(!L)return;
+  if(f.phase==='punkt'){const i=pkNaechster(L,g.fx0+dx/g.w);if(i!==f.i&&pkMitte(L,L.tage[i])!=null){f.i=i;f.d=L.tage[i];}}
+  else{f.fx=pkKl(g.fx0+dx/g.w,0.02,0.98);f.fy=pkKl(g.fy0+dy/g.h,0.04,0.96);}
+  if(!_pkRaf)_pkRaf=requestAnimationFrame(()=>{_pkRaf=0;pkMarkDom();});
+},{passive:false});
+const pkGesteEnde=e=>{
+  const g=_pkG,f=pkForm;if(!g||e.pointerId!==g.id)return;_pkG=null;if(!f||g.bewegt)return;
+  // Tipp ohne Ziehen
+  const L=pkL();if(!L)return;
+  if(f.phase==='punkt'){if(g.aufPunkt){pkPunktOk();return;}f.i=pkNaechster(L,(e.clientX-g.l)/g.w);f.d=L.tage[f.i];pkMarkDom();return;}
+  if(f.phase==='linie'){if(g.aufKasten){pkLinieOk();return;}f.fx=pkKl((e.clientX-g.l)/g.w,0.02,0.98);f.fy=pkKl((e.clientY-g.o)/g.h,0.04,0.96);pkMarkDom();}
+};
+document.addEventListener('pointerup',pkGesteEnde,true);
+document.addEventListener('pointercancel',()=>{_pkG=null;},true);
 function pkFormText(v){if(pkForm)pkForm.t=v;}
 function pkFormBias(b,btn){
   if(!pkForm)return;pkForm.b=pkForm.b===b?'neu':b;
@@ -526,7 +550,8 @@ function pkSpeichern(){
     research.notes.push({id,fids:[],title:t,body:'',tags:['chart'],fav:false,pin:false,arch:false,ts:now,up:now,bias:f.b,evt:null,asset:'',pm});
     save();
     pkForm=null;pkAdd=false;pkPopZu();pkKnopf(false);
-    pkSel={a:f.a,k:L&&L.woche?wocheVon(f.d):f.d};
+    // kein automatisch gewaehlter Tag danach (Nutzer-Foto 2026-11-16: grauer Streifen eingekreist)
+    pkSel=null;
     pkNeu=id;
     if(typeof window.renderDetail==='function')window.renderDetail();
   }catch(e){alert('The note could not be saved: '+(e&&e.message||e));}
@@ -551,11 +576,8 @@ document.addEventListener('click',e=>{
   if(pkForm&&L){
     // ⚠ Erst pruefen, dann stoppen: ein stopPropagation in dieser Capture-Phase schluckte
     // sonst die Klicks IM Kasten (Bullish/Bearish/Done wirkten nicht - gemessen 2026-11-16).
-    if(t.closest('#pkPop,.pk-mk-dot'))return;
-    e.stopPropagation();
-    if(pkForm.phase==='punkt'){   // Tipp neben den Punkt: Punkt springt auf diese Kerze
-      const r=el.getBoundingClientRect();pkForm.i=pkNaechster(L,(e.clientX-r.left)/r.width);pkPopZeichnen();return;}
-    if(pkForm.phase==='linie'){const z=pkLinieZiel(e);if(z){pkForm.fx=z.fx;pkForm.fy=z.fy;pkForm.phase='text';pkPopZeichnen();}return;}
+    if(t.closest('#pkPop,.pk-mk-hint'))return;
+    e.stopPropagation();   // Punkt/Kasten bewegt die Geste (pointerdown/-move/-up), kein Tag-Waehlen
     return;
   }
   if(t.closest('.pk-nt,.pk-nt-dot'))return;
@@ -669,5 +691,5 @@ function pkZustand(){return{sel:pkSel,hover:pkHover,add:pkAdd,form:pkForm,vgl:JS
 export {pkBandLegende,pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkReleases,pkEimer,PFEIL,pkAddAktiv};
 function pkAddAktiv(){return pkAdd;}
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window,{pkWaehle,pkMarkenSchalter,pkAddUmschalten,pkFormAuf,pkPunktOk,pkNotizAuf,pkFormText,pkFormBias,pkFormZu,pkSpeichern,pkEigenWeg,
+Object.assign(window,{pkWaehle,pkMarkenSchalter,pkAddUmschalten,pkFormAuf,pkPunktOk,pkLinieOk,pkNotizAuf,pkFormText,pkFormBias,pkFormZu,pkSpeichern,pkEigenWeg,
   pkModusSetzen,pkMoveWaehle,pkBewegungen,pkVglAuf,pkVglAsset,pkVglGruppe,pkVglUmschalten,pkVglWeg,pkVglSkalaSetzen,pkZustand,pkReleases});
