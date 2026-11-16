@@ -20,5 +20,5 @@ Ohne Rueckfrage, ohne dass der Nutzer es aufzaehlt. Erst **Quellen auf dem Runne
 | Kalender / News | `js/event-matchers.js`, Workflow TV-ECONOMICS-RULES (+ `HIST_REGELN`), News-Aliasse, `js/calendar.js` Aliasse, `LOWER_IS_BETTER_RE` | |
 | Set-ups / Watchlist / Trends | `PAIR_CODE_TO_ID` + 3× `codeToId`, `ALL_PAIRS`, `trendAssets()`, `TREND_COLORS` | |
 | Eingabe-Aliasse | `js/quickcapture.js`, `js/trades.js` TJ_ALIAS | |
-| Feed-Groesse | `check/feedgroesse.js` (bewusst anheben, begruenden) | |
+| Feed-Groesse | `check/feedgroesse.js` (bewusst anheben, begruenden). **Vorher hochrechnen** (2026-11-16, nach Copper/Natural Gas lag `price_data.json` bei 896/900 KB): jede betroffene Datei auf ihr volles Fenster (`price_data.json`: 1100 Punkte je Asset, Kerzen nur 183 Tage) — nicht nur den heutigen Stand messen | |
 | Waechter | betroffene `check/*` (z. B. mpcoel, scorenachrechnung) mitziehen | |
