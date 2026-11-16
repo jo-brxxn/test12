@@ -22270,3 +22270,10 @@ Nutzer: *„Ja maximale Historie“*.
 - Erster Entwurf las die Grenze aus der Reihe (erster Tag mit Kerze) → GOLD lud schon bei 3M das Archiv (einzelne jüngere Tage ohne Kerze); jetzt feste Grenze `KERZEN_TAGE` wie im Werkzeug
 **Umsetzung:** `tools/kerzen-auslagern.mjs`, Workflow-Schritt *Move old candles* (+ `backfill-ohlc.yml`), `priceSeriesAnzeige`/`kerzenArchivBei`/`ladeKerzenArchiv` in `js/data-feeds.js`, `preisReiheLang` + Price-Karte + Data-Seite + Trades. `check/feedgroesse.js`: `price_ohlc.json` als Einzeldatei.
 **Wächter:** `check/kerzenarchiv.js` (A–E), Gegenprobe ohne Ausloeser der Price-Karte → D rot.
+
+## 2026-11-16 — COT-Filter springt bei 390 px (VERSION-CHECK-736)
+
+**Fund:** CI 753 rot, `filterfest` A: *cot: pickCotFilter nach Wahl von CHF um 111/0 px versetzt* (lokal 113 px), erst seit der Feed COT für Natural Gas liefert.
+**Gemessen (Playwright, 390 px):** Zeile `.cot-ctrl-r` 259 px; Feld 146 px (ein `<select>` misst sich an der breitesten Option, „Natural Gas“) + 10 + Refresh 103 = **259** → passt exakt. Nach der Wahl erscheint das ✕ (32 px + 10): Refresh bricht in eine neue Zeile, das rechtsbündige Feld rutscht von x 117 auf 230.
+**Wurzel:** das ✕ nahm Platz in der Zeile, ob sie umbricht, hing an der längsten Option. **Fix:** in `.cot-ctrl-r` steht das ✕ außerhalb des Flusses links neben dem Feld (absolut) — Zeile mit/ohne ✕ identisch. Gemessen 360/390/768/1180 px: Feld fest, ✕ überdeckt nichts, ist antippbar.
+**Fehlerklasse:** `filterfest` A prüft alle Gruppen-Auswahllisten aller Tabs — nur COT war betroffen. Wächter = `filterfest` (war die rote Gegenprobe in CI).
