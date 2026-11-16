@@ -286,6 +286,8 @@ const gruen = m => console.log('  ✓ ' + m);
   const anzahl = () => p.evaluate(() => ({ panels: document.querySelectorAll('#dataBody .data-panel').length, offen: !!document.getElementById('dataAllePicker'), alle: dataAlle.map(x => x.a + '|' + x.k) }));
   await tipp('#dataAlleBtn');
   await tipp('#dataAllePicker .dap-reihe .ind-hist-range-btn:has-text("Energy")');
+  // seit 2026-11-16 zwei Energie-Assets (OIL, NATGAS) - das Asset ausdruecklich waehlen wie bei EUR
+  await tipp('#dataAllePicker .dap-reihe .cmp-chip:text-is("OIL")');
   await tipp('#dataAllePicker .data-picker-body .cmp-chip:has-text("Price")');
   await tipp('#dataAllePicker .dap-reihe .ind-hist-range-btn:has-text("Currencies")');
   await tipp('#dataAllePicker .dap-reihe .cmp-chip:text-is("EUR")');
