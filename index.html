@@ -8054,7 +8054,7 @@ window.fxLogoSvg=function(art){
           <div><div class="tj-lbl">Open date</div><input class="m-inp" id="tjDate" type="date" onchange="tjEdEingabe(true)"></div>
           <div><div class="tj-lbl">Open time</div><input class="m-inp" id="tjTime" type="time"></div>
         </div>
-        <div class="tj-f"><div class="tj-lbl">Asset</div><input class="m-inp" id="tjAsset" list="tjAssetList" placeholder="e.g. EUR/USD, GOLD, NAS100" autocomplete="off" oninput="tjEdEingabe(true)"><datalist id="tjAssetList"></datalist></div>
+        <div class="tj-f"><div class="tj-lbl">Asset</div><select class="m-inp" id="tjAsset" onchange="tjEdEingabe(true)"></select></div>
         <div id="tjGpBox" class="tj-gp" hidden></div>
         <div class="tj-f"><div class="tj-lbl">Direction</div>
           <div class="tj-seg" role="group" aria-label="Direction"><button type="button" class="tj-seg-b" data-dir="long" aria-pressed="true" onclick="tjRichtung('long')">Long</button><button type="button" class="tj-seg-b" data-dir="short" aria-pressed="false" onclick="tjRichtung('short')">Short</button></div>

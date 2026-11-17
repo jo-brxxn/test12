@@ -77,7 +77,7 @@ const trade = (id, a, up) => ({ id, d: '2026-10-02', cd: '2026-10-02', st: 'clos
     const p = await seite(); geraete.push(ctx);
     return { ctx, p, seite };
   };
-  const neuerTrade = (p, a) => p.evaluate(a => { tjNeu('2026-10-02'); document.getElementById('tjAsset').value = a; document.getElementById('tjPnl').value = '100'; return tjFormSpeichern(); }, a);
+  const neuerTrade = (p, a) => p.evaluate(a => { tjNeu('2026-10-02'); tjAssetSetzen(a); document.getElementById('tjPnl').value = '100'; return tjFormSpeichern(); }, a);
 
   // ── A: Abgleich mit fremden Trades - die eigenen muessen hoch ─────────
   console.log('A) Abgleich holt fremde Trades und laedt die eigenen, die der Cloud fehlen, hoch');

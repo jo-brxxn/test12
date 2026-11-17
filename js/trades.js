@@ -42,7 +42,8 @@
 // ATR14 (aus echten Hoch/Tief) neben dem Entry - sichtbar in den Feldern,
 // zum Verschieben gedacht, kein Wert, der still im Hintergrund entsteht.
 import {escH,escJH,openM,closeM,uid,cloudAutoSync,markLsUpdatedSeen,markPrefEdit,curPage,syms,pairs,getCloudCfg,
-  icn,achsenTicks,chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn} from './main.js';
+  icn,achsenTicks,chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn,
+  FX_PAIRS_AZ,COT_NAME,SB_CATS,watchlistedAssetIds,watchlistPairs} from './main.js';
 import {PRICE_DATA_FEED,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,autoFetchPriceData} from './data-feeds.js';
 import {fmtDayHdr,fmtDayShort,fmtStamp} from './calendar.js';
 import {FX,BC} from './constants.js';
@@ -826,7 +827,7 @@ function tjLoeschen(){
 }
 
 // ── Editor ───────────────────────────────────────────────────────────
-// ⚠ tjAsset muss das erste Textfeld bleiben (check/eingaben.js tippt dort);
+// ⚠ tjAsset (seit 741 eine Auswahlliste) muss das erste Feld nach Datum/Zeit bleiben (check/eingaben.js waehlt dort);
 // die versteckten Felder tjSt/tjDir stehen deshalb dahinter.
 const TJ_FELDER=['tjDate','tjTime','tjAsset','tjSt','tjDir','tjW0','tjW1','tjPnl','tjEntry','tjExit','tjSl','tjTp','tjSize','tjSetup','tjNotes','tjCDate','tjCTime'];
 const TJ_SCHLUESSEL=['d','t','a','st','dir','w0','w1','pnl','entry','exit','sl','tp','size','setup','notes','cd','ct'];
@@ -840,12 +841,40 @@ function tjStatus(st){
   const cd=document.getElementById('tjCDate');
   if(h.value==='closed'&&cd&&!cd.value)cd.value=tjHeute();
 }
-function tjAssetVorschlaege(){
-  const s=new Set();
-  tjAktiv().forEach(t=>t.a&&s.add(t.a));
-  (pairs||[]).forEach(p=>p&&p.name&&s.add(p.name));
-  (syms||[]).forEach(x=>x&&x.id&&s.add(x.id));
-  return[...s].sort((a,b)=>a.localeCompare(b));
+// Asset-Auswahl wie jeder Asset-Filter (Nutzer 2026-11-17: "beim Trade hinzufuegen der Asset
+// Filter soll nach Kategorien sortiert sein wie jeder Asset Filter"): <select> mit Gruppen ->
+// oeffnet automatisch das 2-Spalten-Fenster (gwAuf). Reihenfolge: Watchlist, FX Pairs, dann die
+// Kategorien der Seitenleiste (SB_CATS, ohne die Einzelwaehrungen), Other. Ein alter Trade mit
+// einem Asset ausserhalb der Liste (frei getippt vor 741) behaelt es unter Other.
+function tjAssetOptionen(akt){
+  const opt=(v,t)=>`<option value="${escH(v)}">${escH(t||v)}</option>`;
+  const name=id=>COT_NAME[id]||((syms||[]).find(x=>x&&x.id===id)||{}).name||id;
+  const ids=(syms||[]).map(x=>x&&x.id).filter(id=>id&&!FX.includes(id));
+  const wlP=(watchlistPairs()||[]).map(p=>p&&p.name).filter(n=>FX_PAIRS_AZ.includes(n));
+  const wlA=watchlistedAssetIds(ids);
+  const da=new Set([...wlP,...wlA]);
+  let h='<option value="" disabled hidden>Choose an asset</option>';
+  if(da.size)h+=`<optgroup label="Watchlist">${wlP.map(p=>opt(p)).join('')}${wlA.map(id=>opt(id,name(id))).join('')}</optgroup>`;
+  const fx=FX_PAIRS_AZ.filter(p=>!da.has(p));
+  if(fx.length)h+=`<optgroup label="FX Pairs">${fx.map(p=>opt(p)).join('')}</optgroup>`;
+  const inKat=new Set();
+  SB_CATS.forEach(c=>{
+    const l=c.ids.filter(id=>ids.includes(id));
+    l.forEach(id=>inKat.add(id));
+    const z=l.filter(id=>!da.has(id));
+    if(z.length)h+=`<optgroup label="${escH(c.l)}">${z.map(id=>opt(id,name(id))).join('')}</optgroup>`;
+  });
+  const rest=ids.filter(id=>!inKat.has(id)&&!da.has(id)).map(id=>opt(id,name(id)));
+  if(akt&&!FX_PAIRS_AZ.includes(akt)&&!ids.includes(akt))rest.push(opt(akt));
+  if(rest.length)h+=`<optgroup label="Other">${rest.join('')}</optgroup>`;
+  return h;
+}
+// Asset setzen (auch ein Wert ausserhalb der Liste - alte Trades, Waechter)
+function tjAssetSetzen(a){
+  const e=document.getElementById('tjAsset');if(!e)return;
+  const v=String(a||'');
+  if(v&&![...e.options].some(o=>o.value===v)){e.innerHTML=tjAssetOptionen(v);}
+  e.value=v;tjEdEingabe(true);
 }
 // ── Gameplan am Trade (Nutzer 2026-11-17) ───────────────────────────
 // "wenn ich ja ein Asset auswaehle direkt die These angehaengt wird zu dem Asset also den
@@ -911,8 +940,8 @@ function tjNeu(datum,id){
   const t=id?trades.find(x=>x.id===id&&!x.del):null;
   _tjEdit=t?t.id:null;
   document.getElementById('tjFormTitle').textContent=t?'Edit trade':'New trade';
-  const dl=document.getElementById('tjAssetList');
-  if(dl)dl.innerHTML=tjAssetVorschlaege().map(a=>`<option value="${escH(a)}"></option>`).join('');
+  const sa=document.getElementById('tjAsset');
+  if(sa)sa.innerHTML=tjAssetOptionen(t&&t.a);
   TJ_FELDER.forEach((f,i)=>{
     const e=document.getElementById(f);if(!e)return;
     const k=TJ_SCHLUESSEL[i];
@@ -1120,7 +1149,7 @@ if(typeof window!=='undefined'){
 export {trades,tjUndoSetzen,TJG_GUARD,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
   tjFuerCloud,tjGesendet,tjSendeFehler};
 if(typeof window!=='undefined'){
-  Object.assign(window,{tjGpBias,tjGpFensterSpeichern,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
+  Object.assign(window,{tjAssetSetzen,tjGpBias,tjGpFensterSpeichern,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
     mergeTrades,tjUebernehmen,tjR,tjReihe,tjTagKlick,tjTagFenster,tjTagZuTrade,tjTagNeu,tjRichtung,tjExitAuf,tjEdEingabe,tjStreak,tjStats,
     tjStatus,tjAbschliessen,tjZuExit,tjZuErgebnis,tjZuSpeichern,tjZuBearbeiten,tjJetzt,tjLive,
     tjFuerCloud,tjCloudStand,tjJetztHochladen,tjSig});

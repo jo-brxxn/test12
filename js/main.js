@@ -36,6 +36,8 @@ import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './k
 export {scoreAssets,closeM,
   // Was js/undo.js von hier braucht (2026-11-17).
   snap,undoSnapSetzen,renderSidebar,flushAndSave,tippenOffen,tippenJetztSpeichern,
+  // Was js/trades.js fuer die Asset-Auswahl braucht (2026-11-17).
+  FX_PAIRS_AZ,COT_NAME,
   // Was js/gameplan.js von hier braucht (2026-11-16).
   getSymEventsAll,watchlistedAssetIds,watchlistPairs,watchInvolvedAssets,YIELD_CCY,ar,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
   // Was js/zentralbank.js von hier braucht (Notizen = research.notes, Banner-Quittung = zbQuittung).
@@ -22536,7 +22538,7 @@ function gwAuf(sel){
   gwZu();
   const el=document.createElement('div');el.id='gwPicker';el.className='data-picker gw-picker';el.setAttribute('role','listbox');
   const chip=o=>`<button type="button" class="cmp-chip${o.selected?' on':''}" data-i="${o.index}"${o.disabled?' disabled':''} role="option" aria-selected="${o.selected}">${escH(o.textContent.trim())}</button>`;
-  const kopf=[...sel.children].filter(c=>c.tagName==='OPTION');
+  const kopf=[...sel.children].filter(c=>c.tagName==='OPTION'&&!c.hidden);
   const gruppen=[...sel.querySelectorAll('optgroup')];
   el.innerHTML=`<div class="data-picker-hd"><span>${escH(sel.getAttribute('title')||sel.getAttribute('aria-label')||'Choose')}</span></div>
     ${kopf.length?`<div class="gw-kopf">${kopf.map(chip).join('')}</div>`:''}

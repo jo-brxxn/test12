@@ -10,6 +10,8 @@
 //  D) Asset ohne eigene Seite: kein Fenster, Trade ohne Plan gespeichert
 //  E) Karte "Open trades" zeigt Asset-Name + These
 //  F) 390 px: Fenster ohne Seitenueberlauf
+//  G) Asset-Auswahl wie jeder Asset-Filter (Nutzer 2026-11-17): Gruppen FX Pairs + Kategorien,
+//     Antippen oeffnet das 2-Spalten-Fenster, Wahl setzt das Asset und zeigt den Plan
 // --gegenprobe: Pflicht-Pruefung entfernt -> C rot.
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const { chromium } = require(PW);
@@ -27,21 +29,32 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     await p.goto('http://127.0.0.1:' + PORT + '/index.html'); await wartenBisDatenDa(p);
     await p.evaluate(() => { ['lockScreen', 'introOv'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); document.querySelectorAll('.ov').forEach(m => { m.style.display = 'none'; }); showTab('journal'); });
     const trades = () => p.evaluate(() => JSON.parse(localStorage.getItem('fxpro_trades') || '[]').filter(t => !t.del));
-    const neu = async a => { await p.evaluate(() => tjNeu()); await p.waitForTimeout(300); await p.fill('#tjAsset', a); await p.dispatchEvent('#tjAsset', 'input'); await p.waitForTimeout(400); };
+    const neu = async a => { await p.evaluate(() => tjNeu()); await p.waitForTimeout(300); await p.evaluate(a => tjAssetSetzen(a), a); await p.waitForTimeout(400); };
     const offen = id => p.evaluate(id => getComputedStyle(document.getElementById(id)).display !== 'none', id);
+    // G
+    await p.evaluate(() => tjNeu()); await p.waitForTimeout(300);
+    const Gg = await p.evaluate(() => [...document.querySelectorAll('#tjAsset optgroup')].map(g => g.label));
+    if (Gg[0] !== 'FX Pairs' && Gg[0] !== 'Watchlist' || !['Metals', 'Indices', 'Energy'].every(x => Gg.includes(x))) F.push(`${o} G: Asset-Auswahl nicht nach Kategorien (${Gg.join('|')})`);
+    const rG = await p.evaluate(() => { const b = document.getElementById('tjAsset').getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+    await p.mouse.click(rG[0], rG[1]); await p.waitForTimeout(400);
+    if (!(await p.evaluate(() => !!document.getElementById('gwPicker')))) F.push(`${o} G: Antippen der Asset-Auswahl oeffnet kein 2-Spalten-Fenster`);
+    else { await p.click('#gwPicker button:has-text("Silver")'); await p.waitForTimeout(400);
+      const gv = await p.evaluate(() => [document.getElementById('tjAsset').value, document.getElementById('tjGpBox').hidden]);
+      if (gv[0] !== 'SILVER' || gv[1]) F.push(`${o} G: Wahl im Fenster setzt das Asset/den Plan nicht (${gv})`); }
+    await p.evaluate(() => closeM('mTrade'));
     // A
     await p.evaluate(() => { gpBias('GOLD', 'bull'); gpText('GOLD', 'th', 'Real yields falling'); }); await p.waitForTimeout(600);
-    await neu('XAU/USD');
+    await neu('GOLD');
     const box = await p.evaluate(() => { const x = document.getElementById('tjGpBox'); return x && !x.hidden ? x.innerText : ''; });
     if (!/Gameplan · Gold/i.test(box) || !/Real yields falling/.test(box)) F.push(`${o} A: Formular zeigt den GOLD-Plan nicht ("${box.replace(/\n/g, ' | ').slice(0, 80)}")`);
     await p.click('#mTrade .m-btns .btn.g'); await p.waitForTimeout(600);
     if (await offen('mTradeGp')) F.push(`${o} A: Fenster offen, obwohl GOLD eine These hat`);
-    let t = await trades(); const tg = t.find(x => x.a === 'XAU/USD');
+    let t = await trades(); const tg = t.find(x => x.a === 'GOLD');
     if (!tg || !Array.isArray(tg.gp) || tg.gp[0].id !== 'GOLD' || tg.gp[0].th !== 'Real yields falling' || tg.gp[0].b !== 'bull') F.push(`${o} A: Trade ohne Kopie des Plans: ${JSON.stringify(tg && tg.gp)}`);
     // B
     await p.evaluate(() => gpText('GOLD', 'th', 'Changed later')); await p.waitForTimeout(600);
     t = await trades();
-    if ((t.find(x => x.a === 'XAU/USD').gp || [{}])[0].th !== 'Real yields falling') F.push(`${o} B: Kopie am Trade hat sich mit dem Gameplan geaendert`);
+    if ((t.find(x => x.a === 'GOLD').gp || [{}])[0].th !== 'Real yields falling') F.push(`${o} B: Kopie am Trade hat sich mit dem Gameplan geaendert`);
     // C
     await neu('NZD/JPY');
     await p.click('#mTrade .m-btns .btn.g'); await p.waitForTimeout(500);

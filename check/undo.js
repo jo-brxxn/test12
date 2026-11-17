@@ -81,7 +81,7 @@ const warte = ms => new Promise(r => setTimeout(r, ms));
   await A.evaluate(() => doRedo()); await A.waitForTimeout(400);
   // E: Trade
   const tn = () => A.evaluate(() => JSON.parse(localStorage.getItem('fxpro_trades') || '[]').filter(t => !t.del && t.a === 'UNDOTEST').length);
-  await A.evaluate(() => { showTab('journal'); tjNeu(); document.getElementById('tjAsset').value = 'UNDOTEST'; document.getElementById('tjEntry').value = '1'; tjFormSpeichern(); });
+  await A.evaluate(() => { showTab('journal'); tjNeu(); tjAssetSetzen('UNDOTEST'); document.getElementById('tjEntry').value = '1'; tjFormSpeichern(); });
   await A.waitForTimeout(900);
   const e1 = await tn();
   await A.evaluate(() => doUndo()); await A.waitForTimeout(600);
