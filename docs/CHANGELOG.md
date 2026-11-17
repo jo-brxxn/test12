@@ -22432,3 +22432,13 @@ Nutzer (PC-Foto): *„die Maus ist weiter links aber ausgewählt ist weiter rech
   - Notiz-Kästchen der Price-Karte, Gleit-Animation (FLIP) von Notizen/Rangliste: auf Seiten-Pixel umgestellt (Dashboard selbst ist ungezoomt, daher ohne sichtbaren Fehler — vorbeugend).
   - Unkritisch: Auswahl-Ziehen (`brushAnbinden`, Prozent), Menüs/Popups am `body` (ungezoomt), BTC-Sentiment/Score-Charts (Verhältnis).
 - Wächter: `check/zoomhover.js` (A Hover-Linie, B Trade-Chart, C COT-Tooltip, 1920/2560 px), Gegenprobe alte Rechnung → A rot.
+
+## 2026-11-17 — Weiß = TradingView, Grund dunkler, Kartenränder schärfer (VERSION-CHECK-752)
+
+Nutzer: *„Mess mal den Hintergrund weis Ton und benutz den absofort anstelle des aktuellen weis Tons überall“* (TradingView-Screenshot) · *„mach die Kartenränder schärfer also präziser nicht verschwommen und mach die hintergrundfarbe ein ganz bischen dunkler“*.
+
+- **Gemessen:** TradingView-Hintergrund rgb(255,255,255) = `#FFFFFF`. Aktuelles „Weiß“ der App am Pixel: `#F8FAFD` (`--card` + `--bg2`, größte Fläche auf Dashboard/Asset/Journal).
+- `--card`/`--bg2` `#F8FAFD` → **`#FFFFFF`**; `--bg0` `#E9F0F8` → **`#E3EBF5`**.
+- `--shadow-card`: 4 Lagen bis 26 px Weichzeichnung → **3 Lagen, max. 12 px**, harte 1-px-Kante (`0 1px 0`).
+- Messung `check/kartenlook.js`: Karte gegen Grund **1,32:1** (vorher ~1,13), Schattenkante **1,36:1** (≥ 1,28). Zwei schärfere Varianten fielen durch (1,14 / 1,24 — Kante endet vor der Messzeile), daher die harte Kante + 3-px-Lage.
+- Bewusst unverändert: getönte Chart-Innenfläche der Price-Karte `#F1F4F9`, Texttöne auf Navy (`#F4F7FC`), dunkles Theme.

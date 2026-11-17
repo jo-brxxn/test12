@@ -555,8 +555,8 @@ App"):
 
 | Baustein | Regel |
 |---|---|
-| Seite | getönter Grund `--bg0` `#E9F0F8` |
-| Karte | fast weiß `--card` `#F8FAFD`, 1-px-Rand `--bd` `#DBE5F3`, Radius `--r` 14 px |
+| Seite | getönter Grund `--bg0` `#E3EBF5` (2026-11-17, vorher `#E9F0F8`) |
+| Karte | **Weiß = `#FFFFFF`** (TradingView-Weiß, Nutzer-Regel 2026-11-17: *„benutz den absofort anstelle des aktuellen weis Tons überall“*) `--card`/`--bg2`, 1-px-Rand `--bd2` `#B3C3DA`, Schatten **knapp** (3 Lagen, max. 12 px Weichzeichnung — *„schärfer, präziser, nicht verschwommen“*), Radius `--r` 14 px |
 | Kartenkopf | **Symbol + Titel** (`abTileIcon()`), kein eigener Hintergrund, keine Linie; Titel `--fs-md` 700 |
 | Zeitraum-Umschalter & neutrale Chips | hellgrau `--ctl-bg`, **aktiv = `--ui-act` gefüllt, weiße Schrift** |
 | Knöpfe/Dropdowns zweiter Ebene | Kartenfläche mit feinem Rand (wie „Aging" im Bild) |

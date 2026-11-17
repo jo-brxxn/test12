@@ -220,7 +220,10 @@ body{font-family:var(--ff-text);background-image:linear-gradient(180deg,rgba(27,
      JETZT: die Seite ist reinweiss, die Karte traegt die Toenung. */
   /* ⚠ 2026-09-22 WIEDER UMGEKEHRT (Nutzerbild): getoenter Grund #E9F0F8,
      fast weisse Karten #F8FAFD mit 1px-Rand #DBE5F3 - am Bildpixel gemessen. */
-  --bg0:#E9F0F8;--bg1:#F3F6FB;--bg2:#F8FAFD;--bg3:#EDF2F9;--bg4:#E3EAF5;--bg5:#D8E1EE;--bg6:#C3CEDF;
+  /* ⚠ 2026-11-17 (752): Weiss = TradingView-Hintergrund #FFFFFF (Nutzer-Screenshot, am Pixel
+     255,255,255 gemessen: "benutz den absofort anstelle des aktuellen weis Tons ueberall") ->
+     --bg2/--card #F8FAFD -> #FFFFFF; Grund "ein ganz bischen dunkler" #E9F0F8 -> #E3EBF5. */
+  --bg0:#E3EBF5;--bg1:#F3F6FB;--bg2:#FFFFFF;--bg3:#EDF2F9;--bg4:#E3EAF5;--bg5:#D8E1EE;--bg6:#C3CEDF;
   /* ⚠ --card ist seit 2026-09-13 ein EIGENER Wert, kein Alias mehr auf
      --bg1. Damals war er an drei Stellen benutzt und nirgends definiert -
      var(--card) ohne Rueckfallwert ist "invalid at computed-value time", der
@@ -249,7 +252,7 @@ body{font-family:var(--ff-text);background-image:linear-gradient(180deg,rgba(27,
      unabhaengig von --card. Genau deshalb ist in check/kartenlook.js der
      Schatten als EIGENE Untergrenze dazugekommen - sonst wuerde das
      Absenken des Kartentons die Pruefung leer laufen lassen. */
-  --card:#F8FAFD;
+  --card:#FFFFFF;
   --bd:#C9D6E8;--bd2:#B3C3DA;   /* Crisp (2026-11-16), vorher #DBE5F3 / #C9D6E8 */
   /* ⚠ --t2 und --accent sind am 2026-09-04 MINIMAL nachgedunkelt worden.
      Der neue Waechter check/theme.js rechnet jede Textstufe gegen jede
@@ -332,11 +335,13 @@ body{font-family:var(--ff-text);background-image:linear-gradient(180deg,rgba(27,
   /* 2026-09-22 Bild-Design: je Lage eine Spur kraeftiger - auf dem
      getoenten Grund (#E9F0F8) mass die Schattenkante sonst nur 1,273:1
      (check/kartenlook.js verlangt 1,28). */
+  /* ⚠ 2026-11-17 (752) "Kartenraender schaerfer also praeziser nicht verschwommen": Lagen
+     enger und kuerzer (max. 8 px statt 26 px Weichzeichnung), unterste Lage fast ohne
+     Weichzeichnung -> Kante wie ein Strich; drei Lagen bleiben (check/kartenlook.js). */
   --shadow-card:
-    0 1px 2px rgba(20,27,46,.11),
-    0 2px 5px rgba(20,27,46,.095),
-    0 5px 12px rgba(20,27,46,.085),
-    0 10px 26px rgba(20,27,46,.075);
+    0 1px 0 rgba(20,27,46,.2),
+    0 3px 3px rgba(20,27,46,.18),
+    0 6px 12px rgba(20,27,46,.06);
   /* Dieselbe Staffelung, eine Stufe hoeher - fuer alles, was ueber der
      Seite schwebt (Popups, Menues, Bias-Picker). */
   --shadow-pop:
@@ -7846,11 +7851,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-751 - PC-Seiten-Zoom: Hover-Linie, Trade-Chart (Tipp, Griffe) und COT-Tooltip liegen wieder an der Maus"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-752 - Weiss = #FFFFFF (TradingView), Grund #E3EBF5, Kartenschatten schaerfer"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-751</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-752</span>
     </span>
   </div>
   <div class="hdr-r">
