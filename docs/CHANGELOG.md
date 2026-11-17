@@ -22404,3 +22404,7 @@ Nutzer: *„Ja maximale Historie“*.
 - Gameplan-Leiste: These `--t0`, 600 (vorher `--t2`, 400); Platzhalter bleibt kursiv/leicht.
 - Zwischentitel *OVERVIEW* über der Price-Karte entfernt.
 - Data-Karte in der Macro-Reihe (`.mk-data-slot`): `clamp(440px,62vh,700px)` statt `clamp(520px,78vh,860px)` — iPad quer 834 px: 650 → 517 px (−20 %).
+
+## 2026-11-17 — Auswahlfenster: gleich breite Knöpfe (VERSION-CHECK-749)
+
+**Nutzer (Foto Asset-Fenster):** *„nicht alle Assets gleich breit und damit nicht perfekt untereinander“* — gemessen FX Pairs 5 Breiten (71–75 px) an 10 linken Kanten, Stocks 13 Breiten. `chipRaster()`: je Fenster eine Breite, Raster `minmax(W,1fr)`, Innenabstand 6 px → 3 Spalten je Spalte des Fensters (1194 px), 2 bei 390 px; alle Knöpfe 83 px. Gilt für jedes `.data-picker`-Fenster. Wächter `check/chipraster.js`.

@@ -22641,6 +22641,27 @@ function gwAuf(sel){
   });
   setTimeout(()=>{document.addEventListener('pointerdown',gwDaneben,true);document.addEventListener('keydown',gwTaste,true);document.addEventListener('scroll',gwSeiteScrollt,true);},0);
 }
+// ══ AUSWAHLFENSTER: GLEICH BREITE KNOEPFE IM RASTER (2026-11-17, VERSION-CHECK-749) ══
+// Nutzer 2026-11-17 (Foto des Asset-Fensters): "nicht alle Assets gleich breit und damit nicht
+// perfekt untereinander". Gemessen: FX Pairs 5 Breiten (71-75 px) an 10 verschiedenen linken
+// Kanten, Stocks 13 Breiten. Jetzt: je Fenster EINE Breite (die des breitesten Knopfs), jede
+// Gruppe als Raster mit Spalten dieser Breite -> alle Knoepfe stehen untereinander, auch ueber
+// Gruppen hinweg. Gilt fuer jedes .data-picker-Fenster (Filter, Data, Vergleich, Profil ...).
+// Geprueft von check/chipraster.js.
+function chipRaster(p){
+  const grps=[...p.querySelectorAll('.cmp-filter-grp')].filter(g=>g.querySelector(':scope>.cmp-chip'));if(!grps.length)return;
+  const chips=grps.flatMap(g=>[...g.querySelectorAll(':scope>.cmp-chip')]);
+  grps.forEach(g=>{g.style.display='';g.style.gridTemplateColumns='';});
+  chips.forEach(c=>{c.style.width='';});
+  const avail=Math.min(...grps.map(g=>g.clientWidth).filter(w=>w>0));if(!isFinite(avail)||!avail)return;
+  const W=Math.min(avail,Math.ceil(Math.max(...chips.map(c=>c.getBoundingClientRect().width))));
+  grps.forEach(g=>{g.style.display='grid';g.style.gridTemplateColumns=`repeat(auto-fill,minmax(${W}px,1fr))`;});
+  chips.forEach(c=>{c.style.width='100%';});
+}
+let _chipT=0;
+function chipRasterBald(){cancelAnimationFrame(_chipT);_chipT=requestAnimationFrame(()=>document.querySelectorAll('.data-picker').forEach(chipRaster));}
+try{new MutationObserver(ms=>{if(ms.some(m=>[...m.addedNodes].some(n=>n.nodeType===1&&(n.classList.contains('data-picker')||n.closest&&n.closest('.data-picker')||n.querySelector&&n.querySelector('.data-picker')))))chipRasterBald();}).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
+addEventListener('resize',chipRasterBald);
 // Scrollt die SEITE, wuerde das Fenster von seiner Liste wegwandern -> zu.
 // Scrollen IM Fenster (lange Listen) bleibt offen.
 function gwSeiteScrollt(e){const t=e.target;if(t&&t.closest&&t.closest('#gwPicker'))return;gwZu();}

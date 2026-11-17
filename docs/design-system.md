@@ -1530,6 +1530,10 @@ die eigene Aufzeichnung unter 20 Tagen liegt: ACT `n/20d`, Chart-Text
 „Building up“. Past-Liste: Filter „High impact“ in der Titelzeile vor dem ⓘ
 (derselbe Schalter wie „High-impact only“ der Kalender-Leiste).
 
+## Auswahlfenster: gleich breite Knöpfe im Raster (seit 2026-11-17, 749)
+
+- Jedes `.data-picker`-Fenster: EINE Knopfbreite (breitester Knopf, 6 px Innenabstand), Gruppen als Raster `minmax(W,1fr)` → alles steht untereinander, auch über Gruppen. `chipRaster()` (MutationObserver), geprüft von `check/chipraster.js`.
+
 ## Nichts überlappt — nirgends (Dauerregel seit 2026-11-17, 747)
 
 - Nutzer: *„Es darf zu keiner Zeit egal wo auf der Webseite Elemente überlappen“*.
