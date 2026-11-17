@@ -370,7 +370,7 @@ function tjDrawdown(list){
 }
 
 function tjZeileHtml(t){
-  return`<button class="tj-zl ${tjKlasse(t)}" onclick="event.stopPropagation();tjZeigen('${escJH(t.id)}')" title="${escH(t.a)} · ${tjSeite(t.dir)} · ${tjGeld(t.pnl)}"><span class="tj-za">${escH(t.a)}</span>${tjSeiteHtml(t.dir)}<b class="tj-zp">${tjGeld(t.pnl)}</b></button>`;
+  return`<button class="tj-zl ${tjKlasse(t)}" onclick="event.stopPropagation();tjZeigen('${escJH(t.id)}')" title="${escH(tjName(t.a))} · ${tjSeite(t.dir)} · ${tjGeld(t.pnl)}"><span class="tj-za">${escH(tjName(t.a))}</span>${tjSeiteHtml(t.dir)}<b class="tj-zp">${tjGeld(t.pnl)}</b></button>`;
 }
 function tjKalenderHtml(y,m,proTag){
   const erster=new Date(y,m-1,1),tage=new Date(y,m,0).getDate(),vorlauf=(erster.getDay()+6)%7,heute=tjHeute();
@@ -428,7 +428,7 @@ function renderJournal(){
   const liste=`<div class="tj-card">
     <div class="tj-kh">${tjTitel(`Trades · ${tjMonTitel(y,m)}`,TJ_ERKL.tabelle)}</div>
     ${neueste.length?`<div class="tj-tab-wrap"><table class="tj-tab"><thead><tr><th class="c-d">Date</th><th>Asset</th><th class="c-s">Side</th><th class="c-set">Setup</th><th class="r c-r">R</th><th class="r c-p">P/L</th></tr></thead><tbody>
-      ${neueste.map(t=>`<tr class="${tjKlasse(t)}" onclick="tjZeigen('${escJH(t.id)}')" title="Show all details"><td class="c-d">${escH(fmtDayShort(tjTagVon(t)))}${(t.cd?t.ct:t.t)?` <i>${escH(t.cd?t.ct:t.t)}</i>`:''}</td><td class="c-a"><b>${escH(t.a)}</b><span class="c-a-s">${tjSeiteHtml(t.dir)}</span></td><td class="c-s">${tjSeiteHtml(t.dir)}</td><td class="c-set">${t.setup?escH(t.setup):'<i>–</i>'}</td><td class="r c-r">${(()=>{const r=tjR(t);return r==null?'–':`<span style="color:${tjFarbe(r)}">${tjRText(r)}</span>`;})()}</td><td class="r c-p"><b style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></td></tr>`).join('')}
+      ${neueste.map(t=>`<tr class="${tjKlasse(t)}" onclick="tjZeigen('${escJH(t.id)}')" title="Show all details"><td class="c-d">${escH(fmtDayShort(tjTagVon(t)))}${(t.cd?t.ct:t.t)?` <i>${escH(t.cd?t.ct:t.t)}</i>`:''}</td><td class="c-a"><b>${escH(tjName(t.a))}</b><span class="c-a-s">${tjSeiteHtml(t.dir)}</span></td><td class="c-s">${tjSeiteHtml(t.dir)}</td><td class="c-set">${t.setup?escH(t.setup):'<i>–</i>'}</td><td class="r c-r">${(()=>{const r=tjR(t);return r==null?'–':`<span style="color:${tjFarbe(r)}">${tjRText(r)}</span>`;})()}</td><td class="r c-p"><b style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></td></tr>`).join('')}
     </tbody></table></div>`:`<div class="tj-leertext"><i>No trades in this month yet</i><button class="btn g" onclick="tjNeu()">＋ Add trade</button></div>`}
   </div>`;
   el.innerHTML=tjOffenHtml()+leiste+tjKachelnHtml(st,sk,y,m)+eq+kal+liste;
@@ -450,7 +450,7 @@ function tjTagFenster(ds){
   const l=tjChrono(tjZu().filter(t=>tjTagVon(t)===ds)),st=tjStats(l);
   document.getElementById('tjdTitle').textContent=fmtDayHdr(ds);
   document.getElementById('tjdBody').innerHTML=`<div class="tjd-sum"><span><b>${st.n}</b> trade${st.n===1?'':'s'}</span><b style="color:${tjFarbe(st.net)}">${tjGeld(st.net)}</b></div>
-    <div class="tjd-liste">${l.map(t=>`<button class="tjd-z ${tjKlasse(t)}" onclick="tjTagZuTrade('${escJH(t.id)}')"><span class="tjd-a"><b>${escH(t.a)}</b>${tjSeiteHtml(t.dir)}${(t.cd?t.ct:t.t)?`<i>${escH(t.cd?t.ct:t.t)}</i>`:''}</span><b style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></button>`).join('')}</div>`;
+    <div class="tjd-liste">${l.map(t=>`<button class="tjd-z ${tjKlasse(t)}" onclick="tjTagZuTrade('${escJH(t.id)}')"><span class="tjd-a"><b>${escH(tjName(t.a))}</b>${tjSeiteHtml(t.dir)}${(t.cd?t.ct:t.t)?`<i>${escH(t.cd?t.ct:t.t)}</i>`:''}</span><b style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></button>`).join('')}</div>`;
   openM('mTradeDay');
 }
 function tjTagZuTrade(id){closeM('mTradeDay');tjZeigen(id);}
@@ -742,11 +742,11 @@ function tjDatumNeu(){
   tjEdEingabe(true);
 }
 function tjEdChart(){
-  const a=document.getElementById('tjAsset'),d=document.getElementById('tjDate');
-  // Titel = Name aus der Auswahlliste ("Copper"), nicht die Kennung ("COPPER")
-  const t=document.getElementById('tjChTitel'),o=a&&a.selectedOptions&&a.selectedOptions[0];
-  if(t)t.textContent=(a&&a.value.trim()?(o&&o.value?o.textContent.trim():a.value.trim()):'')||'Price chart';
-  tjChartBauen('tjChart',{asset:a?a.value:'',datum:d?d.value:'',edit:true});
+  const a=tjAssetWert(),d=document.getElementById('tjDate');
+  // Titel = Name ("Copper"), nicht die Kennung ("COPPER")
+  const t=document.getElementById('tjChTitel');
+  if(t)t.textContent=tjName(a)||'Price chart';
+  tjChartBauen('tjChart',{asset:a,datum:d?d.value:'',edit:true});
   if(_tjBreiteNach!=null){
     const st=TJ_CH.tjChart,w0=document.getElementById('tjW0');
     const i0=st&&w0?tjDatumIdx(st,w0.value):null;
@@ -819,12 +819,12 @@ function tjZeigen(id){
   document.getElementById('tjvTitle').textContent='Trade details';
   document.getElementById('tjvBody').innerHTML=`
     <div class="tjv-kopf ${tjKlasse(t)}">
-      <div class="tjv-kl"><div class="tjv-asset">${escH(t.a)} ${tjSeiteHtml(t.dir)}</div><div class="tjv-datum">${t.cd&&t.cd!==t.d?`Opened <b>${escH(fmtDayShort(t.d))}</b>${t.t?` <i>${escH(t.t)}</i>`:''} · Closed <b>${escH(fmtDayShort(t.cd))}</b>${t.ct?` <i>${escH(t.ct)}</i>`:''}`:`${escH(fmtDayHdr(tjTagVon(t)))}${(t.ct||t.t)?` · <i>${escH(t.ct||t.t)}</i>`:''}`}</div></div>
+      <div class="tjv-kl"><div class="tjv-asset">${escH(tjName(t.a))} ${tjSeiteHtml(t.dir)}</div><div class="tjv-datum">${t.cd&&t.cd!==t.d?`Opened <b>${escH(fmtDayShort(t.d))}</b>${t.t?` <i>${escH(t.t)}</i>`:''} · Closed <b>${escH(fmtDayShort(t.cd))}</b>${t.ct?` <i>${escH(t.ct)}</i>`:''}`:`${escH(fmtDayHdr(tjTagVon(t)))}${(t.ct||t.t)?` · <i>${escH(t.ct||t.t)}</i>`:''}`}</div></div>
       <div class="tjv-kr"><div class="tjv-erg">${tjErgebnis(t)}</div><b class="tjv-pnl" style="color:${tjFarbe(t.pnl)}">${tjGeld(t.pnl)}</b></div>
     </div>
     ${kacheln.length?`<div class="tjv-kacheln">${kacheln.map(([l,v])=>`<div class="tjv-k"><div class="tj-kl">${l}</div><div class="tjv-kv">${v}</div></div>`).join('')}</div>`:''}
     ${tjPreisleisteHtml(t)}
-    <div class="tjv-ch-kopf"><b>${escH(t.a)}</b> <i>daily · trade day marked</i></div>
+    <div class="tjv-ch-kopf"><b>${escH(tjName(t.a))}</b> <i>daily · trade day marked</i></div>
     <div id="tjvChart" class="tjv-chart"></div>
     ${Array.isArray(t.gp)&&t.gp.length?`<div class="tjv-gp">${t.gp.map(k=>gpTradeHtml(k,k.id,'Gameplan at entry')).join('')}</div>`:''}
     ${t.notes?`<div class="tjv-notiz"><div class="tj-kl">Notes</div><i>${escH(t.notes)}</i></div>`:''}`;
@@ -838,7 +838,7 @@ function tjDetailChart(t){
 function tjBearbeiten(){const id=_tjView;closeM('mTradeView');if(id)tjNeu(null,id);}
 function tjLoeschen(){
   const t=trades.find(x=>x.id===_tjView);if(!t)return;
-  if(!confirm(`Delete this trade?\n${t.a} · ${tjGeld(t.pnl)}`))return;
+  if(!confirm(`Delete this trade?\n${tjName(t.a)} · ${tjGeld(t.pnl)}`))return;
   const alt={...t};
   // Grabstein statt Entfernen - sonst holt der Merge ihn vom anderen Geraet zurueck.
   Object.keys(t).forEach(k=>{if(k!=='id')delete t[k];});
@@ -874,7 +874,7 @@ function tjAssetOptionen(akt){
   const wlP=(watchlistPairs()||[]).map(p=>p&&p.name).filter(n=>FX_PAIRS_AZ.includes(n));
   const wlA=watchlistedAssetIds(ids);
   const da=new Set([...wlP,...wlA]);
-  let h='<option value="" disabled hidden>Choose an asset</option>';
+  let h='<option value="" disabled hidden>Filter</option>';
   if(da.size)h+=`<optgroup label="Watchlist">${wlP.map(p=>opt(p)).join('')}${wlA.map(id=>opt(id,name(id))).join('')}</optgroup>`;
   const fx=FX_PAIRS_AZ.filter(p=>!da.has(p));
   if(fx.length)h+=`<optgroup label="FX Pairs">${fx.map(p=>opt(p)).join('')}</optgroup>`;
@@ -895,7 +895,46 @@ function tjAssetSetzen(a){
   const e=document.getElementById('tjAsset');if(!e)return;
   const v=String(a||'');
   if(v&&![...e.options].some(o=>o.value===v)){e.innerHTML=tjAssetOptionen(v);}
-  e.value=v;tjEdEingabe(true);
+  e.value=v;
+  const x=document.getElementById('tjAssetTxt');if(x)x.value=v?tjName(v):'';
+  tjEdEingabe(true);
+}
+// Geteiltes Feld (Nutzer 2026-11-17, iPad-Foto "Audnzd"): "links wo man reinschreibt und rechts
+// wo man den Filter oeffnen kann und wenn man links was reinschreibt wird das rechts im Filter
+// ausgewaehlt und da steht nicht mehr Filter und wenn man was im Filter auswaehlt wird der
+// Asset Name links ausgefuellt". Gespeichert wird die Kennung aus der Liste (Kurse, Gameplan),
+// angezeigt der Name. Passt nichts, gilt der getippte Text.
+const tjNorm=x=>String(x||'').toUpperCase().replace(/[\s/\-_.]/g,'');
+function tjAssetFinden(txt){
+  const n=tjNorm(txt);if(!n)return'';
+  const e=document.getElementById('tjAsset');if(!e)return'';
+  const os=[...e.options].filter(o=>o.value);
+  const o=os.find(o=>tjNorm(o.value)===n)||os.find(o=>tjNorm(o.textContent)===n);
+  if(o)return o.value;
+  const ali=TJ_ALIAS[n];
+  return ali&&os.some(o=>o.value===ali)?ali:'';
+}
+function tjAssetTippen(){
+  const x=document.getElementById('tjAssetTxt'),e=document.getElementById('tjAsset');if(!x||!e)return;
+  e.value=tjAssetFinden(x.value);
+  tjEdEingabe(true);
+}
+function tjAssetGewaehlt(){
+  const x=document.getElementById('tjAssetTxt'),e=document.getElementById('tjAsset');if(!x||!e)return;
+  if(e.value)x.value=tjName(e.value);
+  tjEdEingabe(true);
+}
+// Asset fuer Chart, Plan und Speichern: Wahl im Filter, sonst der getippte Text
+function tjAssetWert(){
+  const e=document.getElementById('tjAsset'),x=document.getElementById('tjAssetTxt');
+  return(e&&e.value)||(x&&x.value.trim())||'';
+}
+// Anzeige-Name einer gespeicherten Kennung (COPPER -> Copper, NAS -> Nasdaq)
+function tjName(a){
+  const v=String(a||'');if(!v)return'';
+  if(COT_NAME[v]&&!FX.includes(v))return COT_NAME[v];
+  const s=(syms||[]).find(x=>x&&x.id===v);
+  return s&&s.name&&!FX.includes(v)?s.name:v;
 }
 // ── Gameplan am Trade (Nutzer 2026-11-17) ───────────────────────────
 // "wenn ich ja ein Asset auswaehle direkt die These angehaengt wird zu dem Asset also den
@@ -917,7 +956,7 @@ function tjGpIds(asset){
 // Formular: Plan zum gewaehlten Asset. Beim Bearbeiten mit unveraendertem Asset die Kopie.
 function tjGpBox(){
   const box=document.getElementById('tjGpBox');if(!box)return;
-  const a=(document.getElementById('tjAsset')||{}).value||'';
+  const a=tjAssetWert();
   const alt=_tjEdit?trades.find(x=>x.id===_tjEdit):null;
   const kopie=alt&&Array.isArray(alt.gp)&&alt.a===a.trim()?alt.gp:null;
   const ids=kopie?kopie.map(k=>k.id):tjGpIds(a);
@@ -977,6 +1016,7 @@ function tjNeu(datum,id){
     if(t&&k==='cd'&&!tjOffen(t))v=t.cd||t.d;
     e.value=v==null?'':String(v);
   });
+  {const x=document.getElementById('tjAssetTxt');if(x)x.value=t?tjName(t.a):'';}
   tjStatus(document.getElementById('tjSt').value);
   const h=document.getElementById('tjDir');
   document.querySelectorAll('#mTrade .tj-seg-b[data-dir]').forEach(b=>{const on=b.dataset.dir===(h&&h.value||'long');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
@@ -988,6 +1028,7 @@ function tjNeu(datum,id){
 }
 function tjFormSpeichern(){
   const v={};TJ_FELDER.forEach((f,i)=>{const e=document.getElementById(f);v[TJ_SCHLUESSEL[i]]=e?String(e.value||'').trim():'';});
+  v.a=tjAssetWert();
   const fehl=[],zu=v.st==='closed';
   if(!/^\d{4}-\d{2}-\d{2}$/.test(v.d))fehl.push('Open date');
   if(!v.a)fehl.push('Asset');
@@ -1017,7 +1058,7 @@ function tjFormSpeichern(){
   return true;
 }
 // Fuer MODAL_GUARD_TABELLE (js/main.js) - Nachfrage bei ungespeicherten Eingaben.
-const TJ_GUARD={felder:TJ_FELDER,save:()=>tjFormSpeichern(),was:'This trade'};
+const TJ_GUARD={felder:[...TJ_FELDER,'tjAssetTxt'],save:()=>tjFormSpeichern(),was:'This trade'};
 
 // ── Offene Trades: Live-Stand + Abschluss ─────────────────────────────
 // Aktueller Kurs = letzter Wert der Tagesreihe (Feed stuendlich). Stand nur
@@ -1040,9 +1081,9 @@ function tjOffenKarte(t){
   const kl=L.zug==null?'':L.zug>0?' plus':L.zug<0?' minus':'';
   const stand=L.r!=null?`<b class="tjo-r" style="color:${tjFarbe(L.r)}">${tjRText(L.r)}</b>`:L.zug!=null?`<b class="tjo-r" style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b>`:'<b class="tjo-r" style="color:var(--t3)">–</b>';
   const zeile1=L.e==null?'<i>Add an entry price to track it live</i>':`Entry <b>${tjPreis(L.e)}</b> · Now <b>${L.j?tjPreis(L.j.v):'–'}</b>`;
-  const zeile2=L.zug!=null?`<b style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b> since entry${L.r==null?' · <i>add a stop for R</i>':''}`:(L.e!=null?(PRICE_DATA_FEED?`<i>No price data for ${escH(t.a)}</i>`:'<i>Loading prices</i>'):'');
+  const zeile2=L.zug!=null?`<b style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b> since entry${L.r==null?' · <i>add a stop for R</i>':''}`:(L.e!=null?(PRICE_DATA_FEED?`<i>No price data for ${escH(tjName(t.a))}</i>`:'<i>Loading prices</i>'):'');
   return`<div class="tjo${kl}" role="button" tabindex="0" onclick="tjAbschliessen('${escJH(t.id)}')" title="Close this trade">
-    <div class="tjo-kopf"><div class="tjo-a"><b>${escH(t.a)}</b>${tjSeiteHtml(t.dir)}</div>${stand}</div>
+    <div class="tjo-kopf"><div class="tjo-a"><b>${escH(tjName(t.a))}</b>${tjSeiteHtml(t.dir)}</div>${stand}</div>
     ${Array.isArray(t.gp)?t.gp.map(k=>gpTradeHtml(k,k.id,'',true)).join(''):''}
     <div class="tjo-z">${zeile1}</div>
     ${zeile2?`<div class="tjo-z">${zeile2}</div>`:''}
@@ -1078,7 +1119,7 @@ function tjDashHtml(){
     const zug=L.zug!=null?`<b style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b>`:'<i>–</i>';
     const r=L.r!=null?`<b class="db-pos-r" style="color:${tjFarbe(L.r)}">${tjRText(L.r)}</b>`:'<b class="db-pos-r" style="color:var(--t3)">–</b>';
     return`<div class="db-row db-pos-row" role="button" tabindex="0" onclick="showTab('journal')" title="Open the journal">
-      <span class="db-pos-a"><b>${escH(t.a)}</b>${tjSeiteHtml(t.dir)}</span>
+      <span class="db-pos-a"><b>${escH(tjName(t.a))}</b>${tjSeiteHtml(t.dir)}</span>
       <span class="db-pos-px"><i>Entry</i> <b>${tjPreis(L.e)}</b></span>
       <span class="db-pos-px"><i>Now</i> <b>${L.j?tjPreis(L.j.v):'–'}</b></span>
       <span class="db-pos-z">${zug}</span>
@@ -1100,7 +1141,7 @@ function tjZuInfo(t){
 function tjAbschliessen(id){
   const t=trades.find(x=>x.id===id&&!x.del&&tjOffen(x));if(!t)return;
   _tjZu=id;
-  document.getElementById('tjcTitle').textContent=`Close ${t.a} · ${tjSeite(t.dir)}`;
+  document.getElementById('tjcTitle').textContent=`Close ${tjName(t.a)} · ${tjSeite(t.dir)}`;
   const L=tjZuInfo(t);
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v==null?'':String(v);};
   set('tjcExit','');set('tjcPnl','');set('tjcDate',tjHeute());set('tjcTime',tjUhr());set('tjcNotes',t.notes||'');
@@ -1170,7 +1211,7 @@ if(typeof window!=='undefined'){
 export {trades,tjUndoSetzen,TJG_GUARD,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
   tjFuerCloud,tjGesendet,tjSendeFehler};
 if(typeof window!=='undefined'){
-  Object.assign(window,{tjGpFensterAuf,tjDatumNeu,tjAssetSetzen,tjGpBias,tjGpFensterSpeichern,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
+  Object.assign(window,{tjAssetTippen,tjAssetGewaehlt,tjGpFensterAuf,tjDatumNeu,tjAssetSetzen,tjGpBias,tjGpFensterSpeichern,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
     mergeTrades,tjUebernehmen,tjR,tjReihe,tjTagKlick,tjTagFenster,tjTagZuTrade,tjTagNeu,tjRichtung,tjExitAuf,tjEdEingabe,tjStreak,tjStats,
     tjStatus,tjAbschliessen,tjZuExit,tjZuErgebnis,tjZuSpeichern,tjZuBearbeiten,tjJetzt,tjLive,
     tjFuerCloud,tjCloudStand,tjJetztHochladen,tjSig});

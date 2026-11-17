@@ -13,6 +13,8 @@
 //  G) Asset-Auswahl wie jeder Asset-Filter (Nutzer 2026-11-17): Gruppen FX Pairs + Kategorien,
 //     Antippen oeffnet das 2-Spalten-Fenster, Wahl setzt das Asset und zeigt den Plan
 //  H) Open date geaendert -> das Werkzeug im Chart beginnt dort, seine Breite bleibt
+//  I) Asset-Feld geteilt: links tippen (Audnzd) waehlt rechts AUD/NZD, ohne Treffer "Filter";
+//     Wahl rechts (Copper) fuellt links den Namen, gespeichert wird die Kennung
 // --gegenprobe H: node check/tradegameplan.js --gegenprobe-datum (tjDatumNeu ohne Verschieben) -> H rot.
 // --gegenprobe: Pflicht-Pruefung entfernt -> C rot.
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
@@ -54,6 +56,18 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     if (!H0.w0) F.push(`${o} H: Testaufbau - Tipp setzt kein Werkzeug`);
     else if (H1.w0 !== '2026-10-01' || Math.abs((H1.w || 0) - H0.w) > 1) F.push(`${o} H: neues Open date verschiebt das Werkzeug nicht (Beginn ${H1.w0}, Breite ${H0.w} -> ${H1.w})`);
     if (H1.t !== 'Silver') F.push(`${o} G: Chart-Titel "${H1.t}" statt "Silver"`);
+    // I: geteiltes Feld - links tippen waehlt rechts aus, rechts waehlen fuellt links (Nutzer 2026-11-17)
+    await p.fill('#tjAssetTxt', 'Audnzd'); await p.waitForTimeout(300);
+    const I1 = await p.evaluate(() => { const e = document.getElementById('tjAsset'); return [e.value, e.selectedOptions[0] && e.selectedOptions[0].textContent]; });
+    if (I1[0] !== 'AUD/NZD') F.push(`${o} I: "Audnzd" links waehlt rechts nicht AUD/NZD (${I1})`);
+    await p.fill('#tjAssetTxt', 'xyz'); await p.waitForTimeout(200);
+    const I2 = await p.evaluate(() => { const e = document.getElementById('tjAsset'); return e.selectedOptions[0] ? e.selectedOptions[0].textContent : ''; });
+    if (I2 !== 'Filter') F.push(`${o} I: ohne Treffer zeigt der Filter "${I2}" statt "Filter"`);
+    const rI = await p.evaluate(() => { const b = document.getElementById('tjAsset').getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+    await p.mouse.click(rI[0], rI[1]); await p.waitForTimeout(400);
+    if (await p.evaluate(() => !!document.getElementById('gwPicker'))) { await p.click('#gwPicker button:has-text("Copper")'); await p.waitForTimeout(300); }
+    const I3 = await p.evaluate(() => [document.getElementById('tjAssetTxt').value, document.getElementById('tjAsset').value]);
+    if (I3[0] !== 'Copper' || I3[1] !== 'COPPER') F.push(`${o} I: Wahl im Filter fuellt links nicht den Namen (${I3})`);
     await p.evaluate(() => closeM('mTrade'));
     // A
     await p.evaluate(() => { gpBias('GOLD', 'bull'); gpText('GOLD', 'th', 'Real yields falling'); }); await p.waitForTimeout(600);

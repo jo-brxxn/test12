@@ -22339,3 +22339,11 @@ Nutzer: *„Ja maximale Historie“*.
 **Nachtrag (gleiche Version):** *„beim Trade hinzufügen der Asset Filter soll nach Kategorien sortiert sein wie jeder Asset Filter“* — `#tjAsset` ist jetzt eine Auswahlliste mit Gruppen (Watchlist, FX Pairs, dann SB_CATS ohne Einzelwährungen, Other) → öffnet automatisch das 2-Spalten-Fenster (`gwAuf`). Freitext entfällt; alte Trades mit frei getipptem Asset behalten es unter *Other* (`tjAssetSetzen`). `gwAuf` lässt versteckte Platzhalter-Optionen weg. Wächter `check/tradegameplan.js` G.
 
 **Nachtrag 2 (gleiche Version, iPad-Foto Copper):** *„wenn man das entry Datum eingibt soll sich diese Tool am Chart direkt dahin bewegen“* — Ursache: das per Tipp gesetzte Werkzeug merkt sich Beginn/Ende als Datum (`w0/w1`); ein neues *Open date* baute nur den Chart neu, `w0/w1` blieben. Jetzt `tjDatumNeu()`: Beginn = neues Datum, Breite in Kerzen bleibt (gemessen: 71,46 px vorher/nachher, Beginn 2026-10-20 → 2026-10-01). Chart-Titel zeigt den Namen aus der Liste („Copper“ statt „COPPER“). Wächter `check/tradegameplan.js` H, Gegenprobe `--gegenprobe-datum` → H rot.
+
+## 2026-11-17 — Trade: Asset-Feld geteilt (VERSION-CHECK-742)
+
+**Nutzer (iPad-Foto, „Audnzd“ getippt):** *„Das soll aufgeteilt werden in links wo man reinschreibt und rechts wo man den Filter öffnen kann und wenn man links was reinschreibt wird das rechts im Filter ausgewählt und da steht nicht mehr Filter und wenn man was im Filter auswählt wird der Asset Name links ausgefüllt“*
+- Links `#tjAssetTxt` (Tippen), rechts `#tjAsset` (Liste mit Gruppen → 2-Spalten-Fenster, Platzhalter *Filter*), Raster 1,5 : 1.
+- Tippen → Abgleich ohne Groß-/Kleinschreibung, Leer-/Schrägstriche (`Audnzd` → AUD/NZD; Name `copper` → COPPER; Kürzel über `TJ_ALIAS`, z. B. XAU → GOLD). Kein Treffer → rechts *Filter*, gespeichert wird der getippte Text.
+- Wahl rechts → links der Name (*Copper*). Gespeichert wird die Kennung (Kurse, Gameplan); Journal, Karten, Löschen-/Schließen-Dialog zeigen den Namen (`tjName`).
+- Wächter `check/tradegameplan.js` I.
