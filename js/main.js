@@ -156,6 +156,9 @@ const AI_GLYPHS = {
   BTC: '<circle cx="18" cy="12" r="8.8" fill="none" stroke="currentColor" stroke-width="1.9"/>'
     + '<path d="M15 7.8h4.2c2.1 0 3.3 1 3.3 2.5 0 1-.6 1.7-1.6 2 1.3.3 2.1 1.1 2.1 2.4 0 1.7-1.4 2.6-3.6 2.6H15Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>'
     + '<path d="M17.2 5.4v2.6M20.2 5.4v2.6M17.2 16.6v2.6M20.2 16.6v2.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  // Solana (2026-11-17): Muenze mit drei schraegen Balken.
+  SOL: '<circle cx="18" cy="12" r="8.8" fill="none" stroke="currentColor" stroke-width="1.9"/>'
+    + '<path d="M14.6 8.4h7.6l-1.4 1.6h-7.6ZM13.2 11.2h7.6l1.4 1.6h-7.6ZM14.6 14h7.6l-1.4 1.6h-7.6Z" fill="currentColor"/>',
   ETH: '<path d="M18 3 26.2 12 18 16.6 9.8 12Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>'
     + '<path d="M9.8 13.8 18 21l8.2-7.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>',
 };
@@ -598,7 +601,7 @@ const ALL_PAIRS=[
   'NZD/JPY','NZD/CAD','NZD/CHF',
   'CAD/JPY','CAD/CHF',
   'CHF/JPY',
-  'XAU/USD','XAG/USD','XCU/USD','WTI/USD','XNG/USD','BTC/USD','ETH/USD','SP500/USD','NAS/USD'
+  'XAU/USD','XAG/USD','XCU/USD','WTI/USD','XNG/USD','BTC/USD','SOL/USD','ETH/USD','SP500/USD','NAS/USD'
 ];
 
 // The 28 pure FX cross pairs (both legs are G8 currencies) – these are
@@ -618,7 +621,7 @@ let _kmOffen=null;
 
 const SB_CATS=[
   {l:'FX',ids:['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD']},
-  {l:'Crypto',ids:['BTC']},
+  {l:'Crypto',ids:['BTC','SOL']},
   {l:'Metals',ids:['GOLD','SILVER','COPPER']},
   {l:'Energy',ids:['OIL','NATGAS']},
   {l:'Indices',ids:['SP500','NAS','DAX']},
@@ -971,7 +974,7 @@ import {
 // daher gelten USD-Nachrichten/Makro-Rubriken auch für sie.
 // GER100 am 2026-09-27 entfernt (Nutzer: "Entfern ger100" - "Germany 100"
 // ist kein echter Index, es gab keine Kursreihe dafuer).
-const NONFX_IDS=['BTC','GOLD','SILVER','COPPER','OIL','NATGAS','SP500','NAS','DAX',...STOCK_IDS];
+const NONFX_IDS=['BTC','SOL','GOLD','SILVER','COPPER','OIL','NATGAS','SP500','NAS','DAX',...STOCK_IDS];
 // Kategorie eines Symbols ('fx','crypto','metal','energy','index','stock'): für
 // eingebaute Symbole aus ASSET_CLASS, für selbst hinzugefügte aus der beim
 // Hinzufügen gewählten Kategorie (customIds[].cls).
@@ -1046,7 +1049,7 @@ function syncAssetGroup(srcId){
   if(changed&&typeof stampRubOwners==='function')stampRubOwners();
   return changed;
 }
-const PAIR_CODE_TO_ID={'XAU':'GOLD','XAG':'SILVER','XCU':'COPPER','WTI':'OIL','XNG':'NATGAS','BTC':'BTC','ETH':'ETH'};
+const PAIR_CODE_TO_ID={'XAU':'GOLD','XAG':'SILVER','XCU':'COPPER','WTI':'OIL','XNG':'NATGAS','BTC':'BTC','SOL':'SOL','ETH':'ETH'};
 // Dashboard-Watchlist (Nutzer-Wunsch 2026-08-06): ein Non-FX-"Paar" in der
 // Watchlist (z.B. "XAU/USD") soll in der Zeile als das eigentliche Asset
 // (Gold, eigener Score/Bias) erscheinen, nicht als rohe Paar-Notation -
@@ -4520,7 +4523,7 @@ function mkR(texts,b){return texts.map(t=>({id:uid(),text:t,bias:b,imp:false}));
 const CB_MAP={USD:'the Fed (Federal Reserve)',EUR:'the ECB (European Central Bank)',GBP:'the BoE (Bank of England)',CHF:'the SNB (Swiss National Bank)',JPY:'the BoJ (Bank of Japan)',CAD:'the BoC (Bank of Canada)',AUD:'the RBA (Reserve Bank of Australia)',NZD:'the RBNZ (Reserve Bank of New Zealand)'};
 function cbName(id){return CB_MAP[id]||'the Fed (Federal Reserve)';}
 function cbDat(id){return cbName(id).replace(/^die /,'der ');}
-const ASSET_CLASS={USD:'fx',EUR:'fx',GBP:'fx',CHF:'fx',JPY:'fx',CAD:'fx',AUD:'fx',NZD:'fx',BTC:'crypto',GOLD:'metal',SILVER:'metal',COPPER:'metal',OIL:'energy',NATGAS:'energy',SP500:'index',NAS:'index',DAX:'index',
+const ASSET_CLASS={USD:'fx',EUR:'fx',GBP:'fx',CHF:'fx',JPY:'fx',CAD:'fx',AUD:'fx',NZD:'fx',BTC:'crypto',SOL:'crypto',GOLD:'metal',SILVER:'metal',COPPER:'metal',OIL:'energy',NATGAS:'energy',SP500:'index',NAS:'index',DAX:'index',
   USYIELD:'yield',DEYIELD:'yield',GBYIELD:'yield',CHYIELD:'yield',JPYIELD:'yield',CAYIELD:'yield',AUYIELD:'yield',NZYIELD:'yield'};
 STOCK_IDS.forEach(id=>{ASSET_CLASS[id]='stock';});
 
@@ -4594,6 +4597,12 @@ const DEF=[
   {id:'BTC',name:'BTC',full:'Bitcoin / USD',bias:'neu',
     genBull:mkR(['Fixed supply (21M cap) – deflationary by design','Institutional adoption: ETF inflows, corporate treasuries','Halving cycle: supply shock historically precedes bull runs'],'bull'),
     genBear:mkR(['High-beta risk asset: correlates with Nasdaq in risk-off','Regulatory risk: SEC actions, global exchange restrictions','No cash flows – valuation purely sentiment-driven'],'bear'),
+    rubrics:mkRubs(),noteRubs:[],notes:''},
+  // Nutzer 2026-11-17: "füg Solana zur Webseite hinzu". Krypto-Verbund mit BTC (symSyncGroup 'crypto'):
+  // Makro-Karten und Regeln gespiegelt, eigene COT (CME SOL 177741), Saison, Put/Call (BSOL).
+  {id:'SOL',name:'SOL',full:'Solana / USD',bias:'neu',
+    genBull:mkR(['Fast, cheap chain: high activity in payments, DeFi and stablecoins','Spot Solana ETFs open the door to institutional money','Higher beta than BTC – outsized gains when liquidity rises'],'bull'),
+    genBear:mkR(['Higher beta than BTC – falls harder in risk-off','Network outages in the past hurt trust','Token unlocks and staking supply can weigh on price'],'bear'),
     rubrics:mkRubs(),noteRubs:[],notes:''},
   {id:'GOLD',name:'Gold',full:'XAU/USD',bias:'bull',
     genBull:mkR(['Classic safe-haven and inflation hedge','Central banks globally buying gold – reserve diversification','Negative correlation with USD'],'bull'),
@@ -4820,6 +4829,11 @@ const MACRO_DATA={
     ron:{info:'BTC is a high-beta risk asset: in risk-on phases with rising global liquidity and risk appetite, BTC is often among the strongest gainers – outsized relative to equities.'},
     roff:{info:'In risk-off phases BTC usually correlates strongly with the Nasdaq and falls disproportionately – liquidation cascades on leveraged positions further amplify downside moves.'},
     extraInfo:'BTC reacts very sensitively to global USD liquidity: when the Fed balance sheet expands (QE) or real rates fall, risk appetite for cash-flow-less assets like BTC rises. A restrictive Fed (QT, high real rates) drains liquidity from the market and weighs on BTC disproportionately.'},
+  SOL:{extra:'Global USD liquidity & Fed balance sheet',
+    safe:{info:'SOL is no safe haven: in acute crises it trades as a high-beta risk asset, moving with BTC and the Nasdaq, usually harder than both.'},
+    ron:{info:'SOL is a high-beta risk asset: in risk-on phases with rising global liquidity and risk appetite, SOL is often among the strongest gainers – outsized relative to equities.'},
+    roff:{info:'In risk-off phases SOL usually correlates strongly with the Nasdaq and falls disproportionately – liquidation cascades on leveraged positions further amplify downside moves.'},
+    extraInfo:'SOL reacts very sensitively to global USD liquidity: when the Fed balance sheet expands (QE) or real rates fall, risk appetite for cash-flow-less assets like SOL rises. A restrictive Fed (QT, high real rates) drains liquidity from the market and weighs on SOL disproportionately.'},
   GOLD:{extra:'Real rates (US TIPS) & central bank gold buying',
     safe:{info:'Gold is THE classic safe haven par excellence – in geopolitical crises, financial market stress, or a loss of confidence in fiat currencies, capital structurally flows into gold.'},
     ron:{info:'In strong risk-on phases gold can underperform in the short term, as capital rotates into higher-yielding risk assets – but the effect is often dampened by structural central bank buying.'},
@@ -6167,13 +6181,16 @@ const ROH_VORLAGE={COPPER:'SILVER',NATGAS:'OIL'};
 function ensureBuiltinSyms(){
   if(!Array.isArray(syms))return;
   entfernteSymsBereinigen();
-  const have=new Set(syms.map(s=>s&&s.id));
+  const have=new Set(syms.map(s=>s&&s.id)),neu=[];
   DEF.forEach(d=>{if(have.has(d.id))return;const n={...d};
     // Copper/Natural Gas (2026-11-16): "Score gleich wie bei den anderen Metallen / wie bei Oel" -
     // die eigenen Zahnrad-Regeln der Vorlage mitnehmen (ohne eigene Regeln gilt deren Vorgabe).
     const v=ROH_VORLAGE[d.id]&&syms.find(s=>s&&s.id===ROH_VORLAGE[d.id]);
     if(v&&v.deriveRules)n.deriveRules=JSON.parse(JSON.stringify(v.deriveRules));
-    syms.push(n);});
+    syms.push(n);neu.push(d.id);});
+  // Solana (2026-11-17): neuer Krypto-Coin uebernimmt sofort den Stand des Krypto-Verbunds (BTC) -
+  // Makro-Karten, Regeln, Argumente; COT bleibt eigen (SYNC_EXCLUDE_RUBS).
+  if(neu.some(id=>isCrypto(id))&&have.has('BTC')){try{syncAssetGroup('BTC');}catch(e){}}
 }
 // ⚠ Nutzer-Bugreport 2026-09-06 ("bei AUD bei GDP steht out of date, aber es
 // gibt schon neue Daten, und es gibt auch keine Historie da"). Per Playwright
@@ -9252,6 +9269,15 @@ bars:`<svg viewBox="0 0 420 170" xmlns="http://www.w3.org/2000/svg">
  <ellipse cx="290" cy="156" rx="130" ry="10" fill="${F1}"/>
  ${[[190,150],[270,150],[350,150],[230,108],[310,108],[270,66]].map(([x,y])=>`<g transform="translate(${x} ${y})"><path d="M-40 0 L40 0 L30 -38 L-30 -38 Z" fill="${F2}" stroke="${ST}" stroke-width="2.2" stroke-linejoin="round"/><path d="M-30 -38 L30 -38 L24 -44 L-24 -44 Z" fill="${F1}" stroke="${ST}" stroke-width="2" stroke-linejoin="round"/><path d="M-18 -12 L18 -12 M-12 -22 L12 -22" stroke="${F3}" stroke-width="3" stroke-linecap="round"/></g>`).join('')}
 </svg>`,
+// Solana (2026-11-17): dieselbe Muenze, drei schraege Balken statt des Bitcoin-Zeichens.
+coinsol:`<svg viewBox="0 0 420 170" xmlns="http://www.w3.org/2000/svg">
+ <ellipse cx="300" cy="150" rx="104" ry="12" fill="${F1}"/>
+ <g transform="translate(345 112)"><ellipse rx="44" ry="12" fill="${F3}"/><rect x="-44" y="-14" width="88" height="14" fill="${F2}"/><ellipse cy="-14" rx="44" ry="12" fill="${F1}" stroke="${ST}" stroke-width="2"/></g>
+ <g transform="translate(345 90)"><ellipse rx="44" ry="12" fill="${F3}"/><rect x="-44" y="-14" width="88" height="14" fill="${F2}"/><ellipse cy="-14" rx="44" ry="12" fill="${F1}" stroke="${ST}" stroke-width="2"/></g>
+ <circle cx="250" cy="82" r="66" fill="${F2}"/><circle cx="246" cy="78" r="66" fill="${F1}" stroke="${ST}" stroke-width="3"/>
+ <circle cx="246" cy="78" r="52" fill="none" stroke="${F3}" stroke-width="3" stroke-dasharray="4 7"/>
+ <path d="M220 52h62l-12 14h-62Z M208 71h62l12 14h-62Z M220 90h62l-12 14h-62Z" fill="${F3}" stroke="${ST}" stroke-width="2" stroke-linejoin="round"/>
+</svg>`,
 // Erdgas (2026-11-16): LNG-Kugeltank + Flamme - das Fass passt nicht zu Gas.
 flamme:`<svg viewBox="0 0 420 170" xmlns="http://www.w3.org/2000/svg">
  <ellipse cx="290" cy="158" rx="118" ry="9" fill="${F1}"/>
@@ -9353,7 +9379,7 @@ const SEITEN_SZENEN=(()=>{const F1=MOTIV_F1,F2=MOTIV_F2,F3=MOTIV_F3,ST=MOTIV_ST,
 // links neben dem Namen). Aktien und Renditen bekommen Bulle & Baer.
 const MOTIV_JE_KLASSE={crypto:'coin',metal:'bars',energy:'barrel',index:'bullbear',stock:'bullbear',yield:'bullbear'};
 // Eigenes Motiv je Asset, wo das Klassen-Motiv nicht passt (2026-11-16).
-const MOTIV_JE_ASSET={NATGAS:'flamme',COPPER:'spule'};
+const MOTIV_JE_ASSET={NATGAS:'flamme',COPPER:'spule',SOL:'coinsol'};
 // Kopf-Flagge als STATISCHES, breites Band (Nutzer 2026-09-23: "die
 // gezeichnete Flagge also generell die ganzen Bilder oben rechts ohne
 // Animation ... laenglich und dann in den Hintergrund von der Farbe her
@@ -11477,7 +11503,7 @@ function abGrafikHtml(art,c){
     // braucht, findet sie unveraendert im COT-Tab.
     const id=abCotId(c.id);
     if(!id)return abTileZ('cot','COT Positioning','',
-      AB_LEER(`The CFTC publishes futures contracts, and there is none for ${escH(c.name||c.id)}. Covered: the eight FX majors plus Gold, Silver, WTI, BTC, S&amp;P 500 and Nasdaq.`));
+      AB_LEER(`The CFTC publishes futures contracts, and there is none for ${escH(c.name||c.id)}. Covered: the eight FX majors plus Gold, Silver, Copper, WTI, Natural Gas, BTC, SOL, S&amp;P 500 and Nasdaq.`));
     const s=COT_DATA.symbols[id];
     const m=cotMetrics(s);
     if(!m)return abTileZ('cot','COT Positioning','',AB_LEER('The latest COT report carries no usable long/short figures for this contract.'));
@@ -12497,7 +12523,7 @@ function updateSidebarSelection(){
 // sofort an den neuen Inhalt.
 // 1,0 s (Nutzer 2026-09-23: "Animation mindestens doppelt so lang" - vorher 0,5 s).
 const WISCH_MS=1000;
-const WISCH_VB={coin:'170 8 240 158',bars:'145 15 255 150',barrel:'190 12 215 152',flamme:'170 12 225 152',spule:'190 12 215 152',bullbear:'0 8 420 160',szene:'200 10 210 158'};
+const WISCH_VB={coin:'170 8 240 158',coinsol:'170 8 240 158',bars:'145 15 255 150',barrel:'190 12 215 152',flamme:'170 12 225 152',spule:'190 12 215 152',bullbear:'0 8 420 160',szene:'200 10 210 158'};
 const SEITE_SZENE={dash:'dashboard',pairs:'setups',watch:'watchlist',cal:'calendar',notes:'archive'};
 let _wischOv=null,_wischLaeuft=false,_wischBereit=false;  // _wischOv: gemerkter Stand zwischen wischStart und wischLos
 function wischErlaubt(){
@@ -13334,7 +13360,7 @@ function confirmDelSym(){
 // >=+3 bullish, <=-3 bearish, sonst neutral.
 function autoPairBias(pairName){
   const parts=(pairName||'').split('/');if(parts.length!==2)return'neu';
-  const codeToId={'XAU':'GOLD','XAG':'SILVER','XCU':'COPPER','WTI':'OIL','XNG':'NATGAS','BTC':'BTC','ETH':'ETH'};
+  const codeToId={'XAU':'GOLD','XAG':'SILVER','XCU':'COPPER','WTI':'OIL','XNG':'NATGAS','BTC':'BTC','SOL':'SOL','ETH':'ETH'};
   const bSym=syms.find(s=>s.id===(codeToId[parts[0]]||parts[0]));
   const qSym=syms.find(s=>s.id===(codeToId[parts[1]]||parts[1]));
   if(!bSym||!qSym)return'neu';
@@ -13505,7 +13531,7 @@ function recomputeAllSymBiases(){
 function recomputeAllPairBiases(){
   pairs.forEach(p=>{
     const parts=p.name.split('/');if(parts.length!==2)return;
-    const codeToId={'XAU':'GOLD','XAG':'SILVER','XCU':'COPPER','WTI':'OIL','XNG':'NATGAS','BTC':'BTC','ETH':'ETH'};
+    const codeToId={'XAU':'GOLD','XAG':'SILVER','XCU':'COPPER','WTI':'OIL','XNG':'NATGAS','BTC':'BTC','SOL':'SOL','ETH':'ETH'};
     const bSym=syms.find(s=>s.id===(codeToId[parts[0]]||parts[0]));
     const qSym=syms.find(s=>s.id===(codeToId[parts[1]]||parts[1]));
     if(bSym&&qSym)p.bias=autoPairBias(p.name);
@@ -18474,7 +18500,7 @@ function trendAssets(){
   // scoreHist-Verlauf hat wie jedes andere Asset.
   // Aktien bewusst NICHT (2026-11-13): ihr Score ist fast der des S&P 500 (dieselben USD-Karten);
   // 13 nahezu deckungsgleiche Linien verdeckten in Trends die Fokus-Linien (check/designregeln.js L).
-  return [...FX,'GOLD','SILVER','COPPER','OIL','NATGAS','BTC','SP500','NAS','DAX',...Object.keys(YIELD_CCY)].filter(id=>present.has(id));
+  return [...FX,'GOLD','SILVER','COPPER','OIL','NATGAS','BTC','SOL','SP500','NAS','DAX',...Object.keys(YIELD_CCY)].filter(id=>present.has(id));
 }
 // Alle Assets MIT Score (Score-Journal, Score-Verlauf) - Trends-Assets PLUS Aktien.
 // ⚠ Nicht trendAssets() dafuer nehmen: dort fehlen die Aktien bewusst (Anzeige).
@@ -18624,7 +18650,7 @@ function recordScoreHist(){
 // Taeglicher Netto-Verlauf (Risk assets − Safe havens) fuer das Mini-Chart in
 // der Risk-Sentiment-Karte, aus scoreHist abgeleitet - waechst von selbst um
 // einen Punkt, sobald recordScoreHist() einen neuen Tag erfasst hat.
-const RISK_ON_IDS=['AUD','NZD','SP500','NAS','BTC','DAX'],RISK_OFF_IDS=['JPY','CHF','GOLD'];
+const RISK_ON_IDS=['AUD','NZD','SP500','NAS','BTC','SOL','DAX'],RISK_OFF_IDS=['JPY','CHF','GOLD'];
 // Geteilte Risk-On/Off-Berechnung (Nutzer-Wunsch 2026-07-25: Dual-Source
 // vermeiden, dieselbe net>0.8/<-0.8-Schwelle ueberall) - genutzt vom
 // risk_sentiment-Dashboard-Widget, updateAuroraColors() und dem
@@ -19025,7 +19051,7 @@ function renderMatrixRoh(){
 // zudem mit dem Bias-Farbcode (z.B. USD-Blau ~ BC.bull-Blau). Gleiche
 // Lightness/Saettigung ueber alle 14 Werte, nur der Hue unterscheidet -
 // wirkt als zusammenhaengende Palette statt als bunte Ansammlung.
-const TREND_COLORS={USD:'#7c9cba',EUR:'#c9a26a',GBP:'#7fa88a',JPY:'#b97e7e',CHF:'#9788ad',CAD:'#6fa3a3',AUD:'#b5a571',NZD:'#bd8aa0',GOLD:'#c2a869',SILVER:'#98a0ab',COPPER:'#c27a4a',OIL:'#957f6c',NATGAS:'#5b8fd1',BTC:'#6f9aa8',SP500:'#a17690',NAS:'#8482ab'};
+const TREND_COLORS={USD:'#7c9cba',EUR:'#c9a26a',GBP:'#7fa88a',JPY:'#b97e7e',CHF:'#9788ad',CAD:'#6fa3a3',AUD:'#b5a571',NZD:'#bd8aa0',GOLD:'#c2a869',SILVER:'#98a0ab',COPPER:'#c27a4a',OIL:'#957f6c',NATGAS:'#5b8fd1',BTC:'#6f9aa8',SOL:'#8f7fc4',SP500:'#a17690',NAS:'#8482ab'};
 STOCK_IDS.forEach(id=>{if(!TREND_COLORS[id])TREND_COLORS[id]=STOCK_ACCENT[id];});
 // Yields-Kategorie: dieselbe Linienfarbe wie die zugrundeliegende Waehrung
 // (US Yield teilt sich USDs Farbton usw.) - die Legende unterscheidet ueber
@@ -19795,8 +19821,8 @@ function clearCotCcyFilter(){cotCcyFilter=[];cotScope='';renderCot();}
 let cotRefreshing=false;
 let cotRefreshNote='';         // kurzer Status-Hinweis nach manuellem Refresh
 let cotCdTimer=null;           // Countdown-Intervall (laeuft nur auf der COT-Seite)
-const COT_SYMS=['USD','EUR','GBP','JPY','CHF','CAD','AUD','NZD','GOLD','SILVER','COPPER','OIL','NATGAS','BTC','SP500','NAS'];
-const COT_NAME={USD:'USD',EUR:'EUR',GBP:'GBP',JPY:'JPY',CHF:'CHF',CAD:'CAD',AUD:'AUD',NZD:'NZD',GOLD:'Gold',SILVER:'Silver',COPPER:'Copper',OIL:'WTI Oil',NATGAS:'Natural Gas',BTC:'BTC',SP500:'S&P 500',NAS:'Nasdaq',DAX:'DAX',
+const COT_SYMS=['USD','EUR','GBP','JPY','CHF','CAD','AUD','NZD','GOLD','SILVER','COPPER','OIL','NATGAS','BTC','SOL','SP500','NAS'];
+const COT_NAME={USD:'USD',EUR:'EUR',GBP:'GBP',JPY:'JPY',CHF:'CHF',CAD:'CAD',AUD:'AUD',NZD:'NZD',GOLD:'Gold',SILVER:'Silver',COPPER:'Copper',OIL:'WTI Oil',NATGAS:'Natural Gas',BTC:'BTC',SOL:'SOL',SP500:'S&P 500',NAS:'Nasdaq',DAX:'DAX',
   USYIELD:'US Yield',DEYIELD:'DE Yield',GBYIELD:'GB Yield',CHYIELD:'CH Yield',JPYIELD:'JP Yield',CAYIELD:'CA Yield',AUYIELD:'AU Yield',NZYIELD:'NZ Yield'};
 // Lokaler Cache der zuletzt gesehenen Historie. Die stuendlich geschriebene
 // cot_data.json kann (z.B. direkt nach diesem Feature-Rollout, oder wenn der
@@ -19862,6 +19888,7 @@ const COT_MARKETS=[
   {id:'NZD',inc:/(NZ DOLLAR|NEW ZEALAND DOLLAR)/,exc:/MICRO/},
   {id:'USD',inc:/(U\.?S\.?\s*DOLLAR INDEX|USD INDEX)/,exc:/MICRO/},
   {id:'BTC',inc:/BITCOIN/,exc:/(MICRO|YIELD|ETHER|EVENT)/},
+  {id:'SOL',inc:/^SOL - CHICAGO/,exc:/(MICRO|NANO|PERP)/},
   {id:'GOLD',inc:/^GOLD - /,exc:/(MICRO|KILO)/},
   {id:'SILVER',inc:/^SILVER - /,exc:/MICRO/},
   {id:'COPPER',inc:/^COPPER- #1 - COMMODITY EXCHANGE/,exc:/MICRO/},
@@ -23603,11 +23630,11 @@ function setFearGreedRangeCustom(from,to){fearGreedCustomFrom=from||'';fearGreed
 // GER40/GER30/... (7 Kandidaten, siehe update-ff-calendar.yml) - Myfxbook
 // fuehrt den DAX-Index unter wechselndem Brokernamen, welcher davon
 // tatsaechlich ankommt entscheidet erst der Live-Fetch.
-const SENT_NONFX_SYMS=new Set(['XAUUSD','XAGUSD','BTCUSD','US500','NAS100','USOIL','GER40','GER30','DE40','DE30','GRXEUR','DAX40','DAX30']);
+const SENT_NONFX_SYMS=new Set(['XAUUSD','XAGUSD','BTCUSD','SOLUSD','US500','NAS100','USOIL','GER40','GER30','DE40','DE30','GRXEUR','DAX40','DAX30']);
 // Broker-Symbol -> unsere Asset-ID, fuer den Preis-Vergleich in der Retail-
 // Sentiment-Historie (priceSeriesFor/resolvePairPriceSeries erwarten unsere
 // IDs, nicht den Myfxbook-Symbolnamen).
-const SENT_NONFX_PRICE_ID={XAUUSD:'GOLD',XAGUSD:'SILVER',BTCUSD:'BTC',US500:'SP500',NAS100:'NAS',USOIL:'OIL',GER40:'DAX',GER30:'DAX',DE40:'DAX',DE30:'DAX',GRXEUR:'DAX',DAX40:'DAX',DAX30:'DAX'};
+const SENT_NONFX_PRICE_ID={XAUUSD:'GOLD',XAGUSD:'SILVER',BTCUSD:'BTC',SOLUSD:'SOL',US500:'SP500',NAS100:'NAS',USOIL:'OIL',GER40:'DAX',GER30:'DAX',DE40:'DAX',DE30:'DAX',GRXEUR:'DAX',DAX40:'DAX',DAX30:'DAX'};
 function sentSymPriceSeries(sym){
   const id=SENT_NONFX_PRICE_ID[sym];
   if(id)return priceSeriesFor(id);
@@ -24929,7 +24956,7 @@ function renderFearGreedCards(D){
   html+=card('Crypto Fear &amp; Greed','feargreed',cf?escH(cf.label||''):'',
     `<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
       <div style="flex:1;min-width:180px">${cf?sentGauge(Math.round(cf.value),0,100,'','','sentCryptoFG'):'<div style=\"color:var(--t3);font-size:var(--fs-sm)\">no data</div>'}</div>
-      <div style="flex:1;min-width:150px">${sentReadBadge(cfEv)}<div style="color:var(--t3);font-size:var(--fs-xs);margin-top:6px">Applies to: BTC${syms.find(s=>s.id==='ETH')?', ETH':''}. Source: <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener" style="color:var(--blue)">alternative.me ↗</a></div></div>
+      <div style="flex:1;min-width:150px">${sentReadBadge(cfEv)}<div style="color:var(--t3);font-size:var(--fs-xs);margin-top:6px">Applies to: BTC${syms.find(s=>s.id==='SOL')?', SOL':''}${syms.find(s=>s.id==='ETH')?', ETH':''}. Source: <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener" style="color:var(--blue)">alternative.me ↗</a></div></div>
     </div><div style="margin-top:8px">${sentSpark(cfFilteredSeries,0,100,25,75)}</div>`);
   const vx=D.vix,vxEv=sentEval('vix',vx);
   const vxFiltered=vx&&vx.series?filterDatesByRange(vx.series.map(e=>e[0]),fearGreedRange,fearGreedCustomFrom,fearGreedCustomTo):[];
@@ -25236,7 +25263,7 @@ function autoFetchSeasonality(){
 function setSeasAsset(v){seasAsset=v||'';renderSeasonality();}
 const SEAS_MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 // Anzeige-Reihenfolge = Reihenfolge der App-Listung (FX-Majors, dann Non-FX)
-const SEAS_ORDER=['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD','GOLD','SILVER','COPPER','OIL','NATGAS','BTC','ETH','SP500','NAS','DAX',...STOCK_IDS,'USYIELD'];
+const SEAS_ORDER=['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD','GOLD','SILVER','COPPER','OIL','NATGAS','BTC','SOL','ETH','SP500','NAS','DAX',...STOCK_IDS,'USYIELD'];
 // Seit 2026-10-27: Renditen (US 10Y) als Monatsaenderung in Basispunkten -
 // eine Rendite hat keinen Prozent-Return. Alles andere in Prozent.
 function seasFmt(v,unit){return(+v>0?'+':'')+(unit==='bp'?(+v).toFixed(1)+' bp':(+v).toFixed(2)+'%');}

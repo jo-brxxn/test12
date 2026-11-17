@@ -22361,3 +22361,16 @@ Nutzer: *„Ja maximale Historie“*.
 ## 2026-11-17 — Trade-Fenster schlanker (VERSION-CHECK-744)
 
 **Nutzer (iPad-Foto):** *„Entry und exit time kann komplett weg auch Notes und setup kann weg“* — *New trade*/*Edit trade*: Open time, Close time, Setup, Notes entfernt; *Close trade*: Close time, Notes entfernt; Open/Close date volle Breite. `TJ_FELDER` fasst `t`, `ct`, `setup`, `notes` nicht mehr an — **alte Trades behalten ihre Werte** (Details zeigen vorhandene Notes/Setup weiter an).
+
+## 2026-11-17 — Neues Asset Solana (VERSION-CHECK-745, Score-Modell 34)
+
+**Nutzer:** *„füg Solana zur Webseite hinzu“* — nach `docs/neues-asset.md`, Sonde `tools/krypto-sonde.mjs` (Workflow *Probe solana sources*, Lauf 2026-11-17):
+- **Kurse:** TradingView `COINBASE:SOLUSD` live (73,62), Yahoo `SOL-USD` Tageskurse seit 2020-04-10 (2413 Tage) → 3J-Backfill, 10J-Archiv, 4h-Trend (1h-Kerzen vorhanden).
+- **COT:** CME „SOL - CHICAGO MERCANTILE EXCHANGE“ Code 177741 (OI 10 712 am 2026-11-10); Micro/Nano/Perp ausgeschlossen (wie BTC).
+- **Put/Call:** BSOL (Bitwise Solana ETF, 6 Laufzeiten, OI Calls 28 765 / Puts 7 888) — liquider als GSOL/SOLZ/SSK/SOLT; Historie erst seit 2025.
+- **Saisonalität:** `SOL-USD` Monatskurse (seit 2020).
+- **Retail:** Myfxbook-Login in der Sonde gescheitert (HTML-Antwort) → `SOLUSD` in die Abrufliste aufgenommen; führt der Broker es nicht, bleibt die Kachel leer (nichts geschätzt).
+- **Kalender:** TradingView-Wirtschaftskalender hat keine Krypto-Termine (0 Treffer) → Makro-Termine des Krypto-Verbunds (USD) wie bei BTC; News-Alias `solana`.
+- **Score:** Krypto-Verbund mit BTC (Makro-Karten, Regeln, Argumente gespiegelt, beim Anlegen sofort übernommen), eigene COT/Saison/Trend, Crypto Fear & Greed wie BTC. Bestehende Scores unverändert.
+- **Symbol:** eigene Münze (violett→türkis, drei schräge Balken), einfarbige Glyphe, Kopfbild `coinsol`. Set-ups/Trends/Watchlist (`SOL/USD`), Aliasse (Trades, Schnellerfassung, Kalender).
+- Feed-Größe hochgerechnet: +≈34 KB `price_data.json` (641→≈675/900), +≈40 KB `price_hist.json`, Summe ≈3550/3700 KB — kein Deckel angehoben.

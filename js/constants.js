@@ -249,6 +249,18 @@ export const AI_SYMBOLS = {
     <path d="M17.2,4.6 h1.5 v2.6 h-1.5Z M19.6,4.6 h1.5 v2.6 h-1.5Z
              M17.2,16.9 h1.5 v2.6 h-1.5Z M19.6,16.9 h1.5 v2.6 h-1.5Z" fill="#fff"/>
     <g clip-path="url(#aiCoinClip)"><path class="ai-sheen-el" d="M-2,22 L6,2 L10,2 L2,22Z" fill="#fff" opacity=".38"/></g>`,
+
+  // Solana (2026-11-17): eigene Muenze - violett-tuerkiser Verlauf, drei schraege Balken.
+  SOL: `
+    <defs>
+      <linearGradient id="aiSolG" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0" stop-color="#7B3FE4"/><stop offset=".55" stop-color="#5A6FE0"/><stop offset="1" stop-color="#1FC7A8"/>
+      </linearGradient>
+    </defs>
+    <circle cx="18" cy="12" r="9.4" fill="url(#aiSolG)"/>
+    <circle cx="18" cy="12" r="9.4" fill="none" stroke="#fff" stroke-width=".7" opacity=".3"/>
+    <path d="M14.3,7.8 h8.4 l-1.6,1.9 h-8.4Z M12.7,11.1 h8.4 l1.6,1.9 h-8.4Z M14.3,14.4 h8.4 l-1.6,1.9 h-8.4Z" fill="#fff"/>
+    <g clip-path="url(#aiCoinClip)"><path class="ai-sheen-el" d="M-2,22 L6,2 L10,2 L2,22Z" fill="#fff" opacity=".38"/></g>`,
 };
 // Yields-Kategorie, grosser animierter Icon-Satz (Asset-Kopfzeile, Research-
 // Terminal-Sidebar, ...): dieselbe Verkleinern-plus-Abzeichen-Idee wie bei

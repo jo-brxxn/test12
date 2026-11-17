@@ -40,6 +40,7 @@ const QC_WORT = {
   NATGAS: ['natural gas', 'natgas', 'erdgas', 'xng', 'henry hub'],
   OIL: ['oil', 'oel', 'öl', 'wti', 'brent', 'crude'],
   BTC: ['btc', 'bitcoin'],
+  SOL: ['solana', 'sol'],
   SP500: ['sp500', 's&p', 'spx', 's&p500'],
   NAS: ['nas', 'nasdaq', 'ndx'],
   NVDA: ['nvda', 'nvidia'], AMD: ['amd'], INTC: ['intc', 'intel'], AAPL: ['aapl', 'apple'], GOOGL: ['googl', 'goog', 'google', 'alphabet'],

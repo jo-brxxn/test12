@@ -153,6 +153,7 @@ const SENT_SOURCE={
 // ohnehin die groesste Komponente des Stock-F&G ist).
 const SENT_MAP={
   BTC:[['Crypto Fear & Greed','cryptoFng']],
+  SOL:[['Crypto Fear & Greed','cryptoFng']],
   ETH:[['Crypto Fear & Greed','cryptoFng']],
   // AAII misst die Erwartung US-amerikanischer PRIVATanleger fuer den
   // AKTIENMARKT auf Sicht von sechs Monaten - deshalb speist es nur die
@@ -1372,7 +1373,7 @@ function countActiveInds(sym){
 }
 function openScoreInfoPair(pairName){
   const parts=(pairName||'').split('/');
-  const codeToId={XAU:'GOLD',XAG:'SILVER',XCU:'COPPER',WTI:'OIL',XNG:'NATGAS',BTC:'BTC',ETH:'ETH'};
+  const codeToId={XAU:'GOLD',XAG:'SILVER',XCU:'COPPER',WTI:'OIL',XNG:'NATGAS',BTC:'BTC',SOL:'SOL',ETH:'ETH'};
   const bSym=syms.find(s=>s.id===(codeToId[parts[0]]||parts[0]));
   const qSym=syms.find(s=>s.id===(codeToId[parts[1]]||parts[1]));
   const row=(l,v,sub)=>`<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:5px 8px;border:1px solid var(--bd2);border-radius:7px;margin-bottom:5px"><span><span style="font-weight:600">${escH(l)}</span>${sub?`<br><span style="color:var(--t3);font-size:var(--fs-xs)">${escH(sub)}</span>`:''}</span><span style="font-weight:700">${fmtScNum(v)}</span></div>`;
@@ -1927,7 +1928,7 @@ function symScoreCmp(sym){
 // anderen Metallen ... Naturalgas ... gleich wie bei Oel"): zwei neue Assets; NATGAS mit eigener Zeile
 // Gas Storage (EIA, woechentlich, halbes Gewicht, Abbau = bullish) wie OIL Oil Inventories. Die Scores der
 // bestehenden Assets aendern sich nicht.
-const SCORE_MODEL_VERSION=33;
+const SCORE_MODEL_VERSION=34;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.
@@ -1995,7 +1996,7 @@ function symStrengthMissing(sym){
 // Carry-Komponente.
 function pairScore(pairName){
   const parts=(pairName||'').split('/');if(parts.length!==2)return 0;
-  const codeToId={XAU:'GOLD',XAG:'SILVER',XCU:'COPPER',WTI:'OIL',XNG:'NATGAS',BTC:'BTC',ETH:'ETH'};
+  const codeToId={XAU:'GOLD',XAG:'SILVER',XCU:'COPPER',WTI:'OIL',XNG:'NATGAS',BTC:'BTC',SOL:'SOL',ETH:'ETH'};
   const bSym=syms.find(s=>s.id===(codeToId[parts[0]]||parts[0]));
   const qSym=syms.find(s=>s.id===(codeToId[parts[1]]||parts[1]));
   if(!bSym||!qSym)return 0;

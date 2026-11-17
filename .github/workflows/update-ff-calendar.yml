@@ -2975,7 +2975,7 @@ jobs:
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
           curl -sL -A "$UA" -H "Origin: https://www.tradingview.com" -H "Content-Type: application/json" \
-            --data '{"symbols":{"tickers":["TVC:DXY","FX:EURUSD","FX:GBPUSD","FX:USDCHF","FX:USDJPY","FX:USDCAD","FX:AUDUSD","FX:NZDUSD","TVC:GOLD","TVC:SILVER","NYMEX:CL1!","COMEX:HG1!","NYMEX:NG1!","COINBASE:BTCUSD","COINBASE:ETHUSD","SP:SPX","NASDAQ:NDX","TVC:DEU40","NASDAQ:NVDA","NASDAQ:AMD","NASDAQ:INTC","NASDAQ:AAPL","NASDAQ:GOOGL","NASDAQ:MSFT","NASDAQ:AMZN","NASDAQ:META","NASDAQ:TSLA","NASDAQ:AVGO","NYSE:ORCL","NASDAQ:PLTR","NASDAQ:CRWV"],"query":{"types":[]}},"columns":["close","open","high","low"]}' \
+            --data '{"symbols":{"tickers":["TVC:DXY","FX:EURUSD","FX:GBPUSD","FX:USDCHF","FX:USDJPY","FX:USDCAD","FX:AUDUSD","FX:NZDUSD","TVC:GOLD","TVC:SILVER","NYMEX:CL1!","COMEX:HG1!","NYMEX:NG1!","COINBASE:BTCUSD","COINBASE:ETHUSD","COINBASE:SOLUSD","SP:SPX","NASDAQ:NDX","TVC:DEU40","NASDAQ:NVDA","NASDAQ:AMD","NASDAQ:INTC","NASDAQ:AAPL","NASDAQ:GOOGL","NASDAQ:MSFT","NASDAQ:AMZN","NASDAQ:META","NASDAQ:TSLA","NASDAQ:AVGO","NYSE:ORCL","NASDAQ:PLTR","NASDAQ:CRWV"],"query":{"types":[]}},"columns":["close","open","high","low"]}' \
             "https://scanner.tradingview.com/global/scan" -o price_tv.json || true
           echo "=== TradingView scanner response (first 500 chars) ==="
           head -c 500 price_tv.json 2>/dev/null || echo "(missing)"
@@ -3000,6 +3000,7 @@ jobs:
               "NYMEX:CL1!":{id:"OIL",invert:false},
               "COINBASE:BTCUSD":{id:"BTC",invert:false},
               "COINBASE:ETHUSD":{id:"ETH",invert:false},
+              "COINBASE:SOLUSD":{id:"SOL",invert:false},   // Solana 2026-11-17 (Sonde tools/krypto-sonde.mjs)
               "SP:SPX":{id:"SP500",invert:false},
               "NASDAQ:NDX":{id:"NAS",invert:false},
               "TVC:DEU40":{id:"DAX",invert:false},
@@ -3024,6 +3025,7 @@ jobs:
               OIL:"https://www.tradingview.com/symbols/NYMEX-CL1!/",
               BTC:"https://www.tradingview.com/symbols/BTCUSD/",
               ETH:"https://www.tradingview.com/symbols/ETHUSD/",
+              SOL:"https://www.tradingview.com/symbols/SOLUSD/",
               SP500:"https://www.tradingview.com/symbols/SPX/",
               NAS:"https://www.tradingview.com/symbols/NDX/",
               DAX:"https://www.tradingview.com/symbols/TVC-DEU40/",
@@ -3430,7 +3432,7 @@ jobs:
                 // wechselnden Broker-Namen, deshalb mehrere Kandidaten wie bei den
                 // anderen Non-FX-Assets; bleibt leer (Karte zeigt "No data"), falls
                 // keiner davon bei Myfxbook existiert.
-                const NONFX=[["XAUUSD"],["XAGUSD"],["BTCUSD"],["US500","SP500","SPX500"],["NAS100","USTEC","NDX100","US100"],["USOIL","XTIUSD","WTIUSD","WTI"],["GER40","GER30","DE40","DE30","GRXEUR","DAX40","DAX30"]];
+                const NONFX=[["XAUUSD"],["XAGUSD"],["BTCUSD"],["SOLUSD"],["US500","SP500","SPX500"],["NAS100","USTEC","NDX100","US100"],["USOIL","XTIUSD","WTIUSD","WTI"],["GER40","GER30","DE40","DE30","GRXEUR","DAX40","DAX30"]];
                 const bySym={};
                 (Array.isArray(j.symbols)?j.symbols:[]).forEach(s=>{
                   const sym=String(s.name||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
@@ -3776,7 +3778,7 @@ jobs:
           curl -sL --max-time 15 -A "$UA" -c ycookies.txt "https://fc.yahoo.com" -o /dev/null || true
           CRUMB=$(curl -sL --max-time 15 -A "$UA" -b ycookies.txt -c ycookies.txt "https://query2.finance.yahoo.com/v1/test/getcrumb")
           echo "[debug] Yahoo crumb: len=${#CRUMB}"
-          declare -A PROXY=( [USD]=UUP [EUR]=FXE [GBP]=FXB [JPY]=FXY [CHF]=FXF [CAD]=FXC [AUD]=FXA [GOLD]=GLD [SILVER]=SLV [OIL]=USO [COPPER]=CPER [NATGAS]=UNG [BTC]=IBIT [SP500]=SPY [NAS]=QQQ )
+          declare -A PROXY=( [USD]=UUP [EUR]=FXE [GBP]=FXB [JPY]=FXY [CHF]=FXF [CAD]=FXC [AUD]=FXA [GOLD]=GLD [SILVER]=SLV [OIL]=USO [COPPER]=CPER [NATGAS]=UNG [BTC]=IBIT [SOL]=BSOL [SP500]=SPY [NAS]=QQQ )
           rm -f yopt_all.json
           echo "{" > yopt_all.json
           first=1
@@ -3925,7 +3927,7 @@ jobs:
           if [ -z "$MDTOKEN" ]; then
             echo "[debug] marketdata: MARKETDATA_TOKEN secret not set, skipping"
           else
-            declare -A PROXY=( [USD]=UUP [EUR]=FXE [GBP]=FXB [JPY]=FXY [CHF]=FXF [CAD]=FXC [AUD]=FXA [GOLD]=GLD [SILVER]=SLV [OIL]=USO [COPPER]=CPER [NATGAS]=UNG [BTC]=IBIT [SP500]=SPY [NAS]=QQQ )
+            declare -A PROXY=( [USD]=UUP [EUR]=FXE [GBP]=FXB [JPY]=FXY [CHF]=FXF [CAD]=FXC [AUD]=FXA [GOLD]=GLD [SILVER]=SLV [OIL]=USO [COPPER]=CPER [NATGAS]=UNG [BTC]=IBIT [SOL]=BSOL [SP500]=SPY [NAS]=QQQ )
             rm -f md_series_all.txt
             for ASSET in "${!PROXY[@]}"; do
               SYM="${PROXY[$ASSET]}"
@@ -4074,7 +4076,7 @@ jobs:
           CRUMB=$(curl -sL --max-time 15 -A "$UA" -b ypc.txt -c ypc.txt "https://query2.finance.yahoo.com/v1/test/getcrumb")
           echo "[debug] price backfill crumb: len=${#CRUMB}"
           # Asset -> Yahoo-Symbol (Underlying identisch zum TradingView-Schritt)
-          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F COPPER:HG=F NATGAS:NG=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI NVDA:NVDA AMD:AMD INTC:INTC AAPL:AAPL GOOGL:GOOGL MSFT:MSFT AMZN:AMZN META:META TSLA:TSLA AVGO:AVGO ORCL:ORCL PLTR:PLTR CRWV:CRWV"
+          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F COPPER:HG=F NATGAS:NG=F BTC:BTC-USD ETH:ETH-USD SOL:SOL-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI NVDA:NVDA AMD:AMD INTC:INTC AAPL:AAPL GOOGL:GOOGL MSFT:MSFT AMZN:AMZN META:META TSLA:TSLA AVGO:AVGO ORCL:ORCL PLTR:PLTR CRWV:CRWV"
           rm -f pbf_meta.txt
           for PAIR in $MAPS; do
             ASSET="${PAIR%%:*}"; SYM="${PAIR#*:}"
@@ -4196,7 +4198,7 @@ jobs:
             echo "[debug] price archive: fresh (< 7 days), skipping"; exit 0
           fi
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI"
+          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F BTC:BTC-USD ETH:ETH-USD SOL:SOL-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI"
           for PAIR in $MAPS; do
             ASSET="${PAIR%%:*}"; SYM="${PAIR#*:}"
             ENC=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$SYM")
@@ -4248,7 +4250,7 @@ jobs:
         continue-on-error: true
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F COPPER:HG=F NATGAS:NG=F BTC:BTC-USD ETH:ETH-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI"
+          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F COPPER:HG=F NATGAS:NG=F BTC:BTC-USD ETH:ETH-USD SOL:SOL-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI"
           for PAIR in $MAPS; do
             ASSET="${PAIR%%:*}"; SYM="${PAIR#*:}"
             ENC=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$SYM")
@@ -4263,7 +4265,7 @@ jobs:
             const r7=v=>Number(v.toPrecision(7));
             let alt={};try{alt=JSON.parse(fs.readFileSync("trend_data.json","utf8")).assets||{};}catch(e){}
             const out={};let ok=0;
-            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","COPPER","NATGAS","BTC","SP500","NAS","DAX"];   // Aktien bewusst nicht (2026-11-13: Feed-Groesse, siehe check/feedgroesse.js)
+            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","COPPER","NATGAS","BTC","SOL","SP500","NAS","DAX"];   // Aktien bewusst nicht (2026-11-13: Feed-Groesse, siehe check/feedgroesse.js)
             const FXL=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD"],NU=FXL.filter(c=>c!=="USD");
             // 1. Durchgang: je Asset die geschlossenen 4h-Bloecke.
             const KZ={},SYM={};
@@ -4403,7 +4405,7 @@ jobs:
           export SEAS_PAIRS="$PAIRS"
           # Nur ueberspringen, wenn heute schon geholt UND jedes Asset und jedes
           # Paar drinsteht - sonst wartete ein neu aufgenommenes bis morgen.
-          if node -e 'try{const d=JSON.parse(require("fs").readFileSync("seasonality_data.json","utf8"));const alle=["USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD","GOLD","SILVER","OIL","COPPER","NATGAS","BTC","ETH","SP500","NAS","DAX","USYIELD","NVDA","AMD","INTC","AAPL","GOOGL","MSFT","AMZN","META","TSLA","AVGO","ORCL"].every(k=>d.assets&&d.assets[k]);const paare=process.env.SEAS_PAIRS.split(" ").every(p=>d.pairs&&d.pairs[p.slice(0,3)+"/"+p.slice(3)]);process.exit(String(d.updated||"").slice(0,10)==="'"$TODAY"'"&&alle&&paare?0:1);}catch(e){process.exit(1);}'; then
+          if node -e 'try{const d=JSON.parse(require("fs").readFileSync("seasonality_data.json","utf8"));const alle=["USD","EUR","GBP","JPY","CHF","CAD","AUD","NZD","GOLD","SILVER","OIL","COPPER","NATGAS","BTC","SOL","ETH","SP500","NAS","DAX","USYIELD","NVDA","AMD","INTC","AAPL","GOOGL","MSFT","AMZN","META","TSLA","AVGO","ORCL"].every(k=>d.assets&&d.assets[k]);const paare=process.env.SEAS_PAIRS.split(" ").every(p=>d.pairs&&d.pairs[p.slice(0,3)+"/"+p.slice(3)]);process.exit(String(d.updated||"").slice(0,10)==="'"$TODAY"'"&&alle&&paare?0:1);}catch(e){process.exit(1);}'; then
             echo "[debug] seasonality: already fetched today, skipping"
             exit 0
           fi
@@ -4413,7 +4415,7 @@ jobs:
           echo "[debug] seasonality Yahoo crumb: len=${#CRUMB}"
           # Nicht-FX-Assets: ETF/Index/Kurs selbst. NZD/DAX/BTC (2026-09-25):
           # ^GDAXI ist der DAX, BTC-USD der Kurs (IBIT erst seit 01/2024).
-          declare -A PROXY=( [GOLD]=GLD [SILVER]=SLV [OIL]=USO [COPPER]=HG%3DF [NATGAS]=NG%3DF [BTC]=BTC-USD [ETH]=ETH-USD [SP500]=SPY [NAS]=QQQ [DAX]=%5EGDAXI [USYIELD]=%5ETNX [NVDA]=NVDA [AMD]=AMD [INTC]=INTC [AAPL]=AAPL [GOOGL]=GOOGL [MSFT]=MSFT [AMZN]=AMZN [META]=META [TSLA]=TSLA [AVGO]=AVGO [ORCL]=ORCL [PLTR]=PLTR [CRWV]=CRWV )
+          declare -A PROXY=( [GOLD]=GLD [SILVER]=SLV [OIL]=USO [COPPER]=HG%3DF [NATGAS]=NG%3DF [BTC]=BTC-USD [SOL]=SOL-USD [ETH]=ETH-USD [SP500]=SPY [NAS]=QQQ [DAX]=%5EGDAXI [USYIELD]=%5ETNX [NVDA]=NVDA [AMD]=AMD [INTC]=INTC [AAPL]=AAPL [GOOGL]=GOOGL [MSFT]=MSFT [AMZN]=AMZN [META]=META [TSLA]=TSLA [AVGO]=AVGO [ORCL]=ORCL [PLTR]=PLTR [CRWV]=CRWV )
           export SEAS_ALLE="USD EUR GBP JPY CHF CAD AUD NZD ${!PROXY[*]}"
           hole(){  # $1 Dateiname, $2 Yahoo-Symbol (URL-kodiert)
             HCODE=$(curl -sL --max-time 30 -A "$UA" -b yscookies.txt -H "Accept: application/json" -w "%{http_code}" "https://query1.finance.yahoo.com/v8/finance/chart/${2}?range=20y&interval=1mo&crumb=${CRUMB}" -o "$1" || echo "000")
@@ -4583,6 +4585,8 @@ jobs:
               {id:"NZD", code:"112741", inc:/(NZ DOLLAR|NEW ZEALAND DOLLAR)/, exc:/MICRO/},
               {id:"USD", code:"098662", inc:/(U\.?S\.?\s*DOLLAR INDEX|USD INDEX)/, exc:/MICRO/},
               {id:"BTC", code:"133741", inc:/BITCOIN/, exc:/(MICRO|NANO|PERP|YIELD|ETHER|EVENT)/},
+              // Solana 2026-11-17 (Sonde): CME "SOL - CHICAGO MERCANTILE EXCHANGE" 177741 (wie BTC 133741, nicht Micro/Nano/Perp)
+              {id:"SOL", code:"177741", inc:/^SOL - CHICAGO/, exc:/(MICRO|NANO|PERP)/},
               {id:"GOLD", code:"088691", inc:/^GOLD - /, exc:/(MICRO|KILO)/},
               {id:"SILVER", code:"084691", inc:/^SILVER - /, exc:/MICRO/},
               // 2026-11-16 (Sonde tools/rohstoff-sonde.mjs): COMEX-Kupfer und NYMEX-Henry-Hub
@@ -5747,6 +5751,7 @@ jobs:
             NATGAS:["natural gas","natgas","henry hub"],
             OIL:["oil","crude","opec","wti","brent","petroleum"],
             BTC:["bitcoin","btc","crypto","cryptocurrency"],
+            SOL:["solana"],
             SP500:["s&p 500","wall street","us stocks","equities","stock market"],
             NAS:["nasdaq","tech stocks","big tech"]
           };
