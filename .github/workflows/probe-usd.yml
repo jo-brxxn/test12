@@ -1,0 +1,13 @@
+# USD-Kurse je Asset (2026-11-17): Live- vs Historien-Quelle. Schreibt NICHTS.
+name: Probe usd quotes
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Quellen vergleichen
+        run: node tools/usd-sonde.mjs
