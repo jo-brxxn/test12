@@ -7962,7 +7962,7 @@ document.addEventListener('click',ev=>{
 // Steht die Nachfrage offen, fuehrt Escape zurueck ins Fenster (der
 // harmlose Weg, wie der Klick neben die Nachfrage).
 const ESC_MODALS=['mAddSym','mAssetCfg','mHist','mAddPair','mRename','mDelSym','mInfo','mCloud','mRateWatch','mIndLink','mBackup','mTrash',
-  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeView','mTradeDay','mTradeClose'];
+  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const nf=document.getElementById('mUnsaved');
