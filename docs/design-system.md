@@ -1530,6 +1530,12 @@ die eigene Aufzeichnung unter 20 Tagen liegt: ACT `n/20d`, Chart-Text
 „Building up“. Past-Liste: Filter „High impact“ in der Titelzeile vor dem ⓘ
 (derselbe Schalter wie „High-impact only“ der Kalender-Leiste).
 
+## Nichts überlappt — nirgends (Dauerregel seit 2026-11-17, 747)
+
+- Nutzer: *„Es darf zu keiner Zeit egal wo auf der Webseite Elemente überlappen“*.
+- Beschriftungen an Werten (Preisleiste, Level im Chart, Marker) nach **Pixeln** anordnen, nie nach Prozent/Reihenfolge: erste freie Reihe (`tjpAnordnen`), nahe Level auseinanderschieben (`nivAnordnen`); Punkte mit Mindestabstand.
+- Neue Ansicht → in den Rundgang von `check/ueberlappung.js` (C) aufnehmen.
+
 ## Fenster liegen zwischen Kopfzeile und Seitenleiste (Dauerregel seit 2026-11-17, 743)
 
 - Nutzer: *„alle Fenster die man öffnen kann sollen absofort innerhalb der oberen und linken Leiste sein damit man auch die Pfeiltaste da benutzen kann. Klickt man was anderes schließt es sich wenn der Inhalt nicht gespeichert ist wird wie normal gefragt“*

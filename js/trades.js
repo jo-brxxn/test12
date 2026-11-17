@@ -801,9 +801,59 @@ function tjPreisleisteHtml(t,jetzt){
   const marken=[['sl','SL',sl],['entry','Entry',e],[jetzt!=null?'now':'exit',jetzt!=null?'Now':'Exit',x],['tp','TP',tp]].filter(m=>m[2]!=null).sort((a,b)=>pos(a[2])-pos(b[2]));
   // Beschriftungen immer abwechselnd oben/unten: der Abstand in % sagt nichts
   // ueber Pixel (in einer 270-px-Karte ueberlappten SL und Entry bei 26 %).
+  // Lage ohne Pixel: abwechselnd oben/unten (erste Anzeige, ohne Skript). Die echte Anordnung
+  // macht tjpAnordnen() nach Pixeln - siehe dort.
   const mk=marken.map(([k,l,v],i)=>{const p=pos(v),unten=i%2===1;
-    return`<span class="tjp-mk k-${k}${unten?' unten':''}${p<10?' li':p>90?' re':''}" style="left:${p.toFixed(2)}%"><span class="tjp-pkt"></span><span class="tjp-lbl">${l} <b>${tjPreis(v)}</b></span></span>`;}).join('');
+    return`<span class="tjp-mk k-${k}${unten?' unten':''}${p<10?' li':p>90?' re':''}" data-p="${p.toFixed(3)}" style="left:${p.toFixed(2)}%"><span class="tjp-pkt"></span><span class="tjp-lbl">${l} <b>${tjPreis(v)}</b></span></span>`;}).join('');
   return`<div class="tjp${jetzt!=null?' klein':''}"><div class="tjp-bahn">${zone(sl,e,'risk')}${zone(e,tp,'reward')}${mk}</div></div>`;
+}
+// ── Keine Ueberlappung (Nutzer 2026-11-17, iPad-Foto: "SL 1.22149" lag auf "Entry 1.22825";
+// Dauerregel: "Es darf zu keiner Zeit egal wo auf der Webseite Elemente ueberlappen").
+// Gemessen: 390 px, AUD/NZD Long -> 20,3 x 15,4 px Ueberlappung. Ursache: die Beschriftungen
+// wechselten stur nach Reihenfolge oben/unten - SL und Entry landeten beide oben, egal wie nah
+// sie in Pixeln stehen. Jetzt nach PIXELN: Punkte halten Mindestabstand (Reihenfolge bleibt,
+// der genaue Wert steht in der Beschriftung), jede Beschriftung nimmt die erste freie Reihe
+// (oben 1, unten 1, oben 2, unten 2 ...), die Karte waechst um die belegten Reihen.
+const TJP_PKT=16,TJP_LUFT=8,TJP_REIHE=17;
+function tjpAnordnen(el){
+  const bahn=el.querySelector('.tjp-bahn');if(!bahn)return;
+  const W=bahn.clientWidth;if(!W)return;
+  const mks=[...bahn.querySelectorAll('.tjp-mk')];if(!mks.length)return;
+  // 1) Punkte: Mindestabstand, innerhalb der Bahn
+  const x=mks.map(m=>Math.max(0,Math.min(W,(+m.dataset.p||0)/100*W)));
+  for(let i=1;i<x.length;i++)x[i]=Math.max(x[i],x[i-1]+TJP_PKT);
+  for(let i=x.length-1;i>=0;i--){x[i]=Math.min(x[i],i===x.length-1?W:x[i+1]-TJP_PKT);}
+  for(let i=0;i<x.length;i++)x[i]=Math.max(x[i],i===0?0:x[i-1]+TJP_PKT);
+  mks.forEach((m,i)=>{m.style.left=x[i].toFixed(1)+'px';m.classList.remove('li','re','unten');});
+  // 2) Beschriftungen: erste freie Reihe
+  const reihen=[];let obenMax=0,untenMax=0;
+  mks.forEach((m,i)=>{
+    const l=m.querySelector('.tjp-lbl');if(!l)return;
+    const w=l.offsetWidth;
+    const L=Math.max(-6,Math.min(W+6-w,x[i]-w/2));
+    for(let r=0;;r++){
+      const belegt=reihen[r]||(reihen[r]=[]);
+      if(!belegt.some(([a,b])=>L<b+TJP_LUFT&&L+w+TJP_LUFT>a)){
+        belegt.push([L,L+w]);
+        const oben=r%2===0,stufe=r>>1;
+        l.style.left=(L-x[i]).toFixed(1)+'px';l.style.transform='none';l.style.right='auto';
+        if(oben){l.style.bottom=(18+stufe*TJP_REIHE)+'px';l.style.top='auto';obenMax=Math.max(obenMax,stufe);}
+        else{l.style.top=(18+stufe*TJP_REIHE)+'px';l.style.bottom='auto';untenMax=Math.max(untenMax,stufe);}
+        break;
+      }
+      if(r>12)break;
+    }
+  });
+  el.style.paddingTop=obenMax?`calc(var(--tjp-pt) + ${obenMax*TJP_REIHE}px)`:'';
+  el.style.paddingBottom=untenMax?`calc(var(--tjp-pb) + ${untenMax*TJP_REIHE}px)`:'';
+}
+function tjpAlle(root){(root||document).querySelectorAll('.tjp').forEach(tjpAnordnen);}
+let _tjpT=0;
+function tjpBald(){cancelAnimationFrame(_tjpT);_tjpT=requestAnimationFrame(()=>tjpAlle());}
+if(typeof window!=='undefined'){
+  try{new MutationObserver(ms=>{if(ms.some(m=>[...m.addedNodes].some(n=>n.nodeType===1&&(n.classList.contains('tjp')||n.querySelector&&n.querySelector('.tjp')))))tjpBald();}).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
+  addEventListener('resize',tjpBald);
+  try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(tjpBald);}catch(e){}
 }
 function tjZeigen(id){
   const t=trades.find(x=>x.id===id&&!x.del);if(!t)return;

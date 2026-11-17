@@ -8006,6 +8006,25 @@ document.addEventListener('pointerdown',ev=>{
   }
 },true);
 document.addEventListener('click',ev=>{if(_ovSchluck){_ovSchluck=false;ev.stopPropagation();ev.preventDefault();}},true);
+// ══ KEINE UEBERLAPPUNG: Gameplan-Level-Beschriftungen im Kerzen-Chart (2026-11-17) ══
+// Dauerregel (Nutzer 2026-11-17): "Es darf zu keiner Zeit egal wo auf der Webseite Elemente
+// ueberlappen". Die Beschriftungen stehen rechtsbuendig auf Hoehe ihrer Linie (Prozent der
+// Chart-Hoehe) - nahe Level deckten sich. Nach dem Einfuegen: nach Lage sortieren und jede so weit
+// verschieben, dass sie unter der vorigen beginnt (2 px Luft). Geprueft von check/ueberlappung.js.
+function nivAnordnen(){
+  const boxen=new Set([...document.querySelectorAll('.gp-niv')].map(e=>e.parentElement));
+  boxen.forEach(box=>{
+    const ls=[...box.querySelectorAll(':scope>.gp-niv')];if(ls.length<2)return;
+    ls.forEach(l=>{l.style.marginTop='';});
+    const rs=ls.map(l=>({l,r:l.getBoundingClientRect()})).sort((a,b)=>a.r.top-b.r.top);
+    let unten=-1e9;
+    rs.forEach(({l,r})=>{const d=unten+2-r.top;if(d>0){l.style.marginTop=d.toFixed(1)+'px';unten=r.bottom+d;}else unten=r.bottom;});
+  });
+}
+let _nivT=0;
+function nivBald(){cancelAnimationFrame(_nivT);_nivT=requestAnimationFrame(nivAnordnen);}
+try{new MutationObserver(ms=>{if(ms.some(m=>[...m.addedNodes].some(n=>n.nodeType===1&&(n.classList.contains('gp-niv')||n.querySelector&&n.querySelector('.gp-niv')))))nivBald();}).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
+addEventListener('resize',nivBald);
 // Escape schliesst das OBERSTE offene Fenster dieser Liste - ueber denselben
 // Schutz wie der Klick daneben. Bis 2026-09-30 setzte es display:none direkt
 // und nahm Eingaben in sieben Fenstern ohne Nachfrage mit.
@@ -10002,6 +10021,8 @@ function abKerzenBlock(reihe,titel,einheit,assetId,achse,feed,opt){
   // Beschriftung als HTML (das SVG wird gestreckt). Ausserhalb der Kursspanne:
   // nur ein Hinweis am Rand - die Skala wird dafuer NICHT gedehnt, sonst
   // schrumpfen die Kerzen.
+  // Ueberlappung (2026-11-17, gemessen: Entry 3859 / Break 3862 deckten sich 72 x 16 px): nivAnordnen()
+  // schiebt nahe Beschriftungen nach dem Einfuegen auseinander (Pixel, nicht Prozent).
   let nivHtml='';
   (opt&&opt.niveaus||[]).forEach(nv=>{
     const fmtN=zahl(nv.v);

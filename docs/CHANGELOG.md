@@ -22389,3 +22389,11 @@ Nutzer: *„Ja maximale Historie“*.
 - Forex: sobald eine Währung keine These hat, beide Teile — die vorhandene These steht schon drin, Änderungen gehen in den Gameplan.
 - *Skip*: Trade wird gespeichert, angehängt wird nur, was schon im Gameplan steht. *Save plan & trade* verlangt die These je Teil (Meldung nennt Skip).
 - Wächter `check/tradegameplan.js` J (AUD/CAD mit AUD-These: beide Teile, vorbelegt, nur 2 Felder, Skip speichert mit AUD-Plan).
+
+## 2026-11-17 — Nichts überlappt: Preisleiste + Gameplan-Linien (VERSION-CHECK-747)
+
+**Nutzer (iPad-Foto, offener Trade AUD/NZD):** *„Es darf zu keiner Zeit egal wo auf der Webseite Elemente überlappen“* (Dauerregel → `docs/design-system.md`, CLAUDE.md-Router).
+- **Reproduziert:** AUD/NZD Long, Entry 1.22825, SL 1.22149, TP 1.24338 → bei 390 px „SL 1.22149“ × „Entry 1.22825“ **20,3 × 15,4 px**. Ursache: Beschriftungen wechselten stur nach Reihenfolge oben/unten (SL, Now, Entry, TP → SL und Entry beide oben), unabhängig vom Pixelabstand.
+- **Fix:** `tjpAnordnen()` nach dem Einfügen (MutationObserver, Resize, Schriften geladen): Punkte mit 16 px Mindestabstand (Reihenfolge bleibt), jede Beschriftung in die erste freie Reihe (oben 1, unten 1, oben 2 …), Karte wächst um belegte Reihen. Danach 0 Überlappungen (390/1194 px).
+- **Fehlerklasse:** Gameplan-Linien im Kerzen-Chart — Entry 3859 / Break 3862 deckten sich **72 × 16 px** → `nivAnordnen()` schiebt nahe Beschriftungen auseinander. Rundgang über 8 Seiten (Text auf Text, sichtbarer Bereich innerhalb abschneidender Eltern): 0 weitere Funde.
+- Wächter `check/ueberlappung.js` (A–C, Gegenprobe → A rot).
