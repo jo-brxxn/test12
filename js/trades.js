@@ -43,7 +43,7 @@
 // zum Verschieben gedacht, kein Wert, der still im Hintergrund entsteht.
 import {escH,escJH,openM,closeM,uid,cloudAutoSync,markLsUpdatedSeen,markPrefEdit,curPage,syms,pairs,getCloudCfg,
   icn,achsenTicks,chartHoverWrap,attachChartHovers,tagesKerzen,ladeLogoHtml,abInfoBtn,
-  FX_PAIRS_AZ,COT_NAME,SB_CATS,watchlistedAssetIds,watchlistPairs} from './main.js';
+  FX_PAIRS_AZ,COT_NAME,SB_CATS,watchlistedAssetIds,watchlistPairs,trashAblegen,save} from './main.js';
 import {PRICE_DATA_FEED,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,autoFetchPriceData} from './data-feeds.js';
 import {fmtDayHdr,fmtDayShort,fmtStamp} from './calendar.js';
 import {FX,BC} from './constants.js';
@@ -900,7 +900,18 @@ function tjLoeschen(){
   Object.keys(t).forEach(k=>{if(k!=='id')delete t[k];});
   t.del=true;t.up=new Date().toISOString();
   if(!tjSpeichern()){Object.keys(t).forEach(k=>{if(k!=='id')delete t[k];});Object.assign(t,alt);return;}
+  try{trashAblegen('trade',{t:alt});save();}catch(e){}   // Papierkorb (757)
   closeM('mTradeView');renderJournal();
+}
+// Aus dem Papierkorb zurueck (757): Grabstein durch den alten Trade ersetzen, neuer Stempel.
+function tjWiederherstellen(alt){
+  if(!alt||!alt.id)return false;
+  let t=trades.find(x=>x.id===alt.id);
+  if(!t){t={id:alt.id};trades.push(t);}
+  Object.keys(t).forEach(k=>{if(k!=='id')delete t[k];});
+  Object.assign(t,alt,{up:new Date().toISOString()});delete t.del;
+  const ok=tjSpeichern();try{renderJournal();}catch(e){}
+  return ok;
 }
 
 // ── Editor ───────────────────────────────────────────────────────────
@@ -1268,7 +1279,7 @@ if(typeof window!=='undefined'){
     tjOffeneChartsAuffrischen();},160);});
 }
 
-export {trades,tjUndoSetzen,TJG_GUARD,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
+export {tjWiederherstellen,trades,tjUndoSetzen,TJG_GUARD,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
   tjFuerCloud,tjGesendet,tjSendeFehler};
 if(typeof window!=='undefined'){
   Object.assign(window,{tjGpSkip,tjAssetTippen,tjAssetGewaehlt,tjGpFensterAuf,tjDatumNeu,tjAssetSetzen,tjGpFensterSpeichern,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,

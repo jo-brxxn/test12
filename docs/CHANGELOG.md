@@ -22539,3 +22539,20 @@ Nutzer (Rückfrage zur History): *„Ich mach selber also muss es einen Button g
 - **Papierkorb:** allgemein über `trashAblegen()`; Trash-Seite zeigt den Typ „Gameplan“, Wiederherstellen setzt den Eintrag zurück.
 - **Trade-Kopie** (`gpKopie`) ohne History.
 - **Wächter:** neu `check/gphistory.js` (A–F), Gegenprobe → C rot.
+
+## 2026-11-17 — Papierkorb für alles Gelöschte (VERSION-CHECK-757)
+
+Nutzer: *„im Papierkorb soll alles reinkommen was auf der Webseite gelöscht wird“*.
+
+- **Neu im Papierkorb** über `trashAblegen()` (vorher nur Notizen/Ordner):
+  - Trade (`tjLoeschen`, Grabstein bleibt)
+  - eigener Kalender-Eintrag (`delCalEv`, Feed-Einträge nicht)
+  - Pair, Watchlist-Eintrag
+  - Preisalarm, Event-Alarm (drei Wege)
+  - Asset, Asset-Karte, Indikator
+  - Dashboard-Karte
+  - Gameplan-History (756)
+- **Wiederherstellen:** `trashZurueck()` je Art; ein Trade ersetzt seinen Grabstein mit neuem Stempel (`tjWiederherstellen`).
+- **Trash-Seite:** zeigt Typ und lesbaren Namen (z. B. „EUR/USD · long · 2026-11-10“, „Price alert: EUR · above · 1.2“).
+- **Fund beim Testen:** `trades.js` importierte `save()` nicht. Der Papierkorb-Eintrag eines Trades wäre ohne nächstes Speichern nicht auf die Platte gekommen. Import ergänzt.
+- **Wächter:** neu `check/papierkorb.js` (12 Arten über die echten Löschwege), Gegenprobe → rot.

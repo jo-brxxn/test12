@@ -17,7 +17,7 @@ import {scoreJournal,loadScoreJournal,jrErfassen,jrBootFertig,jrSperren,jrFreige
 import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL_RESEARCH_MATCHERS,isScoreDrivingEvent,periodLabel} from './event-matchers.js';
 // Trading Journal: eigene Trades im Monatskalender (Nutzer-Wunsch 2026-10-24,
 // siehe Kopf von trades.js). Zirkulaerer Import wie bei journal.js.
-import {trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,TJ_GUARD,TJ_GUARD_ZU,TJG_GUARD,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
+import {tjWiederherstellen,trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,TJ_GUARD,TJ_GUARD_ZU,TJG_GUARD,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 import {gameplans,gpRein,gpSetzeAlle,gpVereinen,gpLeisteHtml,gpNiveaus,renderGameplan,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpHistZurueck} from './gameplan.js';
@@ -6313,6 +6313,19 @@ setInterval(()=>{if(document.visibilityState!=='hidden')saveLocalBackup('Automat
 function trashEntryLabel(t){
   if(!t||!t.data)return t&&t.kind==='folder'?'Folder':'Note';
   if(t.kind==='gphist'){const e=t.data.e||{};return(t.data.asset||'')+' · '+(e.th||'Gameplan').slice(0,80);}
+  const d=t.data;
+  switch(t.kind){
+    case'trade':return[(d.t&&d.t.a)||'Trade',d.t&&d.t.dir,d.t&&d.t.d].filter(Boolean).join(' · ');
+    case'calev':return[(d.e&&d.e.name)||'Event',d.e&&d.e.date].filter(Boolean).join(' · ');
+    case'pair':return(d.p&&(d.p.name||d.p.id))||'Pair';
+    case'watch':return d.name||'Watchlist entry';
+    case'palert':return[(d.a&&d.a.target)||'Price alert',d.a&&d.a.dir,d.a&&d.a.level].filter(Boolean).join(' · ');
+    case'ealert':return(d.a&&(d.a.name||d.a.msg||d.a.evKey))||'Event alert';
+    case'sym':return(d.s&&(d.s.name||d.s.id))||'Asset';
+    case'rub':return[d.sym,d.r&&d.r.name].filter(Boolean).join(' · ');
+    case'ind':return[d.sym,d.rub,d.i&&d.i.name].filter(Boolean).join(' · ');
+    case'widget':return(d.w&&(d.w.title||d.w.type))||'Dashboard card';
+  }
   if(t.kind==='folder')return t.data.name||'Folder';
   return t.data.title||researchTitleFrom(t.data.body)||'Note';
 }
@@ -6338,11 +6351,37 @@ function openTrashM(){
   }catch(e){}
   openM('mTrash');
 }
+// Papierkorb -> zurueck fuer alles ausser Notizen/Gameplan (757). true = zurueckgelegt.
+function trashZurueck(t){
+  const d=t.data||{},neu=x=>x&&x.id!=null;
+  switch(t.kind){
+    case'trade':return tjWiederherstellen(d.t);
+    case'calev':if(neu(d.e)&&!calEvts.some(e=>e.id===d.e.id))calEvts.push(d.e);return true;
+    case'pair':if(neu(d.p)&&!pairs.some(x=>x.id===d.p.id))pairs.push(d.p);return true;
+    case'watch':if(d.name)setWatched(d.name,true);return true;
+    case'palert':if(neu(d.a)&&!priceAlerts.some(x=>x.id===d.a.id))priceAlerts.push(d.a);return true;
+    case'ealert':if(neu(d.a)&&!eventAlerts.some(x=>x.id===d.a.id))eventAlerts.push(d.a);return true;
+    case'sym':
+      if(!d.s||!d.s.id)return false;
+      if(!syms.some(s=>s.id===d.s.id))syms.splice(Math.min(syms.length,Math.max(0,+d.pos||0)),0,d.s);
+      if(d.c&&!customIds.some(c=>c.id===d.c.id))customIds.push(d.c);
+      return true;
+    case'rub':{const c=syms.find(s=>s.id===d.sym);if(!c||!d.r)return false;if(!Array.isArray(c.rubrics))c.rubrics=[];
+      if(!c.rubrics.some(r=>r.name===d.r.name))c.rubrics.splice(Math.min(c.rubrics.length,+d.pos||0),0,d.r);return true;}
+    case'ind':{const c=syms.find(s=>s.id===d.sym),r=c&&(c.rubrics||[]).find(x=>x.name===d.rub);if(!r||!d.i)return false;if(!Array.isArray(r.indicators))r.indicators=[];
+      if(!r.indicators.some(x=>x.id===d.i.id))r.indicators.splice(Math.min(r.indicators.length,+d.pos||0),0,d.i);return true;}
+    case'widget':if(!d.w)return false;if(!widgets.some(w=>w.id===d.w.id))widgets.push(d.w);dashRemovedTypes=dashRemovedTypes.filter(x=>x!==d.w.type);return true;
+  }
+  return false;
+}
 function restoreTrashItem(id){
   const t=(research.trash||[]).find(x=>x.id===id);
   if(!t)return;
   pushU();
   if(t.kind==='gphist'){gpHistZurueck(t.data);}
+  else if(['trade','calev','pair','watch','palert','ealert','sym','rub','ind','widget'].includes(t.kind)){
+    if(!trashZurueck(t)){alert('Could not restore this item - its place no longer exists.');return;}
+  }
   else if(t.kind==='folder'){
     const f={...t.data};
     // Elternordner fehlt (nicht mitwiederhergestellt)? An die Wurzel haengen
@@ -12807,7 +12846,7 @@ function togRubCollapse(ri){const r=getRub(ri);if(!r)return;r.collapsed=!r.colla
 // setzen. Den Indikator gibt es nicht mehr, also auch nichts mehr zu
 // setzen - stehengelassene Bedienelemente ohne Wirkung sind schlimmer als
 // gar keine (Regel 6).
-function delRub(ri){const c=getSym();const r=c&&c.rubrics&&c.rubrics[ri];if(!confirm(`Really delete "${r?r.name:'this card'}"?`))return;pushU();if(c&&c.rubrics)c.rubrics.splice(ri,1);save();renderDetail();}
+function delRub(ri){const c=getSym();const r=c&&c.rubrics&&c.rubrics[ri];if(!confirm(`Really delete "${r?r.name:'this card'}"?`))return;pushU();if(c&&c.rubrics){trashAblegen('rub',{sym:c.id,r:JSON.parse(JSON.stringify(r)),pos:ri});c.rubrics.splice(ri,1);}save();renderDetail();}
 function mvRub(ri,d){
   const c=getSym();if(!c||!c.rubrics)return;
   pushU();
@@ -13106,7 +13145,7 @@ function syncMacroIndAddRemove(ri,action,name){
     }
   });
 }
-function delInd(ri,ii){const r=getRub(ri);const ind=r&&r.indicators&&r.indicators[ii];if(!confirm(`Really delete "${ind?ind.name:'this indicator'}"?`))return;pushU();r.indicators.splice(ii,1);if(ind)syncMacroIndAddRemove(ri,'del',ind.name);syncMacroRub(ri);_flipCauseTag='structure';recomputeAuto();_flipCauseTag=null;save();renderSidebar();renderDetail();if(curPage==='dash')renderDash();else if(curPage==='pairs')renderPairs();}
+function delInd(ri,ii){const r=getRub(ri);const ind=r&&r.indicators&&r.indicators[ii];if(!confirm(`Really delete "${ind?ind.name:'this indicator'}"?`))return;pushU();if(ind)trashAblegen('ind',{sym:(getSym()||{}).id,rub:r.name,i:JSON.parse(JSON.stringify(ind)),pos:ii});r.indicators.splice(ii,1);if(ind)syncMacroIndAddRemove(ri,'del',ind.name);syncMacroRub(ri);_flipCauseTag='structure';recomputeAuto();_flipCauseTag=null;save();renderSidebar();renderDetail();if(curPage==='dash')renderDash();else if(curPage==='pairs')renderPairs();}
 function mvInd(ri,ii,d){const r=getRub(ri);if(!r||!r.indicators)return;pushU();mvArr(r.indicators,ii,d);syncIndOrderGlobal(ri);syncMacroRub(ri);save();renderDetail();}
 function addInd(ri){
   const inp=document.getElementById('ind-'+ri);if(!inp)return;const v=inp.value.trim();if(!v)return;
@@ -13286,7 +13325,8 @@ function openDelSym(id){
 }
 function confirmDelSym(){
   if(!_delSymId)return;
-  pushU();syms=syms.filter(s=>s.id!==_delSymId);customIds=customIds.filter(c=>c.id!==_delSymId);
+  pushU();{const i=syms.findIndex(s=>s.id===_delSymId);if(i>=0)trashAblegen('sym',{s:JSON.parse(JSON.stringify(syms[i])),c:customIds.find(c=>c.id===_delSymId)||null,pos:i});}
+  syms=syms.filter(s=>s.id!==_delSymId);customIds=customIds.filter(c=>c.id!==_delSymId);
   if(selId===_delSymId)selId=syms[0]?.id||'USD';
   _delSymId=null;closeM('mDelSym');save();renderSidebar();renderDetail();
 }
@@ -15100,6 +15140,7 @@ function watchEntfernen(name){
   try{
     pushU();
     setWatched(name,false);
+    trashAblegen('watch',{name});
     save();
   }catch(e){alert('Could not remove '+name+' from the watchlist: '+(e&&e.message||e));return;}
   if(curPage==='pairs')renderPairs();
@@ -15453,7 +15494,7 @@ try{window.addEventListener('resize',()=>requestAnimationFrame(()=>{if(curPage==
 // aufgerufen werden (Dashboard-Asset-Zeilen, Paar-Overview-Kopf).
 function togSymMark(id){const s=syms.find(x=>x.id===id);if(s)toggleWatch(watchPairNameForAsset(s.id));}
 function movePair(id,catId){const p=pairs.find(x=>x.id===id);if(p){pushU();p.catId=catId;save();renderPairs();if(curPage==='dash')renderDash();}}
-function delPair(id){pushU();pairs=pairs.filter(x=>x.id!==id);save();renderPairs();if(curPage==='dash')renderDash();}
+function delPair(id){pushU();const pp=pairs.find(x=>x.id===id);if(pp)trashAblegen('pair',{p:{...pp}});pairs=pairs.filter(x=>x.id!==id);save();renderPairs();if(curPage==='dash')renderDash();}
 
 // ══ CALENDAR ══════════════════════════════════════════════════════
 // Scrollstand halten - WebKit kuerzt ihn beim innerHTML-Austausch (siehe
@@ -15481,7 +15522,7 @@ function addCalEv(){
   pushU();calEvts.push({id:uid(),name,date,time:document.getElementById('evTime').value.trim(),currencies:document.getElementById('evCcy').value.trim(),impact:document.getElementById('evImpact').value,forecast:document.getElementById('evForecast').value.trim(),previous:document.getElementById('evPrevious').value.trim(),actual:document.getElementById('evActual').value.trim(),notes:document.getElementById('evNotes').value.trim()});
   ['evName','evCcy','evTime','evForecast','evPrevious','evActual','evNotes'].forEach(id=>{document.getElementById(id).value='';});
   document.getElementById('evDate').value='';save();renderCalendar();}
-function delCalEv(id){pushU();calEvts=calEvts.filter(e=>e.id!==id);save();renderCalendar();}
+function delCalEv(id){pushU();const e=calEvts.find(x=>x.id===id);if(e&&e.src!=='ff')trashAblegen('calev',{e:{...e}});calEvts=calEvts.filter(e=>e.id!==id);save();renderCalendar();}
 
 // ── EVENT-ALARME: Modal (Bell-Button in calRowHtml oeffnet dies) ────────
 // Der eigentliche Versand passiert serverseitig (event-alerts.yml), der
@@ -15530,6 +15571,7 @@ function renderEvtAlertList(){
 }
 function deleteEvtAlertById(id){
   pushU();
+  eventAlerts.filter(a=>a.id===id).forEach(a=>trashAblegen('ealert',{a:{...a}}));
   eventAlerts=eventAlerts.filter(a=>a.id!==id);
   save();renderEvtAlertList();rerender();
 }
@@ -15610,6 +15652,7 @@ function saveEvtAlert(){
 }
 function removeEvtAlert(){
   pushU();
+  eventAlerts.filter(a=>a.evKey===_evtAlertKey).forEach(a=>trashAblegen('ealert',{a:{...a}}));
   eventAlerts=eventAlerts.filter(a=>a.evKey!==_evtAlertKey);
   save();closeM('mEvtAlert');rerender();
 }
@@ -15658,6 +15701,7 @@ function saveCustomEvtAlert(){
 function removeCustomEvtAlert(){
   if(!_evtAlertCustomEditId)return;
   pushU();
+  eventAlerts.filter(a=>a.id===_evtAlertCustomEditId).forEach(a=>trashAblegen('ealert',{a:{...a}}));
   eventAlerts=eventAlerts.filter(a=>a.id!==_evtAlertCustomEditId);
   save();closeM('mEvtAlertCustom');rerender();
 }
@@ -15723,7 +15767,7 @@ function createPriceAlert(){
   document.getElementById('paLevel').value='';
   renderPriceAlertList();
 }
-function delPriceAlert(id){pushU();priceAlerts=priceAlerts.filter(a=>a.id!==id);save();renderPriceAlertList();}
+function delPriceAlert(id){pushU();const pa=priceAlerts.find(a=>a.id===id);if(pa)trashAblegen('palert',{a:{...pa}});priceAlerts=priceAlerts.filter(a=>a.id!==id);save();renderPriceAlertList();}
 function renderPriceAlertList(){
   const el=document.getElementById('paList');if(!el)return;
   if(!(priceAlerts||[]).length){el.innerHTML=`<div class="dw-empty" style="padding:10px">No price alerts yet.</div>`;return;}
@@ -16534,7 +16578,7 @@ function rerenderNotesHostRoh(){
 // (gespeicherte Tab-Stapel halten). 30 Tage, je Eintrag Restore / Delete forever.
 function datumKurz(iso){const d=new Date(iso);return isNaN(d)?'':d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
 function trashArt(t){return t.kind==='note'?(t.data&&t.data.cb?'Bank note':notizIstChart(t.data)?'Chart note':'Note'):t.kind==='folder'?'Folder':(TRASH_ARTEN[t.kind]||t.kind);}
-const TRASH_ARTEN={gphist:'Gameplan'};
+const TRASH_ARTEN={gphist:'Gameplan',trade:'Trade',calev:'Calendar event',pair:'Pair',watch:'Watchlist',palert:'Price alert',ealert:'Event alert',sym:'Asset',rub:'Card',ind:'Indicator',widget:'Dashboard card'};
 function renderResearch(){
   const wrap=document.getElementById('resWrap');if(!wrap)return;
   const l=(research.trash||[]).filter(t=>t&&t.kind!=='folder').slice().sort((a,b)=>String(b.delAt).localeCompare(String(a.delAt)));
@@ -18316,6 +18360,7 @@ import {pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSk
 function delWidget(id){
   pushU();
   const w=widgets.find(x=>x.id===id);
+  if(w)trashAblegen('widget',{w:JSON.parse(JSON.stringify(w))});
   if(w&&DASH_DEFAULTS.some(([type])=>type===w.type)&&!dashRemovedTypes.includes(w.type))dashRemovedTypes.push(w.type);
   widgets=widgets.filter(x=>x.id!==id);
   save();renderDash();
@@ -28087,7 +28132,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
