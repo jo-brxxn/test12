@@ -12011,7 +12011,7 @@ function renderAssetBoard(c){
       ${/* Gameplan-Leiste (Nutzer 2026-11-16): "direkt zwischen Asset Name und der
            Price Karte", Tipp klappt auf (js/gameplan.js). */''}
       ${gpLeisteHtml(c)}
-      ${abReihenTitel('Overview')}
+      ${/* Zwischentitel OVERVIEW entfernt (Nutzer 2026-11-17: "mach dieses Overview dadrunter weg") */''}
       ${/* ⚠ EIGENES Unterraster ueber alle Spalten (Nutzer 2026-09-17: die
            Historie "mit in die zeile von price, pinned notes und kalender").
            Die Kopfreihe hat damit VIER Karten, die Makro-Reihe darunter

@@ -22397,3 +22397,10 @@ Nutzer: *„Ja maximale Historie“*.
 - **Fix:** `tjpAnordnen()` nach dem Einfügen (MutationObserver, Resize, Schriften geladen): Punkte mit 16 px Mindestabstand (Reihenfolge bleibt), jede Beschriftung in die erste freie Reihe (oben 1, unten 1, oben 2 …), Karte wächst um belegte Reihen. Danach 0 Überlappungen (390/1194 px).
 - **Fehlerklasse:** Gameplan-Linien im Kerzen-Chart — Entry 3859 / Break 3862 deckten sich **72 × 16 px** → `nivAnordnen()` schiebt nahe Beschriftungen auseinander. Rundgang über 8 Seiten (Text auf Text, sichtbarer Bereich innerhalb abschneidender Eltern): 0 weitere Funde.
 - Wächter `check/ueberlappung.js` (A–C, Gegenprobe → A rot).
+
+## 2026-11-17 — Asset-Seite: These kräftiger, OVERVIEW weg, Data-Karte kleiner (VERSION-CHECK-748)
+
+**Nutzer (iPad-Fotos USD/CHF):** *„Mach die Schrift von der These des gameplans stärker und mach dieses Overview dadrunter weg und mach die data Karte ein wenig kleiner“*
+- Gameplan-Leiste: These `--t0`, 600 (vorher `--t2`, 400); Platzhalter bleibt kursiv/leicht.
+- Zwischentitel *OVERVIEW* über der Price-Karte entfernt.
+- Data-Karte in der Macro-Reihe (`.mk-data-slot`): `clamp(440px,62vh,700px)` statt `clamp(520px,78vh,860px)` — iPad quer 834 px: 650 → 517 px (−20 %).
