@@ -22381,3 +22381,11 @@ Nutzer: *„Ja maximale Historie“*.
 - Sonde `tools/usd-sonde.mjs` (Runner, 2026-11-17): alle Live- und Historienquellen in USD; Live = Historie-Instrument bei Copper/Öl/Gas (Future↔Future), BTC/SOL/ETH (Spot↔Spot), S&P/Nasdaq. DAX in EUR (Index). **Gold/Silber:** live Spot (`TVC:GOLD` 3860,97 ≈ `OANDA:XAUUSD` 3861,07), Historie Future `GC=F` (3859,90) — Yahoo führt kein `XAUUSD=X` (404), stooq sperrt den Runner (403); LBMA als Spot-Referenz in Prüfung.
 - **Fund:** `backfill-ohlc.yml` kannte Copper, Natural Gas und SOL nicht → gemessen 2 / 2 / 1 von 40 Tagen mit echter Kerze (BTC 40/40). Ergänzt; Wächter `check/assetlisten.js` (jedes Asset in jeder Kursliste, Krypto/Retail in USD, Gegenprobe).
 - SOL nach dem ersten Lauf: `price_data.json` 1097 Tage, letzter Kurs 73,86 USD; 4h-Trend und 10J-Archiv (seit 2020-04-10) da.
+
+## 2026-11-17 — Gameplan-Fenster beim Trade: nur These, Forex zweiteilig, Skip (VERSION-CHECK-746)
+
+**Nutzer:** *„wenn man den gameplan hinzufügt dann isr bei Forex wichtig das man den in zwei Teilen hat für beide Währungen und füg doch skip hinzu und es reicht wenn man nur die These hinzufügt“* (löst die Pflicht-Regel von 741 ab).
+- Fenster *Gameplan*: je Währung/Asset nur *Thesis · Name*; Bias/Entry/Break entfallen dort (Gameplan-Seite).
+- Forex: sobald eine Währung keine These hat, beide Teile — die vorhandene These steht schon drin, Änderungen gehen in den Gameplan.
+- *Skip*: Trade wird gespeichert, angehängt wird nur, was schon im Gameplan steht. *Save plan & trade* verlangt die These je Teil (Meldung nennt Skip).
+- Wächter `check/tradegameplan.js` J (AUD/CAD mit AUD-These: beide Teile, vorbelegt, nur 2 Felder, Skip speichert mit AUD-Plan).

@@ -10,6 +10,7 @@
 //  D) Asset ohne eigene Seite: kein Fenster, Trade ohne Plan gespeichert
 //  E) Karte "Open trades" zeigt Asset-Name + These
 //  F) 390 px: Fenster ohne Seitenueberlauf
+//  J) Forex mit nur einer These: beide Teile, vorhandene vorbelegt, nur Thesen-Felder; Skip speichert
 //  G) Asset-Auswahl wie jeder Asset-Filter (Nutzer 2026-11-17): Gruppen FX Pairs + Kategorien,
 //     Antippen oeffnet das 2-Spalten-Fenster, Wahl setzt das Asset und zeigt den Plan
 //  H) Open date geaendert -> das Werkzeug im Chart beginnt dort, seine Breite bleibt
@@ -28,7 +29,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     const o = W + 'px';
     const ctx = await b.newContext({ viewport: { width: W, height: H }, serviceWorkers: 'block' });
     if (GPD) await ctx.route(/\/js\/trades\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('a.value=d;if(b)b.value=\'\';', ''); r.fulfill({ response: res, body: t }); });
-    if (GP) await ctx.route(/\/js\/trades\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('if(ohne.length){tjGpFensterAuf(ohne);return false;}', ''); r.fulfill({ response: res, body: t }); });
+    if (GP) await ctx.route(/\/js\/trades\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('if(ohne.length&&!_tjgSkip){tjGpFensterAuf(ids);return false;}', ''); r.fulfill({ response: res, body: t }); });
     const p = await ctx.newPage(); const err = []; p.on('pageerror', e => err.push(e.message));
     await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) { } });
     await p.goto('http://127.0.0.1:' + PORT + '/index.html'); await wartenBisDatenDa(p);
@@ -94,14 +95,27 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
       if (!/thesis/i.test(fehl)) F.push(`${o} C: Speichern ohne These ohne Meldung`);
       if ((await trades()).some(x => x.a === 'NZD/JPY')) F.push(`${o} C: Trade ohne These gespeichert`);
       if (W < 500) { const ue = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth); if (ue > 1) F.push(`${o} F: Fenster laeuft ${ue} px ueber`); }
-      await p.fill('#tjgTh0', 'RBNZ on hold'); await p.click('#tjgS1 .tj-seg-b[data-b="bear"]'); await p.fill('#tjgTh1', 'BoJ hikes again');
+      await p.fill('#tjgTh0', 'RBNZ on hold'); await p.fill('#tjgTh1', 'BoJ hikes again');
       await p.click('#mTradeGp .m-btns .btn.g'); await p.waitForTimeout(800);
     }
     t = await trades(); const tn = t.find(x => x.a === 'NZD/JPY');
-    const gpS = await p.evaluate(() => { const g = JSON.parse(snap()).gameplans; return { nzd: (g.NZD || {}).th, jpy: (g.JPY || {}).th, jb: (g.JPY || {}).b }; });
+    const gpS = await p.evaluate(() => { const g = JSON.parse(snap()).gameplans; return { nzd: (g.NZD || {}).th, jpy: (g.JPY || {}).th }; });
     if (!tn) F.push(`${o} C: Trade nach dem Ausfuellen nicht gespeichert`);
     else if (!Array.isArray(tn.gp) || tn.gp.map(x => x.th).join('|') !== 'RBNZ on hold|BoJ hikes again') F.push(`${o} C: Kopie am Trade falsch: ${JSON.stringify(tn.gp)}`);
-    if (!GP && (gpS.nzd !== 'RBNZ on hold' || gpS.jpy !== 'BoJ hikes again' || gpS.jb !== 'bear')) F.push(`${o} C: Eingabe nicht in den Gameplan uebernommen ${JSON.stringify(gpS)}`);
+    if (!GP && (gpS.nzd !== 'RBNZ on hold' || gpS.jpy !== 'BoJ hikes again')) F.push(`${o} C: Eingabe nicht in den Gameplan uebernommen ${JSON.stringify(gpS)}`);
+    // J: Forex mit EINER vorhandenen These -> beide Teile, vorhandene vorbelegt; Skip speichert ohne neue These
+    await p.evaluate(() => gpText('AUD', 'th', 'RBA on hold')); await p.waitForTimeout(500);
+    await neu('AUD/CAD'); await p.click('#mTrade .m-btns .btn.g'); await p.waitForTimeout(500);
+    const J1 = await p.evaluate(() => ({ auf: getComputedStyle(document.getElementById('mTradeGp')).display !== 'none', s1: !document.getElementById('tjgS1').hidden, t0: document.getElementById('tjgTh0').value, t1: document.getElementById('tjgTh1').value, felder: document.querySelectorAll('#mTradeGp input:not([type=hidden]),#mTradeGp textarea').length }));
+    if (!J1.auf || !J1.s1) F.push(`${o} J: AUD/CAD (CAD ohne These) zeigt nicht beide Teile`);
+    else {
+      if (J1.t0 !== 'RBA on hold' || J1.t1 !== '') F.push(`${o} J: vorhandene These nicht vorbelegt (${J1.t0} | ${J1.t1})`);
+      if (J1.felder !== 2) F.push(`${o} J: Fenster hat ${J1.felder} Eingabefelder statt nur der zwei Thesen`);
+      await p.click('#mTradeGp .m-btns button:has-text("Skip")'); await p.waitForTimeout(700);
+      const tj = (await trades()).find(x => x.a === 'AUD/CAD');
+      if (!tj) F.push(`${o} J: Skip speichert den Trade nicht`);
+      else if (!Array.isArray(tj.gp) || tj.gp.length !== 1 || tj.gp[0].id !== 'AUD') F.push(`${o} J: Skip-Trade traegt ${JSON.stringify(tj.gp)} statt nur des AUD-Plans`);
+    }
     // D
     await neu('MYASSET1'); await p.click('#mTrade .m-btns .btn.g'); await p.waitForTimeout(500);
     if (await offen('mTradeGp')) F.push(`${o} D: Fenster fuer ein Asset ohne Gameplan`);

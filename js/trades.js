@@ -965,39 +965,40 @@ function tjGpBox(){
   box.hidden=!ids.length;
   box.innerHTML=ids.map(id=>gpTradeHtml(kopie?kopie.find(k=>k.id===id):gpKopie(id),id,kopie?'Gameplan at entry':'Gameplan')).join('');
 }
-// Pflicht-Fenster: je Asset ohne These ein Abschnitt (max. 2 = FX-Paar)
-let _tjgIds=[];
+// Gameplan-Fenster (Nutzer 2026-11-17, Nachtrag: "bei Forex wichtig das man den in zwei Teilen hat
+// fuer beide Waehrungen und fueg doch skip hinzu und es reicht wenn man nur die These hinzufuegt"):
+// je Asset/Waehrung nur die These; Forex = immer beide Teile, eine vorhandene These steht schon
+// drin; Skip speichert den Trade ohne neue These (Kopie dessen, was schon da ist).
+let _tjgIds=[],_tjgSkip=false;
 function tjGpFensterAuf(ids){
   _tjgIds=ids.slice(0,2);
   [0,1].forEach(i=>{
     const id=_tjgIds[i],sek=document.getElementById('tjgS'+i);if(!sek)return;
     sek.hidden=!id;
-    ['tjgTh','tjgEn','tjgBr'].forEach(f=>{const e=document.getElementById(f+i);if(e)e.value='';});
-    const b=document.getElementById('tjgB'+i);if(b)b.value='';
-    sek.querySelectorAll('.tj-seg-b').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-pressed','false');});
-    const t=document.getElementById('tjgN'+i);if(t&&id)t.textContent=gpName(id);
+    const e=document.getElementById('tjgTh'+i);if(e)e.value=id?((gpKopie(id)||{}).th||''):'';
+    const t=document.getElementById('tjgN'+i);if(t&&id)t.innerHTML=`Thesis · ${escH(gpName(id))}`;
   });
   const err=document.getElementById('tjgErr');if(err){err.textContent='';err.hidden=true;}
   openM('mTradeGp');
-  setTimeout(()=>{const e=document.getElementById('tjgTh0');if(e)e.focus();},50);
-}
-function tjGpBias(i,b){
-  const h=document.getElementById('tjgB'+i);if(!h)return;
-  h.value=h.value===b?'':b;
-  document.querySelectorAll(`#tjgS${i} .tj-seg-b`).forEach(x=>{const on=x.dataset.b===h.value;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on?'true':'false');});
+  setTimeout(()=>{const e=[0,1].map(i=>document.getElementById('tjgTh'+i)).find(x=>x&&!x.closest('[hidden]')&&!x.value.trim());if(e)e.focus();},50);
 }
 function tjGpFensterSpeichern(){
-  const w=(f,i)=>String((document.getElementById(f+i)||{}).value||'').trim();
-  const fehlt=_tjgIds.filter((id,i)=>!w('tjgTh',i));
+  const w=i=>String((document.getElementById('tjgTh'+i)||{}).value||'').trim();
+  const fehlt=_tjgIds.filter((id,i)=>!w(i));
   const err=document.getElementById('tjgErr');
-  if(fehlt.length){if(err){err.textContent='Missing: thesis for '+fehlt.map(gpName).join(' · ');err.hidden=false;}return false;}
+  if(fehlt.length){if(err){err.textContent='Missing: thesis for '+fehlt.map(gpName).join(' · ')+' · or tap Skip';err.hidden=false;}return false;}
   try{
-    _tjgIds.forEach((id,i)=>gpAusTrade(id,{b:w('tjgB',i),th:w('tjgTh',i),en:w('tjgEn',i),br:w('tjgBr',i)}));
+    _tjgIds.forEach((id,i)=>{if(w(i)!==((gpKopie(id)||{}).th||'').trim())gpAusTrade(id,{th:w(i)});});
   }catch(e){if(err){err.textContent='Gameplan not saved: '+(e&&e.message||e);err.hidden=false;}return false;}
   closeM('mTradeGp');
   return tjFormSpeichern();
 }
-const TJG_GUARD={felder:['tjgTh0','tjgEn0','tjgBr0','tjgB0','tjgTh1','tjgEn1','tjgBr1','tjgB1'],save:()=>tjGpFensterSpeichern(),was:'This gameplan'};
+function tjGpSkip(){
+  closeM('mTradeGp');
+  _tjgSkip=true;
+  try{return tjFormSpeichern();}finally{_tjgSkip=false;}
+}
+const TJG_GUARD={felder:['tjgTh0','tjgTh1'],save:()=>tjGpFensterSpeichern(),was:'This gameplan'};
 function tjNeu(datum,id){
   const t=id?trades.find(x=>x.id===id&&!x.del):null;
   _tjEdit=t?t.id:null;
@@ -1045,8 +1046,9 @@ function tjFormSpeichern(){
   // Gameplan: neuer Trade oder anderes Asset -> Kopie des aktuellen Plans; ohne These erst das Fenster
   if(!alt||alt.a!==v.a){
     const ids=tjGpIds(v.a),ohne=ids.filter(id=>!gpHatThese(id));
-    if(ohne.length){tjGpFensterAuf(ohne);return false;}
-    neu.gp=ids.map(id=>Object.assign({id},gpKopie(id)));
+    // Forex: beide Waehrungen im Fenster, sobald einer die These fehlt (vorhandene vorbelegt)
+    if(ohne.length&&!_tjgSkip){tjGpFensterAuf(ids);return false;}
+    neu.gp=ids.map(id=>gpKopie(id)?Object.assign({id},gpKopie(id)):null).filter(Boolean);
   }
   const sicherung=alt?{...alt}:null;
   if(alt)Object.assign(alt,neu);else trades.push({id:uid(),...neu});
@@ -1213,7 +1215,7 @@ if(typeof window!=='undefined'){
 export {trades,tjUndoSetzen,TJG_GUARD,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
   tjFuerCloud,tjGesendet,tjSendeFehler};
 if(typeof window!=='undefined'){
-  Object.assign(window,{tjAssetTippen,tjAssetGewaehlt,tjGpFensterAuf,tjDatumNeu,tjAssetSetzen,tjGpBias,tjGpFensterSpeichern,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
+  Object.assign(window,{tjGpSkip,tjAssetTippen,tjAssetGewaehlt,tjGpFensterAuf,tjDatumNeu,tjAssetSetzen,tjGpFensterSpeichern,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
     mergeTrades,tjUebernehmen,tjR,tjReihe,tjTagKlick,tjTagFenster,tjTagZuTrade,tjTagNeu,tjRichtung,tjExitAuf,tjEdEingabe,tjStreak,tjStats,
     tjStatus,tjAbschliessen,tjZuExit,tjZuErgebnis,tjZuSpeichern,tjZuBearbeiten,tjJetzt,tjLive,
     tjFuerCloud,tjCloudStand,tjJetztHochladen,tjSig});
