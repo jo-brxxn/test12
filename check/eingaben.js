@@ -12,7 +12,7 @@
 // GEMESSEN vorher (Playwright, echte Klicks, 1500x1000): der Schutz von
 // 2026-09-01 hing nur am Notiz-Editor und griff dort auf 2 von 4
 // Oeffnungswegen. "+ New note" auf der Asset-Seite, auf der Watchlist und
-// Quick capture: Klick daneben -> Fenster zu, Text WEG, keine Nachfrage.
+// (Quick capture seit 755 entfernt.)
 // Dazu 9 weitere Fenster ohne Schutz, Escape schloss 7 davon am Schutz
 // vorbei. "Save" der Einstellungen stand 1554px unter der Fensterunterkante.
 //
@@ -36,7 +36,7 @@
 //      Querscrollen - in drei Viewports und als Notiz-Vollseite.
 //
 // Gegenproben (muessen ROT werden):
-//   --gegenprobe-schutz  Quick capture aus MODAL_GUARDS entfernt -> A und B rot
+//   --gegenprobe-schutz  Notiz-Editor (mResNote) aus MODAL_GUARDS entfernt -> A und B rot
 //   --gegenprobe-leiste  Leiste nicht mehr sticky                -> E rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
@@ -66,12 +66,10 @@ const OEFFNER = {
   mResNote: [
     `newResNoteIn('USD','')`,                    // Asset-Seite "+ New note"
     `newResNoteForAsset('USD')`,                 // Watchlist + Pinned notes
-    `newResNote()`,                              // Archiv
-    `openResNote(research.notes.find(n=>n&&!n.arch&&!n.seed).id)`, // bestehende Notiz
+    `newResNote()`,                              // ohne Asset
+    // bestehende Pinned note (seit 755 hat ein frisches Profil keine Notizen mehr)
+    `(research.notes.some(n=>n.id==='weinz1')||research.notes.push({id:'weinz1',fids:[],title:'WAECHTER Pinned',body:'x',tags:[],fav:false,pin:true,arch:false,ts:new Date().toISOString(),up:new Date().toISOString(),bias:'neu',evt:null,asset:'USD'}),openResNote('weinz1'))`,
   ],
-  mQuickNote: [`openQuickNote('','USD')`, `quickNoteForAsset('USD')`,
-    // vorbelegt: die Zerlegung darf NICHT als ungespeicherte Aenderung zaehlen
-    `openQuickNote('Fed hikes rates, USD looks bullish into the payrolls','USD')`],
   mPriceAlert: [`openPriceAlertM()`],
   mAddSym: [`openAddSym()`],
   mAddPair: [`openAddPair('Watchlist')`],
@@ -109,7 +107,7 @@ const OEFFNER = {
   const p = await neueSeite(W, H);
   await p.evaluate(() => { try { gotoSym('USD'); } catch (e) {} });
   await p.waitForTimeout(600);
-  if (GP_SCHUTZ) await p.evaluate(() => { delete MODAL_GUARDS.mQuickNote; });
+  if (GP_SCHUTZ) await p.evaluate(() => { delete MODAL_GUARDS.mResNote; });
 
   console.log('A) Jedes Eingabefenster ist geschuetzt oder begruendet ausgenommen');
   const inv = await p.evaluate(() => {
@@ -198,7 +196,7 @@ const OEFFNER = {
   };
 
   let faelle = 0, fehlalarm = 0, verloren = 0;
-  for (const id of inv.geschuetzt.concat(GP_SCHUTZ ? ['mQuickNote'] : [])) {
+  for (const id of inv.geschuetzt.concat(GP_SCHUTZ ? ['mResNote'] : [])) {
     for (const src of OEFFNER[id] || []) {
       // 1) unveraendert: kein Fehlalarm, bei keinem Weg
       for (const weg of ['daneben', 'escape', 'cancel']) {
@@ -231,6 +229,8 @@ const OEFFNER = {
   if (!verloren && !fehlalarm) gruen(`${faelle} Schliess-Vorgaenge mit Eingabe: jeder fragt nach; ohne Eingabe kein einziger Fehlalarm`);
 
   // ── C: die Nachfrage selbst ───────────────────────────────────────────
+  // Gegenprobe: ohne Schutz des Notiz-Editors muessen A/B rot sein; C/D brauchen den Schutz
+  if (GP_SCHUTZ) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: bleibt gruen.'); process.exit(fehler ? 0 : 1); }
   console.log('C) Nachfrage: "No, delete" bearish, "Yes, save" bullish, daneben = zurueck');
   await oeffne(`newResNoteIn('USD','')`);
   const titel = 'WAECHTER-C ' + Date.now();
@@ -271,20 +271,6 @@ const OEFFNER = {
     offen: document.getElementById('mResNote').style.display !== 'none',
   }), titel);
   if (!gesp.da || gesp.offen) rot(`"Yes, save" speichert nicht / schliesst nicht: ${JSON.stringify(gesp)}`);
-  // Quick capture ebenso
-  await oeffne(`openQuickNote('','USD')`);
-  await p.locator('#qcInput').fill('WAECHTER quick capture: CPI came in hot, USD bullish');
-  await p.mouse.click(5, H - 5);
-  await p.waitForTimeout(150);
-  if ((await status('mQuickNote')).nachfrage) {
-    await p.locator('#mUnsaved button', { hasText: 'Yes, save' }).click();
-    await p.waitForTimeout(200);
-  }
-  const qc = await p.evaluate(() => ({
-    da: research.notes.some(n => n && String(n.body || '').includes('WAECHTER quick capture')),
-    offen: document.getElementById('mQuickNote').style.display !== 'none',
-  }));
-  if (!qc.da || qc.offen) rot(`Quick capture: "Yes, save" speichert nicht / schliesst nicht: ${JSON.stringify(qc)}`);
   await aufraeumen();
   // Fenster, die nach ihrem EIGENEN Speichern offen bleiben: danach ist der
   // Stand gespeichert, ein Klick daneben darf nicht mehr nachfragen.
@@ -306,7 +292,7 @@ const OEFFNER = {
     await aufraeumen();
   }
   await p.evaluate(() => { try { localStorage.removeItem('fxpro_cloud_cfg'); } catch (e) {} priceAlerts = []; save(); });
-  if (!fehler) gruen('zwei Knoepfe in Bias-Farben, Satz nennt die Notiz, daneben = zurueck, "Yes, save" speichert (Editor und Quick capture); nach eigenem Speichern (Price alert, Settings) keine Nachfrage mehr');
+  if (!fehler) gruen('zwei Knoepfe in Bias-Farben, Satz nennt die Notiz, daneben = zurueck, "Yes, save" speichert (Notiz-Editor); nach eigenem Speichern (Price alert, Settings) keine Nachfrage mehr');
 
   // ── D: Pinned notes -> voller Editor ────────────────────────────────────
   console.log('D) Pinned notes oeffnen den vollen Notiz-Editor, angepinnt');

@@ -1,4 +1,6 @@
 // ── NOTIZEN UEBERLEBEN ALLES ──────────────────────────────────────
+// Seit 2026-11-17 (VERSION-CHECK-755) nur noch Pinned notes + History (entpinnt), Bank- und
+// Chart-Notizen; Archiv, Ordner, Beispielnotizen und Quick capture entfernt (Nutzer-Wunsch).
 // Notiz-Datenverlust ist in diesem Projekt DREIMAL beim Nutzer angekommen
 // (2026-09-01 Klick neben den Editor, 2026-09-01 Papierkorb nachgeruestet,
 // 2026-09-08 der Fall hier). Notizen sind der einzige Inhalt der App, den
@@ -45,76 +47,39 @@ const { wartenBisDatenDa } = require('./warten.js');
   if(schlechteOrdner.length)add('Ordner-Id faellt durch den eigenen Sicherheitsfilter',
     {anzahl:schlechteOrdner.length,beispiele:schlechteOrdner.slice(0,3).map(f=>f.id)});
 
-  // ── 2) Der eigentliche Regressionstest: eine mitgelieferte Notiz
-  // bearbeiten, in einen ZWEITEN Ordner legen und durch applySnap schicken.
-  // Genau dieser Weg laeuft bei jedem Cloud-Sync.
-  const seedN=research.notes.find(n=>n&&n.seed&&Array.isArray(n.fids)&&n.fids.length);
-  const ordner=researchFolders.filter(f=>researchFolderAssetOf&&researchFolderAssetOf(f.id));
-  if(!seedN||ordner.length<6){
-    add('Regressionstest nicht durchfuehrbar',{seedNotiz:!!seedN,ordner:ordner.length});
-  }else{
-    const id=seedN.id;
-    const TITEL='WAECHTER: vom Nutzer ueberschrieben';
-    const TEXT='WAECHTER: dieser Text darf einen Sync NIE verlieren.';
-    seedN.title=TITEL;seedN.body=TEXT;delete seedN.seed;   // genau das macht saveResNote()
-    const zweit=ordner.find(f=>f.id!==seedN.fids[0]).id;
-    seedN.fids=[seedN.fids[0],zweit];
-    const vorFids=seedN.fids.slice();
+  // ── 2) SEIT 755 NUR NOCH PINNED NOTES (Archiv, Ordner, Beispielnotizen entfernt) ──
+  // Eine eigene Pinned note mit eigenem Text muss jeden Sync (applySnap) ueberleben,
+  // entpinnt in der History bleiben, eine Notiz ohne Pin/History in den Papierkorb gehen
+  // (mit Loesch-Marker) und von dort als Pinned note zurueckkommen.
+  const jetzt=new Date().toISOString();
+  const neuN=(id,x)=>Object.assign({id,fids:[],title:'WAECHTER '+id,body:'WAECHTER: dieser Text darf einen Sync NIE verlieren.',tags:[],fav:false,pin:true,arch:false,ts:jetzt,up:jetzt,bias:'bull',evt:null,asset:'USD'},x||{});
+  research.notes.push(neuN('wnp1'),neuN('wnh1'),neuN('wna1',{pin:false}));
+  togResPin('wnh1');                       // entpinnen -> History
+  applySnap(snap());
+  const p1=research.notes.find(n=>n.id==='wnp1'),h1=research.notes.find(n=>n.id==='wnh1'),a1=research.notes.find(n=>n.id==='wna1');
+  ok.roundtrip={pinned:!!p1,history:!!h1};
+  if(!p1)add('Pinned note ueberlebt den Sync nicht',{});
+  else if(!p1.pin||String(p1.body).indexOf('WAECHTER:')<0||p1.asset!=='USD')add('Pinned note nach dem Sync veraendert',{pin:p1.pin,asset:p1.asset});
+  if(!h1)add('Entpinnte Notiz (History) nach dem Sync weg',{});
+  else if(h1.pin||!h1.hist)add('History-Eintrag nach dem Sync nicht mehr in der History',{pin:h1.pin,hist:h1.hist});
+  if(typeof pinHist==='function'&&!pinHist('USD').some(n=>n.id==='wnh1'))add('History der Pinned notes zeigt die entpinnte Notiz nicht',{});
+  if(a1)add('Notiz ohne Pin/History steht nach dem Sync noch da (Archiv-Rest)',{});
+  const t1=(research.trash||[]).find(t=>t.data&&t.data.id==='wna1');
+  if(!t1)add('Notiz ohne Pin/History nicht im Papierkorb',{});
+  if(!(research.geloescht||{})['n:wna1'])add('Kein Loesch-Marker fuer die abgeraeumte Notiz',{});
+  if((researchFolders||[]).length)add('Es gibt noch Ordner',{anzahl:researchFolders.length});
+  if(research.notes.some(n=>n&&n.seed))add('Beispielnotizen werden noch erzeugt',{});
+  if(t1){
+    restoreTrashItem(t1.id);
     applySnap(snap());
-    const nach=research.notes.find(n=>n.id===id);
-    ok.roundtrip={vorhanden:!!nach};
-    if(!nach){
-      const imMuell=(research.trash||[]).some(t=>t.data&&(t.data.title===TITEL||t.data.id===id));
-      add('Bearbeitete Notiz ueberlebt den Sync nicht',{id,imPapierkorb:imMuell});
-    }else{
-      if(nach.title!==TITEL||String(nach.body||'').indexOf('WAECHTER:')<0)
-        add('Eigener Text wurde beim Sync ueberschrieben',{id,titelNachher:nach.title,textNachher:String(nach.body||'').slice(0,60)});
-      if(nach.seed)add('Notiz wieder als mitgeliefert markiert',{id});
-      const fidsNachher=(nach.fids||[]).slice();
-      if(fidsNachher.length!==vorFids.length)
-        add('Ordner-Zuordnung beim Sync verloren',{id,vorher:vorFids,nachher:fidsNachher});
-      ok.roundtrip.ordner=fidsNachher.length;
-      ok.roundtrip.textErhalten=nach.title===TITEL;
-    }
+    const z=research.notes.find(n=>n.id==='wna1');
+    if(!z)add('Wiederhergestellte Notiz nach dem Sync wieder weg',{});
+    else if(!z.pin)add('Wiederhergestellte Notiz ist keine Pinned note',{});
+    ok.wiederhergestellt=!!z;
   }
-  // ── 4) ARCHIVIERT-ZUSTAND UEBERLEBT DEN SYNC ─────────────────────
-  // Nutzer-Wunsch 2026-09-19: jede Notiz ist entweder in "Current" oder in
-  // "Archived" (n.arch). Der Zustand haengt am Notiz-Objekt und faehrt damit
-  // im bestehenden snap()/mergeResearchNotes-Sync mit.
-  //
-  // ⚠ Fuer die MITGELIEFERTEN Verhaltensnotizen gilt das NICHT automatisch:
-  // applySeedNoteFlags() setzt deren Schalter bei jedem applySnap auf den
-  // Standard zurueck, weil die 1.440 Seed-Notizen jedes Mal neu entstehen.
-  // Ohne einen Eintrag in seedNoteFlags waere jede archivierte Seed-Notiz
-  // nach einem Cloud-Sync wieder in Current - genau die Fehlerklasse vom
-  // 2026-09-08, nur mit einem anderen Feld. Geprueft wird deshalb BEIDES:
-  // eine eigene Notiz und eine Seed-Notiz.
-  {
-    const eigen=research.notes.find(n=>n&&!n.seed);
-    const seed=research.notes.find(n=>n&&n.seed);
-    const faelle=[['eigene Notiz',eigen],['Seed-Notiz',seed]].filter(x=>x[1]);
-    faelle.forEach(([was,n])=>{
-      if(typeof archiveResNote!=='function'){add('archiveResNote fehlt in der window-Bruecke',{was});return;}
-      const id=n.id;
-      archiveResNote(id,true);
-      const vor=research.notes.find(x=>x.id===id);
-      if(!vor||!vor.arch){add('Archivieren hat gar nicht gewirkt',{was,id});return;}
-      applySnap(snap());
-      const nach=research.notes.find(x=>x.id===id);
-      if(!nach)add('Archivierte Notiz nach dem Sync verschwunden',{was,id});
-      else if(!nach.arch)add('Archiviert-Zustand beim Sync verloren - Notiz ist wieder in Current',{was,id,seed:!!nach.seed});
-      else ok['arch_'+was.split(' ')[0]]='ueberlebt';
-      // Aufraeumen, damit der Waechter den Stand nicht veraendert zurueklaesst
-      const zurueck=research.notes.find(x=>x.id===id);
-      if(zurueck)archiveResNote(id,false);
-    });
-    // Ein Pin und "archiviert" zugleich waere ein Widerspruch: die
-    // Asset-Seite zeigt Pins als "das ist gerade wichtig".
-    const widerspruch=research.notes.filter(n=>n&&n.pin&&n.arch).map(n=>n.id);
-    if(widerspruch.length)add('Notizen sind gleichzeitig angeheftet UND archiviert',{ids:widerspruch.slice(0,5)});
-    ok.pinUndArchiv=widerspruch.length;
-  }
-
+  // aufraeumen
+  ['wnp1','wnh1','wna1'].forEach(id=>{const n=research.notes.find(x=>x.id===id);if(n){trashResNote(n);research.notes=research.notes.filter(x=>x.id!==id);}});
+  ok.pinUndArchiv=research.notes.filter(n=>n&&n.pin&&n.arch).length;
   return {fehler:F.length,F:F.slice(0,20),ok};
  });
  console.log('pageerrors',perr.length,perr.slice(0,2));

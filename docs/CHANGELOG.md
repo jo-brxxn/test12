@@ -22484,3 +22484,44 @@ Nutzer-Screenshot iPad (16:21): *„Local storage is full — your last changes 
   - „Show what is using the space“ zeigt jetzt auch Undo-Verlauf und Basis.
 - **Wächter:** neu `check/speicherplatz.js` (Gegenprobe volle Kopie → rot). `speichervoll` hat eine neue Marke; die Gegenprobe ist weiter rot.
 - **Gegengeprüft:** Abgleich-Wächter grün — `zurueck`, `geloescht`, `trades`, `eingabesync`, `altgeraet`, `notizen`, `snaprunde`.
+
+## 2026-11-17 — Archive weg, Trash-Seite, History der Pinned notes, Quick capture weg (VERSION-CHECK-755)
+
+Nutzer: *„entfern das Archive komplett und auch den Inhalt davon. Aber nicht die pinned notes und die gameplans und die Bank Kommentare“* · *„Mach das quick capture weg. Es soll nur noch Notizen in pinned Notes, gameplan geben und die werden dort in den historys gespeichert. Und im Papierkorb soll alles reinkommen was auf der Webseite gelöscht wird.“*
+
+Rückfragen beantwortet:
+
+| Frage | Antwort |
+|---|---|
+| Bank- und Chart-Notizen | bleiben |
+| Papierkorb | Menüpunkt „Trash“ |
+| Aufbewahrung | 30 Tage |
+| News „Save note“ | wird Pinned note |
+| History Pinned notes | nur Entfernte (entpinnt) |
+| History Gameplan | eigener Knopf (Etappe 756) |
+
+- **Bereinigungs-Regel** `seedAssetBehaviorNotes()`, läuft bei jedem Laden/Abgleich:
+  1. angepinnte Beispielnotiz → eigene Pinned note `pin_<sid>`
+  2. jede Notiz bekommt ihr Asset fest
+  3. Notiz ohne Pin/Bank/Chart/History → Papierkorb + Marker `n:`
+  4. Ordner → Marker `f:`, keine Ordner mehr
+- **Gemessen** an einem nachgestellten Altbestand (Ordner mit Unterordner, Archiv-Notiz im Ordner, archivierte Notiz, Pinned im Ordner, Bank, Chart):
+  - danach Notizen `p1*@USD, b1@USD, c1@USD`
+  - Papierkorb `a1, a2`
+  - 0 Ordner, Marker gesetzt
+  - nach Neuladen unverändert
+- **Fund unterwegs:** Ein frisches Profil legte 171 eingebaute Struktur-Argumente (genBull/genBear) als Archiv-Notizen an. Jetzt nicht mehr, sie wären sofort im Papierkorb gelandet.
+- **Fund unterwegs:** `seedNoteFlags` kommt beim Laden erst NACH dem Notiz-Aufbau an. Die Umwandlung läuft deshalb zusätzlich in `applySeedNoteFlags()`. Getestet: einmal umgewandelt, beim nächsten Laden nicht doppelt.
+- **UI:**
+  - Seitenleiste „Archive“ → **Trash** mit Papierkorb-Symbol. Tabelle Type | Name | Deleted | Kept, Restore / Delete forever, ⓘ.
+  - Pinned notes: ⚡ weg, unten **History** statt „Go to Archive“.
+  - Fenster `mPinHist`: Pin again / Delete → Trash.
+  - Watchlist: „Quick“ weg.
+  - Pair-Übersicht: nur Pinned notes, Links „Open Archive“ weg.
+  - Settings → Trash öffnet die Seite.
+- **Entfernt:** `js/quickcapture.js`, `check/quickcapture.js`, Fenster `mQuickNote`.
+- **Wächter:**
+  - `notizen` neu geschrieben: Pinned + History überleben den Sync; Notiz ohne Pin → Papierkorb + Marker; Wiederherstellen = Pinned; keine Ordner/Beispielnotizen.
+  - `geloescht`: Testnotizen angepinnt, Ordner-Teil raus.
+  - `eingaben`: Quick capture raus, Gegenprobe jetzt mit dem Notiz-Editor (rot, 13 Befunde).
+  - `hierarchie`: Trash-Karte mit ⓘ.

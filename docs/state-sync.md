@@ -113,6 +113,22 @@ vier Stellen: `cloudPush`/`exportData` (`data.tradeJournal`), `cloudPull`/
 - **Sicherung (seit 627, `check/trades.js`):** `cloudPull` ruft `tjUebernehmen()` IMMER (auch ohne Feld) und lädt hoch, wenn der Cloud eigene Trades fehlen (`tjFehlt`, wie `prefPending`). Vor jedem Schreiben/Upload/Export Vereinigung mit localStorage (`tjVonPlatte`), `storage`-Ereignis. Sichtbarer Cloud-Stand + Wiederholung alle 15 s (`fxpro_trades_cloud`/`fxpro_trades_cloud_err`, beide nur lokal).
 - ⚠ Muster für jedes künftige Log-Feld dieser Art: ein Pull, der vereinigt, MUSS hochladen, wenn das Ergebnis mehr enthält als die Cloud — sonst bleibt der Rest nur lokal.
 
+## Notizen seit 2026-11-17 (VERSION-CHECK-755): nur Pinned notes + History, Bank, Chart
+
+Nutzer-Regel: *„Es soll nur noch Notizen in pinned Notes, gameplan geben und die werden dort in den historys gespeichert. Und im Papierkorb soll alles reinkommen was auf der Webseite gelöscht wird.“*
+
+- **Archiv weg:** keine Ordner, keine Beispielnotizen, kein Quick capture. Menüpunkt `notes` = **Trash**-Seite (`renderResearch()`).
+- **Was bleibt in `research.notes`:** `pin`, `cb` (Bank), `pm`/Tag `chart` (Price-Karte) oder `hist` (entpinnt = History der Pinned notes).
+  - Alles andere räumt `seedAssetBehaviorNotes()` bei JEDEM Laden/Abgleich in den Papierkorb, mit Lösch-Marker `n:<id>`.
+  - Grund: Ein altes Gerät brächte die Notiz sonst per Abgleich zurück.
+- **Entpinnen:** setzt `n.hist` (ISO-Zeit). Anpinnen löscht `n.hist`. History-Fenster `mPinHist`.
+- **Wiederherstellen aus dem Trash:** Eine normale Notiz kommt als **Pinned note** zurück.
+- **Angepinnte Beispielnotiz** (`seedNoteFlags[sid].pin`): wird einmal zur eigenen Notiz `pin_<sid>`.
+  - Feste Id → zwei Geräte erzeugen dieselbe.
+  - Passiert in `seedPinsUmwandeln()` und auch in `applySeedNoteFlags()`, weil die Schalter beim Laden erst danach ankommen.
+- **Papierkorb:** `research.trash`, 30 Tage (`TRASH_TTL_MS`).
+- **Geprüft von:** `check/notizen.js`, `check/geloescht.js`.
+
 ## Zentralbank-Notizen (seit 2026-10-27): KEINE eigene Speicherform
 
 **Gleiches Muster seit 2026-11-01: eigene Pfeile der Price-Karte** (`js/preiskarte.js`) = Notizen mit `pm = {a: Asset, d: Tag}`, Titel = Text, `bias`, `tags:['chart']`, ohne `asset`/`fids`. Löschen wie `resNoteToTrash` (Papierkorb + aus der Liste; Marker setzt `snap()`).

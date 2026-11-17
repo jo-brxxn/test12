@@ -3769,162 +3769,7 @@ function feedEntryFor(feed,name){
 // ueberschreiben die drei Token in index.html mit aufgehellten Fassungen.
 // Fuer Flaechen (fill, background, Chart-Striche) bleibt BC richtig - dort
 // liegt die Farbe auf hellem Grund oder ist selbst die Flaeche.
-// ══ SCHNELLERFASSUNG ═══════════════════════════════════════════════════
-// Nutzer-Wunsch 2026-09-08: "Ich will eine Nachricht reinkopieren und die ki
-// nimmt alles auseinander und traegt das dann ein."
-// Die Zerlegung steckt in js/quickcapture.js (dort auch die Begruendung,
-// warum Regeln statt KI). Hier nur Anzeige, Korrektur und Speichern.
-// ⚠ Das Ergebnis wird ANGEZEIGT, bevor es gespeichert wird, und jede Angabe
-// bleibt aenderbar. Eine Automatik, die still entscheidet, wo eine Notiz
-// landet, waere schlimmer als gar keine - man findet sie spaeter nicht
-// wieder und merkt nie, dass sie falsch einsortiert wurde.
-let _qcStand=null;
-// Von welcher Stelle aus die Erfassung geoeffnet wurde. Auf der Watchlist und
-// in der Asset-Ansicht ist das Asset ja schon bekannt (Nutzer-Wunsch
-// 2026-09-13: "Mach das auch auf der Watchlist und in der Asset-Ansicht") -
-// dort waere es unsinnig, es aus dem Text erraten zu lassen. Der Text lautet
-// dann typisch "CPI kam hoeher rein" und nennt die Waehrung gar nicht.
-let _qcAssetVor=null;
-
-function openQuickNote(vorbelegung,assetVor){
-  _qcStand=null;
-  // ⚠ Nur ein Asset, das es in dieser App wirklich gibt (Regel 4) - sonst
-  // stuende eine Vorauswahl da, die beim Speichern still verschwindet.
-  _qcAssetVor=(assetVor&&syms.some(x=>x.id===assetVor))?assetVor:null;
-  // Ein abgebrochener Watchlist-Aufruf darf nicht dazu fuehren, dass die
-  // NAECHSTE Notiz ungefragt angepinnt wird.
-  _resAutoPin=null;
-  const inp=document.getElementById('qcInput');
-  if(inp)inp.value=vorbelegung||'';
-  const out=document.getElementById('qcOut'); if(out)out.hidden=true;
-  const b=document.getElementById('qcSaveBtn'); if(b)b.disabled=true;
-  const pre=document.getElementById('qcPre');
-  if(pre){
-    const sym=_qcAssetVor?syms.find(x=>x.id===_qcAssetVor):null;
-    pre.hidden=!_qcAssetVor;
-    pre.textContent=_qcAssetVor?`Filed on ${sym?sym.name:_qcAssetVor} — you can change that below.`:'';
-  }
-  // Die Zerlegung eines vorbelegten Texts laeuft VOR openM(): dort wird der
-  // Stand fuer die Ungespeichert-Nachfrage aufgenommen. Danach waere schon
-  // die Vorbelegung eine "ungespeicherte Aenderung".
-  // ⚠ Das Feld zuerst leeren: qcTitle behielt sonst den Titel der LETZTEN
-  // Erfassung, und ein verworfener Text staende beim naechsten Mal wieder da.
-  const tit=document.getElementById('qcTitle');if(tit)tit.value='';
-  if(inp&&inp.value)qcAnalyse();
-  openM('mQuickNote');
-  if(inp)inp.focus();
-}
-// Aus der Watchlist heraus: wie newResNoteForAsset(), nur mit der
-// Schnellerfassung statt des leeren Formulars. Solange Platz ist, wird die
-// Notiz angepinnt - sonst legt man sie genau an der Stelle an, an der sie
-// danach nicht auftaucht.
-function quickNoteForAsset(assetId){
-  openQuickNote('',assetId);
-  _resAutoPin=assetId;
-}
-
-function qcAnalyse(){
-  const inp=document.getElementById('qcInput');
-  const out=document.getElementById('qcOut');
-  const knopf=document.getElementById('qcSaveBtn');
-  if(!inp||!out)return;
-  const roh=inp.value||'';
-  if(!roh.trim()){out.hidden=true;if(knopf)knopf.disabled=true;_qcStand=null;return;}
-  // Nur Assets vorschlagen, die es in DIESER App wirklich gibt (Regel 4).
-  _qcStand=qcZerlegen(roh,syms.map(x=>x.id));
-  // Das Asset der aufrufenden Stelle steht vorn und bleibt gewaehlt, auch
-  // wenn der Text es nicht nennt. Abwaehlbar ist es wie jedes andere.
-  if(_qcAssetVor&&!_qcStand.assets.includes(_qcAssetVor))_qcStand.assets.unshift(_qcAssetVor);
-  out.hidden=false;
-  if(knopf)knopf.disabled=false;
-  const t=document.getElementById('qcTitle'); if(t)t.value=_qcStand.titel;
-  qcZeichnen();
-}
-
-function qcZeichnen(){
-  if(!_qcStand)return;
-  const av=document.getElementById('qcAssets');
-  if(av){
-    // Alle Assets anbieten, die erkannten vorausgewaehlt - so korrigiert man
-    // mit einem Klick, statt ein Feld zu suchen.
-    const erkannt=new Set(_qcStand.assets);
-    const liste=syms.map(x=>x.id).filter(id=>erkannt.has(id))
-      .concat(syms.map(x=>x.id).filter(id=>!erkannt.has(id)).slice(0,10));
-    av.innerHTML=liste.length
-      ? liste.map(id=>`<button type="button" class="qc-chip${erkannt.has(id)?' on':''}" onclick="qcTogAsset('${escJH(id)}')">${escH(id)}</button>`).join('')
-      : '<span class="qc-chip leer">no asset found — the note goes to the general folder</span>';
-  }
-  const bv=document.getElementById('qcBias');
-  if(bv){
-    const L={bull:'▲ Bullish',bear:'▼ Bearish',neu:'• Neutral'};
-    bv.innerHTML=['bull','bear','neu'].map(b=>
-      `<button type="button" class="qc-b${_qcStand.bias===b?' on':''}" style="${_qcStand.bias===b?'color:'+biasCss(b):''}" onclick="qcSetBias('${b}')">${L[b]}</button>`
-    ).join('')
-    // Woran die Richtung festgemacht wurde - ohne das ist sie eine Behauptung.
-    +`<span class="qc-beleg">${_qcStand.belege.bull||_qcStand.belege.bear
-        ?`${_qcStand.belege.bull} bullish / ${_qcStand.belege.bear} bearish wording`
-        :'no directional wording found'}</span>`;
-  }
-  const tv=document.getElementById('qcTags');
-  if(tv)tv.innerHTML=_qcStand.tags.length
-    ? _qcStand.tags.map(t=>`<button type="button" class="qc-chip on" onclick="qcTogTag('${escJH(t)}')">${escH(t)}</button>`).join('')
-    : '<span class="qc-chip leer">no topic found</span>';
-}
-
-function qcTogAsset(id){
-  if(!_qcStand)return;
-  const i=_qcStand.assets.indexOf(id);
-  if(i>=0)_qcStand.assets.splice(i,1); else _qcStand.assets.push(id);
-  qcZeichnen();
-}
-function qcSetBias(b){ if(_qcStand){_qcStand.bias=b;qcZeichnen();} }
-function qcTogTag(t){
-  if(!_qcStand)return;
-  const i=_qcStand.tags.indexOf(t);
-  if(i>=0)_qcStand.tags.splice(i,1);
-  qcZeichnen();
-}
-
-function qcSpeichern(){
-  if(!_qcStand){alert('Nothing to save yet.');return;}
-  // ⚠ Kein Schreibpfad ohne try/catch mit sichtbarer Meldung (CLAUDE.md
-  // Regel 6): scheitert das Speichern still, sieht es fuer den Nutzer aus,
-  // als haette der Knopf nichts getan - und der eingefuegte Text ist weg.
-  try{
-    const titel=(document.getElementById('qcTitle')||{}).value||_qcStand.titel;
-    const ids=_qcStand.assets.filter(id=>syms.some(x=>x.id===id));
-    const fids=ids.map(id=>researchGenFidFor(id)).filter(Boolean);
-    const jetzt=new Date().toISOString();
-    const id=uid();
-    // Dieselbe Anpin-Regel wie beim manuellen Formular (saveResNote): wurde
-    // die Notiz auf der Watchlist begonnen, soll sie dort auch erscheinen.
-    const pinNeu=!!(_resAutoPin&&fids.length
-      &&resNoteAssetIds({fids}).includes(_resAutoPin));
-    pushU();
-    research.notes.push({
-      id,fids,
-      title:String(titel||'Quick note').slice(0,120),
-      body:String(_qcStand.body||''),
-      tags:_qcStand.tags.slice(0,5),
-      fav:false,pin:pinNeu,arch:false,ts:jetzt,up:jetzt,
-      bias:_qcStand.bias||'neu',
-      // Ohne Ordner haengt die Notiz sonst nirgends - dasselbe Verhalten wie
-      // bei den Notiz-Vorschlaegen aus den Nachrichten.
-      asset:fids.length?'':(ids[0]||''),
-    });
-    _resAutoPin=null;
-    save();
-    closeM('mQuickNote');
-    // ⚠ Nicht nur die Research-Seite: die Notiz erscheint auch in der
-    // Watchlist-Zeile und auf der Asset-Seite. Ohne diese drei Faelle bliebe
-    // die Stelle, an der man gerade geklickt hat, unveraendert - fuer den
-    // Nutzer sieht das aus, als haette das Speichern nicht funktioniert.
-    if(curPage==='notes'||curPage==='cur'||curPage==='watch')rerenderNotesHost();
-    newsNoteHinweis('Note saved'+(ids.length?' on '+ids.join(', '):' (no asset)')+(pinNeu?' · pinned':''));
-  }catch(e){
-    alert('The note could not be saved: '+(e&&e.message||e)+'\nYour text is still in the box.');
-  }
-}
+// Schnellerfassung (Quick capture) entfernt 2026-11-17 (Nutzer: "Mach das quick capture weg", 755).
 
 function biasCss(b){
   return (b==='bull'||b==='bear'||b==='neu')?`var(--bias-${b})`:(BC[b]||BC.neu);
@@ -5458,8 +5303,11 @@ function migrateLegacyAssetNotesIntoResearch(r){
   (syms||[]).forEach(sym=>{
     const g=researchGenFidFor(sym.id);
     if(!g)return;
+    // seit 755 kein Archiv mehr: die eingebauten Struktur-Argumente (genBull/genBear, ~171
+    // Notizen bei einer frischen Installation) werden nicht mehr als Notizen angelegt - sie
+    // landeten sonst sofort im Papierkorb. Bestandsnutzer sind laengst migriert.
     const push=(title,body,bias)=>{
-      if(!body||!String(body).trim())return;
+      return;
       r.notes.push({id:uid(),fids:[g],title:researchTitleFrom(title||body),
         body:String(body),tags:[],fav:false,pin:false,ts:now,up:now,
         bias:(bias==='bull'||bias==='bear')?bias:'neu',evt:null,asset:''});
@@ -5551,6 +5399,7 @@ function seedNoteId(assetId,themeKey,bias,i){return'sd_'+assetId+'_'+themeKey+'_
 // angewandt. Idempotent, darf beliebig oft laufen.
 function applySeedNoteFlags(){
   if(!research||!Array.isArray(research.notes))return;
+  seedPinsUmwandeln(research);   // 755: angepinnte Beispielnotiz -> eigene Pinned note
   const weg=[];
   research.notes.forEach(n=>{
     if(!n||!n.seed)return;
@@ -5609,85 +5458,66 @@ function migrateSeedNotesOut(r){
   return r;
 }
 const BEHAVIOR_NOTES_CONTENT_V=3;
-function seedAssetBehaviorNotes(r){
-  if(!r._behaviorNotesSeeded)r._behaviorNotesSeeded={};
-  const now=new Date().toISOString();
-  Object.keys(ASSET_BEHAVIOR_NOTES).forEach(assetId=>{
-    const have=r._behaviorNotesSeeded[assetId];
-    // ⚠ Der Versions-Gate darf das Erzeugen NICHT mehr verhindern: seit
-    // 2026-09-07 stehen Seed-Notizen nicht mehr im gespeicherten Zustand,
-    // also muessen sie bei JEDEM Start neu entstehen. Der Gate steuert nur
-    // noch das Aufraeumen alter Seed-Staende (Block `if(have)` unten).
-    // Idempotent: liegen sie schon im Speicher, wird nichts angehaengt.
-    if(!(syms||[]).some(s=>s.id===assetId))return;
-    if(r.notes.some(n=>n&&n.seed&&String(n.id||'').startsWith('sd_'+assetId+'_')))return;
-    const root=researchGenFidFor(assetId);
-    if(!root)return;
-    // ⚠ Der Aufraeum-Block darf NUR bei einem echten Inhalts-Versionssprung
-    // laufen. Er behaelt einen Themen-/Unterordner naemlich nur dann, wenn
-    // noch eine Notiz auf ihn zeigt - und seit die Seed-Notizen nicht mehr
-    // gespeichert werden, zeigt beim Laden zunaechst KEINE auf sie.
-    // Ohne diese Bedingung loeschte applySnap() deshalb alle 288 Ordner und
-    // legte sie mit neuen Zufalls-Ids wieder an: bei jedem Cloud-Sync und
-    // jedem Undo. Der runtime-Waechter hat genau das als "snap/applySnap
-    // roundtrip is NOT idempotent" gemeldet - und die Folge waere schlimmer
-    // als unschoen gewesen, denn eigene Notizen verweisen ueber fids auf
-    // diese Ordner-Ids.
-    if(have&&have!==BEHAVIOR_NOTES_CONTENT_V){
-      const staleIds=new Set(r.notes.filter(n=>n.seed&&n.asset===''&&(n.fids||[]).some(f=>{
-        const folder=researchFolders.find(x=>x.id===f);
-        return folder&&(folder.parentId===root||researchFolders.find(t=>t.id===folder.parentId&&t.parentId===root));
-      })).map(n=>n.id));
-      r.notes=r.notes.filter(n=>!staleIds.has(n.id));
-      researchFolders=researchFolders.filter(f=>{
-        const isThemeOrSub=f.parentId===root||researchFolders.find(t=>t.id===f.parentId&&t.parentId===root);
-        if(!isThemeOrSub)return true;
-        return r.notes.some(n=>(n.fids||[]).includes(f.id));
-      });
-    }
-    ASSET_BEHAVIOR_THEMES.forEach(([key,name])=>{
-      let themeFolder=researchFolders.find(f=>f.parentId===root&&f.name===name);
-      if(!themeFolder){themeFolder={id:uid(),name:name,parentId:root};researchFolders.push(themeFolder);}
-      const data=ASSET_BEHAVIOR_NOTES[assetId][key];
-      const subNames=ASSET_BEHAVIOR_SUBTOPICS[key]||[];
-      if(!data)return;
-      const subFolders=subNames.map(subName=>{
-        let f=researchFolders.find(x=>x.parentId===themeFolder.id&&x.name===subName);
-        if(!f){f={id:uid(),name:subName,parentId:themeFolder.id};researchFolders.push(f);}
-        return f;
-      });
-      ['bull','bear','neu'].forEach(bias=>{
-        (data[bias]||[]).forEach((entry,idx)=>{
-          const subFolder=subFolders[entry.sub]||themeFolder;
-          // ⚠ Feste, aus dem Inhalt abgeleitete Id statt uid() (2026-09-07).
-          // Seed-Notizen werden nicht mehr gespeichert, sondern bei jedem
-          // Start neu erzeugt - mit einer Zufalls-Id koennte man ihnen dann
-          // nichts mehr zuordnen, was der Nutzer an ihnen getan hat
-          // (Anpinnen, Favorit, Loeschen). Die feste Id ist der Anker dafuer.
-          //
-          // ⚠⚠ Der Index MUSS der Platz innerhalb dieser Bias-Gruppe im Seed
-          // sein - NICHT r.notes.length. Der erste Wurf benutzte die Laenge
-          // des gesamten Notiz-Arrays; sobald der Nutzer EINE eigene Notiz
-          // hatte, verschoben sich damit alle folgenden Ids. Der Test hat
-          // das sofort gezeigt: eine angepinnte Seed-Notiz war nach dem
-          // Neuladen nicht mehr angepinnt, eine bearbeitete komplett weg.
-          // Der Gruppen-Index haengt allein am Seed im Code und ist damit
-          // ueber Geraete und Sitzungen hinweg derselbe.
-          const sid=seedNoteId(assetId,key,bias,idx);
-          if(seedNoteFlags[sid]&&seedNoteFlags[sid].del)return;   // vom Nutzer geloescht
-          // Vom Nutzer ueberschrieben: die eigene Fassung ist gespeichert und
-          // liegt bereits in r.notes - dann darf die Seed-Fassung NICHT
-          // zusaetzlich erscheinen, sonst stuenden beide nebeneinander.
-          if(r.notes.some(n=>n&&!n.seed&&(n.replacesSeed===sid||n.id===sid)))return;
-          const fl=seedNoteFlags[sid]||{};
-          r.notes.push({id:sid,fids:[subFolder.id],title:entry.t,
-            body:entry.b,tags:(entry.tags||[]).slice(),fav:!!fl.fav,pin:!!fl.pin,ts:now,up:now,
-            bias:bias,evt:null,asset:'',seed:true});
-        });
-      });
-    });
-    r._behaviorNotesSeeded[assetId]=BEHAVIOR_NOTES_CONTENT_V;
+// ══ NUR NOCH PINNED NOTES (Nutzer 2026-11-17, VERSION-CHECK-755) ══════════════════════════
+// Woertlich: "entfern das Archive komplett und auch den Inhalt davon. Aber nicht die pinned
+// notes und die gameplans und die Bank Kommentare" · "Mach das quick capture weg. Es soll nur
+// noch Notizen in pinned Notes, gameplan geben und die werden dort in den historys gespeichert.
+// Und im Papierkorb soll alles reinkommen was auf der Webseite geloescht wird." Rueckfrage:
+// Bank- und Chart-Notizen bleiben, Papierkorb 30 Tage als Menuepunkt "Trash".
+// Laeuft bei JEDEM Laden/Abgleich (frueher erzeugte die Funktion hier die Beispielnotizen):
+//  1) angepinnte Beispielnotizen -> eigene Pinned note (feste Id pin_<seed>, zwei Geraete
+//     erzeugen dieselbe), Beispielnotizen werden nicht mehr erzeugt
+//  2) jede uebrige Notiz behaelt ihr Asset fest (n.asset), bevor die Ordner wegfallen
+//  3) Notizen ohne Pin, Bank-Bezug (cb), Chart-Bezug (pm/Tag chart) und History-Eintrag (hist)
+//     -> Papierkorb + Loesch-Marker (ein altes Geraet bringt sie sonst per Abgleich zurueck)
+//  4) Ordner -> Loesch-Marker, keine Ordner mehr
+function notizIstChart(n){return!!(n&&(n.pm||(Array.isArray(n.tags)&&n.tags.includes('chart'))));}
+function notizBleibt(n){return!!(n&&(n.pin||n.cb||n.hist||notizIstChart(n)));}
+function seedPinsUmwandeln(r){
+  if(!r||!Array.isArray(r.notes))return;
+  const jetzt=new Date().toISOString();
+  if(!r.geloescht||typeof r.geloescht!=='object'||Array.isArray(r.geloescht))r.geloescht={};
+  const g=r.geloescht;
+  Object.keys(seedNoteFlags||{}).forEach(sid=>{
+    const fl=seedNoteFlags[sid];if(!fl||!fl.pin||fl.del)return;
+    const m=/^sd_(.+)_([^_]+)_(bull|bear|neu)_(\d+)$/.exec(sid);if(!m)return;
+    const [,a,key,bias,idx]=m,e=((ASSET_BEHAVIOR_NOTES[a]||{})[key]||{})[bias];
+    const entry=Array.isArray(e)?e[+idx]:null;if(!entry)return;
+    const id='pin_'+sid;
+    if(g['n:'+id]||r.notes.some(n=>n&&n.id===id))return;
+    r.notes.push({id,fids:[researchGenFidFor(a)],title:entry.t,body:entry.b,tags:(entry.tags||[]).slice(),
+      fav:!!fl.fav,pin:true,arch:false,ts:jetzt,up:jetzt,bias,evt:null,asset:a});
   });
+}
+function seedAssetBehaviorNotes(r){
+  if(!r||!Array.isArray(r.notes))return r;
+  const jetzt=new Date().toISOString();
+  if(!r.geloescht||typeof r.geloescht!=='object'||Array.isArray(r.geloescht))r.geloescht={};
+  const g=r.geloescht;
+  // 1 (auch in applySeedNoteFlags: beim Laden kommen die Schalter erst NACH diesem Aufruf an)
+  seedPinsUmwandeln(r);
+  r.notes=r.notes.filter(n=>n&&!n.seed);
+  // 2 + 3
+  const weg=[];
+  r.notes.forEach(n=>{
+    if(!n.asset){const a=resNoteAssetIds(n)[0];if(a)n.asset=a;}
+    if(!notizBleibt(n))weg.push(n);
+  });
+  if(weg.length){
+    if(!Array.isArray(r.trash))r.trash=[];
+    weg.forEach(n=>{
+      if(!r.trash.some(t=>t&&t.data&&t.data.id===n.id))r.trash.push({id:uid(),kind:'note',data:{...n,arch:false},delAt:jetzt,grund:'archive'});
+      const st=nachIso(gelStempel(n)>jetzt?gelStempel(n):jetzt);if(!g['n:'+n.id]||g['n:'+n.id]<st)g['n:'+n.id]=st;
+    });
+    const ids=new Set(weg.map(n=>n.id));
+    r.notes=r.notes.filter(n=>!ids.has(n.id));
+  }
+  // 4
+  if(Array.isArray(researchFolders)&&researchFolders.length){
+    researchFolders.forEach(f=>{if(f&&f.id!=null&&!g['f:'+f.id])g['f:'+f.id]=jetzt;});
+    researchFolders=[];
+  }
+  r._behaviorNotesSeeded={};
   return r;
 }
 // Einmalige Migration (Nutzer-Wunsch 2026-08-03): die fruehere freie Themen-
@@ -6492,7 +6322,7 @@ function openTrashM(){
         return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">
           <div style="flex:1;min-width:0">
             <div style="font-weight:700;color:var(--t0);font-size:var(--fs-base);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(trashEntryLabel(t))}</div>
-            <div style="color:var(--t3);font-size:var(--fs-xs)">${t.kind==='folder'?'Folder':'Note'} · ${daysLeft} day${daysLeft===1?'':'s'} left · deleted ${fmtDayShort(t.delAt)}</div>
+            <div style="color:var(--t3);font-size:var(--fs-xs)">${t.kind==='folder'?'Folder':'Note'} · ${daysLeft} day${daysLeft===1?'':'s'} left · deleted ${datumKurz(t.delAt)}</div>
           </div>
           <button class="btn g" onclick="restoreTrashItem('${t.id}')" style="font-size:var(--fs-xs);flex-shrink:0" title="Restore">↩</button>
           <button class="btn" onclick="permaDeleteTrashItem('${t.id}')" style="font-size:var(--fs-xs);flex-shrink:0" title="Delete permanently">✕</button>
@@ -6520,16 +6350,20 @@ function restoreTrashItem(id){
     // nicht weiter als geloescht gemerkt sein, sonst verschwindet sie beim
     // naechsten Start sofort wieder.
     if(n.seed&&seedNoteFlags[n.id]&&seedNoteFlags[n.id].del)setSeedNoteFlag(n.id,'del',false);
+    // seit 755: ohne Archiv kommt eine Notiz als Pinned note zurueck (sonst raeumt
+    // seedAssetBehaviorNotes sie beim naechsten Laden gleich wieder ab)
+    if(!notizBleibt(n)){n.pin=true;delete n.hist;}
+    delete n.seed;n.up=new Date().toISOString();
     if(!research.notes.some(x=>x.id===n.id))research.notes.push(n);
   }
   research.trash=(research.trash||[]).filter(x=>x.id!==id);
-  save();openTrashM();rerenderNotesHost();
+  save();try{openTrashM();}catch(e){}rerenderNotesHost();if(curPage==='notes')renderResearch();
 }
 function permaDeleteTrashItem(id){
   if(!confirm('Permanently delete this item? This cannot be undone.'))return;
   pushU();
   research.trash=(research.trash||[]).filter(x=>x.id!==id);
-  save();openTrashM();
+  save();try{openTrashM();}catch(e){}if(curPage==='notes')renderResearch();
 }
 
 // ══ STATE ═══════════════════════════════════════════════════════════
@@ -7287,7 +7121,7 @@ document.addEventListener('keydown',e=>{
 // die Liste. Greift NIE in einem Eingabefeld und nie mit Modifier-Taste.
 const KEY_TABS={d:['dash','Dashboard'],a:['cur','Assets'],n:['news','News'],
   c:['cal','Calendar'],s:['pairs','Set-ups'],w:['watch','Watchlist'],
-  t:['trends','Trends'],m:['mx','Matrix'],r:['notes','Archive'],
+  t:['trends','Trends'],m:['mx','Matrix'],r:['notes','Trash'],
   y:['carry','Carry'],o:['cot','COT'],j:['journal','Journal']};
 let _keyChord='',_keyChordT=0;
 function keyNavAktiv(e){
@@ -7975,9 +7809,6 @@ const MODAL_GUARD_TABELLE={
   mResNote:{felder:['resNTitle','resNBody','resNTags','resNFav','resNPin','resNEvt'],
     extra:()=>JSON.stringify([(_resFids||[]).slice().sort(),_resBias]),
     save:()=>saveResNote(),was:'This note'},
-  mQuickNote:{felder:['qcInput','qcTitle'],
-    extra:()=>_qcStand?JSON.stringify([_qcStand.assets,_qcStand.bias,_qcStand.tags]):'',
-    save:()=>qcSpeichern(),was:'This note'},
   // Nur das Level zaehlt: Ziel und Richtung allein sind noch kein Alarm.
   // createPriceAlert() schliesst das Fenster nicht (man legt dort oft
   // mehrere Alarme nacheinander an) - deshalb hier erst nach Erfolg.
@@ -8083,7 +7914,7 @@ addEventListener('resize',nivBald);
 // Steht die Nachfrage offen, fuehrt Escape zurueck ins Fenster (der
 // harmlose Weg, wie der Klick neben die Nachfrage).
 const ESC_MODALS=['mAddSym','mAssetCfg','mHist','mAddPair','mRename','mDelSym','mInfo','mCloud','mRateWatch','mIndLink','mBackup','mTrash',
-  'mQuickNote','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose'];
+  'mPinHist','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const nf=document.getElementById('mUnsaved');
@@ -8594,7 +8425,7 @@ function assetQuickRowHtml(c){
   // Tuer bleibt - als Knopf in derselben Zeile. Ein entfernter Einstieg ohne
   // Ersatz ist genau der Fehler aus Regel 6.
   const aufNotes=curSub==='notes';
-  const notizKnopf=`<button class="aql${aufNotes?' on':''}" onclick="setSub('${aufNotes?'specific':'notes'}')" title="${aufNotes?'Back to the data view':'All notes and folders of this asset'}">${icn('note',14)}<span>${aufNotes?'Close notes':'All notes'}</span></button>`;
+  const notizKnopf='';   // Archiv entfernt (755) - Notizen nur noch als Pinned notes
   return`<div class="aqr"><div class="aqr-links">${links}${notizKnopf}</div></div>`;
 }
 // Hoechstens so viele Notizen darf man pro Asset anpinnen.
@@ -8621,7 +8452,11 @@ function assetPinnedNotes(assetId){
 }
 function togResPin(id){
   const n=resNotes().find(x=>x.id===id);if(!n)return;
-  pushU();n.pin=!n.pin;n.up=new Date().toISOString();if(n.seed)setSeedNoteFlag(n.id,'pin',n.pin);save();rerenderNotesHost();
+  pushU();n.pin=!n.pin;n.up=new Date().toISOString();
+  // Entpinnen = History der Pinned notes (755), Anpinnen holt sie dort heraus.
+  if(n.pin)delete n.hist;else n.hist=n.up;
+  if(n.seed)setSeedNoteFlag(n.id,'pin',n.pin);save();rerenderNotesHost();
+  if(document.getElementById('mPinHist')&&document.getElementById('mPinHist').style.display!=='none'&&_pinHistAsset)pinHistAuf(_pinHistAsset);
 }
 // ── CURRENT / ARCHIVED (Nutzer-Wunsch 2026-09-19) ──────────────────────
 // Woertlich: "bevor eine Notiz dort landet soll sie in einem Vorstadium
@@ -9175,7 +9010,7 @@ function calpListeHtml(c,gross){
 const AB_GOTO_NAME={
   trends:'Trends', data:'Data', cot:'COT', retail:'Retail Sentiment',
   seas:'Seasonality', cal:'Calendar', news:'News', rate:'Rate Probabilities',
-  notes:'Archive',
+  notes:'Trash',
 };
 // `stopp` fuer Karten, die SELBST einen onclick tragen (die Kalenderkarte
 // oeffnet als Ganze ein Fenster) - ohne stopPropagation wuerde ein Klick auf
@@ -11756,7 +11591,7 @@ function abNoteMove(id,assetId,richtung){
 function abQuickGridHtml(c){
   const links=ASSET_QUICK_LINKS.map(([tab,ic,lbl])=>aqlKnopfHtml(tab,ic,lbl,c.id)).join('');
   const aufNotes=curSub==='notes';
-  const notizKnopf=`<button class="aql${aufNotes?' on':''}" onclick="setSub('${aufNotes?'specific':'notes'}')" title="${aufNotes?'Back to the data view':'All notes and folders of this asset'}">${icn('note',14)}<span>${aufNotes?'Close notes':'All notes'}</span></button>`;
+  const notizKnopf='';   // Archiv entfernt (755) - Notizen nur noch als Pinned notes
   // ⚠ ZWEI SCHRITTE AM 2026-09-14, in dieser Reihenfolge:
   //   1. "und das das mit den quicklinks Position Switcht" - der Preis-Chart
   //      nach oben, die vier Knoepfe darunter.
@@ -11777,7 +11612,7 @@ function abQuickGridHtml(c){
 function abQuickZeileHtml(c){
   const links=ASSET_QUICK_LINKS.map(([tab,ic,lbl])=>aqlKnopfHtml(tab,ic,lbl,c.id)).join('');
   const aufNotes=curSub==='notes';
-  const notizKnopf=`<button class="aql${aufNotes?' on':''}" onclick="setSub('${aufNotes?'specific':'notes'}')" title="${aufNotes?'Back to the data view':'All notes and folders of this asset'}">${icn('note',14)}<span>${aufNotes?'Close notes':'All notes'}</span></button>`;
+  const notizKnopf='';   // Archiv entfernt (755) - Notizen nur noch als Pinned notes
   // Country profile nur bei den acht Waehrungen (wie die Karte selbst) -
   // bei Non-FX gaebe es nichts zu oeffnen, der Knopf faellt weg.
   const cpKnopf=FX.includes(c.id)?`<button class="aql" onclick="cpFensterAuf()" title="Country profile — central bank, economy and what moves ${escH(c.id)}, in a window">${icn('globe',14)}<span>Country profile</span></button>`:'';
@@ -11790,6 +11625,28 @@ function abQuickZeileHtml(c){
 // Angepinnte Notizen. Bewusst NUR die angepinnten: die vollstaendige Liste
 // steht eine Taste weiter unter "All notes", und eine zweite vollstaendige
 // Liste hier waere wieder die Dopplung, die gerade erst weggeraeumt wurde.
+// ── History der Pinned notes (755): entpinnte Notizen dieses Assets, neueste zuerst ──
+let _pinHistAsset=null;
+function pinHist(assetId){
+  return resNotes().filter(n=>n&&!n.pin&&n.hist&&!n.cb&&!notizIstChart(n)&&resNoteAssetIds(n).includes(assetId))
+    .sort((a,b)=>String(b.hist||'').localeCompare(String(a.hist||'')));
+}
+function pinHistAuf(assetId){
+  _pinHistAsset=assetId;
+  const el=document.getElementById('pinHistBody');if(!el)return;
+  const c=(syms||[]).find(x=>x.id===assetId),l=pinHist(assetId);
+  document.getElementById('pinHistTitel').textContent='History · '+(c?c.name:assetId);
+  el.innerHTML=l.length?l.map(n=>`<div class="ph-z" style="--nb:${biasCss(n.bias||'neu')}">
+      <div class="ph-tx"><b>${escH(n.title||'Untitled note')}</b>${n.body?`<span>${escH(n.body.replace(/\s+/g,' ').slice(0,160))}</span>`:''}<i>Unpinned ${escH(datumKurz(n.hist))}</i></div>
+      <div class="ph-kn"><button class="btn" onclick="togResPin('${escJH(n.id)}')">Pin again</button><button class="btn" onclick="pinHistLoeschen('${escJH(n.id)}')">Delete</button></div>
+    </div>`).join(''):`<div class="ph-leer"><i>No unpinned notes yet</i> · unpinning a note moves it here</div>`;
+  openM('mPinHist');
+}
+function pinHistLoeschen(id){
+  const n=resNotes().find(x=>x.id===id);if(!n)return;
+  try{pushU();trashResNote(n);research.notes=resNotes().filter(x=>x.id!==id);save();rerenderNotesHost();if(_pinHistAsset)pinHistAuf(_pinHistAsset);}
+  catch(e){alert('Could not delete the note: '+(e&&e.message||e));}
+}
 function abPinnedHtml(c){
   const list=abNotizen(c.id).filter(n=>n.pin);
   const zeilen=list.map((n,i)=>`<div class="ab-nt${n.hl?' hl':''}" style="--nb:${biasCss(n.bias||'neu')}">
@@ -11812,12 +11669,12 @@ function abPinnedHtml(c){
   // Favorit, Pin) - vorbelegt mit diesem Asset und angepinnt.
   return`<div class="ab-ntile">
     <div class="ab-tile-hd">${abTileIcon('Pinned notes')}<span class="ab-tile-t">Pinned notes</span><span class="ab-tile-s">${list.length}</span>${abInfoBtn('Pinned notes',['Your pinned notes for this asset. "New pinned note" opens the full note window — title, text, folders, tags, bias and the related event, all in one place. The note is pinned straight away; you can untick that in the window.','The colour of each note follows the bias you gave it. Notes sync across your devices.'])}
-      <button class="ab-nt-qc" onclick="openQuickNote('','${escJH(c.id)}')" title="Paste a text — direction and topics are picked out for you">${icn('zap',14)}</button></div>
+</div>
     <div class="ab-nt-add">
       <button type="button" class="finp ab-nt-neu" onclick="newResNoteForAsset('${escJH(c.id)}')" title="Opens the note window with everything to set — pinned to ${escH(c.name)}">＋ New pinned note on ${escH(c.name)}…</button>
     </div>
     <div class="ab-nt-list">${zeilen}</div>
-    ${abGoToHtml('notes')}
+    <div class="ab-goto"><button class="ab-goto-b" onclick="pinHistAuf('${escJH(c.id)}')" title="Unpinned notes of ${escH(c.name)}">History${pinHist(c.id).length?' · '+pinHist(c.id).length:''} →</button></div>
   </div>`;
 }
 
@@ -15059,17 +14916,17 @@ function povCorrHtml(name){
 // Research Terminal.
 function povNotesHtml(name){
   const l=pairLegs(name);if(!l)return'';
-  const list=resNotes().filter(n=>{const a=resNoteAssetIds(n);return a.includes(l.bId)||a.includes(l.qId);})
+  const list=resNotes().filter(n=>{if(!n||!n.pin)return false;const a=resNoteAssetIds(n);return a.includes(l.bId)||a.includes(l.qId);})
     .sort((a,b)=>String(b.ts||'').localeCompare(String(a.ts||''))).slice(0,8);
-  if(!list.length)return povEmpty('No notes on either side yet. Write them in the Archive — they show up here automatically.')+
-    `<div class="pov-note"><button class="pov-link" onclick="showTab('notes')">Open Archive</button></div>`;
-  return list.map(n=>{const a=resNoteAssetIds(n);return`<div class="pov-note-row" style="border-left:3px solid ${BC[n.bias||'neu']};padding-left:6px" onclick="showTab('notes')" title="Open in the Archive">
+  // seit 755 nur Pinned notes (kein Archiv mehr)
+  if(!list.length)return povEmpty('No pinned notes on either side yet · pin them on the asset page');
+  return list.map(n=>{const a=resNoteAssetIds(n);return`<div class="pov-note-row" style="border-left:3px solid ${BC[n.bias||'neu']};padding-left:6px" onclick="openResNote('${escJH(n.id)}')" title="Open this note">
       <span class="pov-nleg">${escH(a.includes(l.bId)?l.bc:l.qc)}</span>
       <span class="pov-ntitle">${escH(n.title||'(untitled)')}</span>
       ${noteBiasBadge(n)}
       <span class="pov-ndate">${escH(String(n.ts||'').slice(0,10))}</span>
     </div>`;}).join('')+
-    `<div class="pov-note">Notes from both currencies of this pair, newest first. <button class="pov-link" onclick="showTab('notes')">Open Archive</button></div>`;
+    `<div class="pov-note"><i>Pinned notes of both currencies · newest first</i></div>`;
 }
 
 // ── Block 9: Score-Verlauf gegen den Kurs ────────────────────────────────
@@ -15374,7 +15231,6 @@ function watchAssetNotesHtml(name){
       <div class="wt-pinhd">
         <span class="wt-pinid" onclick="event.stopPropagation();gotoSym('${escJH(id)}')" title="Open ${escH(sym?sym.name:id)}">${escH(sym?sym.name:id)}</span>
         <span class="wt-pincnt">${pins.length} pinned${total?' · '+total+' total':''}</span>
-        <button class="wt-pinadd" onclick="event.stopPropagation();quickNoteForAsset('${escJH(id)}')" title="Paste a text for ${escH(sym?sym.name:id)} — direction and topics are picked out for you">${icn('zap',13)} Quick</button>
         <button class="wt-pinadd" onclick="event.stopPropagation();newResNoteForAsset('${escJH(id)}')" title="Add a note for ${escH(sym?sym.name:id)} — it is stored on the asset itself">＋ Note</button>
       </div>${rows}
     </div>`;
@@ -16666,18 +16522,24 @@ function rerenderNotesHostRoh(){
 // Event-Wecker der Timeline sind weiter ueber den eigenen Wecker-Waehler
 // erreichbar (openEvtAlertM via mEvtAlertPicker/mEvtAlertList) - es ist
 // also KEINE Funktion unerreichbar geworden, nur dieser eine Zugang.
+// ══ TRASH (seit 755 statt Archive, Nutzer 2026-11-17: "im Papierkorb soll alles reinkommen
+// was auf der Webseite geloescht wird") - eigene Seite unter dem alten Tab-Schluessel 'notes'
+// (gespeicherte Tab-Stapel halten). 30 Tage, je Eintrag Restore / Delete forever.
+function datumKurz(iso){const d=new Date(iso);return isNaN(d)?'':d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
+function trashArt(t){return t.kind==='note'?(t.data&&t.data.cb?'Bank note':notizIstChart(t.data)?'Chart note':'Note'):t.kind==='folder'?'Folder':(TRASH_ARTEN[t.kind]||t.kind);}
+const TRASH_ARTEN={};
 function renderResearch(){
   const wrap=document.getElementById('resWrap');if(!wrap)return;
-  // Zwei Spalten: Ordnerbaum links ueber die volle Hoehe, Inhalt der
-  // Auswahl rechts. Der Baum reicht weiterhin "bis ganz oben hin"
-  // (Nutzer-Korrektur 2026-08-04, gilt unveraendert).
-  wrap.innerHTML=`<div class="rterm-shell">
-    <div class="rterm-side">${researchSideTitleHtml()}${researchSidebarHtml()}</div>
-    <div class="rterm-main">
-      <div class="rterm-mid" id="rtermMid">${researchMidHtml()}</div>
-    </div>
-  </div>`;
-  attachChartHovers(wrap);
+  const l=(research.trash||[]).filter(t=>t&&t.kind!=='folder').slice().sort((a,b)=>String(b.delAt).localeCompare(String(a.delAt)));
+  const zeile=t=>{const tage=Math.max(0,Math.ceil((new Date(t.delAt).getTime()+TRASH_TTL_MS-Date.now())/864e5));
+    const asset=t.data&&(t.data.asset||(t.data.cb&&t.data.cb.b))||'';
+    return`<tr><td class="tr-art">${escH(trashArt(t))}</td><td class="tr-ti"><b>${escH(trashEntryLabel(t))}</b>${asset?` <i>${escH(asset)}</i>`:''}</td>
+      <td class="tr-d">${escH(datumKurz(t.delAt))}</td><td class="tr-d"><b>${tage}</b> d left</td>
+      <td class="tr-kn"><button class="btn" onclick="restoreTrashItem('${escJH(t.id)}')">Restore</button><button class="btn" onclick="permaDeleteTrashItem('${escJH(t.id)}')">Delete forever</button></td></tr>`;};
+  wrap.innerHTML=`<div class="pg-titel">Trash</div><div class="pg-sub">Everything deleted on the site · <b>30 days</b> · then gone for good</div>
+    <div class="ab-tile tr-karte"><div class="ab-tile-hd"><span class="ab-tile-t">Deleted</span><span class="ab-tile-s">${l.length}</span>${abInfoBtn('Trash',['<b>Everything deleted</b> on the site lands here','<b>Kept</b> | 30 days, then removed for good','<b>Restore</b> | notes come back as pinned notes','<b>Delete forever</b> | gone at once, on every device'])}</div>
+    ${l.length?`<div class="tr-wrap"><table class="tr-tbl"><thead><tr><th>Type</th><th>Name</th><th>Deleted</th><th>Kept</th><th></th></tr></thead><tbody>${l.map(zeile).join('')}</tbody></table></div>`
+      :'<div class="ph-leer"><i>Trash is empty</i></div>'}</div>`;
 }
 // ── ANALYSIS-BLATT (Nutzer-Wunsch 2026-08-04): pro Asset-Karte (Inflation/
 // Interest Rates/Labour Market/Economic Growth/COT Data/Risk Environment)
@@ -16941,7 +16803,6 @@ function researchNotesPanelHtml(assetId,fid){
     <div class="rterm-noterow">
       <input class="finp rterm-notesearch" id="rtermNoteSearch" placeholder="Search in ${scopeName} and its subfolders…" value="${escH(researchNoteQuery)}" oninput="researchSetNoteQuery(this.value)">
       ${resSearchFieldPickerHtml()}
-      <button class="btn" onclick="openQuickNote('','${escJH(assetId)}')" title="Paste a text — direction and topics are picked out for you">${icn('zap',13)} Quick capture</button>
       <button class="btn g" onclick="newResNoteIn('${escJH(assetId)}','${fid?escJH(fid):''}')">${icn('note',13)} + New note</button>
     </div>
     <div class="res-list" style="margin-top:10px">${rows}</div>
@@ -18429,7 +18290,6 @@ import {
   globeHitTest,globeOnPointerDown,globeOnPointerMove,globeOnPointerUp,startGlobes,resetGlobeLon,
   globePaletteKey,
 } from './globe.js';
-import {qcZerlegen} from './quickcapture.js';
 // Leichtes Federn am Scroll-Ende (Nutzer 2026-11-01), siehe js/federn.js
 import {federnAn} from './federn.js';
 import {undoDiff,undoAnwenden,undoInit,undoNachSave,undoOffen,undoSeq,undoRuhe,undoGrenze,undoFremd,undoFuerCloud,undoUebernehmen,undoKnoepfe,doUndo,doRedo} from './undo.js';
@@ -23419,7 +23279,7 @@ function newsNoteAnnehmen(u){
       title:String(h.note.title||h.t||'').slice(0,120),
       body:String(h.note.body||'')+'\n\n---\nSource: '+(h.s||'?')+' ('+String(h.d||'').slice(0,10)+')\n'+String(h.u||''),
       tags:Array.isArray(h.note.tags)?h.note.tags.slice(0,6):[],
-      fav:false,pin:false,arch:false,ts:now,up:now,bias:h.note.bias||'neu',
+      fav:false,pin:true,arch:false,ts:now,up:now,bias:h.note.bias||'neu',   // seit 755 Pinned note (kein Archiv)
       asset:fids.length?'':(ids[0]||'')});
     h.noteId=id;
     save();
@@ -26312,7 +26172,7 @@ const TABS={
   // Label 2026-08-02 von 'Notes' auf 'Research' umbenannt, 2026-09-19 auf
   // 'Archive' (beides Nutzer-Wunsch);
   // der Schluessel 'notes' bleibt bewusst, damit gespeicherte tabStacks halten.
-  notes:{label:'Archive',tab:'notes'},
+  notes:{label:'Trash',tab:'notes'},   // seit 755 Papierkorb statt Archiv
 };
 const TABSTACKS_KEY='fxpro_tabstacks';
 let tabStacks=[];           // [{id,name,members:[tabId,...]}]
@@ -26419,7 +26279,8 @@ const TAB_ICONS={
   gameplan:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
   journal:'<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>',
   cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
-  notes:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  // seit 755 Papierkorb (Tab-Schluessel 'notes' bleibt fuer gespeicherte Stapel)
+  notes:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
 };
 const TAB_ICON_STACK='<path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>';
 function npIconSvg(d){return`<span class="np-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg></span>`;}
@@ -28259,7 +28120,7 @@ Object.assign(window,{basisSetzen,basisVonPlatte,gpWaehle,gpAuf,gpBias,gpText,gp
   toggleFxTheme,updFxThemeToggleBtn,applyFxTheme,normFxTheme,FX_THEMES,
   // ⚠ Alle fuenf haengen an onclick/oninput im Modal-HTML - fehlt eine,
   // wirft der Klick still ein ReferenceError (CLAUDE.md Regel 6).
-  openQuickNote,quickNoteForAsset,qcAnalyse,qcSpeichern,qcTogAsset,qcSetBias,qcTogTag,
+  pinHist,pinHistAuf,pinHistLoeschen,
   abReihenTitel,
   // ⚠ openCardInfo haengt am onclick JEDES ⓘ neben einem Kartennamen - fehlt
   // die Zeile hier, wirft der Klick still einen ReferenceError und die

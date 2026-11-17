@@ -142,7 +142,7 @@ console.log('D) Vereinigungen nur mit Loesch-Markern');
     await A.evaluate(() => cloudSyncNow()); await warte(2000);
     await B.evaluate(() => cloudSyncNow()); await warte(2000);
   }
-  const notiz = (id, extra) => Object.assign({ id, title: 'WAECHTER ' + id, body: 'x', tags: [], fids: [], asset: 'USD', bias: 'neu', fav: false, pin: false, arch: false, ts: new Date().toISOString(), up: new Date().toISOString() }, extra || {});
+  const notiz = (id, extra) => Object.assign({ id, title: 'WAECHTER ' + id, body: 'x', tags: [], fids: [], asset: 'USD', bias: 'neu', fav: false, pin: true, arch: false, ts: new Date().toISOString(), up: new Date().toISOString() }, extra || {});
 
   // ── A) zwei Geraete ───────────────────────────────────────────────────
   console.log('A) Zwei Geraete, nachgestellte Cloud');
@@ -150,32 +150,29 @@ console.log('D) Vereinigungen nur mit Loesch-Markern');
   const A = await seite(ctxA, 'A');
   await A.evaluate(([liste]) => {
     pushU();
-    researchFolders.push({ id: 'lwf1', name: 'WAECHTER Ordner', parentId: null });
     liste.forEach(n => research.notes.push(n));
     save();
   }, [[
     notiz('lwzb1', { title: 'Fed: sticky services', cb: { b: 'USD', s: 'infl', m: '2026-10-29' }, fids: [] }),
-    notiz('lwn1'), notiz('lwk1'), notiz('lwk2'), notiz('lwr1'), notiz('lwp1'),
-    notiz('lwf1n', { fids: ['lwf1'], asset: '' })
+    notiz('lwn1'), notiz('lwk1'), notiz('lwk2'), notiz('lwr1'), notiz('lwp1')
   ]]);
   await warte(300);
   await A.evaluate(() => { resNoteToTrash('lwr1'); resNoteToTrash('lwp1'); });
   await warte(3500);
   const B = await seite(ctxB, 'B'); await warte(2500);
   const vorB = await stand(B);
-  if (!['lwzb1', 'lwn1', 'lwk1', 'lwf1n'].every(id => vorB.notes.includes(id)) || !vorB.folders.includes('lwf1') || !vorB.trash.includes('lwr1')) rot('Testaufbau: B hat den Startstand nicht (' + JSON.stringify(vorB.notes.filter(x => /^lw/.test(x))) + ')');
+  if (!['lwzb1', 'lwn1', 'lwk1'].every(id => vorB.notes.includes(id)) || !vorB.trash.includes('lwr1')) rot('Testaufbau: B hat den Startstand nicht (' + JSON.stringify(vorB.notes.filter(x => /^lw/.test(x))) + ')');
 
   // Runde 1: Loeschen, Wiederherstellen, endgueltig Loeschen auf A
   await A.evaluate(() => {
     resNoteToTrash('lwzb1');                                   // Bank-Karte -> Notiz -> Delete
     openResNote('lwn1'); delResNote();                         // Notizfenster -> Delete
-    researchDelFolder('lwf1');                                 // Ordner samt elternloser Notiz
     const r = (research.trash || []).find(t => t.data && t.data.id === 'lwr1'); if (r) restoreTrashItem(r.id);
     const p = (research.trash || []).find(t => t.data && t.data.id === 'lwp1'); if (p) permaDeleteTrashItem(p.id);
     try { closeM('mTrash'); } catch (e) {}
   });
   await runde(A, B);
-  const soll1 = { da: ['lwk1', 'lwk2', 'lwr1'], weg: ['lwzb1', 'lwn1', 'lwf1n'], ordnerWeg: ['lwf1'], imMuell: ['lwzb1', 'lwn1', 'lwf1n'], nichtImMuell: ['lwr1', 'lwp1'] };
+  const soll1 = { da: ['lwk1', 'lwk2', 'lwr1'], weg: ['lwzb1', 'lwn1'], imMuell: ['lwzb1', 'lwn1'], nichtImMuell: ['lwr1', 'lwp1'] };   // Ordner gibt es seit 755 nicht mehr
   pruefe('Loeschen/Wiederherstellen · Geraet A', await stand(A), soll1);
   pruefe('Loeschen/Wiederherstellen · Geraet B', await stand(B), soll1);
   pruefe('Loeschen/Wiederherstellen · Cloud', standAus(cloud.data), soll1);
@@ -191,7 +188,7 @@ console.log('D) Vereinigungen nur mit Loesch-Markern');
   const undo2 = await A.evaluate(() => { doUndo(); return (research.notes || []).some(n => n.id === 'lwk2'); });
   if (!undo2) rot('Testaufbau: Undo hat das Loeschen nicht zurueckgenommen');
   await runde(A, B);
-  const soll2 = { da: ['lwk1', 'lwk2', 'lwr1'], weg: ['lwu1', 'lwzb1', 'lwn1', 'lwf1n'], ordnerWeg: ['lwf1'], nichtImMuell: ['lwk2', 'lwr1', 'lwp1'] };
+  const soll2 = { da: ['lwk1', 'lwk2', 'lwr1'], weg: ['lwu1', 'lwzb1', 'lwn1'], nichtImMuell: ['lwk2', 'lwr1', 'lwp1'] };
   pruefe('Undo · Geraet A', await stand(A), soll2);
   pruefe('Undo · Geraet B', await stand(B), soll2);
   pruefe('Undo · Cloud', standAus(cloud.data), soll2);

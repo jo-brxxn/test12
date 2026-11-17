@@ -7764,6 +7764,29 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .ab-ptile.pk-add .pk-tipp{display:none!important}
 /* beim Markieren kein Kurs-Tooltip/Fadenkreuz ueber Punkt und Kasten */
 .ab-ptile.pk-add .pk-chart .chv-tip,.ab-ptile.pk-add .pk-chart .chv-x,.ab-ptile.pk-add .pk-chart .chv-dot{display:none!important}
+
+/* ── Trash-Seite + History der Pinned notes (755) ── */
+.tr-karte{margin-top:14px}
+.tr-wrap{overflow-x:auto}
+.tr-tbl{width:100%;border-collapse:collapse;font-size:var(--fs-md)}
+.tr-tbl th{text-align:left;font-size:var(--fs-sm);color:var(--t3);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--bd)}
+.tr-tbl td{padding:8px;border-bottom:1px solid var(--bd);vertical-align:middle}
+.tr-tbl .tr-art{color:var(--t2);white-space:nowrap}
+.tr-tbl .tr-ti b{color:var(--t0)}
+.tr-tbl .tr-ti i{color:var(--t3)}
+.tr-tbl .tr-d{white-space:nowrap;color:var(--t2)}
+.tr-tbl .tr-kn{white-space:nowrap;text-align:right}
+.tr-tbl .tr-kn .btn{margin-left:6px}
+.ph-modal{max-width:620px}
+.ph-liste{display:flex;flex-direction:column;gap:8px;margin:8px 0 12px}
+.ph-z{display:flex;gap:10px;align-items:flex-start;border-left:3px solid var(--nb,var(--bd2));padding:8px 10px;background:var(--bg3);border-radius:var(--rs)}
+.ph-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:var(--fs-md)}
+.ph-tx b{color:var(--t0)}
+.ph-tx span{color:var(--t2)}
+.ph-tx i{color:var(--t3);font-size:var(--fs-sm)}
+.ph-kn{display:flex;gap:6px;flex-shrink:0}
+.ph-leer{color:var(--t3);font-size:var(--fs-md);padding:10px 0}
+@media (max-width:700px){.ph-z{flex-direction:column}.tr-tbl .tr-kn{white-space:normal}}
 </style>
 </head>
 <body>
@@ -7851,11 +7874,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-754 - iPad Speicher voll: Abgleich-Basis nur noch als Unterschied (1,1 MB frei)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-755 - Archive weg, Trash-Seite (30 Tage), History der Pinned notes, Quick capture weg, News-Notiz angepinnt"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-754</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-755</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -8184,13 +8207,7 @@ window.fxLogoSvg=function(art){
     <p class="uc-hint">Tap outside this box to keep editing.</p>
   </div>
 </div>
-<!-- ══ SCHNELLERFASSUNG (Nutzer-Wunsch 2026-09-08) ═══════════════════════
-     "Ich will eine Nachricht reinkopieren und die ki nimmt alles
-     auseinander und traegt das dann ein."
-     Text einfuegen -> Asset, Richtung, Titel und Themen werden erkannt und
-     ANGEZEIGT, bevor gespeichert wird. Alles bleibt aenderbar; nichts wird
-     still entschieden. Die Erkennung ist regelbasiert (js/quickcapture.js),
-     nicht KI - Begruendung steht dort im Kopfkommentar. -->
+<!-- Schnellerfassung (Quick capture) entfernt 2026-11-17 (755). -->
 <!-- Kalender-Detailfenster der Asset-Seite (Nutzer-Wunsch 2026-09-13:
      "wenn man auf Kalender klickt oeffnet sich ein rechteckiges Fenster
      zentriert mittig wo man die Events mit mehr Detail sieht"). Der
@@ -8205,37 +8222,12 @@ window.fxLogoSvg=function(art){
     </div>
   </div>
 </div>
-<div class="ov" id="mQuickNote" style="display:none">
-  <div class="modal" style="max-width:680px">
-    <h3><span class="h-ic" data-ic="zap"></span>Quick capture</h3>
-    <div class="qc-hint">Paste anything — a headline, a chat answer, your own thought. The asset, direction and topics are picked out for you.</div>
-    <!-- Von der Watchlist/Asset-Seite aus ist das Asset schon bekannt. Das
-         muss SICHTBAR sein, bevor Text da ist: sonst waere die Vorauswahl eine
-         stille Entscheidung darueber, wo die Notiz landet. -->
-    <div class="qc-pre" id="qcPre" hidden></div>
-    <textarea class="nbox" id="qcInput" rows="7" placeholder="Paste or type here…" oninput="qcAnalyse()" style="min-height:130px"></textarea>
-    <div class="qc-out" id="qcOut" hidden>
-      <div class="qc-row">
-        <span class="qc-lbl">Title</span>
-        <input class="m-inp" id="qcTitle" placeholder="Title">
-      </div>
-      <div class="qc-row">
-        <span class="qc-lbl">Files into</span>
-        <span class="qc-chips" id="qcAssets"></span>
-      </div>
-      <div class="qc-row">
-        <span class="qc-lbl">Direction</span>
-        <span class="qc-bias" id="qcBias"></span>
-      </div>
-      <div class="qc-row">
-        <span class="qc-lbl">Topics</span>
-        <span class="qc-chips" id="qcTags"></span>
-      </div>
-    </div>
-    <div class="m-btns" style="margin-top:12px">
-      <button class="btn" onclick="closeMGuarded('mQuickNote')">Cancel</button>
-      <button class="btn g" id="qcSaveBtn" onclick="qcSpeichern()" disabled>Save note</button>
-    </div>
+<!-- History der Pinned notes (755): entpinnte Notizen eines Assets, Pin again / Delete (-> Trash) -->
+<div class="ov" id="mPinHist" style="display:none" onclick="if(event.target===this)closeM('mPinHist')">
+  <div class="modal ph-modal">
+    <h3><span class="h-ic" data-ic="clock"></span><span id="pinHistTitel">History</span></h3>
+    <div id="pinHistBody" class="ph-liste"></div>
+    <div class="m-btns"><button class="btn" onclick="closeM('mPinHist')">Close</button></div>
   </div>
 </div>
 <div class="ov" id="mResNote" style="display:none">
@@ -8592,7 +8584,7 @@ window.fxLogoSvg=function(art){
             <button class="btn" onclick="exportData()">Export</button>
             <button class="btn" onclick="document.getElementById('impFile').click()">Import</button>
             <button class="btn" onclick="openBackupM()">Backups</button>
-            <button class="btn" onclick="openTrashM()"><span class="h-ic" data-ic="trash"></span>Trash</button>
+            <button class="btn" onclick="closeM('mCloud');showTab('notes')"><span class="h-ic" data-ic="trash"></span>Trash</button>
           </div>
         </div>
         <div class="set-sec">Security</div>
