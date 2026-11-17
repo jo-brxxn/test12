@@ -7980,9 +7980,10 @@ document.addEventListener('pointerdown',ev=>{
   const t=ev.target;if(!t||!t.closest||!t.closest('.hdr,#navSidebar'))return;
   const offen=ovOffen();if(!offen.length)return;
   _ovSchluck=false;
+  // offene Nachfrage zuerst (steht im HTML vor anderen Fenstern): wie Klick daneben = zurueck ins Fenster
+  if(offen.some(o=>o.id==='mUnsaved')){_ovSchluck=true;unsavedKeepEditing();return;}
   for(let i=offen.length-1;i>=0;i--){
     const id=offen[i].id;
-    if(id==='mUnsaved'){_ovSchluck=true;return;}           // erst die Nachfrage beantworten
     if(modalIsDirty(id)){_ovSchluck=true;closeMGuarded(id);return;}
     closeM(id);
   }

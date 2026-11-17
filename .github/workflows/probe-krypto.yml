@@ -1,0 +1,16 @@
+# Solana (2026-11-17): welche Quellen liefern was? Schreibt NICHTS.
+name: Probe solana sources
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Quellen pruefen
+        env:
+          MYFXBOOK_EMAIL: ${{ secrets.MYFXBOOK_EMAIL }}
+          MYFXBOOK_PASSWORD: ${{ secrets.MYFXBOOK_PASSWORD }}
+        run: node tools/krypto-sonde.mjs
