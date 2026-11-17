@@ -115,7 +115,7 @@ export function gpLeisteHtml(c){
     <div class="gp-k1-z" role="button" tabindex="0" aria-expanded="${offen}" onclick="gpAuf('${escJH(id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();gpAuf('${escJH(id)}')}">
       <b class="gp-k1-t">Gameplan</b>
       <span class="gp-bd">${g.b==='bull'?'Bullish':g.b==='bear'?'Bearish':'No bias'}</span>
-      ${offen?`<input class="gp-th-in" value="${escH(g.th)}" placeholder="Your thesis in one line" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" oninput="gpText('${escJH(id)}','th',this.value)" aria-label="Thesis">`
+      ${offen?`<textarea class="gp-th-in" rows="1" placeholder="Your thesis" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" oninput="ar(this);gpText('${escJH(id)}','th',this.value)" aria-label="Thesis">${escH(g.th)}</textarea>`
         :`<span class="gp-k1-th" data-gp-th="${escH(id)}">${th?escH(th):'<i>No thesis yet · tap to plan</i>'}</span>`}
       ${n?`<span class="gp-k1-n">Next <b>${escH(n.name||'')}</b> ${countdownHtml(n.date)}</span>`:''}
       ${staleHtml(g)}
@@ -127,7 +127,8 @@ export function gpLeisteHtml(c){
     ${offen?`<div class="gp-k1-a">
       <div class="gp-zwei">${kritHtml(id,'en','Entry','e')}${kritHtml(id,'br','Break','x')}</div>
       <div class="gp-lab">Upcoming catalysts</div>${katHtml(id)}
-      <div class="gp-k1-fuss">${biasSchalter(id)}<button type="button" class="gp-zur" onclick="showTab('gameplan');gpWaehle('${escJH(id)}')">All gameplans</button></div>
+      <div class="gp-k1-fuss">${biasSchalter(id)}</div>
+      <div class="ab-goto"><button class="ab-goto-b" onclick="showTab('gameplan');gpWaehle('${escJH(id)}')" title="Open the Gameplan page with this asset selected">Go to Gameplan →</button></div>
     </div>`:''}
   </div>`;
 }
@@ -182,7 +183,7 @@ export function renderGameplan(){
 function neuZeichnen(id){
   if(curPage==='gameplan')renderGameplan();
   const l=document.getElementById('gpLeiste');
-  if(l&&l.dataset.gp===id){const t=document.createElement('div');t.innerHTML=gpLeisteHtml({id});l.replaceWith(t.firstElementChild);document.querySelectorAll('#gpLeiste .gp-ta').forEach(ar);}
+  if(l&&l.dataset.gp===id){const t=document.createElement('div');t.innerHTML=gpLeisteHtml({id});l.replaceWith(t.firstElementChild);document.querySelectorAll('#gpLeiste .gp-ta,#gpLeiste .gp-th-in').forEach(ar);}
 }
 export function gpWaehle(id){gpSel=id;if(curPage==='gameplan'){renderGameplan();const d=document.getElementById('gpDetail');if(d&&innerWidth<760)d.scrollIntoView({block:'start',behavior:'smooth'});}}
 export function gpAuf(id){if(gpOffen.has(id))gpOffen.delete(id);else gpOffen.add(id);neuZeichnen(id);}
@@ -230,3 +231,7 @@ export function gpTradeHtml(k,id,titel,kurz){
     ${krit('Entry',g.en)}${krit('Break',g.br)}
   </div>`;
 }
+
+// These immer ganz sichtbar (Nutzer 2026-11-17): das aufgeklappte Feld waechst mit dem Text -
+// auch wenn die Leiste mit der Asset-Seite neu aufgebaut wird (nicht nur ueber neuZeichnen).
+try{new MutationObserver(ms=>{if(ms.some(m=>[...m.addedNodes].some(n=>n.nodeType===1&&n.querySelector&&n.querySelector('.gp-th-in'))))requestAnimationFrame(()=>document.querySelectorAll('.gp-th-in').forEach(ar));}).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}

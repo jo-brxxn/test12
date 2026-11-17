@@ -13,6 +13,8 @@
 //  F) 15 Tage alte Aenderung -> Hinweis "Not reviewed"
 //  G) Abgleich zweier Geraete: je Asset gewinnt die juengere Aenderung; Feld in snap()
 //  H) 390 px: kein Seitenueberlauf auf Seite und Asset-Seite
+//  I) These immer ganz (umbricht), These + Kalender eine Stufe unter dem Titel, aufgeklappt
+//     "Go to Gameplan" und runde Ecke unten
 // --gegenprobe: Leiste wird nicht eingebaut -> C rot.
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const { chromium } = require(PW); const fs = require('fs'); const path = require('path');
@@ -82,6 +84,17 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     if (!Fz) F.push(o + ' F: 15 Tage alte Aenderung ohne Hinweis');
     const ue = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     if (ue > 1) F.push(`${o} H: Gameplan-Seite laeuft ${ue} px ueber`);
+    // I (750): These immer ganz sichtbar (umbricht), These + Kalender eine Stufe unter dem Titel;
+    //   aufgeklappt: "Go to Gameplan", untere Ecken rund
+    await p.evaluate(() => { gpText('GOLD', 'th', 'A very long thesis that must never be cut off: real yields falling, central banks buying, the dollar weakening and geopolitical risk rising into year end'); gotoSym('GOLD'); }); await p.waitForTimeout(1500);
+    const I = await p.evaluate(() => { const t = document.querySelector('#gpLeiste .gp-k1-th'), ti = document.querySelector('#gpLeiste .gp-k1-t'), n = document.querySelector('#gpLeiste .gp-k1-n');
+      return { ganz: t && t.scrollWidth <= t.clientWidth + 1 && getComputedStyle(t).textOverflow !== 'ellipsis' && t.scrollHeight <= t.clientHeight + 1, fs: t && parseFloat(getComputedStyle(t).fontSize), ft: ti && parseFloat(getComputedStyle(ti).fontSize), fn: n && parseFloat(getComputedStyle(n).fontSize) }; });
+    if (!I.ganz) F.push(`${o} I: lange These abgeschnitten`);
+    if (I.fs !== I.ft - 2 || (I.fn && I.fn !== I.ft - 2)) F.push(`${o} I: These ${I.fs} px / Kalender ${I.fn} px statt eine Stufe unter dem Titel (${I.ft} px)`);
+    await p.evaluate(() => document.querySelector('#gpLeiste .gp-k1-z').click()); await p.waitForTimeout(500);
+    const I2 = await p.evaluate(() => { const a = document.querySelector('#gpLeiste .gp-k1-a'), g = [...document.querySelectorAll('#gpLeiste .ab-goto-b')].map(b => b.textContent.trim()); return { go: g, rad: a ? getComputedStyle(a).borderBottomRightRadius : '' }; });
+    if (!I2.go.some(x => /^Go to Gameplan/.test(x))) F.push(`${o} I: aufgeklappt ohne "Go to Gameplan" (${I2.go})`);
+    if (!I2.rad || I2.rad === '0px') F.push(`${o} I: aufgeklappt untere rechte Ecke nicht rund`);
     err.forEach(e => F.push(o + ' JS-Fehler: ' + e));
     await ctx.close();
   }

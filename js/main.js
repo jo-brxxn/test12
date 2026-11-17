@@ -17848,7 +17848,7 @@ function dashHeroHtml(){
   const upd=priceDataLastFetch?new Date(priceDataLastFetch).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):null;
   return`<div class="pg-titel dx-gruss" id="dashGruss">${dashGruss(now)}, <span class="dx-name">${escH(DASH_NAME)}</span>!</div>
     <div class="pg-sub dx-hero-sub">Here's your market overview.</div>
-    <div class="dx-hero-meta"><span class="db-live"></span><b>Live data</b><span class="dx-sep">|</span><span id="dashUhr">${upd?'Last update '+escH(upd):'Updating'}</span><span class="dx-sep">|</span>${ses.length?`<b>${escH(ses.join(' + '))}</b>&nbsp;open`:'<i>Markets closed</i>'}</div>`;
+    <div class="dx-hero-meta"><b>Live data</b><span class="dx-sep">|</span><span id="dashUhr">${upd?'Last update '+escH(upd):'Updating'}</span><span class="dx-sep">|</span>${ses.length?`<b>${escH(ses.join(' + '))}</b>&nbsp;open`:'<i>Markets closed</i>'}</div>`;
 }
 // Kennzahl-Kacheln (Knoepfe - fuer check/hierarchie.js keine "Karten").
 function dashStatsHtml(z){

@@ -97,17 +97,19 @@ const gruen = m => console.log('  ✓ ' + m);
     else if (!treffer) rot('H: Fahren ueber den Chart findet keinen Tag mit Releases');
     else if (treffer.ist !== treffer.soll || !/\d/.test(treffer.t)) rot(`H: ${treffer.k}: Spalte "${treffer.t}" mit ${treffer.ist} Karten, der Tag hat ${treffer.soll} Releases`);
     else gruen(`H: Maus ueber ${treffer.k} -> Spalte "${treffer.t}" mit genau ${treffer.soll} Release(s) des Tages`);
-    // Klick haelt fest, Maus weg -> bleibt; derselbe Tag nochmal geklickt -> Next up
+    // C (seit 750, Nutzer 2026-11-17: "nur dieses Preisschildstab da bewegen und wenn der nicht da
+    // ist ... dann werden die zukuenftigen Events angezeigt"): Maus-Klick haelt NICHT fest, Maus weg
+    // -> Next up; kein graues Tagesband, keine Prozent-Chips, kein "Mark this day".
     const px = box.x + box.width * fx, py = box.y + box.height * 0.5;
-    await p.mouse.click(px, py); await p.waitForTimeout(400);
+    await p.mouse.move(px, py); await p.waitForTimeout(300);
+    const c0 = await p.evaluate(() => { const b = document.querySelector('#detail .pk-band'); return { band: b ? getComputedStyle(b).display !== 'none' && getComputedStyle(b).opacity !== '0' : false, chips: !!document.querySelector('#detail .pk-stat'), neu: !!document.querySelector('#detail .pk-neu') }; });
+    await p.mouse.click(px, py); await p.waitForTimeout(300);
     await p.mouse.move(2, 2); await p.waitForTimeout(400);
-    const c1 = await p.evaluate(() => ({ sel: pkZustand().sel, t: (document.querySelector('.pk-col-t') || {}).textContent || '' }));
-    await p.mouse.click(px, py); await p.waitForTimeout(400);
-    await p.mouse.move(2, 2); await p.waitForTimeout(400);
-    const c2 = await titel(p);
-    if (!c1.sel || !/\d/.test(c1.t)) rot(`C: Klick haelt den Tag nicht fest (Auswahl ${JSON.stringify(c1.sel)}, Titel "${c1.t}")`);
-    else if (c2 !== 'Next up') rot(`C: derselbe Tag nochmal geklickt -> "${c2}" statt Next up`);
-    else gruen(`C: Klick haelt ${c1.sel.k} fest (Maus weg -> bleibt "${c1.t}"), nochmal -> Next up`);
+    const c1 = await titel(p);
+    if (c0.band) rot('C: graues Tagesband sichtbar');
+    if (c0.chips || c0.neu) rot(`C: Tag-Spalte zeigt noch ${c0.chips ? 'Prozent-Chips ' : ''}${c0.neu ? 'Mark this day' : ''}`);
+    if (c1 !== 'Next up') rot(`C: Maus weg nach Klick -> "${c1}" statt Next up`);
+    if (!c0.band && !c0.chips && !c0.neu && c1 === 'Next up') gruen('C: kein Band, keine Chips, kein Mark this day; Klick haelt nicht fest, Maus weg -> Next up');
     await p.evaluate(() => pkModusSetzen('next')); await p.waitForTimeout(300);
     const t2 = await titel(p);
     if (t2 !== 'Next up') rot(`C: Reiter Next up -> "${t2}"`);

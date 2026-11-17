@@ -22408,3 +22408,14 @@ Nutzer: *„Ja maximale Historie“*.
 ## 2026-11-17 — Auswahlfenster: gleich breite Knöpfe (VERSION-CHECK-749)
 
 **Nutzer (Foto Asset-Fenster):** *„nicht alle Assets gleich breit und damit nicht perfekt untereinander“* — gemessen FX Pairs 5 Breiten (71–75 px) an 10 linken Kanten, Stocks 13 Breiten. `chipRaster()`: je Fenster eine Breite, Raster `minmax(W,1fr)`, Innenabstand 6 px → 3 Spalten je Spalte des Fensters (1194 px), 2 bei 390 px; alle Knöpfe 83 px. Gilt für jedes `.data-picker`-Fenster. Wächter `check/chipraster.js`.
+
+## 2026-11-17 — UI-Paket (VERSION-CHECK-750)
+
+Nutzer (mehrere iPad-Fotos):
+- *„Die These des gameplans muss immer komplett zu sehen sein“* + *„These und Kalender nur eine schriftgröße kleiner als … gameplan“*: `.gp-k1-th` umbricht (kein Abschneiden), 15 px (Titel 17 px), Kalender „Next …“ 15 px; aufgeklappt wächst das Feld mit (Textfeld, `ar()`).
+- *„wenn man die gameplan Karte aufklappt ist sie unten rechts nicht abgerundet und da soll … go to gameplan“*: Verlauf-Hintergrund ragte über die Ecke → `.gp-k1-a` unten gerundet; „All gameplans“ → *Go to Gameplan →* wie jede Karte.
+- *„… mit diese grauen Box umgesetzt jetzt ist das doppelt ich will nur dieses Preisschildstab da bewegen und wenn der nicht da ist … dann werden die zukünftigen Events angezeigt“*: graues Tagesband aus; Maus-Klick hält keinen Tag mehr fest (Maus weg → Next up), Finger-Tipp weiter.
+- *„Entfern … mark this day und die ganzen Zeitangaben mit Prozentzahlen“*: Chips (Week/Day, Next 5D, Umfeld, ▲▼◆) und „+ Mark this day“ weg; Tag ohne Release → „No releases on this day“.
+- *„Das umkreiste entry mit dem Preis … ist doppelt“*: Karte Open trades ohne Entry-Etikett an der Preisleiste (Punkt bleibt).
+- *„Das Zeichen neben Live data soll weg und live data soll gleich weit links“*: Punkt entfernt.
+- Wächter: `check/preiskarte.js` C neu, `check/gameplan.js` I.

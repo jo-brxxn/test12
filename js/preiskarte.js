@@ -370,9 +370,9 @@ function pkSpalteHtml(id){
   const titel=L.woche?`Week of ${tagKurz(b.k)}`:tagJahr(d0);
   const ev=b.ev.slice().sort((x,y)=>x.d.localeCompare(y.d));
   return`<div class="pk-col-hd"><span class="pk-col-t">${escH(titel)}</span>${ev.length?`<span class="pk-pill">${ev.length}</span>`:''}<button type="button" class="pk-x" onclick="pkWaehle(null)" title="Back to next up" aria-label="Back to next up">✕</button></div>
-    <div class="pk-stat"><span>${L.woche?'Week':'Day'} ${f(bw.tag)}</span>${bw.nach!=null?`<span>Next 5D ${f(bw.nach)}</span>`:''}${pkUmfeld(id,d0,d1).map(u=>`<span>${escH(u[0])} <b style="color:${u[2]>0?BC.bull:u[2]<0?BC.bear:'var(--t1)'}">${escH(u[1])}</b></span>`).join('')}${ev.length?`<span><b style="color:${BC.bull}">▲${b.g}</b> <b style="color:${BC.bear}">▼${b.s}</b> <b>◆${b.n}</b></span>`:''}</div>
-    <div class="pk-list">${ev.map(e=>karteHtml(e,L.woche?escH(tagKurz(e.d)):'')).join('')}${b.eig.map(n=>`<div class="pk-ev pk-ev-eig" style="--c:${bcol(n.bias)}"><div class="pk-ev-o"><span class="pk-mine">Mine</span><span class="pk-ev-n">${escH(n.title||'')}</span><button type="button" class="pk-del" onclick="pkEigenWeg('${escJH(n.id)}')" title="Delete this mark" aria-label="Delete this mark">✕</button></div><div class="pk-ev-u"><span style="color:${bcol(n.bias)};font-weight:800">${(BIAS.find(z=>z[0]===n.bias)||BIAS[1])[1]}</span>${L.woche?`<span>${escH(tagKurz(n.pm.d))}</span>`:''}</div></div>`).join('')}
-      <button type="button" class="pk-neu" onclick="pkFormAuf('${escJH(d1)}')">＋ Mark this day</button></div>`;
+    ${/* Prozent-Chips (Week/Next 5D/Umfeld/Zaehler) entfernt - Nutzer 2026-11-17 */''}
+    <div class="pk-list">${ev.length||b.eig.length?'':`<div class="pk-leer">No releases ${L.woche?'this week':'on this day'}</div>`}${ev.map(e=>karteHtml(e,L.woche?escH(tagKurz(e.d)):'')).join('')}${b.eig.map(n=>`<div class="pk-ev pk-ev-eig" style="--c:${bcol(n.bias)}"><div class="pk-ev-o"><span class="pk-mine">Mine</span><span class="pk-ev-n">${escH(n.title||'')}</span><button type="button" class="pk-del" onclick="pkEigenWeg('${escJH(n.id)}')" title="Delete this mark" aria-label="Delete this mark">✕</button></div><div class="pk-ev-u"><span style="color:${bcol(n.bias)};font-weight:800">${(BIAS.find(z=>z[0]===n.bias)||BIAS[1])[1]}</span>${L.woche?`<span>${escH(tagKurz(n.pm.d))}</span>`:''}</div></div>`).join('')}
+</div>`;
 }
 
 // ── Bedienung ────────────────────────────────────────────────────────────
@@ -583,6 +583,10 @@ document.addEventListener('click',e=>{
   if(t.closest('.pk-nt,.pk-nt-dot'))return;
   // Tipp/Klick auf einen Tag haelt ihn fest; derselbe Tag nochmal = zurueck zu Next up
   const tg=L?pkTagAn(e):null;
+  // Maus: kein Festhalten (Nutzer 2026-11-17: "nur dieses Preisschildstab da bewegen und wenn der
+  // nicht da ist ... dann werden die zukuenftigen Events angezeigt") - Fahren zeigt den Tag,
+  // Verlassen zeigt Next up. Finger: Tipp haelt den Tag (es gibt kein Fahren).
+  if(e.pointerType==='mouse'&&tg)return;
   if(tg&&!(pkSel&&pkSel.a===tg.L.a&&pkSel.k===tg.k&&e.pointerType!=='touch'&&!e.__pkFinger)){pkWaehle(tg.k);return;}
   if(pkSel)pkWaehle(null);
 },true);

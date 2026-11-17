@@ -803,8 +803,9 @@ function tjPreisleisteHtml(t,jetzt){
   // ueber Pixel (in einer 270-px-Karte ueberlappten SL und Entry bei 26 %).
   // Lage ohne Pixel: abwechselnd oben/unten (erste Anzeige, ohne Skript). Die echte Anordnung
   // macht tjpAnordnen() nach Pixeln - siehe dort.
-  const mk=marken.map(([k,l,v],i)=>{const p=pos(v),unten=i%2===1;
-    return`<span class="tjp-mk k-${k}${unten?' unten':''}${p<10?' li':p>90?' re':''}" data-p="${p.toFixed(3)}" style="left:${p.toFixed(2)}%"><span class="tjp-pkt"></span><span class="tjp-lbl">${l} <b>${tjPreis(v)}</b></span></span>`;}).join('');
+  // Karte "Open trades": Entry steht schon in der Zeile darueber - kein zweites Etikett (Nutzer 2026-11-17)
+  const mk=marken.map(([k,l,v],i)=>{const p=pos(v),unten=i%2===1,ohne=jetzt!=null&&k==='entry';
+    return`<span class="tjp-mk k-${k}${unten?' unten':''}${p<10?' li':p>90?' re':''}" data-p="${p.toFixed(3)}" style="left:${p.toFixed(2)}%"><span class="tjp-pkt"></span>${ohne?'':`<span class="tjp-lbl">${l} <b>${tjPreis(v)}</b></span>`}</span>`;}).join('');
   return`<div class="tjp${jetzt!=null?' klein':''}"><div class="tjp-bahn">${zone(sl,e,'risk')}${zone(e,tp,'reward')}${mk}</div></div>`;
 }
 // ── Keine Ueberlappung (Nutzer 2026-11-17, iPad-Foto: "SL 1.22149" lag auf "Entry 1.22825";
