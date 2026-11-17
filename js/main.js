@@ -7795,7 +7795,7 @@ function getSym(){return syms.find(c=>c.id===selId)||syms[0];}
 // auch fuer einen, der erst spaeter dazukommt. ⚠ try/catch, weil openM
 // schon beim Laden des Moduls laufen kann (Erststart-Hilfe, Cloud-Fenster
 // aus dem Sperrbildschirm), bevor MODAL_GUARDS weiter unten existiert.
-function openM(id){const el=document.getElementById(id);el.style.display='flex';try{guardArm(id);}catch(e){}
+function openM(id){try{ovRahmen();}catch(e){}const el=document.getElementById(id);el.style.display='flex';try{guardArm(id);}catch(e){}
   // Kein Fliesstext (Dauerregel 2026-10-11): jedes Fenster, das Absaetze oder
   // mehrsaetzige Listenpunkte enthaelt, zeigt sie als Punkte. Eingabefelder
   // und Notiz-Inhalte bleiben unberuehrt (kurzDom ueberspringt sie).
@@ -7956,6 +7956,38 @@ document.addEventListener('click',ev=>{
   if(t&&t.classList&&t.classList.contains('ov')&&t.id===_ovPressId)closeMGuarded(t.id);
   _ovPressId=null;
 });
+// ══ FENSTER ZWISCHEN KOPFZEILE UND SEITENLEISTE (seit 2026-11-17, VERSION-CHECK-743) ══
+// Nutzer 2026-11-17: "alle Fenster die man oeffnen kann sollen absofort innerhalb der oberen
+// und linken Leiste sein damit man auch die Pfeiltaste da benutzen kann. Klickt man was
+// anderes schliesst es sich wenn der Inhalt nicht gespeichert ist wird wie normal gefragt".
+// Rueckfrage: Tipp auf den Pfeil = Fenster zu (mit Nachfrage) UND Pfeil wirkt; Handy (<= 700 px)
+// volle Breite unter der Kopfzeile. Geprueft von check/fensterrahmen.js.
+function ovRahmen(){
+  const h=document.querySelector('.hdr'),sb=document.getElementById('navSidebar'),r=document.documentElement.style;
+  const t=h?Math.max(0,Math.round(h.getBoundingClientRect().bottom)):0;
+  let l=0;
+  if(innerWidth>700&&sb&&getComputedStyle(sb).display!=='none'){const b=sb.getBoundingClientRect();if(b.width>0&&b.left<=1)l=Math.round(b.right);}
+  r.setProperty('--ov-t',t+'px');r.setProperty('--ov-l',l+'px');
+}
+addEventListener('resize',ovRahmen);
+try{const ro=new ResizeObserver(ovRahmen);['.hdr','#navSidebar'].forEach(q=>{const e=document.querySelector(q);if(e)ro.observe(e);});}catch(e){}
+ovRahmen();
+// Tipp auf Kopfzeile/Seitenleiste bei offenem Fenster: Fenster zu, der Tipp wirkt danach
+// (Pfeil, Seitenwechsel, Profil ...). Steht Ungespeichertes drin: Nachfrage, der Tipp wirkt NICHT.
+let _ovSchluck=false;
+function ovOffen(){return[...document.querySelectorAll('.ov')].filter(o=>getComputedStyle(o).display!=='none');}
+document.addEventListener('pointerdown',ev=>{
+  const t=ev.target;if(!t||!t.closest||!t.closest('.hdr,#navSidebar'))return;
+  const offen=ovOffen();if(!offen.length)return;
+  _ovSchluck=false;
+  for(let i=offen.length-1;i>=0;i--){
+    const id=offen[i].id;
+    if(id==='mUnsaved'){_ovSchluck=true;return;}           // erst die Nachfrage beantworten
+    if(modalIsDirty(id)){_ovSchluck=true;closeMGuarded(id);return;}
+    closeM(id);
+  }
+},true);
+document.addEventListener('click',ev=>{if(_ovSchluck){_ovSchluck=false;ev.stopPropagation();ev.preventDefault();}},true);
 // Escape schliesst das OBERSTE offene Fenster dieser Liste - ueber denselben
 // Schutz wie der Klick daneben. Bis 2026-09-30 setzte es display:none direkt
 // und nahm Eingaben in sieben Fenstern ohne Nachfrage mit.

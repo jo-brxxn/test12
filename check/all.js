@@ -92,6 +92,7 @@ const PRUEFUNGEN = [
   { n: 'eingabesync', s: 60, d: 'Kein Abgleich/Neuaufbau mitten in Eingabe oder Scrollen: Fokus und Zeichen bleiben, fremde Aenderung kommt danach, Scroll-Stand bleibt', f: 'check/eingabesync.js', args: [], browser: true },
   { n: 'undo', s: 90, d: 'Undo/Redo: Feld = 1 Schritt, Feed bleibt draussen, 20 Schritte, nach Neuladen, Trade mit Grabstein, ueber zwei Geraete', f: 'check/undo.js', args: [], browser: true },
   { n: 'tradegameplan', s: 40, d: 'Neuer Trade: Gameplan im Formular, Kopie am Trade, leerer Plan -> Pflicht-Fenster, Eingabe auch im Gameplan', f: 'check/tradegameplan.js', args: [], browser: true },
+  { n: 'fensterrahmen', s: 30, d: 'Fenster zwischen Kopfzeile und Seitenleiste (Handy: unter der Kopfzeile), Pfeil-Tipp schliesst + wirkt, Ungespeichertes fragt nach', f: 'check/fensterrahmen.js', args: [], browser: true },
   { n: 'datumfeld', s: 1, d: 'Datum-/Zeit-Felder ragen auf dem iPad nicht ueber ihre Spalte (globale Regel min-width:0/max-width:100%)', f: 'check/datumfeld.js', args: [], browser: false },
   { n: 'gameplan', s: 60, d: 'Gameplan: Seite (jedes Asset, Watchlist oben), Bias faerbt, Leiste vor der Price-Karte, aufgeklappt ab Entry|Break, gespeichert, Preislinie, 14-Tage-Hinweis', f: 'check/gameplan.js', args: [], browser: true },
   { n: 'kerzenarchiv', s: 40, d: 'Alte Kerzen (>183 Tage) in price_ohlc.json, Laden nur fuer lange Charts, Rundreise bitgenau, Scores unveraendert', f: 'check/kerzenarchiv.js', args: [], browser: true },

@@ -22347,3 +22347,13 @@ Nutzer: *„Ja maximale Historie“*.
 - Tippen → Abgleich ohne Groß-/Kleinschreibung, Leer-/Schrägstriche (`Audnzd` → AUD/NZD; Name `copper` → COPPER; Kürzel über `TJ_ALIAS`, z. B. XAU → GOLD). Kein Treffer → rechts *Filter*, gespeichert wird der getippte Text.
 - Wahl rechts → links der Name (*Copper*). Gespeichert wird die Kennung (Kurse, Gameplan); Journal, Karten, Löschen-/Schließen-Dialog zeigen den Namen (`tjName`).
 - Wächter `check/tradegameplan.js` I.
+
+## 2026-11-17 — Fenster zwischen Kopfzeile und Seitenleiste (VERSION-CHECK-743)
+
+**Nutzer:** *„alle Fenster die man öffnen kann sollen absofort innerhalb der oberen und linken Leiste sein damir man auch die Pfeiltaste da benutzen kann. Klickt man was anderes schließ es sich wenn der Inhalt nicht gespeichert ist wird wie normal gefragt ob das gespeichert werden soll“*
+**Rückfragen:** Pfeil-Tipp = Fenster zu (mit Nachfrage) und Pfeil wirkt · Handy volle Breite unter der Kopfzeile. Korrektur meiner ersten Frage: auch bei 390 px gibt es die Seitenleiste (64 px, gemessen).
+- Gemessen vorher: `.ov` `inset:0`, z 200 über Kopfzeile (54 px) und Leiste (76 px) — Pfeile nicht erreichbar.
+- Jetzt `--ov-t/--ov-l` aus `ovRahmen()`; Vollbild-Varianten (BTC Sentiment, Fear & Greed, Notiz-Seite, `.modal` max-height) rechnen mit denselben Werten.
+- Tipp auf Kopfzeile/Leiste: Fenster von oben nach unten zu (`closeM`); Ungespeichertes → `closeMGuarded` + Tipp geschluckt; offene Nachfrage → Tipp geschluckt.
+- Asset-Feld-Platzhalter am Handy abgeschnitten („EUR/U“) → kurz *Type an asset*.
+- Wächter `check/fensterrahmen.js` (A–E, Gegenprobe → A rot).

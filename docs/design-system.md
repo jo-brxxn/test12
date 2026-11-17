@@ -1530,6 +1530,13 @@ die eigene Aufzeichnung unter 20 Tagen liegt: ACT `n/20d`, Chart-Text
 „Building up“. Past-Liste: Filter „High impact“ in der Titelzeile vor dem ⓘ
 (derselbe Schalter wie „High-impact only“ der Kalender-Leiste).
 
+## Fenster liegen zwischen Kopfzeile und Seitenleiste (Dauerregel seit 2026-11-17, 743)
+
+- Nutzer: *„alle Fenster die man öffnen kann sollen absofort innerhalb der oberen und linken Leiste sein damit man auch die Pfeiltaste da benutzen kann. Klickt man was anderes schließt es sich wenn der Inhalt nicht gespeichert ist wird wie normal gefragt“*
+- `.ov` = `inset: var(--ov-t) 0 0 var(--ov-l)`; `ovRahmen()` misst Kopfzeile/Seitenleiste (Resize, ResizeObserver, jedes `openM`). **Handy ≤ 700 px:** volle Breite unter der Kopfzeile (Nutzer-Wahl).
+- Vollbild-Fenster rechnen mit denselben Variablen — **nie** `inset:0` + `100vw`/`100dvh` (`check/fensterrahmen.js` E).
+- Tipp auf Kopfzeile/Seitenleiste bei offenem Fenster: Fenster zu, der Tipp wirkt danach (Pfeil = Undo, Seitenwechsel …). Ungespeichertes: Nachfrage, der Tipp wirkt nicht.
+
 ## Fenster (Modals): Knopfleiste fest unten, Nachfrage bei ungespeicherten Eingaben (Dauerregel seit 2026-09-30)
 
 Nutzer: *„ich will das die [Buttons Save und so] jetzt in einer eigenen Leiste fest fixiert da
