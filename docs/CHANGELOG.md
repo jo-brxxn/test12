@@ -22454,3 +22454,33 @@ Nutzer (PC-Fotos, Stand noch 748): *„das ausklappbare von den Assets am pc geh
   - Trends ≤ 5 px; Fear&Greed, BTC-Sentiment, Trends-Linien rechnen über Verhältnisse (zoomfest); Daten-Filter hängen am `body` (ungezoomt).
 - Vorbeugend: Knopfbreite der Price-Karte (`--pk-w`) aus `offsetWidth`.
 - Wächter `check/zoomhover.js` um **D** erweitert, `--gegenprobe-panel` → D rot.
+
+## 2026-11-17 — iPad „Local storage is full“: Abgleich-Basis nur noch als Unterschied (VERSION-CHECK-754)
+
+Nutzer-Screenshot iPad (16:21): *„Local storage is full — your last changes were NOT saved … 2574 KB“* · *„Prüf ob das Problem immer noch besteht und lös es“*.
+
+- **Reproduziert** (iPad-Kontingent 2560 K Zeichen nachgestellt, Cloud gestellt): frisches Gerät mit Sync **2401 K** belegt:
+
+  | Schlüssel | Größe |
+  |---|---|
+  | `fxpro_v1` | 948 K |
+  | `fxpro_sync_basis` | **1096 K** |
+  | Score-Journal | 159 K |
+  | Score-Cache | 167 K |
+  | COT-Cache | 31 K |
+
+  - Mit eigenen Notizen wirft die Leiter erst die Caches weg, dann rote Leiste.
+  - Der Wächter `speichervoll` maß dasselbe (2541 K) — das Rot am Morgen war kein Wackler.
+- **Ursache:** Die Basis war eine 1:1-Kopie des Stands. Beim Start ohne Offenes wird sie aus `snap()` gesetzt, nach jedem Abgleich ebenso. Dazu lag sie als String in JSON mit escapten Anführungszeichen (+148 K).
+- **Verdacht Undo-Verlauf widerlegt:** 5 K nach 50 Aktionen, 24–74 K bei großen Notiz-Mengen.
+- **Fix:** `fxpro_sync_basis` speichert jetzt eine von drei Formen:
+  - `{seen, gleich:1}`, wenn die Basis dem gespeicherten Stand entspricht
+  - `{seen, d}`: Unterschied (`undoDiff`) zu `fxpro_v1`, nach jedem Schreiben von `fxpro_v1` neu berechnet
+  - Rückfall `{seen, o}`, wenn die Rundweg-Prüfung nicht exakt zurückkommt
+- **Ergebnis:** frisches iPad mit Sync **1306 K statt 2401 K**; offene Eingaben → Unterschied **2 K statt 948 K**, nach Neuladen exakt.
+- **Eigenen Fehler abgefangen:** Beim Verkleinern fehlte das Kennzeichen `o` an Reihenfolge-Einträgen. Der Rundweg-Check schaltete deshalb auf die volle Kopie zurück; der Wächter zeigte es sofort (B rot).
+- **Zusätzlich:**
+  - Der Undo-Verlauf weicht bei vollem Speicher vor dem Score-Journal.
+  - „Show what is using the space“ zeigt jetzt auch Undo-Verlauf und Basis.
+- **Wächter:** neu `check/speicherplatz.js` (Gegenprobe volle Kopie → rot). `speichervoll` hat eine neue Marke; die Gegenprobe ist weiter rot.
+- **Gegengeprüft:** Abgleich-Wächter grün — `zurueck`, `geloescht`, `trades`, `eingabesync`, `altgeraet`, `notizen`, `snaprunde`.

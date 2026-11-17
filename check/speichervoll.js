@@ -30,7 +30,9 @@ const GP = process.argv.includes('--gegenprobe');
 const FAKE = 'https://speichervoll-cloud.invalid';
 const LIMIT = 2621440;   // 5 MB in UTF-16
 const MAIN = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
-const MARKE = "schreibeMitPlatz('fxpro_sync_basis',JSON.stringify({seen,s}))";
+// seit 754 liegt die Basis als Unterschied zum Stand da (check/speicherplatz.js); die Gegenprobe
+// stellt die alte volle Kopie mit rohem setItem wieder her.
+const MARKE = "schreibeMitPlatz('fxpro_sync_basis',wert)";
 
 let fehler = 0;
 const rot = m => { console.log('  ✗ ' + m); fehler++; };

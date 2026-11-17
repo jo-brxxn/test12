@@ -5828,11 +5828,16 @@ const SNAP_ENTBEHRLICH=[
   ['fxpro_backups','local backups'],
   ['fxpro_cot_hist_cache','the COT history cache'],
   ['fxpro_scorehist','the score history cache'],
+  // Undo-Verlauf (seit 741): bequem, aber kein Datenstand - vor dem Journal (754)
+  ['fxpro_undo_log','the undo history'],
   // Letzte Stufe: das Score-Journal ist NICHT wiederherstellbar, aber es ist
   // ein Protokoll - die eigenen Daten des Nutzers gehen immer vor.
   ['fxpro_scorejournal','the score journal (causes of past score changes)'],
 ];
 function schreibeSnapshot(s){
+  try{schreibeSnapshotRoh(s);}finally{try{_v1Platte=localStorage.getItem(SK);if(_syncBasis)basisAufPlatte();}catch(e){}}
+}
+function schreibeSnapshotRoh(s){
   try{localStorage.setItem(SK,s);saveQuotaOk();return;}catch(e){if(!istQuotaFehler(e))throw e;}
   // Stufe 1: den alten, groesseren Eintrag zuerst freigeben.
   try{
@@ -5978,6 +5983,8 @@ function storageRows(){
   ['fxpro_scorehist','fxpro_cot_hist_cache'].forEach(k=>{
     const v=localStorage.getItem(k);if(v&&v.length>1024)rows.push({n:k,kb:kb(v.length),hint:'Cache, rebuilds itself.',loesch:k});
   });
+  {const v=localStorage.getItem('fxpro_undo_log');if(v&&v.length>1024)rows.push({n:'Undo history',kb:kb(v.length),hint:'Last 20 changes for the arrows top right. Dropped first if space runs out.'});}
+  {const v=localStorage.getItem('fxpro_sync_basis');if(v&&v.length>1024)rows.push({n:'Sync base',kb:kb(v.length),hint:'Only the changes not yet synced. Needed so a reload does not overwrite the other device.'});}
   {const v=localStorage.getItem(JOURNAL_KEY);if(v&&v.length>1024)rows.push({n:'Score journal',kb:kb(v.length),
     hint:'Every score change with its cause, kept '+JR_TAGE+' days and synced. It cannot be rebuilt, so there is no delete button here.'});}
   return rows.sort((a,b)=>b.kb-a.kb);
@@ -7400,11 +7407,56 @@ function appVeraltet(){
 // Neuladen mit offenen Aenderungen verloren, und der erste Push lud dann ohne
 // Abgleich hoch (ueberschrieb, was das andere Geraet inzwischen geaendert hatte).
 function basisSetzen(s,seen){
-  _syncBasis=s;
-  // Ueber schreibeMitPlatz (siehe dort): bei vollem Speicher weichen erst
-  // Sicherungen und Caches, statt dass die Basis still verloren geht.
-  try{if(!(s&&seen&&schreibeMitPlatz('fxpro_sync_basis',JSON.stringify({seen,s}))))localStorage.removeItem('fxpro_sync_basis');}
-  catch(e){try{localStorage.removeItem('fxpro_sync_basis');}catch(x){}}
+  _syncBasis=s;_basisSeen=seen;
+  basisAufPlatte();
+}
+// ⚠ BASIS ALS UNTERSCHIED ZUM GESPEICHERTEN STAND (2026-11-17, VERSION-CHECK-754).
+// Nutzer-Screenshot iPad: "Local storage is full - 2574 KB". GEMESSEN (iPad-Kontingent
+// nachgestellt, frisches Geraet mit Sync): 2401 von 2560 K Zeichen belegt, davon
+// fxpro_v1 948 K und fxpro_sync_basis 1096 K - die Basis war eine 1:1-Kopie des
+// Stands (beim Start ohne Offenes wird sie aus snap() gesetzt, nach jedem Abgleich
+// ebenso) und lag zusaetzlich als String-in-JSON mit escapten Anfuehrungszeichen da
+// (+148 K). Eigene Daten von ~150 K reichten fuer die rote Leiste.
+// Jetzt: gleich dem gespeicherten Stand -> nur eine Marke; sonst der Unterschied
+// (undoDiff, nur die Zielwerte) relativ zu fxpro_v1, nach JEDEM Schreiben von
+// fxpro_v1 neu berechnet. Rundweg wird geprueft; passt er nicht, liegt die Basis
+// als Objekt (ohne Doppel-Escaping) da. Geprueft von check/speicherplatz.js.
+let _basisSeen=null,_v1Platte=null,_basisPlatteZuletzt=null;
+function basisAufPlatte(){
+  const s=_syncBasis,seen=_basisSeen;
+  try{
+    if(!(s&&seen)){localStorage.removeItem('fxpro_sync_basis');_basisPlatteZuletzt=null;return;}
+    const v1=_v1Platte!=null?_v1Platte:localStorage.getItem(SK);
+    let wert;
+    if(v1!=null&&s===v1)wert=JSON.stringify({seen,gleich:1});
+    else{
+      let d=null;
+      if(v1!=null){try{
+        const ab=JSON.parse(v1),ziel=JSON.parse(s);
+        d=undoDiff(ab,ziel,[],[]).map(x=>x.o?{p:x.p,o:1,n:x.n}:{p:x.p,b:x.b});   // o bleibt als Kennzeichen (Reihenfolge)
+        if(JSON.stringify(undoAnwenden(JSON.parse(v1),d))!==JSON.stringify(ziel))d=null;   // Rundweg
+      }catch(e){d=null;}}
+      wert=d?JSON.stringify({seen,d}):JSON.stringify({seen,o:JSON.parse(s)});
+    }
+    if(wert===_basisPlatteZuletzt)return;
+    // Ueber schreibeMitPlatz (siehe dort): bei vollem Speicher weichen erst
+    // Sicherungen und Caches, statt dass die Basis still verloren geht.
+    if(schreibeMitPlatz('fxpro_sync_basis',wert))_basisPlatteZuletzt=wert;
+    else{localStorage.removeItem('fxpro_sync_basis');_basisPlatteZuletzt=null;}
+  }catch(e){try{localStorage.removeItem('fxpro_sync_basis');}catch(x){}_basisPlatteZuletzt=null;}
+}
+// Basis von der Platte lesen (Start): Marke, Unterschied, Objekt oder altes Format (String).
+function basisVonPlatte(seen){
+  try{
+    const b=JSON.parse(localStorage.getItem('fxpro_sync_basis')||'null');
+    if(!b||!seen||b.seen!==seen)return null;
+    const v1=localStorage.getItem(SK);
+    if(b.gleich)return v1;
+    if(b.d&&v1!=null)return JSON.stringify(undoAnwenden(JSON.parse(v1),b.d));
+    if(b.o)return JSON.stringify(b.o);
+    if(typeof b.s==='string')return b.s;
+  }catch(e){}
+  return null;
 }
 function syncMerge3(basis,lokal,cloud){
   const gleich=(a,b)=>a===b||JSON.stringify(a)===JSON.stringify(b);
@@ -18380,7 +18432,7 @@ import {
 import {qcZerlegen} from './quickcapture.js';
 // Leichtes Federn am Scroll-Ende (Nutzer 2026-11-01), siehe js/federn.js
 import {federnAn} from './federn.js';
-import {undoInit,undoNachSave,undoOffen,undoSeq,undoRuhe,undoGrenze,undoFremd,undoFuerCloud,undoUebernehmen,undoKnoepfe,doUndo,doRedo} from './undo.js';
+import {undoDiff,undoAnwenden,undoInit,undoNachSave,undoOffen,undoSeq,undoRuhe,undoGrenze,undoFremd,undoFuerCloud,undoUebernehmen,undoKnoepfe,doUndo,doRedo} from './undo.js';
 // Eigenes Leicht-Federn (js/federn.js) seit 2026-11-06 AUS - die Seiten federn
 // wieder nativ (Nutzer: "wieder das normale iOS bouncen"). Modul bleibt fuer
 // eine Rueckkehr liegen.
@@ -27394,7 +27446,7 @@ undoInit();
 // genau der Cloud-Version gehoert, die dieses Geraet zuletzt kannte.
 try{if(getCloudCfg()){const seen=localStorage.getItem('fxpro_cloud_seen');
   if(localStorage.getItem('fxpro_updated')===seen)basisSetzen(snap(),seen);
-  else{const b=JSON.parse(localStorage.getItem('fxpro_sync_basis')||'null');if(b&&b.s&&seen&&b.seen===seen)_syncBasis=b.s;}}}catch(e){}
+  else{const bs=basisVonPlatte(seen);if(bs){_syncBasis=bs;_basisSeen=seen;}}}}catch(e){}
 // Hoechste App-Nummer, die auf diesem Geraet lief - ein aelterer Tab erkennt daran, dass er veraltet ist.
 try{if(APP_VER>+(localStorage.getItem('fxpro_app_ver')||0))localStorage.setItem('fxpro_app_ver',String(APP_VER));}catch(e){}
 applyCompactView();
@@ -28167,7 +28219,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{basisSetzen,basisVonPlatte,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
