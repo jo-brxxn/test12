@@ -351,7 +351,8 @@ if (neueScoreFnKandidaten.length) {
 // stehen. Der Lauf ist idempotent: findet er nichts, meldet Supabase 204.
 // sync_basis/app_ver (2026-10-21): Buchhaltung des Abgleichs je Geraet - der
 // gemeinsame Stand und die hoechste hier gelaufene App-Nummer, kein Nutzerzustand.
-const LOKAL_ERLAUBT = /(cloud|vorschau|updated|seen|pending|cache|migrat|purge|_v\d|intro|help|verbanner|score_mode|lastfetch|sync_basis|app_ver)/i;
+// undo_dev (741): Kennung DIESES Geraets im Undo-Verlauf (wer hat den Schritt gemacht) - gehoert bewusst nur hierher.
+const LOKAL_ERLAUBT = /(cloud|vorschau|updated|seen|pending|cache|migrat|purge|_v\d|intro|help|verbanner|score_mode|lastfetch|sync_basis|app_ver|undo_dev)/i;
 const altHtmlFuerKeys = codeGeaendert ? basisCode() : '';
 const neueKeys = [...new Set([...diffText.matchAll(/^\+.*localStorage\.setItem\(\s*['"](fxpro_[\w]+)['"]/gm)]
   .map(m => m[1]))].filter(k => !LOKAL_ERLAUBT.test(k) && !altHtmlFuerKeys.includes(k));
