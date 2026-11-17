@@ -22525,3 +22525,17 @@ Rückfragen beantwortet:
   - `geloescht`: Testnotizen angepinnt, Ordner-Teil raus.
   - `eingaben`: Quick capture raus, Gegenprobe jetzt mit dem Notiz-Editor (rot, 13 Befunde).
   - `hierarchie`: Trash-Karte mit ⓘ.
+
+## 2026-11-17 — Gameplan-History (VERSION-CHECK-756)
+
+Nutzer (Rückfrage zur History): *„Ich mach selber also muss es einen Button geben um das da abzulegen“*.
+
+- **Knöpfe:**
+  - Aufgeklappte Gameplan-Leiste (Asset-Seite) und Gameplan-Seite: **Save to history** und **History · N**.
+  - Fenster `mGpHist`: Datum, Bias, These, Entry/Break, **Delete** → Trash.
+- **Speicher:** `gameplans[id].h`, max. 60 Einträge, ältester fällt als Grabstein weg.
+  - Abgleich: Vereinigung je Id, jüngeres `u` gewinnt.
+  - Eigener Fund beim Testen: Ohne `u` hätte ein wiederhergestellter Eintrag beim Abgleich gegen den alten Grabstein des anderen Geräts verloren. Gemessen im Test D, behoben.
+- **Papierkorb:** allgemein über `trashAblegen()`; Trash-Seite zeigt den Typ „Gameplan“, Wiederherstellen setzt den Eintrag zurück.
+- **Trade-Kopie** (`gpKopie`) ohne History.
+- **Wächter:** neu `check/gphistory.js` (A–F), Gegenprobe → C rot.

@@ -7705,7 +7705,7 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .gp-chev{flex:0 0 auto;color:var(--t3);font-size:12px;width:16px;text-align:center}
 .gp-k1-a{padding:0 12px 8px;border-top:1px solid var(--bd);border-radius:0 0 var(--rs) var(--rs);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 6%,var(--card)),var(--card) 90px)}
 .gp-k1-a>.gp-zwei{padding-top:12px}
-.gp-k1-fuss{display:flex;align-items:center;gap:8px;justify-content:space-between;padding-top:12px}
+.gp-k1-fuss{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap;padding-top:12px}
 .gp-k1-a .gp-kat{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px}
 @media (max-width:760px){
   .gp-k1-z{flex-wrap:wrap;row-gap:6px}.gp-k1-th,.gp-th-in{flex-basis:100%;order:5;white-space:normal}
@@ -7729,7 +7729,7 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .gp-box{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:2px 12px 12px;min-width:0;display:flex;flex-direction:column}
 .gp-box>.gp-ta-th{flex:1 1 auto;min-height:90px}
 .gp-box.e,.gp-box.x{background:color-mix(in srgb,var(--k) 7%,var(--card))}
-.gp-d-f{display:flex;justify-content:flex-end;margin-top:12px}
+.gp-d-f{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:12px}
 @media (max-width:760px){.gp2{grid-template-columns:1fr}.gp2-l{position:static;max-height:300px}.gp-d-g{grid-template-columns:1fr}}
 /* Preislinien der Price-Karte (gpNiveaus) */
 .gp-niv{position:absolute;right:4px;transform:translateY(-50%);font:700 var(--fs-2xs)/1 var(--ff-text);color:#fff;background:var(--c);border-radius:5px;padding:3px 6px;pointer-events:none;z-index:6;box-shadow:0 0 0 2px var(--card);white-space:nowrap}
@@ -7786,6 +7786,7 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .ph-tx i{color:var(--t3);font-size:var(--fs-sm)}
 .ph-kn{display:flex;gap:6px;flex-shrink:0}
 .ph-leer{color:var(--t3);font-size:var(--fs-md);padding:10px 0}
+.gp-hk{display:flex;gap:6px;flex-wrap:wrap}
 @media (max-width:700px){.ph-z{flex-direction:column}.tr-tbl .tr-kn{white-space:normal}}
 </style>
 </head>
@@ -7874,11 +7875,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-755 - Archive weg, Trash-Seite (30 Tage), History der Pinned notes, Quick capture weg, News-Notiz angepinnt"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-756 - Gameplan-History: Save to history + History-Fenster, Loeschen in den Trash"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-755</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-756</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -8220,6 +8221,14 @@ window.fxLogoSvg=function(art){
     <div class="m-btns" style="margin-top:12px">
       <button class="btn" onclick="closeAssetCal()">Close</button>
     </div>
+  </div>
+</div>
+<!-- Gameplan-History (756): abgelegte Staende eines Assets, Delete -> Trash -->
+<div class="ov" id="mGpHist" style="display:none" onclick="if(event.target===this)closeM('mGpHist')">
+  <div class="modal ph-modal">
+    <h3><span class="h-ic" data-ic="clock"></span><span id="gpHistTitel">Gameplan history</span></h3>
+    <div id="gpHistBody" class="ph-liste"></div>
+    <div class="m-btns"><button class="btn" onclick="closeM('mGpHist')">Close</button></div>
   </div>
 </div>
 <!-- History der Pinned notes (755): entpinnte Notizen eines Assets, Pin again / Delete (-> Trash) -->

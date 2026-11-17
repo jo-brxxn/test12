@@ -126,7 +126,12 @@ Nutzer-Regel: *„Es soll nur noch Notizen in pinned Notes, gameplan geben und d
 - **Angepinnte Beispielnotiz** (`seedNoteFlags[sid].pin`): wird einmal zur eigenen Notiz `pin_<sid>`.
   - Feste Id → zwei Geräte erzeugen dieselbe.
   - Passiert in `seedPinsUmwandeln()` und auch in `applySeedNoteFlags()`, weil die Schalter beim Laden erst danach ankommen.
-- **Papierkorb:** `research.trash`, 30 Tage (`TRASH_TTL_MS`).
+- **Papierkorb:** `research.trash`, 30 Tage (`TRASH_TTL_MS`). Allgemein über `trashAblegen(kind,data)`. Arten bisher: `note`, `gphist`.
+- **Gameplan-History (756):** `gameplans[id].h = [{id, at, u, b, th, en, br}]`.
+  - Löschen = Grabstein `{id, at, u, del:1}`, der Inhalt geht in den Papierkorb (`kind 'gphist'`).
+  - `gpVereinen` vereinigt `h` je Id; die jüngere Änderung `u` gewinnt, bei Gleichstand der Grabstein.
+  - `gpKopie` (Trade) ohne `h`.
+  - Geprüft von `check/gphistory.js`.
 - **Geprüft von:** `check/notizen.js`, `check/geloescht.js`.
 
 ## Zentralbank-Notizen (seit 2026-10-27): KEINE eigene Speicherform

@@ -20,7 +20,7 @@ import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL
 import {trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,TJ_GUARD,TJ_GUARD_ZU,TJG_GUARD,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
-import {gameplans,gpRein,gpSetzeAlle,gpVereinen,gpLeisteHtml,gpNiveaus,renderGameplan,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert} from './gameplan.js';
+import {gameplans,gpRein,gpSetzeAlle,gpVereinen,gpLeisteHtml,gpNiveaus,renderGameplan,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpHistZurueck} from './gameplan.js';
 // Hero-Zeichnung des Dashboards (Nutzer 2026-11-06, siehe Kopf von heroart.js).
 import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
@@ -33,7 +33,7 @@ import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.j
 import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './kachelbild.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
-export {scoreAssets,closeM,
+export {scoreAssets,closeM,trashAblegen,newsNoteHinweis,
   // Was js/undo.js von hier braucht (2026-11-17).
   snap,undoSnapSetzen,renderSidebar,flushAndSave,tippenOffen,tippenJetztSpeichern,
   // Was js/trades.js fuer die Asset-Auswahl braucht (2026-11-17).
@@ -4807,6 +4807,11 @@ function mkResearch(){return{folders:mkResearchFolders(),notes:[],trash:[],_fold
 // Inhalts-Versionssprung routinemaessig ersetzt - das waere reines Rauschen
 // im Papierkorb, keine echte Nutzer-Aktion).
 const TRASH_TTL_MS=30*86400000;
+// Allgemeiner Papierkorb-Eintrag (756): alles, was auf der Seite geloescht wird (Nutzer 2026-11-17).
+function trashAblegen(kind,data){
+  if(!Array.isArray(research.trash))research.trash=[];
+  research.trash.push({id:uid(),kind,data,delAt:new Date().toISOString()});
+}
 function trashResNote(n){
   if(!n)return;
   // ⚠ Eine geloeschte SEED-Notiz muss sich das merken (2026-09-07), sonst
@@ -6307,6 +6312,7 @@ setInterval(()=>{if(document.visibilityState!=='hidden')saveLocalBackup('Automat
 // Notizen/Ordner mit voller Kontrolle darueber, was genau wiederkommt.
 function trashEntryLabel(t){
   if(!t||!t.data)return t&&t.kind==='folder'?'Folder':'Note';
+  if(t.kind==='gphist'){const e=t.data.e||{};return(t.data.asset||'')+' · '+(e.th||'Gameplan').slice(0,80);}
   if(t.kind==='folder')return t.data.name||'Folder';
   return t.data.title||researchTitleFrom(t.data.body)||'Note';
 }
@@ -6336,7 +6342,8 @@ function restoreTrashItem(id){
   const t=(research.trash||[]).find(x=>x.id===id);
   if(!t)return;
   pushU();
-  if(t.kind==='folder'){
+  if(t.kind==='gphist'){gpHistZurueck(t.data);}
+  else if(t.kind==='folder'){
     const f={...t.data};
     // Elternordner fehlt (nicht mitwiederhergestellt)? An die Wurzel haengen
     // statt unsichtbar zu bleiben - ein synthetischer Asset-Wurzel-Ordner
@@ -7914,7 +7921,7 @@ addEventListener('resize',nivBald);
 // Steht die Nachfrage offen, fuehrt Escape zurueck ins Fenster (der
 // harmlose Weg, wie der Klick neben die Nachfrage).
 const ESC_MODALS=['mAddSym','mAssetCfg','mHist','mAddPair','mRename','mDelSym','mInfo','mCloud','mRateWatch','mIndLink','mBackup','mTrash',
-  'mPinHist','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose'];
+  'mPinHist','mGpHist','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const nf=document.getElementById('mUnsaved');
@@ -16527,7 +16534,7 @@ function rerenderNotesHostRoh(){
 // (gespeicherte Tab-Stapel halten). 30 Tage, je Eintrag Restore / Delete forever.
 function datumKurz(iso){const d=new Date(iso);return isNaN(d)?'':d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
 function trashArt(t){return t.kind==='note'?(t.data&&t.data.cb?'Bank note':notizIstChart(t.data)?'Chart note':'Note'):t.kind==='folder'?'Folder':(TRASH_ARTEN[t.kind]||t.kind);}
-const TRASH_ARTEN={};
+const TRASH_ARTEN={gphist:'Gameplan'};
 function renderResearch(){
   const wrap=document.getElementById('resWrap');if(!wrap)return;
   const l=(research.trash||[]).filter(t=>t&&t.kind!=='folder').slice().sort((a,b)=>String(b.delAt).localeCompare(String(a.delAt)));
@@ -28080,7 +28087,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{basisSetzen,basisVonPlatte,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

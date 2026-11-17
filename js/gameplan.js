@@ -21,7 +21,7 @@
 // Geprueft von check/gameplan.js.
 import {BC} from './constants.js';
 import {escH,escJH,syms,pushU,saveSoon,save,todayStr,getSymEventsAll,assetIconHtml,watchlistedAssetIds,
-  watchlistPairs,watchInvolvedAssets,SB_CATS,YIELD_CCY,renderDetail,curPage,ar,abInfoBtn} from './main.js';
+  watchlistPairs,watchInvolvedAssets,SB_CATS,YIELD_CCY,renderDetail,curPage,ar,abInfoBtn,openM,trashAblegen,newsNoteHinweis} from './main.js';
 import {isEvtPast,evtImpact,countdownHtml,fmtDayHdr} from './calendar.js';
 import {priceSeriesFor} from './data-feeds.js';
 import {FX} from './constants.js';
@@ -35,9 +35,28 @@ const gpOffen=new Set();        // aufgeklappte Leisten auf der Asset-Seite (Sit
 // ── Zustand ──────────────────────────────────────────────────────────────
 const kritRein=k=>{const o=k&&typeof k==='object'?k:{};const art=o.k==='d'||o.k==='p'?o.k:'';
   return{t:typeof o.t==='string'?o.t.slice(0,600):'',k:art,v:typeof o.v==='string'?o.v.slice(0,40):''};};
+// History (756, Nutzer 2026-11-17: "bei den gameplans ... muss es einen Button geben um das da
+// abzulegen"): h = [{id, at, b, th, en, br}] - abgelegte Staende, neueste zuletzt. Geloescht =
+// Grabstein {id, at, del:1} (Liste wird beim Abgleich VEREINIGT -> Loesch-Marker, Regel 1);
+// der Inhalt liegt dann im Papierkorb (research.trash, kind 'gphist').
+const GP_HIST_MAX=60;
+function histRein(h){
+  if(!Array.isArray(h))return[];
+  return h.filter(x=>x&&typeof x==='object'&&typeof x.id==='string'&&/^[A-Za-z0-9_-]{1,40}$/.test(x.id)).map(x=>x.del
+    ?{id:x.id,at:+x.at||0,u:+x.u||+x.at||0,del:1}
+    :{id:x.id,at:+x.at||0,u:+x.u||+x.at||0,b:x.b==='bull'||x.b==='bear'?x.b:'',th:typeof x.th==='string'?x.th.slice(0,2000):'',en:kritRein(x.en),br:kritRein(x.br)});
+}
+// je Eintrag gewinnt die juengere Aenderung u (Loeschen ODER Wiederherstellen); gleich alt -> geloescht
+function histVereinen(a,b){
+  const m=new Map();
+  [...histRein(a),...histRein(b)].forEach(x=>{const v=m.get(x.id);if(!v||x.u>v.u||(x.u===v.u&&x.del))m.set(x.id,x);});
+  return[...m.values()].sort((x,y)=>x.at-y.at);
+}
 function eintragRein(e){
   if(!e||typeof e!=='object')return null;
-  return{b:e.b==='bull'||e.b==='bear'?e.b:'',th:typeof e.th==='string'?e.th.slice(0,2000):'',en:kritRein(e.en),br:kritRein(e.br),t:+e.t||0};
+  const o={b:e.b==='bull'||e.b==='bear'?e.b:'',th:typeof e.th==='string'?e.th.slice(0,2000):'',en:kritRein(e.en),br:kritRein(e.br),t:+e.t||0};
+  const h=histRein(e.h);if(h.length)o.h=h;
+  return o;
 }
 export function gpRein(v){
   const o={};if(!v||typeof v!=='object'||Array.isArray(v))return o;
@@ -48,7 +67,11 @@ export function gpSetzeAlle(v){gameplans=gpRein(v);}
 // Zwei Geraete bearbeiten verschiedene Assets: je Asset gewinnt die juengere Aenderung.
 export function gpVereinen(lokal,fremd){
   const a=gpRein(lokal),b=gpRein(fremd),o=Object.assign({},a);
-  Object.keys(b).forEach(id=>{if(!o[id]||(b[id].t||0)>=(o[id].t||0))o[id]=b[id];});
+  Object.keys(b).forEach(id=>{
+    const h=histVereinen(a[id]&&a[id].h,b[id].h);
+    if(!o[id]||(b[id].t||0)>=(o[id].t||0))o[id]=b[id];
+    if(h.length)o[id]=Object.assign({},o[id],{h});
+  });
   return o;
 }
 const leer=()=>({b:'',th:'',en:{t:'',k:'',v:''},br:{t:'',k:'',v:''},t:0});
@@ -127,7 +150,7 @@ export function gpLeisteHtml(c){
     ${offen?`<div class="gp-k1-a">
       <div class="gp-zwei">${kritHtml(id,'en','Entry','e')}${kritHtml(id,'br','Break','x')}</div>
       <div class="gp-lab">Upcoming catalysts</div>${katHtml(id)}
-      <div class="gp-k1-fuss">${biasSchalter(id)}</div>
+      <div class="gp-k1-fuss">${biasSchalter(id)}<div class="gp-hk"><button type="button" class="btn" onclick="gpHistAblegen('${escJH(id)}')" title="Store the current gameplan with today's date">Save to history</button><button type="button" class="btn" onclick="gpHistAuf('${escJH(id)}')">History${gpHist(id).length?' · '+gpHist(id).length:''}</button></div></div>
       <div class="ab-goto"><button class="ab-goto-b" onclick="showTab('gameplan');gpWaehle('${escJH(id)}')" title="Open the Gameplan page with this asset selected">Go to Gameplan →</button></div>
     </div>`:''}
   </div>`;
@@ -163,7 +186,7 @@ function detailHtml(id){
       ${kritHtml(id,'en','Entry','e gp-box')}
       ${kritHtml(id,'br','Break','x gp-box')}
     </div>
-    <div class="gp-d-f"><button type="button" class="gp-zur" onclick="gotoSym('${escJH(id)}')">Open ${escH(name(id))}</button></div>
+    <div class="gp-d-f"><div class="gp-hk"><button type="button" class="btn" onclick="gpHistAblegen('${escJH(id)}')" title="Store the current gameplan with today's date">Save to history</button><button type="button" class="btn" onclick="gpHistAuf('${escJH(id)}')">History${gpHist(id).length?' · '+gpHist(id).length:''}</button></div><button type="button" class="gp-zur" onclick="gotoSym('${escJH(id)}')">Open ${escH(name(id))}</button></div>
   </div>`;
 }
 export function renderGameplan(){
@@ -205,8 +228,50 @@ export function gpWert(id,feld,v){
 // angehaengt wird ... Wenn der gameplan leer ist dann oeffnet sich beim hinzufuegen druecken
 // ein Fenster und man kann ihn [dann] ausfuellen das wird dann auch so fuer den gameplan
 // uebernommen"). Rueckfrage: Kopie beim Speichern; ohne These kein Trade (Pflicht).
+// ── History (756) ──
+export function gpHist(id){return((gameplans[id]&&gameplans[id].h)||[]).filter(x=>!x.del).slice().reverse();}
+export function gpHistAblegen(id){
+  const g=gp(id);
+  if(!hatInhalt(g)){alert('Nothing to store yet - write a thesis, entry or break first.');return;}
+  try{
+    pushU();
+    veraendert(id,x=>{x.h=histRein(x.h);x.h.push({id:'h'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),at:Date.now(),u:Date.now(),b:x.b,th:x.th,en:{...x.en},br:{...x.br}});
+      const lebend=x.h.filter(e=>!e.del);if(lebend.length>GP_HIST_MAX){const weg=lebend[0].id;x.h=x.h.map(e=>e.id===weg?{id:e.id,at:e.at,u:Date.now(),del:1}:e);}});
+    save();neuZeichnen(id);gpHinweis('Gameplan stored in the history');
+  }catch(e){alert('Could not store the gameplan: '+(e&&e.message||e));}
+}
+let _gpHistId=null;
+export function gpHistAuf(id){
+  _gpHistId=id;
+  const el=document.getElementById('gpHistBody');if(!el)return;
+  document.getElementById('gpHistTitel').textContent='Gameplan history · '+name(id);
+  const kz=(k,t)=>k.t||k.v?`<span><b>${t}</b> ${escH(k.t||'')}${k.v?` <i>${escH(k.k==='p'?'@ '+k.v:k.v)}</i>`:''}</span>`:'';
+  const L=gpHist(id);
+  el.innerHTML=L.length?L.map(x=>`<div class="ph-z" style="--nb:${farbe(x.b)}">
+      <div class="ph-tx"><i>${escH(new Date(x.at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}))} · ${x.b==='bull'?'Bullish':x.b==='bear'?'Bearish':'No bias'}</i><b>${x.th?escH(x.th):'<i>No thesis</i>'}</b>${kz(x.en,'Entry')}${kz(x.br,'Break')}</div>
+      <div class="ph-kn"><button class="btn" onclick="gpHistLoeschen('${escJH(id)}','${escJH(x.id)}')">Delete</button></div>
+    </div>`).join(''):'<div class="ph-leer"><i>Nothing stored yet</i> · "Save to history" keeps the current gameplan with its date</div>';
+  openM('mGpHist');
+}
+export function gpHistLoeschen(id,hid){
+  const g=gameplans[id];if(!g||!Array.isArray(g.h))return;
+  const x=g.h.find(e=>e.id===hid&&!e.del);if(!x)return;
+  try{
+    pushU();
+    trashAblegen('gphist',{asset:id,e:JSON.parse(JSON.stringify(x))});
+    veraendert(id,y=>{y.h=y.h.map(e=>e.id===hid?{id:e.id,at:e.at,u:Date.now(),del:1}:e);});
+    save();neuZeichnen(id);if(_gpHistId)gpHistAuf(_gpHistId);
+  }catch(e){alert('Could not delete the entry: '+(e&&e.message||e));}
+}
+// Papierkorb -> zurueck (aus main.js restoreTrashItem)
+export function gpHistZurueck(d){
+  if(!d||!d.asset||!d.e||!d.e.id)return;
+  veraendert(d.asset,y=>{y.h=histRein(y.h).filter(e=>e.id!==d.e.id);y.h.push(Object.assign(histRein([d.e])[0],{u:Date.now()}));y.h.sort((a,b)=>a.at-b.at);});
+  neuZeichnen(d.asset);
+}
+function gpHinweis(t){try{newsNoteHinweis(t);}catch(e){}}
 export function gpHatThese(id){return!!gp(id).th.trim();}
-export function gpKopie(id){const g=gameplans[id];return g&&hatInhalt(g)?JSON.parse(JSON.stringify(g)):null;}
+export function gpKopie(id){const g=gameplans[id];if(!(g&&hatInhalt(g)))return null;const k=JSON.parse(JSON.stringify(g));delete k.h;return k;}   // ohne History
 export function gpName(id){return name(id);}
 export function gpAusTrade(id,v){
   pushU();
