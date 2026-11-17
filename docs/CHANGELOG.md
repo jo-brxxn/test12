@@ -22315,3 +22315,23 @@ Nutzer: *„Ja maximale Historie“*.
 **Gemessen danach:** 0 Abweichungen; nach 2 s Ruhe fremde Änderung da, eigener Text lokal + Cloud; Gameplan-Liste behält 300 px Scroll über einen Abgleich.
 **Markieren:** Ziehen **irgendwo** im Chart bewegt den Punkt relativ zum Finger (rastet auf Kerzen), Tipp auf Punkt/„Next“; danach Vorschau-Kasten „Your note“ frei in alle Richtungen ziehen (je Bild einmal gezeichnet, kein Einrasten), Tipp auf Kasten/„Write note“ → Text. `touch-action:none` während des Markierens (vorher scrollte die Seite bei senkrechter Fingerbewegung). Nach dem Speichern kein automatisch gewählter Tag mehr (eingekreister grauer Streifen). iPad-Touch gemessen: Punkt 14 Kerzen per Ziehen 150 px neben ihm, Kasten rechts/unten/links/oben, Seite 0 px gescrollt.
 **Wächter:** `check/eingabesync.js` (A–C, Gegenprobe `nutzerAktiv()` aus → A rot), `check/preiskarte.js` E (Ziehen neben dem Punkt, Kasten nach links oben).
+
+## 2026-11-17 — Undo/Redo neu, Gameplan am Trade, Datum/Zeit-Felder auf dem iPad (VERSION-CHECK-741)
+
+**Nutzer (iPad-Foto, Fenster „New trade“):** *„Die Tasten oben rechts also die Pfeile. Die Funktion soll sein sich die letzen 20 Aktionen zu merken egal was es ist außer halt scrollen und iwas öffnen … was löscht hinzufügt oder neu anordnet … dauerhaft … Und auf dem Screenshot das da überlappt. Und ich will bei Open trades das wenn ich ja ein Asset auswähle direkt die These angehängt wird … Wenn der gameplan leer isr dann öffnet sich beim hinzufügen drücken ein Fenster …“*
+**Rückfragen:** Verlauf über alle Geräte · ein Feld = ein Schritt · Plan als Kopie beim Speichern · These Pflicht.
+
+**Undo/Redo — vorher gemessen:** 60 volle `snap()`-Kopien nur im Speicher (nach Neuladen weg); Trades nicht erfasst; Tipp-Felder ohne `pushU` (Gameplan-Texte) nicht erfasst; ein Undo setzte den ganzen Stand zurück, auch Abgeglichenes vom anderen Gerät. `snap()` = 924 KB, `snap()` 7,8 ms / `JSON.parse` 3,5 ms (CPU ×4: 48 / 16 ms) → 20 Kopien = 18 MB, passt nicht in den iPad-Speicher (~5 MB).
+- Neu `js/undo.js`: Schritt = Unterschied (Pfad alt/neu, `id`-Listen je Eintrag), 20 Schritte, `localStorage` + Cloud-Feld `undoLog`.
+- **Beim Bauen gemessen (check/undo.js):**
+  - B: Feed-`save()` mitten im Tippen nahm die Tipp-Markierung mit → Undo des Tippens löschte den Feed-Kalendereintrag. Fix: zwei Markierungen (Tipp-Markierung zählt nur fürs Speichern aus dem Tipp-Takt), Feed-Änderung während eines offenen Schritts wird herausgefiltert, Stand wird synchron in `save()` genommen (das gesperrte `doSave` lief später und sah schon die nächsten Zeichen).
+  - `onfocus="pushU()"` (Gameplan-Felder, 737) markierte schon beim Hineintippen → entfernt; Markierung von `pushU` gilt nur 2 s.
+  - C: 24 Bias-Klicks im 450-ms-Takt ergaben 1 Schritt (`saveSoon` 400 ms entprellt) → `pushU` speichert Wartendes sofort und schließt den Schritt ab.
+  - C (mit Cloud): ein `save()`, das wegen eines anderen Tabs früh zurückkehrt, verbrauchte die Tipp-Markierung nie → Schritt blieb ewig offen. „Tippen offen“ = Tipp-Takt läuft, nicht Markierung.
+  - F: Undo eines neu angelegten Gameplans entfernte ihn → der Abgleich (je Asset jüngster gewinnt) holte ihn vom anderen Gerät zurück. Jetzt leerer Plan mit frischem `t`; Trades als Grabstein.
+- Ergebnis: Feld = 1 Schritt, Öffnen = 0, Feed bleibt draußen, 24 → 20, nach Neuladen, Trade-Undo bleibt nach Abgleich weg, Undo auf Gerät B kommt auf A an, fremde Änderung bleibt. Wächter `check/undo.js` (Gegenprobe → B rot).
+- **Bewusst nicht im Verlauf:** Ansichts-Einstellungen (Filter, Zeitraum, Theme, Kompakt) — „öffnen“, keine Änderung.
+
+**Überlappung (Foto):** „Open time“ ragte ~37 px über den Fensterrand. In Chromium bei 6 Breiten 0 px (nicht reproduzierbar — iOS-Safari-eigene Mindestbreite von `input[type=date|time]`). Wurzel-Fix global für alle 11 Datum-/Zeit-Felder: `appearance:none; min-width:0; max-width:100%`. Wächter `check/datumfeld.js` (statisch, Gegenprobe). **Auf dem iPad noch nicht gemessen.**
+
+**Gameplan am Trade:** Asset wählen → Plan erscheint unter *Asset* (FX-Paar: beide Währungen). *Save trade* ohne These → Fenster *Gameplan needed* (Bias, Thesis Pflicht, Entry, Break), *Save plan & trade* schreibt in den Gameplan und speichert den Trade (ein Undo-Schritt). Kopie `t.gp` in Trade-Details („Gameplan at entry“) und als Zeile Asset + These auf der Karte *Open trades*. Wächter `check/tradegameplan.js` (Gegenprobe → C rot).

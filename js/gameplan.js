@@ -20,7 +20,7 @@
 // Ansichtswahl (gewaehltes Asset auf der Seite, aufgeklappte Leiste) nur Sitzung.
 // Geprueft von check/gameplan.js.
 import {BC} from './constants.js';
-import {escH,escJH,syms,pushU,saveSoon,todayStr,getSymEventsAll,assetIconHtml,watchlistedAssetIds,
+import {escH,escJH,syms,pushU,saveSoon,save,todayStr,getSymEventsAll,assetIconHtml,watchlistedAssetIds,
   watchlistPairs,watchInvolvedAssets,SB_CATS,YIELD_CCY,renderDetail,curPage,ar,abInfoBtn} from './main.js';
 import {isEvtPast,evtImpact,countdownHtml,fmtDayHdr} from './calendar.js';
 import {priceSeriesFor} from './data-feeds.js';
@@ -95,10 +95,10 @@ function bezugHtml(id,k){
 function kritHtml(id,feld,titel,cls){
   const k=gp(id)[feld];
   const art=[['','Text'],['d','Date'],['p','Price']].map(([a,l])=>`<button type="button" class="gp-art${k.k===a?' on':''}" onclick="gpArt('${escJH(id)}','${feld}','${a}')" aria-pressed="${k.k===a}">${l}</button>`).join('');
-  const feldWert=k.k==='d'?`<input type="date" class="gp-in gp-in-d" value="${escH(k.v)}" onfocus="pushU()" onchange="gpWert('${escJH(id)}','${feld}',this.value)" aria-label="${titel} date">`
-    :k.k==='p'?`<input type="text" inputmode="decimal" class="gp-in gp-in-p" value="${escH(k.v)}" placeholder="Price level" onfocus="pushU()" onchange="gpWert('${escJH(id)}','${feld}',this.value)" aria-label="${titel} price level">`:'';
+  const feldWert=k.k==='d'?`<input type="date" class="gp-in gp-in-d" value="${escH(k.v)}" onchange="gpWert('${escJH(id)}','${feld}',this.value)" aria-label="${titel} date">`
+    :k.k==='p'?`<input type="text" inputmode="decimal" class="gp-in gp-in-p" value="${escH(k.v)}" placeholder="Price level" onchange="gpWert('${escJH(id)}','${feld}',this.value)" aria-label="${titel} price level">`:'';
   return`<div class="gp-krit ${cls}"><div class="gp-lab">${titel}</div>
-    <textarea class="gp-ta" rows="2" placeholder="${feld==='en'?'What has to happen before you enter?':'What proves the idea wrong?'}" onfocus="pushU()" oninput="ar(this);gpText('${escJH(id)}','${feld}',this.value)">${escH(k.t)}</textarea>
+    <textarea class="gp-ta" rows="2" placeholder="${feld==='en'?'What has to happen before you enter?':'What proves the idea wrong?'}" oninput="ar(this);gpText('${escJH(id)}','${feld}',this.value)">${escH(k.t)}</textarea>
     <div class="gp-link"><span class="gp-arten" role="group" aria-label="Link ${titel}">${art}</span>${feldWert}${bezugHtml(id,k)}</div></div>`;
 }
 function biasSchalter(id){
@@ -115,7 +115,7 @@ export function gpLeisteHtml(c){
     <div class="gp-k1-z" role="button" tabindex="0" aria-expanded="${offen}" onclick="gpAuf('${escJH(id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();gpAuf('${escJH(id)}')}">
       <b class="gp-k1-t">Gameplan</b>
       <span class="gp-bd">${g.b==='bull'?'Bullish':g.b==='bear'?'Bearish':'No bias'}</span>
-      ${offen?`<input class="gp-th-in" value="${escH(g.th)}" placeholder="Your thesis in one line" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" onfocus="pushU()" oninput="gpText('${escJH(id)}','th',this.value)" aria-label="Thesis">`
+      ${offen?`<input class="gp-th-in" value="${escH(g.th)}" placeholder="Your thesis in one line" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" oninput="gpText('${escJH(id)}','th',this.value)" aria-label="Thesis">`
         :`<span class="gp-k1-th" data-gp-th="${escH(id)}">${th?escH(th):'<i>No thesis yet · tap to plan</i>'}</span>`}
       ${n?`<span class="gp-k1-n">Next <b>${escH(n.name||'')}</b> ${countdownHtml(n.date)}</span>`:''}
       ${staleHtml(g)}
@@ -157,7 +157,7 @@ function detailHtml(id){
   return`<div class="gp-d" style="--c:${farbe(g.b)}">
     <div class="gp-d-k">${assetIconHtml(id,30)}<b class="gp-d-t">${escH(name(id))}</b>${staleHtml(g)}${biasSchalter(id)}</div>
     <div class="gp-d-g">
-      <div class="gp-box"><div class="gp-lab">Thesis</div><textarea class="gp-ta gp-ta-th" rows="3" placeholder="Why should this asset move, and which way?" onfocus="pushU()" oninput="ar(this);gpText('${escJH(id)}','th',this.value)">${escH(g.th)}</textarea></div>
+      <div class="gp-box"><div class="gp-lab">Thesis</div><textarea class="gp-ta gp-ta-th" rows="3" placeholder="Why should this asset move, and which way?" oninput="ar(this);gpText('${escJH(id)}','th',this.value)">${escH(g.th)}</textarea></div>
       <div class="gp-box"><div class="gp-lab">Upcoming catalysts</div>${katHtml(id)}</div>
       ${kritHtml(id,'en','Entry','e gp-box')}
       ${kritHtml(id,'br','Break','x gp-box')}
@@ -198,4 +198,35 @@ export function gpWert(id,feld,v){
   if(gp(id)[feld].k==='p'){w=w.replace(/,/g,'');if(w!==''&&!isFinite(+w))w='';}
   veraendert(id,g=>{g[feld].v=w;});
   neuZeichnen(id);if(curPage==='cur'&&gp(id)[feld].k==='p')renderDetail();
+}
+
+// ── Gameplan am Trade (Nutzer 2026-11-17: "wenn ich ja ein Asset auswaehle direkt die These
+// angehaengt wird ... Wenn der gameplan leer ist dann oeffnet sich beim hinzufuegen druecken
+// ein Fenster und man kann ihn [dann] ausfuellen das wird dann auch so fuer den gameplan
+// uebernommen"). Rueckfrage: Kopie beim Speichern; ohne These kein Trade (Pflicht).
+export function gpHatThese(id){return!!gp(id).th.trim();}
+export function gpKopie(id){const g=gameplans[id];return g&&hatInhalt(g)?JSON.parse(JSON.stringify(g)):null;}
+export function gpName(id){return name(id);}
+export function gpAusTrade(id,v){
+  pushU();
+  veraendert(id,g=>{
+    if(v.b==='bull'||v.b==='bear')g.b=v.b;
+    g.th=String(v.th||'').trim().slice(0,2000);
+    if(String(v.en||'').trim())g.en.t=String(v.en).trim().slice(0,600);
+    if(String(v.br||'').trim())g.br.t=String(v.br).trim().slice(0,600);
+  });
+  save();   // sofort: Plan + Trade sind EIN Undo-Schritt (saveSoon kaeme 400 ms spaeter)
+  neuZeichnen(id);
+}
+// Anzeige im Trade-Formular / in den Trade-Details / auf der Karte "Open trades"
+export function gpTradeHtml(k,id,titel,kurz){
+  const g=eintragRein(k)||leer(),f=farbe(g.b);
+  const wert=x=>escH(x.t||'')+(x.v?`${x.t?' · ':''}<b>${escH(x.v)}</b>`:'');
+  const krit=(lab,x)=>x.t||x.v?`<div class="tj-gp-r"><span>${lab}</span><span>${wert(x)}</span></div>`:'';
+  if(kurz)return g.th.trim()?`<div class="tj-gp-kurz" style="border-left-color:${f}"><span class="tj-gp-dot" style="background:${f}"></span><b>${escH(name(id))}</b><i>${escH(g.th.trim())}</i></div>`:'';
+  return`<div class="tj-gp-k" style="border-left-color:${f}">
+    <div class="tj-gp-t"><b>${escH(titel||'Gameplan')} · ${escH(name(id))}</b>${g.b?`<span class="tj-gp-b" style="color:${f}">${g.b==='bull'?'Bullish':'Bearish'}</span>`:''}</div>
+    ${g.th.trim()?`<div class="tj-gp-th">${escH(g.th.trim())}</div>`:`<div class="tj-gp-th leer"><i>No thesis yet · required when you save</i></div>`}
+    ${krit('Entry',g.en)}${krit('Break',g.br)}
+  </div>`;
 }

@@ -46,6 +46,8 @@ import {escH,escJH,openM,closeM,uid,cloudAutoSync,markLsUpdatedSeen,markPrefEdit
 import {PRICE_DATA_FEED,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,autoFetchPriceData} from './data-feeds.js';
 import {fmtDayHdr,fmtDayShort,fmtStamp} from './calendar.js';
 import {FX,BC} from './constants.js';
+import {undoTradeGespeichert,undoTradeBasis} from './undo.js';
+import {gpHatThese,gpKopie,gpAusTrade,gpTradeHtml,gpName} from './gameplan.js';
 
 const TRADES_KEY='fxpro_trades';
 let trades=(()=>{try{const v=JSON.parse(localStorage.getItem(TRADES_KEY)||'[]');return Array.isArray(v)?v.filter(tjGueltig):[];}catch(e){return[];}})();
@@ -136,6 +138,7 @@ function tjUebernehmen(remote){
   trades=mergeTrades(trades,r);
   if(JSON.stringify(trades)!==vorher){
     try{localStorage.setItem(TRADES_KEY,JSON.stringify(trades));}catch(e){}
+    try{undoTradeBasis();}catch(e){}
     if(curPage==='journal')renderJournal();
   }
   if(_tjGp())return false;
@@ -144,6 +147,8 @@ function tjUebernehmen(remote){
   if(!fehlt)tjCloudMerken(r);
   return fehlt;
 }
+// Undo/Redo (js/undo.js): ganze Liste setzen; Zeitstempel/Grabsteine setzt undo.js.
+function tjUndoSetzen(list){trades=(Array.isArray(list)?list:[]).filter(tjGueltig);const ok=tjSpeichern();try{if(curPage==='journal')renderJournal();}catch(e){}return ok;}
 function tjSpeichern(){
   try{
     // Vorher mit der Platte vereinigen: ein zweiter Tab kann inzwischen
@@ -153,6 +158,7 @@ function tjSpeichern(){
     localStorage.setItem('fxpro_updated',new Date().toISOString());
     markLsUpdatedSeen();markPrefEdit();cloudAutoSync();
     tjCloudAnzeige();
+    try{undoTradeGespeichert();}catch(e){}
     return true;
   }catch(e){alert('The trade could not be saved: '+(e&&e.message||e));return false;}
 }
@@ -729,7 +735,7 @@ function tjEdChart(){
 }
 let _tjEdT=0;
 // Ebenen-Felder: nur neu skalieren (schnell). Asset/Datum: Chart neu bauen.
-function tjEdEingabe(neuBauen){clearTimeout(_tjEdT);_tjEdT=setTimeout(()=>{if(TJ_CH.tjChart&&!neuBauen)tjNeuSkalieren('tjChart');else tjEdChart();},neuBauen?250:90);}
+function tjEdEingabe(neuBauen){if(neuBauen)tjGpBox();clearTimeout(_tjEdT);_tjEdT=setTimeout(()=>{if(TJ_CH.tjChart&&!neuBauen)tjNeuSkalieren('tjChart');else tjEdChart();},neuBauen?250:90);}
 function tjRichtung(dir){
   const h=document.getElementById('tjDir');if(!h)return;
   const alt=h.value;h.value=dir==='short'?'short':'long';
@@ -798,6 +804,7 @@ function tjZeigen(id){
     ${tjPreisleisteHtml(t)}
     <div class="tjv-ch-kopf"><b>${escH(t.a)}</b> <i>daily · trade day marked</i></div>
     <div id="tjvChart" class="tjv-chart"></div>
+    ${Array.isArray(t.gp)&&t.gp.length?`<div class="tjv-gp">${t.gp.map(k=>gpTradeHtml(k,k.id,'Gameplan at entry')).join('')}</div>`:''}
     ${t.notes?`<div class="tjv-notiz"><div class="tj-kl">Notes</div><i>${escH(t.notes)}</i></div>`:''}`;
   openM('mTradeView');
   requestAnimationFrame(()=>tjDetailChart(t));
@@ -840,6 +847,66 @@ function tjAssetVorschlaege(){
   (syms||[]).forEach(x=>x&&x.id&&s.add(x.id));
   return[...s].sort((a,b)=>a.localeCompare(b));
 }
+// ── Gameplan am Trade (Nutzer 2026-11-17) ───────────────────────────
+// "wenn ich ja ein Asset auswaehle direkt die These angehaengt wird zu dem Asset also den
+// aktuellen gameplan ... Wenn der gameplan leer ist dann oeffnet sich beim hinzufuegen
+// druecken ein Fenster und man kann ihn [dann] ausfuellen das wird dann auch so fuer den
+// gameplan uebernommen". Rueckfrage: KOPIE beim Speichern (t.gp, der Plan von damals bleibt
+// sichtbar, auch wenn der Gameplan spaeter geaendert wird); ohne These kein neuer Trade.
+// FX-Paar = beide Waehrungen (EUR/USD -> EUR + USD), sonst das Asset selbst.
+// Kein Gameplan moeglich (Asset ohne eigene Seite): kein Fenster, kein Block.
+function tjGpIds(asset){
+  const roh=String(asset||'').toUpperCase().replace(/\s+/g,'');if(!roh)return[];
+  const da=id=>(syms||[]).some(x=>x&&x.id===id);
+  const ali=TJ_ALIAS[roh.replace('/','')];
+  if(ali)return da(ali)?[ali]:[];
+  const m=/^([A-Z]{3})\/?([A-Z]{3})$/.exec(roh);
+  if(m&&FX.includes(m[1])&&FX.includes(m[2])&&m[1]!==m[2])return[m[1],m[2]].filter(da);
+  return da(roh)?[roh]:[];
+}
+// Formular: Plan zum gewaehlten Asset. Beim Bearbeiten mit unveraendertem Asset die Kopie.
+function tjGpBox(){
+  const box=document.getElementById('tjGpBox');if(!box)return;
+  const a=(document.getElementById('tjAsset')||{}).value||'';
+  const alt=_tjEdit?trades.find(x=>x.id===_tjEdit):null;
+  const kopie=alt&&Array.isArray(alt.gp)&&alt.a===a.trim()?alt.gp:null;
+  const ids=kopie?kopie.map(k=>k.id):tjGpIds(a);
+  box.hidden=!ids.length;
+  box.innerHTML=ids.map(id=>gpTradeHtml(kopie?kopie.find(k=>k.id===id):gpKopie(id),id,kopie?'Gameplan at entry':'Gameplan')).join('');
+}
+// Pflicht-Fenster: je Asset ohne These ein Abschnitt (max. 2 = FX-Paar)
+let _tjgIds=[];
+function tjGpFensterAuf(ids){
+  _tjgIds=ids.slice(0,2);
+  [0,1].forEach(i=>{
+    const id=_tjgIds[i],sek=document.getElementById('tjgS'+i);if(!sek)return;
+    sek.hidden=!id;
+    ['tjgTh','tjgEn','tjgBr'].forEach(f=>{const e=document.getElementById(f+i);if(e)e.value='';});
+    const b=document.getElementById('tjgB'+i);if(b)b.value='';
+    sek.querySelectorAll('.tj-seg-b').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-pressed','false');});
+    const t=document.getElementById('tjgN'+i);if(t&&id)t.textContent=gpName(id);
+  });
+  const err=document.getElementById('tjgErr');if(err){err.textContent='';err.hidden=true;}
+  openM('mTradeGp');
+  setTimeout(()=>{const e=document.getElementById('tjgTh0');if(e)e.focus();},50);
+}
+function tjGpBias(i,b){
+  const h=document.getElementById('tjgB'+i);if(!h)return;
+  h.value=h.value===b?'':b;
+  document.querySelectorAll(`#tjgS${i} .tj-seg-b`).forEach(x=>{const on=x.dataset.b===h.value;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on?'true':'false');});
+}
+function tjGpFensterSpeichern(){
+  const w=(f,i)=>String((document.getElementById(f+i)||{}).value||'').trim();
+  const fehlt=_tjgIds.filter((id,i)=>!w('tjgTh',i));
+  const err=document.getElementById('tjgErr');
+  if(fehlt.length){if(err){err.textContent='Missing: thesis for '+fehlt.map(gpName).join(' · ');err.hidden=false;}return false;}
+  try{
+    _tjgIds.forEach((id,i)=>gpAusTrade(id,{b:w('tjgB',i),th:w('tjgTh',i),en:w('tjgEn',i),br:w('tjgBr',i)}));
+  }catch(e){if(err){err.textContent='Gameplan not saved: '+(e&&e.message||e);err.hidden=false;}return false;}
+  closeM('mTradeGp');
+  return tjFormSpeichern();
+}
+const TJG_GUARD={felder:['tjgTh0','tjgEn0','tjgBr0','tjgB0','tjgTh1','tjgEn1','tjgBr1','tjgB1'],save:()=>tjGpFensterSpeichern(),was:'This gameplan'};
 function tjNeu(datum,id){
   const t=id?trades.find(x=>x.id===id&&!x.del):null;
   _tjEdit=t?t.id:null;
@@ -865,6 +932,7 @@ function tjNeu(datum,id){
   document.querySelectorAll('#mTrade .tj-seg-b[data-dir]').forEach(b=>{const on=b.dataset.dir===(h&&h.value||'long');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
   const err=document.getElementById('tjErr');if(err){err.textContent='';err.hidden=true;}
   delete TJ_CH.tjChart;const c=document.getElementById('tjChart');if(c)c.innerHTML='';
+  tjGpBox();
   openM('mTrade');
   requestAnimationFrame(tjEdChart);
 }
@@ -881,6 +949,12 @@ function tjFormSpeichern(){
   const neu={...v,st:zu?'closed':'open',dir:v.dir==='short'?'short':'long',pnl:zu?pnl:null,up:new Date().toISOString()};
   if(!zu){neu.exit='';neu.cd='';neu.ct='';}
   const alt=_tjEdit?trades.find(x=>x.id===_tjEdit):null;
+  // Gameplan: neuer Trade oder anderes Asset -> Kopie des aktuellen Plans; ohne These erst das Fenster
+  if(!alt||alt.a!==v.a){
+    const ids=tjGpIds(v.a),ohne=ids.filter(id=>!gpHatThese(id));
+    if(ohne.length){tjGpFensterAuf(ohne);return false;}
+    neu.gp=ids.map(id=>Object.assign({id},gpKopie(id)));
+  }
   const sicherung=alt?{...alt}:null;
   if(alt)Object.assign(alt,neu);else trades.push({id:uid(),...neu});
   if(!tjSpeichern()){
@@ -919,6 +993,7 @@ function tjOffenKarte(t){
   const zeile2=L.zug!=null?`<b style="color:${tjFarbe(L.zug)}">${L.zug>0?'+':L.zug<0?'−':''}${Math.abs(L.zug).toFixed(dz)}</b> since entry${L.r==null?' · <i>add a stop for R</i>':''}`:(L.e!=null?(PRICE_DATA_FEED?`<i>No price data for ${escH(t.a)}</i>`:'<i>Loading prices</i>'):'');
   return`<div class="tjo${kl}" role="button" tabindex="0" onclick="tjAbschliessen('${escJH(t.id)}')" title="Close this trade">
     <div class="tjo-kopf"><div class="tjo-a"><b>${escH(t.a)}</b>${tjSeiteHtml(t.dir)}</div>${stand}</div>
+    ${Array.isArray(t.gp)?t.gp.map(k=>gpTradeHtml(k,k.id,'',true)).join(''):''}
     <div class="tjo-z">${zeile1}</div>
     ${zeile2?`<div class="tjo-z">${zeile2}</div>`:''}
     ${L.j&&L.e!=null?tjPreisleisteHtml(t,L.j.v):''}
@@ -1042,10 +1117,10 @@ if(typeof window!=='undefined'){
     tjOffeneChartsAuffrischen();},160);});
 }
 
-export {trades,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
+export {trades,tjUndoSetzen,TJG_GUARD,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
   tjFuerCloud,tjGesendet,tjSendeFehler};
 if(typeof window!=='undefined'){
-  Object.assign(window,{renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
+  Object.assign(window,{tjGpBias,tjGpFensterSpeichern,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
     mergeTrades,tjUebernehmen,tjR,tjReihe,tjTagKlick,tjTagFenster,tjTagZuTrade,tjTagNeu,tjRichtung,tjExitAuf,tjEdEingabe,tjStreak,tjStats,
     tjStatus,tjAbschliessen,tjZuExit,tjZuErgebnis,tjZuSpeichern,tjZuBearbeiten,tjJetzt,tjLive,
     tjFuerCloud,tjCloudStand,tjJetztHochladen,tjSig});

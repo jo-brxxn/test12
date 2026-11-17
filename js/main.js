@@ -17,7 +17,7 @@ import {scoreJournal,loadScoreJournal,jrErfassen,jrBootFertig,jrSperren,jrFreige
 import {mkIndMatcher,mkCcyIndMatcher,RETAIL_SALES_MATCHER,IND_EVENT_MATCHERS,CAL_RESEARCH_MATCHERS,isScoreDrivingEvent,periodLabel} from './event-matchers.js';
 // Trading Journal: eigene Trades im Monatskalender (Nutzer-Wunsch 2026-10-24,
 // siehe Kopf von trades.js). Zirkulaerer Import wie bei journal.js.
-import {trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,TJ_GUARD,TJ_GUARD_ZU,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
+import {trades,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,TJ_GUARD,TJ_GUARD_ZU,TJG_GUARD,tjFuerCloud,tjGesendet,tjSendeFehler} from './trades.js';
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 import {gameplans,gpRein,gpSetzeAlle,gpVereinen,gpLeisteHtml,gpNiveaus,renderGameplan,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert} from './gameplan.js';
@@ -34,6 +34,8 @@ import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './k
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
 export {scoreAssets,closeM,
+  // Was js/undo.js von hier braucht (2026-11-17).
+  snap,undoSnapSetzen,renderSidebar,flushAndSave,tippenOffen,tippenJetztSpeichern,
   // Was js/gameplan.js von hier braucht (2026-11-16).
   getSymEventsAll,watchlistedAssetIds,watchlistPairs,watchInvolvedAssets,YIELD_CCY,ar,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,pairs,uid,
   // Was js/zentralbank.js von hier braucht (Notizen = research.notes, Banner-Quittung = zbQuittung).
@@ -5720,7 +5722,15 @@ function mkWidgets(){return[
 ];}
 
 // ══ UNDO/REDO ═══════════════════════════════════════════════════════
-let uStack=[],rStack=[];
+// Undo/Redo: js/undo.js (seit 2026-11-17, 741). _undoMarke = Nutzer-Markierung seit dem letzten save().
+let _undoMarke=0,_undoMarkeSoon=false,_saveAusTippen=false;
+// Zwei Markierungen (gemessen 2026-11-17, check/undo.js B): Tippen setzt seine Markierung
+// per saveSoon, gespeichert wird 400 ms spaeter. Ein Feed, der in diesem Fenster selbst save()
+// ruft, nahm diese Markierung mit - und ein Undo des Tippens drehte den Feed-Eintrag mit
+// zurueck. Jetzt zaehlt die Tipp-Markierung nur fuer das save() aus dem saveSoon-Takt bzw.
+// flushAndSave (_saveAusTippen); pushU/markUserEditTs/markPrefEdit zaehlen fuer das naechste
+// save() innerhalb von 2 s (_undoMarke = Zeitpunkt) - eine Markierung ohne Aenderung (z. B.
+// beim Oeffnen) faerbt sonst das naechste Feed-Speichern als Nutzer-Schritt.
 // Multi-Tab-/Multi-Geraete-Schutz: pushU() laeuft vor praktisch jeder ECHTEN
 // Nutzeraktion (Undo-Punkt), aber nie bei automatischen Daten-Refreshes
 // (FF/ind/bond/COT laden silent, ohne pushU). Damit ist es das verlaesslichste
@@ -5755,7 +5765,7 @@ function markUserSynced(){_userEditedSinceSync=false;try{localStorage.removeItem
 // Toggle als "nur Auto-Refresh" ein, ersetzte den Push durch einen Pull
 // und zog die ALTE Cloud-Stufe drueber - der Hide-Button "sprang zurueck",
 // sobald irgendein anderes Geraet zwischenzeitlich gepusht hatte.
-function markPrefEdit(){_userEditZaehler++;_userEditedSinceSync=true;try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}}
+function markPrefEdit(){_undoMarke=Date.now();_userEditZaehler++;_userEditedSinceSync=true;try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}}
 // ── Manuelles Score-Aenderungs-Log ──────────────────────────────────
 // Protokolliert JEDE vom Nutzer selbst ausgeloeste Score-Aenderung
 // (Indikator-Bias per Klick, ★-Wichtig-Toggle) mit Zeitstempel, alt->neu
@@ -6027,7 +6037,7 @@ function zbQuittungRein(v){
   if(v&&typeof v==='object')Object.keys(v).forEach(k=>{if(/^[A-Z]{3}$/.test(k)&&typeof v[k]==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v[k]))o[k]=v[k];});
   return o;
 }
-function pushU(){_userEditZaehler++;_lastUserEditTs=Date.now();_userEditedSinceSync=true;try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}uStack.push(snap());if(uStack.length>60)uStack.shift();rStack=[];updUB();}
+function pushU(){try{undoGrenze();}catch(e){}_userEditZaehler++;_lastUserEditTs=Date.now();_userEditedSinceSync=true;try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}_undoMarke=Date.now();}
 // Sicherheits-Grenze fuer JEDEN Weg, wie Zustand von aussen in die App kommt
 // (Cloud-Sync, Datei-Import, Undo/Redo/Backup) - applySnap() ist dafuer laut
 // CLAUDE.md-Grundsatz der EINE gemeinsame Trichter. Symbol-IDs werden an
@@ -6252,10 +6262,17 @@ function applySnapRoh(s){const d=sanitizeSnapIds(JSON.parse(s));
 // save()s Multi-Tab-Schutz noch cloudPush()s optimistische Versionspruefung
 // einen Undo/Redo-Klick als eigene Nutzeraktion (Nutzer-Bugreport 2026-07-27,
 // gleiche Bug-Klasse wie toggleMwSym/die Notes-Funktionen).
-function markUserEditTs(){_userEditZaehler++;_lastUserEditTs=Date.now();_userEditedSinceSync=true;try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}}
-function doUndo(){if(!uStack.length)return;markUserEditTs();rStack.push(snap());_flipCauseTag='undo';applySnap(uStack.pop());_flipCauseTag=null;save();renderSidebar();rerender();updUB();}
-function doRedo(){if(!rStack.length)return;markUserEditTs();uStack.push(snap());_flipCauseTag='undo';applySnap(rStack.pop());_flipCauseTag=null;save();renderSidebar();rerender();updUB();}
-function updUB(){document.getElementById('undoBtn').disabled=!uStack.length;document.getElementById('redoBtn').disabled=!rStack.length;}
+function markUserEditTs(){_undoMarke=Date.now();_userEditZaehler++;_lastUserEditTs=Date.now();_userEditedSinceSync=true;try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}}
+// Undo/Redo selbst: js/undo.js. Hier nur der Einstieg, den undo.js zum Setzen braucht.
+// Getippte Zeichen warten noch auf ihr saveSoon-Speichern (nicht die Markierung: ein save(), das
+// wegen eines anderen Tabs frueh zurueckkehrt, verbraucht sie nie - gemessen check/undo.js C).
+function tippenOffen(){return!!_saveSoonTimer;}
+// Neuer Klick (pushU) waehrend noch Getipptes/ein Klick auf saveSoon wartet: jetzt speichern,
+// damit jeder Klick sein eigener Undo-Schritt bleibt (gemessen: 24 Bias-Klicks im 450-ms-Takt
+// ergaben sonst 1 Schritt).
+function tippenJetztSpeichern(){if(!_saveSoonTimer)return;clearTimeout(_saveSoonTimer);_saveSoonTimer=null;_saveAusTippen=true;try{save();}finally{_saveAusTippen=false;_undoMarkeSoon=false;}}
+function undoSnapSetzen(j){_flipCauseTag='undo';applySnap(j);_flipCauseTag=null;}
+function updUB(){undoKnoepfe();}
 
 // ══ LOKALE BACKUPS ══════════════════════════════════════════════════
 // Bis zu 5 Snapshots lokal (localStorage), unabhängig von Cloud und Undo-Stapel.
@@ -6844,7 +6861,7 @@ function adoptExternalState(){sprungLog('adoptExternalState','other tab / stored
       s=localStorage.getItem(SK);if(!s)return;
       // Ein Tab mit aelterer App laesst neue Felder weg (siehe neueFelderBehalten).
       let s2=s;try{s2=JSON.stringify(neueFelderBehalten(JSON.parse(s),JSON.parse(snap())));}catch(e){}
-      _flipCauseTag='sync';applySnap(s2);_flipCauseTag=null;
+      undoFremd(()=>{_flipCauseTag='sync';applySnap(s2);_flipCauseTag=null;});
       if(localStorage.getItem(SK)===s&&localStorage.getItem('fxpro_updated')===seenMarker)break;
     }
     try{const ts=JSON.parse(localStorage.getItem(TABSTACKS_KEY));if(Array.isArray(ts)){tabStacks=ts;renderTabBar();}}catch(e){}
@@ -6882,6 +6899,14 @@ function save(){
   // Der eigentliche Lese-Merge-Schreib-Zyklus, ausgelagert, damit er wahlweise
   // ueber navigator.locks serialisiert oder (Fallback) direkt synchron laeuft
   // (siehe Kommentar bei der Lock-Anfrage unten).
+  // Undo (js/undo.js): war dieses Speichern eine Nutzer-Aenderung?
+  const _nutzer=(_undoMarke&&Date.now()-_undoMarke<2000)||(_undoMarkeSoon&&_saveAusTippen);
+  if(_nutzer){_undoMarke=0;_undoMarkeSoon=false;}
+  // Undo nimmt den Stand JETZT (synchron): doSave laeuft hinter der Sperre spaeter und saehe
+  // sonst schon die danach getippten Zeichen bzw. den naechsten Klick (gemessen, check/undo.js B/C).
+  // Nur fuer Nutzer-Speichern oder waehrend eines offenen Schritts - sonst reicht doSave's Stand.
+  const _undoSq=undoSeq();let _undoSync=false;
+  try{if(_nutzer||undoOffen()){undoNachSave(snap(),_nutzer,_undoSq);_undoSync=true;}}catch(e){}
   const doSave=()=>{
     let changed=false;
     try{
@@ -6909,6 +6934,7 @@ function save(){
         try{researchMitPlatte(JSON.parse(localStorage.getItem(SK)||'null'));}catch(e){}
       }
       const s=snap();
+      if(!_undoSync){try{undoRuhe(s,_undoSq);}catch(e){}}
       // fxpro_updated nur bumpen, wenn sich der Inhalt WIRKLICH geändert hat -
       // save() läuft auch aus reinen Sicherheitsnetzen heraus (15s-Intervall,
       // beforeunload/pagehide/visibilitychange), die inhaltlich meist nichts
@@ -6997,11 +7023,12 @@ function save(){
 // Multi-Tab-Schutz fuer die naechsten 3s nicht eingreift.
 let _saveSoonTimer=null;
 function saveSoon(){
+  _undoMarkeSoon=true;
   _lastUserEditTs=Date.now();
   _userEditedSinceSync=true;
   try{localStorage.setItem('fxpro_user_pending','1');}catch(e){}
   clearTimeout(_saveSoonTimer);
-  _saveSoonTimer=setTimeout(save,400);
+  _saveSoonTimer=setTimeout(()=>{_saveSoonTimer=null;_saveAusTippen=true;try{save();}finally{_saveAusTippen=false;_undoMarkeSoon=false;}},400);
 }
 
 // ══ EXPORT / IMPORT ═════════════════════════════════════════════════
@@ -7463,7 +7490,7 @@ async function cloudPushRoh(manual){
     // zuruecksetzen - siehe cloudPull-Kommentar).
     const z0=_userEditZaehler;
     const gesendet=snap();
-    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupKlasse=setupKlasse;data.dashBiasKat=dashBiasKat;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
+    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();{const ul=undoFuerCloud();if(ul)data.undoLog=ul;}data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupKlasse=setupKlasse;data.dashBiasKat=dashBiasKat;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
     if(APP_VER)data.appVer=APP_VER;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
@@ -7601,7 +7628,7 @@ async function cloudPullRoh(manual,forceOverwrite){
       // Felder, die der Schreiber nicht kannte, behalten (siehe neueFelderBehalten).
       try{neueFelderBehalten(cd,JSON.parse(lokalVorher));}catch(e){}
       pushU();const z0=_userEditZaehler;
-      _flipCauseTag='sync';applySnap(JSON.stringify(cd));_flipCauseTag=null;
+      undoFremd(()=>{_flipCauseTag='sync';applySnap(JSON.stringify(cd));_flipCauseTag=null;});
       // ⚠ DREI-WEGE-ABGLEICH (Nutzer 2026-09-30: "manchmal wenn ich ein paar
       // button druecke ... kommt auf einmal ein Moment und dann gehen die
       // Buttons zurueck auf den Zustand von davor"). GEMESSEN mit
@@ -7619,7 +7646,7 @@ async function cloudPullRoh(manual,forceOverwrite){
       if(prefPending&&_syncBasis&&lokalVorher!==_syncBasis){
         try{
           const zusammen=syncMerge3(JSON.parse(_syncBasis),JSON.parse(lokalVorher),JSON.parse(cloudSnap));
-          _flipCauseTag='sync';applySnap(JSON.stringify(zusammen));_flipCauseTag=null;
+          undoFremd(()=>{_flipCauseTag='sync';applySnap(JSON.stringify(zusammen));_flipCauseTag=null;});
         }catch(e){console.warn('Drei-Wege-Abgleich fehlgeschlagen, Cloud-Stand bleibt:',e);}
       }
       basisSetzen(cloudSnap,cloudUpdated);
@@ -7673,6 +7700,7 @@ async function cloudPullRoh(manual,forceOverwrite){
       // die naechste Aenderung gegen seinen eigenen, aelteren Stand und zaehlt
       // Bewegungen doppelt, die das andere Geraet schon aufgezeichnet hat.
       if(cd.scoreJournal){try{jrUebernehmen(cd.scoreJournal);}catch(e){}}
+      if(cd.undoLog){try{undoUebernehmen(cd.undoLog);}catch(e){}}
       // Trading Journal: ebenfalls Merge nach id statt Overwrite (js/trades.js).
       // Immer aufrufen - auch ohne Feld (alte App): fehlen der Cloud Trades
       // dieses Geraets, wird unten wie bei prefPending hochgeladen.
@@ -7901,6 +7929,7 @@ const MODAL_GUARD_TABELLE={
   // Vergleichsstand neu; "Yes, save" schliesst deshalb erst danach.
   // Trading Journal: alle Felder des Trade-Editors (js/trades.js).
   mTrade:TJ_GUARD,
+  mTradeGp:TJG_GUARD,
   mTradeClose:TJ_GUARD_ZU,
   mCloud:{felder:['cloudUsername','cloudUrl','cloudKey','cloudSyncId'],
     save:()=>{saveCloudCfg();if(!modalIsDirty('mCloud'))closeM('mCloud');},was:'Your sync settings'},
@@ -18269,6 +18298,7 @@ import {
 import {qcZerlegen} from './quickcapture.js';
 // Leichtes Federn am Scroll-Ende (Nutzer 2026-11-01), siehe js/federn.js
 import {federnAn} from './federn.js';
+import {undoInit,undoNachSave,undoOffen,undoSeq,undoRuhe,undoGrenze,undoFremd,undoFuerCloud,undoUebernehmen,undoKnoepfe,doUndo,doRedo} from './undo.js';
 // Eigenes Leicht-Federn (js/federn.js) seit 2026-11-06 AUS - die Seiten federn
 // wieder nativ (Nutzer: "wieder das normale iOS bouncen"). Modul bleibt fuer
 // eine Rueckkehr liegen.
@@ -27142,7 +27172,7 @@ document.addEventListener('keydown',e=>{
 // We must NOT blur the focused field here - doing so on the periodic
 // timer used to kick users out of whatever they were typing.
 function flushAndSave(){
-  save();
+  _saveAusTippen=true;try{save();}finally{_saveAusTippen=false;}
   // Nutzer-Bugreport 2026-08-22 ("Telegram kommt trotz Aus-Schalter"):
   // cloudAutoSync() debounced jeden Auto-Push um 1,5s. Wird die App/der Tab
   // in genau diesem Fenster geschlossen oder in den Hintergrund gelegt (der
@@ -27242,6 +27272,7 @@ try{setTimeout(aktienDatenHolen,2500);}catch(e){}
 // meist mit dem ersten Feed statt einen eigenen Aufbau auszuloesen.
 try{kachelFormenLaden();}catch(e){}
 loadState();
+undoInit();
 // Gemeinsamer Stand fuer den Drei-Wege-Abgleich (syncMerge3): nur wenn der
 // letzte Schritt ein Abgleich war. Stehen noch nicht hochgeladene Aenderungen
 // an, laeuft beim Start erst der Push - der setzt die Basis dann selbst.
@@ -28114,7 +28145,7 @@ Object.assign(window,{gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,t
   researchTitleFrom,migrateResearch,migrateResearchNoteFields,migrateLegacyAssetNotesIntoResearch,
   migrateResearchToAssetFolders,LEGACY_SEED_EVTS,mkCalEvts,cleanLegacySeedEvts,mkWidgets,markLsUpdatedSeen,
   markUserSynced,markPrefEdit,syncMerge3,pruneScoreLog,logScoreChange,snap,pushU,SAFE_ID_RE,SAFE_UID_RE,sanitizeSnapIds,
-  ensureBuiltinSyms,applySnap,markUserEditTs,doUndo,doRedo,updUB,BACKUP_KEY,saveLocalBackup,openBackupM,
+  ensureBuiltinSyms,applySnap,markUserEditTs,updUB,undoSnapSetzen,BACKUP_KEY,saveLocalBackup,openBackupM,
   restoreLocalBackup,TRASH_TTL_MS,trashResNote,pruneResearchTrash,mergeResearchTrash,trashEntryLabel,openTrashM,
   restoreTrashItem,permaDeleteTrashItem,
   DASH_V,DASH_DEFAULTS,DASH_RANK,restoreAlltimeDashboard,migrateDash,loadState,adoptExternalState,
@@ -28287,8 +28318,6 @@ Object.defineProperty(window,'_quickReturnTab',{get:()=>_quickReturnTab,set:v=>{
 Object.defineProperty(window,'resEditMode',{get:()=>resEditMode,set:v=>{resEditMode=v;},configurable:true});
 Object.defineProperty(window,'_resEditTimer',{get:()=>_resEditTimer,set:v=>{_resEditTimer=v;},configurable:true});
 Object.defineProperty(window,'_resEditStart',{get:()=>_resEditStart,set:v=>{_resEditStart=v;},configurable:true});
-Object.defineProperty(window,'uStack',{get:()=>uStack,set:v=>{uStack=v;},configurable:true});
-Object.defineProperty(window,'rStack',{get:()=>rStack,set:v=>{rStack=v;},configurable:true});
 Object.defineProperty(window,'_lastUserEditTs',{get:()=>_lastUserEditTs,set:v=>{_lastUserEditTs=v;},configurable:true});
 Object.defineProperty(window,'_userEditedSinceSync',{get:()=>_userEditedSinceSync,set:v=>{_userEditedSinceSync=v;},configurable:true});
 Object.defineProperty(window,'_syncBasis',{get:()=>_syncBasis,set:v=>{_syncBasis=v;},configurable:true});

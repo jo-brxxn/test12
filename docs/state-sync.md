@@ -349,3 +349,17 @@ in `seedNoteFlags` — winzig, aber gespeichert.
 - **Hintergrund-Neuaufbau** (Feeds `rerenderBald`, Pull `rerenderHintergrund`, Stunden-/Minuten-Takt) wartet ebenso und rettet den Scroll-Stand (`scrollMerken/scrollZurueck`)
 - Neuer Hintergrund-Takt, der neu zeichnet → **immer** über `rerenderHintergrund()` / `nutzerAktiv()`, nie direkt `rerender()`
 - Geprüft von `check/eingabesync.js`
+
+## Undo/Redo-Verlauf (seit 2026-11-17, 741) — `js/undo.js`
+
+- **20 Schritte, dauerhaft, über alle Geräte** (Nutzer-Wahl). `localStorage['fxpro_undo_log']` = `{t,pos,e:[{ts,g,fs,l,d}]}`; Cloud-Feld `undoLog` (in `cloudPushRoh` angehängt, in `cloudPullRoh` per `undoUebernehmen` — **jüngeres `t` gewinnt, ganzes Objekt**). Nicht in `snap()`.
+- Ein Schritt = **nur der Unterschied** (`d` = Pfade mit alt/neu; Listen mit `id` je Eintrag + Reihenfolge). `snap()` misst 924 KB — volle Kopien passen nicht. Deckel 1,2 MB, älteste fliegen raus.
+- **Was ein Schritt ist:** `save()` mit Nutzer-Markierung (`pushU`/`markUserEditTs`/`markPrefEdit` innerhalb 2 s; `saveSoon` nur für das Speichern aus dem Tipp-Takt) + jedes `tjSpeichern`. `pushU` = Grenze (Wartendes speichern, offenen Schritt abschließen). Ein Feld = ein Schritt (wartet, bis Getipptes gespeichert ist).
+- **Nie im Schritt:** `save()` ohne Markierung (Feeds, Kalender, Trend/COT/Sentiment) — mitten in einer Eingabe wird ihre Änderung gemerkt (`aus`) und herausgefiltert; Abgleich/anderer Tab über `undoFremd()` (schließt vorher ab, Basis danach neu).
+- **Undo setzt nur die Pfade des Schritts** — Fremdes an anderer Stelle bleibt. Zeitstempel frisch (Notiz `up`, Gameplan `t`, Trade `up`), entfernter Gameplan → leerer Plan mit frischem `t`, entfernter Trade → **Grabstein** — sonst holt der Abgleich (jüngster gewinnt / Vereinigung) das Rückgängig-Gemachte zurück.
+- Neuer vereinigter Zustand (Liste/Objekt je Eintrag) → in `zeitstempelFrisch()` ergänzen. Geprüft von `check/undo.js` (A–F, zwei Geräte).
+
+## Gameplan am Trade (seit 2026-11-17, 741)
+
+- `trade.gp = [{id, b, th, en, br, t}]` — **Kopie** beim Speichern (neuer Trade oder anderes Asset), reist mit dem Trade (`tradeJournal`). FX-Paar = beide Währungen.
+- Fehlt die These → Fenster `mTradeGp` (Pflicht), Eingabe geht über `gpAusTrade()` in `gameplans` (synchronisiert wie jeder Plan). Geprüft von `check/tradegameplan.js`.
