@@ -246,7 +246,7 @@ function pkLageHtml(id,api){
 function pkKnopfBreite(breite,n,woche){const px=(breite||600)/Math.max(1,n)*(woche?5:1);return Math.max(8,Math.min(22,Math.floor(px-1)));}
 function pkBreiteSetzen(){
   const el=pkLage();if(!el)return;const L=_pkReg[el.dataset.pk];if(!L)return;
-  const w=el.getBoundingClientRect().width;if(w>0)el.style.setProperty('--pk-w',pkKnopfBreite(w,L.tage.length,L.woche)+'px');
+  const w=el.offsetWidth;if(w>0)el.style.setProperty('--pk-w',pkKnopfBreite(w,L.tage.length,L.woche)+'px');
 }
 // ── Spalte ───────────────────────────────────────────────────────────────
 function pkKommend(id){

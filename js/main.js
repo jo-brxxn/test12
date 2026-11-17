@@ -26406,7 +26406,9 @@ function syncNavActive(){
   updateSidebarSelection();
 }
 let _navTopRo=null;
-function navTopSetzen(bar){try{const t=Math.round(bar.getBoundingClientRect().top)+'px';if(bar.__navTop!==t){bar.__navTop=t;bar.style.setProperty('--nav-top',t);}}catch(e){}}
+// ⚠ Seiten-Zoom (PC): die Leiste ist gezoomt, ihr fixes Panel rechnet top in Seiten-Pixeln ->
+// Bildschirm-Wert durch den Zoom teilen (sonst Luecke 13 px bei 1920 / 52 px bei 2560, 753).
+function navTopSetzen(bar){try{const r=bar.getBoundingClientRect(),z=(bar.offsetWidth&&r.width)?r.width/bar.offsetWidth:1,t=Math.round(r.top/z*100)/100+'px';if(bar.__navTop!==t){bar.__navTop=t;bar.style.setProperty('--nav-top',t);}}catch(e){}}
 function navTopBeobachten(bar){
   if(_navTopRo||typeof ResizeObserver==='undefined'){if(!_navTopRo)navTopSetzen(bar);return;}
   _navTopRo=new ResizeObserver(()=>navTopSetzen(bar));

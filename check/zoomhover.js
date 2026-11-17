@@ -13,17 +13,22 @@
 //  B) Trade-Chart (New trade, GOLD): Tipp in die Mitte -> Kasten beginnt hoechstens 1,5 Kerzen
 //     neben dem Tipp; SL-Griff 40 px gezogen -> Griff hoechstens 3 px neben der Maus
 //  C) COT-Verlauf (EUR): Tooltip-Mitte hoechstens 3 px neben der Hover-Linie (ausser am Rand)
+//  D) Assets-Panel der Seitenleiste beginnt an der Unterkante der Kopfzeile (Nutzer-Foto PC
+//     2026-11-17: "das ausklappbare von den Assets geht nicht bis ganz nach oben"; vorher
+//     13 px Luecke bei 1920, 52 px bei 2560, VERSION-CHECK-753)
 // --gegenprobe: alte Rechnung der Hover-Linie (Rect statt offsetWidth) -> A rot.
+// --gegenprobe-panel: alte --nav-top-Rechnung (Bildschirm-Pixel) -> D rot.
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
-const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe');
+const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'), GPP = process.argv.includes('--gegenprobe-panel');
 (async () => {
   const F = [];
   const b = await chromium.launch();
   for (const [W, H] of [[1920, 1080], [2560, 1440]]) {
     const o = W + 'px';
     const ctx = await b.newContext({ viewport: { width: W, height: H }, serviceWorkers: 'block' });
+    if (GPP) await ctx.route(/\/js\/main\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace("t=Math.round(r.top/z*100)/100+'px'", "t=Math.round(r.top)+'px'"); r.fulfill({ response: res, body: t }); });
     if (GP) await ctx.route(/\/js\/main\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('const r={width:w.offsetWidth||rr.width,height:w.offsetHeight||rr.height};', 'const r=rr;'); r.fulfill({ response: res, body: t }); });
     const p = await ctx.newPage(); const err = []; p.on('pageerror', e => err.push(e.message));
     await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) { } });
@@ -31,8 +36,19 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     await p.evaluate(() => { ['lockScreen', 'introOv'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); });
     const zoom = await p.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pg-zoom')) || 1);
     if (zoom < 1.1) F.push(`${o}: Testaufbau - Seiten-Zoom nur ${zoom}`);
-    // A
-    await p.evaluate(() => gotoSym('USD')); await p.waitForTimeout(2500);
+    // D
+    await p.evaluate(() => gotoSym('USD')); await p.waitForTimeout(1200);
+    const ab = await p.evaluate(() => { const e = [...document.querySelectorAll('#navSidebar *')].find(x => x.children.length < 4 && /^\s*Assets\s*$/.test(x.textContent)); if (!e) return null; const b = (e.closest('button,a,[onclick]') || e).getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
+    if (!ab) F.push(`${o} D: Testaufbau - kein Assets-Knopf`);
+    else {
+      const offen = await p.evaluate(() => { const s = document.getElementById('sidebar'); return !!(s && s.classList.contains('open')); });
+      if (!offen) { await p.mouse.click(ab[0], ab[1]); await p.waitForTimeout(700); }
+      const D = await p.evaluate(() => { const s = document.getElementById('sidebar'), h = document.querySelector('.hdr').getBoundingClientRect(); return s && s.classList.contains('open') ? { top: s.getBoundingClientRect().top, hdr: h.bottom } : null; });
+      if (!D) F.push(`${o} D: Assets-Panel geht nicht auf`);
+      else if (Math.abs(D.top - D.hdr) > 1) F.push(`${o} D: Assets-Panel beginnt ${(D.top - D.hdr).toFixed(1)} px unter der Kopfzeile`);
+      if (!offen) { await p.mouse.click(ab[0], ab[1]); await p.waitForTimeout(400); }
+    }
+    // A await p.waitForTimeout(2500);
     const KARTE = () => [...document.querySelectorAll('#detail .chv[data-chv]')].filter(x => x.getBoundingClientRect().width > 100)[0];
     const hatA = await p.evaluate(`(${KARTE})()?((${KARTE})().scrollIntoView({block:'center'}),true):false`);
     if (!hatA) F.push(`${o} A: Testaufbau - kein Hover-Chart auf der USD-Seite`);
@@ -85,7 +101,8 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     await ctx.close();
   }
   await b.close();
+  if (GPP) { const ok = F.some(f => / D: Assets-Panel beginnt/.test(f)); console.log(ok ? 'zoomhover --gegenprobe-panel: ok (Luecke unter der Kopfzeile gemeldet)' : 'zoomhover --gegenprobe-panel: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (GP) { const ok = F.some(f => / A: Hover-Linie/.test(f)); console.log(ok ? 'zoomhover --gegenprobe: ok (alte Rechnung verschiebt die Linie)' : 'zoomhover --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (F.length) { console.log('zoomhover: ' + F.length + ' Befund(e)\n  ' + F.join('\n  ')); process.exit(1); }
-  console.log('zoomhover: ok (Hover-Linie, Trade-Chart Tipp + SL-Griff, COT-Tooltip liegen bei 1920/2560 px Seiten-Zoom an der Maus)');
+  console.log('zoomhover: ok (Hover-Linie, Trade-Chart Tipp + SL-Griff, COT-Tooltip liegen bei 1920/2560 px Seiten-Zoom an der Maus, Assets-Panel buendig unter der Kopfzeile)');
 })().catch(e => { console.log('zoomhover: ABBRUCH ' + e.message); process.exit(1); });

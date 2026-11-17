@@ -22442,3 +22442,15 @@ Nutzer: *„Mess mal den Hintergrund weis Ton und benutz den absofort anstelle d
 - `--shadow-card`: 4 Lagen bis 26 px Weichzeichnung → **3 Lagen, max. 12 px**, harte 1-px-Kante (`0 1px 0`).
 - Messung `check/kartenlook.js`: Karte gegen Grund **1,32:1** (vorher ~1,13), Schattenkante **1,36:1** (≥ 1,28). Zwei schärfere Varianten fielen durch (1,14 / 1,24 — Kante endet vor der Messzeile), daher die harte Kante + 3-px-Lage.
 - Bewusst unverändert: getönte Chart-Innenfläche der Price-Karte `#F1F4F9`, Texttöne auf Navy (`#F4F7FC`), dunkles Theme.
+
+## 2026-11-17 — PC: Assets-Panel bündig unter der Kopfzeile, Chart-Rundgang (VERSION-CHECK-753)
+
+Nutzer (PC-Fotos, Stand noch 748): *„das ausklappbare von den Assets am pc geht nicht bis ganz nach oben und es betrifft mehrere Charts das mit der Maus“*.
+
+- **Assets-Panel:** `navTopSetzen()` schrieb die Oberkante der Seitenleiste in Bildschirm-Pixeln nach `--nav-top`; das fixe Panel sitzt in der gezoomten Leiste → × Zoom. Lücke gemessen **13 px** (1920, Zoom 1,205) / **52 px** (2560, 1,616) → **0 px** (1366/1920/2560).
+- **Chart-Rundgang** bei 1920/2560 über Dashboard, USD, SILVER, BTC, Currencies, Trends, COT, Seasonality, Data u. a. (je Chart Maus bei 30/75 %):
+  - alle `.chv`-Charts ≤ 17 px (Einrasten auf den nächsten Punkt) — Foto zeigt 748, also vor dem Fix in 751.
+  - BTC, Chart mit 12 Punkten: 61–134 px — **auch bei 1366 ohne Zoom gleich**, kein Zoom-Fehler: Punkte decken nur einen Teil der Breite, links davon rastet die Linie auf den ersten Punkt.
+  - Trends ≤ 5 px; Fear&Greed, BTC-Sentiment, Trends-Linien rechnen über Verhältnisse (zoomfest); Daten-Filter hängen am `body` (ungezoomt).
+- Vorbeugend: Knopfbreite der Price-Karte (`--pk-w`) aus `offsetWidth`.
+- Wächter `check/zoomhover.js` um **D** erweitert, `--gegenprobe-panel` → D rot.
