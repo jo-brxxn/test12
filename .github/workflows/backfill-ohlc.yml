@@ -40,7 +40,7 @@ jobs:
       - name: Yahoo-Tageskerzen holen und Open/High/Low nachtragen
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
-          for PAIR in "USD:DX-Y.NYB" "EUR:EURUSD=X" "GBP:GBPUSD=X" "CHF:USDCHF=X" "JPY:USDJPY=X" "CAD:USDCAD=X" "AUD:AUDUSD=X" "NZD:NZDUSD=X" "GOLD:GC=F" "SILVER:SI=F" "OIL:CL=F" "BTC:BTC-USD" "SP500:%5EGSPC" "NAS:%5ENDX" "DAX:%5EGDAXI"; do
+          for PAIR in "USD:DX-Y.NYB" "EUR:EURUSD=X" "GBP:GBPUSD=X" "CHF:USDCHF=X" "JPY:USDJPY=X" "CAD:USDCAD=X" "AUD:AUDUSD=X" "NZD:NZDUSD=X" "GOLD:GC=F" "SILVER:SI=F" "OIL:CL=F" "COPPER:HG=F" "NATGAS:NG=F" "BTC:BTC-USD" "SOL:SOL-USD" "SP500:%5EGSPC" "NAS:%5ENDX" "DAX:%5EGDAXI"; do
             ID="${PAIR%%:*}"; SYM="${PAIR#*:}"
             curl -sL -A "$UA" --max-time 45 -o "y_$ID.json" \
               "https://query1.finance.yahoo.com/v8/finance/chart/$SYM?range=5y&interval=1d" || true
@@ -50,7 +50,8 @@ jobs:
           node tools/kerzen-auslagern.mjs --einlesen
           node -e '
             const fs=require("fs");
-            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","BTC","SP500","NAS","DAX"];
+            // COPPER/NATGAS/SOL 2026-11-17: fehlten seit ihrer Aufnahme (gemessen: 2 bzw. 1 von 40 Tagen mit Kerze, BTC 40/40).
+            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","COPPER","NATGAS","BTC","SOL","SP500","NAS","DAX"];
             let pd;
             try{pd=JSON.parse(fs.readFileSync("price_data.json","utf8"));}
             catch(e){console.log("price_data.json unlesbar - nichts geaendert ("+e.message+")");process.exit(0);}

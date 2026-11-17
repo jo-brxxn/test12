@@ -22374,3 +22374,10 @@ Nutzer: *„Ja maximale Historie“*.
 - **Score:** Krypto-Verbund mit BTC (Makro-Karten, Regeln, Argumente gespiegelt, beim Anlegen sofort übernommen), eigene COT/Saison/Trend, Crypto Fear & Greed wie BTC. Bestehende Scores unverändert.
 - **Symbol:** eigene Münze (violett→türkis, drei schräge Balken), einfarbige Glyphe, Kopfbild `coinsol`. Set-ups/Trends/Watchlist (`SOL/USD`), Aliasse (Trades, Schnellerfassung, Kalender).
 - Feed-Größe hochgerechnet: +≈34 KB `price_data.json` (641→≈675/900), +≈40 KB `price_hist.json`, Summe ≈3550/3700 KB — kein Deckel angehoben.
+
+## 2026-11-17 — USD-Kurse überall geprüft, Kerzen-Nachtrag ergänzt
+
+**Nutzer:** *„immer wenn du Preise für Assets hinzufügst die usd Kurse benutzen also solusd und xauusd überprüf das überall“* (Dauerregel → `docs/neues-asset.md`).
+- Sonde `tools/usd-sonde.mjs` (Runner, 2026-11-17): alle Live- und Historienquellen in USD; Live = Historie-Instrument bei Copper/Öl/Gas (Future↔Future), BTC/SOL/ETH (Spot↔Spot), S&P/Nasdaq. DAX in EUR (Index). **Gold/Silber:** live Spot (`TVC:GOLD` 3860,97 ≈ `OANDA:XAUUSD` 3861,07), Historie Future `GC=F` (3859,90) — Yahoo führt kein `XAUUSD=X` (404), stooq sperrt den Runner (403); LBMA als Spot-Referenz in Prüfung.
+- **Fund:** `backfill-ohlc.yml` kannte Copper, Natural Gas und SOL nicht → gemessen 2 / 2 / 1 von 40 Tagen mit echter Kerze (BTC 40/40). Ergänzt; Wächter `check/assetlisten.js` (jedes Asset in jeder Kursliste, Krypto/Retail in USD, Gegenprobe).
+- SOL nach dem ersten Lauf: `price_data.json` 1097 Tage, letzter Kurs 73,86 USD; 4h-Trend und 10J-Archiv (seit 2020-04-10) da.

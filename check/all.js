@@ -94,6 +94,7 @@ const PRUEFUNGEN = [
   { n: 'tradegameplan', s: 40, d: 'Neuer Trade: Gameplan im Formular, Kopie am Trade, leerer Plan -> Pflicht-Fenster, Eingabe auch im Gameplan', f: 'check/tradegameplan.js', args: [], browser: true },
   { n: 'fensterrahmen', s: 30, d: 'Fenster zwischen Kopfzeile und Seitenleiste (Handy: unter der Kopfzeile), Pfeil-Tipp schliesst + wirkt, Ungespeichertes fragt nach', f: 'check/fensterrahmen.js', args: [], browser: true },
   { n: 'datumfeld', s: 1, d: 'Datum-/Zeit-Felder ragen auf dem iPad nicht ueber ihre Spalte (globale Regel min-width:0/max-width:100%)', f: 'check/datumfeld.js', args: [], browser: false },
+  { n: 'assetlisten', s: 1, d: 'Jedes Nicht-FX-Asset in jeder Kursliste (Live, 3J, 4h, Saison, Kerzen-Nachtrag), Krypto/Metalle/Retail in USD', f: 'check/assetlisten.js', args: [], browser: false },
   { n: 'gameplan', s: 60, d: 'Gameplan: Seite (jedes Asset, Watchlist oben), Bias faerbt, Leiste vor der Price-Karte, aufgeklappt ab Entry|Break, gespeichert, Preislinie, 14-Tage-Hinweis', f: 'check/gameplan.js', args: [], browser: true },
   { n: 'kerzenarchiv', s: 40, d: 'Alte Kerzen (>183 Tage) in price_ohlc.json, Laden nur fuer lange Charts, Rundreise bitgenau, Scores unveraendert', f: 'check/kerzenarchiv.js', args: [], browser: true },
   { n: 'stkmakro', s: 30, d: 'Aktien: Makro-Karten + Zentralbank nicht auf der Seite, Quicklink Macro -> Fenster ~2/3 mit allen Funktionen, FX unveraendert', f: 'check/stkmakro.js', args: [], browser: true },
