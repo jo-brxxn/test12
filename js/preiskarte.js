@@ -468,7 +468,7 @@ function pkPopZeichnen(){
       <div class="pk-ed-r"><button type="button" class="btn pk-ab" onclick="pkFormZu()">Cancel</button><button type="button" class="btn pk-ok" onclick="pkSpeichern()">Done</button></div>`;
     el.appendChild(p);
     // im Chart halten (Kasten ~ 230 px): Mitte auf den Tipp, an den Raendern eingerueckt
-    const lr=el.getBoundingClientRect(),pw=p.offsetWidth,ph=p.offsetHeight;
+    const lr={width:el.offsetWidth,height:el.offsetHeight},pw=p.offsetWidth,ph=p.offsetHeight;   // Seiten-Pixel (Zoom-fest, 751)
     const lx=Math.max(pw/2+4,Math.min(lr.width-pw/2-4,f.fx*lr.width)),ly=Math.max(ph/2+4,Math.min(lr.height-ph/2-4,f.fy*lr.height));
     p.style.left=lx+'px';p.style.top=ly+'px';
     setTimeout(()=>{const inp=document.getElementById('pkIn');if(inp)inp.focus();},40);

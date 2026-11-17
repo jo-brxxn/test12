@@ -650,6 +650,11 @@ function tjToolZeichnen(boxId){
   }else hd.querySelectorAll('.tj-wbox,.tj-wd').forEach(e=>e.remove());
   if(st.edit)tjRRZeigen();
 }
+// Maus -> Chart-Pixel. ⚠ Seiten-Zoom (PC, --pg-zoom, auch im Fenster): clientX/Y und
+// getBoundingClientRect sind Bildschirm-Pixel, st.pl/st.slot/st.pt Chart-Pixel (W =
+// clientWidth). Ohne Teilen durch k landete ein Tipp bei 1920 px (Zoom 1,205) 68 px, bei
+// 2560 px (1,616) 294 px rechts der Maus (VERSION-CHECK-751, check/zoomhover.js).
+function tjMass(svg,st){const r=svg.getBoundingClientRect();return{l:r.left,o:r.top,k:(r.width&&st.W)?r.width/st.W:1};}
 // Waagerecht ziehen: Kante = Anfang/Ende auf eine Kerze einrasten, Mitte =
 // ganzen Kasten verschieben (Breite bleibt). Mindestens eine Kerze breit.
 function tjBreiteStart(ev,boxId,art){
@@ -657,12 +662,12 @@ function tjBreiteStart(ev,boxId,art){
   ev.preventDefault();ev.stopPropagation();
   const el=ev.currentTarget;try{el.setPointerCapture(ev.pointerId);}catch(e){}
   const svg=document.querySelector(`#${boxId} svg.tj-ch-svg`);if(!svg)return;
-  const links=svg.getBoundingClientRect().left,sp0=tjSpanne(boxId),x0=ev.clientX;
-  const idx=cx=>Math.floor((cx-links-st.pl)/st.slot);
+  const M=tjMass(svg,st),links=M.l,sp0=tjSpanne(boxId),x0=ev.clientX;
+  const idx=cx=>Math.floor(((cx-links)/M.k-st.pl)/st.slot);
   el.classList.add('aktiv');
   const zieh=e=>{
     let i0=sp0.i0,i1=sp0.i1;
-    if(art==='m'){const breit=i1-i0,d=Math.round((e.clientX-x0)/st.slot);i0=Math.max(0,Math.min(st.n-1-breit,sp0.i0+d));i1=i0+breit;}
+    if(art==='m'){const breit=i1-i0,d=Math.round((e.clientX-x0)/M.k/st.slot);i0=Math.max(0,Math.min(st.n-1-breit,sp0.i0+d));i1=i0+breit;}
     else if(art==='l')i0=Math.max(0,Math.min(i1,idx(e.clientX)));
     else i1=Math.max(i0,Math.min(st.n-1,idx(e.clientX)));
     tjSpanneSetzen(boxId,i0,i1);tjToolZeichnen(boxId);
@@ -678,11 +683,11 @@ function tjZiehStart(ev,boxId,k){
   ev.preventDefault();ev.stopPropagation();
   const el=ev.currentTarget;try{el.setPointerCapture(ev.pointerId);}catch(e){}
   const svg=document.querySelector(`#${boxId} svg.tj-ch-svg`);if(!svg)return;
-  const oben=svg.getBoundingClientRect().top;
+  const M=tjMass(svg,st);
   el.classList.add('aktiv');
   const feld=document.getElementById(TJ_FELD[k]);
   const zieh=e=>{
-    const yy=Math.max(st.pt,Math.min(st.pt+st.ph,e.clientY-oben));
+    const yy=Math.max(st.pt,Math.min(st.pt+st.ph,(e.clientY-M.o)/M.k));
     if(feld)feld.value=st.v(yy).toFixed(st.dez);
     tjToolZeichnen(boxId);
   };
@@ -701,12 +706,12 @@ function tjPlatzieren(boxId,ev){
   const lv=tjEbenen(boxId);
   if(lv.entry!=null&&lv.sl!=null&&lv.tp!=null)return;
   const svg=document.querySelector(`#${boxId} svg.tj-ch-svg`);if(!svg)return;
-  const box=svg.getBoundingClientRect();
-  const yy=Math.max(st.pt,Math.min(st.pt+st.ph,ev.clientY-box.top));
+  const M=tjMass(svg,st);
+  const yy=Math.max(st.pt,Math.min(st.pt+st.ph,(ev.clientY-M.o)/M.k));
   const e=lv.entry!=null?lv.entry:st.v(yy);
   // Der Kasten beginnt an der angetippten Kerze (Zeit), TJ_BREITE Kerzen breit.
   const w0=document.getElementById('tjW0');
-  if(w0&&!w0.value){const i0=Math.max(0,Math.min(st.n-1,Math.floor((ev.clientX-box.left-st.pl)/st.slot)));tjSpanneSetzen(boxId,i0,Math.min(st.n-1,i0+TJ_BREITE-1));}
+  if(w0&&!w0.value){const i0=Math.max(0,Math.min(st.n-1,Math.floor(((ev.clientX-M.l)/M.k-st.pl)/st.slot)));tjSpanneSetzen(boxId,i0,Math.min(st.n-1,i0+TJ_BREITE-1));}
   const d=st.atr||(st.hi-st.lo)*0.08,kurz=(document.getElementById('tjDir')||{}).value==='short';
   const setz=(k,v)=>{const f=document.getElementById(TJ_FELD[k]);if(f&&!String(f.value).trim())f.value=v.toFixed(st.dez);};
   setz('entry',e);setz('sl',kurz?e+d:e-d);setz('tp',kurz?e-2*d:e+2*d);

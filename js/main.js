@@ -20306,8 +20306,11 @@ function cotChartShowIdx(i){
     <div class="cot-tip-row"><span>Δ Long % (wk)</span><b style="color:${cotBiasColor(m.dNetPct)}">${m.dNetPct==null?'–':cotPct(m.dNetPct,true)}</b></div>${meta.preis?`<div class="cot-tip-row"><span>Price (report day)</span><b>${escH(cotPreisTxt(meta.preis[i]))}</b></div>`:''}`;
   tip.style.display='block';
   const wrapRect=wrap.getBoundingClientRect(),svgRect=svg.getBoundingClientRect();
-  const scale=svgRect.width/parseFloat(svg.getAttribute('width'));
-  let left=(svgRect.left-wrapRect.left)+x*scale+wrap.scrollLeft-tip.offsetWidth/2;
+  // ⚠ Seiten-Zoom (PC, --pg-zoom): Rects sind Bildschirm-Pixel, style.left Seiten-Pixel ->
+  // durch z teilen (sonst Tooltip 185 px bei 1920 / 743 px bei 2560 neben der Linie, 751).
+  const z=wrap.offsetWidth?wrapRect.width/wrap.offsetWidth:1;
+  const scale=svgRect.width/z/parseFloat(svg.getAttribute('width'));
+  let left=(svgRect.left-wrapRect.left)/z+x*scale+wrap.scrollLeft-tip.offsetWidth/2;
   left=Math.max(2,Math.min(left,wrap.scrollWidth-tip.offsetWidth-2));
   tip.style.left=left+'px';
   tip.style.top='2px';
@@ -20736,7 +20739,12 @@ function attachChartHovers(root){
       return w._chvShowPt(best);
     };
     w._chvShowPt=best=>{
-      const r=w.getBoundingClientRect();if(!r.width||!best){hide();return null;}
+      // ⚠ Seiten-Zoom (PC, --pg-zoom): getBoundingClientRect misst in Bildschirm-Pixeln, style.left
+      // wirkt in Seiten-Pixeln, die der Zoom noch einmal vergroessert - die Linie stand 98 px (1920,
+      // Zoom 1,205) bzw. 420 px (2560) rechts der Maus (Nutzer-Foto PC 2026-11-17). Positionen
+      // deshalb in Seiten-Pixeln (offsetWidth/-Height), fx aus der Maus bleibt ein Anteil.
+      const rr=w.getBoundingClientRect();if(!rr.width||!best){hide();return null;}
+      const r={width:w.offsetWidth||rr.width,height:w.offsetHeight||rr.height};
       const ys=Array.isArray(best.ys)&&best.ys.length>1?best.ys:null;
       const px=best.fx*r.width,py=(ys?Math.min(...ys.map(z=>z.fy)):best.fy)*r.height;
       if(ys){

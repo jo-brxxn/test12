@@ -22419,3 +22419,16 @@ Nutzer (mehrere iPad-Fotos):
 - *„Das umkreiste entry mit dem Preis … ist doppelt“*: Karte Open trades ohne Entry-Etikett an der Preisleiste (Punkt bleibt).
 - *„Das Zeichen neben Live data soll weg und live data soll gleich weit links“*: Punkt entfernt.
 - Wächter: `check/preiskarte.js` C neu, `check/gameplan.js` I.
+
+## 2026-11-17 — PC: Maus und Anzeige versetzt beim Seiten-Zoom (VERSION-CHECK-751)
+
+Nutzer (PC-Foto): *„die Maus ist weiter links aber ausgewählt ist weiter rechts aber es werden die Daten von wo die Maus ist angezeigt aber halt verschoben“*.
+
+- **Ursache (gemessen):** `--pg-zoom` (CSS `zoom`) vergrößert am PC Seiten und Fenster. `getBoundingClientRect`/`clientX` = Bildschirm-Pixel, `style.left`/viewBox = Seiten-Pixel → Position × Zoom.
+- **Hover-Linie Asset-Charts** (`_chvShowPt`): vorher **98 px** (1920, Zoom 1,205) / **420 px** (2560, Zoom 1,616) rechts der Maus → nachher −7/−10/−14 px (1366/1920/2560 = Einrasten auf den nächsten Punkt). Fix: Positionen aus `offsetWidth/offsetHeight`.
+- **Fehlerklasse gesucht** (jede Stelle mit Rect/clientX → `style.left/top`):
+  - Trade-Chart im Fenster (`tjPlatzieren`, `tjBreiteStart`, `tjZiehStart`): Tipp **68/294 px** daneben, SL-Griff **81 px** → 0 px (Kasten −4/−5 px = Kerzenraster). Neu `tjMass()` teilt durch den Zoom.
+  - COT-Verlauf-Tooltip: **185/743 px** neben der Linie → 0 px.
+  - Notiz-Kästchen der Price-Karte, Gleit-Animation (FLIP) von Notizen/Rangliste: auf Seiten-Pixel umgestellt (Dashboard selbst ist ungezoomt, daher ohne sichtbaren Fehler — vorbeugend).
+  - Unkritisch: Auswahl-Ziehen (`brushAnbinden`, Prozent), Menüs/Popups am `body` (ungezoomt), BTC-Sentiment/Score-Charts (Verhältnis).
+- Wächter: `check/zoomhover.js` (A Hover-Linie, B Trade-Chart, C COT-Tooltip, 1920/2560 px), Gegenprobe alte Rechnung → A rot.

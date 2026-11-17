@@ -1458,7 +1458,7 @@ function flipNotes(mutate){
   mutate();
   document.querySelectorAll(sel).forEach(el=>{
     const b=before[el.getAttribute('data-flip')];if(!b)return;
-    const a=el.getBoundingClientRect(),dx=b.left-a.left,dy=b.top-a.top;
+    const a=el.getBoundingClientRect(),z=(el.offsetWidth&&a.width)?a.width/el.offsetWidth:1,dx=(b.left-a.left)/z,dy=(b.top-a.top)/z;   // /z: Seiten-Zoom (751)
     if(!dx&&!dy)return;
     el.style.transition='none';el.style.transform=`translate(${dx}px,${dy}px)`;
     requestAnimationFrame(()=>{el.style.transition='transform .32s cubic-bezier(.2,.7,.3,1)';el.style.transform='';setTimeout(()=>{el.style.transition='';},340);});
@@ -1472,7 +1472,7 @@ function flipNotes(mutate){
 function flipRankRows(root,before){
   root.querySelectorAll('.rank-row[data-flip]').forEach(el=>{
     const b=before[el.getAttribute('data-flip')];if(!b)return;
-    const a=el.getBoundingClientRect(),dy=b.top-a.top;
+    const a=el.getBoundingClientRect(),z=(el.offsetWidth&&a.width)?a.width/el.offsetWidth:1,dy=(b.top-a.top)/z;   // /z: Seiten-Zoom (751)
     if(!dy)return;
     el.style.transition='none';el.style.transform=`translateY(${dy}px)`;
     requestAnimationFrame(()=>{el.style.transition='transform .28s cubic-bezier(.2,.7,.3,1)';el.style.transform='';setTimeout(()=>{el.style.transition='';},300);});
