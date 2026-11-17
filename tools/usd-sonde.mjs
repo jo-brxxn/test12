@@ -25,3 +25,19 @@ for (const [id, tvs, yhs] of PAARE) {
   for (const t of tvs) log(`  TV    ${t.padEnd(22)} ${await tv(t)}`);
   for (const y of yhs) log(`  Yahoo ${y.padEnd(22)} ${await yh(y)}`);
 }
+// 2) Spot-Historie XAUUSD/XAGUSD (Yahoo fuehrt sie nicht): stooq CSV, und wie weit weicht der
+// Future (GC=F/SI=F, bisher Historienquelle) ueber 3 Jahre vom Spot ab?
+async function csv(u) { try { const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(25000) }); return { s: r.status, t: await r.text() }; } catch (e) { return { s: 0, t: e.message }; } }
+async function yhLang(y) { const r = await j(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(y)}?range=5y&interval=1d`); const x = r.d && r.d.chart && r.d.chart.result && r.d.chart.result[0]; if (!x) return new Map(); const m = new Map(); x.timestamp.forEach((t, i) => { const c = x.indicators.quote[0].close[i]; if (c != null) m.set(new Date(t * 1000).toISOString().slice(0, 10), c); }); return m; }
+for (const [s, y] of [['xauusd', 'GC=F'], ['xagusd', 'SI=F']]) {
+  const r = await csv(`https://stooq.com/q/d/l/?s=${s}&i=d`);
+  const z = r.t.trim().split('\n'); log(`== stooq ${s} ${r.s} Zeilen ${z.length} | ${z[0]} | ${z[1]} | ${z[z.length - 1]}`);
+  if (z.length < 50) continue;
+  const spot = new Map(z.slice(1).map(l => l.split(',')).map(a => [a[0], +a[4]]));
+  const fut = await yhLang(y);
+  const d = [...fut].filter(([k]) => spot.has(k) && k >= '2023-11-01').map(([k, v]) => [k, (v - spot.get(k)) / spot.get(k) * 100]);
+  if (!d.length) { log('  kein gemeinsamer Tag'); continue; }
+  const abs = d.map(x => Math.abs(x[1])).sort((a, b) => a - b);
+  const max = d.reduce((a, b) => Math.abs(b[1]) > Math.abs(a[1]) ? b : a);
+  log(`  ${y} vs Spot seit 2023-11: Tage ${d.length}, Median ${abs[abs.length >> 1].toFixed(2)} %, 95% ${abs[Math.floor(abs.length * .95)].toFixed(2)} %, max ${max[1].toFixed(2)} % am ${max[0]}`);
+}
