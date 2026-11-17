@@ -12,17 +12,20 @@
 //  F) 390 px: Fenster ohne Seitenueberlauf
 //  G) Asset-Auswahl wie jeder Asset-Filter (Nutzer 2026-11-17): Gruppen FX Pairs + Kategorien,
 //     Antippen oeffnet das 2-Spalten-Fenster, Wahl setzt das Asset und zeigt den Plan
+//  H) Open date geaendert -> das Werkzeug im Chart beginnt dort, seine Breite bleibt
+// --gegenprobe H: node check/tradegameplan.js --gegenprobe-datum (tjDatumNeu ohne Verschieben) -> H rot.
 // --gegenprobe: Pflicht-Pruefung entfernt -> C rot.
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
-const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe');
+const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'), GPD = process.argv.includes('--gegenprobe-datum');
 (async () => {
   const F = [];
   const b = await chromium.launch();
   for (const [W, H] of [[1194, 834], [390, 844]]) {
     const o = W + 'px';
     const ctx = await b.newContext({ viewport: { width: W, height: H }, serviceWorkers: 'block' });
+    if (GPD) await ctx.route(/\/js\/trades\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('a.value=d;if(b)b.value=\'\';', ''); r.fulfill({ response: res, body: t }); });
     if (GP) await ctx.route(/\/js\/trades\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('if(ohne.length){tjGpFensterAuf(ohne);return false;}', ''); r.fulfill({ response: res, body: t }); });
     const p = await ctx.newPage(); const err = []; p.on('pageerror', e => err.push(e.message));
     await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) { } });
@@ -41,6 +44,16 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     else { await p.click('#gwPicker button:has-text("Silver")'); await p.waitForTimeout(400);
       const gv = await p.evaluate(() => [document.getElementById('tjAsset').value, document.getElementById('tjGpBox').hidden]);
       if (gv[0] !== 'SILVER' || gv[1]) F.push(`${o} G: Wahl im Fenster setzt das Asset/den Plan nicht (${gv})`); }
+    // H: Open date aendern -> Werkzeug beginnt dort, Breite bleibt (Nutzer 2026-11-17)
+    await p.waitForTimeout(800);
+    const hb = await p.evaluate(() => { const r = document.getElementById('tjChart').getBoundingClientRect(); return [r.x + r.width * 0.55, r.y + r.height * 0.5]; });
+    await p.mouse.click(hb[0], hb[1]); await p.waitForTimeout(500);
+    const H0 = await p.evaluate(() => { const r = document.querySelector('#tjChart-tool rect'); return { w0: document.getElementById('tjW0').value, w: r && +r.getAttribute('width') }; });
+    await p.fill('#tjDate', '2026-10-01'); await p.dispatchEvent('#tjDate', 'change'); await p.waitForTimeout(900);
+    const H1 = await p.evaluate(() => { const r = document.querySelector('#tjChart-tool rect'); return { w0: document.getElementById('tjW0').value, w: r && +r.getAttribute('width'), t: document.getElementById('tjChTitel').textContent }; });
+    if (!H0.w0) F.push(`${o} H: Testaufbau - Tipp setzt kein Werkzeug`);
+    else if (H1.w0 !== '2026-10-01' || Math.abs((H1.w || 0) - H0.w) > 1) F.push(`${o} H: neues Open date verschiebt das Werkzeug nicht (Beginn ${H1.w0}, Breite ${H0.w} -> ${H1.w})`);
+    if (H1.t !== 'Silver') F.push(`${o} G: Chart-Titel "${H1.t}" statt "Silver"`);
     await p.evaluate(() => closeM('mTrade'));
     // A
     await p.evaluate(() => { gpBias('GOLD', 'bull'); gpText('GOLD', 'th', 'Real yields falling'); }); await p.waitForTimeout(600);
@@ -90,6 +103,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     await ctx.close();
   }
   await b.close();
+  if (GPD) { const ok = F.some(f => / H: neues/.test(f)); console.log(ok ? 'tradegameplan --gegenprobe-datum: ok (stehengebliebenes Werkzeug gemeldet)' : 'tradegameplan --gegenprobe-datum: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (GP) { const ok = F.some(f => / C: /.test(f)); console.log(ok ? 'tradegameplan --gegenprobe: ok (fehlendes Pflicht-Fenster gemeldet)' : 'tradegameplan --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (F.length) { console.log('tradegameplan: ' + F.length + ' Befund(e)\n  ' + F.join('\n  ')); process.exit(1); }
   console.log('tradegameplan: ok (Plan im Formular, Kopie am Trade bleibt, leerer Plan -> Pflicht-Fenster mit beiden Waehrungen, Eingabe auch im Gameplan, Asset ohne Plan ohne Fenster, These auf der Karte, 1194/390 px)');

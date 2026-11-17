@@ -728,10 +728,31 @@ function tjRRZeigen(){
   el.innerHTML=(teile.length?teile.join('<span class="tj-sep">·</span>'):'<i>Tap the chart to place the position · then drag Entry, SL and TP</i>')+
     warn.map(w=>`<span class="tj-warn">${escH(w)}</span>`).join('');
 }
+// Open date geaendert (Nutzer 2026-11-17: "wenn man das entry Datum eingibt soll sich diese
+// Tool am Chart direkt dahin bewegen"): das Werkzeug beginnt am neuen Datum und behaelt seine
+// Breite in Kerzen. Vorher blieb es an der alten, per Tipp gesetzten Stelle stehen (w0/w1).
+let _tjBreiteNach=null;
+function tjDatumNeu(){
+  const d=(document.getElementById('tjDate')||{}).value||'',a=document.getElementById('tjW0'),b=document.getElementById('tjW1'),st=TJ_CH.tjChart;
+  if(a&&a.value&&/^\d{4}-\d{2}-\d{2}$/.test(d)){
+    const i0=st?tjDatumIdx(st,a.value):null,i1=st?tjDatumIdx(st,b&&b.value):null;
+    _tjBreiteNach=i0!=null&&i1!=null&&i1>=i0?i1-i0:TJ_BREITE-1;
+    a.value=d;if(b)b.value='';
+  }
+  tjEdEingabe(true);
+}
 function tjEdChart(){
   const a=document.getElementById('tjAsset'),d=document.getElementById('tjDate');
-  const t=document.getElementById('tjChTitel');if(t)t.textContent=(a&&a.value.trim())||'Price chart';
+  // Titel = Name aus der Auswahlliste ("Copper"), nicht die Kennung ("COPPER")
+  const t=document.getElementById('tjChTitel'),o=a&&a.selectedOptions&&a.selectedOptions[0];
+  if(t)t.textContent=(a&&a.value.trim()?(o&&o.value?o.textContent.trim():a.value.trim()):'')||'Price chart';
   tjChartBauen('tjChart',{asset:a?a.value:'',datum:d?d.value:'',edit:true});
+  if(_tjBreiteNach!=null){
+    const st=TJ_CH.tjChart,w0=document.getElementById('tjW0');
+    const i0=st&&w0?tjDatumIdx(st,w0.value):null;
+    if(i0!=null){tjSpanneSetzen('tjChart',i0,Math.min(st.n-1,i0+_tjBreiteNach));tjToolZeichnen('tjChart');}
+    _tjBreiteNach=null;
+  }
   tjRRZeigen();
 }
 let _tjEdT=0;
@@ -1149,7 +1170,7 @@ if(typeof window!=='undefined'){
 export {trades,tjUndoSetzen,TJG_GUARD,TRADES_KEY,mergeTrades,tjUebernehmen,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjFormSpeichern,TJ_GUARD,TJ_GUARD_ZU,tjR,tjReihe,
   tjFuerCloud,tjGesendet,tjSendeFehler};
 if(typeof window!=='undefined'){
-  Object.assign(window,{tjAssetSetzen,tjGpBias,tjGpFensterSpeichern,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
+  Object.assign(window,{tjDatumNeu,tjAssetSetzen,tjGpBias,tjGpFensterSpeichern,renderJournal,tjDashHtml,tjOffenKartenHtml,tjOffenAnzahl,tjNeu,tjZeigen,tjBearbeiten,tjLoeschen,tjFormSpeichern,tjMonatSetzen,tjMonatHeute,
     mergeTrades,tjUebernehmen,tjR,tjReihe,tjTagKlick,tjTagFenster,tjTagZuTrade,tjTagNeu,tjRichtung,tjExitAuf,tjEdEingabe,tjStreak,tjStats,
     tjStatus,tjAbschliessen,tjZuExit,tjZuErgebnis,tjZuSpeichern,tjZuBearbeiten,tjJetzt,tjLive,
     tjFuerCloud,tjCloudStand,tjJetztHochladen,tjSig});
