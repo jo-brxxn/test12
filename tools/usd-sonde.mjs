@@ -41,3 +41,17 @@ for (const [s, y] of [['xauusd', 'GC=F'], ['xagusd', 'SI=F']]) {
   const max = d.reduce((a, b) => Math.abs(b[1]) > Math.abs(a[1]) ? b : a);
   log(`  ${y} vs Spot seit 2023-11: Tage ${d.length}, Median ${abs[abs.length >> 1].toFixed(2)} %, 95% ${abs[Math.floor(abs.length * .95)].toFixed(2)} %, max ${max[1].toFixed(2)} % am ${max[0]}`);
 }
+
+// 3) LBMA (offizielle Gold/Silber-Preise in USD, JSON) als Spot-Referenz: Abweichung GC=F/SI=F
+for (const [f, y] of [['gold_pm', 'GC=F'], ['silver', 'SI=F']]) {
+  const r = await j(`https://prices.lbma.org.uk/json/${f}.json`);
+  if (!Array.isArray(r.d)) { log(`== LBMA ${f} ${r.s} ${(r.t || '').slice(0, 80)}`); continue; }
+  const spot = new Map(r.d.filter(x => x && x.v && x.v[0]).map(x => [x.d, +x.v[0]]));
+  log(`== LBMA ${f} ${r.s} Tage ${spot.size} | erster ${r.d[0] && r.d[0].d} | letzter ${r.d[r.d.length - 1].d} ${r.d[r.d.length - 1].v[0]}`);
+  const fut = await yhLang(y);
+  const d = [...fut].filter(([k]) => spot.has(k) && k >= '2023-11-01').map(([k, v]) => [k, (v - spot.get(k)) / spot.get(k) * 100]);
+  if (!d.length) { log('  kein gemeinsamer Tag'); continue; }
+  const abs = d.map(x => Math.abs(x[1])).sort((a, b) => a - b), mit = d.reduce((a, b) => a + b[1], 0) / d.length;
+  const max = d.reduce((a, b) => Math.abs(b[1]) > Math.abs(a[1]) ? b : a);
+  log(`  ${y} vs LBMA seit 2023-11: Tage ${d.length}, Mittel ${mit.toFixed(2)} %, Median |${abs[abs.length >> 1].toFixed(2)}| %, 95% ${abs[Math.floor(abs.length * .95)].toFixed(2)} %, max ${max[1].toFixed(2)} % am ${max[0]}`);
+}
