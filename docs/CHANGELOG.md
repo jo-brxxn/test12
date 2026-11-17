@@ -22357,3 +22357,7 @@ Nutzer: *„Ja maximale Historie“*.
 - Tipp auf Kopfzeile/Leiste: Fenster von oben nach unten zu (`closeM`); Ungespeichertes → `closeMGuarded` + Tipp geschluckt; offene Nachfrage → Tipp geschluckt.
 - Asset-Feld-Platzhalter am Handy abgeschnitten („EUR/U“) → kurz *Type an asset*.
 - Wächter `check/fensterrahmen.js` (A–E, Gegenprobe → A rot).
+
+## 2026-11-17 — Trade-Fenster schlanker (VERSION-CHECK-744)
+
+**Nutzer (iPad-Foto):** *„Entry und exit time kann komplett weg auch Notes und setup kann weg“* — *New trade*/*Edit trade*: Open time, Close time, Setup, Notes entfernt; *Close trade*: Close time, Notes entfernt; Open/Close date volle Breite. `TJ_FELDER` fasst `t`, `ct`, `setup`, `notes` nicht mehr an — **alte Trades behalten ihre Werte** (Details zeigen vorhandene Notes/Setup weiter an).

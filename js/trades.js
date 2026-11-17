@@ -850,8 +850,10 @@ function tjLoeschen(){
 // ── Editor ───────────────────────────────────────────────────────────
 // ⚠ tjAsset (seit 741 eine Auswahlliste) muss das erste Feld nach Datum/Zeit bleiben (check/eingaben.js waehlt dort);
 // die versteckten Felder tjSt/tjDir stehen deshalb dahinter.
-const TJ_FELDER=['tjDate','tjTime','tjAsset','tjSt','tjDir','tjW0','tjW1','tjPnl','tjEntry','tjExit','tjSl','tjTp','tjSize','tjSetup','tjNotes','tjCDate','tjCTime'];
-const TJ_SCHLUESSEL=['d','t','a','st','dir','w0','w1','pnl','entry','exit','sl','tp','size','setup','notes','cd','ct'];
+// Open/Close time, Setup, Notes entfernt (Nutzer 2026-11-17: "Entry und exit time kann komplett weg auch Notes und setup").
+// Alte Trades behalten ihre Werte (t, ct, setup, notes): das Formular fasst sie nicht mehr an.
+const TJ_FELDER=['tjDate','tjAsset','tjSt','tjDir','tjW0','tjW1','tjPnl','tjEntry','tjExit','tjSl','tjTp','tjSize','tjCDate'];
+const TJ_SCHLUESSEL=['d','a','st','dir','w0','w1','pnl','entry','exit','sl','tp','size','cd'];
 function tjUhr(){const d=new Date();return`${tjPad(d.getHours())}:${tjPad(d.getMinutes())}`;}
 // Schalter Open | Closed: bei Open sind Schluss, Exit und P/L ausgeblendet.
 function tjStatus(st){
@@ -1144,7 +1146,7 @@ function tjAbschliessen(id){
   document.getElementById('tjcTitle').textContent=`Close ${tjName(t.a)} · ${tjSeite(t.dir)}`;
   const L=tjZuInfo(t);
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v==null?'':String(v);};
-  set('tjcExit','');set('tjcPnl','');set('tjcDate',tjHeute());set('tjcTime',tjUhr());set('tjcNotes',t.notes||'');
+  set('tjcExit','');set('tjcPnl','');set('tjcDate',tjHeute());
   const knopf=(id,an)=>{const b=document.getElementById(id);if(b)b.disabled=!an;};
   knopf('tjcHitTp',tjNum(t.tp)!=null);knopf('tjcHitSl',tjNum(t.sl)!=null);knopf('tjcNow',!!L.j);
   const err=document.getElementById('tjcErr');if(err){err.textContent='';err.hidden=true;}
@@ -1179,14 +1181,14 @@ function tjZuSpeichern(){
   if(!fehl.length&&cd<t.d)fehl.push('Close date before open date');
   if(fehl.length){if(err){err.textContent='Missing: '+fehl.join(' · ');err.hidden=false;}return false;}
   const alt={...t};
-  Object.assign(t,{st:'closed',exit:g('tjcExit'),pnl,cd,ct:g('tjcTime'),notes:g('tjcNotes'),up:new Date().toISOString()});
+  Object.assign(t,{st:'closed',exit:g('tjcExit'),pnl,cd,up:new Date().toISOString()});
   if(!tjSpeichern()){Object.keys(t).forEach(k=>delete t[k]);Object.assign(t,alt);if(err){err.textContent='Not saved - storage is full or blocked';err.hidden=false;}return false;}
   tjMonat=cd.slice(0,7);
   closeM('mTradeClose');renderJournal();
   return true;
 }
 function tjZuBearbeiten(){const id=_tjZu;closeM('mTradeClose');if(id)tjNeu(null,id);}
-const TJ_GUARD_ZU={felder:['tjcExit','tjcPnl','tjcNotes','tjcDate','tjcTime'],save:()=>tjZuSpeichern(),was:'Closing this trade'};
+const TJ_GUARD_ZU={felder:['tjcExit','tjcPnl','tjcDate'],save:()=>tjZuSpeichern(),was:'Closing this trade'};
 
 // Wiederholung (D): solange ein Stand nicht in der Cloud liegt, alle 15 s
 // erneut hochladen - auch ohne neue Eingabe, und sofort beim Wieder-online.

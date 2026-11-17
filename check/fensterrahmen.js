@@ -60,7 +60,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     }
     // D: Ungespeichertes + Tipp auf die Seitenleiste
     await p.evaluate(() => { showTab('journal'); tjNeu(); }); await p.waitForTimeout(500);
-    await p.fill('#tjNotes', 'unsaved waechter'); await p.waitForTimeout(100);
+    await p.fill('#tjEntry', '1.2345'); await p.waitForTimeout(100);
     // Handy: das Fenster deckt die Leiste (volle Breite) -> dort die Kopfzeile (Undo-Pfeil) antippen
     const nav = W <= 700 ? ub : await p.evaluate(() => { const e = [...document.querySelectorAll('#navSidebar *')].find(x => x.children.length < 4 && /^\s*Dashboard\s*$/.test(x.textContent) && x.getBoundingClientRect().width > 0); const b = (e.closest('button,a,[onclick]') || e).getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; });
     await p.mouse.click(nav[0], nav[1]); await p.waitForTimeout(500);
