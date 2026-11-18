@@ -11446,7 +11446,7 @@ function nachPreisFeed(){
   if(ch){try{_flipCauseTag='trend';recomputeAuto();_flipCauseTag=null;save();renderSidebar();}catch(e){_flipCauseTag=null;}}
 }
 // Score-Zeile der Price-Karte: beide Ebenen, direkt aus der Score-Engine.
-function abTrendScoreZeile(c){
+function abTrendScoreZeile(c,goto){
   const rub=(c&&c.rubrics||[]).find(r=>r&&r.name==='COT Data');
   const w=trendWerte(c.id);
   const teil=k=>{
@@ -11462,7 +11462,7 @@ function abTrendScoreZeile(c){
   return`<div class="ab-scoreline tr-line" title="${escH(trendRegelText())}">
     <span class="ab-scoreline-l">Trend score</span>
     <b style="color:${col}">${sum>0?'+':''}${sum}</b>
-    <span class="ab-scoreline-n">${d.html} · ${h.html}</span>${pkBandLegende()}
+    <span class="ab-scoreline-n">${d.html} · ${h.html}</span>${pkBandLegende()}${goto?`<span class="ab-scoreline-go">${goto}</span>`:''}
   </div>`;
 }
 // ── Das Grafik-Band ─────────────────────────────────────────────────────
@@ -12214,8 +12214,8 @@ function assetPreisKarteHtml(c){
       <div class="pk-col">${pkSpalteHtml(c.id)}</div>
       <div class="pk-main"><div class="ab-pk-chart">${ch.html}</div>${fuss}</div>
     </div>
-    ${YIELD_CCY[c.id]?'':abTrendScoreZeile(c)}
-    ${abGoToHtml('trends')}
+    ${/* 762 (Nutzer 2026-11-18): "Go to Trends" in die Zeile darueber (Trend score), spart eine Zeile */''}
+    ${YIELD_CCY[c.id]?abGoToHtml('trends'):abTrendScoreZeile(c,abGoToHtml('trends'))}
   </div>`;
 }
 

@@ -22630,3 +22630,21 @@ Nutzer (iPad-Foto Data, Compare all, CAD): *„Die Infos sollen immer im Vorderg
 - **Wächter:**
   - neu `check/hovertip.js`, 131 Positionen inkl. COT, Gegenprobe → rot
   - auf die schwebende Box umgestellt: `zoomhover` C, `chartsync`, `kerzen` (Scroll-Ereignis abwarten)
+
+## 2026-11-18 — Price-Karte: Go to Trends in die Zeile darüber, Biggest moves weg, Event-Liste scrollt erst nach Tipp (VERSION-CHECK-762)
+
+Nutzer (iPad-Foto CHF): *„verschiebe das go to... in die Zeile eins dadrüber bei der Price Karte und entfern die biggest movers und mach das man erst auf die Events klicken muss bevor man sie scrollen kann. Und silberpreis und Gold so lassen“*.
+
+- **„Go to Trends →“** steht rechts in der Trend-score-Zeile (`abTrendScoreZeile(c, goto)`), eine Zeile weniger. Bei Renditen ohne Trend-Zeile bleibt der Knopf allein.
+- **„Biggest moves“** ist entfernt: Spaltenkopf nur „Next up“, Zweig aus `pkSpalteHtml` raus. `check/moves.js` ist mit entfernt, weil es nur diese Funktion prüfte.
+- **Event-Liste** gemessen:
+
+  | Zustand | Messung |
+  |---|---|
+  | ohne Tipp | Mausrad → `scrollTop` 0, die Seite scrollt |
+  | nach Tipp | 227 px (iPad quer) bzw. 88 px (Handy) |
+  | Tipp daneben | wieder gesperrt |
+
+- **Gold/Silber:** bleibt wie es ist (Spot live, Historie Futures), festgehalten in `docs/data-sources.md`.
+- **Wächter:** `check/kartenauf.js` E.
+  - Ein eigener Testfehler unterwegs: Das erste Rad scrollte richtigerweise die Seite, der Tipp lag danach daneben. Jetzt peilt der Test die Liste neu an.

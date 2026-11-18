@@ -297,6 +297,13 @@ function pkUmfeld(id,d0,d1){
       if(isFinite(bp)){const nm=(syms.find(x=>x.id===ry)||{}).name||ry;out.push([nm,(bp>0?'+':'')+bp.toFixed(1)+' bp',bp]);}}}
   return out;
 }
+// Event-Liste der Price-Karte scrollt erst nach einem Tipp (762, Nutzer 2026-11-18: "mach das man
+// erst auf die Events klicken muss bevor man sie scrollen kann"); Tipp daneben sperrt wieder.
+document.addEventListener('pointerdown',e=>{
+  const col=e.target&&e.target.closest?e.target.closest('.pk-col'):null;
+  document.querySelectorAll('.pk-col.pk-scroll').forEach(c=>{if(c!==col)c.classList.remove('pk-scroll');});
+  if(col)col.classList.add('pk-scroll');
+},true);
 function pkModusSetzen(m){pkModus=m==='moves'?'moves':'next';pkSel=null;pkHover=null;pkMarkiere();pkSpalteNeu();}
 // ── Fahren ueber den Chart (Nutzer 2026-11-15: "wenn man ueber den Chart hovert das links in
 // dem Kasten die News Events von dem Tag stehen"). Nur Maus (auf Touch waehlt der Tipp den Tag).
@@ -351,15 +358,8 @@ function pkSpalteHtml(id){
   // Fahren ueber den Chart zeigt den Tag (pkHover), eine Auswahl per Tipp hat Vorrang.
   const selK=pkSel&&pkSel.a===id?pkSel.k:(pkHover&&pkHover.a===id?pkHover.k:null);
   const b=selK&&L?L.B.get(selK):null;
-  const tabs=`<span class="ctyp pk-modus" role="group" aria-label="Column view">${[['next','Next up'],['moves','Biggest moves']].map(([v,t])=>`<button type="button" class="ind-hist-range-btn ctyp-b${pkModus===v?' on':''}" onclick="pkModusSetzen('${v}')" title="${v==='next'?'Upcoming releases for this asset':'Largest moves in the visible range and what was released on those days'}">${t}</button>`).join('')}</span>`;
-  if(!b&&pkModus==='moves'){
-    const m=pkBewegungen(id,L);
-    return`<div class="pk-col-hd">${tabs}</div>
-      <div class="pk-list">${m.length?m.map(x=>{const col=x.v>0?BC.bull:BC.bear,bb=x.b;
-        return`<button type="button" class="pk-ev pk-mv" style="--c:${col}" onclick="pkMoveWaehle('${escJH(x.k)}')" title="Show this ${L.woche?'week':'day'} in the chart">
-          <span class="pk-ev-o"><span class="pk-ev-n">${escH(L.woche?'Week of '+tagKurz(x.k):tagJahr(x.d0))}</span><b class="pk-mv-v" style="color:${col}">${pct(x.v)}</b></span>
-          <span class="pk-mv-u">${bb&&bb.ev.length?`<b style="color:${BC.bull}">▲${bb.g}</b> <b style="color:${BC.bear}">▼${bb.s}</b> <b>◆${bb.n}</b> <i>${escH(bb.ev.slice(0,2).map(e=>e.n).join(' · '))}${bb.ev.length>2?' +'+(bb.ev.length-2):''}</i>`:(bb&&bb.eig.length?`<i>${escH(bb.eig[0].title||'Own mark')}</i>`:'<i>No tracked release</i>')}</span></button>`;}).join(''):'<div class="pk-leer">No price history in this range.</div>'}</div>`;
-  }
+  // 762: "Biggest moves" entfernt (Nutzer 2026-11-18: "entfern die biggest movers") - nur noch Next up
+  const tabs=`<span class="pk-col-t">Next up</span>`;
   if(!b){
     const l=pkKommend(id);
     return`<div class="pk-col-hd">${tabs}${l.length?`<span class="pk-pill">${l.length}</span>`:''}</div>

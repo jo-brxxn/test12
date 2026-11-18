@@ -1000,3 +1000,11 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
 - **Nicht aufgenommen:** TSMC und andere ausländische Werte (melden per 20-F/6-K, keine Quartals-XBRL bei der SEC → keine Historie, keine 3J-Schnitte).
 - CIK je Ticker aus `https://www.sec.gov/files/company_tickers.json` (Rückfall: Zahl in `AKTIEN`).
 - Wächter: `check/aktien.js` (mit Testdaten `check/fixtures/stock_test.json`).
+
+
+## Gold/Silber: Spot live, Historie aus Futures (Nutzer-Entscheid 2026-11-18)
+
+- **Live:** Spot `TVC:GOLD`/`TVC:SILVER` (≈ XAUUSD/XAGUSD).
+- **Historie:** COMEX-Futures (`GC=F`/`SI=F`), Abstand ca. 1 USD.
+- **Warum:** Eine freie Spot-Historie war nicht erreichbar (Yahoo 404, stooq/LBMA 403).
+- Nutzer: *„silberpreis und Gold so lassen“*. Nicht wieder aufrollen.

@@ -1870,6 +1870,7 @@ Nutzer: *„die history Karte nicht mehr scrollbar … das soll nur gehen wenn m
 - **Ausnahme Data-Karte** der Macro-Reihe (Nutzer 2026-11-18: *„auf keinen Fall abgeschnitten und scrollbar … es soll alles zu sehen sein“*): Sie wächst mit ihren Panels, nichts wird abgeschnitten (`check/datakarte.js`).
 - Ein Tipp irgendwo öffnet das Fenster (`abKarteAuf()`), dort wird gescrollt.
 - Knöpfe in der Karte behalten ihre eigene Wirkung.
+- **Event-Liste der Price-Karte (762):** Sie scrollt erst nach einem Tipp; ein Tipp daneben sperrt sie wieder. Ohne Tipp scrollt das Rad die Seite.
 - Geprüft von `check/kartenauf.js`.
 
 ## Notiz-Überschriften nie gekürzt (Dauerregel seit 2026-11-18)

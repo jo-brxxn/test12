@@ -7804,6 +7804,12 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 
 /* Hover-Info als schwebende Box am <body> (761): oberste Ebene, nie abgeschnitten (check/hovertip.js) */
 .chv-float{position:fixed!important;z-index:2147483000;transform:none!important;pointer-events:none}
+
+/* Price-Karte (762): Event-Liste scrollt erst nach einem Tipp; vorher weicher Auslauf. "Go to Trends" in der Trend-score-Zeile. */
+.pk-col:not(.pk-scroll) .pk-list{overflow-y:hidden;-webkit-mask-image:linear-gradient(to bottom,#000 85%,transparent);mask-image:linear-gradient(to bottom,#000 85%,transparent)}
+.pk-col{cursor:pointer}.pk-col.pk-scroll{cursor:auto}
+.ab-scoreline .ab-scoreline-go{margin-left:auto}
+.ab-scoreline .ab-scoreline-go .ab-goto{margin:0;padding:0}
 </style>
 </head>
 <body>
@@ -7891,11 +7897,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-761 - Hover-Info immer im Vordergrund, direkt ueber dem Punkt, nie abgeschnitten (Charts, COT, BTC Sentiment)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-762 - Price-Karte: Go to Trends in der Trend-score-Zeile, Biggest moves weg, Event-Liste scrollt erst nach Tipp"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-761</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-762</span>
     </span>
   </div>
   <div class="hdr-r">
