@@ -112,6 +112,8 @@ function cotWowIsSmall(ind){
 // (ind.stepDriven) immer 0,5 - unabhaengig von Core-Paarung, da es ohne
 // Forecast kein staerkeres Vergleichssignal gibt, das ist schon die Basis.
 function indBaseWeight(ind,rub){
+  // Asset-eigenes Gewicht (764, ASSET_EIGEN_GEWICHT in js/main.js), z.B. China-Block bei AUD/Kupfer.
+  if(typeof ind.gew==='number'&&ind.gew>0&&ind.gew<=2)return ind.gew;
   if(BOND_HALF_PT.has(ind.name))return BOND_PKT;
   if(ind.stepDriven)return 0.5;
   return indIsHalfWeight(ind,rub)?0.5:1;
@@ -1928,7 +1930,7 @@ function symScoreCmp(sym){
 // anderen Metallen ... Naturalgas ... gleich wie bei Oel"): zwei neue Assets; NATGAS mit eigener Zeile
 // Gas Storage (EIA, woechentlich, halbes Gewicht, Abbau = bullish) wie OIL Oil Inventories. Die Scores der
 // bestehenden Assets aendern sich nicht.
-const SCORE_MODEL_VERSION=34;
+const SCORE_MODEL_VERSION=35;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.

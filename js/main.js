@@ -33,7 +33,7 @@ import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.j
 import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './kachelbild.js';
 // Namen, die js/globe.js (zirkulaerer Import, siehe dort) von hier zurueck
 // braucht - reine Export-Liste, keine erneute Deklaration.
-export {scoreAssets,closeM,trashAblegen,newsNoteHinweis,
+export {scoreAssets,closeM,assetEigenFeed,trashAblegen,newsNoteHinweis,
   // Was js/undo.js von hier braucht (2026-11-17).
   snap,undoSnapSetzen,renderSidebar,flushAndSave,tippenOffen,tippenJetztSpeichern,
   // Was js/trades.js fuer die Asset-Auswahl braucht (2026-11-17).
@@ -3427,6 +3427,8 @@ const IND_DISPLAY_NAMES={
   // Asset-eigene Zeilen (ASSET_EIGENE_IND) stehen unter der Asset-Id.
   OIL:{'Oil Inventories':'EIA Crude Oil Inventories'},
   NATGAS:{'Gas Storage':'EIA Natural Gas Storage'},
+  AUD:{'China New Loans':'China New Yuan Loans','China Retail Sales':'China Retail Sales y/y'},
+  COPPER:{'China NBS Manufacturing PMI':'China NBS Manufacturing PMI','China New Loans':'China New Yuan Loans','China Retail Sales':'China Retail Sales y/y'},
   USD:{'Money Supply':'M2 Money Supply y/y','Central Bank Rate':'Fed Funds Rate','Unemployment Claims':'Initial Jobless Claims','NFP / Employment Change':'Nonfarm Payrolls (NFP)','Consumer Confidence':'CB Consumer Confidence'},
   EUR:{'Money Supply':'M3 Money Supply y/y','Central Bank Rate':'ECB Deposit Facility Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Negotiated Wage Growth','JOLTS Job Openings':'Job Vacancy Rate'},
   GBP:{'Money Supply':'M4 Money Supply m/m','Central Bank Rate':'BoE Bank Rate','Unemployment Claims':'Claimant Count Change','NFP / Employment Change':'Employment Change (3M)','Avg Hourly Earnings':'Average Earnings Index (+Bonus)','Consumer Confidence':'GfK Consumer Confidence'},
@@ -3995,6 +3997,9 @@ const IND_INFO_DEFAULTS={
   'Building Permits':'New residential building consents, month-over-month change in %. A leading indicator for construction activity.',
   'Money Supply':'Growth of the broad money supply of the central bank (EUR/CHF/JPY/AUD/NZD M3, GBP M4, USD M2, CAD M2++), in %. Faster growth than expected or than last time counts as bullish (more inflation pressure, more hawkish).',
   'Oil Inventories':'Weekly change of US commercial crude oil stocks (EIA, Wednesday), in million barrels. A draw (below forecast) is bullish for oil, a build is bearish. Counts half.',
+  'China New Loans':'New yuan loans granted by Chinese banks in the month (PBoC), in billion CNY. More credit than expected means stronger Chinese demand: bullish for AUD and copper. China block, see weight in the row.',
+  'China Retail Sales':'Chinese retail sales, year-over-year in % (NBS). Stronger consumption than expected is bullish for AUD and copper. China block, see weight in the row.',
+  'China NBS Manufacturing PMI':'Official Chinese manufacturing PMI (NBS), above 50 = expansion. China is about half of world copper demand - a beat is bullish for copper.',
   'Gas Storage':'Weekly change of US natural gas in storage (EIA, Thursday), in billion cubic feet. A draw or a smaller build than expected is bullish for gas, a bigger build is bearish. Counts half.',
   'MPC Vote Split':'Bank of England MPC votes as hike-cut-hold (same order as the calendar); colour = more or fewer hawkish votes (hike minus cut) than forecast. Shown only: 2017–2026 the pound did not move with a vote surprise on the day (25 surprises, t −0.35).',
   'Inflation Expectations':'Expected inflation from a survey (US: households, 1 year ahead; New Zealand: businesses, 2 years ahead), in %. Higher expectations keep the central bank hawkish.',
@@ -4240,7 +4245,18 @@ function addSurveyInds(rubrics,sym){
 // NICHT gespiegelt: ihren Bias rechnet applyIndDataFeed (js/data-feeds.js)
 // aus dem Feed der verknuepften Waehrung, resetNonFxIndBias laesst ihn stehen.
 // Score: halbes Gewicht (Nutzer-Wahl, js/score.js ASSET_EIGEN_HALB).
-const ASSET_EIGENE_IND={OIL:{'Economic Growth':['Oil Inventories']},NATGAS:{'Economic Growth':['Gas Storage']}};
+const ASSET_EIGENE_IND={OIL:{'Economic Growth':['Oil Inventories']},NATGAS:{'Economic Growth':['Gas Storage']},
+  // China-Block (764, Nutzer 2026-11-18: "bau die in den Score ein ... maximal 1,5 Gewicht ... in Economic
+  // Growth ... nimm die auch bei Kupfer mit rein"). Auswahl nach Ereignisstudie (cal_hist 2016-2026):
+  // AUD New Yuan Loans t +2,7 (5 T), Retail Sales t +2,0/+2,1; Kupfer NBS-PMI +1,5/+1,8/+1,6 (n 26).
+  AUD:{'Economic Growth':['China New Loans','China Retail Sales']},
+  COPPER:{'Economic Growth':['China NBS Manufacturing PMI','China New Loans','China Retail Sales']}};
+// Feed-Waehrung einer Asset-eigenen Zeile, wenn sie NICHT die verknuepfte Waehrung ist (764: China = CNY).
+const ASSET_EIGEN_FEED={'China New Loans':'CNY','China Retail Sales':'CNY','China NBS Manufacturing PMI':'CNY'};
+function assetEigenFeed(symId,name){return istAssetEigen(symId,name)?(ASSET_EIGEN_FEED[stripPeriodSuffix(name||'').base]||null):null;}
+// Gewicht je Asset und Zeile (764, Rueckfrage: "je nach Messung"): Summe des China-Blocks <= 1,5.
+const ASSET_EIGEN_GEWICHT={AUD:{'China New Loans':0.5,'China Retail Sales':0.5},
+  COPPER:{'China NBS Manufacturing PMI':0.75,'China New Loans':0.375,'China Retail Sales':0.375}};
 function istAssetEigen(symId,name){
   const b=stripPeriodSuffix(name||'').base,m=ASSET_EIGENE_IND[symId];
   return !!m&&Object.values(m).some(l=>l.includes(b));
@@ -4252,8 +4268,11 @@ function addAssetEigeneInds(rubrics,sym){
     const rub=rubrics.find(r=>r&&r.name===rn);
     if(!rub||!Array.isArray(rub.indicators))return;
     m[rn].forEach(nm=>{
-      if(rub.indicators.some(i=>stripPeriodSuffix(i.name).base===nm))return;
+      const gw=(ASSET_EIGEN_GEWICHT[sym.id]||{})[nm];
+      const da=rub.indicators.find(i=>stripPeriodSuffix(i.name).base===nm);
+      if(da){if(gw!=null&&da.gew!==gw)da.gew=gw;return;}
       const ni={id:uid(),name:nm,bias:'neu',imp:false,date:'',interval:'',points:[]};
+      if(gw!=null)ni.gew=gw;
       const dn=IND_DISPLAY_NAMES[sym.id]&&IND_DISPLAY_NAMES[sym.id][nm];
       if(dn)ni.displayName=dn;
       rub.indicators.push(ni);

@@ -768,3 +768,28 @@ ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
 
 - `scoreAssets()` = `trendAssets()` + Aktien. **Nie `trendAssets()` fuer "alle Assets mit Score"** nehmen: dort fehlen die Aktien bewusst (nur Anzeige in Trends).
 - Genutzt von `jrLauf` (js/journal.js) und `recordScoreHist`. Geprueft von `check/journal.js` A.
+
+
+## China-Block (seit 2026-11-18, Modell 35, VERSION-CHECK-764)
+
+- **Nutzer:** *„wenn die Indikatoren bei aud so gut sind dann bau die in den Score ein … maximal 1,5 Gewicht … in Economic Growth … auch bei Kupfer“*.
+- **Auswahl** nach Ereignisstudie (`cal_hist` 2016–2026, Überraschung Actual − Forecast gegen die Kursreaktion), Rückfrage „je nach Messung“:
+
+  | Asset | Zeile | Gewicht | Messung |
+  |---|---|---|---|
+  | AUD | China New Loans | 0,5 | t +2,7 nach 5 T, n 119 |
+  | AUD | China Retail Sales | 0,5 | t +2,0 / +2,1 nach 1 / 5 T, n 106 |
+  | Kupfer | China NBS Manufacturing PMI | 0,75 | +1,5 / +1,8 / +1,6, n 26 |
+  | Kupfer | China New Loans | 0,375 | |
+  | Kupfer | China Retail Sales | 0,375 | |
+
+  - Summe je Asset ≤ 1,5.
+- **Umsetzung:**
+  - Asset-eigene Zeilen (`ASSET_EIGENE_IND`), Gewicht `ASSET_EIGEN_GEWICHT` → `ind.gew`, Vorrang in `indBaseWeight`.
+  - Feed-Währung `CNY` (`ASSET_EIGEN_FEED`, Weiche in `applyIndDataFeed`).
+  - Beat → bullish. Der übliche Altersabschlag gilt.
+- **Daten:** Der Workflow holt TradingView jetzt mit `CN`. Für `CNY` gelten NUR die drei China-Regeln.
+  - Die Tiefen-Historie füllt sich erst mit neuen Abrufen; der Score braucht nur den jüngsten Release.
+- ⚠ **Mehrfachtest:** 162 Kombinationen geprüft, 6 mit |t| ≥ 2. Das ist am Rand des Zufalls, deshalb das kleine Gewicht.
+  - Kupfer hatte nur 3 Jahre Kurse; mit 10 Jahren nachmessen.
+- **Geprüft von** `check/chinablock.js`.

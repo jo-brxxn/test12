@@ -10,7 +10,7 @@
 // das allgemeine Muster) - dieses Modul exportiert deshalb weiter unten
 // die Namen, die main.js zurueck braucht.
 import {BC,FX} from './constants.js';
-import {DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,feedEntryFor,kanonIndName,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,applyRevisionToValHist,applyTrendModel,checkPriceAlerts,curPage,escH,fmtDayHdr,indBiasInputSig,indBiasPinned,invalidateRateStepCache,isNonFx,macroCcyFor,openM,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,syms,todayStr,trackIndValues,widgets,istAssetEigen} from './main.js';
+import {DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,feedEntryFor,kanonIndName,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,applyRevisionToValHist,applyTrendModel,checkPriceAlerts,curPage,escH,fmtDayHdr,indBiasInputSig,indBiasPinned,invalidateRateStepCache,isNonFx,macroCcyFor,openM,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,syms,todayStr,trackIndValues,widgets,istAssetEigen,assetEigenFeed} from './main.js';
 
 // ── INDIKATOR-WERTE AUS ECHTER API-QUELLE (ind_data.json) ──
 // ind_data.json wird stündlich per GitHub Action aus TradingViews
@@ -47,8 +47,7 @@ function applyIndDataFeed(){
   if(!IND_DATA_FEED)return false;
   let changed=false;
   syms.forEach(c=>{
-    const feed=IND_DATA_FEED[macroCcyFor(c.id)];
-    if(!feed)return;
+    const feed0=IND_DATA_FEED[macroCcyFor(c.id)];
     const fxAsset=!isNonFx(c.id);
     (c.rubrics||[]).forEach(rub=>{
       if(!rub.indicators)return;
@@ -63,6 +62,9 @@ function applyIndDataFeed(){
         // "GDP Growth QoQ"), fand die Reihe sonst nie - ohne jede Meldung.
         // feedEntryFor() versucht erst exakt, dann kanonisch und nur bei
         // Eindeutigkeit (siehe kanonIndName in js/main.js).
+        // Asset-eigene Zeile mit eigener Feed-Waehrung (764: China-Block = CNY)
+        const feedCcy=assetEigenFeed(c.id,ind.name)||macroCcyFor(c.id),feed=assetEigenFeed(c.id,ind.name)?IND_DATA_FEED[feedCcy]:feed0;
+        if(!feed)return;
         const f=feedEntryFor(feed,ind.name);
         if(!f||f.actual==null)return;
         const r=ind.research||{};
@@ -87,7 +89,7 @@ function applyIndDataFeed(){
         // Feed-Aenderung ihr Erstkontakt-Seeding + die Trend-Anteile bekommen.
         if(fx){
           if(adoptFeedHistory(ind,f))changed=true;
-          if(trackIndValues(ind,macroCcyFor(c.id),f.date,na,np))changed=true;
+          if(trackIndValues(ind,feedCcy,f.date,na,np))changed=true;
           // Revision NACH beiden Historien-Schritten einspielen: adoptFeedHistory
           // ueberschreibt valHist komplett aus der Feed-Reihe (die weiter den
           // Erstdruck traegt), eine vorher gesetzte Korrektur waere danach

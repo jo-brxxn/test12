@@ -92,7 +92,11 @@ fs.readdirSync(path.join(ROOT, 'cal_hist')).filter(f => /^\d{4}\.json$/.test(f))
 // ── D) App-Verdrahtung ──
 {
   // seit 2026-11-16 zusaetzlich NATGAS / Gas Storage (Nutzer: "bei Naturalgas ist es gleich wie bei Oel")
-  if (!/const ASSET_EIGENE_IND=\{OIL:\{'Economic Growth':\['Oil Inventories'\]\},NATGAS:\{'Economic Growth':\['Gas Storage'\]\}\};/.test(main)) fail('D', 'ASSET_EIGENE_IND: Oil Inventories nur bei OIL, Gas Storage nur bei NATGAS (Economic Growth)');
+  { const m = main.match(/const ASSET_EIGENE_IND=(\{[\s\S]*?\}\});/); const blk = m ? m[1] : '';
+    // seit 764 stehen dort auch AUD/COPPER (China-Block) - geprueft wird nur die Aussage dieses Waechters
+    if (!/OIL:\{'Economic Growth':\['Oil Inventories'\]\}/.test(blk) || !/NATGAS:\{'Economic Growth':\['Gas Storage'\]\}/.test(blk)
+      || (blk.match(/Oil Inventories/g) || []).length !== 1 || (blk.match(/Gas Storage/g) || []).length !== 1)
+      fail('D', 'ASSET_EIGENE_IND: Oil Inventories nur bei OIL, Gas Storage nur bei NATGAS (Economic Growth)'); }
   const r = main.indexOf('function resetNonFxIndBias(sym){'), r2 = main.indexOf('\n}\n', r);
   const rs = main.slice(r, r2);
   if (!rs.includes(M_EIG) || rs.indexOf(M_EIG) > rs.indexOf("if(derived&&ind.bias!=='neu')ind.bias='neu';")) fail('D', 'resetNonFxIndBias setzt den Bias der OIL-eigenen Zeile zurueck');

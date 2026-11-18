@@ -1008,3 +1008,13 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
 - **Historie:** COMEX-Futures (`GC=F`/`SI=F`), Abstand ca. 1 USD.
 - **Warum:** Eine freie Spot-Historie war nicht erreichbar (Yahoo 404, stooq/LBMA 403).
 - Nutzer: *„silberpreis und Gold so lassen“*. Nicht wieder aufrollen.
+
+
+## China-Daten im Indikator-Feed (seit 2026-11-18, 764)
+
+- TradingView-Abrufe mit `CN` → `CNY`.
+- Nur drei Reihen:
+  - `China New Loans` (TV „New Yuan Loans“)
+  - `China Retail Sales` (y/y, nicht YTD)
+  - `China NBS Manufacturing PMI` (nicht Caixin)
+- Muster gleichlautend in `js/event-matchers.js`.

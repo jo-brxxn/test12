@@ -22669,3 +22669,18 @@ Nutzer zum Vorher/Nachher-Bild: *„die Panels sind so gut“*.
 
 - **Wächter:** `check/datakarte.js` C, `--gegenprobe-kopf` → rot.
 - **Nachtrag:** `datalayout` (8 Panels, je ¼ Breite) maß 42 px statt höchstens 40 px, weil das Datum zweizeilig umbrach. Zeilenhöhe des Datumsblocks jetzt 1,15, damit sind auch zwei Zeilen ≤ 40 px. Grün.
+
+## 2026-11-18 — China-Block im Score: AUD + Kupfer (VERSION-CHECK-764, Score-Modell 35)
+
+Nutzer: *„wenn die Indikatoren bei aud so gut sind dann bau die in den Score ein aber wenn du so 3 einbaust dann mach maximal 1,5 Gewicht drauf und pack die in Economic Groth rein. Und nimm die auch bei Kupfer mit rein.“* Rückfrage: Auswahl „je nach Messung“.
+
+- **AUD:** China New Loans 0,5 + China Retail Sales 0,5.
+- **Kupfer:** China NBS Manufacturing PMI 0,75 + New Loans 0,375 + Retail Sales 0,375.
+- Messwerte, Umsetzung und Vorbehalt (Mehrfachtest): siehe `docs/score-model.md` „China-Block“.
+- **Workflow:** TV-Abrufe mit `CN`, `TV2CCY.CN = "CNY"`, drei CNY-Regeln, Sperre gegen allgemeine Regeln bei CNY.
+- **Test** mit eingeschleuster CNY-Sektion:
+  - Beat → bullish, Miss → bearish
+  - Beträge mit dem üblichen Altersabschlag (PMI 18 Tage alt: 0,56 von 0,75)
+  - Silber, Gold, NZD und USD ohne Zeilen
+- **Wächter:** neu `check/chinablock.js`, Gegenprobe → rot.
+- ⚠ **Bis zum nächsten Workflow-Lauf** stehen die Zeilen ohne Wert (neutral, kein Schätzwert).
