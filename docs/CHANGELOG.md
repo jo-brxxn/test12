@@ -22572,3 +22572,23 @@ Nutzer: *„Mach so das jede Notiz von außen die Überschrift komplett zu lesen
 - **Titel-Fix:** eine gemeinsame Regel für alle Titel-Klassen. Danach überall ganz.
 - **Hinweis Bestand:** Notizen, die vor diesem Fix über den Haken entpinnt wurden, liegen im Trash. „Restore“ holt sie als Pinned note zurück, danach „Unpin“ → History.
 - **Wächter:** neu `check/notiztitel.js` (A Titel, B Entpinnen) mit zwei Gegenproben.
+
+## 2026-11-18 — History- und Kalender-Karte ohne inneres Scrollen (VERSION-CHECK-759)
+
+Nutzer: *„die history Karte nicht mehr scrollbar machst das soll nur gehen wenn man sie öffnet und sie soll sich auch öffnen wenn man nur irgendwo auf sie drauf drückt. Sowie bei dem minikalender“*.
+
+- **Gemessen vorher:**
+  - History-Karte: `.histp` scrollbar, 388 px sichtbar von 10 070 px; geöffnet wurde sie nur über „Open full history →“.
+  - Kalender-Karte: Month ohne Scrollen, Tipp öffnet schon; Ansicht **Past** mit scrollbarer Liste (230 von 12 513 px).
+- **Jetzt:**
+  - Beide schneiden weich ab (Maske), ohne Scrollbalken.
+  - History-Karte: Tipp irgendwo → Fenster (`abKarteAuf`); Knöpfe in der Karte (Zeitraum, ⓘ, Schere) wirken weiter allein.
+- **Wächter:** neu `check/kartenauf.js`.
+  - Ein eigener Testfehler: Der erste Tipp ging bei der 10 000 px hohen Liste neben den sichtbaren Teil. Jetzt wird in den sichtbaren Kartenkörper getippt.
+  - Gegenprobe → rot.
+- **Nachtrag 759:** `zeitspanne` war nach dem ersten Wurf rot (9 Befunde auf allen Seiten).
+  - Eingegrenzt über Worktrees: 750, 751, 755 und 758 grün, erst 759 rot.
+  - Nachgestellt: Ziehen auf dem History-Chart OHNE Schere löste einen Klick auf die Karte aus. Das Fenster ging auf und lag über allen weiteren Charts.
+  - Fix: Nur ein Tipp öffnet; mehr als 8 px Weg zwischen Drücken und Loslassen gilt als Ziehen.
+  - `kartenauf` D prüft das.
+  - `kartenlook` kennt jetzt den History-Knopf der Pinned notes (`pinHistAuf`, seit 755) als erlaubtes Fenster-Ziel.

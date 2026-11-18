@@ -1853,6 +1853,14 @@ Per Rückfrage festgelegt (TradeZella-Stil), Details `docs/CHANGELOG.md` 622–6
 - **Positions-Werkzeug:** Entry (Navy), SL (bearish), TP (bullish), Exit gestrichelt; Zonen 10 %. Senkrecht ziehen an den Etiketten (`touch-action:none`, Trefferfläche ±8 px).
 - **Zeitspanne (seit 628):** Kasten von `w0` bis `w1` (Datum, mit dem Trade gespeichert), Standard 12 Kerzen ab dem Trade-Tag; Kanten ziehen = Breite (rastet auf Kerzen), Mitte ziehen = verschieben. Rechts 14 (Editor) bzw. 6 (Detail) leere Zukunfts-Slots. **Etiketten stehen AUSSERHALB des Kastens** (rechts, sonst links; unter 520 px ohne R-Zusatz) — darüber verdeckten sie Kanten und Mitte.
 
+## Karten mit langem Inhalt scrollen nicht in sich (Dauerregel seit 2026-11-18)
+
+Nutzer: *„die history Karte nicht mehr scrollbar … das soll nur gehen wenn man sie öffnet und sie soll sich auch öffnen wenn man nur irgendwo auf sie drauf drückt. Sowie bei dem Minikalender“*.
+- History- und Kalender-Karte schneiden weich ab (Maske), ohne Scrollbalken.
+- Ein Tipp irgendwo öffnet das Fenster (`abKarteAuf()`), dort wird gescrollt.
+- Knöpfe in der Karte behalten ihre eigene Wirkung.
+- Geprüft von `check/kartenauf.js`.
+
 ## Notiz-Überschriften nie gekürzt (Dauerregel seit 2026-11-18)
 
 Nutzer: *„jede Notiz von außen die Überschrift komplett zu lesen ist und nicht abgekürzt also abgeschnitten wird“*.

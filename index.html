@@ -7795,6 +7795,12 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
    Titel-Klassen (Spezifitaet wie .zb-schaft .ab-nt-ti); nur der Titel, der Textauszug darf kuerzen.
    Geprueft von check/notiztitel.js. */
 .ab-nt-ti,.wt-pin-ti,.aqn-n-ti,.pov-ntitle,.res-recent-ti,.zb-schaft .ab-nt-ti,.zb-card .ab-nt-ti{white-space:normal;overflow:visible;text-overflow:clip;display:block;-webkit-line-clamp:unset;line-clamp:none;max-height:none;overflow-wrap:anywhere}
+
+/* ── Karten ohne inneres Scrollen (759): History + Mini-Kalender (Past) schneiden weich ab, ein Tipp
+   oeffnet das Fenster (dort wird gescrollt). Nutzer 2026-11-18. Geprueft von check/kartenauf.js. */
+.ab-htile-bd>.histp,.ab-htile .histp{overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,#000 82%,transparent);mask-image:linear-gradient(to bottom,#000 82%,transparent)}
+.calp-karte .calp{overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,#000 80%,transparent);mask-image:linear-gradient(to bottom,#000 80%,transparent)}
+.ab-auf,.abc-cal{cursor:pointer}
 </style>
 </head>
 <body>
@@ -7882,11 +7888,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-758 - Notiz-Ueberschriften nie abgeschnitten, Entpinnen im Notizfenster landet in der History statt im Trash"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-759 - History- und Kalender-Karte ohne inneres Scrollen, Tipp irgendwo oeffnet das Fenster"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-758</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-759</span>
     </span>
   </div>
   <div class="hdr-r">

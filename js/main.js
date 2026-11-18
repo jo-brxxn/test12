@@ -2553,11 +2553,26 @@ function abHistorieKarteHtml(c){
   // fuellt dabei _histErkl - wird die Kopfzeile vorher gebaut, traegt das ⓘ
   // den Text des ZULETZT gerenderten Symbols.
   const panel=renderSymHistoryPanel(c.id);
-  return`<div class="ab-htile ab-ntile">
+  // 759 (Nutzer 2026-11-18): "die history Karte nicht mehr scrollbar ... das soll nur gehen wenn man
+  // sie oeffnet und sie soll sich auch oeffnen wenn man nur irgendwo auf sie drauf drueckt. Sowie
+  // bei dem Minikalender" -> Karte ohne inneres Scrollen, Tipp irgendwo = Fenster.
+  return`<div class="ab-htile ab-ntile ab-auf" onclick="abKarteAuf(event,()=>openHistModal('${escJH(c.id)}'))" title="Open the full history">
     <div class="ab-tile-hd">${abTileIcon('History')}<span class="ab-tile-t">History</span>${abInfoBtn('History',_histErkl)}</div>
     <div class="ab-htile-bd" id="abHistBody">${panel}</div>
     <div class="ab-goto"><button class="ab-goto-b" onclick="openHistModal('${escJH(c.id)}')" title="Open the full history window — the same content on the whole screen, with room for about eleven days at once instead of three">Open full history →</button></div>
   </div>`;
+}
+// Tipp auf eine Karte = Fenster auf; Bedienelemente IN der Karte behalten ihre eigene Wirkung (759).
+// Nur ein TIPP oeffnet: wandert der Zeiger zwischen Druecken und Loslassen mehr als 8 px, war es
+// Ziehen (Chart, Schere) - sonst oeffnete schon ein Zieh-Versuch auf dem Chart das Fenster (gemessen
+// mit check/zeitspanne.js: Fenster blieb offen ueber allen weiteren Charts).
+let _abTippStart=null;
+document.addEventListener('pointerdown',e=>{_abTippStart={x:e.clientX,y:e.clientY};},true);
+function abKarteAuf(ev,fn){
+  const t=ev&&ev.target;
+  if(t&&t.closest&&t.closest('button,a,input,select,textarea,label,[role="button"],.info-b'))return;
+  if(_abTippStart&&ev&&Math.hypot((ev.clientX||0)-_abTippStart.x,(ev.clientY||0)-_abTippStart.y)>8)return;
+  try{fn();}catch(e){console.error(e);}
 }
 function openHistModal(id){
   const c=syms.find(s=>s.id===id);if(!c)return;
@@ -28140,7 +28155,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

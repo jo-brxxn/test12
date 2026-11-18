@@ -295,7 +295,9 @@ const MIN_SCHATTEN_LAGEN = 3;
       // Retail seit 2026-09-25: retailGoTo() = Paar-Auswahl, danach Retail Sentiment
       // (geprueft in check/retailwahl.js, inkl. Klick bis ins Buch).
       const rt = /retailGoTo\(\)/.test(h);
-      raus.ziele.push(m ? m[1] : rt ? 'retail' : mm ? 'modal:' + mm[1] : 'KEIN gueltiges Ziel: ' + h.slice(0, 40));
+      // Pinned notes seit 755: "History" oeffnet das Fenster der entpinnten Notizen (pinHistAuf).
+      const ph = /pinHistAuf\(/.test(h);
+      raus.ziele.push(m ? m[1] : rt ? 'retail' : mm ? 'modal:' + mm[1] : ph ? 'modal:PinHist' : 'KEIN gueltiges Ziel: ' + h.slice(0, 40));
     }));
     return raus;
   }, KARTEN_SEL);
@@ -304,7 +306,7 @@ const MIN_SCHATTEN_LAGEN = 3;
   g.schief.forEach(x => fail('GO-TO SITZT NICHT UNTEN RECHTS', `${x}. Gemessen waren es beim Bauen 1/95/102px - drei Hoehen in einer Reihe.`));
   const ERLAUBTE_ZIELE = ['trends', 'data', 'cot', 'retail', 'seas', 'cal', 'news', 'rate', 'notes'];
   // Karten, deren Vollansicht ein Fenster ist (siehe Kommentar oben).
-  const ERLAUBTE_FENSTER = ['modal:Hist'];
+  const ERLAUBTE_FENSTER = ['modal:Hist', 'modal:PinHist'];
   g.ziele.forEach(z => { if (!ERLAUBTE_ZIELE.includes(z) && !ERLAUBTE_FENSTER.includes(z))
     fail('GO-TO OHNE GUELTIGES ZIEL',
     `"${z}" ist weder eine Kategorie, die assetQuickGo() kennt (${ERLAUBTE_ZIELE.join('/')}), noch ein erlaubtes Fenster (${ERLAUBTE_FENSTER.join('/')}) - der Klick wuerde ins Leere fuehren.`); });
