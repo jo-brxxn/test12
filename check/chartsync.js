@@ -51,7 +51,9 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
       await p.mouse.move(box.x + box.width * f, box.y + box.height * 0.5); await p.waitForTimeout(120);
       const r = await p.evaluate(([a, bId]) => {
         const A = document.querySelector('#' + a + ' .chv'), B = document.querySelector('#' + bId + ' .chv');
-        const tipA = A.querySelector('.chv-tip'), tipB = B.querySelector('.chv-tip');
+        // seit 761 schwebt die sichtbare Box am <body> (w.__tipFloat); die Box im Chart traegt nur den Inhalt
+        const sichtbar = w => { const f = w.__tipFloat; return f && f.style.display !== 'none' ? f : { style: { display: 'none' } }; };
+        const tipA = sichtbar(A), tipB = sichtbar(B);
         const ptsA = window._chvReg[A.dataset.chv], ptsB = window._chvReg[B.dataset.chv];
         const textA = tipA.style.display === 'none' ? null : tipA.innerHTML, textB = tipB.style.display === 'none' ? null : tipB.innerHTML;
         const pA = ptsA.find(x => x.tip === textA);

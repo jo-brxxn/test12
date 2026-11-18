@@ -1853,6 +1853,16 @@ Per Rückfrage festgelegt (TradeZella-Stil), Details `docs/CHANGELOG.md` 622–6
 - **Positions-Werkzeug:** Entry (Navy), SL (bearish), TP (bullish), Exit gestrichelt; Zonen 10 %. Senkrecht ziehen an den Etiketten (`touch-action:none`, Trefferfläche ±8 px).
 - **Zeitspanne (seit 628):** Kasten von `w0` bis `w1` (Datum, mit dem Trade gespeichert), Standard 12 Kerzen ab dem Trade-Tag; Kanten ziehen = Breite (rastet auf Kerzen), Mitte ziehen = verschieben. Rechts 14 (Editor) bzw. 6 (Detail) leere Zukunfts-Slots. **Etiketten stehen AUSSERHALB des Kastens** (rechts, sonst links; unter 520 px ohne R-Zusatz) — darüber verdeckten sie Kanten und Mitte.
 
+## Hover-Info: immer im Vordergrund, direkt über dem Punkt (Dauerregel seit 2026-11-18)
+
+Nutzer: *„Die Infos sollen immer im Vordergrund aber auch immer über dem was der Chart oder Tabelle oder Grafik zeigt stehen“*. Rückfrage ergab: direkt über dem Punkt.
+- Jede Hover-Info läuft über `infoBoxZeigen(besitzer, html, x, y, klasse)` (`js/main.js`).
+- Die Box ist eine schwebende Box am `<body>` (`.chv-float`, `position:fixed`, oberste Ebene).
+- Sie steht mit 10 px Abstand über dem Punkt, ohne Platz darunter, waagerecht im Fenster gehalten.
+- Ein Chart-Container darf sie nie wieder enthalten (abgeschnitten, Kopfzeile darüber).
+- Neue Charts und Tabellen mit Hover nutzen dieselbe Funktion.
+- Geprüft von `check/hovertip.js`.
+
 ## Karten mit langem Inhalt scrollen nicht in sich (Dauerregel seit 2026-11-18)
 
 Nutzer: *„die history Karte nicht mehr scrollbar … das soll nur gehen wenn man sie öffnet und sie soll sich auch öffnen wenn man nur irgendwo auf sie drauf drückt. Sowie bei dem Minikalender“*.

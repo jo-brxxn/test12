@@ -7801,6 +7801,9 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .ab-htile-bd>.histp,.ab-htile .histp{overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,#000 82%,transparent);mask-image:linear-gradient(to bottom,#000 82%,transparent)}
 .calp-karte .calp{overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,#000 80%,transparent);mask-image:linear-gradient(to bottom,#000 80%,transparent)}
 .ab-auf,.abc-cal{cursor:pointer}
+
+/* Hover-Info als schwebende Box am <body> (761): oberste Ebene, nie abgeschnitten (check/hovertip.js) */
+.chv-float{position:fixed!important;z-index:2147483000;transform:none!important;pointer-events:none}
 </style>
 </head>
 <body>
@@ -7888,11 +7891,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-760 - Data-Karte der Macro-Reihe: nichts abgeschnitten, kein eigenes Scrollen, Panels klein wie seit 748"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-761 - Hover-Info immer im Vordergrund, direkt ueber dem Punkt, nie abgeschnitten (Charts, COT, BTC Sentiment)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-760</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-761</span>
     </span>
   </div>
   <div class="hdr-r">

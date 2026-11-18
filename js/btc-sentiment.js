@@ -416,13 +416,14 @@ function fadenkreuz(t, quelle) {
   document.querySelectorAll('#mCardInfoBody .bs-chart').forEach(el => {
     const m = el.__m, kr = el.querySelector('.bs-kreuz'), tip = el.querySelector('.bs-tip'), rd = document.querySelector(`#mCardInfoBody .bs-read[data-k="${el.dataset.k}"]`);
     if (!m || !kr) return;
-    if (t == null) { kr.style.display = 'none'; if (tip) tip.style.display = 'none'; if (rd) rd.innerHTML = ''; return; }
+    if (t == null) { kr.style.display = 'none'; if (tip) tip.style.display = 'none'; try { window.infoBoxWeg(el); } catch (x) { } if (rd) rd.innerHTML = ''; return; }
     const j = naechster(m.a, t); const e = j >= 0 && t - m.a[j][0] < 7 * TAG ? m.a[j] : null;
     const x = m.xOf(t); kr.setAttribute('x1', x); kr.setAttribute('x2', x); kr.style.display = x >= m.pl && x <= m.pl + m.iw ? '' : 'none';
     const pj = naechster(D.price, t), p = pj >= 0 ? D.price[pj][1] : null;
     const txt = `<i>${esc(fmtTag(t))}</i> · <b>${e ? esc((m.i.fmt || (v => v.toFixed(0)))(e[1])) : '–'}</b>${p ? ` · <span style="color:${BTC_FARBE}">BTC <b>$${Math.round(p).toLocaleString('en-US')}</b></span>` : ''}`;
     if (rd) rd.innerHTML = txt;
-    if (tip) { if (el === quelle) { tip.innerHTML = txt; tip.style.display = ''; const links = x / m.W * el.clientWidth; tip.style.left = Math.min(Math.max(4, links + 10), el.clientWidth - 190) + 'px'; } else tip.style.display = 'none'; }
+    // 761: Info-Box schwebend direkt ueber dem Wert (window.infoBoxZeigen, main.js), nie abgeschnitten
+    if (tip) { tip.style.display = 'none'; if (el === quelle && e) { const r = el.getBoundingClientRect(), sv = el.querySelector('svg') || el, q = sv.getBoundingClientRect(), k = q.width / m.W; try { window.infoBoxZeigen(el, txt, q.left + x * k, q.top + m.yOf(e[1]) * (q.height / (sv.viewBox && sv.viewBox.baseVal && sv.viewBox.baseVal.height || q.height)), 'bs-tip'); } catch (x2) { } } else { try { window.infoBoxWeg(el); } catch (x3) { } } }
   });
 }
 

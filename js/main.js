@@ -20291,6 +20291,8 @@ function cotChartShowIdx(i){
     <div class="cot-tip-row"><span>Net Bullish Positioning</span><b style="color:${BC.bull}">${m.longPct.toFixed(1)}% · ${cotNum(m.L)}</b></div>
     <div class="cot-tip-row"><span>Net Bearish Positioning</span><b style="color:${BC.bear}">${m.shortPct.toFixed(1)}% · ${cotNum(m.S)}</b></div>
     <div class="cot-tip-row"><span>Δ Long % (wk)</span><b style="color:${cotBiasColor(m.dNetPct)}">${m.dNetPct==null?'–':cotPct(m.dNetPct,true)}</b></div>${meta.preis?`<div class="cot-tip-row"><span>Price (report day)</span><b>${escH(cotPreisTxt(meta.preis[i]))}</b></div>`:''}`;
+  // 761: Info-Box schwebend direkt ueber dem Punkt (infoBoxZeigen), nicht mehr oben in der Ecke des Charts
+  if(dot){const dr=dot.getBoundingClientRect();tip.style.display='none';infoBoxZeigen(wrap,tip.innerHTML,dr.left+dr.width/2,dr.top+dr.height/2,'cot-tip');return;}
   tip.style.display='block';
   const wrapRect=wrap.getBoundingClientRect(),svgRect=svg.getBoundingClientRect();
   // ⚠ Seiten-Zoom (PC, --pg-zoom): Rects sind Bildschirm-Pixel, style.left Seiten-Pixel ->
@@ -20303,6 +20305,7 @@ function cotChartShowIdx(i){
   tip.style.top='2px';
 }
 function cotChartHideTip(){
+  try{infoBoxWeg(document.getElementById('cotHistWrap'));}catch(e){}
   const wrap=document.getElementById('cotHistWrap');if(!wrap)return;
   const svg=wrap.querySelector('.cot-hist-svg');
   if(svg){const dot=svg.querySelector('#cotHoverDot'),vline=svg.querySelector('#cotHoverVLine');if(dot)dot.style.display='none';if(vline)vline.style.display='none';}
@@ -20692,6 +20695,39 @@ function chvAufraeumen(){
   for(const id in _chvReg){if(+id.slice(3)<grenze&&!imDom.has(id)){delete _chvReg[id];delete _chvPick[id];}}
   _chvAufrBis=_chvSeq;
 }
+// ── Hover-Info IMMER IM VORDERGRUND, DIREKT UEBER DEM PUNKT (761) ─────────────────────────────
+// Nutzer 2026-11-18 (iPad-Foto Data, Compare all): "Die Infos sollen immer im Vordergrund aber auch
+// immer ueber dem was der Chart ... zeigt stehen" (Rueckfrage: direkt ueber dem Punkt). Gemessen:
+// die Box lag IM Panel - dessen overflow schnitt sie ab, die Panel-Kopfzeile lag darueber (Core CPI:
+// Datumszeile unter der Kopfzeile). Jetzt EINE schwebende Box am <body> (position:fixed, oberste
+// Ebene): unterer Rand 10 px ueber dem Punkt, waagerecht im Fenster gehalten; reicht der Platz ueber
+// dem Punkt nicht, steht sie darunter. Kein Container kann sie mehr abschneiden oder verdecken.
+// Je Chart/Besitzer EINE eigene schwebende Box (Gruppen wie Data zeigen alle Panels gleichzeitig).
+// Gilt fuer JEDE Hover-Info (Charts .chv, COT-Verlauf, BTC Sentiment): infoBoxZeigen/infoBoxWeg.
+function infoBoxEl(w,kl){
+  let e=w.__tipFloat;
+  if(!e||!e.isConnected){
+    document.querySelectorAll('body>.chv-float').forEach(x=>{if(!x.__w||!x.__w.isConnected)x.remove();});   // verwaiste Boxen
+    e=document.createElement('div');e.style.display='none';e.__w=w;document.body.appendChild(e);w.__tipFloat=e;
+  }
+  e.className=(kl||'chv-tip')+' chv-float';
+  return e;
+}
+// sx/sy = Punkt in Bildschirm-Pixeln; die Box steht mit 10 px Abstand darueber, sonst darunter.
+function infoBoxZeigen(w,html,sx,sy,kl){
+  const e=infoBoxEl(w,kl);
+  e.innerHTML=html;e.style.display='';
+  const tw=e.offsetWidth,th=e.offsetHeight,rand=6,abst=10;
+  let top=sy-th-abst;if(top<rand)top=sy+abst+4;
+  e.style.left=Math.max(rand,Math.min(innerWidth-tw-rand,sx-tw/2))+'px';
+  e.style.top=Math.max(rand,Math.min(innerHeight-th-rand,top))+'px';
+}
+function infoBoxWeg(w){
+  if(w){if(w.__tipFloat)w.__tipFloat.style.display='none';return;}
+  document.querySelectorAll('body>.chv-float').forEach(x=>{x.style.display='none';});
+}
+const chvTipZeigen=(w,html,sx,sy)=>infoBoxZeigen(w,html,sx,sy,'chv-tip'),chvTipWeg=w=>infoBoxWeg(w);
+addEventListener('scroll',()=>infoBoxWeg(),true);
 function attachChartHovers(root){
   const jetzt=Date.now();
   // window.__gpKeinChvAufr: nur fuer die Gegenprobe in check/performance.js (F).
@@ -20700,7 +20736,7 @@ function attachChartHovers(root){
     if(w._chvWired)return;w._chvWired=1;
     const line=w.querySelector('.chv-line'),dot=w.querySelector('.chv-dot'),tip=w.querySelector('.chv-tip');
     const extra=[];   // weitere Punkte fuer ys (je Linie einer)
-    const hide=()=>{if(line)line.style.display='none';if(dot)dot.style.display='none';if(tip)tip.style.display='none';extra.forEach(d=>{d.style.display='none';});
+    const hide=()=>{if(line)line.style.display='none';if(dot)dot.style.display='none';if(tip)tip.style.display='none';chvTipWeg(w);extra.forEach(d=>{d.style.display='none';});
       const cb=_chvPick[w.dataset.chv];if(cb)try{cb(null);}catch(e){}};
     w._chvHide=hide;
     // Solange der Zeiger IM Diagramm ist, ist IMMER ein Datenpunkt gewaehlt
@@ -20750,7 +20786,7 @@ function attachChartHovers(root){
       // gewinnen gegen das bottom aus dem CSS.
       if(line){const bot=Math.max(0,r.height-22),ty=Math.min(bot,best.ly!=null?best.ly*r.height:4);line.style.left=px+'px';line.style.top=ty+'px';line.style.height=Math.max(0,bot-ty)+'px';line.style.display='';}
       if(dot){dot.style.left=px+'px';dot.style.top=py+'px';dot.style.borderColor=best.col||'var(--t3)';dot.style.display='';}
-      if(tip){tip.innerHTML=best.tip;tip.style.display='';const tw=tip.offsetWidth||120;tip.style.left=Math.max(tw/2+2,Math.min(r.width-tw/2-2,px))+'px';tip.style.top=Math.max(4,py)+'px';}
+      if(tip){tip.innerHTML=best.tip;tip.style.display='none';chvTipZeigen(w,best.tip,rr.left+px*(rr.width/r.width),rr.top+py*(rr.height/r.height));}   // Inhalt bleibt auch im Chart (Wächter lesen ihn), sichtbar ist die schwebende Box
       const cb=_chvPick[w.dataset.chv];if(cb)try{cb(best);}catch(e){}
       return best;
     };
@@ -28162,7 +28198,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

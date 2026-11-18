@@ -169,11 +169,12 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
     // einmal Koordinaten ausserhalb des Fensters, mouse.move landet im
     // Nichts und der Waechter meldet "kein Tooltip", wo einer ist.
     await chv.scrollIntoViewIfNeeded();
+    await p.waitForTimeout(300);   // Scroll-Ereignis abwarten - es blendet die schwebende Box aus (761)
     const bx = await chv.boundingBox();
     await p.mouse.move(bx.x + bx.width * 0.6, bx.y + bx.height / 2);
     await p.waitForTimeout(250);
     const tip = await p.evaluate(() => {
-      const t = document.querySelector('.ab-k .chv-tip');
+      const w = document.querySelector('.ab-k .chv'), t = w && w.__tipFloat;   // seit 761 schwebende Box am <body>
       return t && t.style.display !== 'none' ? t.innerText.replace(/\s+/g, ' ').trim() : '';
     });
     if (!tip) fail('HOVER', 'kein Tooltip, obwohl der Zeiger im Chart steht');

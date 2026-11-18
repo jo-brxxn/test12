@@ -22613,3 +22613,20 @@ Nutzer (iPad-Foto, CAD, Compare all): *„Das data da soll auf keinen Fall abges
   - iPad quer: Panel 162 px wie vorher, Karte 566 px statt 517 px mit Scrollen.
   - „+ Add“ ganz sichtbar.
 - **Wächter:** neu `check/datakarte.js`, Gegenprobe (alte feste Höhe) → rot.
+
+## 2026-11-18 — Hover-Info immer im Vordergrund, direkt über dem Punkt (VERSION-CHECK-761)
+
+Nutzer (iPad-Foto Data, Compare all, CAD): *„Die Infos sollen immer im Vordergrund aber auch immer über dem was der Chart oder Tabelle oder Grafik zeigt stehen“*. Rückfrage: direkt über dem Punkt.
+
+- **Gemessen am alten Stand** (`check/hovertip.js --gegenprobe`, 126 Hover-Positionen):
+  - Box lag IM Panel (`position:absolute`), keine in der obersten Ebene.
+  - 12 Positionen vom Panel (`.data-pc`) abgeschnitten. Foto: Core CPI, Datumszeile unter der Panel-Kopfzeile.
+  - COT-Verlauf: Box fest oben links im Chart, also über den Balken statt über dem Punkt.
+- **Wurzel:** Jede Hover-Info ist jetzt eine schwebende Box am `<body>` (`infoBoxZeigen`, `position:fixed`, oberste Ebene).
+  - Unterkante 10 px über dem Punkt; ohne Platz darüber steht sie darunter; waagerecht im Fenster gehalten.
+  - Je Chart eine eigene Box, damit Gruppen wie Data weiter alle Panels gleichzeitig zeigen.
+  - Beim Scrollen wird sie ausgeblendet.
+- **Fehlerklasse:** Gleiche Umstellung für den COT-Verlauf (`cotChartShowIdx`) und BTC Sentiment (`fadenkreuz`, über dem Wert).
+- **Wächter:**
+  - neu `check/hovertip.js`, 131 Positionen inkl. COT, Gegenprobe → rot
+  - auf die schwebende Box umgestellt: `zoomhover` C, `chartsync`, `kerzen` (Scroll-Ereignis abwarten)

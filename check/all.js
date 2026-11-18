@@ -163,6 +163,7 @@ const PRUEFUNGEN = [
   { n: 'notiztitel', s: 30, d: 'Notiz-Ueberschrift nie abgeschnitten (Pinned, Bank, Watchlist, History, Trash) + Entpinnen per Knopf/Haken -> History, auch nach Neuladen', f: 'check/notiztitel.js', args: [], browser: true },
   { n: 'kartenauf', s: 40, d: 'History- und Kalender-Karte: kein inneres Scrollen, Tipp irgendwo oeffnet das Fenster, Knoepfe wirken allein', f: 'check/kartenauf.js', args: [], browser: true },
   { n: 'datakarte', s: 40, d: 'Data-Karte der Macro-Reihe: nichts abgeschnitten, kein eigenes Scrollen, Add ganz sichtbar, Panels wie seit 748', f: 'check/datakarte.js', args: [], browser: true },
+  { n: 'hovertip', s: 60, d: 'Hover-Info: ganz sichtbar, oberste Ebene, direkt ueber dem Punkt (Data, Asset-Seite, COT)', f: 'check/hovertip.js', args: [], browser: true },
   { n: 'eingaben',  s: 172, d: 'Kein Fenster verliert Eingaben beim Schliessen, Nachfrage in Bias-Farben, Knopfleiste fest unten', f: 'check/eingaben.js', args: [], browser: true },
   { n: 'filterreset', s: 36, d: '✕ neben Asset-Dropdowns mit "alle"-Ansicht: nur bei Auswahl, direkt daneben, setzt zurueck', f: 'check/filterreset.js', args: [], browser: true },
   { n: 'designregeln', s: 461, d: 'Design-Audit: keine Emojis, eine Schrift, Diagramm-/Mindestschrift 11 px, 3 Hoehen, Trefferflaechen ohne Ueberdeckung, aktiv Navy, Rot nur bearish', f: 'check/designregeln.js', args: [], browser: true },

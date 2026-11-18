@@ -93,7 +93,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     else {
       await p.evaluate(() => { const hs = [...document.querySelectorAll('#cotHistWrap .cot-hit')]; hs[Math.floor(hs.length * 0.5)].scrollIntoView({ block: 'center' }); }); await p.waitForTimeout(300);
       const h = await hit(); await p.mouse.move(h[0], h[1]); await p.waitForTimeout(300);
-      const C = await p.evaluate(() => { const t = document.getElementById('cotHoverTip').getBoundingClientRect(), v = document.querySelector('#cotHoverVLine'); const vr = v && v.getBoundingClientRect(); return { t: t.x + t.width / 2, v: vr ? vr.x + vr.width / 2 : null }; });
+      const C = await p.evaluate(() => { const fl = [...document.querySelectorAll('body>.chv-float.cot-tip')].find(e => getComputedStyle(e).display !== 'none'); const t = (fl || document.getElementById('cotHoverTip')).getBoundingClientRect(), v = document.querySelector('#cotHoverVLine'); const vr = v && v.getBoundingClientRect(); return { t: t.x + t.width / 2, v: vr ? vr.x + vr.width / 2 : null }; });
       if (C.v == null) F.push(`${o} C: keine COT-Hover-Linie`);
       else if (Math.abs(C.t - C.v) > 3) F.push(`${o} C: COT-Tooltip ${(C.t - C.v).toFixed(1)} px neben der Linie`);
     }
