@@ -22974,7 +22974,14 @@ function dataRasterFuellen(el,n,jobs){
   const cs=getComputedStyle(pg);
   // Freie Hoehe = sichtbare Hoehe von #pgData minus alles oberhalb des Rasters.
   const oben=grid.getBoundingClientRect().top-pg.getBoundingClientRect().top+pg.scrollTop-parseFloat(cs.paddingTop);
-  const frei=pg.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)-oben;
+  // Data-Karte in der Macro-Reihe (760): KEINE feste Hoehe und kein eigenes Scrollen mehr (Nutzer
+  // 2026-11-18, iPad-Foto: "soll auf keinen Fall abgeschnitten und scrollbar sein es soll alles zu
+  // sehen sein. Du solltest es nur ein wenig kleiner machen"). Die Panels teilen sich dieselbe Hoehe
+  // wie seit 748 (62 % der Fensterhoehe, 440-700 px), die Karte waechst mit ihnen.
+  const imSlot=pg.classList&&pg.classList.contains('mk-data-slot');
+  const pgZoom=(pg.offsetHeight&&pg.getBoundingClientRect().height)?pg.getBoundingClientRect().height/pg.offsetHeight:1;
+  const budget=imSlot?Math.max(440,Math.min(700,innerHeight*0.62/pgZoom)):pg.clientHeight;
+  const frei=budget-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)-oben;
   grid.style.gridTemplateColumns=`repeat(${c},minmax(0,1fr))`;
   const kopfH=(grid.querySelector('.data-ph')||{offsetHeight:40}).offsetHeight;
   // Mindesthoehe = Chart DATA_MIN_CHART_H + Panel-Kopf + Innenabstand. Bei

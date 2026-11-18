@@ -22592,3 +22592,24 @@ Nutzer: *„die history Karte nicht mehr scrollbar machst das soll nur gehen wen
   - Fix: Nur ein Tipp öffnet; mehr als 8 px Weg zwischen Drücken und Loslassen gilt als Ziehen.
   - `kartenauf` D prüft das.
   - `kartenlook` kennt jetzt den History-Knopf der Pinned notes (`pinHistAuf`, seit 755) als erlaubtes Fenster-Ziel.
+
+## 2026-11-18 — Data-Karte: nichts abgeschnitten, kein eigenes Scrollen (VERSION-CHECK-760)
+
+Nutzer (iPad-Foto, CAD, Compare all): *„Das data da soll auf keinen Fall abgeschnitten und scrollbar sein es soll alles zu sehen sein. Du solltest es nur ein wenig kleiner machen“*.
+
+- **Ursache:** Die Karte hatte eine feste Höhe (vor 748 `clamp(520px,78vh,860px)`, seit 748 `clamp(440px,62vh,700px)`) mit `overflow:auto`. 748 hat sie nur niedriger gemacht, deshalb war mehr abgeschnitten.
+- **Gemessen**, 4 Panels außerhalb der Karte:
+
+  | Fenster | vorher | nachher |
+  |---|---|---|
+  | iPad quer 1194×834 | 2 von 4 | 0 |
+  | iPad hoch 834×1194 | 2 von 4 | 0 |
+  | Handy 390×844 | 3 von 4 | 0 |
+  | PC 1920×1080 | 0 | 0 |
+
+- **Fix:**
+  - Karte `height:auto; overflow:visible`.
+  - Die Panels teilen sich dieselbe Höhe wie seit 748 (62 % Fensterhöhe, 440–700 px, Seiten-Zoom eingerechnet); die Karte wächst mit ihnen.
+  - iPad quer: Panel 162 px wie vorher, Karte 566 px statt 517 px mit Scrollen.
+  - „+ Add“ ganz sichtbar.
+- **Wächter:** neu `check/datakarte.js`, Gegenprobe (alte feste Höhe) → rot.

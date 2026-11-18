@@ -2060,7 +2060,7 @@ body.compact-view .rub-summary{display:block}
 /* Data an Ort und Stelle (2026-11-12): das Feld gibt der Data-Seite ihre Hoehe */
 .sk-rsw{order:1;margin-right:16px;flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;cursor:pointer;padding:6px 0;margin-top:-6px;margin-bottom:-6px;user-select:none}
 .sk-rsw-l{font:700 var(--fs-2xs)/1 var(--ff-text);color:var(--t3);text-transform:uppercase;letter-spacing:.09em}
-.mk-data-slot{grid-column:1/-1;height:clamp(440px,62vh,700px);overflow-y:auto;overscroll-behavior:contain;background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:12px 14px}
+.mk-data-slot{grid-column:1/-1;height:auto;overflow:visible;background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:12px 14px}
 .mk-data-slot .pg-titel,.mk-data-slot .pg-sub{display:none}
 /* Aktien (2026-11-13, js/aktien.js): Firmenprofil + Kennzahlen-Karten.
    Tabellen nutzen .ind-table wie die Makro-Karten; Text nur Etikett|Wert. */
@@ -7888,11 +7888,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-759 - History- und Kalender-Karte ohne inneres Scrollen, Tipp irgendwo oeffnet das Fenster"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-760 - Data-Karte der Macro-Reihe: nichts abgeschnitten, kein eigenes Scrollen, Panels klein wie seit 748"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-759</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-760</span>
     </span>
   </div>
   <div class="hdr-r">

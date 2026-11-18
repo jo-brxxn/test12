@@ -1857,6 +1857,7 @@ Per Rückfrage festgelegt (TradeZella-Stil), Details `docs/CHANGELOG.md` 622–6
 
 Nutzer: *„die history Karte nicht mehr scrollbar … das soll nur gehen wenn man sie öffnet und sie soll sich auch öffnen wenn man nur irgendwo auf sie drauf drückt. Sowie bei dem Minikalender“*.
 - History- und Kalender-Karte schneiden weich ab (Maske), ohne Scrollbalken.
+- **Ausnahme Data-Karte** der Macro-Reihe (Nutzer 2026-11-18: *„auf keinen Fall abgeschnitten und scrollbar … es soll alles zu sehen sein“*): Sie wächst mit ihren Panels, nichts wird abgeschnitten (`check/datakarte.js`).
 - Ein Tipp irgendwo öffnet das Fenster (`abKarteAuf()`), dort wird gescrollt.
 - Knöpfe in der Karte behalten ihre eigene Wirkung.
 - Geprüft von `check/kartenauf.js`.
