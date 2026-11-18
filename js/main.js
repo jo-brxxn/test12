@@ -2872,7 +2872,7 @@ function indNextReleaseCell(symId,ind){
 }
 // Lange Form fuer den Vergleich: von wann der Wert ist UND wann der naechste
 // kommt (Nutzer-Wunsch 2026-09-05).
-function indAsOfNextHtml(symId,ind){
+function indAsOfNextHtml(symId,ind,kurz){
   const r=(ind&&ind.research)||{};
   const ev=findIndEvent(symId,ind&&ind.name);
   const asOf=(ev&&ev.date)||r.date||'';
@@ -2892,7 +2892,7 @@ function indAsOfNextHtml(symId,ind){
   const nxHtml=datum==null?null:nx?countdownHtml(datum):escH(d<=0?'due':'~'+d+'d');
   const nxTitle=nx?`${escH(nx.name)} — ${escH(fmtDayHdr(nx.date))}${nx.time?' '+escH(nx.time):''} (confirmed date from the calendar).${escH(indNextViaText(ind,nt.via))}`
     :`Expected around ${escH(fmtDayHdr(exp||''))} — NOT a confirmed date. Derived from this indicator's own measured rhythm (every ~${Math.round(indCycleDays(ind))} days, the median of its actual gaps). As soon as the calendar carries the release (high and medium about a month ahead, high-impact up to three months), the exact date replaces this.`;
-  return`<div class="px-asof"><span class="px-asof-lbl">As of</span> <b>${asOf?escH(fmtDayHdr(asOf)):'–'}</b><span class="px-asof-sep">·</span><span class="px-asof-lbl">Next</span> ${datum?`<b class="px-next${nx?'':' px-next-est'}${soon?' soon':''}" title="${nxTitle}">${nxHtml}</b>`:`<b class="px-next-none" title="No scheduled release inside the calendar window, and no measured release rhythm to expect one from — so nothing is claimed here.">not scheduled yet</b>`}</div>`;
+  return`<div class="px-asof"><span class="px-asof-lbl">As of</span> <b>${asOf?escH(kurz?fmtDayHdr(asOf).replace(/^[A-Z][a-z]{2}, /,''):fmtDayHdr(asOf)):'–'}</b><span class="px-asof-sep">·</span><span class="px-asof-lbl">Next</span> ${datum?`<b class="px-next${nx?'':' px-next-est'}${soon?' soon':''}" title="${nxTitle}">${nxHtml}</b>`:`<b class="px-next-none" title="No scheduled release inside the calendar window, and no measured release rhythm to expect one from — so nothing is claimed here.">not scheduled yet</b>`}</div>`;
 }
 // Eigene, rollierende Werte-Historie je Indikator (unabhaengig vom kurzen
 // calEvts-Rueckblickfenster von CAL_PAST_DAYS Tagen). calEvts behaelt naemlich
@@ -22862,9 +22862,10 @@ function renderDataTabRoh(){
     let hasFc=false;
     if(ind){const pp=indChartSeries(ind,sym.id).pts;if(pp&&pp.length){const d0=String(pp[0][0]).slice(0,10);if(!dataAb||d0<dataAb)dataAb=d0;hasFc=pp.some(p=>p[2]!=null);}}
     const k=panelJobs.length;panelJobs.push(ind?{sym,ind}:null);
-    const legend=ind?`<span class="data-lg"><span class="lg-act">■ Actual</span>${hasFc?'<span class="lg-fc">— Forecast</span>':''}</span>`:'';
+    // 763 (Nutzer 2026-11-18, Vorher/Nachher-Bild): Legende aus dem Panel-Kopf - Balken/Linie erklaert das ⓘ
+    const legend='';
     const inner=ind?'':`<div class="ind-hist-empty">${escH(sym.name||sym.id)} does not track “${escH(base)}”. Pick a different one above, or remove this panel.</div>`;
-    return`<div class="cot-card data-panel"><div class="data-ph"><span class="data-pt">${title}</span>${legend}${ind?indAsOfNextHtml(sym.id,ind):''}<span class="px-panel-ctrls">${ctrls||''}</span>${abInfoBtn((sym.name||sym.id)+' — '+base,[ind?`<b>${escH(indName(ind))}</b> of ${escH(sym.name||sym.id)}${rub?' ('+escH(rub.name)+')':''}.`:`${escH(sym.name||sym.id)} does not track this indicator.`,'Bars = the released actual, red line = the consensus forecast. "As of" is the latest release, "Next" the next expected one.','If other panels show the same indicator, all of them use the same y-axis scale.'])}</div><div class="data-pc" data-k="${k}">${inner}</div></div>`;
+    return`<div class="cot-card data-panel"><div class="data-ph"><span class="data-pt">${title}</span>${legend}${ind?indAsOfNextHtml(sym.id,ind,true):''}<span class="px-panel-ctrls">${ctrls||''}</span>${abInfoBtn((sym.name||sym.id)+' — '+base,[ind?`<b>${escH(indName(ind))}</b> of ${escH(sym.name||sym.id)}${rub?' ('+escH(rub.name)+')':''}.`:`${escH(sym.name||sym.id)} does not track this indicator.`,'Bars = the released actual, red line = the consensus forecast. "As of" is the latest release, "Next" the next expected one.','If other panels show the same indicator, all of them use the same y-axis scale.'])}</div><div class="data-pc" data-k="${k}">${inner}</div></div>`;
   };
   // Seitenkopf wie auf jeder Seite (seit 2026-10-04: .pg-titel + .pg-sub,
   // kein Kartenrahmen). Die Chip-Reihe (je Auswahl ein "✕") ist 2026-09-26

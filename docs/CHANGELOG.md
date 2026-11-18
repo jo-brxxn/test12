@@ -22648,3 +22648,24 @@ Nutzer (iPad-Foto CHF): *„verschiebe das go to... in die Zeile eins dadrüber 
 - **Gold/Silber:** bleibt wie es ist (Spot live, Historie Futures), festgehalten in `docs/data-sources.md`.
 - **Wächter:** `check/kartenauf.js` E.
   - Ein eigener Testfehler unterwegs: Das erste Rad scrollte richtigerweise die Seite, der Tipp lag danach daneben. Jetzt peilt der Test die Liste neu an.
+
+## 2026-11-18 — Data-Panel-Kopf ganz lesbar (VERSION-CHECK-763)
+
+Nutzer zum Vorher/Nachher-Bild: *„die Panels sind so gut“*.
+
+- **Weg:**
+  - Legende „■ Actual — Forecast“ im Kopf (die Erklärung stand schon im ⓘ des Panels)
+  - Wochentag im Datum
+  - fester Ausblend-Verlauf (`mask-image` 85 %), der die letzten 15 % immer verblasste
+- **Statt Abschneiden** bricht „As of … · Next …“ um.
+- **Gemessen**, nichts abgeschnitten:
+
+  | Fenster | Kopf |
+  |---|---|
+  | 1194 px | einzeilig, 39 px |
+  | 834 px hoch | 52 px (umgebrochen) |
+  | 1920 px | 47 px |
+  | 390 px | Datumsblock wie bisher ausgeblendet (Container < 330 px) |
+
+- **Wächter:** `check/datakarte.js` C, `--gegenprobe-kopf` → rot.
+- **Nachtrag:** `datalayout` (8 Panels, je ¼ Breite) maß 42 px statt höchstens 40 px, weil das Datum zweizeilig umbrach. Zeilenhöhe des Datumsblocks jetzt 1,15, damit sind auch zwei Zeilen ≤ 40 px. Grün.
