@@ -22556,3 +22556,19 @@ Nutzer: *„im Papierkorb soll alles reinkommen was auf der Webseite gelöscht w
 - **Trash-Seite:** zeigt Typ und lesbaren Namen (z. B. „EUR/USD · long · 2026-11-10“, „Price alert: EUR · above · 1.2“).
 - **Fund beim Testen:** `trades.js` importierte `save()` nicht. Der Papierkorb-Eintrag eines Trades wäre ohne nächstes Speichern nicht auf die Platte gekommen. Import ergänzt.
 - **Wächter:** neu `check/papierkorb.js` (12 Arten über die echten Löschwege), Gegenprobe → rot.
+
+## 2026-11-18 — Notiz-Überschriften ganz, Entpinnen → History (VERSION-CHECK-758)
+
+Nutzer: *„Mach so das jede Notiz von außen die Überschrift komplett zu lesen ist und nicht abgekürzt also abgeschnitten wird“* · *„wenn ich eine Note unpinne dann landet sie nicht in der history sondern im trash“* (Rückfrage: History soll bleiben, der Fehler ist der Trash).
+
+- **Reproduziert** (echte Klicks, Neuladen):
+  - Karten-Knopf „Unpin“ → History, bleibt.
+  - Haken „Pin“ im Notizfenster entfernen + Save → **kein `hist`** → beim nächsten Laden räumte die Regel aus 755 die Notiz in den **Trash**.
+  - Gleiche Klasse: neue Notiz mit abgewähltem Pin → ebenfalls Trash.
+- **Wurzel:** Nur `togResPin` setzte den Stempel. Jetzt setzt ihn `notizHistStempel()` an EINEM Ort für Knopf, Fenster und neue Notiz. Danach alle drei in der History, auch nach Neuladen.
+- **Titel gemessen** (langer Titel, 1194/390 px):
+  - abgeschnitten: Pinned-Karte (`nowrap` + Ellipse), Bank-Karte (`line-clamp 3`), Watchlist (`nowrap` + Ellipse)
+  - ganz: History, Trash
+- **Titel-Fix:** eine gemeinsame Regel für alle Titel-Klassen. Danach überall ganz.
+- **Hinweis Bestand:** Notizen, die vor diesem Fix über den Haken entpinnt wurden, liegen im Trash. „Restore“ holt sie als Pinned note zurück, danach „Unpin“ → History.
+- **Wächter:** neu `check/notiztitel.js` (A Titel, B Entpinnen) mit zwei Gegenproben.

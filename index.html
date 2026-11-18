@@ -7788,6 +7788,13 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .ph-leer{color:var(--t3);font-size:var(--fs-md);padding:10px 0}
 .gp-hk{display:flex;gap:6px;flex-wrap:wrap}
 @media (max-width:700px){.ph-z{flex-direction:column}.tr-tbl .tr-kn{white-space:normal}}
+
+/* ── Notiztitel immer ganz (758, Nutzer 2026-11-18: "das jede Notiz von aussen die Ueberschrift
+   komplett zu lesen ist und nicht abgekuerzt also abgeschnitten wird"). Gemessen vorher: Pinned-
+   Karte + Watchlist einzeilig mit Ellipse, Bank-Karte nach 3 Zeilen gekappt. EINE Regel fuer alle
+   Titel-Klassen (Spezifitaet wie .zb-schaft .ab-nt-ti); nur der Titel, der Textauszug darf kuerzen.
+   Geprueft von check/notiztitel.js. */
+.ab-nt-ti,.wt-pin-ti,.aqn-n-ti,.pov-ntitle,.res-recent-ti,.zb-schaft .ab-nt-ti,.zb-card .ab-nt-ti{white-space:normal;overflow:visible;text-overflow:clip;display:block;-webkit-line-clamp:unset;line-clamp:none;max-height:none;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -7875,11 +7882,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-757 - Papierkorb fuer alles Geloeschte: Trades, Kalender, Watchlist, Alarme, Assets, Karten, Indikatoren, Dashboard-Karten"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-758 - Notiz-Ueberschriften nie abgeschnitten, Entpinnen im Notizfenster landet in der History statt im Trash"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-757</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-758</span>
     </span>
   </div>
   <div class="hdr-r">

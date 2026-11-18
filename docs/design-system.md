@@ -1853,6 +1853,15 @@ Per Rückfrage festgelegt (TradeZella-Stil), Details `docs/CHANGELOG.md` 622–6
 - **Positions-Werkzeug:** Entry (Navy), SL (bearish), TP (bullish), Exit gestrichelt; Zonen 10 %. Senkrecht ziehen an den Etiketten (`touch-action:none`, Trefferfläche ±8 px).
 - **Zeitspanne (seit 628):** Kasten von `w0` bis `w1` (Datum, mit dem Trade gespeichert), Standard 12 Kerzen ab dem Trade-Tag; Kanten ziehen = Breite (rastet auf Kerzen), Mitte ziehen = verschieben. Rechts 14 (Editor) bzw. 6 (Detail) leere Zukunfts-Slots. **Etiketten stehen AUSSERHALB des Kastens** (rechts, sonst links; unter 520 px ohne R-Zusatz) — darüber verdeckten sie Kanten und Mitte.
 
+## Notiz-Überschriften nie gekürzt (Dauerregel seit 2026-11-18)
+
+Nutzer: *„jede Notiz von außen die Überschrift komplett zu lesen ist und nicht abgekürzt also abgeschnitten wird“*.
+- Der Titel jeder Notiz bricht um: keine Ellipse, keine Zeilen-Kappung.
+- Gilt für Pinned-Karte, Bank-Karte, Watchlist, Pair-Übersicht, History und Trash.
+- Umgesetzt mit EINER CSS-Regel am Ende des Stylesheets (`.ab-nt-ti,.wt-pin-ti,…`).
+- Nur der Textauszug darunter darf kürzen.
+- Geprüft von `check/notiztitel.js`.
+
 ## Asset- und Paarnamen nie gekürzt (Dauerregel seit 2026-10-07)
 
 Nutzer: *„Bei set ups sind teilweise Asset Namen abgekürzt das darf nicht

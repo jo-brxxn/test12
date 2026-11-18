@@ -5476,6 +5476,14 @@ const BEHAVIOR_NOTES_CONTENT_V=3;
 //  3) Notizen ohne Pin, Bank-Bezug (cb), Chart-Bezug (pm/Tag chart) und History-Eintrag (hist)
 //     -> Papierkorb + Loesch-Marker (ein altes Geraet bringt sie sonst per Abgleich zurueck)
 //  4) Ordner -> Loesch-Marker, keine Ordner mehr
+// Pin aus -> History, Pin an -> raus aus der History (758). EIN Ort fuer alle Wege: vorher setzte
+// nur togResPin (Knopf an der Karte) den Stempel - Haken "Pin" im Notizfenster entfernen + Save
+// liess die Notiz ohne hist, die Regel unten raeumte sie beim naechsten Laden in den Trash
+// (Nutzer 2026-11-18: "die Note soll ja in der history sein aber ist sie nicht").
+function notizHistStempel(n,jetzt){
+  if(!n||n.cb||notizIstChart(n))return;
+  if(n.pin)delete n.hist;else if(!n.hist)n.hist=jetzt||new Date().toISOString();
+}
 function notizIstChart(n){return!!(n&&(n.pm||(Array.isArray(n.tags)&&n.tags.includes('chart'))));}
 function notizBleibt(n){return!!(n&&(n.pin||n.cb||n.hist||notizIstChart(n)));}
 function seedPinsUmwandeln(r){
@@ -8500,7 +8508,7 @@ function togResPin(id){
   const n=resNotes().find(x=>x.id===id);if(!n)return;
   pushU();n.pin=!n.pin;n.up=new Date().toISOString();
   // Entpinnen = History der Pinned notes (755), Anpinnen holt sie dort heraus.
-  if(n.pin)delete n.hist;else n.hist=n.up;
+  delete n.hist;notizHistStempel(n,n.up);
   if(n.seed)setSeedNoteFlag(n.id,'pin',n.pin);save();rerenderNotesHost();
   if(document.getElementById('mPinHist')&&document.getElementById('mPinHist').style.display!=='none'&&_pinHistAsset)pinHistAuf(_pinHistAsset);
 }
@@ -17034,7 +17042,7 @@ function saveResNote(){
     if(_resEditId){
       const n=resNotes().find(x=>x.id===_resEditId);
       const biasGesp=_resZb&&_resZb.dreht?invertBias(_resBias):_resBias;   // Bank-Notiz: zurueck in die Sicht der Bank-Waehrung
-      if(n){if(n.seed&&!n.replacesSeed)n.replacesSeed=n.id;n.title=title||researchTitleFrom(body);n.body=body;n.tags=tags;n.fids=n.cb?[]:fids;n.fav=fav;n.pin=n.arch||n.cb?false:pin;n.up=now;n.bias=biasGesp;n.evt=evt;delete n.seed;}
+      if(n){if(n.seed&&!n.replacesSeed)n.replacesSeed=n.id;n.title=title||researchTitleFrom(body);n.body=body;n.tags=tags;n.fids=n.cb?[]:fids;n.fav=fav;n.pin=n.arch||n.cb?false:pin;n.up=now;notizHistStempel(n,now);n.bias=biasGesp;n.evt=evt;delete n.seed;}
     }else if(_resZb){
       // Neue Zentralbank-Notiz: oben in ihrer Saeule (ord), Bias in Bank-Sicht.
       const z=_resZb,ords=resNotes().filter(x=>x&&x.cb&&x.cb.b===z.b&&x.cb.s===z.s&&typeof x.ord==='number').map(x=>x.ord);
@@ -17051,7 +17059,7 @@ function saveResNote(){
       const ids=resNoteAssetIds({fids,asset});
       const ords=resNotes().filter(x=>x&&typeof x.ord==='number'&&resNoteAssetIds(x).some(a=>ids.includes(a))).map(x=>x.ord);
       const id=uid();
-      research.notes.push({id,fids:fids,title:title||researchTitleFrom(body),body:body,tags:tags,fav:fav,pin,arch:false,ord:Math.min(0,...ords)-1,ts:now,up:now,bias:_resBias,evt:evt,asset});
+      {const nn={id,fids:fids,title:title||researchTitleFrom(body),body:body,tags:tags,fav:fav,pin,arch:false,ord:Math.min(0,...ords)-1,ts:now,up:now,bias:_resBias,evt:evt,asset};notizHistStempel(nn,now);research.notes.push(nn);}
       // Scheitert gleich save(), aktualisiert ein zweites "Save" DIESE
       // Notiz, statt eine zweite gleiche anzulegen.
       _resEditId=id;

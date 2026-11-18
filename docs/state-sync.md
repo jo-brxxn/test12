@@ -121,7 +121,9 @@ Nutzer-Regel: *„Es soll nur noch Notizen in pinned Notes, gameplan geben und d
 - **Was bleibt in `research.notes`:** `pin`, `cb` (Bank), `pm`/Tag `chart` (Price-Karte) oder `hist` (entpinnt = History der Pinned notes).
   - Alles andere räumt `seedAssetBehaviorNotes()` bei JEDEM Laden/Abgleich in den Papierkorb, mit Lösch-Marker `n:<id>`.
   - Grund: Ein altes Gerät brächte die Notiz sonst per Abgleich zurück.
-- **Entpinnen:** setzt `n.hist` (ISO-Zeit). Anpinnen löscht `n.hist`. History-Fenster `mPinHist`.
+- **Entpinnen:** setzt `n.hist` (ISO-Zeit), Anpinnen löscht `n.hist`. History-Fenster `mPinHist`.
+  - ⚠ Für JEDEN Weg über `notizHistStempel()`: Karten-Knopf, Haken im Notizfenster, neue Notiz ohne Pin.
+  - 758: Der Haken setzte keinen Stempel, die Notiz landete beim nächsten Laden im Trash.
 - **Wiederherstellen aus dem Trash:** Eine normale Notiz kommt als **Pinned note** zurück.
 - **Angepinnte Beispielnotiz** (`seedNoteFlags[sid].pin`): wird einmal zur eigenen Notiz `pin_<sid>`.
   - Feste Id → zwei Geräte erzeugen dieselbe.
