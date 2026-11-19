@@ -22822,3 +22822,13 @@ CI 769 rot. Je Befund lokal geprüft:
 - **Fix:** Der Rückruf kommt nur bei der echten Ankunft des Archivs. Liegt es schon vor, wird nur zusammengeführt.
 - **Wächter `newsarchiv` F:** `news_data.json` 404 + Archiv da → Asset-Seite muss antworten. `--gegenprobe-schleife` (alter Weg) → F rot.
 - **Fehlerklasse:** Rückrufe, die über einen Render-Pfad wieder sich selbst auslösen können. Die Kalender-Archiv-Ladung prüft bereits nur echte Ankünfte.
+
+## 2026-11-19 — Filter-Name „Russell“ wie in der Seitenleiste (VERSION-CHECK-772)
+
+- **Lokaler Lauf Paket 5:** `filterfest` rot. Trends: Nach der Wahl von GBP sprang der Filter um 47 px nach unten.
+- **Gemessen bei 1180 px:**
+  - Kopfzeile 1060 px, Titelblock 871 px, Filter 142 px.
+  - Nach der Wahl kommt das ✕ dazu (37 px) → die Kopfzeile bricht um, der Titel steht über dem Filter.
+  - Die Breite des `<select>` richtet sich nach der längsten Option: „Russell 2000“ aus `COT_NAME`. Die gemeinsame Namensliste aller Filter hatte die Umbenennung (768) nicht mitbekommen.
+- **Fix:** `COT_NAME.RUSSELL = 'Russell'` → Filter 133 px, kein Umbruch, `filterfest` grün.
+- ⚠ **Knapp:** Die Trends-Kopfzeile hat bei 1180 px nur noch wenige Pixel Luft. Ein künftig längerer Asset-Name bricht sie wieder; `filterfest` meldet das.

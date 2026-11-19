@@ -19935,7 +19935,7 @@ let cotRefreshing=false;
 let cotRefreshNote='';         // kurzer Status-Hinweis nach manuellem Refresh
 let cotCdTimer=null;           // Countdown-Intervall (laeuft nur auf der COT-Seite)
 const COT_SYMS=['USD','EUR','GBP','JPY','CHF','CAD','AUD','NZD','GOLD','SILVER','PLATINUM','COPPER','OIL','NATGAS','BTC','SOL','SP500','NAS','RUSSELL','NIKKEI'];
-const COT_NAME={USD:'USD',EUR:'EUR',GBP:'GBP',JPY:'JPY',CHF:'CHF',CAD:'CAD',AUD:'AUD',NZD:'NZD',GOLD:'Gold',SILVER:'Silver',COPPER:'Copper',PLATINUM:'Platinum',RUSSELL:'Russell 2000',NIKKEI:'Nikkei 225',IRONORE:'Iron Ore',OIL:'WTI Oil',NATGAS:'Natural Gas',BTC:'BTC',SOL:'SOL',SP500:'S&P 500',NAS:'Nasdaq',DAX:'DAX',
+const COT_NAME={USD:'USD',EUR:'EUR',GBP:'GBP',JPY:'JPY',CHF:'CHF',CAD:'CAD',AUD:'AUD',NZD:'NZD',GOLD:'Gold',SILVER:'Silver',COPPER:'Copper',PLATINUM:'Platinum',RUSSELL:'Russell',NIKKEI:'Nikkei 225',IRONORE:'Iron Ore',OIL:'WTI Oil',NATGAS:'Natural Gas',BTC:'BTC',SOL:'SOL',SP500:'S&P 500',NAS:'Nasdaq',DAX:'DAX',
   USYIELD:'US Yield',DEYIELD:'DE Yield',GBYIELD:'GB Yield',CHYIELD:'CH Yield',JPYIELD:'JP Yield',CAYIELD:'CA Yield',AUYIELD:'AU Yield',NZYIELD:'NZ Yield'};
 // Lokaler Cache der zuletzt gesehenen Historie. Die stuendlich geschriebene
 // cot_data.json kann (z.B. direkt nach diesem Feature-Rollout, oder wenn der
