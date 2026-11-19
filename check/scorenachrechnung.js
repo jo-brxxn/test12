@@ -80,7 +80,9 @@ const init = () => { try { localStorage.setItem('fxpro_help_seen', '1'); localSt
    if(bn==='WoW Change in Net Position (%)'){const v=parseFloat(String((i.research||{}).actual??'').replace(',','.'));if(isFinite(v)&&Math.abs(v)<3)return true}
    if(SENT.has(bn))return true;if(i.name==='Risk Correlation')return true;
    for(const g of CORE){if(!g.includes(bn))continue;if((rub.indicators||[]).some(o=>o!==i&&strip(o.name)!==bn&&g.includes(strip(o.name))))return true}return false};
- const weight=(i,rub)=>BOND.has(i.name)?0.75:i.stepDriven?0.5:half(i,rub)?0.5:1;
+ // Modell 35/37 (764/766): asset-eigenes Gewicht ind.gew (0 < gew <= 2) hat Vorrang - China-Block AUD/Kupfer,
+ // Silber US ISM/IP (docs/score-model.md). Unabhaengig nachgebaut, nicht aus score.js uebernommen.
+ const weight=(i,rub)=>(typeof i.gew==='number'&&i.gew>0&&i.gew<=2)?i.gew:BOND.has(i.name)?0.75:i.stepDriven?0.5:half(i,rub)?0.5:1;
  const mad=i=>{const s=[];(i.chartHist||[]).forEach(e=>{if(!Array.isArray(e)||e.length<3)return;const a=num(e[1]),f=num(e[2]);if(a==null||f==null)return;s.push(a-f)});if(s.length<5)return null;const m=s.reduce((x,y)=>x+y,0)/s.length;const d=s.reduce((x,y)=>x+Math.abs(y-m),0)/s.length;return d>0&&isFinite(d)?d:null};
  const mag=i=>{const r=i.research||{};const a=num(r.actual),f=num(r.forecast);if(a==null||f==null)return 1;const sd=mad(i);if(sd==null)return 1;return Math.sqrt(Math.max(0.05,Math.abs(a-f)/sd))};
  const decay=(i,rub)=>{if(rub.name==='COT Data'||rub.name==='Risk Environment'||BOND.has(strip(i.name)))return 1;const r=i.research||{};const d=r.date||i.date;if(!d)return 1;const age=(Date.now()-new Date(d+'T00:00:00Z').getTime())/864e5;if(!isFinite(age)||age<=0)return 1;return Math.pow(0.5,age/(1.5*cycle(i)))};

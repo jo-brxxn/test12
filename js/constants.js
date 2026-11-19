@@ -208,6 +208,30 @@ export const AI_SYMBOLS = {
     <path d="M10.6,8.6 H25.4 M10.6,10.6 H25.4 M10.6,12.6 H25.4 M10.6,14.6 H25.4" stroke="#7A3F18" stroke-width=".7" opacity=".7"/>
     <path d="M25.4,15.6 C29,15.6 30,18 31.6,20.4" fill="none" stroke="#C8743A" stroke-width="1.3" stroke-linecap="round"/>`,
 
+  // Platin (768): kühl-blauer Barren mit Kreuz-Prägung.
+  PLATINUM: `
+    <defs>
+      <linearGradient id="aiPtG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#E8F0F6"/><stop offset="1" stop-color="#7E95A8"/>
+      </linearGradient>
+    </defs>
+    <g transform="translate(18,12.2) scale(1.28) translate(-18,-12.2)">
+    <path d="M8.2,9.6 h19.6 l2.6,9.4 h-24.8Z" fill="url(#aiPtG)"/>
+    <path d="M10.6,5.4 h14.8 l2.4,4.2 h-19.6Z" fill="#F4F8FB"/>
+    <path d="M18,11.2 V17 M15.2,14.1 H20.8" stroke="#4E6577" stroke-width="1.2" stroke-linecap="round"/>
+    </g>`,
+
+  // Eisenerz (768): rostroter Erzbrocken.
+  IRONORE: `
+    <defs>
+      <linearGradient id="aiFeG" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#C98A6A"/><stop offset=".55" stop-color="#8E4A33"/><stop offset="1" stop-color="#4E2A1F"/>
+      </linearGradient>
+    </defs>
+    <path d="M7,18.6 L11.4,9 L17.8,5.6 L25.2,8.2 L29,15.8 L26,19.6 H9.6Z" fill="url(#aiFeG)"/>
+    <path d="M13,11.8 L17,14 L22.2,11.2 M17,14 V18.6" fill="none" stroke="#2E1A14" stroke-width=".9" opacity=".7"/>
+    <path d="M11.8,10 L17.8,6.8" stroke="#F0C7AE" stroke-width=".8" opacity=".7"/>`,
+
   // Erdgas (2026-11-16): blaue Brennerflamme.
   NATGAS: `
     <defs>
@@ -287,4 +311,4 @@ export function aiIndex(accent) {
           fill="none" stroke="${accent}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
     <circle class="ai-tick-dot" cx="29.6" cy="6.6" r="1.5" fill="${accent}"/>`;
 }
-export const AI_INDEX_ACCENT = { SP500: '#4FA3F7', NAS: '#7C7CF0', DAX: '#F0C24F' };
+export const AI_INDEX_ACCENT = { SP500: '#4FA3F7', NAS: '#7C7CF0', DAX: '#F0C24F', RUSSELL: '#5FC08A', NIKKEI: '#E0566E' };   // RUSSELL/NIKKEI seit 768

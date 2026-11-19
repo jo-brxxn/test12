@@ -47,7 +47,7 @@ const tag = n => { const d = new Date(); d.setUTCDate(d.getUTCDate() - n); retur
       if (Math.abs(r.sc) > 0.5 + 1e-9) F.push(`${fall} ${tagK[k]}: ${k} Beitrag ${r.sc} ueber 0,5`);
       if ((k === 'gas' || k === 'btc') && soll[k] && Math.abs(Math.abs(r.sc) - 0.5) > 1e-9) F.push(`${fall} ${tagK[k]}: ${k} feste Punkte ${r.sc} statt 0,5`);
     }
-    if (fall === 'hoch' && R.gas && !/5Y avg 80B/.test(R.gas.prev || '')) F.push(`hoch C: Gas-Vergleichswert "${R.gas.prev}" statt "5Y avg 80B"`);
+    if (fall === 'hoch' && R.gas && !/Ø80B/.test(R.gas.prev || '')) F.push(`hoch C: Gas-Vergleichswert "${R.gas.prev}" statt "Ø80B"`);
     R.fremd.forEach(x => F.push(`${fall} E: fremde Zeile ${x}`));
     if (fall === 'hoch') {
       const D = await p.evaluate(async () => { const m = await import('/js/event-matchers.js'); const M = m.IND_EVENT_MATCHERS; const t = (k, n, c) => !!(M[k] && M[k](n, c)); const f = [];

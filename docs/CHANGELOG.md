@@ -22751,3 +22751,38 @@ Anlass: Für Nikkei, Russell, Platin und Eisenerz reichte das Feed-Budget nicht.
   - beide mit Gegenprobe → rot
   - `check/feedgroesse.js` auf die gemessene Liste umgestellt
 - ⚠ **Offen:** `cal_hist/2026.json` lädt auf der Asset-Seite mit 842 KB.
+
+## 2026-11-19 — Neue Assets Platin, Eisenerz, Russell, Nikkei 225 + CI wieder grün (VERSION-CHECK-768, Score-Modell 38)
+
+**Nutzer:** *„Füg Nikkei noch hinzu und Russel. Platin auch und Eisen.“*
+
+- **Quellen:** Sonde `tools/neue-assets-sonde.mjs`; Tabelle in `docs/data-sources.md`.
+- **Score:**
+  - Platin wie Silber, Eisenerz wie Kupfer (`ROH_VORLAGE`).
+  - Russell wie S&P 500 (`MACRO_DERIVE_RULES`).
+  - Nikkei wie DAX, mit JPY verknüpft.
+  - Alle bekommen die US-Realzinszeile.
+  - Bestehende Scores unverändert.
+- **Symbole:** Platin-Barren mit Kreuz, Eisenerz-Brocken, Russell kleine Balken, Nikkei Sonne + Linie; Kopfbild Eisenerz „erz“ (Erzhaufen + Lore).
+- **Name „Russell“** statt „Russell 2000“ (Nutzer-Wahl). Gemessen: 109 px gegen bisher maximal 98 px. Jede Set-ups-Zeile der Spalte war 11,4 px zu breit, die Schrift fiel auf 10,12 px.
+- **Eigene Fehler, gefunden beim Prüfen:**
+  - Nikkei/Russell ohne Symbol (`assetIconHtml` braucht `AI_INDEX_ACCENT`) → neue Prüfung C in `check/assetlisten.js`, Gegenprobe rot.
+
+### CI war seit 761 rot (versäumt, nach den Pushes zu prüfen)
+
+Alle Läufe zu 761, 764, 765 und zur Sonde schlugen fehl; dazwischen wurden sie vom nächsten Push abgebrochen. Ursachen, je lokal reproduziert:
+
+| Wächter | Ursache | Fix |
+|---|---|---|
+| `scorenachrechnung` | kannte `ind.gew` (764/766) nicht | unabhängig nachgebaut |
+| `datum` | `datumKurz` (755) mit vierstelligem Jahr | über `fmtDayShort` |
+| `zellen` | „5Y avg 47.4B“ (766) ragte 21 px aus der Zelle | „Ø47.4B“ |
+| `erklaerung` | maß gegen die Fenstermitte; seit 743 liegen Fenster zwischen Kopfzeile und Seitenleiste (−38/−27 px) — schon bei 734 rot | Mitte des Overlays |
+| `designregeln` F | History-Karte ohne Scrollen (759): abgeschnittene Zeilen lagen geometrisch über anderen Karten | nur der sichtbare Teil zählt; Gegenprobe 14/14 |
+| `designregeln` D | Set-ups-Schrift 10,12 px durch „Russell 2000“ | Name „Russell“ |
+| `performance` | Kugel-Zeitmessung schwankt | unverändert, siehe unten |
+
+- **`performance`:**
+  - Bei 760, 767 und 768 auf derselben Maschine identisch: p95 20,1–20,9 ms, Wisch stetig.
+  - In der CI p95 17,3 ms, dafür Wisch-Tempo-Sprünge.
+  - → Messschwankung, nicht durch diese Änderungen.

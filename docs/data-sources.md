@@ -1039,3 +1039,22 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
 - **Erdgas vs 5 Jahre:** aus `ind_data.json` USD `Gas Storage` `historyFull`.
 - **BTC:** `btc_score.json` (Start-Feed, ~0,2 KB). `btc_sentiment.json` bleibt beim Fenster.
 - **Öl-Terminkurve:** `oel_kurve.json`, TradingView-Scanner `NYMEX:CL1!`, `NYMEX:CL2!`, `ICEEUR:BRN1!`, täglich. Nicht im Browser geladen.
+
+
+## Nikkei 225, Russell 2000, Platin, Eisenerz (seit 2026-11-19, 768)
+
+Gemessen mit Sonde `tools/neue-assets-sonde.mjs`:
+
+| | Live (TradingView) | Historie (Yahoo) | 4H | COT | Retail | Put/Call |
+|---|---|---|---|---|---|---|
+| Nikkei 225 | TVC:NI225 (JPY-Punkte, Index wie DAX) | ^N225 | ✓ | 240743 (Yen) | – | EWJ |
+| Russell 2000 | TVC:RUT | ^RUT | ✓ | 239742 E-mini | – | IWM |
+| Platin | TVC:PLATINUM (Spot USD) | PL=F (Future, wie Gold) | ✓ | 076651 | XPTUSD | PPLT |
+| Eisenerz | SGX:FEF1! (USD/t) | TIO=F | **–** | **–** | – | – |
+
+- **Eisenerz:**
+  - TIO=F ohne Stundenkurse → kein 4H-Trend.
+  - Nur 108 von 3039 Tagen mit Docht → kaum Kerzen.
+  - Kein CFTC-Kontrakt.
+  - Fehlende Daten werden angezeigt, nicht geschätzt.
+- **Platin:** PL=F hat nur 834 von 2518 Tagen mit Docht → ältere Kerzen ohne echten Docht.

@@ -325,8 +325,16 @@ const ruhe = (p, z) => p.waitForTimeout(String(z).startsWith('A:') ? 1000 : 350)
             const i = h && h.closest(IA); out.a.push(`${nm(e)} ${i && i !== e ? 'ragt in ' + nm(i) : 'wirkt nicht (verdeckt/abgeschnitten)'}`);
           });
         });
+        // Nur der SICHTBARE Teil zaehlt (768): ein Vorfahr mit overflow != visible schneidet ab. Gemessen:
+        // History-Karte (seit 759 ohne eigenes Scrollen, overflow hidden) - ihre Ereigniszeilen liegen
+        // geometrisch bis 290 px unter der Karte, sind dort aber unsichtbar und nicht antippbar; ohne
+        // Zuschnitt meldete F sie als "verliert Flaeche an" Knoepfen der Karten darunter.
+        const sichtbar = el => { let q = el.getBoundingClientRect(), L = q.left, T = q.top, R = q.right, B = q.bottom;
+          for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) { const st = getComputedStyle(a); if (st.overflowX === 'visible' && st.overflowY === 'visible') continue;
+            const c = a.getBoundingClientRect(); L = Math.max(L, c.left); T = Math.max(T, c.top); R = Math.min(R, c.right); B = Math.min(B, c.bottom); }
+          return { left: L, top: T, right: R, bottom: B, width: R - L, height: B - T }; };
         alle.forEach(e => {
-          const r = e.getBoundingClientRect(); if (r.width < 6 || r.height < 6 || e.matches('.cax-p')) return; out.el++;
+          const r = sichtbar(e); if (r.width < 6 || r.height < 6 || e.matches('.cax-p')) return; out.el++;
           [[(r.left + r.right) / 2, (r.top + r.bottom) / 2], [r.left + 2, (r.top + r.bottom) / 2], [r.right - 2, (r.top + r.bottom) / 2], [(r.left + r.right) / 2, r.top + 2], [(r.left + r.right) / 2, r.bottom - 2]].forEach(([x, y]) => {
             const h = document.elementFromPoint(x, y); if (!h || h === e || e.contains(h)) return;
             const i = h.closest(IA); if (i && i !== e && !i.contains(e) && !e.contains(i)) out.b.push(`${nm(e)} verliert Flaeche an ${nm(i)}`);

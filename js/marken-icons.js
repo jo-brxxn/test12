@@ -12,6 +12,10 @@ export const AI_MARKEN={
   NAS: P('#7C7CF0',`<path d="M6,17 H11 L15,12 H19 L23,7.5 H29.5" fill="none" stroke="#7C7CF0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="17" r="1.7" fill="#121924" stroke="#7C7CF0" stroke-width="1.2"/><circle cx="15" cy="12" r="1.4" fill="#7C7CF0"/><circle cx="23" cy="7.5" r="1.4" fill="#7C7CF0"/><circle cx="29.5" cy="7.5" r="1.9" fill="#B9B9FF"/><path d="M11,17 V19 M19,12 V15" stroke="#7C7CF0" stroke-width="1" opacity=".6"/>`),
   // DAX: German tricolour band + line
   DAX: P('#F0C24F',`<rect x="5.5" y="5" width="25" height="2.6" rx=".8" fill="#2a2a2a"/><rect x="5.5" y="8" width="25" height="2.6" rx=".8" fill="#D23B3B"/><rect x="5.5" y="11" width="25" height="2.6" rx=".8" fill="#F0C24F"/><path d="M6,19 L12,16.5 L17,17.5 L23,15 L30,14.6" fill="none" stroke="#F0C24F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`),
+  // Russell 2000 (768): many small bars = small caps
+  RUSSELL: P('#5FC08A',`${[0,1,2,3,4,5,6,7].map(i=>`<rect x="${5.6+i*3.2}" y="${[13,11,14,9.5,12,8,10.5,7][i]}" width="2.2" height="${19-[13,11,14,9.5,12,8,10.5,7][i]}" rx=".5" fill="#5FC08A" opacity="${.55+i*.05}"/>`).join('')}`),
+  // Nikkei 225 (768): rising sun + line
+  NIKKEI: P('#E0566E',`<circle cx="11.5" cy="10" r="4.4" fill="#E0566E"/><path d="M6,19 L12,16 L17,17.2 L23,13.4 L30,12" fill="none" stroke="#F2F2F2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`),
   // Apple: smartphone
   AAPL: P('#A9B3BD',`<rect x="13.5" y="4" width="9" height="16" rx="2" fill="#2a323d" stroke="#C9D1D9" stroke-width="1.1"/><rect x="15" y="6.2" width="6" height="10.6" rx=".6" fill="#6f8aa6"/><circle cx="18" cy="18.4" r=".7" fill="#C9D1D9"/><rect x="16.6" y="4.9" width="2.8" height=".7" rx=".35" fill="#C9D1D9"/>`),
   // Microsoft: cloud + code brackets

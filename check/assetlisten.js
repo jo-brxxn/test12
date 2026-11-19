@@ -19,6 +19,9 @@ const ids = [...kat.matchAll(/\{l:'([^']+)',ids:\[([^\]]*)\]/g)].filter(m => !/^
   .flatMap(m => [...m[2].matchAll(/'([A-Z0-9]+)'/g)].map(x => x[1]));
 if (ids.length < 8) F.push('Testaufbau: SB_CATS nicht gelesen (' + ids.join(',') + ')');
 const liste = (txt, re) => { const m = txt.match(re); return m ? m[0] : ''; };
+// Begruendete Luecken (Quelle gemessen, nicht vergessen): je Liste {Asset: Grund}.
+// 768: Eisenerz - Sonde tools/neue-assets-sonde.mjs: Yahoo TIO=F liefert keine Stundenkurse -> kein 4H-Trend.
+const AUSNAHME = { '4h-Trend (IDS)': { IRONORE: 'Yahoo TIO=F ohne Stundenkurse (Sonde 768)' } };
 const L = {
   'Live (TradingView MAP)': [...wf.matchAll(/"[A-Z_]+:[A-Z0-9!]+":\{id:"([A-Z0-9]+)"/g)].map(m => m[1]).join(' '),
   '3J-Tageskurse (MAPS)': liste(wf, /MAPS="[^"]*"/),
@@ -30,9 +33,20 @@ const L = {
 };
 Object.entries(L).forEach(([n, t]) => {
   if (!t) { F.push(`A: Liste "${n}" nicht gefunden`); return; }
-  const fehlt = ids.filter(id => !new RegExp(`(^|[^A-Z0-9])${id}([^A-Z0-9]|$)`).test(t));
+  const fehlt = ids.filter(id => !new RegExp(`(^|[^A-Z0-9])${id}([^A-Z0-9]|$)`).test(t)).filter(id => !(AUSNAHME[n] && AUSNAHME[n][id]));
   if (fehlt.length) F.push(`A: ${n} ohne ${fehlt.join(', ')}`);
 });
+// C (768): jedes Asset der Seitenleiste hat ein eigenes Symbol. Gefunden beim Anlegen von Nikkei/Russell:
+// AI_MARKEN allein reicht nicht, assetIconHtml verlangt AI_SYMBOLS oder AI_INDEX_ACCENT - sonst leeres Symbol.
+{
+  let kon = R('js/constants.js');
+  if (GP) kon = kon.replace(/RUSSELL: '#5FC08A', /, '');
+  const symb = (kon.match(/export const AI_SYMBOLS = \{([\s\S]*?)\n\};/) || [])[1] || '';
+  const hatSym = new Set([...symb.matchAll(/\n  ([A-Z0-9]+): [`']/g)].map(m => m[1]));
+  const akz = new Set([...((kon.match(/export const AI_INDEX_ACCENT = \{([^}]*)\}/) || [])[1] || '').matchAll(/([A-Z0-9]+):/g)].map(m => m[1]));
+  if (hatSym.size < 8) F.push('Testaufbau: AI_SYMBOLS nicht gelesen');
+  ids.forEach(id => { if (!hatSym.has(id) && !akz.has(id)) F.push(`C: ${id} ohne Symbol (weder AI_SYMBOLS noch AI_INDEX_ACCENT) - zeigt ein leeres Kaestchen`); });
+}
 // B
 const krypto = ((kat.match(/\{l:'Crypto',ids:\[([^\]]*)\]/) || [])[1] || '').match(/[A-Z0-9]+/g) || [];
 krypto.forEach(id => {
@@ -43,6 +57,6 @@ krypto.forEach(id => {
 });
 const nonfx = (wf.match(/const NONFX=\[([^\n]*)\];/) || [])[1] || '';
 [...nonfx.matchAll(/\["([A-Z0-9]+)"/g)].map(m => m[1]).filter(s => /^(X[A-Z]{2}|BTC|SOL|ETH)/.test(s)).forEach(s => { if (!/USD$/.test(s)) F.push(`B: Retail-Symbol ${s} nicht in USD`); });
-if (GP) { const ok = F.some(f => /^A: Kerzen-Nachtrag.*SOL/.test(f)); console.log(ok ? 'assetlisten --gegenprobe: ok (fehlendes SOL im Kerzen-Nachtrag gemeldet)' : 'assetlisten --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
+if (GP) { const ok = F.some(f => /^A: Kerzen-Nachtrag.*SOL/.test(f)) && F.some(f => /^C: RUSSELL/.test(f)); console.log(ok ? 'assetlisten --gegenprobe: ok (fehlendes SOL im Kerzen-Nachtrag gemeldet)' : 'assetlisten --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
 if (F.length) { console.log('assetlisten: ' + F.length + ' Befund(e)\n  ' + F.join('\n  ')); process.exit(1); }
 console.log(`assetlisten: ok (${ids.length} Assets in ${Object.keys(L).length} Kurslisten, Krypto ${krypto.join('/')} in USD, Retail in USD)`);

@@ -21,7 +21,7 @@ function reihe(fall) {
 (async () => {
   const F = [];
   const b = await chromium.launch();
-  const MIT = ['GOLD', 'SILVER', 'COPPER', 'BTC', 'SOL', 'SP500', 'NAS', 'DAX'];
+  const MIT = ['GOLD', 'SILVER', 'COPPER', 'PLATINUM', 'IRONORE', 'BTC', 'SOL', 'SP500', 'NAS', 'DAX', 'NIKKEI', 'RUSSELL'];
   const OHNE = ['USD', 'EUR', 'JPY', 'OIL', 'NATGAS'];
   for (const [fall, soll] of [['steigt', -0.5], ['faellt', 0.5], ['flach', 0]]) {
     const ctx = await b.newContext({ viewport: { width: 1194, height: 834 }, serviceWorkers: 'block' });
@@ -32,7 +32,7 @@ function reihe(fall) {
     await p.goto('http://127.0.0.1:' + PORT + '/index.html'); await wartenBisDatenDa(p); await p.waitForTimeout(3500);
     const R = await p.evaluate(() => {
       const yid = (syms.find(s => assetCls(s.id) === 'yield') || {}).id, st = syms.find(s => assetCls(s.id) === 'stock');
-      const ids = ['GOLD', 'SILVER', 'COPPER', 'BTC', 'SOL', 'SP500', 'NAS', 'DAX', 'USD', 'EUR', 'JPY', 'OIL', 'NATGAS', yid, st && st.id].filter(Boolean);
+      const ids = ['GOLD', 'SILVER', 'COPPER', 'PLATINUM', 'IRONORE', 'NIKKEI', 'RUSSELL', 'BTC', 'SOL', 'SP500', 'NAS', 'DAX', 'USD', 'EUR', 'JPY', 'OIL', 'NATGAS', yid, st && st.id].filter(Boolean);
       const o = { yid, st: st && st.id, z: {} };
       ids.forEach(id => { const s = syms.find(x => x.id === id); if (!s) { o.z[id] = 'fehlt'; return; }
         const z = []; (s.rubrics || []).forEach(r => (r.indicators || []).forEach(i => { if (i.name === '10Y Real Yield') z.push({ rub: r.name, bias: i.bias, sc: indScore(i, r), act: i.research && i.research.actual }); }));

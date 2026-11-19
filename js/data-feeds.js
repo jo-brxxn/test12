@@ -406,7 +406,7 @@ function gasFuenfJahre(){
   const bias=Math.abs(diff)<0.5?'neu':diff<0?'bull':'bear';
   const f=x=>(Math.round(x*10)/10)+'B';
   return{bias,pkt:bias==='bull'?ZEILE_PKT:bias==='bear'?-ZEILE_PKT:0,
-    research:{actual:e.actual,forecast:null,previous:'5Y avg '+f(m),date:e.date,source:'ind_data.json · EIA via TradingView (history '+vj.length+' years)',fuenfJ:true,cotColor:bias==='bull'?'bond-up':bias==='bear'?'bond-down':'bond-flat'}};
+    research:{actual:e.actual,forecast:null,previous:'Ø'+f(m),date:e.date,source:'ind_data.json · EIA via TradingView (history '+vj.length+' years)',fuenfJ:true,cotColor:bias==='bull'?'bond-up':bias==='bear'?'bond-down':'bond-flat'}};
 }
 function applyGasFuenfJFeed(){
   if(typeof IND_DATA_FEED==='undefined'||!IND_DATA_FEED||!Array.isArray(syms))return false;

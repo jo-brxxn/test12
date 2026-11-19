@@ -118,8 +118,10 @@ for (const datei of ['js/main.js', 'js/score.js', 'js/calendar.js', 'js/data-fee
           // Seit 2026-10-11 (Dauerregel "kein Fliesstext") gliedern Punkte (li),
           // Abschnitte (.ie-sek) und Fakten-Zeilen (tr) statt Absaetzen (p).
           absaetze: ov.id === 'mCardInfo' && cb ? cb.querySelectorAll('p,li,.ie-sek,tr').length : null,
-          mittigX: Math.abs((mb.left + mb.width / 2) - window.innerWidth / 2),
-          mittigY: Math.abs((mb.top + mb.height / 2) - window.innerHeight / 2) };
+          // Seit 743 (Nutzer: "alle Fenster ... innerhalb der oberen und linken Leiste") liegt das Overlay
+          // zwischen Kopfzeile und Seitenleiste - die Mitte ist die des Overlays, nicht die des Browserfensters.
+          mittigX: (() => { const o = ov.getBoundingClientRect(); return Math.abs((mb.left + mb.width / 2) - (o.left + o.width / 2)); })(),
+          mittigY: (() => { const o = ov.getBoundingClientRect(); return Math.abs((mb.top + mb.height / 2) - (o.top + o.height / 2)); })() };
       });
       geprueft.knoepfe++;
       if (!r.ok) { fehler.push(`[${name}] ⓘ #${i + 1}: ${r.grund}.`); continue; }

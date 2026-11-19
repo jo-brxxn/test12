@@ -40,7 +40,7 @@ jobs:
       - name: Yahoo-Tageskerzen holen und Open/High/Low nachtragen
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
-          for PAIR in "USD:DX-Y.NYB" "EUR:EURUSD=X" "GBP:GBPUSD=X" "CHF:USDCHF=X" "JPY:USDJPY=X" "CAD:USDCAD=X" "AUD:AUDUSD=X" "NZD:NZDUSD=X" "GOLD:GC=F" "SILVER:SI=F" "OIL:CL=F" "COPPER:HG=F" "NATGAS:NG=F" "BTC:BTC-USD" "SOL:SOL-USD" "SP500:%5EGSPC" "NAS:%5ENDX" "DAX:%5EGDAXI" "AAPL:AAPL" "MSFT:MSFT" "GOOGL:GOOGL" "AMZN:AMZN" "NVDA:NVDA" "META:META" "TSLA:TSLA" "AVGO:AVGO" "ORCL:ORCL" "AMD:AMD" "INTC:INTC" "PLTR:PLTR" "CRWV:CRWV"; do
+          for PAIR in "USD:DX-Y.NYB" "EUR:EURUSD=X" "GBP:GBPUSD=X" "CHF:USDCHF=X" "JPY:USDJPY=X" "CAD:USDCAD=X" "AUD:AUDUSD=X" "NZD:NZDUSD=X" "GOLD:GC=F" "SILVER:SI=F" "OIL:CL=F" "COPPER:HG=F" "PLATINUM:PL=F" "IRONORE:TIO=F" "NIKKEI:%5EN225" "RUSSELL:%5ERUT" "NATGAS:NG=F" "BTC:BTC-USD" "SOL:SOL-USD" "SP500:%5EGSPC" "NAS:%5ENDX" "DAX:%5EGDAXI" "AAPL:AAPL" "MSFT:MSFT" "GOOGL:GOOGL" "AMZN:AMZN" "NVDA:NVDA" "META:META" "TSLA:TSLA" "AVGO:AVGO" "ORCL:ORCL" "AMD:AMD" "INTC:INTC" "PLTR:PLTR" "CRWV:CRWV"; do
             ID="${PAIR%%:*}"; SYM="${PAIR#*:}"
             curl -sL -A "$UA" --max-time 45 -o "y_$ID.json" \
               "https://query1.finance.yahoo.com/v8/finance/chart/$SYM?range=5y&interval=1d" || true
@@ -52,7 +52,7 @@ jobs:
             const fs=require("fs");
             // Aktien 2026-11-19 (766): erst 7 Tage mit Hoch/Tief - ATR(14) fuer Trend 1D fehlte (Nutzer: "Bei DAX und Aktien kannst du die Sachen auch umsetzen", Rueckfrage: Trend 1D + 4H je Aktie).
             // COPPER/NATGAS/SOL 2026-11-17: fehlten seit ihrer Aufnahme (gemessen: 2 bzw. 1 von 40 Tagen mit Kerze, BTC 40/40).
-            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","COPPER","NATGAS","BTC","SOL","SP500","NAS","DAX","AAPL","MSFT","GOOGL","AMZN","NVDA","META","TSLA","AVGO","ORCL","AMD","INTC","PLTR","CRWV"];
+            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","COPPER","PLATINUM","IRONORE","NIKKEI","RUSSELL","NATGAS","BTC","SOL","SP500","NAS","DAX","AAPL","MSFT","GOOGL","AMZN","NVDA","META","TSLA","AVGO","ORCL","AMD","INTC","PLTR","CRWV"];
             let pd;
             try{pd=JSON.parse(fs.readFileSync("price_data.json","utf8"));}
             catch(e){console.log("price_data.json unlesbar - nichts geaendert ("+e.message+")");process.exit(0);}

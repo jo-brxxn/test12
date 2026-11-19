@@ -25,3 +25,10 @@ Ohne Rueckfrage, ohne dass der Nutzer es aufzaehlt. Erst **Quellen auf dem Runne
 | Eingabe-Aliasse | `js/trades.js` TJ_ALIAS (Quick capture entfernt 755) | |
 | Feed-Groesse | `check/feedgroesse.js` (bewusst anheben, begruenden). **Vorher hochrechnen** (2026-11-16, nach Copper/Natural Gas lag `price_data.json` bei 896/900 KB): jede betroffene Datei auf ihr volles Fenster (`price_data.json`: 1100 Punkte je Asset, Kerzen nur 183 Tage) — nicht nur den heutigen Stand messen | |
 | Waechter | betroffene `check/*` (z. B. mpcoel, scorenachrechnung) mitziehen | |
+
+
+## Erfahrungen Nikkei/Russell/Platin/Eisenerz (768)
+
+- **Indizes brauchen `AI_INDEX_ACCENT`** (`js/constants.js`), nicht nur `AI_MARKEN`, sonst leeres Symbol. Geprüft von `check/assetlisten.js` C.
+- **Lange Namen kosten Set-ups-Breite:** Die Namensspalte ist per `subgrid` gemeinsam. Ein Name, der breiter ist als „Natural Gas“ (98 px), macht jede Zeile zu breit, und die Schrift fällt unter 11 px. Vorher messen; „Russell 2000“ heißt deshalb „Russell“ (Nutzer-Wahl).
+- **Begründete Lücken** stehen in `AUSNAHME` von `check/assetlisten.js`. Beispiel: Eisenerz ohne 4H, weil Yahoo TIO=F keine Stundenkurse hat.
