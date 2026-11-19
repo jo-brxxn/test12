@@ -73,7 +73,8 @@ const GP_LAGE = process.argv.includes('--gegenprobe-lage');
         // Kartentitel: erster fetter Text im oberen Bereich der Karte
         // nur, was in der Karte steht: eine nach oben weggescrollte Listenzeile liegt
         // ueber der Karte (abgeschnitten) und ist kein Titel (Dashboard Key events, 2026-11-06)
-        const imBild = e => { let a = e.parentElement; while (a && a !== k) { const o = getComputedStyle(a).overflowY; if (o === 'auto' || o === 'scroll') return e.getBoundingClientRect().top >= a.getBoundingClientRect().top - 1; a = a.parentElement; } return true; };
+        // ⚠ 773: auch overflow hidden schneidet ab - Karten-Listen sind ohne Klick gesperrt (klickscroll.js)
+        const imBild = e => { let a = e.parentElement; while (a && a !== k) { const o = getComputedStyle(a).overflowY; if (o !== 'visible') return e.getBoundingClientRect().top >= a.getBoundingClientRect().top - 1; a = a.parentElement; } return true; };
         const oben = blaetter.filter(e => e.getBoundingClientRect().top - kr.top < 56 && e.getBoundingClientRect().top >= kr.top - 1 && imBild(e)).sort((a, c) => a.getBoundingClientRect().top - c.getBoundingClientRect().top || a.getBoundingClientRect().left - c.getBoundingClientRect().left);
         const t = oben.find(e => fw(e) >= 700);
         if (!t) return;

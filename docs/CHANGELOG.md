@@ -22849,3 +22849,14 @@ Nutzer (7 PC-Fotos): *„Im Asset Filter sind Buchstaben abgeschnitten, dann hab
 - ⚠ Kollision gefunden: History- und Kalender-Karte öffnen beim Tipp ihr Fenster (759). Der geschluckte Klick verhinderte das (`kartenauf.js` rot) → `.ab-auf`/`.abc-cal` ausgenommen.
 - Freischalten beim **Klick**, nicht bei pointerdown: ein Wisch, der auf der Liste beginnt, scrollt am Handy die Seite und schaltet nichts frei.
 - *Nicht angefasst:* Price-Karte behält ihr eigenes Muster (762, Spalte statt Liste).
+
+## 2026-11-19 — CI 772/773 rot: Info-i-Trefferfläche, hierarchie, speichervoll (VERSION-CHECK-774)
+
+| Befund | Gemessen | Ursache | Fix |
+|---|---|---|---|
+| `designregeln` F 820/1180/1440: `rinfo` ragt in `perf-win` | 773 lokal | `.dw-hdr>.rinfo` ist seit 773 ein 21-px-Knopf, der alte Rand (−11,5 px für den 13-px-Knopf) ergab **44 px** und reichte unten in die Zeitfenster der Performance-Karte | Rand wie die 21-px-Gruppe → **36 px** (`index.html` „Dashboard-Kopf + Makro-Karten“) |
+| `hierarchie`: „Med“ 11 px als Kartentitel (Key events) | 773 lokal | Wächter erkannte abgeschnittene Listenzeilen nur bei `overflow auto/scroll`; die Liste ist seit 773 ohne Klick `overflow hidden` → nach oben weggescrollte, unsichtbare Zeile galt als Titel | Wächter: jeder abschneidende Vorfahr (`overflow != visible`) |
+| `speichervoll` B (CI 772, Paket 1): Eingabe des iPads fehlt in Cloud + Gerät B | 3 Läufe parallel: **1/3 rot**; Upload nach dem Neuladen ohne Last **4,0 s**, unter 4-facher Last **13,6–20,0 s** — kommt immer an | feste 5 s Wartezeit im Wächter | Wächter wartet auf die Ankunft (bis 30 s); echter Verlust bleibt rot |
+
+- ⚠ **Altfehler, nicht behoben:** `speichervoll --gegenprobe` bleibt grün — schon vor 774 (mit `git stash` gegengeprüft). Die Basis liegt seit 754 als Unterschied auf der Platte; das rohe `setItem` der Gegenprobe stellt den alten Fehler nicht mehr her. Wächter-Gegenprobe neu bauen.
+- ⚠ **Offener Befund (Sync, nicht behoben):** unter Last 1/4 Läufen „WAECHTER B 2“ verloren — auf beiden Geräten und in der Cloud. Vermutete Ursache: `cloudPushRoh` prüft `updated_at` und schreibt danach in einer **zweiten** Anfrage; pusht ein anderes Gerät dazwischen, wird dessen Änderung überschrieben (lost update). Fix nur serverseitig bedingt (Schreiben nur, wenn `updated_at` noch dem geprüften Stand entspricht) — betrifft die geteilte Tabelle `fx_sync`, deshalb erst mit Nutzer-OK.

@@ -101,6 +101,12 @@ const gruen = m => console.log('  ✓ ' + m);
   netzWeg = false;
   await B.evaluate(() => { pushU(); widgets[2].title = 'WAECHTER B spaeter'; save(); }); await B.waitForTimeout(3000);
   await A.reload(); await wartenBisDatenDa(A); await weg(A); await A.waitForTimeout(5000);
+  // ⚠ Auf den Upload WARTEN statt fester 5 s (2026-11-19, CI 772 Paket 1 rot): gemessen kommt die offene
+  // Eingabe von A ohne Last 4,0 s nach dem Neuladen in der Cloud an, unter 4-facher Last erst nach
+  // 13,6-20,0 s - nichts geht verloren, der Runner ist nur langsamer. Ein echter Verlust bleibt rot:
+  // dann kommt "WAECHTER A offen" auch nach 30 s nicht an (Gegenprobe).
+  const aOben = () => { const w = (cloud.data && cloud.data.widgets) || []; return !!w[1] && w[1].title === 'WAECHTER A offen'; };
+  for (let t = 0; t < 30000 && !aOben(); t += 500) await A.waitForTimeout(500);
   await B.evaluate(() => cloudSyncNow()); await B.waitForTimeout(2500);
   const soll = ['WAECHTER B 2', 'WAECHTER A offen', 'WAECHTER B spaeter'];
   const pr = (wo, t) => { const f = soll.filter((x, i) => t[i] !== x); if (f.length) rot(`${wo}: ${t.join(' | ')} (fehlt: ${f.join(', ')})`); else gruen(`${wo}: beide Umstellungen da`); };

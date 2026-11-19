@@ -7206,9 +7206,11 @@ select.px-panel-sel,select.res-sfield,select.dw-sel,select.bt-sel{height:var(--h
    deckten 2px des ⚡ ab (designregeln F, 820/1180/1440). Dort nur 5px. */
 .ab-tile-hd>:is(button,a)+.info-b.ii-nach::after{left:-5px}
 .data-row>.info-b::after{bottom:-7px}
-/* kleine ⓘ (13 px) */
-.dw-hdr>.rinfo::after{inset:-11.5px -11.5px -11.5px -6.5px}
-.mx-card-title>.rinfo::after{inset:-9px -9px -11.5px -11.5px}
+/* Dashboard-Kopf + Makro-Karten: seit 773 ebenfalls 21-px-Knopf mit Kreis (vorher 13 px mit 11,5 px
+   Rand). Der alte Rand machte 44 px und ragte unten in die Zeitfenster der Performance-Karte
+   (designregeln F 820/1180/1440) -> wie die 21-px-Gruppe 36 px. */
+.dw-hdr>.rinfo::after{inset:-7.5px -7.5px -7.5px -4px}
+.mx-card-title>.rinfo::after{inset:-7.5px}
 /* D8 (sichtbares "SUMMARIES" ueber dem Schalter, 2026-10-04) am 2026-10-06
    auf Nutzer-Wunsch wieder entfernt - der Schalter traegt seinen Namen nur
    noch als aria-label und im Tooltip (check/designregeln.js I). */
@@ -7911,11 +7913,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-773 - PC-Bugs: Logo ueber Inhalt, Info-i, Show all mittig, COT-Filter abgeschnitten, Back-Pille, Karten scrollen erst nach Klick"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-774 - Info-i-Trefferflaeche im Dashboard-Kopf wieder 36 px (ragte in die Zeitfenster), Waechter hierarchie/speichervoll"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-773</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-774</span>
     </span>
   </div>
   <div class="hdr-r">
