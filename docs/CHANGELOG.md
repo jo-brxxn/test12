@@ -22706,3 +22706,26 @@ Nutzer: *„Realzinsen auch überall hinzufügen“*. Auf drei Befunde hin (FX-R
   - Gegenprobe ohne Umkehr → rot.
   - Erster Lauf rot wegen eines falschen Sollwerts im Wächter (3,58 statt 2,58), korrigiert.
 - **Eigener Fehler beim Bau:** Zeilenumbruch im Kommentar (`data-feeds.js`) und doppeltes Komma (`journal.js`). Gefunden, weil die App nicht lud; `node --check` prüfte die Dateien nicht als Modul.
+
+## 2026-11-19 — Eigene Zeilen Silber/Öl/Erdgas/BTC, Aktien-Trend, Öl-Kurve sammeln (VERSION-CHECK-766, Score-Modell 37)
+
+Nutzer 2026-11-18 (Silber US-Industrie, Öl, Erdgas, BTC, DAX, Aktien). Vor dem Bau gemessen und vorgelegt; Antworten 2026-11-19:
+- **Silber:** „Wie gesagt (Beat bullish)“, gegen die Messung (IP 1 T t −2,2).
+- **DAX:** „Weglassen“.
+- **Öl:** Rig Count + Kurve sammeln.
+- **Erdgas, BTC:** „trotzdem“.
+- **Aktien:** Trend 1D + 4H.
+
+Messwerte und Regeln: `docs/score-model.md`.
+- **Ursache fehlender Aktien-Trend gemessen:** `trendWerte('AAPL')` → „no measured high/low for the ATR“. Nur 7 von 760 Tageskerzen haben Hoch/Tief, die ATR braucht 14.
+- **Feed-Budget:**
+  - Vorher 3640/3700 KB.
+  - Aktien-4H mit nur 30 Tagen `e4`.
+  - BTC-Wert als eigene 0,2-KB-Datei, weil `btc_sentiment.json` (228 KB) laut `check/feedgroesse.js` nie beim Start laden darf.
+- **Eigene Fehler im Bau, vom neuen Wächter gefunden:**
+  1. `parseNumLike('80B')` rechnet „B“ als Milliarden hoch, angezeigt wurde „5Y avg 80000000000B“. Jetzt eigene Rohzahl.
+  2. Der Wächter suchte „US Industrial Production“ exakt; die App hängt bei Feed-Periode „m/m“ an. Der Wächter vergleicht jetzt den Basisnamen; die Anzeige ist ohne doppeltes Kürzel geprüft.
+- **Wächter:** neu `check/zusatzzeilen.js`, Gegenprobe → rot.
+- ⚠ **Bis zum nächsten Workflow-Lauf:**
+  - Silber- und Rig-Count-Zeilen ohne Wert (die Tiefen-Historie wird über `HIST_REGELN` neu geholt).
+  - Aktien-Trend erst nach dem Backfill bzw. dem nächsten 4H-Lauf.

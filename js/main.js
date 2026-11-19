@@ -3425,8 +3425,10 @@ function resetNonFxIndBias(sym){
 const IND_DISPLAY_NAMES={
   // 'Money Supply' (2026-11-01) steht je Waehrung in deren Zeile unten.
   // Asset-eigene Zeilen (ASSET_EIGENE_IND) stehen unter der Asset-Id.
-  OIL:{'Oil Inventories':'EIA Crude Oil Inventories'},
-  NATGAS:{'Gas Storage':'EIA Natural Gas Storage'},
+  OIL:{'Oil Inventories':'EIA Crude Oil Inventories','Oil Rig Count':'Baker Hughes Oil Rig Count'},
+  NATGAS:{'Gas Storage':'EIA Natural Gas Storage','Gas Storage vs 5Y':'Gas Storage vs 5-Year Average'},
+  SILVER:{'US ISM Manufacturing PMI':'US ISM Manufacturing PMI','US Industrial Production':'US Industrial Production m/m'},
+  BTC:{'BTC Sentiment Score':'BTC Sentiment Score'},
   AUD:{'China New Loans':'China New Yuan Loans','China Retail Sales':'China Retail Sales y/y'},
   COPPER:{'China NBS Manufacturing PMI':'China NBS Manufacturing PMI','China New Loans':'China New Yuan Loans','China Retail Sales':'China Retail Sales y/y'},
   USD:{'Money Supply':'M2 Money Supply y/y','Central Bank Rate':'Fed Funds Rate','Unemployment Claims':'Initial Jobless Claims','NFP / Employment Change':'Nonfarm Payrolls (NFP)','Consumer Confidence':'CB Consumer Confidence'},
@@ -4001,6 +4003,11 @@ const IND_INFO_DEFAULTS={
   'China Retail Sales':'Chinese retail sales, year-over-year in % (NBS). Stronger consumption than expected is bullish for AUD and copper. China block, see weight in the row.',
   'China NBS Manufacturing PMI':'Official Chinese manufacturing PMI (NBS), above 50 = expansion. China is about half of world copper demand - a beat is bullish for copper.',
   '10Y Real Yield':'US 10-year real yield (TIPS, US Treasury real yield curve), in %. Trend like the bond yields (5-day vs 21-day average, 3 bp dead band). Rising real yields are bearish for metals, crypto, indices and stocks (higher opportunity cost, heavier discounting). Fixed ±0.5. Not on FX, energy or yields.',
+  'US ISM Manufacturing PMI':'US ISM manufacturing index, above 50 = expansion. Industrial demand for silver: a beat counts as bullish (0.5). Measured 2016-2026, beats tended to weigh on silver via higher yields - kept as chosen.',
+  'US Industrial Production':'US industrial production, month-over-month in %. Industrial demand for silver: a beat counts as bullish (0.5).',
+  'Oil Rig Count':'Weekly count of active US oil rigs (Baker Hughes, Friday). More rigs = more future supply = bearish for oil; fewer = bullish. Counts 0.5.',
+  'Gas Storage vs 5Y':'This week\'s change in US gas storage vs the 5-year average change for the same week (EIA history). A smaller build or bigger draw than normal is bullish, a bigger build bearish. Fixed ±0.5.',
+  'BTC Sentiment Score':'Composite of the BTC sentiment page (0-100, percentile average of the core indicators, default weights). 70 or higher = euphoric = bearish −0.5, 30 or lower = fearful = bullish +0.5, in between 0.',
   'Gas Storage':'Weekly change of US natural gas in storage (EIA, Thursday), in billion cubic feet. A draw or a smaller build than expected is bullish for gas, a bigger build is bearish. Counts half.',
   'MPC Vote Split':'Bank of England MPC votes as hike-cut-hold (same order as the calendar); colour = more or fewer hawkish votes (hike minus cut) than forecast. Shown only: 2017–2026 the pound did not move with a vote surprise on the day (25 surprises, t −0.35).',
   'Inflation Expectations':'Expected inflation from a survey (US: households, 1 year ahead; New Zealand: businesses, 2 years ahead), in %. Higher expectations keep the central bank hawkish.',
@@ -4246,18 +4253,27 @@ function addSurveyInds(rubrics,sym){
 // NICHT gespiegelt: ihren Bias rechnet applyIndDataFeed (js/data-feeds.js)
 // aus dem Feed der verknuepften Waehrung, resetNonFxIndBias laesst ihn stehen.
 // Score: halbes Gewicht (Nutzer-Wahl, js/score.js ASSET_EIGEN_HALB).
-const ASSET_EIGENE_IND={OIL:{'Economic Growth':['Oil Inventories']},NATGAS:{'Economic Growth':['Gas Storage']},
+const ASSET_EIGENE_IND={
   // China-Block (764, Nutzer 2026-11-18: "bau die in den Score ein ... maximal 1,5 Gewicht ... in Economic
   // Growth ... nimm die auch bei Kupfer mit rein"). Auswahl nach Ereignisstudie (cal_hist 2016-2026):
   // AUD New Yuan Loans t +2,7 (5 T), Retail Sales t +2,0/+2,1; Kupfer NBS-PMI +1,5/+1,8/+1,6 (n 26).
   AUD:{'Economic Growth':['China New Loans','China Retail Sales']},
-  COPPER:{'Economic Growth':['China NBS Manufacturing PMI','China New Loans','China Retail Sales']}};
+  COPPER:{'Economic Growth':['China NBS Manufacturing PMI','China New Loans','China Retail Sales']},
+  // 766 (Nutzer 2026-11-18, Rueckfragen 2026-11-19): SILVER US-Industrie "wie gesagt (Beat bullish)" -
+  // gemessen ist ein Beat fuer Silber eher bearish (Zinskanal), so gewollt, dokumentiert in score-model.md.
+  // OIL Baker-Hughes-Bohrtuerme (mehr = bearish, t +2,3). NATGAS Speicher gegen den 5-Jahres-Schnitt
+  // derselben Woche und BTC Sentiment-Gesamtwert: beide ohne Beleg, Nutzer "trotzdem".
+  SILVER:{'Economic Growth':['US ISM Manufacturing PMI','US Industrial Production']},
+  OIL:{'Economic Growth':['Oil Inventories','Oil Rig Count']},
+  NATGAS:{'Economic Growth':['Gas Storage','Gas Storage vs 5Y']},
+  BTC:{'COT Data':['BTC Sentiment Score']}};
 // Feed-Waehrung einer Asset-eigenen Zeile, wenn sie NICHT die verknuepfte Waehrung ist (764: China = CNY).
 const ASSET_EIGEN_FEED={'China New Loans':'CNY','China Retail Sales':'CNY','China NBS Manufacturing PMI':'CNY'};
 function assetEigenFeed(symId,name){return istAssetEigen(symId,name)?(ASSET_EIGEN_FEED[stripPeriodSuffix(name||'').base]||null):null;}
 // Gewicht je Asset und Zeile (764, Rueckfrage: "je nach Messung"): Summe des China-Blocks <= 1,5.
 const ASSET_EIGEN_GEWICHT={AUD:{'China New Loans':0.5,'China Retail Sales':0.5},
-  COPPER:{'China NBS Manufacturing PMI':0.75,'China New Loans':0.375,'China Retail Sales':0.375}};
+  COPPER:{'China NBS Manufacturing PMI':0.75,'China New Loans':0.375,'China Retail Sales':0.375},
+  SILVER:{'US ISM Manufacturing PMI':0.5,'US Industrial Production':0.5},OIL:{'Oil Rig Count':0.5}};
 // ── REALZINS (seit 2026-11-19, VERSION-CHECK-765, Score-Modell 36) ──
 // Nutzer 2026-11-18: "Realzinsen auch ueberall hinzufuegen", Rueckfrage 2026-11-19: "Mach es nur bei
 // nicht fx und nicht bei Energie". Quelle: US Treasury Daily Par Real Yield Curve, 10 YR (Workflow ->
@@ -6131,6 +6147,9 @@ function reapplyLiveFeeds(){
    ()=>applyRohstoffFeed(),
    // US-Realzins (765) - laeuft in applyBondDataFeed mit, steht hier ausdruecklich (check/structure.js).
    ()=>applyRealzinsFeed(),
+   // Erdgas gegen 5-Jahres-Schnitt + BTC-Sentiment-Gesamtwert (766).
+   ()=>applyGasFuenfJFeed(),
+   ()=>applyBtcScoreFeed(),
    ()=>applyNiveauFeed(),
    ()=>applyTrendFeed()].forEach(fn=>{try{fn();}catch(e){}});
 }
@@ -16073,7 +16092,7 @@ function autoFetchFF(){
 // Daten-Feeds nach js/data-feeds.js ausgekoppelt (docs/module-split.md).
 import {
   IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,
-  isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,applyRealzinsFeed,
+  isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,applyRealzinsFeed,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
   tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
@@ -27544,7 +27563,7 @@ async function bootFetchScoreFeeds(){
   let _jrFrei=false;const jrFrei=()=>{if(!_jrFrei){_jrFrei=true;jrFreigeben();}};
   try{
   const results=await Promise.all([
-    fetchIndData().then(()=>{try{return applyIndDataFeed();}catch(e){return false;}}),
+    fetchIndData().then(()=>{try{const a=applyIndDataFeed(),b=applyGasFuenfJFeed();return a||b;}catch(e){return false;}}),
     fetchBondData().then(()=>{try{return applyBondDataFeed();}catch(e){return false;}}),
     fetchCotData().then(()=>{try{return applyCotDataFeed();}catch(e){return false;}}),
     fetchSentimentData().then(()=>{try{return applySentimentFeed();}catch(e){return false;}}),
@@ -27562,7 +27581,9 @@ async function bootFetchScoreFeeds(){
     fetchTvEconData().then(()=>false),
     // Wie weit die lange Kurshistorie reicht (wenige Bytes; die Daten selbst
     // erst bei Bedarf, ladePreisArchiv).
-    fetchPriceHistMeta().then(()=>false)
+    fetchPriceHistMeta().then(()=>false),
+    // BTC-Sentiment-Gesamtwert (766, ~0,2 KB; die grosse btc_sentiment.json bleibt beim Fenster).
+    fetchBtcScore().then(()=>{try{return applyBtcScoreFeed();}catch(e){return false;}})
   ]);
   let seasCh=false;
   try{seasCh=applySeasRetailFeed();}catch(e){}

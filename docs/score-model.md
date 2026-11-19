@@ -818,3 +818,32 @@ ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
   - Richtung stimmt außer bei Kupfer; **kein Wert mit |t| ≥ 2** → schwaches Signal.
 - ⚠ **FX bewusst ohne:** „Real Rate vs Peers“ flog in Modell 24 raus (IC negativ, siehe Niveau-Block).
 - **Geprüft von** `check/realzins.js`.
+
+
+## Eigene Zeilen Silber / Öl / Erdgas / BTC + Aktien-Trend (seit 2026-11-19, Modell 37, VERSION-CHECK-766)
+
+- **Nutzer:** *„Füg bei Silber auch die Industrieindikatoren hinzu aber aus usa … füg die Sachen bei Öl hinzu … Die Vorschläge von Erdgas und btc auch übernehmen. Bei DAX und Aktien kannst du die Sachen auch umsetzen.“*
+- **Gemessen** (Ereignisstudie `cal_hist` 2016–2026, Signalrendite, t): Entscheidungen nach Vorlage der Messung (Rückfragen 2026-11-19).
+
+  | Asset | Zeile | Gewicht | Messung | Entscheid |
+  |---|---|---|---|---|
+  | Silber | US ISM Manufacturing PMI | 0,5 | Beat → Silber **fällt** (1 T t −1,6) | *„Wie gesagt (Beat bullish)“* |
+  | Silber | US Industrial Production m/m | 0,5 | Beat → Silber **fällt** (1 T t −2,2) | dito |
+  | Öl | Baker Hughes Oil Rig Count | 0,5 | mehr Rigs → Öl fällt (5 T t +2,3) | übernommen |
+  | Erdgas | Speicher vs 5-Jahres-Schnitt | fest 0,5 | kein Signal (5 T t −1,3, nur 3 J Kurse) | *„trotzdem“* |
+  | BTC | Sentiment-Gesamtwert | fest 0,5 | IC +0,02/+0,06/−0,10 (7/30/90 T) | *„trotzdem“* |
+  | Aktien | Trend 1D + 4H | wie Index | – (bestehende Regel) | übernommen |
+  | DAX | China / DE-IP | – | DE-IP t +0,1; China Exports t +2,2 | *„Weglassen“* |
+
+- ⚠ **Silber gegen die Messung:** Die Zeilen zählen Beat bullish, obwohl US-Industriedaten Silber über den Zinskanal drücken. Bewusste Nutzerwahl.
+- **Erdgas:** Die Speicheränderung der letzten EIA-Woche wird mit dem Schnitt derselben ISO-Woche der fünf Vorjahre verglichen (aus `historyFull`, mind. 4 Jahre). Darunter → +0,5, darüber → −0,5, Abstand < 0,5 bcf → 0.
+- **BTC:**
+  - `btc_score.json`, vom Workflow mit derselben `scoreReihe()` wie die Seite gerechnet, Standardgewichte 1.
+  - ≥ 70 euphorisch → −0,5, ≤ 30 ängstlich → +0,5, so wie die Seite ihre Extreme einordnet.
+  - ⚠ In der Stichprobe lief BTC nach ≥ 70 eher besser.
+- **Aktien:**
+  - Trend 1D und 4H nach derselben Regel wie Indizes.
+  - Die 1D-Zeile fehlte, weil die Tageskerzen erst 7 Tage Hoch/Tief hatten (ATR braucht 14). Backfill `backfill-ohlc.yml` um die 13 Aktien ergänzt.
+  - 4H im Trend-Schritt, `e4` nur 30 Tage (Feed-Größe).
+- **Öl-Terminkurve:** wird nur gesammelt (`oel_kurve.json`: WTI 1./2. Monat, Brent), nicht gewertet.
+- **Geprüft von** `check/zusatzzeilen.js`.

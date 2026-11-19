@@ -283,3 +283,20 @@ const text = JSON.stringify(ergebnis);
 log('Groesse', (text.length / 1024).toFixed(1), 'KB', 'Fehler', JSON.stringify(fehler));
 if (PRUEFEN) log('Pruefmodus: nichts geschrieben');
 else fs.writeFileSync(DATEI, text);
+
+// ── Gesamtwert fuer den Asset-Score (seit 2026-11-19, VERSION-CHECK-766) ──
+// Nutzer: "Die Vorschlaege von Erdgas und btc auch uebernehmen", Rueckfrage: "BTC: Composite trotzdem".
+// btc_sentiment.json (228 KB) darf nie beim Start laden (check/feedgroesse.js) - deshalb rechnet der
+// Workflow den Gesamtwert mit DERSELBEN Funktion wie die Seite (scoreReihe, Standardgewichte 1) und
+// legt nur das Ergebnis in btc_score.json (~0,2 KB, Start-Feed). Fehler -> Datei bleibt, nichts geschaetzt.
+try {
+  globalThis.window = globalThis.window || { addEventListener() { } };
+  const m = await import('../js/btc-sentiment.js');
+  const sr = m.scoreReihe(m.aufbereiten(ergebnis));
+  const l = sr[sr.length - 1];
+  if (l) {
+    const sc = { updated: new Date().toISOString(), datum: iso(l[0]), wert: +l[1].toFixed(1), komponenten: l[2], gewichte: 'default (all 1)' };
+    log('Gesamtwert', sc.datum, sc.wert, 'aus', sc.komponenten, 'Komponenten');
+    if (!PRUEFEN) fs.writeFileSync('btc_score.json', JSON.stringify(sc));
+  } else log('Gesamtwert: keine Reihe - btc_score.json bleibt');
+} catch (e) { log('Gesamtwert: Fehler', e.message, '- btc_score.json bleibt'); }

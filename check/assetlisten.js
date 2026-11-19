@@ -22,7 +22,7 @@ const liste = (txt, re) => { const m = txt.match(re); return m ? m[0] : ''; };
 const L = {
   'Live (TradingView MAP)': [...wf.matchAll(/"[A-Z_]+:[A-Z0-9!]+":\{id:"([A-Z0-9]+)"/g)].map(m => m[1]).join(' '),
   '3J-Tageskurse (MAPS)': liste(wf, /MAPS="[^"]*"/),
-  '4h-Trend (IDS)': liste(wf, /const IDS=\["USD"[^\]]*\];\s*\/\/ Aktien/),
+  '4h-Trend (IDS)': liste(wf, /const IDS=\["USD"[^\]]*,\.\.\.AKT\];/),   // seit 766 mit den Aktien (...AKT)
   'Saisonalitaet (Pflichtliste)': liste(wf, /const alle=\[[^\]]*\]/),
   'Saisonalitaet (Quelle)': liste(wf, /declare -A PROXY=\( \[GOLD\]=GLD[^)]*\)/),
   'Kerzen-Nachtrag (backfill-ohlc IDS)': liste(bf, /const IDS=\[[^\]]*\]/),

@@ -95,6 +95,7 @@ const JR_MODELL_NOTIZ={
   32:'removed three indicators the data source no longer publishes: EUR negotiated wages, JPY retail sales m/m, NZD ANZ consumer confidence',
   35:'China block in Economic Growth: AUD China New Yuan Loans 0.5 + China Retail Sales 0.5; Copper China NBS Manufacturing PMI 0.75 + New Yuan Loans 0.375 + Retail Sales 0.375 (chosen by an event study of China releases 2016-2026); other assets unchanged',
   36:'US 10Y real yield (US Treasury TIPS curve) in Inflation for metals, crypto, indices and stocks: rising (5-day vs 21-day average, 3 bp dead band) = bearish, fixed 0.5; not on FX, energy or yields',
+  37:'own rows: Silver US ISM Manufacturing PMI + US Industrial Production (0.5 each, beat bullish); Oil Baker Hughes Oil Rig Count (0.5, more rigs bearish); Natural Gas storage change vs the 5-year average of the same week (fixed 0.5); BTC sentiment composite (70+ bearish, 30- bullish, fixed 0.5); stocks get Trend 1D and 4H like the indices',
   34:'new asset SOL (Solana), scored like BTC (crypto group: mirrored macro cards, own COT, seasonality and Crypto Fear & Greed); existing scores unchanged',
   33:'new assets Copper (scored like Silver) and Natural Gas (like WTI Oil, with its own row Gas Storage: weekly EIA natural gas storage, half weight, a draw is bullish); existing scores unchanged',
   30:'new row OIL Oil Inventories (weekly EIA crude stocks, half weight, a draw is bullish); GBP MPC Vote Split (hike-cut-hold) is shown only and counts 0',

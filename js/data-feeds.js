@@ -374,6 +374,57 @@ function applyRealzinsFeed(yesterday=isoMinusDays(todayStr(),1)){
   });
   return changed;
 }
+// ── BERECHNETE ASSET-ZEILEN (seit 2026-11-19, VERSION-CHECK-766, Score-Modell 37) ──
+// Nutzer: "Die Vorschlaege von Erdgas und btc auch uebernehmen", Rueckfrage: beide "trotzdem" (ohne Beleg).
+// Feste Punkte (ind.pkt) wie jede Feed-Zeile. Fehlt die Quelle, bleibt die Zeile unveraendert - nichts geschaetzt.
+const ZEILE_PKT=0.5;
+function zeileSetzen(symId,rubName,name,v){   // v: {bias,pkt,research} oder null
+  const sym=syms.find(s=>s.id===symId);if(!sym)return false;
+  const rub=(sym.rubrics||[]).find(r=>r&&r.name===rubName);if(!rub||!Array.isArray(rub.indicators))return false;
+  const ind=rub.indicators.find(i=>i&&i.name===name);if(!ind||!v)return false;
+  let ch=false;const r=ind.research||{},n=v.research;
+  if(Object.keys(n).some(k=>r[k]!==n[k])||Object.keys(r).some(k=>!(k in n))){ind.research=n;ch=true;}
+  if(ind.bias!==v.bias){ind.bias=v.bias;ch=true;}
+  if(ind.pkt!==v.pkt){ind.pkt=v.pkt;ch=true;}
+  if(ind.trendBias&&ind.trendBias!=='neu'){ind.trendBias='neu';ch=true;}
+  if(ind.stepDriven||ind.trendDriven){ind.stepDriven=false;ind.trendDriven=false;ch=true;}
+  return ch;
+}
+// NATGAS: Speicher-Aenderung der letzten EIA-Woche gegen den Schnitt derselben ISO-Woche der fuenf
+// Vorjahre (EIA-Praxis "vs 5-year average"). Quelle: ind_data.json USD["Gas Storage"].historyFull.
+function isoWoche(d){const t=new Date(d+'T00:00:00Z'),w=(t.getUTCDay()+6)%7;t.setUTCDate(t.getUTCDate()-w+3);const j=new Date(Date.UTC(t.getUTCFullYear(),0,4));return 1+Math.round(((t-j)/864e5-3+((j.getUTCDay()+6)%7))/7);}
+function gasFuenfJahre(){
+  const e=IND_DATA_FEED&&IND_DATA_FEED.USD&&IND_DATA_FEED.USD['Gas Storage'];
+  const h=e&&Array.isArray(e.historyFull)?e.historyFull:null;if(!h||!e.date)return null;
+  // Rohzahl in der Einheit der Quelle (B = bcf), NICHT parseNumLike (das rechnet 'B' als Milliarden hoch).
+  const zahl=x=>{const m=/^\s*(-?\d+(?:\.\d+)?)/.exec(String(x==null?'':x).replace(/,/g,''));return m?+m[1]:null;};
+  const a=zahl(e.actual);if(a==null)return null;
+  const j=+e.date.slice(0,4),w=isoWoche(e.date);
+  const vj=h.filter(x=>x&&x[0]&&+x[0].slice(0,4)>=j-5&&+x[0].slice(0,4)<j&&isoWoche(x[0])===w).map(x=>zahl(x[1])).filter(x=>x!=null);
+  if(vj.length<4)return null;   // EIA-Schnitt = 5 Jahre; mit weniger als 4 kein ehrlicher Vergleich
+  const m=vj.reduce((s,x)=>s+x,0)/vj.length,diff=a-m;
+  const bias=Math.abs(diff)<0.5?'neu':diff<0?'bull':'bear';
+  const f=x=>(Math.round(x*10)/10)+'B';
+  return{bias,pkt:bias==='bull'?ZEILE_PKT:bias==='bear'?-ZEILE_PKT:0,
+    research:{actual:e.actual,forecast:null,previous:'5Y avg '+f(m),date:e.date,source:'ind_data.json · EIA via TradingView (history '+vj.length+' years)',fuenfJ:true,cotColor:bias==='bull'?'bond-up':bias==='bear'?'bond-down':'bond-flat'}};
+}
+function applyGasFuenfJFeed(){
+  if(typeof IND_DATA_FEED==='undefined'||!IND_DATA_FEED||!Array.isArray(syms))return false;
+  return zeileSetzen('NATGAS','Economic Growth','Gas Storage vs 5Y',gasFuenfJahre());
+}
+// BTC: Gesamtwert der Sentiment-Seite (btc_score.json, vom Workflow mit derselben scoreReihe() gerechnet).
+let BTC_SCORE_FEED=null;
+async function fetchBtcScore(){
+  try{const r=await fetch(DATA_BASE+'btc_score.json?t='+Date.now(),{signal:AbortSignal.timeout(FEED_TIMEOUT_MS),cache:'no-store'});
+    if(r.ok){const d=await r.json();if(d&&isFinite(d.wert))BTC_SCORE_FEED=d;}}catch(e){}
+}
+const BTC_SCORE_HOCH=70,BTC_SCORE_TIEF=30;
+function applyBtcScoreFeed(){
+  if(!BTC_SCORE_FEED||!Array.isArray(syms))return false;
+  const w=+BTC_SCORE_FEED.wert,bias=w>=BTC_SCORE_HOCH?'bear':w<=BTC_SCORE_TIEF?'bull':'neu';
+  return zeileSetzen('BTC','COT Data','BTC Sentiment Score',{bias,pkt:bias==='bull'?ZEILE_PKT:bias==='bear'?-ZEILE_PKT:0,
+    research:{actual:w.toFixed(1),forecast:null,previous:'≥'+BTC_SCORE_HOCH+' bear · ≤'+BTC_SCORE_TIEF+' bull',date:BTC_SCORE_FEED.datum,source:'btc_score.json · BTC Sentiment composite ('+BTC_SCORE_FEED.komponenten+' components)',btcScore:true,cotColor:bias==='bull'?'bond-up':bias==='bear'?'bond-down':'bond-flat'}});
+}
 // ── ASSET-PREISE (price_data.json) ────────────────────────────────
 // Fuer den "Score vs Price"-Chart im Trends-Tab: pro Waehrung/Asset eine
 // taegliche Kurs-Zeitreihe (TradingView, stuendlich per GitHub Action - siehe
@@ -767,7 +818,7 @@ function updFFLastUpd(){
 
 
 export {
-  IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,applyRealzinsFeed,
+  IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,applyRealzinsFeed,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
   isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,NEWS_AI,fetchNewsAi,mergeNewsAi,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,

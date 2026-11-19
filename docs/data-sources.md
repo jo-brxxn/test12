@@ -1028,3 +1028,14 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
 - ⚠ **Nicht nutzbar:**
   - FRED `DFII10`: von den Runnern tot.
   - TradingView kennt `FRED:DFII10` nicht.
+
+
+## Silber / Öl / Erdgas / BTC / Aktien (seit 2026-11-19, 766)
+
+- **USD-Regeln** für die Silber-Zeilen (nur bei SILVER, allgemeine USD-Zeile bleibt):
+  - `US ISM Manufacturing PMI` (TV „ISM Manufacturing PMI“)
+  - `US Industrial Production` (TV „Industrial Production MoM“)
+- **Öl:** `Oil Rig Count` (TV „Baker Hughes Oil Rig Count“, ohne Forecast → gegen Vorwoche).
+- **Erdgas vs 5 Jahre:** aus `ind_data.json` USD `Gas Storage` `historyFull`.
+- **BTC:** `btc_score.json` (Start-Feed, ~0,2 KB). `btc_sentiment.json` bleibt beim Fenster.
+- **Öl-Terminkurve:** `oel_kurve.json`, TradingView-Scanner `NYMEX:CL1!`, `NYMEX:CL2!`, `ICEEUR:BRN1!`, täglich. Nicht im Browser geladen.

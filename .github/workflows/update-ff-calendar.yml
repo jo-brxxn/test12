@@ -1446,7 +1446,8 @@ jobs:
           # 2026-11-10: umbenannte Reihen (Interest Rate, Wage Growth, Consumer
           # Confidence Index, M3 Annual Growth) - Tiefen-Historie neu holen.
           # 2026-11-16: Gas Storage (NATGAS) neu - Tiefen-Historie einmal neu.
-          export HIST_REGELN=2026-11-16
+          # 2026-11-19: US ISM Manufacturing PMI / US Industrial Production (SILVER) + Oil Rig Count (OIL) neu.
+          export HIST_REGELN=2026-11-19
           CHUNKS_DONE=$(node -e '
             const T=+process.env.TARGET_CHUNKS||84;
             try{const d=JSON.parse(require("fs").readFileSync("ind_data.json","utf8"));console.log(d._histRegeln!==process.env.HIST_REGELN?5:Math.max(5,Math.min(T,+d._histChunksFetched||5)));}catch(e){console.log(5);}
@@ -1672,6 +1673,13 @@ jobs:
               // NATGAS (Nutzer 2026-11-16: "bei Naturalgas ist es gleich wie bei Oel"): das Gegenstueck,
               // die woechentlichen EIA-Erdgasbestaende (Donnerstag). Zeile nur bei NATGAS (ASSET_EIGENE_IND).
               {ind:"Gas Storage",period:null,test:(t,c)=>c==="USD"&&/^eia natural gas stocks change$/.test(t)},
+              // 766 (Nutzer 2026-11-18/19): SILVER "die Industrieindikatoren ... aber aus usa ... wie bei Kupfer
+              // dieses nbs-pmi" (Rueckfrage: "Wie gesagt (Beat bullish)") - eigene Zeilen nur bei SILVER, die
+              // allgemeine USD-Zeile "Manufacturing PMI" bleibt (ein Titel darf mehrere Regeln treffen).
+              {ind:"US ISM Manufacturing PMI",period:null,test:(t,c)=>c==="USD"&&/^ism manufacturing pmi$/.test(t)},
+              {ind:"US Industrial Production",period:"m/m",test:(t,c)=>c==="USD"&&/^industrial production (mom|m\/m)$/.test(t)},
+              // OIL: woechentliche Baker-Hughes-Oelbohrtuerme (Freitag). Mehr Bohrtuerme = mehr Angebot = bearish.
+              {ind:"Oil Rig Count",period:null,test:(t,c)=>c==="USD"&&/^baker hughes oil rig count$/.test(t)},
               // GBP: "die stimmverteilung die auch immer veroeffentlicht wird" -
               // TradingView fuehrt sie als DREI Reihen (Vote Hike/Unchanged/Cut).
               // Sie werden unten je Sitzung zu EINEM Ereignis "BoE MPC Vote
@@ -3005,6 +3013,33 @@ jobs:
           '
           rm -f realzins_*.csv
 
+      # ── OEL-TERMINKURVE SAMMELN (seit 2026-11-19, VERSION-CHECK-766) ──
+      # Nutzer: "füg die Sachen bei Öl hinzu die du meinst", Rueckfrage: "Öl: Term Structure sammeln".
+      # NUR SAMMELN, kein Score: WTI Front-/Zweitmonat (Contango/Backwardation) und Brent (Spread zu WTI)
+      # taeglich aus dem TradingView-Scanner nach oel_kurve.json. Gewertet wird erst nach einem Backtest
+      # auf genug eigener Historie. Fehlt ein Wert, wird der Tag nicht geschrieben (nichts geschaetzt).
+      - name: Collect oil term structure (TradingView) -> oel_kurve.json
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          curl -sL -A "$UA" -H "Origin: https://www.tradingview.com" -H "Content-Type: application/json" \
+            --data '{"symbols":{"tickers":["NYMEX:CL1!","NYMEX:CL2!","ICEEUR:BRN1!"],"query":{"types":[]}},"columns":["close"]}' \
+            "https://scanner.tradingview.com/global/scan" -o oel_tv.json || true
+          node -e '
+            const fs=require("fs");
+            let r;try{r=JSON.parse(fs.readFileSync("oel_tv.json","utf8"));}catch(e){console.log("oel_kurve: Antwort unlesbar, Datei bleibt");process.exit(0);}
+            const v={};((r&&r.data)||[]).forEach(x=>{const c=x&&x.d&&Number(x.d[0]);if(isFinite(c)&&c>0)v[x.s]=Math.round(c*1000)/1000;});
+            const cl1=v["NYMEX:CL1!"],cl2=v["NYMEX:CL2!"],br=v["ICEEUR:BRN1!"];
+            if(!(cl1&&cl2&&br)){console.log("oel_kurve: nicht alle drei Werte ("+JSON.stringify(v)+"), Tag nicht geschrieben");process.exit(0);}
+            let d={note:"[Datum, WTI 1. Monat, WTI 2. Monat, Brent 1. Monat] - nur gesammelt, nicht im Score",series:[]};
+            try{const a=JSON.parse(fs.readFileSync("oel_kurve.json","utf8"));if(a&&Array.isArray(a.series))d=a;}catch(e){}
+            const heute=new Date().toISOString().slice(0,10);
+            d.series=d.series.filter(e=>e[0]!==heute);d.series.push([heute,cl1,cl2,br]);d.series.sort((a,b)=>a[0]<b[0]?-1:1);
+            d.updated=new Date().toISOString();
+            fs.writeFileSync("oel_kurve.json",JSON.stringify(d));
+            console.log("oel_kurve: "+d.series.length+" Tage, heute WTI "+cl1+"/"+cl2+" Brent "+br);
+          '
+          rm -f oel_tv.json
+
       # ── ASSET-PREISE (price_data.json) ────────────────────────────────
       # Fuer den "Score vs Price"-Chart im Trends-Tab: pro Waehrung/Asset ein
       # taeglicher Schlusskurs (TradingView-Scanner, gleiche Quelle wie die
@@ -4293,7 +4328,7 @@ jobs:
         continue-on-error: true
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F COPPER:HG=F NATGAS:NG=F BTC:BTC-USD ETH:ETH-USD SOL:SOL-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI"
+          MAPS="USD:DX-Y.NYB EUR:EURUSD=X GBP:GBPUSD=X CHF:CHF=X JPY:JPY=X CAD:CAD=X AUD:AUDUSD=X NZD:NZDUSD=X GOLD:GC=F SILVER:SI=F OIL:CL=F COPPER:HG=F NATGAS:NG=F BTC:BTC-USD ETH:ETH-USD SOL:SOL-USD SP500:^GSPC NAS:^NDX DAX:^GDAXI AAPL:AAPL MSFT:MSFT GOOGL:GOOGL AMZN:AMZN NVDA:NVDA META:META TSLA:TSLA AVGO:AVGO ORCL:ORCL AMD:AMD INTC:INTC PLTR:PLTR CRWV:CRWV"
           for PAIR in $MAPS; do
             ASSET="${PAIR%%:*}"; SYM="${PAIR#*:}"
             ENC=$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$SYM")
@@ -4308,7 +4343,8 @@ jobs:
             const r7=v=>Number(v.toPrecision(7));
             let alt={};try{alt=JSON.parse(fs.readFileSync("trend_data.json","utf8")).assets||{};}catch(e){}
             const out={};let ok=0;
-            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","COPPER","NATGAS","BTC","SOL","SP500","NAS","DAX"];   // Aktien bewusst nicht (2026-11-13: Feed-Groesse, siehe check/feedgroesse.js)
+            const AKT=["AAPL","MSFT","GOOGL","AMZN","NVDA","META","TSLA","AVGO","ORCL","AMD","INTC","PLTR","CRWV"];   // 766: Trend 4H je Aktie (Nutzer-Rueckfrage "Trend 1D + 4H je Aktie"); e4 nur 30 Tage - Feed-Groesse (2026-11-13: volle Historie +259 KB)
+            const IDS=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD","GOLD","SILVER","OIL","COPPER","NATGAS","BTC","SOL","SP500","NAS","DAX",...AKT];
             const FXL=["USD","EUR","GBP","CHF","JPY","CAD","AUD","NZD"],NU=FXL.filter(c=>c!=="USD");
             // 1. Durchgang: je Asset die geschlossenen 4h-Bloecke.
             const KZ={},SYM={};
@@ -4364,13 +4400,13 @@ jobs:
               kz.forEach(b=>{if(b.ema!=null&&b.atr!=null)tag[new Date(b.t*1000).toISOString().slice(0,10)]=[r7(b.ema),r7(b.atr),r7(b.c)];});
               // [Tag, EMA, ATR, Schluss] - der Schluss des letzten 4h-Blocks am
               // Tagesende speist den Verlaufschart der 4H-Zeile.
-              const e4=Object.keys(tag).sort().slice(-520).map(d=>[d,tag[d][0],tag[d][1],tag[d][2]]);
+              const e4=Object.keys(tag).sort().slice(AKT.includes(id)?-30:-520).map(d=>[d,tag[d][0],tag[d][1],tag[d][2]]);
               const z=kz[kz.length-1];
               out[id]={sym:korb?"basket vs 7":SYM[id],korb,emaN:N,now:{t:new Date(z.t*1000).toISOString(),ende:new Date((z.t+B)*1000).toISOString(),c:r7(z.c),ema:r7(z.ema),atr:r7(z.atr)},bars:kz.length,e4};
               ok++;
               console.log("[debug] trend "+id+(korb?" (basket)":"")+": "+kz.length+" 4h bars, last "+out[id].now.t+" c="+out[id].now.c+" ema="+out[id].now.ema+" atr="+out[id].now.atr);
             });
-            if(ok){fs.writeFileSync("trend_data.json",JSON.stringify({updated:new Date().toISOString(),blocks:"UTC 00/04/08/12/16/20",assets:out}));console.log("trend_data.json: "+ok+"/15 assets");}
+            if(ok){fs.writeFileSync("trend_data.json",JSON.stringify({updated:new Date().toISOString(),blocks:"UTC 00/04/08/12/16/20",assets:out}));console.log("trend_data.json: "+ok+" assets");}
             else console.log("trend_data: no 4h bars, keeping existing file");
           '
           rm -f tr_*.json
@@ -6454,6 +6490,8 @@ jobs:
           [ -f stock_data.json ] && git add stock_data.json
           [ -f fng_hist.json ] && git add fng_hist.json
           [ -f btc_sentiment.json ] && git add btc_sentiment.json
+          [ -f btc_score.json ] && git add btc_score.json
+          [ -f oel_kurve.json ] && git add oel_kurve.json
           if ! git diff --staged --quiet; then
             git commit -m "Update FF calendar + indicator data"
             # Retry mit Rebase bei Push-Kollision (Nutzer-Wunsch 2026-07-13:

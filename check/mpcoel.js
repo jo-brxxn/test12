@@ -94,8 +94,9 @@ fs.readdirSync(path.join(ROOT, 'cal_hist')).filter(f => /^\d{4}\.json$/.test(f))
   // seit 2026-11-16 zusaetzlich NATGAS / Gas Storage (Nutzer: "bei Naturalgas ist es gleich wie bei Oel")
   { const m = main.match(/const ASSET_EIGENE_IND=(\{[\s\S]*?\}\});/); const blk = m ? m[1] : '';
     // seit 764 stehen dort auch AUD/COPPER (China-Block) - geprueft wird nur die Aussage dieses Waechters
-    if (!/OIL:\{'Economic Growth':\['Oil Inventories'\]\}/.test(blk) || !/NATGAS:\{'Economic Growth':\['Gas Storage'\]\}/.test(blk)
-      || (blk.match(/Oil Inventories/g) || []).length !== 1 || (blk.match(/Gas Storage/g) || []).length !== 1)
+    // seit 766 auch Oil Rig Count (OIL) und Gas Storage vs 5Y (NATGAS) in denselben Listen
+    if (!/OIL:\{'Economic Growth':\['Oil Inventories'[\],]/.test(blk) || !/NATGAS:\{'Economic Growth':\['Gas Storage'[\],]/.test(blk)
+      || (blk.match(/'Oil Inventories'/g) || []).length !== 1 || (blk.match(/'Gas Storage'/g) || []).length !== 1)
       fail('D', 'ASSET_EIGENE_IND: Oil Inventories nur bei OIL, Gas Storage nur bei NATGAS (Economic Growth)'); }
   const r = main.indexOf('function resetNonFxIndBias(sym){'), r2 = main.indexOf('\n}\n', r);
   const rs = main.slice(r, r2);

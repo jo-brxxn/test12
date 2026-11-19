@@ -53,7 +53,9 @@ const FEEDS = ['ind_data.json', 'bond_data.json', 'price_data.json', 'cot_data.j
   // seit 2026-10-25: Country profile (js/profil.js, nur auf Waehrungs-Seiten geladen)
   'country_data.json',
   // seit 2026-11-13: Aktien (bei Bedarf) und volle Fear-&-Greed-Historie (nur Vollbild)
-  'stock_data.json', 'fng_hist.json'];
+  'stock_data.json', 'fng_hist.json',
+  // seit 2026-11-19 (766): BTC-Sentiment-Gesamtwert fuer den Score (~0,2 KB, Start)
+  'btc_score.json'];
 // Nur beim Oeffnen EINES Fensters geladen, nie beim Start und nie parallel zu den
 // Start-Feeds -> eigener Deckel je Datei (900 KB), aber NICHT in der Gesamtsumme.
 // Seit 2026-11-14: BTC Sentiment (js/btc-sentiment.js, gemessen 222 KB).

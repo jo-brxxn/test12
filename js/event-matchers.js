@@ -203,6 +203,10 @@ const IND_EVENT_MATCHERS={
   'China New Loans':(n,c)=>c==='CNY'&&/^new (yuan )?loans$/.test((n||'').toLowerCase().trim()),
   'China Retail Sales':(n,c)=>c==='CNY'&&/^retail sales (yoy|y\/y)$/.test((n||'').toLowerCase().trim()),
   'China NBS Manufacturing PMI':(n,c)=>c==='CNY'&&/^(nbs |official )?manufacturing pmi$/.test((n||'').toLowerCase().trim()),
+  // 766: SILVER (US-Industrie) und OIL (Bohrtuerme) - gleichlautend mit den Workflow-RULES.
+  'US ISM Manufacturing PMI':(n,c)=>c==='USD'&&/^ism manufacturing pmi$/.test((n||'').toLowerCase().trim()),
+  'US Industrial Production':(n,c)=>c==='USD'&&/^industrial production (mom|m\/m)$/.test((n||'').toLowerCase().trim()),
+  'Oil Rig Count':(n,c)=>c==='USD'&&/^baker hughes oil rig count$/.test((n||'').toLowerCase().trim()),
   // GBP: MPC-Stimmen. Im Kalender stehen die drei TV-Reihen und die FF-Zeile
   // "MPC Official Bank Rate Votes" - alle am Sitzungstag. Das Muster dient NUR
   // dem Termin (nurTermin unten): der Wert der Zeile ist die Netto-Zahl aus dem
