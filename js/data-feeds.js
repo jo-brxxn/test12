@@ -519,7 +519,9 @@ function holeNewsArchiv(){
   return newsArchivVersprechen;
 }
 // Ansicht braucht aeltere Schlagzeilen: Archiv holen und die aktuelle Seite neu zeichnen.
-function newsArchivFuer(seite){if(!newsVollstaendig())holeNewsArchiv().then(ok=>{if(ok)rerenderBald(seite);});}
+// 769: auf der Asset-Seite KEIN Neuaufbau (check/performance.js D: "Asset-Seite 2x aufgebaut", CI 769) -
+// dort tauscht newsArchivDa (js/main.js) nur die News-Karte; sonst wie bisher rerenderBald.
+function newsArchivFuer(seite){if(!newsVollstaendig())holeNewsArchiv().then(ok=>{if(!ok)return;try{if(typeof window.newsArchivDa==='function'&&window.newsArchivDa(seite))return;}catch(e){}rerenderBald(seite);});}
 // ── KI-EINORDNUNG DER NACHRICHTEN (news_ai.json) ──────────────────
 // Nutzer-Wunsch 2026-09-08: "eine kostenlose Loesung die aber ueber ki
 // laeuft ... alle Nachrichten zieht und das automatisch zusammenfasst und

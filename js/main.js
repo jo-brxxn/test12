@@ -23555,7 +23555,8 @@ function symBiasFlipDays(id){
 }
 function newsAssetSectionHtml(sym){
   const heads=newsForAsset(sym.id,6);
-  if(!heads.length)return'';
+  // 769: fehlt das Archiv noch, steht ein unsichtbarer Platzhalter da, den newsArchivDa ersetzt
+  if(!heads.length)return newsVollstaendig()?'':'<div class="news-card-wait" hidden></div>';
   const flips=symBiasFlipDays(sym.id);
   const zeilen=heads.map(h=>{
     const [cls]=newsLevel(h.w);
@@ -23572,6 +23573,16 @@ function newsAssetSectionHtml(sym){
     <div class="news-card-body">${zeilen}</div>
     ${abGoToHtml('news')}
   </div>`;
+}
+// Archiv angekommen (769): auf der Asset-Seite nur die News-Karte tauschen statt die Seite neu zu bauen
+// (gemessen CI 769: Dashboard -> Asset baute die Seite 2x, wenn das Archiv im ersten Besuch ankam).
+function newsArchivDa(seite){
+  if(seite!=='cur'||curPage!=='cur')return false;
+  const s=getSym(),alt=document.querySelector('#detail .news-card, #detail .news-card-wait');
+  if(!s||!alt)return true;   // Karte gar nicht auf der Seite - nichts neu zu bauen
+  const t=document.createElement('div');t.innerHTML=newsAssetSectionHtml(s);
+  const neu=t.firstElementChild;if(neu)alt.replaceWith(neu);else alt.remove();
+  return true;
 }
 // ══ EDGE-Tab entfernt 2026-09-24 (Nutzer: "Entfern die Kategorie Edge").
 // Der Signal-Test legte alle Tage vor dem Kursbeginn (07.08.2023) auf die
@@ -28314,7 +28325,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

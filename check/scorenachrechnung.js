@@ -115,7 +115,7 @@ const init = () => { try { localStorage.setItem('fxpro_help_seen', '1'); localSt
  const fx=syms.filter(s=>FX.includes(s.id));const ref=fx.reduce((a,s)=>a+trk[s.id],0)/fx.length;
  const cmpMine={};syms.forEach(s=>{const f=trk[s.id]?(GP?Math.round(ref/trk[s.id]*100)/100:ref/trk[s.id]):1;cmpMine[s.id]=Math.round(symMine[s.id]*f*10)/10;const ca=SC.symScoreCmp(s);
    if(Math.abs(cmpMine[s.id]-ca)>0.001)F.push(`CMP ${s.id}: mine ${cmpMine[s.id]} app ${ca}`);
-   const exakt=Math.round(symMine[s.id]*ref/(trk[s.id]||1)*10)/10;if(trk[s.id]&&Math.abs(exakt-cmpMine[s.id])>0.001)F.push(`CMP-RUNDUNG ${s.id}: mit exaktem Faktor ${exakt}, mit gerundetem ${cmpMine[s.id]}`)});
+   const exakt=Math.round(symMine[s.id]*(ref/(trk[s.id]||1))*10)/10; /* 769: gleiche Rechenreihenfolge wie die App - (a*b)/c statt a*(b/c) kippte bei CAYIELD genau auf -2,65 die Rundung (Gleitkomma, kein App-Fehler) */if(trk[s.id]&&Math.abs(exakt-cmpMine[s.id])>0.001)F.push(`CMP-RUNDUNG ${s.id}: mit exaktem Faktor ${exakt}, mit gerundetem ${cmpMine[s.id]}`)});
  // Carry unabhaengig
  const y2=(c,d)=>{const s=(BOND_DATA_FEED[c]||{})['2Y Bond Yield'];const ser=s&&s.series;if(!Array.isArray(ser))return null;let v=null,dd=null;ser.forEach(e=>{const t=String(e[0]).slice(0,10),x=Number(e[1]);if(t<=d&&isFinite(x)&&(dd==null||t>=dd)){v=x;dd=t}});return v};
  const vol=(bq,qq,d)=>{let s;try{s=resolvePairPriceSeries(bq,qq)}catch(e){s=null}if(!Array.isArray(s))return null;const r=s.filter(e=>e&&e[0]<=d&&isFinite(e[1])&&e[1]>0).slice(-251);if(r.length<61)return null;const ret=[];for(let k=1;k<r.length;k++)ret.push(Math.log(r[k][1]/r[k-1][1]));const m=ret.reduce((a,x)=>a+x,0)/ret.length;return Math.sqrt(ret.reduce((a,x)=>a+(x-m)**2,0)/(ret.length-1))*Math.sqrt(252)*100};

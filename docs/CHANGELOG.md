@@ -22796,3 +22796,17 @@ Alle Läufe zu 761, 764, 765 und zur Sonde schlugen fehl; dazwischen wurden sie 
 - **Fix:** `flex:0 1 auto; min-width:0; white-space:normal; overflow-wrap:anywhere`. Der Name bleibt ganz (nie gekürzt) und bricht bei Platzmangel um.
 - **Nachgemessen:** 0 px Überbreite. Grün: `kartenlook`, `gameplan`, `titelzeile`, `ueberlappung`, `cards`, `layout`, `typo`.
 - **`cotpreis`** (CI 768 rot: „OHNE KURS“ für die vier neuen Assets) ist nach dem Kalender-Lauf mit Kursen grün.
+
+## 2026-11-19 — News-Archiv ohne zweiten Aufbau der Asset-Seite (VERSION-CHECK-770)
+
+CI 769 rot. Je Befund lokal geprüft:
+
+- **`performance` D: „Dashboard → Asset: Asset-Seite 2x aufgebaut“** — echter Fehler aus 767.
+  - Seit der Workflow die News teilt (`ab` in `news_data.json`), lädt die News-Karte der Asset-Seite das Archiv nach. `newsArchivFuer` rief danach `rerenderBald('cur')` und baute die ganze Seite neu.
+  - Im 767-Lauf war die Datei noch ungeteilt, deshalb grün. Lokal nur bei passendem Zeitpunkt sichtbar (Archiv frühestens 8 s nach dem Laden).
+  - **Fix:** `newsArchivDa` tauscht auf der Asset-Seite nur `.news-card`. Ist die Karte leer, steht ein unsichtbarer Platzhalter `.news-card-wait`.
+  - **Wächter `newsarchiv` E:** hält das Archiv zurück, bis die Asset-Seite steht, und zählt die Aufbauten → 1. Gegenprobe (alter Weg) → 2 Aufbauten, rot.
+- **`scorenachrechnung` „CMP-RUNDUNG CAYIELD -2,6 / -2,7“:** Fehler im Wächter.
+  - Er rechnete `(a·b)/c`, die App `a·(b/c)`. Bei −2,65 kippt die Rundung (Gleitkomma).
+  - Gleiche Reihenfolge; die Gegenprobe (gerundeter Faktor) bleibt rot.
+- **`logo`, `speichervoll`:** lokal grün, in der CI rot. Ich beobachte den nächsten Lauf.
