@@ -1,0 +1,16 @@
+# Nikkei 225, Russell 2000, Platin, Eisenerz (2026-11-19): welche Quellen liefern was? Schreibt NICHTS.
+name: Probe Nikkei Russell platinum iron ore sources
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Quellen pruefen
+        env:
+          MYFXBOOK_EMAIL: ${{ secrets.MYFXBOOK_EMAIL }}
+          MYFXBOOK_PASSWORD: ${{ secrets.MYFXBOOK_PASSWORD }}
+        run: node tools/neue-assets-sonde.mjs || true
