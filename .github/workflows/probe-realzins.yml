@@ -1,0 +1,39 @@
+# Welche Quelle liefert den US-10Y-Realzins (TIPS) - aktuell UND Historie?
+#
+# Anlass (Nutzer 2026-11-18/19): "Realzinsen auch ueberall hinzufuegen",
+# Rueckfrage 2026-11-19: "Mach es nur bei nicht fx und nicht bei Energie".
+# FRED (DFII10) ist von den Runnern seit Juli tot (docs/CHANGELOG.md: "Nicht
+# nochmal fred.stlouisfed.org versuchen") - deshalb hier die Ersatzquellen:
+#   A) US Treasury "Daily Treasury Par Real Yield Curve Rates" (CSV je Jahr)
+#   B) TradingView-Scanner mit FRED-/TVC-Tickern (nur aktueller Wert)
+# ⚠ Dieser Lauf schreibt NICHTS in die Daten: HTTP-Code, Kopfzeile, Zeilen,
+# aeltester/juengster Wert je Kandidat. Erst danach wird gebaut.
+name: Probe real yield sources
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: A) US Treasury real yield curve (CSV)
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          echo "## A) US Treasury Real Yield Curve" >> $GITHUB_STEP_SUMMARY
+          for Y in 2016 2020 2025 2026; do
+            CODE=$(curl -sL -o "tr$Y.csv" -w "%{http_code}" --max-time 60 -A "$UA" \
+              "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/$Y/all?type=daily_treasury_real_yield_curve&field_tdr_date_value=$Y&page&_format=csv" || echo "000")
+            N=$(wc -l < "tr$Y.csv" 2>/dev/null || echo 0)
+            echo "- $Y: HTTP $CODE, Zeilen $N" >> $GITHUB_STEP_SUMMARY
+            echo "=== $Y HTTP $CODE Zeilen $N ==="; head -3 "tr$Y.csv" 2>/dev/null; tail -1 "tr$Y.csv" 2>/dev/null
+          done
+      - name: B) TradingView scanner
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          echo "## B) TradingView Scanner" >> $GITHUB_STEP_SUMMARY
+          curl -sL -A "$UA" -H "Origin: https://www.tradingview.com" -H "Content-Type: application/json" \
+            --data '{"symbols":{"tickers":["FRED:DFII10","FRED:DFII5","FRED:T10YIE","TVC:US10Y","ECONOMICS:USINTR"],"query":{"types":[]}},"columns":["close","description"]}' \
+            "https://scanner.tradingview.com/global/scan" -o tv.json || true
+          cat tv.json; echo
+          echo '```' >> $GITHUB_STEP_SUMMARY; head -c 1500 tv.json >> $GITHUB_STEP_SUMMARY; echo '```' >> $GITHUB_STEP_SUMMARY
