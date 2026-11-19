@@ -37,3 +37,40 @@ jobs:
             "https://scanner.tradingview.com/global/scan" -o tv.json || true
           cat tv.json; echo
           echo '```' >> $GITHUB_STEP_SUMMARY; head -c 1500 tv.json >> $GITHUB_STEP_SUMMARY; echo '```' >> $GITHUB_STEP_SUMMARY
+      - uses: actions/checkout@v4
+      # C) Backtest: Signal wie die Renditezeilen (SMA5 vs SMA21, Totzone 3 bp), Realzins steigt -> bearish.
+      #    Mittlere Rendite der Folgetage je Asset, getrennt nach Signal; t ueber nicht ueberlappende Bloecke.
+      - name: C) Backtest real yield signal vs asset returns
+        run: |
+          for Y in 2016 2017 2018 2019 2020 2021 2022 2023 2024 2025 2026; do
+            curl -sL --max-time 60 -A "Mozilla/5.0" -o "rr$Y.csv" \
+              "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/$Y/all?type=daily_treasury_real_yield_curve&field_tdr_date_value=$Y&page&_format=csv" || true
+          done
+          python3 - <<'PY'
+          import csv,glob,json,math,bisect
+          ry={}
+          for f in glob.glob('rr*.csv'):
+            for r in csv.DictReader(open(f)):
+              try:
+                m,d,y=r['Date'].split('/');ry[f'{y}-{m}-{d}']=float(r['10 YR'])
+              except Exception:pass
+          S=sorted(ry.items());print('Realzins',len(S),S[0],S[-1])
+          sig={}
+          for i in range(21,len(S)):
+            f=sum(v for _,v in S[i-4:i+1])/5;s=sum(v for _,v in S[i-20:i+1])/21
+            sig[S[i][0]]=0 if abs(f-s)<=0.03 else (-1 if f>s else 1)   # steigt -> bearish (-1)
+          ph=json.load(open('price_hist.json'))['assets'];pd=json.load(open('price_data.json'))
+          print('Asset   h   n   bull-Tage   bear-Tage   Differenz   t(Bloecke)')
+          for a in ['GOLD','SILVER','COPPER','BTC','SOL','SP500','NAS','DAX','OIL','NATGAS']:
+            m={d[:10]:float(v) for d,v in ph.get(a,[])};m.update({str(e[0])[:10]:float(e[1]) for e in pd.get(a,{}).get('series',[])})
+            P=sorted(m.items());D=[d for d,_ in P];V=[v for _,v in P]
+            for h in (5,20):
+              x=[];i=0
+              while i+h<len(D):
+                g=sig.get(D[i])
+                if g: x.append(g*(V[i+h]/V[i]-1)*100); i+=h   # nicht ueberlappend
+                else: i+=1
+              if len(x)<10: print(a,h,'zu wenig');continue
+              mu=sum(x)/len(x);sd=math.sqrt(sum((y-mu)**2 for y in x)/(len(x)-1))
+              print(f'{a:7} {h:2} {len(x):4}  Signalrendite {mu:+.2f}%  t {mu/(sd/math.sqrt(len(x))):+.2f}  Treffer {sum(1 for y in x if y>0)/len(x)*100:.0f}%')
+          PY
