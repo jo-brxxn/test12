@@ -7700,7 +7700,8 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .gp-k1-th{flex:1 1 auto;min-width:0;color:var(--t0);font-weight:600;font-size:var(--fs-lg);line-height:1.35;white-space:normal;overflow-wrap:anywhere}
 .gp-k1-th i{color:var(--t3);font-weight:400}
 .gp-th-in{flex:1 1 auto;min-width:0;min-height:var(--h-s);border:1px solid var(--bd2);border-radius:var(--rss);background:var(--card);color:var(--t0);font:600 var(--fs-lg)/1.35 var(--ff-text);padding:5px 9px;resize:none;overflow:hidden;display:block}
-.gp-k1-n{flex:0 0 auto;font-size:var(--fs-lg);color:var(--t2);white-space:nowrap}.gp-k1-n b{color:var(--t1)}
+/* 768: lange Terminnamen ("Revised UoM Consumer Sentiment") ragten bei 390 px 17 px aus der Seite - umbrechen statt ueberstehen (Namen nie gekuerzt) */
+.gp-k1-n{flex:0 1 auto;min-width:0;font-size:var(--fs-lg);color:var(--t2);white-space:normal;overflow-wrap:anywhere;text-align:right}.gp-k1-n b{color:var(--t1)}
 .gp-k1-z>.info-b{margin-right:-3px}
 .gp-chev{flex:0 0 auto;color:var(--t3);font-size:12px;width:16px;text-align:center}
 .gp-k1-a{padding:0 12px 8px;border-top:1px solid var(--bd);border-radius:0 0 var(--rs) var(--rs);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 6%,var(--card)),var(--card) 90px)}
@@ -7897,11 +7898,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-768 - Neue Assets Platin, Eisenerz, Russell 2000, Nikkei 225 (Modell 38)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-769 - Gameplan-Leiste: langer Terminname bricht um statt ueberzustehen (390 px)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-768</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-769</span>
     </span>
   </div>
   <div class="hdr-r">

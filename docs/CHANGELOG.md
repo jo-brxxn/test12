@@ -22786,3 +22786,13 @@ Alle Läufe zu 761, 764, 765 und zur Sonde schlugen fehl; dazwischen wurden sie 
   - Bei 760, 767 und 768 auf derselben Maschine identisch: p95 20,1–20,9 ms, Wisch stetig.
   - In der CI p95 17,3 ms, dafür Wisch-Tempo-Sprünge.
   - → Messschwankung, nicht durch diese Änderungen.
+
+## 2026-11-19 — Gameplan-Leiste: langer Terminname bricht um (VERSION-CHECK-769)
+
+- **CI 768** (`kartenlook`): Die Asset-Seite scrollte bei 390 px waagerecht (USD, Gold, S&P, US Yield).
+- **Gemessen:** `.gp-k1-n` „Next Revised UoM Consumer Sentiment“ ragte 17 px aus `#detail`.
+  - `flex:0 0 auto` + `nowrap`, also weder schrumpfbar noch umbrechbar.
+  - Datenabhängig: Der 767-Lauf war grün, weil ein kürzerer Termin anstand.
+- **Fix:** `flex:0 1 auto; min-width:0; white-space:normal; overflow-wrap:anywhere`. Der Name bleibt ganz (nie gekürzt) und bricht bei Platzmangel um.
+- **Nachgemessen:** 0 px Überbreite. Grün: `kartenlook`, `gameplan`, `titelzeile`, `ueberlappung`, `cards`, `layout`, `typo`.
+- **`cotpreis`** (CI 768 rot: „OHNE KURS“ für die vier neuen Assets) ist nach dem Kalender-Lauf mit Kursen grün.
