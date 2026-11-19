@@ -188,14 +188,14 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 
   // 6) History-Karte auf iPad-Breite
   await p.waitForTimeout(dauer + 200);
-  const h = await p.evaluate(() => { const t = document.querySelector('.ab-htile'); if (!t) return null; const tr = t.getBoundingClientRect(), l = t.querySelector('.histp'), cs = getComputedStyle(l);
+  const h = await p.evaluate(() => { const t = document.querySelector('.ab-htile'); if (!t) return null; const tr = t.getBoundingClientRect(), l = t.querySelector('.histp') || t.querySelector('.ab-htile-bd'), cs = getComputedStyle(l);   // seit 775 Zusammenfassung ohne .histp
     const raus = [...t.querySelectorAll('*')].filter(e => { const r = e.getBoundingClientRect(); return r.width && !e.children.length && e.textContent.trim() && (r.right > tr.right + 1 || r.left < tr.left - 1); }).length;
-    return { raus, ox: cs.overflowX, osb: cs.overscrollBehaviorY, breiter: l.scrollWidth > l.clientWidth + 1 }; });
+    return { raus, ox: cs.overflowX, oy: cs.overflowY, osb: cs.overscrollBehaviorY, breiter: l.scrollWidth > l.clientWidth + 1 }; });
   if (!h) fail('HISTORY-KARTE FEHLT', 'keine .ab-htile auf der Asset-Seite');
   else {
     if (h.raus) fail('HISTORY: TEXT AUSSERHALB', `${h.raus} Textelemente ragen aus der Karte`);
     if (h.ox !== 'hidden' || h.breiter) fail('HISTORY: WAAGERECHT VERSCHIEBBAR', `overflow-x=${h.ox}, Inhalt breiter als die Liste: ${h.breiter}`);
-    if (h.osb !== 'none') fail('HISTORY: SCROLLEN LAEUFT AN DIE SEITE WEITER', `overscroll-behavior=${h.osb}`);
+    if (h.osb !== 'none' && /auto|scroll/.test(h.oy)) fail('HISTORY: SCROLLEN LAEUFT AN DIE SEITE WEITER', `overscroll-behavior=${h.osb}`);
   }
   // 7) Belegter Hauptthread direkt nach dem Anlegen: die Flagge muss danach
   //    trotzdem sichtbar durchfahren (Bugreport iPad 2026-09-23).

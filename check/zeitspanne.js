@@ -29,7 +29,8 @@ const GP = process.argv.includes('--gegenprobe'), GP_OS = process.argv.includes(
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`); let ok = 0;
 const FAELLE = [
   ['Asset Price', 'gotoSym("EUR")', '#detail .ab-ptile [data-br="ab"]'],
-  ['History', 'gotoSym("EUR")', '#detail [data-br="hist"]'],
+  // seit 775: History-KARTE = Zusammenfassung ohne Schere, die Spanne gilt im History-FENSTER
+  ['History', 'gotoSym("EUR");setTimeout(()=>openHistModal("EUR"),900)', '#histBody [data-br="hist"]'],
   ['Indikator', 'gotoSym("EUR");(()=>{const b=[...document.querySelectorAll("#detail [onclick*=toggleIndDetailRow]")][0];if(b)b.click()})()', '#detail [data-br="setIndHistRange"]'],
   ['Trends', 'showTab("trends")', '#pgTrends [data-br="setTrendsRange"]'],
   ['Data', 'showTab("data")', '#pgData [data-br="setDataRange"]'],
@@ -61,6 +62,8 @@ const schere = (p, key) => p.evaluate(k => { const b = [...document.querySelecto
   await p.goto(URL); await wartenBisDatenDa(p);
   await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); });
   for (const [n, nav, sel] of FAELLE) {
+    // offene Fenster (History, Chart-Fenster) des vorigen Falls schliessen - sonst liegen sie ueber dem naechsten Chart
+    await p.evaluate(() => document.querySelectorAll('.ov').forEach(o => { if (o.id && getComputedStyle(o).display !== 'none') try { closeM(o.id); } catch (e) {} }));
     await p.evaluate(nav); await p.waitForTimeout(1800);
     const el = await p.$(sel); if (!el) { fail(n, `kein Chart ${sel}`); continue; }
     const key = await p.evaluate(sel => document.querySelector(sel).dataset.br, sel);
@@ -87,12 +90,12 @@ const schere = (p, key) => p.evaluate(k => { const b = [...document.querySelecto
   // V) Ansicht: Asset-Seite (Price + History + Makro) und Chart-Fenster (alle Panels)
   await p.evaluate(() => { gotoSym('USD'); }); await p.waitForTimeout(1500);
   const wo = () => p.evaluate(() => ({
-    ab: !!document.querySelector('#detail .ab-ptile .br-chip'), hist: !!document.querySelector('#detail [data-br="hist"]') && !!document.querySelector('#detail .ab-htile-bd .br-chip, #detail .histp .br-chip'),
+    ab: !!document.querySelector('#detail .ab-ptile .br-chip'), hist: true,
     mk: !!document.querySelector('#detail .rub-card .br-chip, #detail .mk-karte .br-chip'), n: [...document.querySelectorAll('#detail .br-chip')].filter(e => e.offsetParent).length }));
   await schere(p, 'ab'); await ziehe(p, '#detail .ab-ptile [data-br="ab"]');
   const v1 = await wo();
   if (!v1.ab) fail('ANSICHT', 'Price-Karte zeigt die Spanne nicht');
-  if (!v1.hist) fail('ANSICHT', 'History-Karte uebernimmt die Spanne der Price-Karte nicht');
+  // seit 775 zeigt die History-KARTE fest 3 Monate (Nutzerwahl Entwurf 1) - die Spanne gilt im History-FENSTER
   await p.evaluate(() => { const x = [...document.querySelectorAll('#detail .br-chip .br-x')].find(e => e.offsetParent); if (x) x.click(); }); await p.waitForTimeout(1000);
   const v2 = await wo();
   if (v2.n) fail('ANSICHT', `× an einem Chip laesst ${v2.n} andere stehen`);

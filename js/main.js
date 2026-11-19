@@ -2543,6 +2543,56 @@ function renderSymHistoryPanelRoh(id){
 // laufen auseinander (dieselbe Ueberlegung wie bei den Go-to-Knoepfen).
 // Der Zeitregler steht damit an beiden Orten und wirkt auf beide, weil
 // histRange eine Variable ist und nicht zwei.
+// ── History-Karte = Entwurf 1 "Pulse" mit y-Skala rechts (775) ───────────────────────────────
+// Nutzer 2026-11-19: "Ich nehme die erste Option mit einer kleinen Skala rechts also y-Skala".
+// ⚠ Seit 775 zeigt die KARTE eine Zusammenfassung der letzten 3 Monate, das FENSTER (openHistModal)
+// weiter die volle Tagesliste (renderSymHistoryPanel). Vorher stand in der Karte dieselbe Liste wie im
+// Fenster - die Regel "kein zweiter Nachbau" gilt fuer die Tagesliste, die es weiter nur einmal gibt.
+// Quelle: scoreHist (dieselbe wie Trends/Fenster), heute = Live-Score (symScoreCmp). Werte aus einem
+// frueheren Score-Modell bleiben stehen wie in Trends (jeder ist der Wert, der an dem Tag galt).
+const HP_TAGE=91;
+function hpNett(v){const r=Math.round(v*10)/10;return(r>0?'+':'')+String(r).replace(/\.0$/,'');}
+function abHistPulsHtml(id){
+  const sym=syms.find(s=>s.id===id);if(!sym)return'';
+  const heute=todayStr(),ab=isoMinusDays(heute,HP_TAGE-1);
+  const m=new Map();
+  (scoreHist[id]||[]).forEach(e=>{if(e&&e[0]>=ab&&e[0]<=heute&&e[1]!=null&&isFinite(+e[1]))m.set(e[0],{d:e[0],s:+e[1],b:e[5]||scoreBias(+e[1]),alt:!scoreHistEntryCurrent(e)});});
+  const live=symScoreCmp(sym);m.set(heute,{d:heute,s:live,b:scoreBias(live),alt:false});
+  const H=[...m.values()].sort((a,b)=>a.d<b.d?-1:1);
+  const last=H[H.length-1];
+  const BL={sbull:'Strongly bullish',bull:'Bullish',neu:'Neutral',bear:'Bearish',sbear:'Strongly bearish'};
+  const bias=sym.bias||scoreBias(live),col=v=>v>0?BC.bull:v<0?BC.bear:'var(--t3)';
+  const vor=tage=>{const g=isoMinusDays(heute,tage);let r=null;H.forEach(e=>{if(e.d<=g)r=e;});return r;};
+  const dl=[['1D',H.length>1?H[H.length-2]:null],['1W',vor(7)],['1M',vor(30)],['3M',H[0]!==last?H[0]:null]]
+    .map(([l,e])=>`<div><i>${l}</i>${e?`<b style="color:${col(live-e.s)}">${hpNett(live-e.s)}</b>`:'<b class="hp-leer">–</b>'}</div>`).join('');
+  const kopf=`<div class="hp-top"><div class="hp-jetzt"><div class="hp-sc" style="color:${BC[scoreBias(live)]||'var(--t0)'}">${hpNett(live)}</div><div class="hp-lg" style="color:${BC[String(bias).replace(/^s/,'')]||'var(--t2)'}">${BL[bias]||'Neutral'}</div></div><div class="hp-dl">${dl}</div></div>`;
+  if(H.length<2)return`<div class="hp">${kopf}<div class="hp-wenig"><i>Not enough recorded days yet</i> · the line grows by one point a day</div></div>`;
+  const W=300,Hh=100;
+  const smin=Math.min(0,...H.map(e=>e.s)),smax=Math.max(0,...H.map(e=>e.s)),pad=Math.max(0.5,(smax-smin)*0.08);
+  const ticks=achsenTicks(smin-pad,smax+pad,6),lo=Math.min(smin-pad,ticks[0]),hi=Math.max(smax+pad,ticks[ticks.length-1]);
+  const t0=new Date(ab+'T12:00:00Z').getTime(),t1=new Date(heute+'T12:00:00Z').getTime();
+  const x=d=>((new Date(d+'T12:00:00Z').getTime()-t0)/Math.max(1,t1-t0))*W,y=v=>(hi-v)/(hi-lo)*Hh,y0=y(0);
+  const pts=H.map(e=>x(e.d).toFixed(1)+','+y(e.s).toFixed(1));
+  const flaeche=`M${x(H[0].d).toFixed(1)},${y0.toFixed(1)} L${pts.join(' L')} L${x(last.d).toFixed(1)},${y0.toFixed(1)} Z`;
+  const o=(y0/Hh).toFixed(4),gid='hpg'+id.replace(/[^A-Za-z0-9]/g,'');
+  const gitter=ticks.filter(t=>t!==0).map(t=>`<line x1="0" x2="${W}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}" stroke="var(--bd)" stroke-width="1" vector-effect="non-scaling-stroke"/>`).join('');
+  const skala=ticks.map(t=>`<span style="top:${(y(t)/Hh*100).toFixed(2)}%">${t===0?'0':hpNett(t)}</span>`).join('');
+  const max=H.reduce((a,e)=>e.s>a.s?e:a,H[0]),min=H.reduce((a,e)=>e.s<a.s?e:a,H[0]);
+  const bullTage=Math.round(H.filter(e=>e.b==='bull'||e.b==='sbull').length/H.length*100);
+  const tag=d=>d===heute?'Today':fmtDayShort(d);
+  const mitte=isoMinusDays(heute,Math.round((HP_TAGE-1)/2));
+  return`<div class="hp">${kopf}
+    <div class="hp-ch"><svg class="hp-svg" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" aria-label="Total score, last 3 months">
+      <defs><linearGradient id="${gid}f" x1="0" y1="0" x2="0" y2="${Hh}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${BC.bull}" stop-opacity=".32"/><stop offset="${o}" stop-color="${BC.bull}" stop-opacity=".04"/><stop offset="${o}" stop-color="${BC.bear}" stop-opacity=".04"/><stop offset="1" stop-color="${BC.bear}" stop-opacity=".32"/></linearGradient>
+      <linearGradient id="${gid}l" x1="0" y1="0" x2="0" y2="${Hh}" gradientUnits="userSpaceOnUse"><stop offset="${o}" stop-color="${BC.bull}"/><stop offset="${o}" stop-color="${BC.bear}"/></linearGradient></defs>
+      ${gitter}<path d="${flaeche}" fill="url(#${gid}f)"/>
+      <line x1="0" x2="${W}" y1="${y0.toFixed(1)}" y2="${y0.toFixed(1)}" stroke="var(--t3)" stroke-dasharray="3 3" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      <polyline points="${pts.join(' ')}" fill="none" stroke="url(#${gid}l)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    </svg><div class="hp-y" aria-hidden="true">${skala}</div></div>
+    <div class="hp-ax"><span>${tag(ab)}</span><span>${tag(mitte)}</span><span>Today</span></div>
+    <div class="hp-st"><div><i>High</i><b style="color:${col(max.s)}">${hpNett(max.s)}</b><span>${tag(max.d)}</span></div><div><i>Low</i><b style="color:${col(min.s)}">${hpNett(min.s)}</b><span>${tag(min.d)}</span></div><div><i>Bullish days</i><b>${bullTage}%</b><span>of 3M</span></div></div>
+  </div>`;
+}
 function abHistorieKarteHtml(c){
   _histSymId=c.id;
   // ⚠ Der Verweis auf die Vollansicht sitzt unten rechts wie bei jeder
@@ -2556,12 +2606,14 @@ function abHistorieKarteHtml(c){
   // ⚠ Reihenfolge: erst das Panel bauen, dann die Kopfzeile. renderSymHistoryPanel()
   // fuellt dabei _histErkl - wird die Kopfzeile vorher gebaut, traegt das ⓘ
   // den Text des ZULETZT gerenderten Symbols.
-  const panel=renderSymHistoryPanel(c.id);
+  // 775: Karte = Zusammenfassung (abHistPulsHtml), Tagesliste nur noch im Fenster
+  const panel=abHistPulsHtml(c.id);
+  const erkl=['<b>Total score</b> over the last 3 months — the same recorded values as in Trends; today = live score.','<b>Right scale</b> = score points, dashed line = 0. Above 0 blue (bullish), below red (bearish).','<b>1D / 1W / 1M / 3M</b> = today minus the score back then.','<b>Bullish days</b> = share of days rated bullish (score ≥ 3).','<i>Values recorded under an earlier score model stay unchanged, as in Trends.</i>','Tap the card for the full day-by-day history.'];
   // 759 (Nutzer 2026-11-18): "die history Karte nicht mehr scrollbar ... das soll nur gehen wenn man
   // sie oeffnet und sie soll sich auch oeffnen wenn man nur irgendwo auf sie drauf drueckt. Sowie
   // bei dem Minikalender" -> Karte ohne inneres Scrollen, Tipp irgendwo = Fenster.
   return`<div class="ab-htile ab-ntile ab-auf" onclick="abKarteAuf(event,()=>openHistModal('${escJH(c.id)}'))" title="Open the full history">
-    <div class="ab-tile-hd">${abTileIcon('History')}<span class="ab-tile-t">History</span>${abInfoBtn('History',_histErkl)}</div>
+    <div class="ab-tile-hd">${abTileIcon('History')}<span class="ab-tile-t">History</span>${abInfoBtn('History',erkl)}</div>
     <div class="ab-htile-bd" id="abHistBody">${panel}</div>
     <div class="ab-goto"><button class="ab-goto-b" onclick="openHistModal('${escJH(c.id)}')" title="Open the full history window — the same content on the whole screen, with room for about eleven days at once instead of three">Open full history →</button></div>
   </div>`;
@@ -2583,6 +2635,9 @@ function openHistModal(id){
   _histSymId=id;
   const t=document.getElementById('mHistTitle');if(t)t.textContent=c.name+' – History';
   const el=document.getElementById('histBody');if(el)el.innerHTML=renderSymHistoryPanel(id);
+  // 776: Schere anbinden wie histNeuZeichnen - fehlte beim Oeffnen (gemessen: Ziehen mit Schere im Fenster
+  // setzte keinen Chip, auch vor 776; seit 776 hat die Karte keine Schere mehr, das Fenster ist der einzige Ort)
+  try{if(el)brushAnbinden(el);}catch(e){}
   openM('mHist');
 }
 
@@ -23010,11 +23065,12 @@ function renderDataTabRoh(){
   // indicator) links, Zeitfilter rechts.
   // Vollbild (774, Nutzer 2026-11-19: "bei data ein vollbildmodus ... der ganze also wirklich ganze
   // bildschirm ... ausser die obere Leiste ... oben in flach den Filter und den Zeitfilter mehr nicht. In
-  // maximal eine Zeile"). Nur auf der Data-Seite, nicht in der Macro-Reihe der Asset-Seite.
+  // maximal eine Zeile"). Nur auf der Data-Seite, nicht in der Macro-Reihe der Asset-Seite. Knopf LINKS vom
+  // Filter: rechts davon darf nur der Auswahlknopf stehen (Dauerregel 2026-09-26, check/datalayout.js).
   const imSlot=!!el.closest('.mk-data-slot');
   const voll=dataVoll&&!imSlot;
   const vollKnopf=imSlot?'':`<button class="btn data-voll-b" onclick="dataVollUmschalten()" title="${voll?'Exit full screen (Esc)':'Full screen — only filter and time range above the charts'}" aria-label="${voll?'Exit full screen':'Full screen'}">${icn(voll?'x':'expand',14)}</button>`;
-  const kopf=(sub,filter,knopf,zeit,links2)=>voll?`<div class="data-head data-voll-kopf"><div class="data-voll-z">${filter}${knopf}${zeit}${vollKnopf}</div></div>`:`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${filter}${knopf}${vollKnopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar+(links2||''),zeit)}</div></div>`;
+  const kopf=(sub,filter,knopf,zeit,links2)=>voll?`<div class="data-head data-voll-kopf"><div class="data-voll-z">${filter}${knopf}${zeit}${vollKnopf}</div></div>`:`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${vollKnopf}${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar+(links2||''),zeit)}</div></div>`;
   let head,body,n=0;
   // Ein Preis-Panel (Side by side, Compare all): eigener Massstab, echte Preise.
   const preisPanelHtml=(k,titel,sub,ctrls,namen)=>{

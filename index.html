@@ -757,6 +757,27 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
 .ab-htile-bd{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:0 10px 0}
 .ab-htile>.ab-goto{margin-top:0;padding:6px 11px 8px}
 .ab-htile-bd>.histp{flex:1 1 auto;min-height:0}
+/* History-Karte "Pulse" (775, Nutzer-Wahl Entwurf 1 + y-Skala rechts). Chart waechst mit der Karte. */
+.hp{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:8px;padding:2px 2px 4px}
+.hp-top{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.hp-sc{font:800 var(--fs-hero)/1 var(--ff-num);letter-spacing:-.5px}
+.hp-lg{font:700 var(--fs-md)/1.2 var(--ff-text);margin-top:3px}
+.hp-dl{display:grid;grid-template-columns:repeat(2,auto);gap:3px 12px}
+.hp-dl div{display:flex;gap:5px;justify-content:flex-end;align-items:baseline}
+.hp-dl i{font:600 var(--fs-2xs)/1.2 var(--ff-text);color:var(--t3);font-style:normal}
+.hp-dl b{font:700 var(--fs-md)/1.2 var(--ff-num)}
+.hp-dl .hp-leer{color:var(--t3)}
+.hp-ch{position:relative;flex:1 1 90px;min-height:90px;display:flex}
+.hp-svg{display:block;flex:1 1 auto;min-width:0;height:100%;overflow:visible}
+.hp-y{position:relative;flex:0 0 30px;margin-left:6px}
+.hp-y span{position:absolute;right:0;transform:translateY(-50%);font:500 var(--fs-2xs)/1 var(--ff-num);color:var(--t3);white-space:nowrap}
+.hp-ax{display:flex;justify-content:space-between;font:500 var(--fs-2xs)/1.2 var(--ff-text);color:var(--t3);margin:-2px 36px 0 0}
+.hp-st{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.hp-st div{background:var(--bg3);border-radius:10px;padding:6px 8px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.hp-st i{font:600 var(--fs-2xs)/1.2 var(--ff-text);color:var(--t3);font-style:normal}
+.hp-st b{font:800 var(--fs-lg)/1.2 var(--ff-num)}
+.hp-st span{font:500 var(--fs-2xs)/1.2 var(--ff-text);color:var(--t3)}
+.hp-wenig{font-size:var(--fs-sm);color:var(--t3)}
 /* ⚠ GEMESSEN: die Karte ist 368px hoch (die Reihe streckt sie auf die
    hoechste Schwester), der Inhalt braucht 4198. Mit 182px Chart plus
    Reglerleiste plus Spaltenkopf blieb fuer die Tagesliste NICHTS - man sah
@@ -7922,11 +7943,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-775 - Data: Vollbildmodus (nur Filter + Zeitfilter in einer Zeile), Panel-Kopf ohne As of/Next in einer Zeile"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-776 - History-Karte Pulse (3 Monate, y-Skala rechts, High/Low/Bullish days)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-775</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-776</span>
     </span>
   </div>
   <div class="hdr-r">

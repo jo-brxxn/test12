@@ -57,17 +57,20 @@ const TAGE_HIST = { '15D': 15, '1M': 30, '2M': 60, '3M': 90, '6M': 182, '1Y': 36
   pruefe('PRICE-KARTE', await lies('#detail .ab-ptile .ab-rgs .ab-rg'), GROSS, abP);
   // History
   const abH = await p.evaluate(() => { const h = scoreHist.EUR || []; return h.length ? h[0][0] : null; });
-  pruefe('HISTORY', await lies('#detail .histp-rbtn'), HIST, abH, TAGE_HIST);
+  // seit 775: Zeitfilter der History nur noch im Fenster (die Karte zeigt fest 3 Monate)
+  await p.evaluate(() => openHistModal('EUR')); await p.waitForTimeout(800);
+  pruefe('HISTORY', await lies('#histBody .histp-rbtn'), HIST, abH, TAGE_HIST);
   // Die History-KARTE muss auf den Klick reagieren (bis 2026-09-26 zeichnete
   // setHistRange nur das Fenster #histBody neu - in der Karte blieb "Max"
   // markiert und die Liste unveraendert). Gegenprobe: altes Verhalten.
   if (GEGENPROBE) await p.evaluate(() => { window.setHistRange = d => { window.histRange = d === 'MAX' ? 'MAX' : +d; }; });
-  { const vor = await p.evaluate(() => document.querySelectorAll('#abHistBody .hw-day').length);
-    await p.click('#detail .histp-rbtn:text-is("15D")'); await p.waitForTimeout(400);
-    const n = await p.evaluate(() => ({ on: [...document.querySelectorAll('#abHistBody .histp-rbtn.on')].map(e => e.textContent.trim()).join(), tage: document.querySelectorAll('#abHistBody .hw-day').length }));
-    if (n.on !== '15D' || !(n.tage < vor)) fail('HISTORY-KARTE', `Klick auf 15D wirkt nicht (markiert "${n.on}", ${vor} -> ${n.tage} Tage)`);
+  { const vor = await p.evaluate(() => document.querySelectorAll('#histBody .hw-day').length);
+    await p.click('#histBody .histp-rbtn:text-is("15D")'); await p.waitForTimeout(400);
+    const n = await p.evaluate(() => ({ on: [...document.querySelectorAll('#histBody .histp-rbtn.on')].map(e => e.textContent.trim()).join(), tage: document.querySelectorAll('#histBody .hw-day').length }));
+    if (n.on !== '15D' || !(n.tage < vor)) fail('HISTORY-FENSTER', `Klick auf 15D wirkt nicht (markiert "${n.on}", ${vor} -> ${n.tage} Tage)`);
     await p.evaluate(() => { try { setHistRange('MAX'); } catch (e) {} }); await p.waitForTimeout(300); }
-  { const l = await lies('#detail .histp-rbtn'); ['15D', '1M', '2M'].forEach(x => { if (!l.includes(x)) fail('HISTORY', `Stufe ${x} fehlt (Nutzer 2026-09-26)`); }); }
+  { const l = await lies('#histBody .histp-rbtn'); ['15D', '1M', '2M'].forEach(x => { if (!l.includes(x)) fail('HISTORY', `Stufe ${x} fehlt (Nutzer 2026-09-26)`); }); }
+  await p.evaluate(() => { try { closeM('mHist'); } catch (e) {} }); await p.waitForTimeout(300);
   // aufgeklappter Indikator (Mini)
   const mini = await p.evaluate(() => {
     const s = syms.find(x => x.id === 'EUR'); let ind = null;

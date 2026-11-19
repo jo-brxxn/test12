@@ -22872,3 +22872,18 @@ Nutzer: *„bei data ein vollbildmodus … wirklich ganze bildschirm … außer 
   - Ende: ✕, Esc oder Seitenwechsel. Reiner Anzeige-Zustand, kein Sync.
 - Gemessen (1920/1194/390): `#pgData` 0..Breite × Unterkante Leiste..Unterkante Fenster, Filterzeile 34–41 px (eine Zeile), Titel/Ansicht-Reiter weg, Esc stellt den Normalzustand her, keine JS-Fehler.
 - Push auf Nutzerwunsch **vor** den Prüfungen.
+
+## 2026-11-19 — History-Karte „Pulse“ (Entwurf 1 + y-Skala rechts) (VERSION-CHECK-776)
+
+Nutzer: *„Ich nehme die erste Option mit einer kleinen Skala rechts also y-Skala“*.
+
+- `abHistPulsHtml(id)` ersetzt in der Karte `renderSymHistoryPanel` (Tagesliste) — die Liste lebt nur noch im Fenster.
+- Quelle `scoreHist` der letzten 91 Tage + Live-Score für heute (`symScoreCmp`), also dieselben Werte wie Trends/Fenster.
+- **Lage-Wort und „Bullish days“ aus den App-Schwellen** (`sym.bias`, `scoreBias`: ≥ 3 bullish) — der Entwurf hatte frei erfundene Stufen (5 / 1,5) und „Tage > 0“; beides wäre eine zweite, abweichende Einstufung gewesen.
+- y-Skala über die vorhandene `achsenTicks` (keine zweite Kopie). Gemessen: erste eigene Fassung lieferte bei USD nur 2 Marken (12,5/5 = 2,5000002 → Schritt 5); `achsenTicks(…,6)` → 5 Marken (USD −2,5…+7,5, Gold −7,5…+2,5, EUR −6…+2).
+- Gemessen 1194/1920/390 px: Karte 496/569/420 px, Chart 235/264/146 px, keine JS-Fehler.
+- Wächter angepasst: `zeitfilter` (History-Zeitfilter jetzt im Fenster), `zeitspanne` (Karte übernimmt keine Spanne mehr), `kartenauf` (Chart-Tipp auf `.hp-ch`, Knopf = „Open full history“), `uebergang` (Karte ohne `.histp`).
+- **Prüfungen nach dem 775-Push** (Nutzer: erst pushen, dann prüfen) — zwei Befunde, in 776 behoben:
+  - `datalayout`: Vollbild-Knopf stand rechts vom Filter (195 px statt ≤ 170 px bis zum Rand) → jetzt links vom Filter.
+  - `profil`: Country-profile-Panels haben einen eigenen Kopf (`cpfStand`) mit As of; ohne Umbruch wurde der Name am Handy gekürzt (124 von 164 px). Nutzerwunsch „generell As of/Next weg“ → `cpfStand` leer, Name passt.
+- **Altfehler gefunden:** Schere im History-**Fenster** setzte keine Spanne (`openHistModal` rief `brushAnbinden` nicht auf; am alten Stand gegengeprüft: 0 Chips). Bisher fiel es nicht auf, weil `zeitspanne.js` die Karte prüfte. Jetzt angebunden (3 Chips nach dem Ziehen), Wächter prüft das Fenster.

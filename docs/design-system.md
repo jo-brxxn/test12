@@ -2083,6 +2083,11 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 - Spalte links = weisse erhoehte Karte (A2); Fahren ueber den Chart zeigt den Tag, Tipp waehlt fest.
 - Eigene Notizen = Flagge mit Text im Chart (B1), keine hohlen Pfeile mehr.
 - History-Karte: kein Ageing-Schalter (Nutzer 2026-11-15), Achse ab dem ersten echten Wert.
+- **History-Karte = „Pulse“ (seit 775, Nutzerwahl Entwurf 1 + „kleine Skala rechts also y-Skala“):**
+  - Oben: Live-Score groß (Bias-Farbe) + Lage-Wort (`sym.bias`); rechts 1D / 1W / 1M / 3M = heute minus damals.
+  - Fläche der letzten **3 Monate** aus `scoreHist` (heute = Live-Score), über 0 blau, unter 0 rot, gestrichelte 0-Linie, **y-Skala rechts** (`achsenTicks`, 4–5 Marken).
+  - Unten drei Kacheln: High, Low (je mit Datum), Bullish days (Anteil Tage mit Score ≥ 3 = `scoreBias` „bull“).
+  - **Kein Zeitfilter, keine Schere in der Karte** — die volle Tagesliste mit Zeitfilter/Spanne steht nur im Fenster (`openHistModal`). Tipp irgendwo = Fenster.
 
 ## Kartenkopf: immer 34 px (2026-11-16, 733)
 

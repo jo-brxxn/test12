@@ -523,7 +523,7 @@ function cpfPickerZeichnen(sym,kat){
     <div class="data-picker-ft">All of ${h(sym.name||sym.id)} · every tap is applied right away · closes at ${CPF_MAX} or when you tap outside</div>`;
   pickerAnkern(el,btn);   // einmal ausrichten, danach fest (js/main.js)
 }
-// Kopf je Panel wie Data: Name + Gruppe · Legende · As of/Next · ✕ · ⓘ
+// Kopf je Panel wie Data: Name + Gruppe · Legende · ✕ · ⓘ (As of/Next seit 775 weg)
 function cpfLegende(e,sym){
   if(e.ind){let fc=false;try{fc=(indChartSeries(e.ind,sym.id).pts||[]).some(p=>p[2]!=null);}catch(x){}
     return`<span class="data-lg"><span class="lg-act">■ Actual</span>${fc?'<span class="lg-fc">— Forecast</span>':''}</span>`;}
@@ -531,10 +531,8 @@ function cpfLegende(e,sym){
   return'';
 }
 function cpfStand(e,sym){
-  if(e.ind){try{return indAsOfNextHtml(sym.id,e.ind);}catch(x){return'';}}
-  let d=null;
-  try{if(e.roh){const r=rohstoffTrend(e.roh).r;d=r&&r.length?r[r.length-1].d:null;}else{const p=e.pts();d=p&&p.length?String(p[p.length-1][0]).slice(0,10):null;}}catch(x){d=null;}
-  return d?`<div class="px-asof"><span class="px-asof-lbl">As of</span> <b>${h(fmtDayHdr(d))}</b></div>`:'';
+  // 775 (Nutzer 2026-11-19, generell fuer Charts: "das as of ... und Next ... weg"): kein Stand im Panel-Kopf
+  return'';
 }
 const cpfQuelle=e=>e.ind?'the same series as in the macro table of this asset':e.roh?'daily close with EMA20 and its neutral band, as in the score':e.k.indexOf('spread:')===0?'ECB monthly averages, then daily TradingView yields':e.k==='snb'?'SNB data portal, weekly':e.k==='cn'?'NBS via the calendar archive':'the indicator feed of this asset';
 function cpfRender(){

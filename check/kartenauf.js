@@ -6,7 +6,7 @@
 //  A) in beiden Karten (Kalender: Month UND Past) kein Element, das scrollen kann (overflow auto/scroll
 //     mit mehr Inhalt als Hoehe) - 1194 und 390 px
 //  B) Tipp auf eine freie Stelle der Karte (Kopf rechts neben dem Titel, Chart, Liste) -> Fenster offen
-//  C) Tipp auf einen Knopf in der Karte (Zeitraum 1M) -> Knopf wirkt, kein Fenster
+//  C) Knopf in der Karte (seit 775 nur "Open full history") wirkt allein und oeffnet das Fenster
 //  D) Ziehen auf dem Chart (ohne Schere) ist kein Tipp -> kein Fenster
 //  E) Price-Karte (762): kein "Biggest moves", "Go to Trends" in der Trend-score-Zeile, Event-Liste
 //     scrollt erst nach einem Tipp, Tipp daneben sperrt wieder
@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     const o = W + 'px';
     const ctx = await b.newContext({ viewport: { width: W, height: H }, serviceWorkers: 'block' });
     if (GP) {
-      await ctx.route(/\/index\.html/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('.ab-htile-bd>.histp,.ab-htile .histp{overflow:hidden;', '.ab-htile-bd>.histp,.ab-htile .histp{overflow:auto;').replace('.calp-karte .calp{overflow:hidden;', '.calp-karte .calp{overflow:auto;'); r.fulfill({ response: res, body: t }); });
+      await ctx.route(/\/index\.html/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('.ab-htile-bd>.histp,.ab-htile .histp{overflow:hidden;', '.ab-htile-bd>.histp,.ab-htile .histp{overflow:auto;').replace('.ab-htile-bd{flex:1 1 auto;min-height:0;overflow:hidden;', '.ab-htile-bd{flex:1 1 auto;min-height:0;overflow:auto;').replace('.hp{flex:1 1 auto;min-height:0;', '.hp{flex:0 0 auto;min-height:900px;').replace('.calp-karte .calp{overflow:hidden;', '.calp-karte .calp{overflow:auto;'); r.fulfill({ response: res, body: t }); });
       await ctx.route(/\/js\/main\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace(`onclick="abKarteAuf(event,()=>openHistModal('\${escJH(c.id)}'))"`, ''); r.fulfill({ response: res, body: t }); });
     }
     const p = await ctx.newPage(); const err = []; p.on('pageerror', e => err.push(e.message));
@@ -38,15 +38,16 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     const aH = await SCROLL('.ab-htile');
     if (aH === null) F.push(`${o} A: Testaufbau - keine History-Karte`); else if (aH.length) F.push(`${o} A: History-Karte scrollt: ${aH.join(', ')}`);
     // B History: Liste, Chart
-    for (const [wo, sel, fx, fy] of [['Liste (sichtbarer Teil)', '.ab-htile .ab-htile-bd', 0.5, 0.85], ['Chart', '.ab-htile .histp', 0.5, 0.25], ['Kopf', '.ab-htile .ab-tile-hd', 0.6, 0.5]]) {
+    for (const [wo, sel, fx, fy] of [['Liste (sichtbarer Teil)', '.ab-htile .ab-htile-bd', 0.5, 0.85], ['Chart', '.ab-htile .hp-ch', 0.5, 0.5], ['Kopf', '.ab-htile .ab-tile-hd', 0.6, 0.5]]) {
       await zu(); if (!(await tipp(sel, fx, fy))) { F.push(`${o} B: Testaufbau - ${wo} nicht gefunden`); continue; }
       if (!(await offen('mHist'))) F.push(`${o} B: Tipp auf die History-Karte (${wo}) oeffnet das Fenster nicht`);
     }
-    // C History: Zeitraum-Knopf
+    // C History: Knopf in der Karte ("Open full history") wirkt allein - seit 775 ist er der einzige Knopf
+    //   (Zeitraum-Knoepfe gibt es nur noch im Fenster); er oeffnet das Fenster GENAU einmal und wirft nichts
     await zu();
-    const knopf = await p.evaluate(() => { const bt = [...document.querySelectorAll('.ab-htile button')].find(x => /^\s*1M\s*$/.test(x.textContent)); if (!bt) return null; bt.scrollIntoView({ block: 'center' }); const q = bt.getBoundingClientRect(); return [q.x + q.width / 2, q.y + q.height / 2]; });
-    if (!knopf) F.push(`${o} C: Testaufbau - kein 1M-Knopf`);
-    else { await p.mouse.click(knopf[0], knopf[1]); await p.waitForTimeout(500); if (await offen('mHist')) F.push(`${o} C: Knopf 1M in der Karte oeffnet zusaetzlich das Fenster`); }
+    const knopf = await p.evaluate(() => { const bt = document.querySelector('.ab-htile .ab-goto-b'); if (!bt) return null; bt.scrollIntoView({ block: 'center' }); const q = bt.getBoundingClientRect(); return [q.x + q.width / 2, q.y + q.height / 2]; });
+    if (!knopf) F.push(`${o} C: Testaufbau - kein Knopf "Open full history"`);
+    else { await p.mouse.click(knopf[0], knopf[1]); await p.waitForTimeout(500); if (!(await offen('mHist'))) F.push(`${o} C: Knopf "Open full history" oeffnet das Fenster nicht`); }
     // D: Ziehen auf dem Chart (ohne Schere) oeffnet NICHT
     await zu();
     const ch = await p.evaluate(() => { const el = document.querySelector('.ab-htile [data-br]'); if (!el) return null; el.scrollIntoView({ block: 'center' }); const q = el.getBoundingClientRect(); return [q.x, q.y, q.width, q.height]; });
