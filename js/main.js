@@ -16093,7 +16093,7 @@ function autoFetchFF(){
 import {
   IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,
   isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,applyRealzinsFeed,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
-  PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,RISK_INDEX_DATA,
+  PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,holeNewsArchiv,newsArchivFuer,newsVollstaendig,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
   tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
   _ccyEditWidgetId,openCcyCfgM,renderCcyCfgBody,toggleCcyAsset,updFFLastUpd,
@@ -23308,6 +23308,7 @@ function newsIsNew(h){return !!(newsSeenTs&&h&&h.d&&h.d>newsSeenTs);}
 function newsPool(range,watchOnly,assetSel,themaAn){
   const alle=(NEWS_DATA&&Array.isArray(NEWS_DATA.headlines))?NEWS_DATA.headlines:[];
   const tage={day:1,week:7,month:30}[range]||1;
+  if(tage>1)newsArchivFuer(curPage);   // 767: Woche/Monat brauchen das Archiv
   const grenze=Date.now()-tage*864e5;
   let l=alle.filter(h=>{const ts=Date.parse(h&&h.d);return isFinite(ts)&&ts>=grenze;});
   if(watchOnly){
@@ -23477,6 +23478,7 @@ function newsDayLabel(iso){
 // Schlagzeilen zu genau einem Asset. Zuordnung kommt aus dem Workflow
 // (Feld a[]), hier wird nichts neu erraten.
 function newsForAsset(id,limit){
+  newsArchivFuer(curPage);   // 767: die Asset-Karte zaehlt und reiht ueber den ganzen Bestand
   const alle=(NEWS_DATA&&Array.isArray(NEWS_DATA.headlines))?NEWS_DATA.headlines:[];
   const l=alle.filter(h=>Array.isArray(h.a)&&h.a.indexOf(id)>=0)
     .sort((x,y)=>(y.w||0)-(x.w||0)||Date.parse(y.d)-Date.parse(x.d));
@@ -23549,6 +23551,8 @@ function evtNewsCount(ev){
   const tag=ev&&ev.date;if(!tag)return 0;
   const ids=evtNewsIds(ev);if(!ids.length)return 0;
   const alle=(NEWS_DATA&&Array.isArray(NEWS_DATA.headlines))?NEWS_DATA.headlines:[];
+  // 767: Tag vor dem Start-Fenster -> Archiv holen; bis dahin keine (unvollstaendige) Zahl zeigen.
+  if(!newsVollstaendig()&&NEWS_DATA&&NEWS_DATA.ab&&tag<String(NEWS_DATA.ab).slice(0,10)){newsArchivFuer(curPage);return 0;}
   return alle.filter(h=>String(h.d||'').slice(0,10)===tag&&Array.isArray(h.a)&&h.a.some(x=>ids.indexOf(x)>=0)).length;
 }
 // Scrollstand halten - WebKit kuerzt ihn beim innerHTML-Austausch (siehe
@@ -23558,6 +23562,7 @@ function renderNewsTab(){
   try{return renderNewsTabRoh.apply(this,arguments);}finally{zurueck();}
 }
 function renderNewsTabRoh(){
+  newsArchivFuer('news');   // 767: der News-Tab zeigt auch aeltere Tage
   const el=document.getElementById('newsBody');if(!el)return;
   const alle=(NEWS_DATA&&Array.isArray(NEWS_DATA.headlines))?NEWS_DATA.headlines:[];
   const daten=[...new Set(alle.map(h=>String(h.d||'').slice(0,10)).filter(Boolean))].sort();

@@ -45,23 +45,29 @@ const DECKEL_KB = 900;
 const GESAMT_KB = 3700;
 // Die Live-Dateien, die der Browser beim Start holt. Muss die DATA_BASE-
 // Abrufe in js/main.js + js/data-feeds.js spiegeln.
+// ⚠ SEIT 2026-11-19 (767) GEMESSEN statt angenommen (check/startlast.js laedt die App und vergleicht):
+// Die alte Liste zaehlte price_hist (665 KB), country_data, fng_hist und rate_probabilities mit, die
+// beim Start gar nicht laden, und uebersah globe_land (231 KB), commodity_data (74 KB) und
+// country_shapes (29 KB), die laden. Wirkliche Startlast war 3263 KB, nicht 3675.
 const FEEDS = ['ind_data.json', 'bond_data.json', 'price_data.json', 'cot_data.json',
   'sentiment_data.json', 'news_data.json', 'news_ai.json', 'risk_index.json',
-  'ff_calendar.json', 'score_hist.json', 'seasonality_data.json', 'rate_probabilities.json',
-  // seit 2026-09-25: 4H-Trend, TradingView-Historien, lange Kurshistorie (bei Bedarf geladen)
-  'trend_data.json', 'tvecon_data.json', 'price_hist.json',
-  // seit 2026-10-25: Country profile (js/profil.js, nur auf Waehrungs-Seiten geladen)
-  'country_data.json',
-  // seit 2026-11-13: Aktien (bei Bedarf) und volle Fear-&-Greed-Historie (nur Vollbild)
-  'stock_data.json', 'fng_hist.json',
-  // seit 2026-11-19 (766): BTC-Sentiment-Gesamtwert fuer den Score (~0,2 KB, Start)
-  'btc_score.json'];
-// Nur beim Oeffnen EINES Fensters geladen, nie beim Start und nie parallel zu den
-// Start-Feeds -> eigener Deckel je Datei (900 KB), aber NICHT in der Gesamtsumme.
+  'ff_calendar.json', 'score_hist.json', 'seasonality_data.json', 'trend_data.json',
+  'tvecon_data.json', 'price_hist_meta.json', 'stock_data.json', 'commodity_data.json',
+  'globe_land.json', 'country_shapes.json', 'btc_score.json'];
+// Nur bei Bedarf geladen (ein Fenster, eine Seite, ein Zeitraum), nie im Startpaket -> eigener
+// Deckel je Datei, aber NICHT in der Gesamtsumme.
 // Seit 2026-11-14: BTC Sentiment (js/btc-sentiment.js, gemessen 222 KB).
-// Seit 2026-11-16: alte Kerzen (price_ohlc.json, tools/kerzen-auslagern.mjs) - nur fuer
-// Charts, die weiter als 183 Tage zurueck zeigen (gemessen 416 KB).
-const EINZELN = ['btc_sentiment.json', 'price_ohlc.json'];
+// Seit 2026-11-16: alte Kerzen (price_ohlc.json) - nur fuer Charts > 183 Tage.
+// Seit 2026-11-19 (767): News-Archiv (Woche/Monat, News-Tab, Asset-Seite; Nutzer: "in externe Ordner
+// verschieben die erst bei Bedarf geladen werden und nicht in den Score gehen") und die schon
+// immer nachgeladenen price_hist, country_data, fng_hist, rate_probabilities.
+const EINZELN = ['btc_sentiment.json', 'price_ohlc.json', 'news_archiv.json', 'price_hist.json',
+  'country_data.json', 'fng_hist.json', 'rate_probabilities.json'];
+// Eigener Deckel je Datei (Ausnahme vom DECKEL_KB), mit Begruendung:
+// price_data.json 1000 KB (767): hochgerechnet auf das volle Fenster (1100 Punkte je Asset) mit Nikkei,
+// Russell, Platin, Eisenerz 991 KB. Nach der Rechnung oben bestimmt die GESAMTmenge, wann die letzte
+// Start-Datei ankommt (alle teilen die Leitung) - und die sinkt mit 767 um ~370 KB (News 30 h).
+const DECKEL_JE = { 'price_data.json': 1000 };
 
 const F = [];
 const fail = (t, x) => F.push(`${t}: ${x}`);
@@ -74,8 +80,9 @@ const zeilen = [];
   const kb = fs.statSync(p).size / 1024;
   if (!EINZELN.includes(n)) gesamt += kb;
   zeilen.push(`${n} ${kb.toFixed(0)}KB`);
-  if (kb > DECKEL_KB) fail('ZU GROSS',
-    `${n} ist ${kb.toFixed(1)} KB, erlaubt sind ${DECKEL_KB}. Eine Datei, die beim Nutzer nicht mehr ankommt, sieht aus wie fehlende Daten, nicht wie ein Fehler - genau der am 2026-09-14 gemeldete Bug.`);
+  const deckel = DECKEL_JE[n] || DECKEL_KB;
+  if (kb > deckel) fail('ZU GROSS',
+    `${n} ist ${kb.toFixed(1)} KB, erlaubt sind ${deckel}. Eine Datei, die beim Nutzer nicht mehr ankommt, sieht aus wie fehlende Daten, nicht wie ein Fehler - genau der am 2026-09-14 gemeldete Bug.`);
   // Einrueckung: die grossen Feeds werden von Workflows geschrieben und
   // gehoeren minifiziert. 5% Toleranz fuer die kleinen.
   if (kb > 200) {

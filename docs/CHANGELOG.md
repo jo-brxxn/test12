@@ -22729,3 +22729,25 @@ Messwerte und Regeln: `docs/score-model.md`.
 - ⚠ **Bis zum nächsten Workflow-Lauf:**
   - Silber- und Rig-Count-Zeilen ohne Wert (die Tiefen-Historie wird über `HIST_REGELN` neu geholt).
   - Aktien-Trend erst nach dem Backfill bzw. dem nächsten 4H-Lauf.
+
+## 2026-11-19 — News-Archiv bei Bedarf, Startlast gemessen (VERSION-CHECK-767)
+
+Anlass: Für Nikkei, Russell, Platin und Eisenerz reichte das Feed-Budget nicht. `price_data.json` liegt hochgerechnet bei 991/900 KB, alle Start-Feeds bei ~3850/3700 KB. Nutzer: *„Du kannst bestimmt noch andere Sachen in externe Ordner verschieben die erst bei Bedarf geladen werden und nicht in den Score gehen“*.
+
+- **Gemessen** (Playwright, jede `.json`-Antwort beim Start, 1194/390 px):
+  - `feedgroesse.js` zählte `price_hist` (665 KB), `country_data`, `fng_hist` und `rate_probabilities` mit, die beim Start nicht laden.
+  - Übersehen waren `globe_land` (231 KB), `commodity_data` (74 KB) und `country_shapes` (29 KB).
+  - Wirklich **3263 KB**, gezählt 3675.
+- **News:** 1084 Schlagzeilen / 483 KB beim Start, das Dashboard zeigt im Standard 24 h (82 KB).
+  - Der Workflow schreibt jetzt `news_archiv.json` (alles) und `news_data.json` (30 h, Feld `ab`).
+  - Der Altbestand wird aus dem Archiv gelesen.
+  - Die App lädt das Archiv bei Woche/Monat, im News-Tab, auf der Asset-Seite (Zählung der News-Karte) und für Kalendertage vor `ab`; in den ersten 8 s verzögert.
+- **Ergebnis:** Startlast **2897 KB** (−366 KB).
+- **`price_data.json` Deckel 1000 KB.** Nach der Rechnung im Wächter bestimmt die Gesamtmenge, wann die letzte Start-Datei ankommt, und die sinkt.
+- **Eigener Testfehler:** `newsarchiv` B meldete 248 statt 768. Die News-Karte liegt nicht auf dem Standard-Dashboard, also hatte nichts nachgeladen. Der Test löst jetzt den Kartenpfad aus. In der App war der Pfad richtig (C: 1084/1084).
+- **Wächter:**
+  - neu `check/newsarchiv.js`
+  - neu `check/startlast.js` (Liste gegen Messung)
+  - beide mit Gegenprobe → rot
+  - `check/feedgroesse.js` auf die gemessene Liste umgestellt
+- ⚠ **Offen:** `cal_hist/2026.json` lädt auf der Asset-Seite mit 842 KB.

@@ -166,6 +166,8 @@ const PRUEFUNGEN = [
   { n: 'chinablock', s: 20, d: 'China-Block im Score: AUD 0,5+0,5, Kupfer 0,75+0,375+0,375, Beat bullish, nicht gespiegelt, Kalender-Muster', f: 'check/chinablock.js', args: [], browser: true },
   { n: 'realzins', s: 30, d: 'US-Realzins: Inflation-Karte nur Nicht-FX ohne Energie/Yields, steigt -0,5 / faellt +0,5 / flach 0, sichtbar', f: 'check/realzins.js', args: [], browser: true },
   { n: 'zusatzzeilen', s: 40, d: 'Eigene Zeilen Silber (ISM/IP), Oel (Rig Count), Erdgas (vs 5 Jahre), BTC (Sentiment-Gesamtwert): Richtung, Gewicht, nur beim Asset', f: 'check/zusatzzeilen.js', args: [], browser: true },
+  { n: 'newsarchiv', s: 25, d: 'News: Start nur 30 h, Archiv bei Woche/News-Tab/Asset-Seite, Zahlen wie mit vollem Bestand', f: 'check/newsarchiv.js', args: [], browser: true },
+  { n: 'startlast', s: 25, d: 'Gemessene Startlast: jede Start-Datei in FEEDS, nichts aus EINZELN, Summe unter GESAMT_KB', f: 'check/startlast.js', args: [], browser: true },
   { n: 'eingaben',  s: 172, d: 'Kein Fenster verliert Eingaben beim Schliessen, Nachfrage in Bias-Farben, Knopfleiste fest unten', f: 'check/eingaben.js', args: [], browser: true },
   { n: 'filterreset', s: 36, d: '✕ neben Asset-Dropdowns mit "alle"-Ansicht: nur bei Auswahl, direkt daneben, setzt zurueck', f: 'check/filterreset.js', args: [], browser: true },
   { n: 'designregeln', s: 461, d: 'Design-Audit: keine Emojis, eine Schrift, Diagramm-/Mindestschrift 11 px, 3 Hoehen, Trefferflaechen ohne Ueberdeckung, aktiv Navy, Rot nur bearish', f: 'check/designregeln.js', args: [], browser: true },

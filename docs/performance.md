@@ -248,3 +248,16 @@ Kalender-Abgleich 131 → ~0, FF-Abgleich 93 → ~0, `indOverdueCycles` 63 → 2
 - **Timer je Element bündeln:** `triggerFlipGlow` hatte je Asset einen eigenen Timer mit eigenem `renderSidebar()` (9 volle Leisten beim Laden). Jetzt ein Timer.
 - **Nachgeladene Teile tauschen nur ihren Teil:** Länderumrisse der 1D-Kacheln ersetzen nur `.dx-mkt-grid`, nicht das Dashboard (vorher ein voller `renderDash`, ~290 ms bei CPU 4x).
 - **Startphase länger bündeln:** `rerenderBald` bündelt in den ersten 9 s 700 ms statt 150 ms (vorher drei volle Dashboard-Aufbauten zwischen 2,9 und 5,2 s).
+
+
+## Startlast: nur, was der Score oder die erste Ansicht braucht (seit 2026-11-19, VERSION-CHECK-767)
+
+- **Nutzer:** *„Du kannst bestimmt noch andere Sachen in externe Ordner verschieben die erst bei Bedarf geladen werden und nicht in den Score gehen“*.
+- **Regel:** Daten, die nicht in den Score gehen und die die erste Ansicht nicht braucht, laden **bei Bedarf** (eigene Datei, `EINZELN` in `check/feedgroesse.js`).
+- **Erste Umsetzung:** News.
+  - `news_data.json` hat nur noch 30 h (Feld `ab`).
+  - `news_archiv.json` lädt bei Woche/Monat, im News-Tab, auf der Asset-Seite und für Kalendertage vor `ab`; in den ersten 8 s verzögert.
+- **Startliste gemessen, nicht angenommen:** `check/startlast.js`.
+  - Vorher wirklich **3263 KB**, gezählt 3675.
+  - Jetzt **2897 KB**.
+- ⚠ **Offen:** Die Asset-Seite lädt `cal_hist/<Jahr>.json` (2026: **842 KB**) — nächster Kandidat zum Verkleinern.

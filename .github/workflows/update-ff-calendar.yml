@@ -6103,7 +6103,10 @@ jobs:
           function main(){
             const frisch=einlesen();
             let out={};
+            // Seit 767: der volle Bestand liegt in news_archiv.json (news_data.json traegt nur noch die
+            // letzten 30 h fuer den Start). Altbestand deshalb zuerst aus dem Archiv, sonst wie bisher.
             try{const d=JSON.parse(fs.readFileSync("news_data.json","utf8"));if(d&&typeof d==="object")out=d;}catch(e){}
+            try{const a=JSON.parse(fs.readFileSync("news_archiv.json","utf8"));if(a&&Array.isArray(a.headlines)){const m=new Map();a.headlines.forEach(h=>{if(h&&h.u)m.set(h.u,h);});(Array.isArray(out.headlines)?out.headlines:[]).forEach(h=>{if(h&&h.u)m.set(h.u,h);});out.headlines=[...m.values()];}}catch(e){}
             const bestand=Array.isArray(out.headlines)?out.headlines:[];
             if(!frisch.length&&!bestand.length){console.log("[debug] news: keine Eintraege - nichts geschrieben");return;}
             const map={};
@@ -6163,7 +6166,14 @@ jobs:
             out.sources=[...new Set(liste.map(h=>h.s))].sort();
             const th=themaDesTages(liste);
             if(th)out.topic=th; else delete out.topic;
-            fs.writeFileSync("news_data.json",JSON.stringify(out));
+            // ── AUFTEILUNG (seit 2026-11-19, VERSION-CHECK-767) ──
+            // Nutzer: "Du kannst bestimmt noch andere Sachen in externe Ordner verschieben die erst bei
+            // Bedarf geladen werden und nicht in den Score gehen". News gehen nicht in den Score:
+            // news_archiv.json = alles (laedt die App erst bei Woche/Monat, News-Tab, aelteren Kalendertagen),
+            // news_data.json = letzte 30 h (Dashboard-Standard "day") - gemessen 82 statt 483 KB beim Start.
+            fs.writeFileSync("news_archiv.json",JSON.stringify(out));
+            const ab=new Date(Date.now()-30*3600e3).toISOString();
+            fs.writeFileSync("news_data.json",JSON.stringify({...out,ab,gesamt:liste.length,headlines:liste.filter(h=>Date.parse(h.d)>=Date.parse(ab))}));
             const heute=liste.filter(h=>Date.parse(h.d)>Date.now()-864e5).length;
             const gebuendelt=liste.filter(h=>h.n>1).length;
             console.log("[debug] news: "+liste.length+" Schlagzeilen gesamt, "+heute+" aus den letzten 24h, "
@@ -6484,6 +6494,7 @@ jobs:
           [ -f rate_probabilities.json ] && git add rate_probabilities.json
           [ -f risk_index.json ] && git add risk_index.json
           [ -f news_data.json ] && git add news_data.json
+          [ -f news_archiv.json ] && git add news_archiv.json
           [ -f country_data.json ] && git add country_data.json
           [ -f sektor_data.json ] && git add sektor_data.json
           [ -d sektor_hist ] && git add sektor_hist

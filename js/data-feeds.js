@@ -487,10 +487,39 @@ function fetchNewsData(){
   return fetch(DATA_BASE+'news_data.json?t='+Date.now(),{signal:AbortSignal.timeout(FEED_TIMEOUT_MS),cache:'no-store'})
     .then(r=>r.ok?r.json():null)
     .then(d=>{
-      if(d&&typeof d==='object'&&Array.isArray(d.headlines)){NEWS_DATA=d;DATA_LIVE_OK.news=true;}
+      if(d&&typeof d==='object'&&Array.isArray(d.headlines)){NEWS_DATA=d;DATA_LIVE_OK.news=true;newsZusammen();}
       else DATA_LIVE_OK.news=false;
     }).catch(()=>{DATA_LIVE_OK.news=false;});
 }
+// ── NEWS-ARCHIV BEI BEDARF (seit 2026-11-19, VERSION-CHECK-767) ──
+// Nutzer: "Du kannst bestimmt noch andere Sachen in externe Ordner verschieben die erst bei Bedarf
+// geladen werden und nicht in den Score gehen". news_data.json traegt seit 767 nur die letzten 30 h
+// (Feld "ab"); den vollen Bestand (news_archiv.json) holt die App erst, wenn eine Ansicht aeltere
+// Schlagzeilen braucht: Dashboard-Karte Woche/Monat, News-Tab, Kalendertage vor "ab".
+// Ohne "ab" (Datei aus der Zeit davor) ist news_data.json selbst vollstaendig - nichts nachzuladen.
+let NEWS_ARCHIV=null,newsArchivVersprechen=null;
+function newsVollstaendig(){return !!(NEWS_DATA&&(!NEWS_DATA.ab||NEWS_DATA.archivDa));}
+function newsZusammen(){
+  if(!NEWS_ARCHIV||!NEWS_DATA||!Array.isArray(NEWS_DATA.headlines))return;
+  const m=new Map();NEWS_ARCHIV.forEach(h=>{if(h&&h.u)m.set(h.u,h);});NEWS_DATA.headlines.forEach(h=>{if(h&&h.u)m.set(h.u,h);});
+  NEWS_DATA.headlines=[...m.values()];NEWS_DATA.archivDa=true;
+}
+function holeNewsArchiv(){
+  if(newsVollstaendig())return Promise.resolve(false);
+  if(NEWS_ARCHIV){newsZusammen();mergeNewsAi();return Promise.resolve(true);}
+  if(newsArchivVersprechen)return newsArchivVersprechen;
+  // In der Startphase (News-Karte auf dem Dashboard zaehlt auch Woche/Monat) erst nach 8 s - die
+  // Score-Feeds sollen die Leitung beim Start fuer sich haben.
+  const warte=Math.max(0,8000-performance.now());
+  newsArchivVersprechen=new Promise(res=>setTimeout(res,warte))
+    .then(()=>fetch(DATA_BASE+'news_archiv.json?t='+Math.floor(Date.now()/3e5),{signal:AbortSignal.timeout(FEED_TIMEOUT_MS)}))
+    .then(r=>r.ok?r.json():null)
+    .then(d=>{if(d&&Array.isArray(d.headlines)){NEWS_ARCHIV=d.headlines;newsZusammen();mergeNewsAi();return true;}return false;})
+    .catch(()=>false).finally(()=>{newsArchivVersprechen=null;});
+  return newsArchivVersprechen;
+}
+// Ansicht braucht aeltere Schlagzeilen: Archiv holen und die aktuelle Seite neu zeichnen.
+function newsArchivFuer(seite){if(!newsVollstaendig())holeNewsArchiv().then(ok=>{if(ok)rerenderBald(seite);});}
 // ── KI-EINORDNUNG DER NACHRICHTEN (news_ai.json) ──────────────────
 // Nutzer-Wunsch 2026-09-08: "eine kostenlose Loesung die aber ueber ki
 // laeuft ... alle Nachrichten zieht und das automatisch zusammenfasst und
@@ -820,7 +849,7 @@ function updFFLastUpd(){
 export {
   IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,applyRealzinsFeed,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
   isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,
-  PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,NEWS_AI,fetchNewsAi,mergeNewsAi,RISK_INDEX_DATA,
+  PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,holeNewsArchiv,newsArchivFuer,newsVollstaendig,NEWS_AI,fetchNewsAi,mergeNewsAi,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
   tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,ladeKerzenArchiv,kerzenArchivBei,kerzenAb,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
   _ccyEditWidgetId,openCcyCfgM,renderCcyCfgBody,toggleCcyAsset,updFFLastUpd,
