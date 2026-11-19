@@ -26,7 +26,7 @@ jobs:
               "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/$Y/all?type=daily_treasury_real_yield_curve&field_tdr_date_value=$Y&page&_format=csv" || echo "000")
             N=$(wc -l < "tr$Y.csv" 2>/dev/null || echo 0)
             echo "- $Y: HTTP $CODE, Zeilen $N" >> $GITHUB_STEP_SUMMARY
-            echo "=== $Y HTTP $CODE Zeilen $N ==="; head -3 "tr$Y.csv" 2>/dev/null; tail -1 "tr$Y.csv" 2>/dev/null
+            echo "=== $Y HTTP $CODE Zeilen $N ==="; head -3 "tr$Y.csv" 2>/dev/null || true; tail -1 "tr$Y.csv" 2>/dev/null || true
           done
       - name: B) TradingView scanner
         run: |
@@ -35,8 +35,8 @@ jobs:
           curl -sL -A "$UA" -H "Origin: https://www.tradingview.com" -H "Content-Type: application/json" \
             --data '{"symbols":{"tickers":["FRED:DFII10","FRED:DFII5","FRED:T10YIE","TVC:US10Y","ECONOMICS:USINTR"],"query":{"types":[]}},"columns":["close","description"]}' \
             "https://scanner.tradingview.com/global/scan" -o tv.json || true
-          cat tv.json; echo
-          echo '```' >> $GITHUB_STEP_SUMMARY; head -c 1500 tv.json >> $GITHUB_STEP_SUMMARY; echo '```' >> $GITHUB_STEP_SUMMARY
+          cat tv.json 2>/dev/null || true; echo
+          echo '```' >> $GITHUB_STEP_SUMMARY; head -c 1500 tv.json >> $GITHUB_STEP_SUMMARY 2>/dev/null || true; echo '```' >> $GITHUB_STEP_SUMMARY
       - uses: actions/checkout@v4
       # C) Backtest: Signal wie die Renditezeilen (SMA5 vs SMA21, Totzone 3 bp), Realzins steigt -> bearish.
       #    Mittlere Rendite der Folgetage je Asset, getrennt nach Signal; t ueber nicht ueberlappende Bloecke.

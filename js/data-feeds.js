@@ -10,7 +10,7 @@
 // das allgemeine Muster) - dieses Modul exportiert deshalb weiter unten
 // die Namen, die main.js zurueck braucht.
 import {BC,FX} from './constants.js';
-import {DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,feedEntryFor,kanonIndName,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,applyRevisionToValHist,applyTrendModel,checkPriceAlerts,curPage,escH,fmtDayHdr,indBiasInputSig,indBiasPinned,invalidateRateStepCache,isNonFx,macroCcyFor,openM,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,syms,todayStr,trackIndValues,widgets,istAssetEigen,assetEigenFeed} from './main.js';
+import {DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,feedEntryFor,kanonIndName,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,applyRevisionToValHist,applyTrendModel,checkPriceAlerts,curPage,escH,fmtDayHdr,indBiasInputSig,indBiasPinned,invalidateRateStepCache,isNonFx,macroCcyFor,openM,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,resetNonFxIndBias,REALZINS_IND,realzinsGilt,resolvePairPriceSeries,save,stripPeriodSuffix,syms,todayStr,trackIndValues,widgets,istAssetEigen,assetEigenFeed} from './main.js';
 
 // ── INDIKATOR-WERTE AUS ECHTER API-QUELLE (ind_data.json) ──
 // ind_data.json wird stündlich per GitHub Action aus TradingViews
@@ -251,6 +251,51 @@ function fmtYield(v){
   const n=Number(v);if(!isFinite(n))return String(v);
   return n.toFixed(2)+'%';
 }
+// Signal einer Renditereihe (SMA5 vs SMA21, Totzone) - geteilt von den Renditezeilen und dem
+// Realzins (765). Liefert null, wenn kein abgeschlossener Handelstag mit Wert vorliegt.
+function bondSignal(series,yesterday){
+  // Nur abgeschlossene Handelstage: der heutige (noch laufende) Wert
+  // wuerde die kurze SMA sonst mit einem Teiltag verzerren.
+  const hist=series.filter(e=>e&&e[0]<=yesterday);
+  const use=hist.length>=BOND_SMA_SLOW?hist:series;
+  const aEntry=use[use.length-1];
+  if(!aEntry)return null;
+  const aDate=aEntry[0],aVal=Number(aEntry[1]);
+  if(!isFinite(aVal))return null;
+  // ── Bond-Signal (Nutzer-Entscheid 2026-08-06) ──────────────────────
+  // Vorher gab es ZWEI Fenster nebeneinander: ein 15-Tage-Punktvergleich
+  // trieb den Bias, ein 25-Tage-Punktvergleich einen separaten Trend.
+  // Das war doppelt problematisch: (1) beide Fenster ueberlappen stark
+  // und massen faktisch dasselbe zweimal, (2) sie widersprachen sich
+  // regelmaessig (auf den echten Daten 11 von 16 Indikatoren) - das
+  // Trend-Modal zeigte das 25-Tage-Fenster und behauptete eine
+  // Score-Wirkung, die indScoreParts fuer Bonds ueber `noTrend` ohnehin
+  // verwarf. Jetzt gibt es nur noch EIN Signal.
+  //
+  // Verfahren: kurzer gegen langen gleitenden Durchschnitt (SMA5 vs
+  // SMA21) mit einer Totzone von 3 Basispunkten. Zwei Durchschnitte
+  // gegeneinander entfernen Rauschen auf BEIDEN Seiten des Vergleichs -
+  // ein einzelner Ausreissertag kann weder das "Jetzt" noch die
+  // Vergleichsbasis verfaelschen, anders als beim frueheren Vergleich
+  // gegen einen einzelnen Stichtag. Die Totzone filtert zusaetzlich
+  // Bewegungen heraus, die zu klein sind, um etwas zu bedeuten (vorher
+  // kippte der Bias schon bei 0,001 Prozentpunkten Unterschied).
+  // Empirisch auf der echten Bond-Historie gemessen (Fehlsignale =
+  // Vorzeichenwechsel ueber alle 14 sauberen Indikatoren): 15-Tage-Punkt
+  // 26, reine SMA21 30 (schlechter!), SMA5-vs-SMA21 15, mit Totzone 0.
+  const fast=bondSma(use,BOND_SMA_FAST),slow=bondSma(use,BOND_SMA_SLOW);
+  let bondColor='bond-flat',bias='neu',pStr=null,pDate=null;
+  if(fast!=null&&slow!=null){
+    const diff=fast-slow;
+    if(diff>BOND_DEAD_BAND){bondColor='bond-up';bias='bull';}
+    else if(diff<-BOND_DEAD_BAND){bondColor='bond-down';bias='bear';}
+    // Vergleichsbasis fuer die Anzeige ist die lange SMA (nicht mehr ein
+    // einzelner Stichtagswert), prevDate der Beginn ihres Fensters.
+    pStr=fmtYield(slow);
+    pDate=use[use.length-BOND_SMA_SLOW][0];
+  }
+  return{aDate,aVal,bondColor,bias,pStr,pDate};
+}
 function applyBondDataFeed(){
   if(!BOND_DATA_FEED)return false;
   const today=todayStr();
@@ -267,46 +312,9 @@ function applyBondDataFeed(){
         if(!BOND_INDS.includes(base))return;
         const series=bd[base]&&bd[base].series;
         if(!Array.isArray(series)||!series.length)return;
-        // Nur abgeschlossene Handelstage: der heutige (noch laufende) Wert
-        // wuerde die kurze SMA sonst mit einem Teiltag verzerren.
-        const hist=series.filter(e=>e&&e[0]<=yesterday);
-        const use=hist.length>=BOND_SMA_SLOW?hist:series;
-        const aEntry=use[use.length-1];
-        if(!aEntry)return;
-        const aDate=aEntry[0],aVal=Number(aEntry[1]);
-        if(!isFinite(aVal))return;
-        // ── Bond-Signal (Nutzer-Entscheid 2026-08-06) ──────────────────────
-        // Vorher gab es ZWEI Fenster nebeneinander: ein 15-Tage-Punktvergleich
-        // trieb den Bias, ein 25-Tage-Punktvergleich einen separaten Trend.
-        // Das war doppelt problematisch: (1) beide Fenster ueberlappen stark
-        // und massen faktisch dasselbe zweimal, (2) sie widersprachen sich
-        // regelmaessig (auf den echten Daten 11 von 16 Indikatoren) - das
-        // Trend-Modal zeigte das 25-Tage-Fenster und behauptete eine
-        // Score-Wirkung, die indScoreParts fuer Bonds ueber `noTrend` ohnehin
-        // verwarf. Jetzt gibt es nur noch EIN Signal.
-        //
-        // Verfahren: kurzer gegen langen gleitenden Durchschnitt (SMA5 vs
-        // SMA21) mit einer Totzone von 3 Basispunkten. Zwei Durchschnitte
-        // gegeneinander entfernen Rauschen auf BEIDEN Seiten des Vergleichs -
-        // ein einzelner Ausreissertag kann weder das "Jetzt" noch die
-        // Vergleichsbasis verfaelschen, anders als beim frueheren Vergleich
-        // gegen einen einzelnen Stichtag. Die Totzone filtert zusaetzlich
-        // Bewegungen heraus, die zu klein sind, um etwas zu bedeuten (vorher
-        // kippte der Bias schon bei 0,001 Prozentpunkten Unterschied).
-        // Empirisch auf der echten Bond-Historie gemessen (Fehlsignale =
-        // Vorzeichenwechsel ueber alle 14 sauberen Indikatoren): 15-Tage-Punkt
-        // 26, reine SMA21 30 (schlechter!), SMA5-vs-SMA21 15, mit Totzone 0.
-        const fast=bondSma(use,BOND_SMA_FAST),slow=bondSma(use,BOND_SMA_SLOW);
-        let bondColor='bond-flat',bias='neu',pStr=null,pDate=null;
-        if(fast!=null&&slow!=null){
-          const diff=fast-slow;
-          if(diff>BOND_DEAD_BAND){bondColor='bond-up';bias='bull';}
-          else if(diff<-BOND_DEAD_BAND){bondColor='bond-down';bias='bear';}
-          // Vergleichsbasis fuer die Anzeige ist die lange SMA (nicht mehr ein
-          // einzelner Stichtagswert), prevDate der Beginn ihres Fensters.
-          pStr=fmtYield(slow);
-          pDate=use[use.length-BOND_SMA_SLOW][0];
-        }
+        const sg=bondSignal(series,yesterday);
+        if(!sg)return;
+        const {aDate,aVal,bondColor,bias,pStr,pDate}=sg;
         const src=indResearchSource(macroCcyFor(c.id),base)||bd[base].source||(ind.research&&ind.research.source);
         const aStr=fmtYield(aVal);
         const r=ind.research||{};
@@ -322,7 +330,48 @@ function applyBondDataFeed(){
       });
     });
   });
+  if(applyRealzinsFeed(yesterday))changed=true;
   if(changed)syms.forEach(c=>{if(isNonFx(c.id))resetNonFxIndBias(c);});
+  return changed;
+}
+// ── REALZINS (seit 2026-11-19, VERSION-CHECK-765, Score-Modell 36) ──
+// Nutzer: "Realzinsen auch ueberall hinzufuegen" -> "nur bei nicht fx und nicht bei Energie".
+// Zeile "10Y Real Yield" in der Inflation-Karte (dort stehen die Renditen) jedes Assets der Klassen
+// REALZINS_KLASSEN (js/main.js). Signal wie die Renditezeilen; ein STEIGENDER Realzins ist fuer
+// Metalle, Krypto, Indizes und Aktien bearish (hoehere Opportunitaetskosten / Abzinsung) -> -0,5.
+// Feste Punkte (ind.pkt) wie bei allen Feed-Zeilen: kein Normierungs-Faktor, kein Altersabschlag.
+// Ohne Reihe (Feed fehlt) bleibt eine vorhandene Zeile unveraendert stehen; es wird nichts geschaetzt.
+const REALZINS_PKT=0.5;
+function applyRealzinsFeed(yesterday=isoMinusDays(todayStr(),1)){
+  const bd=BOND_DATA_FEED&&BOND_DATA_FEED.USD,e=bd&&bd[REALZINS_IND];
+  const series=e&&Array.isArray(e.series)&&e.series.length?e.series:null;
+  const sg=series?bondSignal(series,yesterday):null;
+  let changed=false;
+  syms.forEach(c=>{
+    const rub=(c.rubrics||[]).find(r=>r&&r.name==='Inflation');
+    if(!rub||!Array.isArray(rub.indicators))return;
+    const idx=rub.indicators.findIndex(i=>i&&i.name===REALZINS_IND);
+    if(!realzinsGilt(c.id)){if(idx>=0){rub.indicators.splice(idx,1);changed=true;}return;}
+    if(!sg)return;
+    let ind=idx>=0?rub.indicators[idx]:null;
+    if(!ind){
+      ind={id:'rz'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:REALZINS_IND,bias:'neu',imp:false,date:'',interval:'',points:[]};
+      const n10=rub.indicators.findIndex(i=>i&&stripPeriodSuffix(i.name).base==='10Y Bond Yield');
+      rub.indicators.splice(n10>=0?n10+1:rub.indicators.length,0,ind);changed=true;
+    }
+    // steigt -> bearish (umgekehrt zur Rendite-Richtung)
+    const bias=sg.bias==='bull'?'bear':sg.bias==='bear'?'bull':'neu';
+    const pkt=bias==='bull'?REALZINS_PKT:bias==='bear'?-REALZINS_PKT:0;
+    const aStr=fmtYield(sg.aVal),src=e.source||'';
+    const r=ind.research||{};
+    if(!(r.bond&&r.realzins&&r.actual===aStr&&r.previous===sg.pStr&&r.date===sg.aDate&&r.bondColor===sg.bondColor&&r.prevDate===sg.pDate&&r.source===src)){
+      ind.research={actual:aStr,forecast:null,previous:sg.pStr,date:sg.aDate,prevDate:sg.pDate,source:src,bond:true,realzins:true,bondColor:sg.bondColor,sma:true};
+      changed=true;
+    }
+    if(ind.bias!==bias){ind.bias=bias;changed=true;}
+    if(ind.pkt!==pkt){ind.pkt=pkt;changed=true;}
+    if(ind.trendBias&&ind.trendBias!=='neu'){ind.trendBias='neu';changed=true;}
+  });
   return changed;
 }
 // ── ASSET-PREISE (price_data.json) ────────────────────────────────
@@ -718,7 +767,7 @@ function updFFLastUpd(){
 
 
 export {
-  IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,
+  IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,applyRealzinsFeed,
   isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,NEWS_AI,fetchNewsAi,mergeNewsAi,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,

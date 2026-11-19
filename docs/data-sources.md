@@ -1018,3 +1018,13 @@ einem Feiertag einbrechen. Die Options-Reihen tragen deshalb seit dem
   - `China Retail Sales` (y/y, nicht YTD)
   - `China NBS Manufacturing PMI` (nicht Caixin)
 - Muster gleichlautend in `js/event-matchers.js`.
+
+
+## US-Realzins 10Y (seit 2026-11-19, 765)
+
+- **Quelle:** US Treasury „Daily Treasury Par Real Yield Curve Rates“, Spalte `10 YR` (CSV je Jahr).
+- **Ablage:** `bond_data.json` → `USD["10Y Real Yield"]`, 400 Tage.
+- **Geprüft** mit `probe-realzins.yml`: HTTP 200 für 2016–2026.
+- ⚠ **Nicht nutzbar:**
+  - FRED `DFII10`: von den Runnern tot.
+  - TradingView kennt `FRED:DFII10` nicht.

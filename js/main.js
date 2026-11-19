@@ -47,7 +47,7 @@ export {scoreAssets,closeM,assetEigenFeed,trashAblegen,newsNoteHinweis,
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
   applyRevisionToValHist,applyTrendModel,checkPriceAlerts,fmtDayHdr,indBiasInputSig,indBiasPinned,
   invalidateRateStepCache,isNonFx,macroCcyFor,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,
-  resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,todayStr,trackIndValues,widgets,feedEntryFor,kanonIndName,istAssetEigen,
+  resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,todayStr,trackIndValues,widgets,feedEntryFor,kanonIndName,istAssetEigen,REALZINS_IND,realzinsGilt,
   // Was js/preiskarte.js (Price-Karte, zirkulaerer Import) von hier liest.
   abCalNachTag,dataAlleAssetGruppen,dataAlleItems,pickerAnkern,preisChartHtml,abFenster,pkMarkenAn,pkMarkenUmschalten,
   IND_AUTO_RUBS,IND_EVENT_MATCHERS,calEvts,cloudAutoSync,evtMatchesSym,getSym,markLsUpdatedSeen,
@@ -4000,6 +4000,7 @@ const IND_INFO_DEFAULTS={
   'China New Loans':'New yuan loans granted by Chinese banks in the month (PBoC), in billion CNY. More credit than expected means stronger Chinese demand: bullish for AUD and copper. China block, see weight in the row.',
   'China Retail Sales':'Chinese retail sales, year-over-year in % (NBS). Stronger consumption than expected is bullish for AUD and copper. China block, see weight in the row.',
   'China NBS Manufacturing PMI':'Official Chinese manufacturing PMI (NBS), above 50 = expansion. China is about half of world copper demand - a beat is bullish for copper.',
+  '10Y Real Yield':'US 10-year real yield (TIPS, US Treasury real yield curve), in %. Trend like the bond yields (5-day vs 21-day average, 3 bp dead band). Rising real yields are bearish for metals, crypto, indices and stocks (higher opportunity cost, heavier discounting). Fixed ±0.5. Not on FX, energy or yields.',
   'Gas Storage':'Weekly change of US natural gas in storage (EIA, Thursday), in billion cubic feet. A draw or a smaller build than expected is bullish for gas, a bigger build is bearish. Counts half.',
   'MPC Vote Split':'Bank of England MPC votes as hike-cut-hold (same order as the calendar); colour = more or fewer hawkish votes (hike minus cut) than forecast. Shown only: 2017–2026 the pound did not move with a vote surprise on the day (25 surprises, t −0.35).',
   'Inflation Expectations':'Expected inflation from a survey (US: households, 1 year ahead; New Zealand: businesses, 2 years ahead), in %. Higher expectations keep the central bank hawkish.',
@@ -4257,8 +4258,19 @@ function assetEigenFeed(symId,name){return istAssetEigen(symId,name)?(ASSET_EIGE
 // Gewicht je Asset und Zeile (764, Rueckfrage: "je nach Messung"): Summe des China-Blocks <= 1,5.
 const ASSET_EIGEN_GEWICHT={AUD:{'China New Loans':0.5,'China Retail Sales':0.5},
   COPPER:{'China NBS Manufacturing PMI':0.75,'China New Loans':0.375,'China Retail Sales':0.375}};
+// ── REALZINS (seit 2026-11-19, VERSION-CHECK-765, Score-Modell 36) ──
+// Nutzer 2026-11-18: "Realzinsen auch ueberall hinzufuegen", Rueckfrage 2026-11-19: "Mach es nur bei
+// nicht fx und nicht bei Energie". Quelle: US Treasury Daily Par Real Yield Curve, 10 YR (Workflow ->
+// bond_data.json USD['10Y Real Yield']; FRED ist von den Runnern seit 2026-07 tot). Rechnung wie die
+// Renditezeilen (SMA5 vs SMA21, Totzone 3 bp), Realzins steigt -> bearish, feste +-0,5 (ind.pkt).
+// Nicht bei Yield-Assets: eine US-TIPS-Zeile in DE/JP-Renditen ergibt keinen Sinn, in US-Renditen ist
+// sie ein Teil der eigenen Rendite (Nominal = Real + Breakeven).
+const REALZINS_IND='10Y Real Yield';
+const REALZINS_KLASSEN=['metal','crypto','index','stock'];
+function realzinsGilt(id){return REALZINS_KLASSEN.includes(assetCls(id));}
 function istAssetEigen(symId,name){
   const b=stripPeriodSuffix(name||'').base,m=ASSET_EIGENE_IND[symId];
+  if(b===REALZINS_IND&&realzinsGilt(symId))return true;
   return !!m&&Object.values(m).some(l=>l.includes(b));
 }
 function addAssetEigeneInds(rubrics,sym){
@@ -6117,6 +6129,8 @@ function reapplyLiveFeeds(){
    ()=>applyZinsDiffFeed(),
    ()=>applyKurveFeed(),
    ()=>applyRohstoffFeed(),
+   // US-Realzins (765) - laeuft in applyBondDataFeed mit, steht hier ausdruecklich (check/structure.js).
+   ()=>applyRealzinsFeed(),
    ()=>applyNiveauFeed(),
    ()=>applyTrendFeed()].forEach(fn=>{try{fn();}catch(e){}});
 }
@@ -16059,7 +16073,7 @@ function autoFetchFF(){
 // Daten-Feeds nach js/data-feeds.js ausgekoppelt (docs/module-split.md).
 import {
   IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,
-  isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,
+  isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,applyRealzinsFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
   tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,

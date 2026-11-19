@@ -793,3 +793,28 @@ ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
 - ⚠ **Mehrfachtest:** 162 Kombinationen geprüft, 6 mit |t| ≥ 2. Das ist am Rand des Zufalls, deshalb das kleine Gewicht.
   - Kupfer hatte nur 3 Jahre Kurse; mit 10 Jahren nachmessen.
 - **Geprüft von** `check/chinablock.js`.
+
+
+## US-Realzins (seit 2026-11-19, Modell 36, VERSION-CHECK-765)
+
+- **Nutzer:** *„Realzinsen auch überall hinzufügen“*, Rückfrage → *„Mach es nur bei nicht fx und nicht bei Energie“*.
+- **Wo:** Zeile `10Y Real Yield` in der **Inflation-Karte** (dort stehen die Renditen; Interest Rates wird auf der Asset-Seite nicht gezeichnet).
+  - Klassen `metal`, `crypto`, `index`, `stock` (`REALZINS_KLASSEN`, js/main.js).
+  - **Nicht** bei FX, Energie, Yield-Assets (US-TIPS in DE/JP-Renditen sinnlos, in US-Renditen Teil der eigenen Rendite).
+- **Rechnung:** wie die Renditezeilen (SMA5 vs SMA21, Totzone 3 bp). **Steigt → bearish.** Feste ±0,5 (`ind.pkt`), kein Altersabschlag.
+- **Backtest 2016–2026** (Treasury-Kurve, nicht überlappende Blöcke, Signalrendite 5 T / 20 T):
+
+  | Asset | 5 T | 20 T |
+  |---|---|---|
+  | Gold | +0,06 % (t +0,5) | +0,43 % (t +1,1) |
+  | Silber | +0,15 % (t +0,7) | +0,25 % (t +0,3) |
+  | Kupfer | **−0,27 % (t −0,7)** | **−0,97 % (t −0,8)** |
+  | BTC | +0,33 % (t +0,9) | +0,74 % (t +0,5) |
+  | SOL | +1,74 % (t +2,0) | +2,91 % (t +0,8) |
+  | S&P 500 | +0,13 % (t +1,0) | +0,41 % (t +0,9) |
+  | Nasdaq | +0,16 % (t +1,0) | +0,63 % (t +1,2) |
+  | DAX | +0,06 % (t +0,5) | +0,12 % (t +0,3) |
+
+  - Richtung stimmt außer bei Kupfer; **kein Wert mit |t| ≥ 2** → schwaches Signal.
+- ⚠ **FX bewusst ohne:** „Real Rate vs Peers“ flog in Modell 24 raus (IC negativ, siehe Niveau-Block).
+- **Geprüft von** `check/realzins.js`.

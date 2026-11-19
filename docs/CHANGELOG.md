@@ -22684,3 +22684,25 @@ Nutzer: *„wenn die Indikatoren bei aud so gut sind dann bau die in den Score e
   - Silber, Gold, NZD und USD ohne Zeilen
 - **Wächter:** neu `check/chinablock.js`, Gegenprobe → rot.
 - ⚠ **Bis zum nächsten Workflow-Lauf** stehen die Zeilen ohne Wert (neutral, kein Schätzwert).
+
+## 2026-11-19 — US-Realzins im Score bei Nicht-FX ohne Energie (VERSION-CHECK-765, Score-Modell 36)
+
+Nutzer: *„Realzinsen auch überall hinzufügen“*. Auf drei Befunde hin (FX-Realzins in Modell 24 wegen negativem Backtest entfernt; Interest Rates unsichtbar; Gold hat schon 2,0 Punkte aus US-Renditen) zuerst *„Wie vereinbart bauen“*, dann *„Mach es nur bei nicht fx und nicht bei Energie“*.
+
+- **Quelle:**
+  - Probe: Treasury-Kurve HTTP 200 (2016–2026, zuletzt 18.11. **2,88 %**).
+  - TradingView ohne FRED-Ticker.
+  - FRED weiter tot.
+- **Workflow:** neuer Schritt „Fetch US 10Y real yield (US Treasury)“. Lokal mit nachgebauter CSV geprüft: zweimal gleicher Stand, andere Reihen unberührt.
+- **App:**
+  - `bondSignal()` herausgezogen (geteilt mit den Renditezeilen, Ergebnis unverändert).
+  - Neu: `applyRealzinsFeed()`, `REALZINS_IND`/`realzinsGilt()`, Erklärtext.
+  - Die Zeile ist asset-eigen, damit `resetNonFxIndBias` sie nicht zurücksetzt.
+- **Ohne Yield-Assets:** US-TIPS passen nicht zu DE/JP-Renditen.
+- **Backtest:** Tabelle in `docs/score-model.md`.
+  - Richtung stimmt bei 7 von 8 Assets, keins mit |t| ≥ 2.
+  - ⚠ **Kupfer läuft entgegen** (t −0,7).
+- **Wächter:** neu `check/realzins.js`.
+  - Gegenprobe ohne Umkehr → rot.
+  - Erster Lauf rot wegen eines falschen Sollwerts im Wächter (3,58 statt 2,58), korrigiert.
+- **Eigener Fehler beim Bau:** Zeilenumbruch im Kommentar (`data-feeds.js`) und doppeltes Komma (`journal.js`). Gefunden, weil die App nicht lud; `node --check` prüfte die Dateien nicht als Modul.

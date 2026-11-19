@@ -2967,6 +2967,44 @@ jobs:
           '
           rm -f bond_tv.json
 
+      # ── US-REALZINS 10Y (seit 2026-11-19, VERSION-CHECK-765) ─────────
+      # Nutzer: "Realzinsen auch ueberall hinzufuegen" -> nur Nicht-FX ohne Energie.
+      # Quelle: US Treasury "Daily Treasury Par Real Yield Curve Rates", Spalte 10 YR (CSV je Jahr,
+      # geprueft mit probe-realzins.yml: HTTP 200, 2016-2026). FRED (DFII10) ist von den Runnern tot,
+      # TradingView kennt FRED:DFII10 nicht. Schreibt bond_data.json USD["10Y Real Yield"] (400 Tage,
+      # wie die Renditen). Fehlt die Antwort, bleibt die vorhandene Reihe - nichts wird geschaetzt.
+      - name: Fetch US 10Y real yield (US Treasury) -> bond_data.json
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          Y=$(date -u +%Y); PY=$((Y-1))
+          for J in $PY $Y; do
+            curl -sL --max-time 60 -A "$UA" -o "realzins_$J.csv" \
+              "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/$J/all?type=daily_treasury_real_yield_curve&field_tdr_date_value=$J&page&_format=csv" || true
+          done
+          node -e '
+            const fs=require("fs");
+            const pts={};let dateien=0;
+            for(const f of fs.readdirSync(".").filter(x=>/^realzins_\d{4}\.csv$/.test(x))){
+              const z=fs.readFileSync(f,"utf8").trim().split(/\r?\n/);if(z.length<2)continue;
+              const kopf=z[0].split(",").map(x=>x.replace(/"/g,"").trim()),ti=kopf.indexOf("10 YR"),di=kopf.indexOf("Date");
+              if(ti<0||di<0){console.log("realzins: "+f+" ohne Spalte 10 YR - Kopf: "+z[0]);continue;}
+              dateien++;
+              z.slice(1).forEach(l=>{const c=l.split(",");const m=/^(\d\d)\/(\d\d)\/(\d{4})$/.exec((c[di]||"").trim());const v=Number(c[ti]);
+                if(m&&c[ti]!==""&&isFinite(v))pts[m[3]+"-"+m[1]+"-"+m[2]]=String(Math.round(v*1000)/1000);});
+            }
+            const neu=Object.keys(pts).sort();
+            if(!dateien||!neu.length){console.log("realzins: keine Werte vom Treasury, bestehende Reihe bleibt");process.exit(0);}
+            let out={};try{const d=JSON.parse(fs.readFileSync("bond_data.json","utf8"));if(d&&typeof d==="object"&&!Array.isArray(d))out=d;}catch(e){}
+            const cur=(out.USD&&out.USD["10Y Real Yield"])||{};
+            const m=new Map((Array.isArray(cur.series)?cur.series:[]).map(e=>[e[0],e]));
+            neu.forEach(d=>m.set(d,[d,pts[d]]));
+            const series=[...m.values()].sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0).slice(-400);
+            (out.USD=out.USD||{})["10Y Real Yield"]={source:"https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_real_yield_curve",series};
+            fs.writeFileSync("bond_data.json",JSON.stringify(out));
+            console.log("realzins: "+series.length+" Tage, zuletzt "+series[series.length-1].join(" "));
+          '
+          rm -f realzins_*.csv
+
       # ── ASSET-PREISE (price_data.json) ────────────────────────────────
       # Fuer den "Score vs Price"-Chart im Trends-Tab: pro Waehrung/Asset ein
       # taeglicher Schlusskurs (TradingView-Scanner, gleiche Quelle wie die
