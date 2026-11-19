@@ -1,6 +1,6 @@
 {
  "report_date": "2026-11-10",
- "updated": "2026-11-17T14:26:41.180Z",
+ "updated": "2026-11-19T14:27:48.156Z",
  "symbols": {
   "EUR": {
    "long": 227478,
@@ -2186,6 +2186,510 @@
    "contract": "COPPER- #1 - COMMODITY EXCHANGE INC.",
    "code": "085692"
   },
+  "PLATINUM": {
+   "long": 27955,
+   "short": 20328,
+   "dLong": -284,
+   "dShort": -1246,
+   "oi": 91632,
+   "dOi": 354,
+   "history": [
+    {
+     "date": "2026-05-19",
+     "long": 26148,
+     "short": 8240,
+     "oi": 62782
+    },
+    {
+     "date": "2026-05-26",
+     "long": 25998,
+     "short": 8340,
+     "oi": 62711
+    },
+    {
+     "date": "2026-06-02",
+     "long": 25527,
+     "short": 8315,
+     "oi": 65697
+    },
+    {
+     "date": "2026-06-09",
+     "long": 24826,
+     "short": 9814,
+     "oi": 62457
+    },
+    {
+     "date": "2026-06-16",
+     "long": 23745,
+     "short": 9137,
+     "oi": 62420
+    },
+    {
+     "date": "2026-06-23",
+     "long": 23376,
+     "short": 8281,
+     "oi": 57738
+    },
+    {
+     "date": "2026-06-30",
+     "long": 24830,
+     "short": 9829,
+     "oi": 53719
+    },
+    {
+     "date": "2026-07-07",
+     "long": 22825,
+     "short": 8953,
+     "oi": 53645
+    },
+    {
+     "date": "2026-07-14",
+     "long": 22461,
+     "short": 8713,
+     "oi": 53837
+    },
+    {
+     "date": "2026-07-21",
+     "long": 21807,
+     "short": 9323,
+     "oi": 53721
+    },
+    {
+     "date": "2026-07-28",
+     "long": 21071,
+     "short": 9436,
+     "oi": 53658
+    },
+    {
+     "date": "2026-08-04",
+     "long": 23151,
+     "short": 8390,
+     "oi": 55848
+    },
+    {
+     "date": "2026-08-11",
+     "long": 23292,
+     "short": 9752,
+     "oi": 56771
+    },
+    {
+     "date": "2026-08-18",
+     "long": 23514,
+     "short": 10475,
+     "oi": 60129
+    },
+    {
+     "date": "2026-08-25",
+     "long": 26947,
+     "short": 11561,
+     "oi": 64648
+    },
+    {
+     "date": "2026-09-01",
+     "long": 25692,
+     "short": 10692,
+     "oi": 68059
+    },
+    {
+     "date": "2026-09-08",
+     "long": 26775,
+     "short": 10799,
+     "oi": 67810
+    },
+    {
+     "date": "2026-09-15",
+     "long": 26250,
+     "short": 11030,
+     "oi": 65478
+    },
+    {
+     "date": "2026-09-22",
+     "long": 27006,
+     "short": 11640,
+     "oi": 65373
+    },
+    {
+     "date": "2026-09-29",
+     "long": 27190,
+     "short": 13701,
+     "oi": 64046
+    },
+    {
+     "date": "2026-10-06",
+     "long": 27790,
+     "short": 13822,
+     "oi": 65868
+    },
+    {
+     "date": "2026-10-13",
+     "long": 26819,
+     "short": 13846,
+     "oi": 67866
+    },
+    {
+     "date": "2026-10-20",
+     "long": 27162,
+     "short": 14000,
+     "oi": 70511
+    },
+    {
+     "date": "2026-10-27",
+     "long": 27377,
+     "short": 18083,
+     "oi": 83229
+    },
+    {
+     "date": "2026-11-03",
+     "long": 28239,
+     "short": 21574,
+     "oi": 91278
+    },
+    {
+     "date": "2026-11-10",
+     "long": 27955,
+     "short": 20328,
+     "oi": 91632
+    }
+   ],
+   "contract": "PLATINUM - NEW YORK MERCANTILE EXCHANGE",
+   "code": "076651"
+  },
+  "NIKKEI": {
+   "long": 5791,
+   "short": 4106,
+   "dLong": -1257,
+   "dShort": -423,
+   "oi": 27258,
+   "dOi": 1027,
+   "history": [
+    {
+     "date": "2026-05-19",
+     "long": 11628,
+     "short": 1541,
+     "oi": 35308
+    },
+    {
+     "date": "2026-05-26",
+     "long": 10993,
+     "short": 1389,
+     "oi": 32913
+    },
+    {
+     "date": "2026-06-02",
+     "long": 12840,
+     "short": 1716,
+     "oi": 37503
+    },
+    {
+     "date": "2026-06-09",
+     "long": 10306,
+     "short": 3692,
+     "oi": 43323
+    },
+    {
+     "date": "2026-06-16",
+     "long": 9045,
+     "short": 1974,
+     "oi": 25343
+    },
+    {
+     "date": "2026-06-23",
+     "long": 8414,
+     "short": 2623,
+     "oi": 29282
+    },
+    {
+     "date": "2026-06-30",
+     "long": 6890,
+     "short": 2788,
+     "oi": 27616
+    },
+    {
+     "date": "2026-07-07",
+     "long": 8307,
+     "short": 4480,
+     "oi": 31181
+    },
+    {
+     "date": "2026-07-14",
+     "long": 6664,
+     "short": 2645,
+     "oi": 28740
+    },
+    {
+     "date": "2026-07-21",
+     "long": 6713,
+     "short": 2751,
+     "oi": 30441
+    },
+    {
+     "date": "2026-07-28",
+     "long": 9282,
+     "short": 3060,
+     "oi": 35445
+    },
+    {
+     "date": "2026-08-04",
+     "long": 6455,
+     "short": 3265,
+     "oi": 33506
+    },
+    {
+     "date": "2026-08-11",
+     "long": 5021,
+     "short": 3648,
+     "oi": 28863
+    },
+    {
+     "date": "2026-08-18",
+     "long": 6003,
+     "short": 3480,
+     "oi": 31049
+    },
+    {
+     "date": "2026-08-25",
+     "long": 6624,
+     "short": 3330,
+     "oi": 31113
+    },
+    {
+     "date": "2026-09-01",
+     "long": 6639,
+     "short": 3944,
+     "oi": 30948
+    },
+    {
+     "date": "2026-09-08",
+     "long": 5621,
+     "short": 2897,
+     "oi": 42440
+    },
+    {
+     "date": "2026-09-15",
+     "long": 5542,
+     "short": 2918,
+     "oi": 22625
+    },
+    {
+     "date": "2026-09-22",
+     "long": 4199,
+     "short": 2654,
+     "oi": 21974
+    },
+    {
+     "date": "2026-09-29",
+     "long": 5060,
+     "short": 3724,
+     "oi": 23003
+    },
+    {
+     "date": "2026-10-06",
+     "long": 4728,
+     "short": 3914,
+     "oi": 20996
+    },
+    {
+     "date": "2026-10-13",
+     "long": 5687,
+     "short": 2979,
+     "oi": 23701
+    },
+    {
+     "date": "2026-10-20",
+     "long": 5413,
+     "short": 3168,
+     "oi": 25143
+    },
+    {
+     "date": "2026-10-27",
+     "long": 5248,
+     "short": 2971,
+     "oi": 24933
+    },
+    {
+     "date": "2026-11-03",
+     "long": 7048,
+     "short": 4529,
+     "oi": 26231
+    },
+    {
+     "date": "2026-11-10",
+     "long": 5791,
+     "short": 4106,
+     "oi": 27258
+    }
+   ],
+   "contract": "NIKKEI STOCK AVERAGE YEN DENOM - CHICAGO MERCANTILE EXCHANGE",
+   "code": "240743"
+  },
+  "RUSSELL": {
+   "long": 107866,
+   "short": 113621,
+   "dLong": -1819,
+   "dShort": -19718,
+   "oi": 440576,
+   "dOi": -8823,
+   "history": [
+    {
+     "date": "2026-05-19",
+     "long": 79731,
+     "short": 100779,
+     "oi": 421242
+    },
+    {
+     "date": "2026-05-26",
+     "long": 83850,
+     "short": 99779,
+     "oi": 424698
+    },
+    {
+     "date": "2026-06-02",
+     "long": 78291,
+     "short": 93215,
+     "oi": 413739
+    },
+    {
+     "date": "2026-06-09",
+     "long": 61317,
+     "short": 99283,
+     "oi": 397144
+    },
+    {
+     "date": "2026-06-16",
+     "long": 57066,
+     "short": 77315,
+     "oi": 492996
+    },
+    {
+     "date": "2026-06-23",
+     "long": 60724,
+     "short": 87562,
+     "oi": 386817
+    },
+    {
+     "date": "2026-06-30",
+     "long": 72328,
+     "short": 97896,
+     "oi": 399628
+    },
+    {
+     "date": "2026-07-07",
+     "long": 70290,
+     "short": 101299,
+     "oi": 406632
+    },
+    {
+     "date": "2026-07-14",
+     "long": 76787,
+     "short": 101467,
+     "oi": 405743
+    },
+    {
+     "date": "2026-07-21",
+     "long": 87779,
+     "short": 94738,
+     "oi": 411524
+    },
+    {
+     "date": "2026-07-28",
+     "long": 84602,
+     "short": 100871,
+     "oi": 417083
+    },
+    {
+     "date": "2026-08-04",
+     "long": 75483,
+     "short": 110210,
+     "oi": 417259
+    },
+    {
+     "date": "2026-08-11",
+     "long": 77800,
+     "short": 120104,
+     "oi": 419222
+    },
+    {
+     "date": "2026-08-18",
+     "long": 76902,
+     "short": 119117,
+     "oi": 424956
+    },
+    {
+     "date": "2026-08-25",
+     "long": 65674,
+     "short": 117252,
+     "oi": 413000
+    },
+    {
+     "date": "2026-09-01",
+     "long": 63898,
+     "short": 135561,
+     "oi": 424663
+    },
+    {
+     "date": "2026-09-08",
+     "long": 66362,
+     "short": 149197,
+     "oi": 431147
+    },
+    {
+     "date": "2026-09-15",
+     "long": 78550,
+     "short": 150900,
+     "oi": 496762
+    },
+    {
+     "date": "2026-09-22",
+     "long": 82065,
+     "short": 157848,
+     "oi": 415047
+    },
+    {
+     "date": "2026-09-29",
+     "long": 88901,
+     "short": 166341,
+     "oi": 428048
+    },
+    {
+     "date": "2026-10-06",
+     "long": 87450,
+     "short": 175295,
+     "oi": 425152
+    },
+    {
+     "date": "2026-10-13",
+     "long": 112145,
+     "short": 173148,
+     "oi": 444784
+    },
+    {
+     "date": "2026-10-20",
+     "long": 115794,
+     "short": 157703,
+     "oi": 466789
+    },
+    {
+     "date": "2026-10-27",
+     "long": 112363,
+     "short": 148442,
+     "oi": 458959
+    },
+    {
+     "date": "2026-11-03",
+     "long": 109685,
+     "short": 133339,
+     "oi": 449399
+    },
+    {
+     "date": "2026-11-10",
+     "long": 107866,
+     "short": 113621,
+     "oi": 440576
+    }
+   ],
+   "contract": "RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE",
+   "code": "239742"
+  },
   "NATGAS": {
    "long": 264910,
    "short": 534908,
@@ -2861,8 +3365,8 @@
  },
  "pct3y": {
   "report_date": "2026-11-10",
-  "contracts": "EUR=EURO FX - CHICAGO MERCANTILE EXCHANGE|GBP=BRITISH POUND - CHICAGO MERCANTILE EXCHANGE|JPY=JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE|CHF=SWISS FRANC - CHICAGO MERCANTILE EXCHANGE|CAD=CANADIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE|AUD=AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE|NZD=NZ DOLLAR - CHICAGO MERCANTILE EXCHANGE|USD=USD INDEX - ICE FUTURES U.S.|BTC=BITCOIN - CHICAGO MERCANTILE EXCHANGE|SOL=SOL - CHICAGO MERCANTILE EXCHANGE|GOLD=GOLD - COMMODITY EXCHANGE INC.|SILVER=SILVER - COMMODITY EXCHANGE INC.|COPPER=COPPER- #1 - COMMODITY EXCHANGE INC.|NATGAS=NAT GAS NYME - NEW YORK MERCANTILE EXCHANGE|OIL=WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE|SP500=E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE|NAS=NASDAQ-100 CONSOLIDATED - CHICAGO MERCANTILE EXCHANGE",
-  "updated": "2026-11-17T14:26:45.101Z",
+  "contracts": "EUR=EURO FX - CHICAGO MERCANTILE EXCHANGE|GBP=BRITISH POUND - CHICAGO MERCANTILE EXCHANGE|JPY=JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE|CHF=SWISS FRANC - CHICAGO MERCANTILE EXCHANGE|CAD=CANADIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE|AUD=AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE|NZD=NZ DOLLAR - CHICAGO MERCANTILE EXCHANGE|USD=USD INDEX - ICE FUTURES U.S.|BTC=BITCOIN - CHICAGO MERCANTILE EXCHANGE|SOL=SOL - CHICAGO MERCANTILE EXCHANGE|GOLD=GOLD - COMMODITY EXCHANGE INC.|SILVER=SILVER - COMMODITY EXCHANGE INC.|COPPER=COPPER- #1 - COMMODITY EXCHANGE INC.|PLATINUM=PLATINUM - NEW YORK MERCANTILE EXCHANGE|NIKKEI=NIKKEI STOCK AVERAGE YEN DENOM - CHICAGO MERCANTILE EXCHANGE|RUSSELL=RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE|NATGAS=NAT GAS NYME - NEW YORK MERCANTILE EXCHANGE|OIL=WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE|SP500=E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE|NAS=NASDAQ-100 CONSOLIDATED - CHICAGO MERCANTILE EXCHANGE",
+  "updated": "2026-11-19T14:27:55.701Z",
   "data": {
    "EUR": {
     "pct": 2,
@@ -2910,6 +3414,18 @@
    },
    "COPPER": {
     "pct": 50,
+    "n": 182
+   },
+   "PLATINUM": {
+    "pct": 26,
+    "n": 182
+   },
+   "NIKKEI": {
+    "pct": 14,
+    "n": 182
+   },
+   "RUSSELL": {
+    "pct": 81,
     "n": 182
    },
    "NATGAS": {
