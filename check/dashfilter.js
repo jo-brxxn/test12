@@ -39,7 +39,7 @@ const KATS = ['All', 'FX', 'Crypto', 'Metals', 'Energy', 'Indices', 'Stocks', 'Y
       const bias = document.getElementById('dbBias'), perf = document.getElementById('dbPerf');
       const chips = k => k ? [...k.querySelectorAll('.db-kat-b')].map(b => b.textContent.trim() + (b.classList.contains('on') ? '*' : '')) : null;
       const ids = el => el ? [...el.querySelectorAll('.db-bias[data-id]')].map(x => x.dataset.id) : [];
-      const sp = bias ? [...bias.querySelectorAll('.dbv-sp')].map(x => ({ b: x.dataset.bias, sicht: [...x.querySelectorAll('.db-bias')].filter(e => !e.hidden).length, alle: x.querySelectorAll('.db-bias').length, knopf: (x.querySelector('.dbv-mehr') || {}).textContent || '' })) : [];
+      const sp = bias ? [...bias.querySelectorAll('.dbv-sp')].map(x => ({ b: x.dataset.bias, sicht: [...x.querySelectorAll('.db-bias')].filter(e => !e.hidden).length, alle: x.querySelectorAll('.db-bias').length, knopf: (bias.querySelector('.dbv-mehr-z>.dbv-mehr') || {}).textContent || '' })) : [];
       const perfIds = perf ? [...perf.querySelectorAll('.perf-row')].map(r => { const m = (r.getAttribute('onclick') || '').match(/gotoSym\('([^']+)'/); return m ? m[1] : ''; }) : [];
       const zf = perf && perf.querySelector('.dx-zf-perf'), kat = zf && zf.querySelector('.db-kat'), win = zf && zf.querySelector('.db-perf-win');
       return { cb: chips(bias), cp: chips(perf), ids: ids(bias), sp, perfIds, kls: Object.fromEntries([...ids(bias), ...perfIds].map(i => [i, assetCls(i)])),
@@ -54,9 +54,9 @@ const KATS = ['All', 'FX', 'Crypto', 'Metals', 'Energy', 'Indices', 'Stocks', 'Y
     L.sp.forEach(x => { if (x.sicht > 3) F.push(`${o} B: Spalte ${x.b} zeigt ${x.sicht} (max 3)`); if (x.alle > 3 && !/Show all \d+/.test(x.knopf)) F.push(`${o} B: Spalte ${x.b} (${x.alle}) ohne "Show all"`); });
     const lang = L.sp.find(x => x.alle > 3);
     if (lang) {
-      await p.evaluate(b => document.querySelector(`#dbBias .dbv-sp[data-bias="${b}"] .dbv-mehr`).click(), lang.b); await p.waitForTimeout(300);
+      await p.evaluate(() => document.querySelector('#dbBias .dbv-mehr-z>.dbv-mehr').click()); await p.waitForTimeout(300);
       let x = (await lies()).sp.find(y => y.b === lang.b); if (x.sicht !== lang.alle) F.push(`${o} B: nach "Show all" ${x.sicht} von ${lang.alle} sichtbar`);
-      await p.evaluate(b => document.querySelector(`#dbBias .dbv-sp[data-bias="${b}"] .dbv-mehr`).click(), lang.b); await p.waitForTimeout(300);
+      await p.evaluate(() => document.querySelector('#dbBias .dbv-mehr-z>.dbv-mehr').click()); await p.waitForTimeout(300);
       x = (await lies()).sp.find(y => y.b === lang.b); if (x.sicht !== 3) F.push(`${o} B: nach "Show less" ${x.sicht} sichtbar (erwartet 3)`);
     } else F.push(o + ' B: keine Spalte mit mehr als 3 - Pruefung untauglich');
     // C

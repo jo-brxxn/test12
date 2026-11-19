@@ -249,19 +249,23 @@ const GEGENPROBE=process.argv.includes('--gegenprobe');
             card.querySelectorAll('.dbv-sp').forEach(c=>{const b=c.dataset.bias,T=[...c.querySelectorAll('.db-bias')],v=T.map(zahl);
               T.forEach(t=>{const s=syms.find(x=>x.id===t.dataset.id);const sb=s&&(s.bias==='bull'||s.bias==='bear')?s.bias:'neu';if(s&&sb!==b)out.push(`Bias: ${s.id} (${s.bias}) in Spalte ${b}`);});
               for(let i=1;i<v.length;i++)if(b==='bear'?v[i]<v[i-1]:b==='neu'?Math.abs(v[i])>Math.abs(v[i-1]):v[i]>v[i-1]){out.push('Bias: Spalte '+b+' nicht nach Staerke sortiert');break;}});
-            // Jede Spalte eingeklappt 3, Show all je Spalte zeigt alle, Show less klappt wieder
+            // Jede Spalte eingeklappt 3, EIN Show all fuer alle (773), Show less klappt wieder
             // ein (Nutzer 2026-11-15, ersetzt die Neutral-Regel vom 2026-11-08)
             {const K=()=>document.getElementById('dbBias');   // Klick baut die Karte neu - jedes Mal frisch holen
              const zael=b=>{const c=K().querySelector(`.dbv-sp[data-bias="${b}"]`);return c?[...c.querySelectorAll('.db-bias')]:[];};
              const sichtbar=T=>T.filter(t=>!t.hidden&&t.getBoundingClientRect().height>0).length;
              const grenze=3;
-             ['bull','neu','bear'].forEach(b=>{const nAlle=zael(b).length,knopf=()=>K().querySelector(`.dbv-sp[data-bias="${b}"] .dbv-mehr`);
-              if(nAlle>grenze){
-               if(sichtbar(zael(b))!==grenze)out.push(`Bias: ${b} eingeklappt ${sichtbar(zael(b))} sichtbar statt ${grenze}`);
-               if(!knopf()||!/Show all/.test(knopf().textContent))out.push(`Bias: ${b} ohne "Show all"`);
-               else{knopf().click();const n=sichtbar(zael(b));if(n!==nAlle)out.push(`Bias: ${b} nach Show all ${n} statt ${nAlle} sichtbar`);
-                 if(!knopf()||!/Show less/.test(knopf().textContent))out.push(`Bias: ${b} ausgeklappt ohne "Show less"`);else{knopf().click();if(sichtbar(zael(b))!==grenze)out.push(`Bias: ${b} Show less klappt nicht wieder ein`);}}
-              }else if(knopf())out.push(`Bias: ${b} Show-all-Knopf, obwohl nichts verborgen ist`);});}
+             // 773 (Nutzer 2026-11-19): EIN "Show all" mittig unter allen Spalten, klappt alle gemeinsam.
+             const B=['bull','neu','bear'],nAlle=Object.fromEntries(B.map(b=>[b,zael(b).length])),knopf=()=>K().querySelector('.dbv-mehr-z>.dbv-mehr');
+             if(K().querySelector('.dbv-sp .dbv-mehr'))out.push('Bias: noch ein Show-all-Knopf IN einer Spalte');
+             if(B.some(b=>nAlle[b]>grenze)){
+               B.forEach(b=>{const e=Math.min(grenze,nAlle[b]);if(sichtbar(zael(b))!==e)out.push(`Bias: ${b} eingeklappt ${sichtbar(zael(b))} sichtbar statt ${e}`);});
+               const k=knopf(),z=k&&k.parentElement.getBoundingClientRect(),lang=K().querySelector('.dbv-lang').getBoundingClientRect(),kr=k&&k.getBoundingClientRect();
+               if(!k||!/Show all/.test(k.textContent))out.push('Bias: kein gemeinsames "Show all"');
+               else{if(Math.abs((kr.left+kr.right)/2-(lang.left+lang.right)/2)>2)out.push(`Bias: "Show all" nicht mittig unter allen Spalten (${Math.round((kr.left+kr.right)/2-(lang.left+lang.right)/2)} px)`);
+                 k.click();B.forEach(b=>{if(sichtbar(zael(b))!==nAlle[b])out.push(`Bias: ${b} nach Show all ${sichtbar(zael(b))} statt ${nAlle[b]} sichtbar`);});
+                 if(!knopf()||!/Show less/.test(knopf().textContent))out.push('Bias: ausgeklappt ohne "Show less"');else{knopf().click();B.forEach(b=>{if(sichtbar(zael(b))!==Math.min(grenze,nAlle[b]))out.push(`Bias: ${b} Show less klappt nicht wieder ein`);});}}
+             }else if(knopf())out.push('Bias: Show-all-Knopf, obwohl nichts verborgen ist');}
             const card2=document.getElementById('dbBias'),cr2=card2.getBoundingClientRect();
             const T=[...card2.querySelectorAll('.db-bias')];
             T.forEach(t=>{const r=t.getBoundingClientRect();if(!r.width)return;   // eingeklappt (hidden) - kein Platz

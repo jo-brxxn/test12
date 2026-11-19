@@ -3283,7 +3283,9 @@ body.no-ui-anim .cd-heute{animation:none}
    Assets/Indikatoren im Filter kann das deutlich breiter sein als eine
    schmale Karte. max-width:100% + min-width:0 lassen es in seinem
    Flex-Container tatsaechlich schrumpfen statt zu ueberlaufen. */
-.cot-filterbar select{font-size:14px;padding:8px 15px;min-width:0;max-width:100%}
+/* 773 (Nutzer-Foto PC "Copper" unten abgeschnitten): 8 px oben/unten in 34 px fester Hoehe liessen 16 px fuer
+   14-px-Schrift (braucht 16,8) - Unterlaengen weg. Senkrecht kein Innenabstand, das select zentriert selbst. */
+.cot-filterbar select{font-size:14px;padding:0 15px;min-width:0;max-width:100%}
 /* Asset-Filter oben rechts in der Karten-Titelzeile (Sentiment) */
 .cot-card-title .cot-filterbar select{font-size:var(--fs-sm);padding:5px 10px}
 /* Zeitraum-Leiste kompakt IN der Grafik (direkt ueber der Plot-Flaeche) */
@@ -6955,11 +6957,11 @@ body.no-ui-anim .fxlogo>.lg-k,body.no-ui-anim .fxlogo>.lg-b{animation:none!impor
    "D7" am Ende, je Umfeld auf den gemessenen Platz begrenzt) - die fruehere
    Warnung "::after meldet sich als Ueberlauf" kam von check/dashboard.js, der
    scrollWidth mass; er misst jetzt die Textbreite. */
-.info-b,.rub-hdr .rinfo,.cot-card-title .rinfo,.dw-t .rinfo{width:21px;height:21px;margin:0;border:none;border-radius:50%;
+.info-b,.rub-hdr .rinfo,.cot-card-title .rinfo,.dw-t .rinfo,.dw-hdr>.rinfo,.mx-card-title>.rinfo{width:21px;height:21px;margin:0;border:none;border-radius:50%;
   font:800 11px/1 Georgia,'Times New Roman',serif;font-style:italic;position:relative}
-.info-b::before,.rub-hdr .rinfo::before,.cot-card-title .rinfo::before,.dw-t .rinfo::before{content:'';position:absolute;inset:3px;
+.info-b::before,.rub-hdr .rinfo::before,.cot-card-title .rinfo::before,.dw-t .rinfo::before,.dw-hdr>.rinfo::before,.mx-card-title>.rinfo::before{content:'';position:absolute;inset:3px;
   border:1.3px solid var(--blue);border-radius:50%;pointer-events:none}
-@media(hover:hover){.info-b:hover::before,.rub-hdr .rinfo:hover::before,.cot-card-title .rinfo:hover::before,.dw-t .rinfo:hover::before{background:rgba(var(--blue-rgb),.1)}}
+@media(hover:hover){.info-b:hover::before,.rub-hdr .rinfo:hover::before,.cot-card-title .rinfo:hover::before,.dw-t .rinfo:hover::before,.dw-hdr>.rinfo:hover::before,.mx-card-title>.rinfo:hover::before{background:rgba(var(--blue-rgb),.1)}}
 .info-b:hover{background:transparent}
 /* ⚠ Der Kalenderkopf setzt .info-b auf position:static (hoehere Spezifitaet) -
    dann zeichnete ::before den Kreis ueber den ganzen Kopf (479px gemessen). */
@@ -6974,9 +6976,11 @@ body.no-ui-anim .fxlogo>.lg-k,body.no-ui-anim .fxlogo>.lg-b{animation:none!impor
    Element (Zeitregler, Datum, Pfeile), steht er direkt dahinter.
    Waechter: check/infoi.js. */
 :root{--ii-kreis:calc(var(--fs-kt) * .6)}
-.info-b::before,.rub-hdr .rinfo::before,.cot-card-title .rinfo::before,.dw-t .rinfo::before{
+.info-b::before,.rub-hdr .rinfo::before,.cot-card-title .rinfo::before,.dw-t .rinfo::before,.dw-hdr>.rinfo::before,.mx-card-title>.rinfo::before{
   inset:auto;left:50%;top:50%;width:var(--ii-kreis);height:var(--ii-kreis);transform:translate(-50%,-50%);box-sizing:border-box;border-width:1.1px}
-.info-b,.rub-hdr .rinfo,.cot-card-title .rinfo,.dw-t .rinfo{font-size:calc(var(--ii-kreis) * .72)}
+/* 773: Dashboard-Koepfe (.dw-hdr, .mx-card-title) fehlten in dieser Gruppe - dort blieb der alte 13-px-Kreis mit
+   11-px-Schrift, das "i" beruehrte den Rand (Nutzer-Foto 2026-11-19: "das Info i soll in dem Kreis sein und nicht den Kreis beruehren"). */
+.info-b,.rub-hdr .rinfo,.cot-card-title .rinfo,.dw-t .rinfo,.dw-hdr>.rinfo,.mx-card-title>.rinfo{font-size:calc(var(--ii-kreis) * .72)}
 .dw-t>.info-b,.ab-tile-hd>.info-b,.mx-card-title>.info-b,.rub-hdr .info-b,.abc-hd>.info-b,.tr-card-head>.info-b,.data-row>.info-b,.data-ph>.info-b,.rg-hd>.info-b,.rg-top>.info-b,.dw-hdr>.info-b,.cot-card-title>.info-b,
 .dw-t>.rinfo,.cot-card-title>:is(.rinfo,.info-b),.mx-card-title>.rinfo,.dw-hdr>.rinfo,.rub-hdr>.rinfo{
   margin-left:auto!important;margin-right:-5.5px!important;align-self:center;flex:none}
@@ -7449,7 +7453,9 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
 @media (hover:hover){.dbv-l:hover,.dbv-p:hover{background:var(--bg3)}}
 .dbv-l[hidden]{display:none}
 .dbv-mehr{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:var(--h-s);margin-top:2px;padding:0 10px;border:1px dashed var(--bd2);border-radius:var(--rss);background:none;color:var(--t2);font:600 var(--fs-sm)/1 var(--ff-text);cursor:pointer}
-@media (hover:hover){.dbv-mehr:hover{color:var(--t0);border-color:var(--t3)}}
+@media (hover:hover){.dbv-mehr:hover{color:var(--t0);border-color:var(--t3)}
+/* 773: ein "Show all" mittig unter ALLEN Spalten (Nutzer-Foto 2026-11-19) */
+.dbv-mehr-z{display:flex;justify-content:center;margin-top:8px}}
 @media(max-width:759px){.dbv-podest,.dbv-lang{grid-template-columns:minmax(0,1fr)}}
 /* Listen, deren Laenge vom Tag abhaengt (Termine, Meldungen), scrollen in
    fester Hoehe - Nutzer-Regel 2026-08-20, es faellt nichts weg. */
@@ -7809,6 +7815,13 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 /* Price-Karte (762): Event-Liste scrollt erst nach einem Tipp; vorher weicher Auslauf. "Go to Trends" in der Trend-score-Zeile. */
 .pk-col:not(.pk-scroll) .pk-list{overflow-y:hidden;-webkit-mask-image:linear-gradient(to bottom,#000 85%,transparent);mask-image:linear-gradient(to bottom,#000 85%,transparent)}
 .pk-col{cursor:pointer}.pk-col.pk-scroll{cursor:auto}
+/* KARTEN SCROLLEN ERST NACH EINEM KLICK (773, Nutzer 2026-11-19: "alle Karten in denen man scrollen
+   kann sollen erst scrollbar sein wenn man sie klickt"). Muster der Price-Karte (762), jetzt fuer jede
+   Liste mit eigenem Scrollbereich in einer Karte. Ohne Klick: overflow hidden -> Rad/Wisch scrollt die
+   Seite; Verlauf unten nur, wenn wirklich mehr da ist (.ks-mehr, ksMarkieren). Fenster (.ov) bleiben
+   frei scrollbar. ⚠ Liste = KS_SEL in js/main.js; check/klickscroll.js findet neue Listen an der FORM. */
+#pageArea :is(.db-ev-list,.nb-list,.mv-list,.hl-list,.cal-scroll,.gp2-l,.abc-day-list,.ab-nt-list,.aqn-list,.histp,.calp):not(.ov *):not(.ks-an){overflow-y:hidden!important}
+#pageArea :is(.db-ev-list,.nb-list,.mv-list,.hl-list,.cal-scroll,.gp2-l,.abc-day-list,.ab-nt-list,.aqn-list,.histp,.calp).ks-mehr:not(.ov *):not(.ks-an){cursor:pointer;-webkit-mask-image:linear-gradient(to bottom,#000 85%,transparent);mask-image:linear-gradient(to bottom,#000 85%,transparent)}
 .ab-scoreline .ab-scoreline-go{margin-left:auto}
 .ab-scoreline .ab-scoreline-go .ab-goto{margin:0;padding:0}
 </style>
@@ -7898,11 +7911,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-772 - Filter zeigen Russell wie die Seitenleiste (Trends-Kopf bricht nicht mehr um)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-773 - PC-Bugs: Logo ueber Inhalt, Info-i, Show all mittig, COT-Filter abgeschnitten, Back-Pille, Karten scrollen erst nach Klick"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-772</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-773</span>
     </span>
   </div>
   <div class="hdr-r">

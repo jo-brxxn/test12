@@ -22832,3 +22832,20 @@ CI 769 rot. Je Befund lokal geprüft:
   - Die Breite des `<select>` richtet sich nach der längsten Option: „Russell 2000“ aus `COT_NAME`. Die gemeinsame Namensliste aller Filter hatte die Umbenennung (768) nicht mitbekommen.
 - **Fix:** `COT_NAME.RUSSELL = 'Russell'` → Filter 133 px, kein Umbruch, `filterfest` grün.
 - ⚠ **Knapp:** Die Trends-Kopfzeile hat bei 1180 px nur noch wenige Pixel Luft. Ein künftig längerer Asset-Name bricht sie wieder; `filterfest` meldet das.
+
+## 2026-11-19 — PC-Bugliste: Logo, Info-i, Show all, Filter, Back-Pille, Klick-Scrollen (VERSION-CHECK-773)
+
+Nutzer (7 PC-Fotos): *„Im Asset Filter sind Buchstaben abgeschnitten, dann habe ich von einem Asset über eine Karte zu einer Kategorie und von da zum Dashboard dann soll das back weggehen … alle Karten in denen man scrollen kann sollen erst scrollbar sein wenn man sie klickt. Dann ist das Logo an manchen Stellen komplett falsch … bei der bias Score Karte soll Show all … für alle Spalten mittig sein. Dann das Info i soll in dem Kreis sein“*. Auftrag: auch woanders testen.
+
+| Bug | Gemessen vorher | Ursache | Fix | Wächter |
+|---|---|---|---|---|
+| **Logo** mitten in der Karte | 1920 px, Performance-Karte: Logo-Oberkante **22 px über** dem letzten Inhalt; 2560 px schlimmer (Zoom 1,616) | `lgKarte` teilte Höhe/Lage **ein zweites Mal** durch den Dashboard-Zoom; `lgFreiraum` misst seit 2026-11-11 schon in Kartenmaß | zweite Teilung weg | `logoplatz.js` (12 Logos, 1920/2560; Gegenprobe: Teilung zurück → 181–244 px rot) |
+| **Info-i** berührt den Kreis | `.dw-hdr>.rinfo`, `.mx-card-title>.rinfo`: **11 px** i im **10,2 px** Kreis | beide Kopf-Arten fehlten in den vier ⓘ-Regelgruppen | aufgenommen → 7,3 px i, ~1,2 px Luft | `infoi.js` BUCHSTABE (jedes sichtbare ⓘ, ≤ 0,8 × Kreis) |
+| **Show all** nur unter einer Spalte | je Spalte ein eigener Knopf | Knopf je Spalte gebaut | ein Knopf `.dbv-mehr-z` mittig unter allen Spalten (±2 px), klappt alle drei | `dashboard.js`, `dashfilter.js` |
+| **Filter-Buchstaben** abgeschnitten (Copper) | `.cot-filterbar select`: **16 px** Platz für **16,8 px** Zeile (1920 + 1194) | padding 8+8 px bei fester Höhe 34 px | `padding:0 15px`, Höhe bleibt 34 px; Fehlerklasse: 39 Auswahllisten auf 16 Seiten sauber | `selectschnitt.js` |
+| **Back-Pille** bleibt | USD → „Go to Trends“ → Seitenleiste Dashboard: Pille **sichtbar** (1920 + 390) | `showTab` räumte sie nur auf der **Ursprungsseite** ab | `_quickZielTab`: erste Seite nach dem Go-to; jede andere → `rueckwegAus()` (6 Go-to-Wege) | `backpille.js` (Gegenprobe rot) |
+| **Karten scrollen** ohne Klick | Key events (Dashboard) + Gameplan-Liste: Rad scrollte die Liste, Seite stand | nur die Price-Karte (762) hatte die Sperre | eine Regel für alle Karten-Listen (`KS_SEL`); Klick schaltet frei und wird **geschluckt** — gemessen: Key-events-Zeilen sind Links (Klick → Kalender), sonst verlässt man die Seite beim Versuch zu scrollen | `klickscroll.js` (an der Form, 19 Seiten) |
+
+- ⚠ Kollision gefunden: History- und Kalender-Karte öffnen beim Tipp ihr Fenster (759). Der geschluckte Klick verhinderte das (`kartenauf.js` rot) → `.ab-auf`/`.abc-cal` ausgenommen.
+- Freischalten beim **Klick**, nicht bei pointerdown: ein Wisch, der auf der Liste beginnt, scrollt am Handy die Seite und schaltet nichts frei.
+- *Nicht angefasst:* Price-Karte behält ihr eigenes Muster (762, Spalte statt Liste).

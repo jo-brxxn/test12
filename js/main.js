@@ -5186,6 +5186,13 @@ let _quickReturnAssetId=null;
 // die Pille soll zurueck auf den Watchlist-Tab, nicht auf eine Asset-Seite.
 // Nur gesetzt, wenn _quickReturnAssetId leer ist (siehe researchBackFromShortcut).
 let _quickReturnTab=null;
+// Zielseite des Quick-Links (Nutzer 2026-11-19: "von einem Asset ueber eine Karte zu einer Kategorie
+// und von da zum Dashboard dann soll das back weggehen"). Gemessen vorher: USD -> "Go to Trends" ->
+// Seitenleiste Dashboard -> Pille weiter sichtbar (1920 + 390 px), weil showTab sie nur auf der
+// URSPRUNGS-Seite abraeumte. Die Pille gehoert zur Zielseite: showTab merkt sich die erste Seite nach
+// dem Quick-Link, jede andere Seite beendet den Rueckweg (rueckwegAus).
+let _quickZielTab=null;
+function rueckwegAus(){_resReturnActive=false;_quickReturnAssetId=null;_quickReturnTab=null;_quickZielTab=null;document.body.classList.remove('res-return-active');}
 // Scrollstand der Seite, von der der Quick-Link ausging (Nutzer 2026-09-23:
 // "wenn man back drueckt soll man zur alten Position kommen"). Gemessen
 // vorher: USD auf 1500 -> "Go to Trends" -> Pille -> scrollTop 0, weil
@@ -9236,7 +9243,7 @@ function retailPartnerWaehlen(sym){
   const c=getSym();if(!c)return;
   // Wie assetQuickGo: Rueckweg zur Asset-Seite merken, dann gefiltert oeffnen.
   _resReturnActive=true;_quickReturnAssetId=c.id;_quickReturnTab=null;quickReturnMerken();
-  document.body.classList.add('res-return-active');
+  document.body.classList.add('res-return-active');_quickZielTab=null;
   setBackPillTitle(`Back to ${c.name}`);
   showTab('sent');
   try{setSentSub('retail');setSentSym(sym);}catch(e){}
@@ -16323,7 +16330,7 @@ function researchShortcutGo(tabId){
     else if(tabId==='carry'){const q=document.getElementById('carrySearch');if(q)q.value=id;}
   }
   _resReturnActive=true;_quickReturnAssetId=null;
-  document.body.classList.add('res-return-active');
+  document.body.classList.add('res-return-active');_quickZielTab=null;
   setBackPillTitle('Back to the Archive');
   showTab(tabId);
   if(tabId==='carry'){const q=document.getElementById('carrySearch');if(q&&id){q.value=id;renderCarry();}}
@@ -16472,7 +16479,7 @@ function indCompareGo(indId){
   if(base)dataIndBase=base;
   if(dataMode==='vs')dataMode='assets';   // der Knopf verspricht "By asset" mit diesem Asset
   _resReturnActive=true;_quickReturnAssetId=c.id;_quickReturnTab=null;quickReturnMerken();
-  document.body.classList.add('res-return-active');
+  document.body.classList.add('res-return-active');_quickZielTab=null;
   setBackPillTitle(`Back to ${c.name||c.id}`);
   showTab('data');
 }
@@ -16480,7 +16487,7 @@ function assetQuickGo(tabId){
   const c=getSym();if(!c)return;
   applyAssetQuickFilter(tabId,c.id);
   _resReturnActive=true;_quickReturnAssetId=c.id;_quickReturnTab=null;quickReturnMerken();
-  document.body.classList.add('res-return-active');
+  document.body.classList.add('res-return-active');_quickZielTab=null;
   setBackPillTitle(`Back to ${c.name}`);
   showTab(QUICK_LINK_REAL_TAB[tabId]||tabId);
 }
@@ -16538,7 +16545,7 @@ function watchQuickGoDirect(tabId,name){
   else if(tabId==='retail'){setSentSub('retail');setSentSym(name.replace('/',''));}
   else return;
   _resReturnActive=true;_quickReturnAssetId=null;_quickReturnTab='watch';quickReturnMerken();
-  document.body.classList.add('res-return-active');
+  document.body.classList.add('res-return-active');_quickZielTab=null;
   setBackPillTitle('Back to the Watchlist');
   showTab(QUICK_LINK_REAL_TAB[tabId]||tabId);
 }
@@ -16550,7 +16557,7 @@ function watchQuickGo(tabId,id){
   if(!id)return;
   applyAssetQuickFilter(tabId,id);
   _resReturnActive=true;_quickReturnAssetId=null;_quickReturnTab='watch';quickReturnMerken();
-  document.body.classList.add('res-return-active');
+  document.body.classList.add('res-return-active');_quickZielTab=null;
   setBackPillTitle('Back to the Watchlist');
   showTab(QUICK_LINK_REAL_TAB[tabId]||tabId);
 }
@@ -18255,6 +18262,7 @@ const DASH_KLASSEN=[['fx','Currencies'],['metal','Metals'],['energy','Energy'],[
 const DASH_BIAS_KURZ=3;
 let dashBiasAlle={bull:false,neu:false,bear:false};
 function dashBiasSpalteUmschalten(b){dashBiasAlle[b]=!dashBiasAlle[b];renderDash();}
+function dashBiasAlleUmschalten(){const an=!(dashBiasAlle.bull&&dashBiasAlle.neu&&dashBiasAlle.bear);dashBiasAlle={bull:an,neu:an,bear:an};renderDash();}
 // Kategorie-Filter fuer Bias scores und Performance (Nutzer 2026-11-15: "die Auswahl nach
 // all und den ganzen Kategorien also Forex crypto usw"). Je Karte eigener Filter, auf allen
 // Geraeten gemerkt (cloudPush/cloudPull/export/import wie setupFxOnly).
@@ -18303,8 +18311,11 @@ function dashBiasHtml(){
   const sp=[['bull','Bullish',bull],['neu','Neutral',neu],['bear','Bearish',bear]];
   const zeile=(s,i,b)=>{const v=D.sc(s),weg=!dashBiasAlle[b]&&i>=grenze;return dashBiasKnopf(s,'dbv-l',`${dashBiasN(s)}${dashBiasV(s,v)}${dashBiasBalken(s,v,D.mx)}`).replace('<button ',weg?'<button hidden ':'<button ');};
   const anz={bull:bull.length,neu:neu.length,bear:bear.length};
-  const knopf=b=>anz[b]>grenze?`<button class="dbv-mehr" onclick="dashBiasSpalteUmschalten('${b}')" aria-expanded="${dashBiasAlle[b]}">${dashBiasAlle[b]?`Show less${icn('chevronUp',14)}`:`Show all ${anz[b]}${icn('chevronDown',14)}`}</button>`:'';
-  const spalten=rest.length?`<div class="dbv-lang">${sp.map(([b,l,arr])=>`<div class="dbv-sp" data-bias="${b}"><div class="db-gr-lbl" style="color:${biasCss(b)}">${l} <b>${arr.length}</b></div>${arr.length?arr.map((s,i)=>zeile(s,i,b)).join(''):'<div class="db-leer"><i>None</i></div>'}${knopf(b)}</div>`).join('')}</div>`:'';
+  // 773 (Nutzer-Foto 2026-11-19: "Show all soll nicht nur fuer die Spalte sondern fuer alle Spalten mittig sein"):
+  // EIN Knopf mittig unter allen drei Spalten, klappt alle gemeinsam auf/zu (vorher je Spalte einer).
+  const verdeckt=['bull','neu','bear'].reduce((a,b)=>a+Math.max(0,anz[b]-grenze),0),offen=dashBiasAlle.bull&&dashBiasAlle.neu&&dashBiasAlle.bear;
+  const mehr=verdeckt||offen?`<div class="dbv-mehr-z"><button class="dbv-mehr" onclick="dashBiasAlleUmschalten()" aria-expanded="${offen}">${offen?`Show less${icn('chevronUp',14)}`:`Show all ${rest.length}${icn('chevronDown',14)}`}</button></div>`:'';
+  const spalten=rest.length?`<div class="dbv-lang">${sp.map(([b,l,arr])=>`<div class="dbv-sp" data-bias="${b}"><div class="db-gr-lbl" style="color:${biasCss(b)}">${l} <b>${arr.length}</b></div>${arr.length?arr.map((s,i)=>zeile(s,i,b)).join(''):'<div class="db-leer"><i>None</i></div>'}</div>`).join('')}</div>${mehr}`:'';
   return filter+podest+spalten;
 }
 // Heute: High + Medium, chronologisch; vergangene mit Ist-Wert in Beat/Miss-Farbe.
@@ -26810,6 +26821,8 @@ function showTab(tab,btn,fxMode){
   // verschwindet automatisch, sobald der Nutzer tatsaechlich zurueck im
   // Research-Terminal ankommt - egal ob ueber die Back-Pille selbst oder
   // ueber die normale Tab-Leiste.
+  if(_resReturnActive){if(!_quickZielTab)_quickZielTab=tab;else if(tab!==_quickZielTab)rueckwegAus();}
+  ksBald(450);   // Seitenwechsel aendert keinen DOM-Inhalt -> Verlauf der Karten-Listen nach dem Wisch neu messen (773)
   if(tab==='notes'&&_resReturnActive&&!_quickReturnAssetId){_resReturnActive=false;document.body.classList.remove('res-return-active');}
   // Gleiches fuer den Assets-Rueckweg (assetQuickGo): sobald man - egal wie,
   // auch per normaler Tab-Leiste statt der Pille - wieder auf 'cur' landet,
@@ -28059,10 +28072,13 @@ function lgKarte(card,m){
   // Gemessen wird in Bildschirm-Pixeln (getBoundingClientRect), gesetzt in CSS-
   // Pixeln - im hochskalierten Dashboard (zoom, grosse Bildschirme 2026-11-08)
   // sonst doppelt skaliert: gemessen 1920 px - Logo ragte unten aus der Karte.
-  const zd=card.closest('#dashWidgets'),z=zd?(parseFloat(getComputedStyle(zd).zoom)||1):1;
-  lg.style.width=Math.round(breite/z)+'px';
+  // ⚠ 773 (Nutzer-Foto 2026-11-19, PC: "Logo ... teilweise mitten in der Karte"): m ist seit 2026-11-11
+  // schon im Massstab der Karte (lgFreiraum teilt durch currentCSSZoom = ALLE Zooms bis zur Karte). Die
+  // zweite Teilung durch den Dashboard-Zoom hier setzte das Logo um den Faktor 1,205 zu hoch - gemessen
+  // 1920 px Performance-Karte: Logo-Oberkante 22 px UEBER dem letzten Inhalt. Also nicht noch einmal teilen.
+  lg.style.width=Math.round(breite)+'px';
   // unten mittig in der freien Flaeche, mit etwas Abstand zum Fuss
-  lg.style.top=Math.round((m.unten-m.top-hoehe-Math.min(18,m.frei*0.08))/z)+'px';
+  lg.style.top=Math.round(m.unten-m.top-hoehe-Math.min(18,m.frei*0.08))+'px';
 }
 // ── ⓘ in die rechte obere Ecke (Nutzer-Regel 2026-09-25) ────────────────
 // Die CSS-Regel (index.html, "EIN DRITTEL KLEINER") schiebt das ⓘ an den
@@ -28080,6 +28096,35 @@ function lgKarte(card,m){
 // naechste Messung ein neues Layout der ganzen Seite. Gemessen (CPU 4x,
 // Asset-Seite oeffnen): 316 ms. Die Lage innerhalb einer Titelzeile haengt
 // nicht an anderen Titelzeilen; die Messungen bleiben gueltig.
+// ── Karten scrollen erst nach einem Klick (773, Nutzer 2026-11-19). CSS: index.html "KARTEN SCROLLEN
+// ERST NACH EINEM KLICK". Klick in eine Liste schaltet sie frei, Klick daneben sperrt wieder.
+const KS_SEL='.db-ev-list,.nb-list,.mv-list,.hl-list,.cal-scroll,.gp2-l,.abc-day-list,.ab-nt-list,.aqn-list,.histp,.calp';
+// ⚠ Freischalten erst beim KLICK (Tipp ohne Bewegung), nicht bei pointerdown: ein Wisch, der auf der
+// Liste beginnt, soll die Seite scrollen und die Liste NICHT freischalten (Handy). Gemessen 2026-11-19:
+// die Zeilen von Key events sind Links (Klick -> COT-Seite) - der freischaltende Klick wird deshalb
+// geschluckt, sonst verlaesst man beim Versuch zu scrollen die Seite. Erst der naechste Klick oeffnet.
+// Ausgenommen: Fenster (.ov) und Karten, die beim Tipp ihr Fenster oeffnen (.ab-auf/.abc-cal, 759,
+// check/kartenauf.js) - die scrollen ohnehin nie in sich, ein geschluckter Klick haette das Oeffnen verhindert.
+const ksFrei=z=>!!(z&&!z.closest('.ov,.ab-auf,.abc-cal')&&z.closest('#pageArea'));
+const ksListe=t=>{const z=t&&t.closest?t.closest(KS_SEL):null;return ksFrei(z)?z:null;};
+document.addEventListener('pointerdown',e=>{
+  const z=ksListe(e.target);
+  document.querySelectorAll('.ks-an').forEach(x=>{if(x!==z)x.classList.remove('ks-an');});
+},true);
+document.addEventListener('click',e=>{
+  const z=ksListe(e.target);
+  if(!z||z.classList.contains('ks-an')||!z.classList.contains('ks-mehr'))return;
+  z.classList.add('ks-an');e.preventDefault();e.stopPropagation();
+},true);
+// Verlauf unten nur bei echtem Ueberhang (sonst verblasst die letzte Zeile ohne Grund). Erst alle
+// messen, dann schreiben (docs/performance.md).
+function ksMarkieren(){
+  const l=[...document.querySelectorAll('#pageArea :is('+KS_SEL+')')].filter(ksFrei);
+  const m=l.map(x=>x.scrollHeight>x.clientHeight+2);
+  l.forEach((x,i)=>{if(x.classList.contains('ks-mehr')!==m[i])x.classList.toggle('ks-mehr',m[i]);});
+}
+var _ksT=0;function ksBald(ms){clearTimeout(_ksT);_ksT=setTimeout(()=>{try{ksMarkieren();}catch(e){}},ms||150);}
+addEventListener('resize',()=>ksBald());
 function infoKnoepfeEinordnen(root){
   const plan=[];
   (root||document).querySelectorAll('.dw-hdr,.cot-card-title,.ab-tile-hd,.mx-card-title,.tr-card-head,.data-row,.data-ph,.rub-hdr').forEach(h=>{
@@ -28152,7 +28197,7 @@ try{window.addEventListener('resize',()=>requestAnimationFrame(()=>kopfTitelEinp
 let _iiPlan=0;
 // Textwechsel nur dann, wenn er im Asset-Kopf passiert (dort haengt die
 // Einpassung an der Textbreite) - siehe nurTextMutation.
-try{new MutationObserver(ms=>{if(nurTextMutation(ms)&&!ms.some(m=>m.target.closest&&m.target.closest('.ahead')))return;if(!_iiPlan)_iiPlan=requestAnimationFrame(()=>{_iiPlan=0;infoKnoepfeEinordnen();kopfTitelEinpassen();});})
+try{new MutationObserver(ms=>{if(nurTextMutation(ms)&&!ms.some(m=>m.target.closest&&m.target.closest('.ahead')))return;if(!_iiPlan)_iiPlan=requestAnimationFrame(()=>{_iiPlan=0;infoKnoepfeEinordnen();kopfTitelEinpassen();try{ksMarkieren();}catch(e){}});})
   .observe(document.getElementById('pageArea')||document.body,{childList:true,subtree:true});}catch(e){}
 let _lgPlan=0,_lgTextPlan=0;const _lgTextKarten=new Set();
 // ⚠ ERST alle Karten messen, DANN alle Logos setzen (2026-10-03,
@@ -28325,7 +28370,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

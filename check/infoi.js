@@ -11,7 +11,9 @@
 //   - sichtbarer Kreis = 0,6 x Titelschrift (±1 px)
 //   - rechtestes Element der Kopfzeile, Kreis <= 3 px vom Innenrand der Karte
 //   - vertikal auf der Mitte der Titelschrift (±1,5 px)
+//   - BUCHSTABE (773): jedes sichtbare ⓘ, Schrift <= 0,8 x Kreis (das i beruehrt den Kreis nicht)
 //   node check/infoi.js [--gegenprobe]  (alte 15-px-Kreise -> rot)
+//   node check/infoi.js --gegenprobe-buchstabe  (11-px-i im Dashboard-Kopf -> BUCHSTABE rot)
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const { chromium } = require(PW);
@@ -24,6 +26,7 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
   await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) {} });
   const perr = []; p.on('pageerror', e => perr.push(String(e)));
   await p.goto(URL); await wartenBisDatenDa(p);
+  if (process.argv.includes('--gegenprobe-buchstabe')) await p.addStyleTag({ content: '.dw-hdr>.rinfo{font-size:11px!important}' });
   if (GEGENPROBE) await p.addStyleTag({ content: '.info-b::before,.rinfo::before{width:15px!important;height:15px!important}' });
   await p.evaluate(() => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); });
   let n = 0;
@@ -57,6 +60,13 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
       });
       return o;
     }, tab);
+    // BUCHSTABE (773, Nutzer 2026-11-19 PC: "das Info i soll in dem Kreis sein und nicht den Kreis
+    // beruehren"): JEDES sichtbare ⓘ, auch ausserhalb der Kartenkoepfe oben (gemessen vorher: .dw-hdr>.rinfo
+    // und .mx-card-title>.rinfo hatten 11 px Schrift im 10,2-px-Kreis). Schrift <= 0,8 x Kreis.
+    (await p.evaluate(tab => [...document.querySelectorAll('.info-b,.rinfo')].filter(bt => bt.getBoundingClientRect().width && !bt.closest('.modal')).map(bt => {
+      const v = getComputedStyle(bt, '::before'); const kreis = parseFloat(v.width);
+      return { tab, kreis, fs: parseFloat(getComputedStyle(bt).fontSize), name: (bt.parentElement.textContent || '').trim().slice(0, 24) };
+    }), tab)).forEach(x => { if (!(x.kreis > 0) || x.fs > x.kreis * 0.8) fail('BUCHSTABE', `${x.tab} "${x.name}": ${x.fs}px-i im ${x.kreis}px-Kreis (max 0,8 x Kreis)`); });
     r.forEach(x => {
       if (x.ohneKarte != null) { fail('KARTE UNBEKANNT', `${x.tab} "${x.ohneKarte}": ⓘ in keiner bekannten Kartenart - Liste in check/infoi.js ergaenzen`); return; }
       n++;
@@ -69,6 +79,7 @@ const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
   if (!n) fail('KEINE ⓘ', 'nichts gefunden');
   perr.forEach(x => fail('JS-FEHLER', x));
   await b.close();
+  if (process.argv.includes('--gegenprobe-buchstabe')) { const ok = F.some(f => /^BUCHSTABE/.test(f)); console.log(ok ? 'infoi --gegenprobe-buchstabe: ok (zu grosses i gemeldet)' : 'infoi --gegenprobe-buchstabe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (GEGENPROBE) { if (F.length) { console.log(`infoi --gegenprobe: ok (rot wie erwartet, ${F.length} Befund(e))`); process.exit(0); } console.log('infoi --gegenprobe: FEHLER - Waechter bleibt gruen'); process.exit(1); }
   if (F.length) { console.log(`infoi: ${F.length} Befund(e)`); F.slice(0, 40).forEach(f => console.log('  ' + f)); process.exit(1); }
   console.log(`infoi: ok (${n} ⓘ: Kreis 0,6 x Titelschrift, rechts oben in der Ecke, auf Titelhoehe)`);
