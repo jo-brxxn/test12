@@ -22931,6 +22931,21 @@ function renderDataAssetPicker(){
 function setDataInd(v){dataIndBase=v||'';dataIndOverride={};renderDataTab();}
 // Scrollstand halten - WebKit kuerzt ihn beim innerHTML-Austausch (siehe
 // scrollHalten; Fehlerklasse gefunden 2026-09-23 nach dem iPad-Bugreport).
+// Vollbild der Data-Seite (774) - reiner Anzeige-Zustand, kein Sync (wie dataAsset).
+let dataVoll=false;
+function dataVollTop(){
+  const pg=document.getElementById('pgData'),h=document.querySelector('.hdr');if(!pg)return;
+  if(!dataVoll||!h){pg.style.removeProperty('top');return;}
+  // #pgData traegt den Seiten-Zoom: top wird in CSS-Pixeln der Seite gesetzt
+  pg.style.top=(h.getBoundingClientRect().bottom/(pg.currentCSSZoom||1))+'px';
+}
+function dataVollUmschalten(an){
+  dataVoll=an===undefined?!dataVoll:!!an;
+  document.body.classList.toggle('data-voll',dataVoll);
+  dataVollTop();renderDataTab();
+}
+addEventListener('keydown',e=>{if(e.key==='Escape'&&dataVoll&&!document.querySelector('.ov[style*="flex"],.data-picker'))dataVollUmschalten(false);});
+addEventListener('resize',()=>{if(dataVoll)dataVollTop();});
 function renderDataTab(){
   const zurueck=scrollHalten(document.getElementById('pgData'));
   try{return renderDataTabRoh.apply(this,arguments);}finally{zurueck();}
@@ -22984,7 +22999,7 @@ function renderDataTabRoh(){
     // 763 (Nutzer 2026-11-18, Vorher/Nachher-Bild): Legende aus dem Panel-Kopf - Balken/Linie erklaert das ⓘ
     const legend='';
     const inner=ind?'':`<div class="ind-hist-empty">${escH(sym.name||sym.id)} does not track “${escH(base)}”. Pick a different one above, or remove this panel.</div>`;
-    return`<div class="cot-card data-panel"><div class="data-ph"><span class="data-pt">${title}</span>${legend}${ind?indAsOfNextHtml(sym.id,ind,true):''}<span class="px-panel-ctrls">${ctrls||''}</span>${abInfoBtn((sym.name||sym.id)+' — '+base,[ind?`<b>${escH(indName(ind))}</b> of ${escH(sym.name||sym.id)}${rub?' ('+escH(rub.name)+')':''}.`:`${escH(sym.name||sym.id)} does not track this indicator.`,'Bars = the released actual, red line = the consensus forecast. "As of" is the latest release, "Next" the next expected one.','If other panels show the same indicator, all of them use the same y-axis scale.'])}</div><div class="data-pc" data-k="${k}">${inner}</div></div>`;
+    return`<div class="cot-card data-panel"><div class="data-ph"><span class="data-pt">${title}</span>${legend}<span class="px-panel-ctrls">${ctrls||''}</span>${abInfoBtn((sym.name||sym.id)+' — '+base,[ind?`<b>${escH(indName(ind))}</b> of ${escH(sym.name||sym.id)}${rub?' ('+escH(rub.name)+')':''}.`:`${escH(sym.name||sym.id)} does not track this indicator.`,'Bars = the released actual, red line = the consensus forecast. "As of" is the latest release, "Next" the next expected one.','If other panels show the same indicator, all of them use the same y-axis scale.'])}</div><div class="data-pc" data-k="${k}">${inner}</div></div>`;
   };
   // Seitenkopf wie auf jeder Seite (seit 2026-10-04: .pg-titel + .pg-sub,
   // kein Kartenrahmen). Die Chip-Reihe (je Auswahl ein "✕") ist 2026-09-26
@@ -22993,7 +23008,13 @@ function renderDataTabRoh(){
   // Dauerregel 2026-09-26: Filter (Asset-/Indikator-Auswahl) rechtsbuendig
   // in der Titelzeile; darunter die Werkzeugzeile - Ansicht (By asset / By
   // indicator) links, Zeitfilter rechts.
-  const kopf=(sub,filter,knopf,zeit,links2)=>`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar+(links2||''),zeit)}</div></div>`;
+  // Vollbild (774, Nutzer 2026-11-19: "bei data ein vollbildmodus ... der ganze also wirklich ganze
+  // bildschirm ... ausser die obere Leiste ... oben in flach den Filter und den Zeitfilter mehr nicht. In
+  // maximal eine Zeile"). Nur auf der Data-Seite, nicht in der Macro-Reihe der Asset-Seite.
+  const imSlot=!!el.closest('.mk-data-slot');
+  const voll=dataVoll&&!imSlot;
+  const vollKnopf=imSlot?'':`<button class="btn data-voll-b" onclick="dataVollUmschalten()" title="${voll?'Exit full screen (Esc)':'Full screen — only filter and time range above the charts'}" aria-label="${voll?'Exit full screen':'Full screen'}">${icn(voll?'x':'expand',14)}</button>`;
+  const kopf=(sub,filter,knopf,zeit,links2)=>voll?`<div class="data-head data-voll-kopf"><div class="data-voll-z">${filter}${knopf}${zeit}${vollKnopf}</div></div>`:`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${filter}${knopf}${vollKnopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar+(links2||''),zeit)}</div></div>`;
   let head,body,n=0;
   // Ein Preis-Panel (Side by side, Compare all): eigener Massstab, echte Preise.
   const preisPanelHtml=(k,titel,sub,ctrls,namen)=>{
@@ -26822,6 +26843,7 @@ function showTab(tab,btn,fxMode){
   // Research-Terminal ankommt - egal ob ueber die Back-Pille selbst oder
   // ueber die normale Tab-Leiste.
   if(_resReturnActive){if(!_quickZielTab)_quickZielTab=tab;else if(tab!==_quickZielTab)rueckwegAus();}
+  if(tab!=='data'&&dataVoll){dataVoll=false;document.body.classList.remove('data-voll');dataVollTop();}
   ksBald(450);   // Seitenwechsel aendert keinen DOM-Inhalt -> Verlauf der Karten-Listen nach dem Wisch neu messen (773)
   if(tab==='notes'&&_resReturnActive&&!_quickReturnAssetId){_resReturnActive=false;document.body.classList.remove('res-return-active');}
   // Gleiches fuer den Assets-Rueckweg (assetQuickGo): sobald man - egal wie,
@@ -28370,7 +28392,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{dataVollUmschalten,newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

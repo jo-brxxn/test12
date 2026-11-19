@@ -22860,3 +22860,15 @@ Nutzer (7 PC-Fotos): *„Im Asset Filter sind Buchstaben abgeschnitten, dann hab
 
 - ⚠ **Altfehler, nicht behoben:** `speichervoll --gegenprobe` bleibt grün — schon vor 774 (mit `git stash` gegengeprüft). Die Basis liegt seit 754 als Unterschied auf der Platte; das rohe `setItem` der Gegenprobe stellt den alten Fehler nicht mehr her. Wächter-Gegenprobe neu bauen.
 - ⚠ **Offener Befund (Sync, nicht behoben):** unter Last 1/4 Läufen „WAECHTER B 2“ verloren — auf beiden Geräten und in der Cloud. Vermutete Ursache: `cloudPushRoh` prüft `updated_at` und schreibt danach in einer **zweiten** Anfrage; pusht ein anderes Gerät dazwischen, wird dessen Änderung überschrieben (lost update). Fix nur serverseitig bedingt (Schreiben nur, wenn `updated_at` noch dem geprüften Stand entspricht) — betrifft die geteilte Tabelle `fx_sync`, deshalb erst mit Nutzer-OK.
+
+## 2026-11-19 — Data: Vollbildmodus + Panel-Kopf in einer Zeile (VERSION-CHECK-775)
+
+Nutzer: *„bei data ein vollbildmodus … wirklich ganze bildschirm … außer die obere Leiste … oben in flach den Filter und den Zeitfilter mehr nicht. In maximal eine Zeile … diese ganzen Daten über dem Chart … das as of … und Next … weg und der Rest in einer Zeile … push sofort mach danach die Prüfungen“*.
+
+- **Panel-Kopf:** `indAsOfNextHtml` raus aus `panelHtml`; kein Umbruch mehr unter 470 px Container (vorher `white-space:normal`).
+- **Vollbild:** Knopf (Symbol `expand`) rechts in der Filterzeile, nur auf der Data-Seite (nicht in der Macro-Reihe der Asset-Seite).
+  - `body.data-voll #pgData` fest unter der oberen Leiste (`dataVollTop`, Seiten-Zoom eingerechnet), deckt Seitenleiste ab, z-index 150 (< Fenster 200, < Auswahl-Popups 9500).
+  - Kopf = **eine** Zeile: Filter · Auswahlknopf · Zeitfilter · ✕. Zu schmal → seitlich wischen statt umbrechen.
+  - Ende: ✕, Esc oder Seitenwechsel. Reiner Anzeige-Zustand, kein Sync.
+- Gemessen (1920/1194/390): `#pgData` 0..Breite × Unterkante Leiste..Unterkante Fenster, Filterzeile 34–41 px (eine Zeile), Titel/Ansicht-Reiter weg, Esc stellt den Normalzustand her, keine JS-Fehler.
+- Push auf Nutzerwunsch **vor** den Prüfungen.

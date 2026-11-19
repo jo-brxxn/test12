@@ -3108,12 +3108,21 @@ body.no-ui-anim .cd-heute{animation:none}
 .pv-x{border:0;background:none;color:var(--t3);cursor:pointer;font-size:var(--fs-xs);width:28px;height:28px;padding:0}
 @media (hover:hover){.pv-x:hover{color:var(--t0)}}
 .pv-svg{display:block}
-.data-ph .px-asof{margin:0;font-size:var(--fs-2xs);line-height:1.15;flex-wrap:wrap;row-gap:0;min-width:0;flex:0 1 auto}   /* 763: kein Ausblend-Verlauf mehr, bricht um statt abzuschneiden */
 .data-ph .px-panel-ctrls{margin-left:auto;flex:0 1 auto}
 .data-ph .px-panel-sel{max-width:150px;min-width:0}
 .data-lg{display:inline-flex;gap:8px;font:600 var(--fs-2xs)/1 var(--ff-text);flex:0 0 auto}
-@container (max-width:470px){.data-lg{display:none}.data-pt{white-space:normal;max-width:none;flex:1 1 auto;min-width:min-content}}
-@container (max-width:330px){.data-ph .px-asof{display:none}}
+/* 774 (Nutzer 2026-11-19): "As of" und "Next" sind aus dem Panel-Kopf raus, der Rest steht in EINER Zeile -
+   auch schmal kein Umbruch mehr (vorher white-space normal ab 470 px). */
+@container (max-width:470px){.data-lg{display:none}.data-pt{max-width:none;flex:1 1 auto}}
+/* ── Vollbild der Data-Seite (774): ganze Flaeche unter der oberen Leiste, oben nur Filter + Zeitfilter
+   in EINER flachen Zeile (zu schmal: seitlich wischen statt umbrechen). top setzt dataVollTop(). */
+body.data-voll #pgData{position:fixed;left:0;right:0;bottom:0;top:56px;z-index:150;margin:0;padding:8px 12px 10px;background:var(--bg0,var(--bg1))}
+.data-voll-kopf{margin-bottom:8px}
+.data-voll-z{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;white-space:nowrap}
+.data-voll-z::-webkit-scrollbar{display:none}
+.data-voll-z>*,.data-voll-z .cot-filterbar,.data-voll-z .data-range{flex:0 0 auto;margin:0}
+.data-voll-z>.data-voll-b{margin-left:auto}
+.data-voll-b{width:var(--h-m,34px);height:var(--h-m,34px);padding:0;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
 .data-indsel{font:600 var(--fs-sm)/1.2 var(--ff-text)!important;padding:6px 10px!important}
 .data-pc{flex:1 1 auto;min-height:0;padding:6px 10px 4px;overflow:hidden}
 /* ── MATRIX / STRENGTH ── */
@@ -7913,11 +7922,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-774 - Info-i-Trefferflaeche im Dashboard-Kopf wieder 36 px (ragte in die Zeitfenster), Waechter hierarchie/speichervoll"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-775 - Data: Vollbildmodus (nur Filter + Zeitfilter in einer Zeile), Panel-Kopf ohne As of/Next in einer Zeile"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-774</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-775</span>
     </span>
   </div>
   <div class="hdr-r">
