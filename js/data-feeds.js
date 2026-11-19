@@ -521,7 +521,15 @@ function holeNewsArchiv(){
 // Ansicht braucht aeltere Schlagzeilen: Archiv holen und die aktuelle Seite neu zeichnen.
 // 769: auf der Asset-Seite KEIN Neuaufbau (check/performance.js D: "Asset-Seite 2x aufgebaut", CI 769) -
 // dort tauscht newsArchivDa (js/main.js) nur die News-Karte; sonst wie bisher rerenderBald.
-function newsArchivFuer(seite){if(!newsVollstaendig())holeNewsArchiv().then(ok=>{if(!ok)return;try{if(typeof window.newsArchivDa==='function'&&window.newsArchivDa(seite))return;}catch(e){}rerenderBald(seite);});}
+// 770b: Rueckruf NUR bei der echten Ankunft. Liegt das Archiv schon vor, wird nur zusammengefuehrt -
+// sonst rief newsArchivDa -> newsForAsset -> newsArchivFuer -> (Archiv im Speicher, sofort "ok") ->
+// newsArchivDa ... endlos (Microtask-Schleife, Seite eingefroren; gemessen: check/zurueck.js hing, wenn
+// news_data.json fehlte und das Archiv schon da war).
+function newsArchivFuer(seite){
+  if(newsVollstaendig())return;
+  if(NEWS_ARCHIV){newsZusammen();mergeNewsAi();return;}
+  holeNewsArchiv().then(ok=>{if(!ok)return;try{if(typeof window.newsArchivDa==='function'&&window.newsArchivDa(seite))return;}catch(e){}rerenderBald(seite);});
+}
 // ── KI-EINORDNUNG DER NACHRICHTEN (news_ai.json) ──────────────────
 // Nutzer-Wunsch 2026-09-08: "eine kostenlose Loesung die aber ueber ki
 // laeuft ... alle Nachrichten zieht und das automatisch zusammenfasst und

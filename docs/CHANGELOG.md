@@ -22810,3 +22810,15 @@ CI 769 rot. Je Befund lokal geprüft:
   - Er rechnete `(a·b)/c`, die App `a·(b/c)`. Bei −2,65 kippt die Rundung (Gleitkomma).
   - Gleiche Reihenfolge; die Gegenprobe (gerundeter Faktor) bleibt rot.
 - **`logo`, `speichervoll`:** lokal grün, in der CI rot. Ich beobachte den nächsten Lauf.
+
+## 2026-11-19 — News-Archiv: Endlosschleife behoben (VERSION-CHECK-771)
+
+- **CI 770:** Paket 5 nach 30 min abgebrochen; `check/zurueck.js` hing ab 15:38. Lokal reproduziert: 7 min ohne Ende.
+  - Mit `newsArchivDa` außer Kraft grün in 1:54 → Ursache belegt.
+- **Schleife:**
+  1. `newsArchivDa` → `newsAssetSectionHtml` → `newsForAsset` → `newsArchivFuer`.
+  2. `holeNewsArchiv` liefert bei schon geladenem Archiv sofort „ok“ → `newsArchivDa` → wieder von vorn.
+  - Endlos, wenn `newsZusammen` nichts ändern kann (`news_data.json` fehlt) → Microtask-Schleife, Seite eingefroren. Von mir in 770 eingebaut.
+- **Fix:** Der Rückruf kommt nur bei der echten Ankunft des Archivs. Liegt es schon vor, wird nur zusammengeführt.
+- **Wächter `newsarchiv` F:** `news_data.json` 404 + Archiv da → Asset-Seite muss antworten. `--gegenprobe-schleife` (alter Weg) → F rot.
+- **Fehlerklasse:** Rückrufe, die über einen Render-Pfad wieder sich selbst auslösen können. Die Kalender-Archiv-Ladung prüft bereits nur echte Ankünfte.

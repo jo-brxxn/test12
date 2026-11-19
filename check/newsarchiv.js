@@ -12,7 +12,7 @@ const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const { chromium } = require(PW);
 const fs = require('fs'), path = require('path');
 const { wartenBisDatenDa } = require('./warten.js');
-const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe');
+const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'), GPS = process.argv.includes('--gegenprobe-schleife');
 (async () => {
   const F = [];
   // Voller Bestand: das Archiv, wenn es schon da ist, sonst die (noch ungeteilte) news_data.json
@@ -80,7 +80,26 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     err2.forEach(e => F.push('E JS-Fehler: ' + e));
     await c2.close();
   }
-  await b.close();
+  // F (770b): news_data.json fehlt, das Archiv ist da -> die Asset-Seite bleibt bedienbar (vorher endlose
+  // Microtask-Schleife newsArchivDa -> newsForAsset -> newsArchivFuer, check/zurueck.js hing 15 min in der CI).
+  {
+    const c3 = await b.newContext({ viewport: { width: 1194, height: 834 }, serviceWorkers: 'block' });
+    await c3.route(/\/news_data\.json/, r => r.fulfill({ status: 404, body: '' }));
+    await c3.route(/\/news_archiv\.json/, r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(voll) }));
+    if (GPS) await c3.route(/\/js\/data-feeds\.js/, async r => { const res = await r.fetch(); let t = await res.text();
+      t = t.replace('if(NEWS_ARCHIV){newsZusammen();mergeNewsAi();return;}\n  holeNewsArchiv()', 'holeNewsArchiv()'); r.fulfill({ response: res, body: t }); });
+    const q = await c3.newPage();
+    await q.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) { } });
+    await q.goto('http://127.0.0.1:' + PORT + '/index.html'); await wartenBisDatenDa(q); await q.waitForTimeout(9000);
+    // Archiv per Woche-Ansicht holen, dann Asset-Seite: danach muss die Seite noch antworten
+    await q.evaluate(() => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }); try { newsPool('week', false, 'ALL', false); } catch (e) { } });
+    await q.waitForTimeout(2500);
+    const antw = await Promise.race([q.evaluate(() => { gotoSym('USD'); return new Promise(r => setTimeout(() => r('ok'), 1500)); }), new Promise(r => setTimeout(() => r('haengt'), 8000))]);
+    if (antw !== 'ok') F.push('F: Asset-Seite friert ein, wenn news_data.json fehlt und das Archiv da ist (Schleife)');
+    await c3.close().catch(() => { });
+  }
+  await b.close().catch(() => { });
+  if (GPS) { const ok = F.some(f => /^F: /.test(f)); console.log(ok ? 'newsarchiv --gegenprobe-schleife: ok (Schleife gemeldet)' : 'newsarchiv --gegenprobe-schleife: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (GP) { const ok = F.some(f => /^[BCD]: /.test(f)) && F.some(f => /^E: .*aufgebaut/.test(f)); console.log(ok ? 'newsarchiv --gegenprobe: ok (ohne Nachladen fehlende Schlagzeilen gemeldet)' : 'newsarchiv --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (F.length) { console.log('newsarchiv: ' + F.length + ' Befund(e)\n  ' + F.join('\n  ')); process.exit(1); }
   console.log(`newsarchiv: ok (Start ${start.headlines.length} von ${voll.headlines.length} Schlagzeilen, Archiv nur bei Woche/News-Tab/Asset-Seite, Zahlen wie mit vollem Bestand)`);
