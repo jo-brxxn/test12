@@ -7129,14 +7129,14 @@ function saveSoon(){
 function exportData(){
   const data=JSON.parse(snap());
   data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();data.scoreMode=scoreMode;
-  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupKlasse=setupKlasse;data.dashBiasKat=dashBiasKat;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
+  data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupKlasse=setupKlasse;data.dashBiasKat=dashBiasKat;data.dashMktWahl=dashMktWahl;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(JSON.stringify(data,null,2));
   a.download='fx-analyst-'+todayStr()+'.json';a.click();
 }
 function importData(input){
   const f=input.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=normFxTheme(_imp.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.setupKlasse!==undefined){setupKlasse=setupKlasseOk(_imp.setupKlasse);setupKlasseSpeichern();}if(_imp.dashBiasKat!==undefined){dashBiasKat=dashKatOk(_imp.dashBiasKat);localStorage.setItem('fxpro_dash_bias_kat',dashBiasKat);}if(_imp.dashPerfKat!==undefined){dashPerfKat=dashKatOk(_imp.dashPerfKat);localStorage.setItem('fxpro_dash_perf_kat',dashPerfKat);}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.pkMarkenAn!==undefined){setPkMarkenAnVal(_imp.pkMarkenAn);try{localStorage.setItem('fxpro_pk_marken',pkMarkenAn?'1':'0');}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
+  r.onload=e=>{try{pushU();applySnap(e.target.result);const _imp=JSON.parse(e.target.result);if(Array.isArray(_imp.tabStacks)){tabStacks=_imp.tabStacks;tabStacksOhneEntfernte(tabStacks);saveTabStacks();renderTabBar();}if(_imp.compactLevel!==undefined||_imp.compactView!==undefined){compactView=normCompactLevel(_imp.compactLevel!==undefined?_imp.compactLevel:_imp.compactView);localStorage.setItem('fxpro_compactview',String(compactView));applyCompactView();updCompactSw();}if(_imp.pinEnabled!==undefined){pinEnabled=_imp.pinEnabled;try{localStorage.setItem('fxpro_pin_enabled',pinEnabled?'1':'0');}catch(e){}updPinToggleBtn();if(!pinEnabled){try{sessionStorage.setItem('fxpro_unlocked','1');}catch(e){}const ov=document.getElementById('lockScreen');if(ov)ov.style.display='none';}}if(typeof _imp.newsSeenTs==='string'&&_imp.newsSeenTs>newsSeenTs){newsSeenTs=_imp.newsSeenTs;try{localStorage.setItem('fxpro_news_seen',newsSeenTs);}catch(e){}}if(_imp.assetAnimEnabled!==undefined){assetAnimEnabled=_imp.assetAnimEnabled;try{localStorage.setItem('fxpro_asset_anim_enabled',assetAnimEnabled?'1':'0');}catch(e){}applyAssetAnim();updAssetAnimToggleBtn();}if(_imp.denseMode!==undefined){denseMode=normDense(_imp.denseMode);try{localStorage.setItem('fxpro_dense',denseSpeicherwert());}catch(e){}applyDenseMode();updDenseToggleBtn();}if(_imp.fxTheme!==undefined){fxTheme=normFxTheme(_imp.fxTheme);try{fxTheme?localStorage.setItem('fxpro_theme',fxTheme):localStorage.removeItem('fxpro_theme');}catch(e){}applyFxTheme();updFxThemeToggleBtn();}if(_imp.uiAnimEnabled!==undefined){uiAnimEnabled=_imp.uiAnimEnabled;try{localStorage.setItem('fxpro_ui_anim_enabled',uiAnimEnabled?'1':'0');}catch(e){}applyUiAnim();updUiAnimToggleBtn();}if(_imp.dataAnimEnabled!==undefined){dataAnimEnabled=_imp.dataAnimEnabled;try{localStorage.setItem('fxpro_data_anim_enabled',dataAnimEnabled?'1':'0');}catch(e){}applyDataAnim();updDataAnimToggleBtn();}if(_imp.telegramEnabled!==undefined){telegramEnabled=_imp.telegramEnabled;try{localStorage.setItem('fxpro_telegram_enabled',telegramEnabled?'1':'0');}catch(e){}updTelegramToggleBtn();}updAllAnimToggleBtn();if(_imp.scoreHist){scoreHist=mergeScoreHist(_imp.scoreHist,scoreHist);try{localStorage.setItem(SCOREHIST_KEY,JSON.stringify(scoreHist));}catch(e){}}if(_imp.scoreJournal){try{jrUebernehmen(_imp.scoreJournal);}catch(e){}}if(Array.isArray(_imp.tradeJournal)){try{tjUebernehmen(_imp.tradeJournal);}catch(e){}}if(Array.isArray(_imp.setupCcyFilter)){setupCcyFilter=_imp.setupCcyFilter.filter(c=>FX.includes(c));saveSetupCcy();}if(_imp.setupFxOnly!==undefined){setupFxOnly=_imp.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}if(_imp.setupKlasse!==undefined){setupKlasse=setupKlasseOk(_imp.setupKlasse);setupKlasseSpeichern();}if(_imp.dashBiasKat!==undefined){dashBiasKat=dashKatOk(_imp.dashBiasKat);localStorage.setItem('fxpro_dash_bias_kat',dashBiasKat);}if(_imp.dashMktWahl!==undefined){dashMktWahl=dashMktOk(_imp.dashMktWahl);localStorage.setItem('fxpro_dash_mkt',JSON.stringify(dashMktWahl));}if(_imp.dashPerfKat!==undefined){dashPerfKat=dashKatOk(_imp.dashPerfKat);localStorage.setItem('fxpro_dash_perf_kat',dashPerfKat);}if(_imp.abChartRange!==undefined){setAbChartRangeVal(_imp.abChartRange);try{localStorage.setItem('fxpro_ab_range',abChartRange);}catch(e){}}if(_imp.abTrendLinien!==undefined){setAbTrendLinienVal(_imp.abTrendLinien);try{localStorage.setItem('fxpro_ab_trendlines',abTrendLinien);}catch(e){}}if(_imp.kontextSlots!==undefined){setKontextSlotsVal(_imp.kontextSlots);try{localStorage.setItem('fxpro_kontext_slots',JSON.stringify(kontextSlots));}catch(e){}}if(_imp.cotVsPrice!==undefined){setCotVsPriceVal(_imp.cotVsPrice);try{localStorage.setItem('fxpro_cot_vs_price',cotVsPrice?'1':'0');}catch(e){}}if(_imp.pxChartTyp!==undefined){setPxChartTypVal(_imp.pxChartTyp);try{localStorage.setItem('fxpro_px_typ',pxChartTyp);}catch(e){}}if(_imp.pkMarkenAn!==undefined){setPkMarkenAnVal(_imp.pkMarkenAn);try{localStorage.setItem('fxpro_pk_marken',pkMarkenAn?'1':'0');}catch(e){}}if(_imp.regimeCcy!==undefined){setRegimeCcyVal(_imp.regimeCcy);try{localStorage.setItem('fxpro_regime_ccy',regimeCcy);}catch(e){}}if(_imp.calHighOnly!==undefined){calHighOnly=_imp.calHighOnly;try{localStorage.setItem('fxpro_cal_highonly',calHighOnly?'1':'0');}catch(e){}}if(_imp.calCcyFilter!==undefined){calCcyFilter=_imp.calCcyFilter;try{localStorage.setItem('fxpro_cal_ccy',calCcyFilter);}catch(e){}}processCalEvts();save();renderSidebar();rerender();alert('Imported!');}catch(err){alert('Invalid file.');}};
   r.readAsText(f);input.value='';
 }
 
@@ -7622,7 +7622,7 @@ async function cloudPushRoh(manual){
     // zuruecksetzen - siehe cloudPull-Kommentar).
     const z0=_userEditZaehler;
     const gesendet=snap();
-    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();{const ul=undoFuerCloud();if(ul)data.undoLog=ul;}data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupKlasse=setupKlasse;data.dashBiasKat=dashBiasKat;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
+    const data=JSON.parse(gesendet);data.tabStacks=tabStacks;data.compactView=compactView>=1;data.compactLevel=compactView;data.pinEnabled=pinEnabled;data.assetAnimEnabled=assetAnimEnabled;data.uiAnimEnabled=uiAnimEnabled;data.dataAnimEnabled=dataAnimEnabled;data.telegramEnabled=telegramEnabled;data.scoreHist=scoreHist;data.scoreJournal=scoreJournal;data.tradeJournal=tjFuerCloud();{const ul=undoFuerCloud();if(ul)data.undoLog=ul;}data.setupCcyFilter=setupCcyFilter;data.setupFxOnly=setupFxOnly;data.setupKlasse=setupKlasse;data.dashBiasKat=dashBiasKat;data.dashMktWahl=dashMktWahl;data.dashPerfKat=dashPerfKat;data.setupNonFxOnly=setupNonFxOnly;data.setupYieldsOnly=setupYieldsOnly;data.abChartRange=abChartRange;data.abTrendLinien=abTrendLinien;data.kontextSlots=kontextSlots;data.pxChartTyp=pxChartTyp;data.pkMarkenAn=pkMarkenAn;data.cotVsPrice=cotVsPrice;data.calHighOnly=calHighOnly;data.calCcyFilter=calCcyFilter;data.regimeCcy=regimeCcy;data.scoreMode=scoreMode;data.newsSeenTs=newsSeenTs;data.denseMode=denseMode;data.fxTheme=fxTheme;
     if(APP_VER)data.appVer=APP_VER;
     // Kompakter Score-Schnappschuss fuer serverseitige Reports (weekly-report.yml)
     // UND fuer die serverseitige Score-Historie (update-ff-calendar.yml,
@@ -7845,6 +7845,7 @@ async function cloudPullRoh(manual,forceOverwrite){
         if(Array.isArray(cd.setupCcyFilter)){setupCcyFilter=cd.setupCcyFilter.filter(c=>FX.includes(c));try{localStorage.setItem('fxpro_setup_ccy',JSON.stringify(setupCcyFilter));}catch(e){}}
         if(cd.setupFxOnly!==undefined){setupFxOnly=cd.setupFxOnly;try{localStorage.setItem('fxpro_setup_fxonly',setupFxOnly?'1':'0');}catch(e){}}
         if(cd.dashBiasKat!==undefined){dashBiasKat=dashKatOk(cd.dashBiasKat);try{localStorage.setItem('fxpro_dash_bias_kat',dashBiasKat);}catch(e){}}
+        if(cd.dashMktWahl!==undefined){dashMktWahl=dashMktOk(cd.dashMktWahl);try{localStorage.setItem('fxpro_dash_mkt',JSON.stringify(dashMktWahl));}catch(e){}}
         if(cd.dashPerfKat!==undefined){dashPerfKat=dashKatOk(cd.dashPerfKat);try{localStorage.setItem('fxpro_dash_perf_kat',dashPerfKat);}catch(e){}}
         if(cd.setupNonFxOnly!==undefined){setupNonFxOnly=cd.setupNonFxOnly;try{localStorage.setItem('fxpro_setup_nonfxonly',setupNonFxOnly?'1':'0');}catch(e){}}
         if(cd.setupYieldsOnly!==undefined){setupYieldsOnly=cd.setupYieldsOnly;try{localStorage.setItem('fxpro_setup_yieldsonly',setupYieldsOnly?'1':'0');}catch(e){}}
@@ -18041,10 +18042,25 @@ const DASH_MKT_STD=['EUR/USD','GBP/USD','USD/JPY','XAU/USD','XAG/USD','SP500/USD
 const DASH_MKT_WIN=[['1D',1],['1W',7],['1M',30],['3M',91],['1Y',365]];
 let dashMktWin='1D';
 function dashMktWinSetzen(w){dashMktWin=w;renderDash();}
+// ── Eigene Auswahl (778, Nutzer 2026-11-19: "ein zahnrad ... oeffnet sich ein Fenster mit Filter mit allen
+// assets und dann muss man 6 Assets waehlen ... mit einem Schalter Watchlist an und aus schalten. Wenn an sieht
+// man die Assets davon der Rest der frei bleibt kann man selber auswaehlen. Wenn aus kann man alles auswaehlen").
+// dashMktWahl = {wl: Watchlist an/aus, l: eigene Namen in Reihenfolge}. Geraeteuebergreifend (Vier-Ecken-Muster
+// wie dashBiasKat: Export/Import, cloudPush/cloudPull). Leere Plaetze fuellen die Standards wie bisher.
+const DASH_MKT_N=6;
+function dashMktName(id){if(FX.includes(id))return null;const code=Object.keys(PAIR_CODE_TO_ID).find(k=>PAIR_CODE_TO_ID[k]===id)||id;return code+'/USD';}
+function dashMktAlle(){return[...FX_PAIRS_AZ,...(Array.isArray(syms)?syms:[]).filter(x=>isNonFx(x.id)).map(x=>dashMktName(x.id)).filter(Boolean)];}   // syms beim Laden noch leer
+function dashMktOk(v){const alle=new Set(dashMktAlle());const o=v&&typeof v==='object'?v:{};return{wl:o.wl!==false,l:(Array.isArray(o.l)?o.l:[]).filter((n,i,a)=>typeof n==='string'&&a.indexOf(n)===i&&(alle.has(n)||!Array.isArray(syms)||!syms.length)).slice(0,DASH_MKT_N)};}
+let dashMktWahl=(()=>{try{return dashMktOk(JSON.parse(localStorage.getItem('fxpro_dash_mkt')||'null'));}catch(e){return dashMktOk(null);}})();
+function dashMktWl(){return pairs.filter(p=>{const c=pairCats.find(x=>x.id===p.catId);return c&&c.name==='Watchlist';}).map(p=>p.name);}
+function dashMktSpeichern(){
+  try{localStorage.setItem('fxpro_dash_mkt',JSON.stringify(dashMktWahl));syncSetupFilterPref();}
+  catch(e){alert('Could not save the selection: '+(e&&e.message||e));}
+}
 function dashMktListe(){
-  const wl=pairs.filter(p=>{const c=pairCats.find(x=>x.id===p.catId);return c&&c.name==='Watchlist';}).map(p=>p.name);
+  const wl=dashMktWahl.wl?dashMktWl():[];
   const out=[];
-  [...wl,...DASH_MKT_STD].forEach(n=>{if(out.length<6&&!out.includes(n))out.push(n);});
+  [...wl,...dashMktWahl.l,...DASH_MKT_STD].forEach(n=>{if(out.length<DASH_MKT_N&&!out.includes(n))out.push(n);});
   return out.map(n=>{
     if(isPureFxPair(n)){const[a,b]=n.split('/');return{n,lbl:n,ic:`${assetIconHtml(a,16)}`,s:resolvePairPriceSeries(a,b),go:`gotoPairOverview('${escJH(n)}')`,wl:wl.includes(n)};}
     const id=nonFxLegAssetId(n),sym=syms.find(x=>x.id===id);
@@ -18061,6 +18077,48 @@ function dashSparkSvg(pts,col,uid){
 // 1D-Kachel: Laender-Umriss statt Tageskerze (Nutzer 2026-11-07: "nicht die
 // eine Kerze sondern ein Bild von dem Land"; Wahl 2026-11-08: Outline).
 // js/kachelbild.js
+// Auswahlfenster (Chip-Popup wie Data, Gruppen in 2 Spalten): jeder Tipp wirkt sofort.
+let _dashMktOffen=false;
+function dashMktAussen(e){const t=e.target;if(t&&t.closest&&t.closest('#dashMktPicker,.db-zahnrad'))return;dashMktZu();}
+function dashMktZu(){_dashMktOffen=false;document.removeEventListener('pointerdown',dashMktAussen,true);const el=document.getElementById('dashMktPicker');if(el)el.remove();document.querySelectorAll('.db-zahnrad.on').forEach(b=>b.classList.remove('on'));}
+function dashMktAuf(){
+  if(_dashMktOffen){dashMktZu();return;}
+  _dashMktOffen=true;dashMktPickerZeichnen();
+  setTimeout(()=>{if(_dashMktOffen)document.addEventListener('pointerdown',dashMktAussen,true);},0);
+}
+function dashMktUmschalten(n){
+  const wl=dashMktWahl.wl?[...new Set(dashMktWl())].slice(0,DASH_MKT_N):[];
+  if(wl.includes(n))return;            // Watchlist-Plaetze sind fest, solange der Schalter an ist
+  const i=dashMktWahl.l.indexOf(n);
+  const frei=DASH_MKT_N-wl.length;
+  if(i>=0)dashMktWahl.l.splice(i,1);
+  else{const eigene=dashMktWahl.l.filter(x=>!wl.includes(x));if(eigene.length>=frei)return;dashMktWahl.l.push(n);}
+  dashMktSpeichern();renderDash();dashMktPickerZeichnen();
+}
+function dashMktWlSetzen(an){dashMktWahl.wl=!!an;dashMktSpeichern();renderDash();dashMktPickerZeichnen();}
+function dashMktPickerZeichnen(){
+  if(!_dashMktOffen)return;
+  const btn=document.querySelector('#dbMarket .db-zahnrad');if(!btn){dashMktZu();return;}
+  btn.classList.add('on');
+  let el=document.getElementById('dashMktPicker');
+  if(!el){el=document.createElement('div');el.id='dashMktPicker';el.className='data-picker dmk-picker';document.body.appendChild(el);}
+  const wl=dashMktWahl.wl?[...new Set(dashMktWl())].slice(0,DASH_MKT_N):[];
+  const eigene=dashMktWahl.l.filter(x=>!wl.includes(x));
+  const frei=DASH_MKT_N-wl.length,belegt=wl.length+Math.min(eigene.length,frei);
+  const voll=eigene.length>=frei;
+  const lbl=n=>{if(isPureFxPair(n))return n;const id=nonFxLegAssetId(n),x=syms.find(y=>y.id===id);return x?x.name:n;};
+  const chip=n=>{const fest=wl.includes(n),on=fest||eigene.includes(n);
+    return`<button class="cmp-chip${on?' on':''}${isPureFxPair(n)?'':' nf'}${fest?' dmk-fest':''}"${fest||(!on&&voll)?' disabled':''} onclick="dashMktUmschalten('${escJH(n)}')" title="${fest?'From your watchlist':escH(lbl(n))}">${escH(lbl(n))}</button>`;};
+  const grp=(t,l)=>l.length?`<div class="data-picker-grp"><span class="cmp-filter-lbl">${escH(t)}</span><div class="cmp-filter-grp">${l.map(chip).join('')}</div></div>`:'';
+  const alleSet=new Set(dashMktAlle());
+  const nf=SB_CATS.map(c=>grp(c.l,c.ids.filter(id=>isNonFx(id)).map(dashMktName).filter(n=>n&&alleSet.has(n)&&!wl.includes(n)))).join('');
+  el.innerHTML=`<div class="data-picker-hd"><span>Market overview</span><b>${belegt}/${DASH_MKT_N}</b></div>
+    <div class="dmk-wl"><span class="dmk-wl-t">Watchlist<span class="dmk-wl-s">${dashMktWahl.wl?`<b>${wl.length}</b> fixed · <b>${frei}</b> free`:'off · pick all 6'}</span></span>
+      <label class="tgl"><input type="checkbox"${dashMktWahl.wl?' checked':''} onchange="dashMktWlSetzen(this.checked)" aria-label="Show the watchlist first"><span class="tgl-track"></span></label></div>
+    <div class="data-picker-body">${wl.length?grp('Watchlist',wl):''}${grp('FX pairs',FX_PAIRS_AZ.filter(n=>!wl.includes(n)))}${nf}</div>
+    <div class="data-picker-ft">Every tap applies right away · empty places: EUR/USD, GBP/USD, USD/JPY, Gold, Silver, S&P 500</div>`;
+  pickerAnkern(el,btn);
+}
 function dashMarktHtml(){
   const win=DASH_MKT_WIN.find(w=>w[0]===dashMktWin)||DASH_MKT_WIN[0];
   // Umrisse kommen nach: nur das Kachelraster tauschen, nicht das ganze
@@ -18249,7 +18307,7 @@ function renderDash(){sprungLog('renderDash');
     hero:dashHeroHtml(),
     stats:dashStatsHtml({pos:nPos,ev:heute.length,nf:notifs.length}),
     // voruebergehend: Farbschema der Kugel im hellen Modus (Nutzer 2026-11-08 "gib mir da mal Alternativen")
-    markt:dashSek('dbMarket','watchlist','Market overview',`<div class="dx-zf">${mktBar}</div>`+dashMarktHtml(),{link:['Watchlist',"showTab('watch')"],
+    markt:dashSek('dbMarket','watchlist','Market overview',`<div class="dx-zf">${mktBar}</div>`+dashMarktHtml(),{extra:`<button class="db-zahnrad${_dashMktOffen?' on':''}" onclick="dashMktAuf()" title="Choose the 6 assets" aria-label="Choose the 6 assets">${icn('gear',16)}</button>`,link:['Watchlist',"showTab('watch')"],
       erkl:['Your watchlist (first 6), filled up with EUR/USD, GBP/USD, USD/JPY, Gold, Silver, S&P 500.','Change and chart cover exactly the selected window.','1D: country outline instead of a chart — no intraday data. Base in the day\'s colour, quote grey; metals, oil, crypto: their symbol.','Tap a tile for the pair or asset, add pairs on the Watchlist page.']}),
     trades:dashSek('dbTrades','positions','Open trades',tjOffenKartenHtml(),{anz:nPos||null,link:['Journal',"showTab('journal')"],
       erkl:['Your open trades from the journal, same card as there.','Status in R and price distance since entry; the bar shows SL, entry, now and TP.','Close logs the exit.']}),
@@ -28455,7 +28513,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{dataVollUmschalten,newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{dashMktAuf,dashMktUmschalten,dashMktWlSetzen,dataVollUmschalten,newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

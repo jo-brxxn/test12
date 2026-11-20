@@ -22902,3 +22902,12 @@ iPad-Fotos des Nutzers (2026-11-19):
 - `namen` (CI Paket 2): 360 px, breite Schrift, Data: „USD“ 36/40 px. Ursache 775: einzeiliger Panel-Kopf, Titel durfte schrumpfen (`flex:1 1 auto` + Ellipse). Jetzt `flex:0 0 auto`, die Panel-Auswahl gibt nach. Lokal reproduziert, danach grün (12439 Namensstellen).
 - `scorenachrechnung` (CI Paket 4): CMP COPPER mine −0,7 / App −0,8 — lokal mit heutigem Feed grün (1229 Indikatoren); Rundungsgrenze am damaligen Datenstand, im nächsten CI-Lauf beobachten.
 - Lokal kein Testserver mehr startbar (Sitzung): Wächter laufen mit einer Testhilfe, die `127.0.0.1:8935` per Playwright-Route aus dem Arbeitsverzeichnis bedient.
+
+## 2026-11-20 — Market overview: Zahnrad, 6 Assets, Watchlist-Schalter (VERSION-CHECK-779)
+
+Nutzer (Foto, Kreis neben „Watchlist“): *„da ein zahrad … Fenster mit Filter mit allen assets … 6 Assets wählen … mit einem Schalter Watchlist an und aus … Wenn an sieht man die Assets davon der Rest der frei bleibt kann man selber auswählen. Wenn aus kann man alles auswählen“*.
+- `dashMktWahl={wl,l}` (localStorage `fxpro_dash_mkt` + Export/Import + cloudPush/cloudPull wie `dashBiasKat`).
+- `dashMktListe`: Watchlist (wenn an) → eigene Wahl → Standards, bis 6.
+- Fenster `#dashMktPicker`: FX-Paare A–Z + alle Nicht-FX-Gruppen (SB_CATS), Schalter, Zähler, feste Watchlist-Chips.
+- Gemessen: Watchlist aus + AUD/USD, BTC, Nasdaq → Kacheln AUD/USD, BTC, Nasdaq, EUR/USD, GBP/USD, USD/JPY; gespeichert `{"wl":false,"l":["AUD/USD","BTC/USD","NAS/USD"]}`.
+- Fehler beim ersten Lauf gefunden: Startwert las `syms` vor dem Laden (Dashboard baute nicht auf) → abgesichert.

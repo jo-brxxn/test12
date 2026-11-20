@@ -2093,3 +2093,12 @@ Nutzer: *„Option b nur eine Änderung mit Pfeilen statt Punkten und mach einen
 
 - Jeder Kartenkopf (`.ab-tile-hd`, `.abc-hd`) hat min. 34 px (`--h-m`) — so stehen die Titel nebeneinanderliegender Karten auf einer Linie, egal ob ein Kopf Knoepfe hat. Geprueft: `check/titelzeile.js`.
 - Karten-Look **Crisp** fest im hellen Modus (`--bd #C9D6E8`, `--bd2 #B3C3DA`).
+
+## Market overview: eigene Auswahl (seit 779)
+
+Nutzer 2026-11-19: *„ein zahnrad … Fenster mit Filter mit allen assets … 6 Assets wählen … Schalter Watchlist an und aus“*.
+- Zahnrad links von „Watchlist ›“ im Kartenkopf → Chip-Fenster (`#dashMktPicker`, Gruppen in 2 Spalten), jeder Tipp wirkt sofort.
+- **Watchlist an:** Watchlist-Paare fest (gesperrte Chips), freie Plätze = 6 − Watchlist selbst wählbar.
+- **Watchlist aus:** alle 6 frei.
+- Leere Plätze füllen weiter die Standards (EUR/USD, GBP/USD, USD/JPY, Gold, Silber, S&P 500).
+- Zustand `dashMktWahl` geräteübergreifend (`docs/state-sync.md`).

@@ -3035,6 +3035,16 @@ select:has(optgroup):not([data-nativ]):not(:disabled){pointer-events:none}
 @media (max-width:480px){.data-picker .cmp-chip{white-space:normal;text-align:left}}
 .data-picker-ft{padding:8px 13px;border-top:1px solid var(--bd);font:400 var(--fs-2xs)/1.45 var(--ff-text);color:var(--t3)}
 .data-picker .cmp-chip:disabled{opacity:.35;cursor:not-allowed}
+/* Market overview: eigene Auswahl (778) - Zahnrad links vom "Watchlist >", Schalterzeile, feste Watchlist-Chips */
+.db-zahnrad{margin-left:auto;width:var(--h-s);height:var(--h-s);display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:var(--rss);background:none;color:var(--t2);cursor:pointer}
+.db-zahnrad+.db-link{margin-left:2px}
+@media (hover:hover){.db-zahnrad:hover{background:var(--bg3);color:var(--t0)}}
+.db-zahnrad.on{background:var(--bg3);color:var(--ui-act)}
+.dmk-wl{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;border-bottom:1px solid var(--bd)}
+.dmk-wl-t{display:flex;flex-direction:column;gap:2px;font:700 var(--fs-sm)/1.2 var(--ff-text);color:var(--t0)}
+.dmk-wl-s{font:500 var(--fs-2xs)/1.2 var(--ff-text);color:var(--t3)}
+.dmk-wl-s b{color:var(--t1,var(--t0));font-family:var(--ff-num)}
+.data-picker .cmp-chip.dmk-fest:disabled{opacity:1;cursor:default}
 /* Raster gleich breiter Knoepfe (chipRaster, 2026-11-17): Text mittig, Name nie gekuerzt */
 .data-picker .cmp-filter-grp>.cmp-chip{justify-content:center;text-align:center;box-sizing:border-box;padding-left:6px;padding-right:6px}
 /* Compare all (2026-10-31): erst das Asset (kompakte Zeile je Gruppe), darunter nur dessen Charts */
@@ -7992,11 +8002,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-778 - Data-Panel: Name schrumpft nie (CI namen), Auswahl gibt Platz ab"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-779 - Market overview: Zahnrad, 6 Assets waehlen, Watchlist-Schalter (synchronisiert)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-778</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-779</span>
     </span>
   </div>
   <div class="hdr-r">
