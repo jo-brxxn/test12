@@ -3179,7 +3179,8 @@ body.no-ui-anim .cd-heute{animation:none}
 .data-lg{display:inline-flex;gap:8px;font:600 var(--fs-2xs)/1 var(--ff-text);flex:0 0 auto}
 /* 774 (Nutzer 2026-11-19): "As of" und "Next" sind aus dem Panel-Kopf raus, der Rest steht in EINER Zeile -
    auch schmal kein Umbruch mehr (vorher white-space normal ab 470 px). */
-@container (max-width:470px){.data-lg{display:none}.data-pt{max-width:none;flex:1 1 auto}}
+@container (max-width:470px){.data-lg{display:none}.data-pt{max-width:none;flex:0 0 auto;overflow:visible}.data-ph .px-panel-ctrls{flex:1 1 auto;min-width:0;display:flex;justify-content:flex-end}.data-ph .px-panel-sel{flex:1 1 auto;min-width:0}}
+/* 777: der Name schrumpft nie (check/namen.js, 360 px breite Schrift: "USD" 36/40 px), die Auswahl gibt nach */
 /* 777: sehr schmale Panels (Vollbild am Handy, 2 Spalten): Panel-Auswahl weg, damit der Name nie gekuerzt wird -
    der Indikator laesst sich oben in der Filterzeile fuer alle waehlen */
 @container (max-width:240px){.data-ph .px-panel-sel{display:none}.data-ph{gap:6px;padding-left:10px}}
@@ -7991,11 +7992,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-777 - Data: Vollbild ohne Scrollen, Fenster deckt im Vollbild ganz ab, Werkzeugzeile einzeilig; Diagnose-Schalter #diag fuer Safari"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-778 - Data-Panel: Name schrumpft nie (CI namen), Auswahl gibt Platz ab"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-777</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-778</span>
     </span>
   </div>
   <div class="hdr-r">

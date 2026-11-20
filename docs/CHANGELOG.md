@@ -22896,3 +22896,9 @@ iPad-Fotos des Nutzers (2026-11-19):
 - **Werkzeugzeile** (*„Mach das das in einer Zeile steht die Zeitfilter und die anderen“*): 1180 px: links 611 + rechts 462 > 1060 px → 2 Zeilen. Jetzt nowrap, enger ab 1120 px Container (Reiter 8 px, „Display“-Wort weg, Zeitknöpfe 7 px); 1366/1180/1024 passen, Handy wischt.
 - **Safari-Verschwinden der oberen Dashboard-Karten:** in Chrome/Linux-WebKit nicht nachstellbar. Unterschied Dashboard ↔ Asset-Seite: 56 ↔ 1 laufende Filme, 51 ↔ 1 Flaggen mit drop-shadow + mix-blend-mode. Diagnose-Schalter `#diag=film|flagge|kugel|hero|zoom` (Kopf von `index.html`), damit der Nutzer in Safari den Auslöser findet. Chrome-Versuche (Filme außerhalb aus, halbe Bildrate, Kugel pausieren, Filme beim Scrollen anhalten) brachten nachgewiesen nichts und sind nicht im Code.
 - Wächter `check/datavoll.js` (Gegenprobe rot).
+
+## 2026-11-20 — CI 776: Data-Panel-Name gekürzt (VERSION-CHECK-778)
+
+- `namen` (CI Paket 2): 360 px, breite Schrift, Data: „USD“ 36/40 px. Ursache 775: einzeiliger Panel-Kopf, Titel durfte schrumpfen (`flex:1 1 auto` + Ellipse). Jetzt `flex:0 0 auto`, die Panel-Auswahl gibt nach. Lokal reproduziert, danach grün (12439 Namensstellen).
+- `scorenachrechnung` (CI Paket 4): CMP COPPER mine −0,7 / App −0,8 — lokal mit heutigem Feed grün (1229 Indikatoren); Rundungsgrenze am damaligen Datenstand, im nächsten CI-Lauf beobachten.
+- Lokal kein Testserver mehr startbar (Sitzung): Wächter laufen mit einer Testhilfe, die `127.0.0.1:8935` per Playwright-Route aus dem Arbeitsverzeichnis bedient.
