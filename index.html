@@ -59,6 +59,36 @@
   }catch(e){}
 })();
 </script>
+<!-- ⚠ DIAGNOSE-SCHALTER (777, wie #sprungtest): Nutzer 2026-11-19 sieht in SAFARI (Mac), dass die Karten der
+     ersten 2 Dashboard-Reihen beim Zurueckscrollen kurz fehlen; auf der Asset-Seite nicht. Safari/Mac ist hier
+     nicht nachstellbar (Chrome und Linux-WebKit zeigen es nicht). Je ein Verdaechtiger laesst sich ueber die
+     Adresse abschalten, z. B. ...index.html#diag=film oder #diag=film,kugel:
+       film   = animierte Asset-Symbole (56 laufende Filme auf dem Dashboard, 1 auf der Asset-Seite)
+       flagge = Flaggen-Effekte (drop-shadow-Filter + mix-blend-mode, 51 vs 1)
+       kugel  = Globus (Canvas + Animationen)      hero = Hero-Grafik + Logo      zoom = Dashboard-Zoom
+     Ohne #diag aendert sich nichts. Unten links steht dann, was aus ist. -->
+<script>
+(function(){
+  try{
+    var m=/[#&]diag=([a-z,]+)/.exec(location.hash||'');if(!m)return;
+    var l=m[1].split(',').filter(Boolean),h=document.documentElement;
+    l.forEach(function(x){h.classList.add('diag-'+x);});
+    document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('div');d.id='diagHinweis';d.textContent='Diagnosis: off = '+l.join(', ');document.body.appendChild(d);});
+  }catch(e){}
+})();
+</script>
+<style>
+html.diag-film .ai-wrap>.ai-film-win{display:none!important}
+html.diag-film .ai-wrap>.ai-svg{visibility:visible!important}
+html.diag-flagge .ai-flag{filter:none!important}
+html.diag-flagge .ai-fold{mix-blend-mode:normal!important}
+html.diag-kugel #dashGlobeHost{visibility:hidden!important}
+html.diag-kugel #dashGlobeHost *{animation:none!important}
+html.diag-kugel #dashGlobeHost canvas{display:none!important}
+html.diag-hero .dx-hero-art,html.diag-hero .dx-hero-logo{display:none!important}
+html.diag-zoom #dashWidgets{zoom:1!important}
+#diagHinweis{position:fixed;left:8px;bottom:8px;z-index:99999;font:700 12px/1.3 system-ui,sans-serif;background:#0B5FCC;color:#fff;padding:6px 10px;border-radius:8px;pointer-events:none}
+</style>
 <!-- PWA/Offline: Manifest + Icons + Service-Worker-Registrierung (siehe
      sw.js) - macht die App installierbar und offline nutzbar; Aenderungen
      landen wie bisher zuerst in localStorage und werden per Cloud-Sync
@@ -3098,8 +3128,23 @@ body.no-ui-anim .cd-heute{animation:none}
    Werkzeugzeile darunter) statt einer Karte mit 17-px-Titel. */
 .data-head{margin-bottom:10px}
 .data-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:0 0 8px}
-.data-row2{padding:0}
+.data-row2{padding:0;container-type:inline-size}
 .data-row2 .chart-leiste{margin-bottom:0}
+/* 777 (Nutzer 2026-11-19, iPad-Foto: "Mach das das in einer Zeile steht die Zeitfilter und die anderen"):
+   Ansicht-Reiter + Display + Schere + Zeitfilter in EINER Zeile. Gemessen 1180 px: links 611 + rechts 462 px
+   > 1060 verfuegbar -> zwei Zeilen. Enger ab 1120 px Container; reicht auch das nicht (Handy), wischt die Zeile
+   seitlich statt umzubrechen. */
+.data-row2 .chart-leiste,.data-row2 .chart-leiste-l,.data-row2 .chart-leiste-r,.data-row2 .ind-hist-range-bar{flex-wrap:nowrap}
+.data-row2 .chart-leiste{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-bottom:2px}
+.data-row2 .chart-leiste::-webkit-scrollbar{display:none}
+.data-row2 .chart-leiste-l,.data-row2 .chart-leiste-r{flex:0 0 auto}
+@container (max-width:1120px){
+  .data-row2 .km-tab{padding:0 8px}
+  .data-row2 .km-disp .km-lbl{display:none}
+  .data-row2 .chart-leiste{gap:8px}
+  .data-row2 .ind-hist-range-bar{gap:3px}
+  .data-row2 .ind-hist-range-btn{padding-left:7px;padding-right:7px}
+}
 .data-tt{min-width:0}
 .data-h{margin-right:2px}
 .data-row .cot-filterbar,.data-row .cmp-filter-grp{margin:0}
@@ -3135,14 +3180,17 @@ body.no-ui-anim .cd-heute{animation:none}
 /* 774 (Nutzer 2026-11-19): "As of" und "Next" sind aus dem Panel-Kopf raus, der Rest steht in EINER Zeile -
    auch schmal kein Umbruch mehr (vorher white-space normal ab 470 px). */
 @container (max-width:470px){.data-lg{display:none}.data-pt{max-width:none;flex:1 1 auto}}
+/* 777: sehr schmale Panels (Vollbild am Handy, 2 Spalten): Panel-Auswahl weg, damit der Name nie gekuerzt wird -
+   der Indikator laesst sich oben in der Filterzeile fuer alle waehlen */
+@container (max-width:240px){.data-ph .px-panel-sel{display:none}.data-ph{gap:6px;padding-left:10px}}
 /* ── Vollbild der Data-Seite (774): ganze Flaeche unter der oberen Leiste, oben nur Filter + Zeitfilter
    in EINER flachen Zeile (zu schmal: seitlich wischen statt umbrechen). top setzt dataVollTop(). */
-body.data-voll #pgData{position:fixed;left:0;right:0;bottom:0;top:56px;z-index:150;margin:0;padding:8px 12px 10px;background:var(--bg0,var(--bg1))}
-.data-voll-kopf{margin-bottom:8px}
+body.data-voll #pgData{position:fixed;left:0;right:0;bottom:0;top:56px;z-index:150;margin:0;padding:8px 12px 10px;background:var(--bg0,var(--bg1));overflow:hidden}   /* 777: nie scrollen - Raster teilt die Hoehe */
+.data-voll-kopf{margin-bottom:8px;display:flex;align-items:center;gap:8px}   /* ✕ immer sichtbar, nur die Zeile davor wischt */
+.data-voll-kopf>.data-voll-z{flex:1 1 auto;min-width:0}
 .data-voll-z{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;white-space:nowrap}
 .data-voll-z::-webkit-scrollbar{display:none}
 .data-voll-z>*,.data-voll-z .cot-filterbar,.data-voll-z .data-range{flex:0 0 auto;margin:0}
-.data-voll-z>.data-voll-b{margin-left:auto}
 .data-voll-b{width:var(--h-m,34px);height:var(--h-m,34px);padding:0;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
 .data-indsel{font:600 var(--fs-sm)/1.2 var(--ff-text)!important;padding:6px 10px!important}
 .data-pc{flex:1 1 auto;min-height:0;padding:6px 10px 4px;overflow:hidden}
@@ -7943,11 +7991,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-776 - History-Karte Pulse (3 Monate, y-Skala rechts, High/Low/Bullish days)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-777 - Data: Vollbild ohne Scrollen, Fenster deckt im Vollbild ganz ab, Werkzeugzeile einzeilig; Diagnose-Schalter #diag fuer Safari"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-776</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-777</span>
     </span>
   </div>
   <div class="hdr-r">

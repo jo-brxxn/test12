@@ -8093,7 +8093,9 @@ function ovRahmen(){
   const h=document.querySelector('.hdr'),sb=document.getElementById('navSidebar'),r=document.documentElement.style;
   const t=h?Math.max(0,Math.round(h.getBoundingClientRect().bottom)):0;
   let l=0;
-  if(innerWidth>700&&sb&&getComputedStyle(sb).display!=='none'){const b=sb.getBoundingClientRect();if(b.width>0&&b.left<=1)l=Math.round(b.right);}
+  // 777: im Data-Vollbild ist die Seitenleiste ueberdeckt - das Fenster-Dunkel beginnt dann links am Rand
+  // (gemessen vorher: 76/128 px Streifen links nicht abgedunkelt, Nutzer-Foto iPad Settings)
+  if(innerWidth>700&&sb&&getComputedStyle(sb).display!=='none'&&!document.body.classList.contains('data-voll')){const b=sb.getBoundingClientRect();if(b.width>0&&b.left<=1)l=Math.round(b.right);}
   r.setProperty('--ov-t',t+'px');r.setProperty('--ov-l',l+'px');
 }
 addEventListener('resize',ovRahmen);
@@ -22997,7 +22999,7 @@ function dataVollTop(){
 function dataVollUmschalten(an){
   dataVoll=an===undefined?!dataVoll:!!an;
   document.body.classList.toggle('data-voll',dataVoll);
-  dataVollTop();renderDataTab();
+  dataVollTop();try{ovRahmen();}catch(e){}renderDataTab();
 }
 addEventListener('keydown',e=>{if(e.key==='Escape'&&dataVoll&&!document.querySelector('.ov[style*="flex"],.data-picker'))dataVollUmschalten(false);});
 addEventListener('resize',()=>{if(dataVoll)dataVollTop();});
@@ -23011,13 +23013,13 @@ function renderDataTab(){
 // Hoehe, volle Breite), 3-4 = 2x2, 5-6 = 3x2, 7-8 = 4x2. Schmale Fenster: weniger Spalten.
 // Unter DATA_MIN_CHART_H px Chart wird gescrollt statt weiter gestaucht.
 const DATA_MIN_CHART_H=150;
-function dataRaster(n,breite,spalten){
+function dataRaster(n,breite,spalten,voll){
   // 2 = UNTEREINANDER in voller Breite (Nutzer 2026-09-26: "bei 2 Charts
   // mach das untereinander").
   let c=n<=2?1:n<=4?2:n<=6?3:4;
   // Asset vs asset: immer 2 Spalten (A | B), eine Zeile je Indikator.
   if(spalten)c=spalten;
-  if(breite<700)c=1;else if(breite<1000)c=Math.min(c,2);
+  if(breite<700)c=voll&&n>2?2:1;else if(breite<1000)c=Math.min(c,2);   // Vollbild schmal: 2 Spalten, sonst passt nichts ohne Scrollen
   return{c,r:Math.ceil(n/c)};
 }
 function renderDataTabRoh(){
@@ -23070,7 +23072,7 @@ function renderDataTabRoh(){
   const imSlot=!!el.closest('.mk-data-slot');
   const voll=dataVoll&&!imSlot;
   const vollKnopf=imSlot?'':`<button class="btn data-voll-b" onclick="dataVollUmschalten()" title="${voll?'Exit full screen (Esc)':'Full screen — only filter and time range above the charts'}" aria-label="${voll?'Exit full screen':'Full screen'}">${icn(voll?'x':'expand',14)}</button>`;
-  const kopf=(sub,filter,knopf,zeit,links2)=>voll?`<div class="data-head data-voll-kopf"><div class="data-voll-z">${filter}${knopf}${zeit}${vollKnopf}</div></div>`:`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${vollKnopf}${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar+(links2||''),zeit)}</div></div>`;
+  const kopf=(sub,filter,knopf,zeit,links2)=>voll?`<div class="data-head data-voll-kopf"><div class="data-voll-z">${filter}${knopf}${zeit}</div>${vollKnopf}</div>`:`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${vollKnopf}${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar+(links2||''),zeit)}</div></div>`;
   let head,body,n=0;
   // Ein Preis-Panel (Side by side, Compare all): eigener Massstab, echte Preise.
   const preisPanelHtml=(k,titel,sub,ctrls,namen)=>{
@@ -23202,7 +23204,8 @@ function dataRasterFuellen(el,n,jobs){
   // 2026-11-12: #dataBody kann in der Macro-Reihe der Asset-Seite haengen - dann gibt deren Feld die Hoehe vor
   const grid=el.querySelector('.data-grid'),pg=el.closest('.mk-data-slot')||document.getElementById('pgData');
   if(!grid||!pg)return;
-  const {c,r}=dataRaster(n,grid.clientWidth,dataMode==='vs'?2:0);
+  const imSlotR=!!(el.closest&&el.closest('.mk-data-slot'));
+  const {c,r}=dataRaster(n,grid.clientWidth,dataMode==='vs'?2:0,dataVoll&&!imSlotR);
   const gap=parseFloat(getComputedStyle(grid).rowGap)||10;
   const cs=getComputedStyle(pg);
   // Freie Hoehe = sichtbare Hoehe von #pgData minus alles oberhalb des Rasters.
@@ -23220,8 +23223,12 @@ function dataRasterFuellen(el,n,jobs){
   // Mindesthoehe = Chart DATA_MIN_CHART_H + Panel-Kopf + Innenabstand. Bei
   // nur EINER Spalte (Telefon) je zwei Panels pro Bildschirmhoehe statt alle
   // gestaucht - dort wird ohnehin gescrollt.
-  const minZeile=DATA_MIN_CHART_H+kopfH+14;
-  const sichtbar=c===1?Math.min(r,2):r;   // 1 Spalte: hoechstens 2 je Bildschirm
+  // Vollbild (777, Nutzer 2026-11-19 iPad-Foto: "prio hat jetzt das du das nicht scrollbar machst"): ALLE
+  // Reihen teilen sich die freie Hoehe, keine Mindesthoehe, die zum Scrollen zwingt (gemessen vorher: 6 Panels
+  // 1194x834 -> 2 Reihen a 447 px, zweite Reihe abgeschnitten, Seite scrollte).
+  const voll=dataVoll&&!imSlot;
+  const minZeile=voll?60+kopfH:DATA_MIN_CHART_H+kopfH+14;
+  const sichtbar=voll?r:c===1?Math.min(r,2):r;   // 1 Spalte: hoechstens 2 je Bildschirm (ausser Vollbild)
   const zeile=Math.max(minZeile,Math.floor((frei-gap*(sichtbar-1))/sichtbar));
   grid.style.gridAutoRows=zeile+'px';
   // Gleicher Indikator in mehreren Panels -> EINE gemeinsame Y-Skala
@@ -26899,7 +26906,7 @@ function showTab(tab,btn,fxMode){
   // Research-Terminal ankommt - egal ob ueber die Back-Pille selbst oder
   // ueber die normale Tab-Leiste.
   if(_resReturnActive){if(!_quickZielTab)_quickZielTab=tab;else if(tab!==_quickZielTab)rueckwegAus();}
-  if(tab!=='data'&&dataVoll){dataVoll=false;document.body.classList.remove('data-voll');dataVollTop();}
+  if(tab!=='data'&&dataVoll){dataVoll=false;document.body.classList.remove('data-voll');dataVollTop();try{ovRahmen();}catch(e){}}
   ksBald(450);   // Seitenwechsel aendert keinen DOM-Inhalt -> Verlauf der Karten-Listen nach dem Wisch neu messen (773)
   if(tab==='notes'&&_resReturnActive&&!_quickReturnAssetId){_resReturnActive=false;document.body.classList.remove('res-return-active');}
   // Gleiches fuer den Assets-Rueckweg (assetQuickGo): sobald man - egal wie,

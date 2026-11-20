@@ -22887,3 +22887,12 @@ Nutzer: *„Ich nehme die erste Option mit einer kleinen Skala rechts also y-Ska
   - `datalayout`: Vollbild-Knopf stand rechts vom Filter (195 px statt ≤ 170 px bis zum Rand) → jetzt links vom Filter.
   - `profil`: Country-profile-Panels haben einen eigenen Kopf (`cpfStand`) mit As of; ohne Umbruch wurde der Name am Handy gekürzt (124 von 164 px). Nutzerwunsch „generell As of/Next weg“ → `cpfStand` leer, Name passt.
 - **Altfehler gefunden:** Schere im History-**Fenster** setzte keine Spanne (`openHistModal` rief `brushAnbinden` nicht auf; am alten Stand gegengeprüft: 0 Chips). Bisher fiel es nicht auf, weil `zeitspanne.js` die Karte prüfte. Jetzt angebunden (3 Chips nach dem Ziehen), Wächter prüft das Fenster.
+
+## 2026-11-20 — Data-Vollbild ohne Scrollen, Fenster im Vollbild, Werkzeugzeile einzeilig, Safari-Diagnose (VERSION-CHECK-777)
+
+iPad-Fotos des Nutzers (2026-11-19):
+- **Vollbild scrollte** (*„prio hat jetzt das du das nicht scrollbar machst“*): 6 Panels → 2 Reihen à 447 px, zweite abgeschnitten (`DATA_MIN_CHART_H`). Im Vollbild teilen sich jetzt alle Reihen die Höhe (Mindesthöhe nur Kopf + 60 px), schmal 2 Spalten, `#pgData` `overflow:hidden`. Gemessen: 1194/1920/390/844-quer → `scrollHeight == clientHeight`. Sehr schmale Panels blenden die eigene Auswahl aus, damit der Name nie gekürzt wird. ✕ steht fest rechts außerhalb der wischbaren Zeile (am Handy lag es außerhalb des Bildes).
+- **Settings im Vollbild** (*„Beheb den Bug“*): `ovRahmen` ließ links die Breite der Seitenleiste frei (76 px Chrome, 128 px iPad), obwohl der Vollbildmodus sie überdeckt → Streifen anders abgedunkelt. Im Vollbild beginnt das Fenster-Dunkel bei 0 (Chrome + WebKit gemessen).
+- **Werkzeugzeile** (*„Mach das das in einer Zeile steht die Zeitfilter und die anderen“*): 1180 px: links 611 + rechts 462 > 1060 px → 2 Zeilen. Jetzt nowrap, enger ab 1120 px Container (Reiter 8 px, „Display“-Wort weg, Zeitknöpfe 7 px); 1366/1180/1024 passen, Handy wischt.
+- **Safari-Verschwinden der oberen Dashboard-Karten:** in Chrome/Linux-WebKit nicht nachstellbar. Unterschied Dashboard ↔ Asset-Seite: 56 ↔ 1 laufende Filme, 51 ↔ 1 Flaggen mit drop-shadow + mix-blend-mode. Diagnose-Schalter `#diag=film|flagge|kugel|hero|zoom` (Kopf von `index.html`), damit der Nutzer in Safari den Auslöser findet. Chrome-Versuche (Filme außerhalb aus, halbe Bildrate, Kugel pausieren, Filme beim Scrollen anhalten) brachten nachgewiesen nichts und sind nicht im Code.
+- Wächter `check/datavoll.js` (Gegenprobe rot).
