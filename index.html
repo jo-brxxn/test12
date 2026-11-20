@@ -3963,11 +3963,8 @@ body.no-ui-anim .globe-hud-scan::before{animation:none}
    Ueberwachungsmodus-Objekte"): "TRACKING" oben mittig zwischen den Eck-
    Klammern, "SIGNAL" unten mittig - beides reine Modus-/Status-Label wie
    "GLOBAL MARKET SURVEILLANCE" selbst, keine erfundenen Messwerte. */
-/* 779: Kondensstreifen am Flugzeug - atmen leicht (nur opacity) */
-.globe-jet-trail{animation:jetTrail 2.6s ease-in-out infinite}
-@keyframes jetTrail{0%,100%{opacity:1}50%{opacity:.72}}
-body.no-ui-anim .globe-jet-trail{animation:none}
-.globe-ruht .globe-jet-trail{animation-play-state:paused}
+/* 780: Kondensstreifen bewusst OHNE Animation - eine opacity-Animation an einem SVG-Kind zeichnet in WebKit
+   das ganze Kugel-SVG jedes Bild neu (gemessen check/webkitkugel.js: p95 33,5 ms statt 22,8 ms). */
 .globe-hud-badge{position:absolute;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;display:flex;align-items:center;gap:4px;font-size:var(--fs-2xs);font-weight:700;letter-spacing:1.5px;color:var(--hud);font-family:var(--ff-num);text-transform:uppercase}
 .globe-hud-badge.top{top:9px}
 .globe-hud-badge.bottom{bottom:9px}
@@ -8007,11 +8004,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-780 - Weltkugel: TRACKING/SIGNAL weg, Kugel groesser (Rand 26->14), Flugzeug 1,2x, Kondensstreifen"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-781 - Kondensstreifen ohne Animation (WebKit p95 33,5 -> 24 ms), kugelland mit gemeinsamem Rand"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-780</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-781</span>
     </span>
   </div>
   <div class="hdr-r">

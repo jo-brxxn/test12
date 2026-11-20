@@ -22920,3 +22920,9 @@ Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking ent
   - ⚠ Erste Fassung änderte nur die SVG-Seite: das Canvas (Worker) malte die Kugel weiter mit 26 px Rand → weißer Ring unter dem Umriss (Screenshot). Ursache: zwei getrennte Zahlen. Jetzt eine Quelle.
 - Flugzeug: Silhouette, Flammen, Streifen in `scale(1.2)` (inneres `<g>`, das äußere `transform` setzt die Reise-Animation).
 - Kondensstreifen je Flügelspitze: an der Spitze 0,6 px, nach hinten auf 3,4 px, weiß → durchsichtig, hauchdünner dunkler Saum (auf hellem Meer lesbar), atmet über `opacity` (2,6 s), aus bei `no-ui-anim`/Ruhe. Die Flügel-Luftwirbel von 2026-07-28 waren auf Nutzerwunsch entfernt worden — jetzt ausdrücklich wieder gewünscht, als ruhige Streifen statt Wind-Animation.
+
+## 2026-11-20 — Prüfungen nach 780: Kugel in WebKit, kugelland (VERSION-CHECK-781)
+
+- `webkitkugel` (Safari-Engine): Kugel im Dashboard p95 33,5 ms (Grenze 26), am Stand 779 22,8 ms. Ursache: das „Atmen“ der Kondensstreifen (opacity-Animation an einem SVG-Kind) ließ WebKit das ganze Kugel-SVG jedes Bild neu zeichnen. Animation entfernt, Streifen statisch → p95 24,0 / 24,5 ms. (Befund F „Seitenprozess abgestürzt“ tritt auch am alten Stand auf: WPE-OpenGL dieser Umgebung.)
+- `kugelland`: Wächter rechnete mit festem Rand 26 → liest jetzt `GLOBE_RAND` aus `js/globe-zeichnen.js`.
+- Merksatz (docs/performance.md, Abschnitt Kugel): **keine Animation an Elementen innerhalb des Kugel-SVG** — auch nicht opacity.

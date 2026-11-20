@@ -536,7 +536,7 @@ function globeSkeleton(size,uid){
   // Kondensstreifen (779, Nutzer 2026-11-19: "an den Fluegeln sollen so weisse Luftstreifen zurueck gehen"):
   // je Fluegelspitze ein sich verjuengendes Band nach hinten (+y = Heck), weiss mit Verlauf ins Durchsichtige,
   // darunter ein hauchduenner dunkler Saum, damit es auch ueber hellem Meer lesbar bleibt. Liegt in den
-  // jet-lokalen Koordinaten (dreht mit der Flugrichtung). Atmet nur ueber opacity (docs/performance.md).
+  // jet-lokalen Koordinaten (dreht mit der Flugrichtung). Statisch - keine Animation im SVG (webkitkugel B).
   // Form wie ein echter Streifen: an der Spitze haarduenn (0,6), nach hinten weich auf 3,4 breiter, dabei
   // ausblendend; Kanten als Kurven statt gerader Schienen.
   const streifen=x=>{const d=`M${x-0.3},5.2 C${x-0.6},16 ${x-1.7},34 ${x-1.7},46 L${x+1.7},46 C${x+1.7},34 ${x+0.6},16 ${x+0.3},5.2 Z`;

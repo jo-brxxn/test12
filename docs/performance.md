@@ -261,3 +261,5 @@ Kalender-Abgleich 131 → ~0, FF-Abgleich 93 → ~0, `indOverdueCycles` 63 → 2
   - Vorher wirklich **3263 KB**, gezählt 3675.
   - Jetzt **2897 KB**.
 - ⚠ **Offen:** Die Asset-Seite lädt `cal_hist/<Jahr>.json` (2026: **842 KB**) — nächster Kandidat zum Verkleinern.
+
+- **Keine Animation an Elementen IM Kugel-SVG** (781, gemessen `check/webkitkugel.js`): auch eine reine opacity-Animation an einem SVG-Kind zeichnet in WebKit das ganze SVG jedes Bild neu (Kondensstreifen: p95 33,5 statt 22,8 ms). Bewegung nur über das transform der Fahrzeug-Gruppe (vorhanden) oder Canvas.
