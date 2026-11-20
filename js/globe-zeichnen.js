@@ -92,8 +92,12 @@ function neueFlaeche(w, h) {
 // zwei feste Ebenen 47-50 Bilder/s, p95 39 ms; eine Flaeche 57-59, p95 26-28.
 // Jede Ebene ueber/unter einer Flaeche, die sich je Bild aendert, muss der
 // Compositor mit zusammensetzen.
+// Rand um die Kugel (779: 26 -> 14 px) - EINE Quelle fuer Canvas (hier, auch im Worker) und SVG (js/globe.js).
+// Vorher stand 26 hier und in globe.js getrennt: nach der Aenderung nur an einer Stelle malte das Canvas die
+// Kugel kleiner als ihren SVG-Umriss (weisser Ring, gemessen 1194/1920 px).
+export const GLOBE_RAND = 14;
 export function erstelleZeichner(cv, o) {
-  const dpr = o.dpr, size = o.size, R = size / 2 - 26, cx = size / 2, cy = size / 2;
+  const dpr = o.dpr, size = o.size, R = size / 2 - GLOBE_RAND, cx = size / 2, cy = size / 2;
   const sL = Math.sin(o.lat0), cL = Math.cos(o.lat0);
   cv.width = Math.round(size * dpr); cv.height = Math.round(size * dpr);
   const lc = cv.getContext('2d'), mc = lc;

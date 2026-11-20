@@ -22911,3 +22911,12 @@ Nutzer (Foto, Kreis neben „Watchlist“): *„da ein zahrad … Fenster mit Fi
 - Fenster `#dashMktPicker`: FX-Paare A–Z + alle Nicht-FX-Gruppen (SB_CATS), Schalter, Zähler, feste Watchlist-Chips.
 - Gemessen: Watchlist aus + AUD/USD, BTC, Nasdaq → Kacheln AUD/USD, BTC, Nasdaq, EUR/USD, GBP/USD, USD/JPY; gespeichert `{"wl":false,"l":["AUD/USD","BTC/USD","NAS/USD"]}`.
 - Fehler beim ersten Lauf gefunden: Startwert las `syms` vor dem Laden (Dashboard baute nicht auf) → abgesichert.
+
+## 2026-11-20 — Weltkugel: Wörter weg, Kugel größer, Flugzeug + Kondensstreifen (VERSION-CHECK-780)
+
+Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking entfernen … dafür soll die Kugel größer werden also die ganze Kugel proportional größer … das Flugzeug … ein Tick größer und an den Flügeln sollen so weiße Luftstreifen zurück gehen … Fokus auf Qualität“*.
+- Badges `TRACKING`/`SIGNAL` entfernt (HUD-Ecken + Scanline bleiben).
+- Rand um die Kugel 26 → 14 px (`GLOBE_RAND`, jetzt EINE Konstante in `js/globe-zeichnen.js`, importiert von `js/globe.js`). Radius: 1194 px 133 → 145, 1920 px 165 → 177.
+  - ⚠ Erste Fassung änderte nur die SVG-Seite: das Canvas (Worker) malte die Kugel weiter mit 26 px Rand → weißer Ring unter dem Umriss (Screenshot). Ursache: zwei getrennte Zahlen. Jetzt eine Quelle.
+- Flugzeug: Silhouette, Flammen, Streifen in `scale(1.2)` (inneres `<g>`, das äußere `transform` setzt die Reise-Animation).
+- Kondensstreifen je Flügelspitze: an der Spitze 0,6 px, nach hinten auf 3,4 px, weiß → durchsichtig, hauchdünner dunkler Saum (auf hellem Meer lesbar), atmet über `opacity` (2,6 s), aus bei `no-ui-anim`/Ruhe. Die Flügel-Luftwirbel von 2026-07-28 waren auf Nutzerwunsch entfernt worden — jetzt ausdrücklich wieder gewünscht, als ruhige Streifen statt Wind-Animation.

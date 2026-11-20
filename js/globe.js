@@ -10,7 +10,7 @@
 // sind gehoisted, `let`-Bindungen werden erst innerhalb von Funktionskoerpern
 // gelesen, nie am Modul-Top-Level) - Details/Methodik: docs/module-split.md.
 import {BC} from './constants.js';
-import {erstelleZeichner} from './globe-zeichnen.js';
+import {erstelleZeichner,GLOBE_RAND} from './globe-zeichnen.js';
 import {bahnWinkel,bahnTempo} from './globe-bahn.js';
 import {closeM,curPage,escH,getCloudCfg,globeHudLonTxt,gotoSym,icn,openM,symScoreCmp,syms,uid} from './main.js';
 
@@ -439,8 +439,11 @@ function globePathD(pts,lon0,R,cx,cy){
 // Ziel-Optik) und zwei duennsen Radar-Entfernungsringe innerhalb der
 // Landflaeche - alles rein dekorative Geometrie nach echten Radar-/Kampfjet-
 // HUD-Vorbildern, keine erfundenen Werte (siehe CLAUDE.md-Grundsatz).
+// Rand um die Kugel: Platz fuer Bezel-Ring + Kardinal-Striche (bis R+11). 779 (Nutzer 2026-11-19: "Signal und
+// Tracking entfernen ... dafuer soll die Kugel groesser werden ... proportional"): 26 -> 14 px, die Woerter oben
+// und unten brauchten den Platz. ⚠ GLOBE_RAND kommt aus js/globe-zeichnen.js - dieselbe Zahl fuer Canvas und SVG.
 function globeSkeleton(size,uid){
-  const R=size/2-26,cx=size/2,cy=size/2; // 26px Rand statt 16px - Platz fuer den neuen Bezel-Ring/Gradnetz drumherum
+  const R=size/2-GLOBE_RAND,cx=size/2,cy=size/2;
   const fgid='gJetFlame'+uid; // Nachbrenner-Flammen-Verlauf (Boost, Nutzer-Wunsch 2026-07-28)
   // Land/Raster und Marker: Canvas-Ebenen (js/globe-zeichnen.js), nicht mehr im SVG.
   // Jeder Marker bekommt jetzt zusaetzlich einen "Ping"-Ring (Reticle/Radar-
@@ -530,7 +533,18 @@ function globeSkeleton(size,uid){
     <path d="M-4.5,11.4 L-1.2,11.4 L-2.85,42 Z" fill="url(#${fgid})"/>
     <path d="M-3.7,11.5 L-2.0,11.5 L-2.85,28 Z" fill="url(#${fgid}core)"/>
   </g>`;
-  const vehicle=`<g class="globe-vehicle" transform="translate(${cx},${cy}) rotate(90)" pointer-events="none">
+  // Kondensstreifen (779, Nutzer 2026-11-19: "an den Fluegeln sollen so weisse Luftstreifen zurueck gehen"):
+  // je Fluegelspitze ein sich verjuengendes Band nach hinten (+y = Heck), weiss mit Verlauf ins Durchsichtige,
+  // darunter ein hauchduenner dunkler Saum, damit es auch ueber hellem Meer lesbar bleibt. Liegt in den
+  // jet-lokalen Koordinaten (dreht mit der Flugrichtung). Atmet nur ueber opacity (docs/performance.md).
+  // Form wie ein echter Streifen: an der Spitze haarduenn (0,6), nach hinten weich auf 3,4 breiter, dabei
+  // ausblendend; Kanten als Kurven statt gerader Schienen.
+  const streifen=x=>{const d=`M${x-0.3},5.2 C${x-0.6},16 ${x-1.7},34 ${x-1.7},46 L${x+1.7},46 C${x+1.7},34 ${x+0.6},16 ${x+0.3},5.2 Z`;
+    return`<g class="globe-jet-trail"><path d="${d}" fill="url(#${fgid}trs)" transform="translate(.7,.7)"/><path d="${d}" fill="url(#${fgid}tr)"/></g>`;};
+  // 779: "das Flugzeug ... ein Tick groesser" -> Silhouette, Flammen und Streifen 1,2-fach (inneres scale,
+  // das transform der Gruppe selbst setzt die Reise-Animation)
+  const vehicle=`<g class="globe-vehicle" transform="translate(${cx},${cy}) rotate(90)" pointer-events="none"><g transform="scale(1.2)">
+    ${streifen(11)}${streifen(-11)}
     ${flameR}${flameL}
     <path d="M0,-12 L2.2,-2 L11,3 L11,5.5 L2.5,2 L2.5,7 L6,11 L6,12.5 L0,9.5 L-6,12.5 L-6,11 L-2.5,7 L-2.5,2 L-11,5.5 L-11,3 L-2.2,-2 Z" fill="#04101c" stroke="#dff4ff" stroke-width="1.2" stroke-linejoin="round"/>
     <rect x="1.7" y="5.4" width="2.1" height="6.2" rx="1" fill="#04101c" stroke="#8fd3ee" stroke-width=".6"/>
@@ -540,7 +554,7 @@ function globeSkeleton(size,uid){
     <ellipse cx="0" cy="-4.5" rx="1.4" ry="2.8" fill="#5fd0ff" opacity=".8"/>
     <circle class="globe-jet-light" cx="11.5" cy="4.2" r="1" fill="#C50F1A"/>
     <circle class="globe-jet-light" cx="-11.5" cy="4.2" r="1" fill="#C50F1A"/>
-  </g>`;
+  </g></g>`;
   // data-id-Gruppe (wie echte Marker-<g>s) sorgt dafuer, dass
   // globeOnPointerDown() einen Klick/Tap aufs Flugzeug NICHT als Drag-Start
   // interpretiert (dessen bestehender g[data-id]-Ausschluss greift hier
@@ -556,6 +570,8 @@ function globeSkeleton(size,uid){
   // haengen").
   return`<div class="globe-buehne" style="width:${size}px"><canvas class="globe-canvas" aria-hidden="true"></canvas><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" onclick="closeGlobeTip()">
     <defs>
+      <linearGradient id="${fgid}tr" gradientUnits="userSpaceOnUse" x1="0" y1="5" x2="0" y2="46"><stop offset="0" stop-color="#ffffff" stop-opacity=".98"/><stop offset=".3" stop-color="#ffffff" stop-opacity=".78"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+      <linearGradient id="${fgid}trs" gradientUnits="userSpaceOnUse" x1="0" y1="5" x2="0" y2="46"><stop offset="0" stop-color="#04101c" stop-opacity=".2"/><stop offset=".6" stop-color="#04101c" stop-opacity=".06"/><stop offset="1" stop-color="#04101c" stop-opacity="0"/></linearGradient>
       <linearGradient id="${fgid}" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#cfeaff"/>
         <stop offset="10%" stop-color="#fffaf0"/>
@@ -711,7 +727,7 @@ function globeCollectRefs(host,size){
   const vehGroup=svg.querySelector('.globe-vehicle');
   const vehicle=vehGroup?{groupEl:vehGroup}:null;
   return{
-    host,R:size/2-26,cx,cy,
+    host,R:size/2-GLOBE_RAND,cx,cy,
     ...globeCanvasRefs(host,size),
     markers,vehicle,
     sweepEl:host.querySelector('.globe-sweep-w'),
@@ -809,7 +825,7 @@ function globeHitTest(ev,host){
   const rc=svg.getBoundingClientRect();
   if(rc.width<=0)return true;
   const vb=(svg.viewBox&&svg.viewBox.baseVal&&svg.viewBox.baseVal.width)||rc.width;
-  const hitR=(vb/2-26)*(rc.width/vb)+10;
+  const hitR=(vb/2-GLOBE_RAND)*(rc.width/vb)+10;
   const dx=ev.clientX-(rc.left+rc.width/2),dy=ev.clientY-(rc.top+rc.height/2);
   return dx*dx+dy*dy<=hitR*hitR;
 }
@@ -940,7 +956,7 @@ function startGlobes(opt){
     // HUD-Rahmen/Scanline NACH dem Skeleton einfuegen (nicht Teil des
     // Skeleton-Strings selbst) - h.innerHTML= wuerde sie sonst bei jedem
     // Neuaufbau (Tab-Wechsel, Resize) sofort wieder loeschen.
-    h.insertAdjacentHTML('beforeend','<div class="globe-hud-frame"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div><div class="globe-hud-scan"></div><div class="globe-hud-badge top"><b></b> TRACKING</div><div class="globe-hud-badge bottom"><b></b> SIGNAL</div>');
+    h.insertAdjacentHTML('beforeend','<div class="globe-hud-frame"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div><div class="globe-hud-scan"></div>');   // 779: TRACKING/SIGNAL entfernt (Nutzer 2026-11-19)
     const st=globeCollectRefs(h,size);if(st)st.groesse=size;return st;
   }).filter(Boolean);
   _globeHosts.forEach(st=>{globeWorkerVerbinden(st);if(st.landRef!==LAND)globeZeichnerLand(st);});
