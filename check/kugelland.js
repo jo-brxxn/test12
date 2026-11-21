@@ -32,7 +32,7 @@ srv.listen(0, async () => {
   const r = await p.evaluate(async ([gp, gpr]) => {
     const roh = (await (await fetch('/globe_land.json')).json()).ringe;
     const m = await import('/js/globe-zeichnen.js');
-    const LAT0 = 18 * Math.PI / 180, size = 318, R = size / 2 - 26;
+    const LAT0 = 18 * Math.PI / 180, size = 318, R = size / 2 - (m.GLOBE_RAND != null ? m.GLOBE_RAND : 26);   // 780: Rand aus js/globe-zeichnen.js
     const cv = document.createElement('canvas');
     const z = m.erstelleZeichner(cv, { size, dpr: 1, lat0: LAT0, landfarbe: '#2d6ea8', rasterFarbe: 'rgba(126,196,255,.5)', schrift: 'sans-serif', meer: '#0b2445', randSehne: gp });
     z.land(roh); z.meta([]);

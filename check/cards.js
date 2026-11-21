@@ -79,6 +79,11 @@ const WATCHLIST_FUELLEN=()=>{try{
             if(!k.offsetParent)return;
             const r=k.getBoundingClientRect();
             if(r.width<=0)return;
+            // 782: liegt das Element in einer waagerecht WISCHBAREN Zeile (overflow-x auto/scroll, z. B. die
+            // einzeilige Data-Werkzeugzeile seit 777), ist der Ueberstand gewollt und erreichbar - nicht
+            // abgeschnitten. Abgeschnittenes (overflow hidden) wird weiter gemeldet.
+            let wisch=false;for(let a=k.parentElement;a&&a!==pa;a=a.parentElement){if(/auto|scroll/.test(getComputedStyle(a).overflowX)&&a.getBoundingClientRect().right<=innenR+2){wisch=true;break;}}
+            if(wisch)return;
             if(r.right>innenR+2)
               out.push(tab+': Karte ('+String(k.className).slice(0,30)+') steht '+Math.round(r.right-innenR)+'px ueber den rechten Rand des Inhaltsbereichs hinaus - keine Luecke zum Rand');
             if(r.left<innenL-2)
