@@ -1687,3 +1687,13 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **Entry/Break:** freier Text + optional *Date* (Countdown) oder *Price* (Abstand zum letzten Schluss, Linie in der Price-Karte; nicht bei FX-Korb/Renditen)
 - **Hinweis:** *Not reviewed for Nd* nach 14 Tagen ohne Änderung
 - Code: `js/gameplan.js`, Wächter `check/gameplan.js`
+
+## Economy Map (seit 2026-11-21, 784)
+
+- **Seitenleiste:** eigener Eintrag *Economy Map* nach *Gameplan* (in keinem Stapel), Seite `pgEcon`, Code `js/wirtschaft.js`
+- **Wahl aus 5 Entwürfen: Orbit** (Nutzer: *„Setz Orbit um … nur den Inhalt … nicht das Außenrum“*) — Kopfzeile/Seitenleiste der App bleiben, die Leisten der Entwürfe waren nur Rahmen
+- **Aufbau:** Thesen links (helle Karte) | Bühne dunkel wie die Weltkugel: Kern, 7 Sektor-Planeten, 36 Gruppen-Monde, Linien = wer wen beliefert; rechts Panel der gewählten Gruppe (Firmen, Supplies, Depends on); Bühne < 1000 px → Panel unter dem Orbit
+- **Thesen:** New → Titel tippen, Status Active/Watching/Draft, *Link groups* → Monde antippen + → − → aus; gestrichelt = mögliche Folgewirkung über eine Verbindung (nur Vorschlag, nicht gespeichert); Delete → Papierkorb (`econth`)
+- **Firma antippen:** Fenster `mEconFirma`; Umsatz/Gewinn je Quartal nur echt (SEC, `stock_data.json`, die 13 Aktien von Stocks) + *Open asset page*; Forecasts, CapEx, *Where the money goes* = Platzhalter-Rahmen ohne Zahlen (noch keine Quelle, Regel 4)
+- **Orbit in echter Größe:** Breite gemessen, Höhe = freie Fläche bis zum Rand (`--pg-zoom` herausgerechnet), mind. 600 × 520; darunter scrollt die Bühne seitlich (Handy, startet mittig); Namen nur, solange sie lesbar sind (Maßstab ≥ 0,66), sonst nur gewählte/betroffene Gruppe
+- **Beschriftung kollisionsfrei:** Kandidaten (radial, unten, oben, seitlich, schräg, weiter außen, zweizeilig), kleinste Überdeckung + Nähe gewinnt, 6 px Abstand — geprüft mit Kreisgeometrie in `check/wirtschaft.js` B

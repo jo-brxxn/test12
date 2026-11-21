@@ -164,7 +164,7 @@ const NAH = 1.0;           // Unterschied < 1px zwischen Nachbarn = zu nah
   const SEITEN = [['dash','pgDash'],['cur','pgCur'],['mx','pgMx'],
     ['trends','pgTrends'],['cot','pgCot'],['sent','pgSent'],['seas','pgSeas'],
     ['data','pgData'],['rate','pgRate'],['news','pgNews'],
-    ['carry','pgCarry'],['pairs','pgPairs'],['watch','pgWatch'],['journal','pgJournal'],['cal','pgCal'],
+    ['carry','pgCarry'],['pairs','pgPairs'],['watch','pgWatch'],['journal','pgJournal'],['econ','pgEcon'],['cal','pgCal'],
     ['notes','pgNotes'],['regime','pgRegime']];
   // Die Watchlist ist ohne Eintraege leer - dann waere die Seite ungeprueft.
   await pg.evaluate(() => { try {

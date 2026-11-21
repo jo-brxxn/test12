@@ -7761,6 +7761,110 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .dx-gross .ci-body{overflow-x:clip}
 .dx-gross .stale-notify-row{flex-wrap:wrap}
 
+/* ══ ECONOMY MAP (2026-11-21, js/wirtschaft.js) ═════════════════════════════
+   Orbit (Nutzerwahl aus 5 Entwuerfen): Thesen links (helle Karte), Buehne dunkel wie die Weltkugel.
+   Rot nur Bearish, Aktiv = Navy, Hoehen 28/34/40, Kartentitel 17 px, Orbit in echter Groesse. */
+.ec-raster{display:grid;grid-template-columns:300px minmax(0,1fr);gap:var(--gap-block,14px);align-items:start}
+.ec-rail{background:var(--card);border:1px solid var(--bd2);border-radius:var(--r);box-shadow:var(--shadow-card);padding:12px 12px 12px;min-width:0}
+.ec-rail-k{display:flex;align-items:center;gap:8px;margin:0 2px 10px}
+.ec-sp{flex:1 1 auto}
+.ec-kt{font:700 var(--fs-kt)/1.2 var(--ff-text);color:var(--t0)}
+.ec-neu{min-height:var(--h-m);display:inline-flex;align-items:center;gap:6px;padding:0 12px;background:var(--ui-act);border-color:var(--ui-act);color:var(--ui-act-fg)}
+.ec-th-liste{display:flex;flex-direction:column;gap:8px}
+.ec-th{border:1px solid var(--bd);border-radius:var(--rs);padding:10px 11px;background:var(--card);cursor:pointer;min-width:0}
+.ec-th:hover{border-color:var(--bd2)}
+.ec-th.on{cursor:default;border-color:var(--ui-act);box-shadow:0 0 0 1px var(--ui-act) inset;background:color-mix(in srgb,var(--ui-act) 4%,var(--card))}
+.ec-th-n{font:700 var(--fs-md)/1.3 var(--ff-text);color:var(--t0);overflow-wrap:anywhere}.ec-th-n i{color:var(--t3);font-weight:500}
+.ec-th-m{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 7px;font-size:var(--fs-2xs);color:var(--t3)}.ec-th-m b{color:var(--t1)}
+.ec-st{font:700 var(--fs-2xs)/1 var(--ff-text);border-radius:6px;padding:3px 6px;background:var(--bg3);color:var(--t1)}
+.ec-st.a{background:color-mix(in srgb,var(--bias-bull) 12%,var(--card));color:var(--bias-bull)}
+.ec-imps{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.ec-imp{font:600 var(--fs-2xs)/1.25 var(--ff-text);border-radius:6px;padding:3px 6px;white-space:nowrap}
+.ec-imp.b{color:var(--bias-bull);background:color-mix(in srgb,var(--bias-bull) 10%,var(--card))}
+.ec-imp.s{color:var(--bias-bear);background:color-mix(in srgb,var(--bias-bear) 9%,var(--card))}
+.ec-imp.n{color:var(--t3);background:var(--bg3)}
+.ec-leer{font-size:var(--fs-sm);color:var(--t3);font-style:italic}
+.ec-th-kopf{display:flex;gap:8px;align-items:flex-start}
+.ec-th-in{flex:1 1 auto;min-width:0;resize:none;box-sizing:border-box;border:1px solid var(--bd);border-radius:var(--rss);background:var(--card);color:var(--t0);font:700 var(--fs-md)/1.35 var(--ff-text);padding:6px 8px;min-height:var(--h-m)}
+.ec-th-in:focus{outline:2px solid color-mix(in srgb,var(--ui-act) 40%,transparent);outline-offset:0}
+.ec-x{flex:0 0 auto;width:var(--h-m);height:var(--h-m);border:1px solid var(--bd);border-radius:var(--rss);background:var(--card);color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ec-sw{display:flex;border:1px solid var(--bd2);border-radius:var(--rss);overflow:hidden;margin:9px 0 8px}
+.ec-sw button{flex:1 1 0;min-height:var(--h-s);border:0;background:var(--card);color:var(--t2);font:700 var(--fs-xs)/1 var(--ff-text);cursor:pointer;padding:0 6px}
+.ec-sw button+button{border-left:1px solid var(--bd2)}.ec-sw button.on{background:var(--ui-act);color:var(--ui-act-fg)}
+.ec-lk{margin-top:10px;border-top:1px solid var(--bd);padding-top:9px;display:flex;flex-direction:column;gap:6px}
+.ec-lk-t{font:800 var(--fs-2xs)/1 var(--ff-text);letter-spacing:.06em;text-transform:uppercase;color:var(--ui-act)}
+.ec-lk-z{font-size:var(--fs-sm);color:var(--t2)}.ec-lk-z i{font-size:var(--fs-2xs);color:var(--t3)}
+.ec-lk-s{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:var(--fs-2xs);color:var(--t3)}
+.ec-th-kn{display:flex;gap:6px;margin-top:10px}
+.ec-kn{min-height:var(--h-s);font-size:var(--fs-xs);padding:0 10px}
+.ec-th-kn .btn:not(.g).ec-kn{background:var(--ui-act);border-color:var(--ui-act);color:var(--ui-act-fg)}
+.ec-del{margin-left:auto;color:var(--bias-bear)}
+.ec-leer-box{border:1px dashed var(--bd2);border-radius:var(--rs);padding:12px;display:flex;flex-direction:column;gap:4px;font-size:var(--fs-sm);color:var(--t2)}
+.ec-leer-box b{color:var(--t0)}
+.ec-leg{border-top:1px solid var(--bd);margin-top:10px;padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:var(--fs-2xs);color:var(--t2)}
+.ec-leg span{display:flex;gap:6px;align-items:center}
+.ec-leg .lg{width:14px;height:10px;border-radius:3px;flex:0 0 auto}
+.ec-leg .db{background:color-mix(in srgb,var(--bias-bull) 18%,transparent);border:2px solid var(--bias-bull)}
+.ec-leg .ds{background:color-mix(in srgb,var(--bias-bear) 14%,transparent);border:2px solid var(--bias-bear)}
+.ec-leg .kb{border:2px dashed var(--bias-bull)}.ec-leg .ks{border:2px dashed var(--bias-bear)}
+/* Buehne (dunkel in beiden Modi, wie die Weltkugel) */
+.ec-buehne{container-type:inline-size;background:radial-gradient(ellipse at 40% 50%,#13254A 0%,#0B1424 58%,#070D18 100%);border:1px solid #1E2F52;border-radius:var(--r);box-shadow:var(--shadow-card);min-width:0;overflow:hidden;color:#C9D6E8}
+.ec-b-kopf{display:flex;align-items:center;gap:8px;padding:12px 14px 0}
+.ec-kt-d{color:#E6ECF7}
+.ec-buehne .ec-info{color:#C9D6E8;border-color:#5B6F94}
+.ec-b-th{font:600 var(--fs-sm)/1.3 var(--ff-text);color:#E6ECF7;background:rgba(95,208,255,.1);border:1px solid rgba(95,208,255,.3);border-radius:var(--rss);padding:5px 9px;max-width:48%;overflow-wrap:anywhere}
+.ec-b-th i{color:#8FA3C4}
+.ec-b-in{display:grid;grid-template-columns:minmax(0,1fr) 300px;align-items:start}
+.ec-orbit{position:relative;min-width:0;overflow-x:auto;overflow-y:hidden}
+.ec-svg{display:block;font-family:var(--ff-text)}
+.ec-svg .ec-pl-n{font-size:11px;font-weight:800;fill:#E6ECF7}
+.ec-svg .ec-pl-z{filter:brightness(1.4)}
+.ec-svg .ec-kern-t{font-size:13px;font-weight:800;fill:#E6ECF7}.ec-svg .ec-kern-z{font-size:11px;fill:#8FA3C4}
+.ec-mond{cursor:pointer;color:transparent}
+.ec-mond .gl{fill:currentColor;opacity:0}
+.ec-mond .kr{fill:#10213D;stroke-width:2;filter:brightness(1.35)}
+.ec-mond .ic{filter:brightness(1.7)}
+.ec-mond .ec-mn{font-size:11.5px;font-weight:600;fill:#C9D6E8;paint-order:stroke;stroke:#0B1424;stroke-width:3px}
+.ec-mond.sel .ec-mn{fill:#fff;font-weight:800}
+.ec-mond:hover .kr{filter:brightness(1.8)}
+.ec-mond.im-b{color:#4C9BFF}.ec-mond.im-s{color:#FF5A64}
+.ec-mond.im-d .gl{opacity:.75}.ec-mond.im-d .kr{stroke:currentColor;stroke-width:3;filter:none}
+.ec-mond.im-k .gl{opacity:.25}.ec-mond.im-k .kr{stroke:currentColor;stroke-dasharray:4 3;stroke-width:2.5;filter:none}
+.ec-mond.im-off{opacity:.32}
+.ec-mond:focus-visible{outline:none}.ec-mond:focus-visible .kr{stroke:#fff;stroke-width:3}
+.ec-p{margin:12px 12px 12px 0;background:rgba(16,30,56,.82);border:1px solid #24375E;border-radius:var(--rs);padding:14px;align-self:start}
+.ec-p-leer{min-height:180px;display:flex;flex-direction:column;justify-content:center;text-align:center;gap:4px}
+.ec-p-k{display:flex;gap:10px;align-items:center}
+.ec-p-ic{width:var(--h-l);height:var(--h-l);border-radius:var(--rss);background:#0B1424;border:1px solid #2A3A5C;display:flex;align-items:center;justify-content:center;filter:brightness(1.5);flex:0 0 auto}
+.ec-p-t{font:700 var(--fs-kt)/1.2 var(--ff-text);color:#fff}
+.ec-p-z{font:700 var(--fs-2xs)/1.3 var(--ff-text);letter-spacing:.04em;filter:brightness(1.6);margin-top:2px;color:#8FA3C4}
+.ec-p-im{margin-top:10px;font:700 var(--fs-sm)/1.3 var(--ff-text);border-radius:var(--rss);padding:6px 9px}
+.ec-p-im.b{background:rgba(76,155,255,.15);color:#7DB6FF}.ec-p-im.s{background:rgba(255,90,100,.15);color:#FF8A92}
+.ec-p-h{font:800 var(--fs-2xs)/1 var(--ff-text);letter-spacing:.08em;text-transform:uppercase;color:#6F84A8;margin:14px 0 6px;display:flex;gap:6px}.ec-p-h span{color:#AFC0DA}
+.ec-p-c{display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:8px;align-items:center;width:100%;min-height:var(--h-m);border:0;border-top:1px solid #1E2F52;background:none;color:#C9D6E8;font:500 var(--fs-md)/1.25 var(--ff-text);text-align:left;cursor:pointer;padding:4px 2px}
+.ec-p-c b{color:#fff;font-size:var(--fs-sm);font-weight:800}.ec-p-c span{overflow-wrap:anywhere}.ec-p-c:hover span{color:#fff}
+.ec-p-c i{font:700 var(--fs-2xs)/1 var(--ff-text);font-style:normal;color:#5fd0ff;border:1px solid rgba(95,208,255,.4);border-radius:5px;padding:3px 5px}
+.ec-p-l{display:flex;gap:6px;align-items:baseline;width:100%;min-height:var(--h-s);border:0;background:none;color:#8FA3C4;font:500 var(--fs-sm)/1.3 var(--ff-text);text-align:left;cursor:pointer;padding:4px 2px}
+.ec-p-l b{color:#E6ECF7;font-weight:600}.ec-p-l i{margin-left:auto;font-size:var(--fs-2xs);white-space:nowrap}.ec-p-l:hover b{color:#fff}
+.ec-p-l0{font-size:var(--fs-sm);color:#6F84A8;padding:4px 2px}
+/* Firmenfenster */
+.ec-fm{max-width:640px;width:min(640px,calc(100vw - 32px))}
+.ec-f-tk{font:800 var(--fs-sm)/1 var(--ff-text);background:var(--ui-act);color:var(--ui-act-fg);border-radius:var(--rss);padding:6px 8px;margin-right:9px;vertical-align:2px}
+.ec-f{display:flex;flex-direction:column;gap:14px}
+.ec-f-g{display:flex;flex-wrap:wrap;gap:6px}
+.ec-f-gr{display:inline-flex;gap:5px;align-items:center;font:600 var(--fs-2xs)/1.2 var(--ff-text);background:var(--bg3);border-radius:6px;padding:4px 7px}.ec-f-gr span{color:var(--t1)}
+.ec-f-t{font:700 var(--fs-md)/1.3 var(--ff-text);color:var(--t0);margin-bottom:6px;display:flex;gap:8px;align-items:baseline}.ec-f-t span{font:500 var(--fs-2xs)/1 var(--ff-text);color:var(--t3)}
+.ec-f-lg{display:flex;flex-wrap:wrap;gap:12px;font-size:var(--fs-2xs);color:var(--t3);margin-bottom:4px}
+.ec-f-lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.ec-lg-r,.ec-ch .ec-r{background:var(--blue);fill:var(--blue);opacity:.55}
+.ec-ch{display:block}.ec-ch .ec-gl{stroke:var(--bd);stroke-width:1}.ec-ch .ec-ax{font-size:11px;fill:var(--t3)}
+.ec-pz{border:1px dashed var(--bd2);border-radius:var(--rs);padding:12px;background:color-mix(in srgb,var(--bg3) 55%,transparent)}
+.ec-pz-t{font:700 var(--fs-md)/1.3 var(--ff-text);color:var(--t1)}
+.ec-pz-z{font-size:var(--fs-sm);color:var(--t3);margin-top:3px}
+.ec-f-th{display:flex;gap:8px;align-items:center;font-size:var(--fs-sm);color:var(--t1);padding:6px 0;border-top:1px solid var(--bd)}
+@media (max-width:1100px){.ec-raster{grid-template-columns:minmax(0,1fr)}}
+@container (max-width:1000px){.ec-b-in{grid-template-columns:minmax(0,1fr)}.ec-p{margin:0 12px 12px}}
+@container (max-width:520px){.ec-b-th{display:none}}
 /* ══ GAMEPLAN (2026-11-16, js/gameplan.js) ═════════════════════════════════
    Seite G2 (Liste | Detail), Asset-Seite K1-Leiste, aufgeklappt wie G1 ab Entry/Break.
    Farbe der Karte = Bias (--c); Rot nur Bearish/Break (Design-Audit). Hoehen 28/34/40. */
@@ -8004,11 +8108,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-783 - Abgleich legt keinen Undo-Schritt mehr an"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-784 - Economy Map (Orbit): Sektoren, Gruppen, Firmen, Thesen"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-783</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-784</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -8154,6 +8258,14 @@ window.fxLogoSvg=function(art){
     <div class="pg-titel">Gameplan</div><div class="pg-sub">One plan per asset &middot; <b>bias</b>, thesis, <b>entry</b> and <b>break</b> &middot; next high-impact events &middot; watchlist pinned on top</div>
   </div>
   <div id="gameplanBody"></div>
+</div>
+<!-- PAGE: ECONOMY MAP (Nutzer 2026-11-21: Orbit - Sektoren, Gruppen, Firmen, Thesen;
+     Aufbau in renderEcon(), js/wirtschaft.js) -->
+<div class="pc" id="pgEcon" style="display:none">
+  <div style="margin-bottom:11px">
+    <div class="pg-titel">Economy Map</div><div class="pg-sub"><b>7</b> sectors &middot; <b>36</b> industry groups &middot; who supplies whom &middot; link your <b>theses</b> to the groups they hit</div>
+  </div>
+  <div id="econBody"></div>
 </div>
 <!-- PAGE: JOURNAL (Nutzer-Wunsch 2026-10-24: eigene Trades im Kalender,
      Aufbau in renderJournal(), js/trades.js) -->
@@ -8521,6 +8633,14 @@ window.fxLogoSvg=function(art){
      Zentriert (.ov zentriert bereits), schmal statt breit: eine Erklaerung
      liest sich in kurzen Zeilen, nicht ueber 700px hinweg. Ein Absatz je
      Gedanke - "muss uebersichtlich sein" heisst hier Struktur, nicht Kuerze. -->
+<!-- MODAL: Firma aus der Economy Map (js/wirtschaft.js ecAktie) - eigenes Fenster, keine Eingabefelder -->
+<div class="ov" id="mEconFirma" style="display:none">
+  <div class="modal ec-fm">
+    <h3 id="mEconFirmaT">Company</h3>
+    <div id="mEconFirmaB"></div>
+    <div class="m-btns" id="mEconFirmaK"><button class="btn g" onclick="closeM('mEconFirma')">Done</button></div>
+  </div>
+</div>
 <div class="ov" id="mCardInfo" style="display:none">
   <div class="modal ci-modal">
     <h3 id="mCardInfoTitle">About this card</h3>

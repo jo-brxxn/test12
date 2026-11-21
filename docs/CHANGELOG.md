@@ -22965,3 +22965,13 @@ Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking ent
   - **Behoben**: Der Test legt 16 eigene Termine für heute an, wie `check/calpast.js`.
     - Lokal grün bei 1920 und 390 px.
     - Gegenprobe ohne Sperre → A und B rot.
+
+## 2026-11-21 — Economy Map (Orbit) als neue Kategorie (VERSION-CHECK-784)
+
+**Nutzer:** neue Kategorie für Aktienanalyse, erst die Gesamtwirtschaft als Bild — Gruppen (*„Chip-Hersteller, Supermärkte, Leute die ins Weltall gehen, Autobauer, Pepsi/Cola, Pharma“*), Firmen zugeordnet, Klick auf Aktie → *„Earnings und Forecasts und Revenue … CapEx … worein die investieren“*, links *„Thesenleiste … die man zuordnen kann“* (Beispiele: Hackerangriffe auf Banken/Airlines/Supermärkte, Blue Wave → Datenzentren begrenzt + Chip-Exporte nach China). *„Mach das alles erstmal mit Platzhalter.“* Danach Wahl aus 5 Entwürfen (Inselkarte, Wertschöpfungskette, Orbit, Gewichtskarte, Schnittbild): *„Setz Orbit um … nur den Inhalt … nicht das Außenrum“*.
+
+- **Katalog:** 7 Sektoren, 36 Gruppen, 175 Firmen (Vertreter, auch Nicht-US: ASML, TSMC, Novo, SAP, Toyota …), 40 beschriftete Lieferbeziehungen — Definition, keine Messwerte.
+- **Platzhalter ohne erfundene Zahlen:** Umsatz/Gewinn nur, wo es echte Daten gibt (SEC, 13 Aktien); Forecasts, CapEx je Quartal, *Where the money goes* als sichtbare Rahmen *„source not connected yet“*. Grund: Regel 4 — die Entwürfe hatten Zufallszahlen, in der App wären sie mit echten nicht zu unterscheiden.
+- **Folgewirkung nur als Vorschlag** (gestrichelt, nicht gespeichert): Liefer- und Nachfrage-Schocks laufen in verschiedene Richtungen — eine automatische Übertragung ergab z. B. „Cloud bullish via Cybersecurity“.
+- **Gemessen beim Bau:** Orbit ragte 1000 px statt ~830 hoch — `getBoundingClientRect` misst Bildschirm-Pixel, die Seite ist am PC per `--pg-zoom` 1,205 skaliert → Zoom herausgerechnet. Beschriftungen: „Enterprise Software“ lag 7 px im Software-Planeten, „Machinery & Electrical“ in der Lücke Industry/Consumer → mehr Ausweichplätze (zweizeilig auch ohne „&“, weiter außen), Sperrrand 4 px, Bahn 322 → 336, Monde 80 → 78. „Metals &“ + „Nuclear & Uranium“ lasen sich als ein Name → 6 px Mindestabstand.
+- **Wächter:** `check/wirtschaft.js` (A–G, Gegenprobe), Seite in den Rundgängen von `klickscroll`, `ueberlappung`, `typo`, `hierarchie`, `designregeln`.

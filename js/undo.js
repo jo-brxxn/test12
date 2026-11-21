@@ -133,7 +133,7 @@ export function undoUebernehmen(r){
 export function undoFuerCloud(){const l=undoLog();return l.e.length?l:null;}
 const NAMEN={research:'Note',researchFolders:'Folder',researchAnalysis:'Analysis',calEvts:'Calendar',syms:'Asset',pairs:'Watchlist',pairCats:'Watchlist',
   noteCats:'Note category',widgets:'Dashboard',dashRemovedTypes:'Dashboard',dashV:'Dashboard',sbOrder:'Sidebar order',catOrder:'Category order',rubOrder:'Card order',
-  eventAlerts:'Alert',priceAlerts:'Alert',gameplans:'Gameplan',zbEntscheid:'Central bank',zbQuittung:'Central bank',bsGewichte:'Bias weights',scoreLog:'Score'};
+  eventAlerts:'Alert',priceAlerts:'Alert',gameplans:'Gameplan',econThesen:'Thesis',zbEntscheid:'Central bank',zbQuittung:'Central bank',bsGewichte:'Bias weights',scoreLog:'Score'};
 function etikett(ps){
   if(ps.some(x=>x.p[0]==='T'))return'Trade';
   const p=(ps.find(x=>x.p[1]!=='scoreLog')||ps[0]).p;

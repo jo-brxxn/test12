@@ -58,7 +58,7 @@ const REGEL = ':not(.ks-an){overflow-y:hidden!important}';
         if (await L.evaluate(e => e.classList.contains('ks-an'))) F.push(`${o} B: Klick daneben sperrt die Liste nicht`);
       }
     }
-    for (const t of ['dash', 'cur', 'GOLD', 'regime', 'news', 'mx', 'trends', 'cot', 'sent', 'seas', 'data', 'rate', 'carry', 'pairs', 'watch', 'gameplan', 'journal', 'cal', 'notes']) {
+    for (const t of ['dash', 'cur', 'GOLD', 'regime', 'news', 'mx', 'trends', 'cot', 'sent', 'seas', 'data', 'rate', 'carry', 'pairs', 'watch', 'gameplan', 'econ', 'journal', 'cal', 'notes']) {
       await p.evaluate(t => { document.querySelectorAll('.ks-an').forEach(x => x.classList.remove('ks-an')); if (t === 'cur') gotoSym('USD'); else if (t === 'GOLD') gotoSym('GOLD'); else showTab(t); }, t);
       await p.waitForTimeout(t === 'cur' || t === 'GOLD' ? 1800 : 1000);
       const r = await p.evaluate(() => {

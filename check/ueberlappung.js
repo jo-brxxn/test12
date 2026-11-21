@@ -66,7 +66,7 @@ const MESSEN = ([sel, minX, minY]) => {
       if (B.length) F.push(`${o} B: Gameplan-Linien ${name} - ${B[0]}`);
     }
     // C: Rundgang
-    for (const [wo, fn] of [['Dashboard', "showTab('dash')"], ['Journal', "showTab('journal')"], ['Gameplan', "showTab('gameplan')"], ['GOLD', "gotoSym('GOLD')"], ['EUR', "gotoSym('EUR')"], ['SOL', "gotoSym('SOL')"], ['Set-ups', "showTab('setups')"], ['Kalender', "showTab('cal')"]]) {
+    for (const [wo, fn] of [['Dashboard', "showTab('dash')"], ['Journal', "showTab('journal')"], ['Gameplan', "showTab('gameplan')"], ['Economy Map', "showTab('econ')"], ['GOLD', "gotoSym('GOLD')"], ['EUR', "gotoSym('EUR')"], ['SOL', "gotoSym('SOL')"], ['Set-ups', "showTab('setups')"], ['Kalender', "showTab('cal')"]]) {
       await p.evaluate(fn); await p.waitForTimeout(2000);
       const C = await p.evaluate(MESSEN, ['TEXT', 2, 3]);
       if (C.length) F.push(`${o} C: ${wo} - ${C.length}x Text deckt Text, z. B. ${C[0]}`);
