@@ -22977,3 +22977,4 @@ Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking ent
 - **Wächter:** `check/wirtschaft.js` (A–G, Gegenprobe), Seite in den Rundgängen von `klickscroll`, `ueberlappung`, `typo`, `hierarchie`, `designregeln`.
 
 - **785 (hierarchie):** Gruppentitel im Panel war 17 px = Kartentitel „Economy orbit“ → 15 px.
+- **786 (designregeln):** Seitenleiste „Economy Map“ brach um (25 px) → Eintrag „Economy“, Seitentitel bleibt. Monde (role=button) schlossen den Namen ein → Knopfflächen überlappten (F ÜBERDECKT 1180/1440) → Namen eigene, nicht klickbare Ebene. ⓘ-Trefferfläche ragte 7,5 px in den Orbit (elementFromPoint unten = svg) → Kopf 8 px Abstand unten.

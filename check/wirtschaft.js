@@ -2,7 +2,7 @@
 // Nutzer 2026-11-21: neue Kategorie, Wirtschaft als Bild (Orbit gewaehlt), Gruppen mit Firmen,
 // Klick auf Firma -> Revenue/Earnings/Forecasts/CapEx, links Thesen zum Zuordnen; Platzhalter
 // fuer alles ohne Quelle. "nur den Inhalt ... nicht das Aussenrum".
-//  A) Seitenleiste "Economy Map", Seite mit .pg-titel, 7 Sektoren + 36 Gruppen im Orbit,
+//  A) Seitenleiste "Economy", Seite "Economy Map" mit .pg-titel, 7 Sektoren + 36 Gruppen im Orbit,
 //     Orbit in echter Groesse (SVG-Breite = gezeichnete Breite, kein Skalieren der Schrift)
 //  B) Nichts ueberlappt: Gruppennamen untereinander und mit fremden Monden/Planeten (Kreisgeometrie, 1920, 1024)
 //  C) These: anlegen, Titel tippen, Status, Gruppen verknuepfen (+ -> - -> aus), in snap(),
@@ -37,7 +37,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
   };
   // Beschriftungen + Kreise: keine Ueberdeckung (Bildschirm-Rechtecke)
   const ueberlapp = p => p.evaluate(() => {
-    const T = [...document.querySelectorAll('#ecOrbit .ec-mn, #ecOrbit .ec-pl-n')].map(e => ({ n: e.textContent, g: e.closest('[data-g]') ? e.closest('[data-g]').dataset.g : '', r: e.getBoundingClientRect() }));
+    const T = [...document.querySelectorAll('#ecOrbit .ec-mn, #ecOrbit .ec-pl-n')].map(e => ({ n: e.textContent, g: e.dataset.lg || '', r: e.getBoundingClientRect() }));
     const K = [...document.querySelectorAll('#ecOrbit .ec-mond .kr, #ecOrbit .ec-pl-z')].map(e => ({ g: e.closest('[data-g]') ? e.closest('[data-g]').dataset.g : 'planet', r: e.getBoundingClientRect() }));
     const sch = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
     const out = [];
@@ -53,7 +53,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
   for (const [W, H] of [[1920, 1080], [1024, 768]]) {
     const o = W + 'px';
     const { ctx, p } = await seite(W, H);
-    if (W > 1000) { const nav = await p.evaluate(() => (document.getElementById('navSidebar') || {}).textContent || ''); if (!/Economy Map/.test(nav)) F.push(o + ' A: kein Eintrag "Economy Map" in der Seitenleiste'); }
+    if (W > 1000) { const nav = await p.evaluate(() => (document.getElementById('navSidebar') || {}).textContent || ''); if (!/Economy/.test(nav)) F.push(o + ' A: kein Eintrag "Economy" in der Seitenleiste'); }
     await p.evaluate(() => showTab('econ')); await p.waitForTimeout(900);
     const a = await p.evaluate(() => { const s = document.querySelector('#ecOrbit svg'), ob = document.getElementById('ecOrbit'), pg = document.getElementById('pgEcon');
       const z = parseFloat(getComputedStyle(pg).zoom) || 1;

@@ -7809,7 +7809,7 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .ec-leg .kb{border:2px dashed var(--bias-bull)}.ec-leg .ks{border:2px dashed var(--bias-bear)}
 /* Buehne (dunkel in beiden Modi, wie die Weltkugel) */
 .ec-buehne{container-type:inline-size;background:radial-gradient(ellipse at 40% 50%,#13254A 0%,#0B1424 58%,#070D18 100%);border:1px solid #1E2F52;border-radius:var(--r);box-shadow:var(--shadow-card);min-width:0;overflow:hidden;color:#C9D6E8}
-.ec-b-kopf{display:flex;align-items:center;gap:8px;padding:12px 14px 0}
+.ec-b-kopf{display:flex;align-items:center;gap:8px;padding:12px 14px 8px}
 .ec-kt-d{color:#E6ECF7}
 .ec-buehne .ec-info{color:#C9D6E8;border-color:#5B6F94}
 .ec-b-th{font:600 var(--fs-sm)/1.3 var(--ff-text);color:#E6ECF7;background:rgba(95,208,255,.1);border:1px solid rgba(95,208,255,.3);border-radius:var(--rss);padding:5px 9px;max-width:48%;overflow-wrap:anywhere}
@@ -7824,8 +7824,9 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .ec-mond .gl{fill:currentColor;opacity:0}
 .ec-mond .kr{fill:#10213D;stroke-width:2;filter:brightness(1.35)}
 .ec-mond .ic{filter:brightness(1.7)}
-.ec-mond .ec-mn{font-size:11.5px;font-weight:600;fill:#C9D6E8;paint-order:stroke;stroke:#0B1424;stroke-width:3px}
-.ec-mond.sel .ec-mn{fill:#fff;font-weight:800}
+/* Namen eigene Ebene, nicht klickbar: der Knopf ist nur der Mond (designregeln F) */
+.ec-svg .ec-mn{font-size:11.5px;font-weight:600;fill:#C9D6E8;paint-order:stroke;stroke:#0B1424;stroke-width:3px;pointer-events:none}
+.ec-svg .ec-mn.sel{fill:#fff;font-weight:800}.ec-svg .ec-mn.im-off{opacity:.32}
 .ec-mond:hover .kr{filter:brightness(1.8)}
 .ec-mond.im-b{color:#4C9BFF}.ec-mond.im-s{color:#FF5A64}
 .ec-mond.im-d .gl{opacity:.75}.ec-mond.im-d .kr{stroke:currentColor;stroke-width:3;filter:none}
@@ -8108,11 +8109,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-785 - Economy Map: Gruppentitel im Panel eine Stufe unter dem Kartentitel"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-786 - Economy Map: Seitenleiste einzeilig, Monde ohne Namensflaeche, i-Trefferflaeche frei"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-785</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-786</span>
     </span>
   </div>
   <div class="hdr-r">

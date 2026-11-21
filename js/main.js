@@ -26575,7 +26575,7 @@ const TABS={
   // Gameplan je Asset (Nutzer 2026-11-16): eigener Eintrag nach der Watchlist, in keinem Stapel.
   gameplan:{label:'Gameplan',tab:'gameplan'},
   // Economy Map (Nutzer 2026-11-21, Orbit): eigener Eintrag nach dem Gameplan, in keinem Stapel.
-  econ:{label:'Economy Map',tab:'econ'},
+  econ:{label:'Economy',tab:'econ'},   // Seitenleiste einzeilig (designregeln D); Seitentitel bleibt "Economy Map"
   journal:{label:'Journal',tab:'journal'},
   cal:{label:'Calendar',tab:'cal'},
   // Label 2026-08-02 von 'Notes' auf 'Research' umbenannt, 2026-09-19 auf

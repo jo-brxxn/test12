@@ -259,6 +259,7 @@ function orbitSvg(W,H,im){
     const col=heiss?(v>0?'#4C9BFF':'#FF5A64'):sel?'#5fd0ff':'#5B6F94',op=ths?(heiss?.95:.08):ecSel?(sel?.9:.1):.35;
     o+=`<path d="M${p.x.toFixed(1)},${p.y.toFixed(1)} Q${kx.toFixed(1)},${ky.toFixed(1)} ${q.x.toFixed(1)},${q.y.toFixed(1)}" fill="none" stroke="${col}" stroke-width="${heiss&&!knock?2.2:1.4}"${knock?' stroke-dasharray="3 4"':''} opacity="${op}"/>`;});
   // Monde (Gruppen)
+  let namen='';
   EC_GRUPPEN.forEach(g=>{
     const p=pos[g.id],z=ZO[g.z],m=im[g.id],sel=ecSel===g.id;
     const kl=ths?(m?(m.v>0?' im-b':' im-s')+(m.direkt?' im-d':' im-k'):' im-off'):'';
@@ -267,7 +268,9 @@ function orbitSvg(W,H,im){
       <circle class="gl" cx="${p.x}" cy="${p.y}" r="${rM+7}" filter="url(#ecGl)"/><circle class="kr" cx="${p.x}" cy="${p.y}" r="${rM}" stroke="${z.c}"/>
       <g transform="translate(${(p.x-isz/2).toFixed(1)},${(p.y-isz/2).toFixed(1)})" color="${z.c}" class="ic">${icon(g.id,isz)}</g>
       ${sel?`<circle cx="${p.x}" cy="${p.y}" r="${rM+6}" fill="none" stroke="#5fd0ff" stroke-width="2"/>`:''}
-      ${l?`<text x="${l[0].toFixed(1)}" y="${l[1].toFixed(1)}" text-anchor="${l[2]}" class="ec-mn">${l[3]?zweiZeilen(g.n).map((t,k)=>`<tspan x="${l[0].toFixed(1)}" dy="${k?14:0}">${escH(t)}</tspan>`).join(''):escH(g.n)}</text>`:''}</g>`;});
+</g>`;
+    if(l)namen+=`<text x="${l[0].toFixed(1)}" y="${l[1].toFixed(1)}" text-anchor="${l[2]}" class="ec-mn${kl}${sel?' sel':''}" data-lg="${g.id}">${l[3]?zweiZeilen(g.n).map((t,k)=>`<tspan x="${l[0].toFixed(1)}" dy="${k?14:0}">${escH(t)}</tspan>`).join(''):escH(g.n)}</text>`;});
+  o+=`<g class="ec-namen">${namen}</g>`;
   return o+'</svg>';
 }
 // Name in zwei Zeilen: nach "&" bzw. am Leerzeichen nahe der Mitte (nie gekuerzt)
