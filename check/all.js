@@ -104,7 +104,7 @@ const PRUEFUNGEN = [
   { n: 'zoomhover', s: 30, d: 'PC-Seiten-Zoom: Hover-Linie, Trade-Chart und COT-Tooltip liegen an der Maus', f: 'check/zoomhover.js', args: [], browser: true },
   { n: 'datumfeld', s: 1, d: 'Datum-/Zeit-Felder ragen auf dem iPad nicht ueber ihre Spalte (globale Regel min-width:0/max-width:100%)', f: 'check/datumfeld.js', args: [], browser: false },
   { n: 'assetlisten', s: 1, d: 'Jedes Nicht-FX-Asset in jeder Kursliste (Live, 3J, 4h, Saison, Kerzen-Nachtrag), Krypto/Metalle/Retail in USD', f: 'check/assetlisten.js', args: [], browser: false },
-  { n: 'wirtschaft', s: 90, d: 'Economy Map (Orbit): 7 Sektoren/36 Gruppen in echter Groesse, nichts ueberlappt, Thesen anlegen/verknuepfen/Abgleich mit Grabstein/Papierkorb, Firmenfenster nur echte Zahlen', f: 'check/wirtschaft.js', args: [], browser: true },
+  { n: 'wirtschaft', s: 90, d: 'Economy Map: zoombare Karte, alle Sektoren/Firmen in echter Groesse, nichts ueberlappt, Klick hebt Links + Quellen hervor, Filter, Thesen mit Grabstein/Papierkorb, Firmenfenster nur echte Zahlen', f: 'check/wirtschaft.js', args: [], browser: true },
   { n: 'gameplan', s: 60, d: 'Gameplan: Seite (jedes Asset, Watchlist oben), Bias faerbt, Leiste vor der Price-Karte, aufgeklappt ab Entry|Break, gespeichert, Preislinie, 14-Tage-Hinweis', f: 'check/gameplan.js', args: [], browser: true },
   { n: 'kerzenarchiv', s: 40, d: 'Alte Kerzen (>183 Tage) in price_ohlc.json, Laden nur fuer lange Charts, Rundreise bitgenau, Scores unveraendert', f: 'check/kerzenarchiv.js', args: [], browser: true },
   { n: 'stkmakro', s: 30, d: 'Aktien: Makro-Karten + Zentralbank nicht auf der Seite, Quicklink Macro -> Fenster ~2/3 mit allen Funktionen, FX unveraendert', f: 'check/stkmakro.js', args: [], browser: true },

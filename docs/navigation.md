@@ -1688,12 +1688,15 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **Hinweis:** *Not reviewed for Nd* nach 14 Tagen ohne Änderung
 - Code: `js/gameplan.js`, Wächter `check/gameplan.js`
 
-## Economy Map (seit 2026-11-21, 784)
+## Economy Map (seit 2026-11-21, 784; zoombare Karte seit 787)
 
-- **Seitenleiste:** eigener Eintrag *Economy* (einzeilig, designregeln D; Seitentitel *Economy Map*) nach *Gameplan* (in keinem Stapel), Seite `pgEcon`, Code `js/wirtschaft.js`
-- **Wahl aus 5 Entwürfen: Orbit** (Nutzer: *„Setz Orbit um … nur den Inhalt … nicht das Außenrum“*) — Kopfzeile/Seitenleiste der App bleiben, die Leisten der Entwürfe waren nur Rahmen
-- **Aufbau:** Thesen links (helle Karte) | Bühne dunkel wie die Weltkugel: Kern, 7 Sektor-Planeten, 36 Gruppen-Monde, Linien = wer wen beliefert; rechts Panel der gewählten Gruppe (Firmen, Supplies, Depends on); Bühne < 1000 px → Panel unter dem Orbit
-- **Thesen:** New → Titel tippen, Status Active/Watching/Draft, *Link groups* → Monde antippen + → − → aus; gestrichelt = mögliche Folgewirkung über eine Verbindung (nur Vorschlag, nicht gespeichert); Delete → Papierkorb (`econth`)
-- **Firma antippen:** Fenster `mEconFirma`; Umsatz/Gewinn je Quartal nur echt (SEC, `stock_data.json`, die 13 Aktien von Stocks) + *Open asset page*; Forecasts, CapEx, *Where the money goes* = Platzhalter-Rahmen ohne Zahlen (noch keine Quelle, Regel 4)
-- **Orbit in echter Größe:** Breite gemessen, Höhe = freie Fläche bis zum Rand (`--pg-zoom` herausgerechnet), mind. 600 × 520; darunter scrollt die Bühne seitlich (Handy, startet mittig); Namen nur, solange sie lesbar sind (Maßstab ≥ 0,66), sonst nur gewählte/betroffene Gruppe
-- **Beschriftung kollisionsfrei:** Kandidaten (radial, unten, oben, seitlich, schräg, weiter außen, zweizeilig), kleinste Überdeckung + Nähe gewinnt, 6 px Abstand — geprüft mit Kreisgeometrie in `check/wirtschaft.js` B
+- **Seitenleiste:** Eintrag *Economy* (einzeilig; Seitentitel *Economy Map*) nach *Gameplan*, Seite `pgEcon`, Code `js/wirtschaft.js`, Katalog `js/wirtschaft-katalog.js`
+- **Nur börsennotierte Firmen**, jede in GENAU einer Hauptgruppe + Tags (AI exposure, Rate-sensitive, Defensive, Cyclical, China exposure, Government-driven, Commodity price, Nuclear)
+- **Sektoren nach Stufe** (Nutzer: Hauptbereiche am größten, kleine im Hintergrund, nichts fällt weg): 1 = AI & Compute (12 Ebenen vom Chip-Design bis zur KI-Software), Space, Energy & Power (Erzeuger, Netze/Versorger, Netztechnik, Nuklear, Öl/Gas, Services, Erneuerbare getrennt); 2 = Health, Finance, Consumer, Software & Internet, Industrials, Defense, Transport (getrennt!), Materials, Telecom, Real Estate; 3 = Agriculture, Leisure & Travel, Business Services, Water & Waste
+- **Beziehungen** `[a, b, typ, datum, was, quelle]`, Typ buys/power/invest/partner, NUR mit Quelle (Recherche, Zahlen so wie die Quelle sie nennt); Pfeil = Ware/Dienst vom Verkäufer zum Käufer
+- **Karte:** Sektoren als Gebiete (squarified, Fläche = Stufe × Firmenzahl^0,8), Gruppen darin, Firmen im Raster; semantischer Zoom (Geometrie umgerechnet, Schrift fest in echter Größe), Namen nur, wenn sie ganz passen; Gruppenname beim Überfahren (`<title>`)
+- **Bedienung:** Ziehen = verschieben, Rad-Zoom erst nach Klick in die Karte (Klick daneben sperrt), zwei Finger = Zoom, + / − / Fit, Doppelklick = näher; Tipp auf Sektor = hinzoomen, auf Gruppe = Panel (+ hinzoomen), auf Firma = Firma + alle Links hell, Rest blass, Panel mit Typ, Datum, Quelle, *Company details* (Fenster `mEconFirma`), *Zoom to links*
+- **Filter:** Tags (UND), Link-Typen; Ansicht/Filter = Sitzung
+- **Thesen links:** wie 784; Verknüpfen-Modus: Gruppe antippen + → − → aus; alte Gruppen-ids werden beim Einlesen umgeschrieben (`EC_ALT`)
+- **Firmenfenster:** *What it does* (Gruppe), Umsatz/Gewinn nur echt (SEC, 13 Aktien), Forecasts/CapEx/*Where the money goes* Platzhalter-Rahmen ohne Zahlen, Links mit Quelle, verknüpfte Thesen
+- Wächter `check/wirtschaft.js` (A–H + Gegenprobe)

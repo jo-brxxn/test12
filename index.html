@@ -7816,23 +7816,38 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .ec-b-th i{color:#8FA3C4}
 .ec-b-in{display:grid;grid-template-columns:minmax(0,1fr) 300px;align-items:start}
 .ec-orbit{position:relative;min-width:0;overflow-x:auto;overflow-y:hidden}
-.ec-svg{display:block;font-family:var(--ff-text)}
-.ec-svg .ec-pl-n{font-size:11px;font-weight:800;fill:#E6ECF7}
-.ec-svg .ec-pl-z{filter:brightness(1.4)}
-.ec-svg .ec-kern-t{font-size:13px;font-weight:800;fill:#E6ECF7}.ec-svg .ec-kern-z{font-size:11px;fill:#8FA3C4}
-.ec-mond{cursor:pointer;color:transparent}
-.ec-mond .gl{fill:currentColor;opacity:0}
-.ec-mond .kr{fill:#10213D;stroke-width:2;filter:brightness(1.35)}
-.ec-mond .ic{filter:brightness(1.7)}
-/* Namen eigene Ebene, nicht klickbar: der Knopf ist nur der Mond (designregeln F) */
-.ec-svg .ec-mn{font-size:11.5px;font-weight:600;fill:#C9D6E8;paint-order:stroke;stroke:#0B1424;stroke-width:3px;pointer-events:none}
-.ec-svg .ec-mn.sel{fill:#fff;font-weight:800}.ec-svg .ec-mn.im-off{opacity:.32}
-.ec-mond:hover .kr{filter:brightness(1.8)}
-.ec-mond.im-b{color:#4C9BFF}.ec-mond.im-s{color:#FF5A64}
-.ec-mond.im-d .gl{opacity:.75}.ec-mond.im-d .kr{stroke:currentColor;stroke-width:3;filter:none}
-.ec-mond.im-k .gl{opacity:.25}.ec-mond.im-k .kr{stroke:currentColor;stroke-dasharray:4 3;stroke-width:2.5;filter:none}
-.ec-mond.im-off{opacity:.32}
-.ec-mond:focus-visible{outline:none}.ec-mond:focus-visible .kr{stroke:#fff;stroke-width:3}
+.ec-svg{display:block;font-family:var(--ff-text);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.ec-svg:active{cursor:grabbing}
+.ec-svg .ec-zn{font-size:12px;font-weight:800;letter-spacing:.06em;filter:brightness(1.45)}.ec-svg .ec-zn.gross{font-size:14px}
+.ec-svg .ec-z{cursor:zoom-in}
+.ec-svg .ec-gr{fill:rgba(255,255,255,.035);stroke-opacity:.45;stroke-width:1}
+.ec-svg .ec-g{cursor:pointer}.ec-svg .ec-g:hover .ec-gr{fill:rgba(255,255,255,.07)}
+.ec-svg .ec-gn{font-size:11.5px;font-weight:700;fill:#C9D6E8;pointer-events:none}
+.ec-svg .ec-g.sel .ec-gr{stroke:#5fd0ff;stroke-opacity:1;stroke-width:2}
+.ec-svg .ec-g.im-b .ec-gr{stroke:#4C9BFF;stroke-opacity:1;stroke-width:2.5;fill:rgba(76,155,255,.16)}
+.ec-svg .ec-g.im-s .ec-gr{stroke:#FF5A64;stroke-opacity:1;stroke-width:2.5;fill:rgba(255,90,100,.14)}
+.ec-svg .ec-g.im-off{opacity:.45}
+.ec-svg .ec-f{cursor:pointer}
+.ec-svg .ec-f rect{fill:#13254A;stroke:#2E4573;stroke-width:1}
+.ec-svg .ec-f .ec-ft{font-size:11px;font-weight:800;fill:#E6ECF7;pointer-events:none}
+.ec-svg .ec-f .ec-fn{font-size:11px;font-weight:500;fill:#AFC0DA;pointer-events:none}
+.ec-svg .ec-f .ec-fd{fill:#AFC0DA}.ec-svg .ec-f .ec-fl{fill:#5fd0ff}
+.ec-svg .ec-f:hover rect{stroke:#5fd0ff}
+.ec-svg .ec-f.dim{opacity:.18}
+.ec-svg .ec-f.hell rect{stroke:#5fd0ff;stroke-width:1.5;fill:#1B3566}.ec-svg .ec-f.hell .ec-fd{fill:#5fd0ff}
+.ec-svg .ec-f.sel rect{stroke:#fff;stroke-width:2.5;fill:#24447E}.ec-svg .ec-f.sel .ec-fd{fill:#fff}
+.ec-svg .ec-l{fill:none;stroke-width:2.2;opacity:.95;pointer-events:stroke}
+.ec-zoom{display:inline-flex;align-items:center;border:1px solid #2A3A5C;border-radius:var(--rss);overflow:hidden;background:rgba(16,30,56,.8)}
+.ec-zoom button{min-width:var(--h-s);height:var(--h-s);border:0;background:none;color:#E6ECF7;font:700 var(--fs-md)/1 var(--ff-text);cursor:pointer;padding:0 8px}
+.ec-zoom button+button,.ec-zoom span+button{border-left:1px solid #2A3A5C}
+.ec-zoom span{font:600 var(--fs-2xs)/1 var(--ff-text);color:#AFC0DA;min-width:42px;text-align:center;border-left:1px solid #2A3A5C;line-height:var(--h-s)}
+.ec-zoom .ec-fit{font-size:var(--fs-xs)}
+.ec-filter{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 14px 10px}
+.ec-fl-l{font:800 var(--fs-2xs)/1 var(--ff-text);letter-spacing:.08em;text-transform:uppercase;color:#6F84A8;margin:0 2px 0 6px}.ec-fl-l:first-child{margin-left:0}
+.ec-chip{min-height:var(--h-s);display:inline-flex;align-items:center;gap:6px;padding:0 10px;border-radius:999px;border:1px solid #2A3A5C;background:rgba(16,30,56,.6);color:#C9D6E8;font:600 var(--fs-xs)/1 var(--ff-text);cursor:pointer;white-space:nowrap}
+.ec-chip.on{background:#E6ECF7;color:#0D1B2F;border-color:#E6ECF7}
+.ec-chip.ty i{width:10px;height:3px;border-radius:2px;background:var(--tc)}
+.ec-chip.ty:not(.on){opacity:.55}.ec-chip.ty.on{background:rgba(16,30,56,.6);color:#E6ECF7;border-color:var(--tc)}
 .ec-p{margin:12px 12px 12px 0;background:rgba(16,30,56,.82);border:1px solid #24375E;border-radius:var(--rs);padding:14px;align-self:start}
 .ec-p-leer{min-height:180px;display:flex;flex-direction:column;justify-content:center;text-align:center;gap:4px}
 .ec-p-k{display:flex;gap:10px;align-items:center}
@@ -7848,6 +7863,18 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .ec-p-l{display:flex;gap:6px;align-items:baseline;width:100%;min-height:var(--h-s);border:0;background:none;color:#8FA3C4;font:500 var(--fs-sm)/1.3 var(--ff-text);text-align:left;cursor:pointer;padding:4px 2px}
 .ec-p-l b{color:#E6ECF7;font-weight:600}.ec-p-l i{margin-left:auto;font-size:var(--fs-2xs);white-space:nowrap}.ec-p-l:hover b{color:#fff}
 .ec-p-l0{font-size:var(--fs-sm);color:#6F84A8;padding:4px 2px}
+.ec-p-tk{font:800 var(--fs-sm)/1 var(--ff-text);background:#E6ECF7;color:#0D1B2F;border-radius:var(--rss);padding:7px 8px;flex:0 0 auto}
+.ec-p-tw{min-width:0}
+.ec-p-was{font-size:var(--fs-sm);color:#C9D6E8;margin-top:10px;line-height:1.4}
+.ec-p-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}.ec-p-tags span{font:600 var(--fs-2xs)/1 var(--ff-text);color:#AFC0DA;border:1px solid #2A3A5C;border-radius:6px;padding:4px 6px}
+.ec-p-b{border-top:1px solid #1E2F52;padding:8px 0}.ec-p-b.aus{opacity:.4}
+.ec-p-b1{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ec-p-typ{font:700 var(--fs-2xs)/1 var(--ff-text);color:var(--tc);border:1px solid var(--tc);border-radius:6px;padding:4px 6px;white-space:nowrap}
+.ec-p-o{border:0;background:none;color:#C9D6E8;font:500 var(--fs-sm)/1.3 var(--ff-text);cursor:pointer;text-align:left;padding:4px 0;min-height:var(--h-s)}.ec-p-o b{color:#fff}.ec-p-o:hover{color:#fff}
+.ec-p-b2{font-size:var(--fs-sm);color:#AFC0DA;margin-top:2px;line-height:1.35}
+.ec-p-b3{display:flex;gap:10px;align-items:center;font-size:var(--fs-2xs);color:#6F84A8;margin-top:4px}.ec-p-b3 a{color:#5fd0ff;font-weight:700}
+.ec-p-kn{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.ec-p-hilfe{display:flex;flex-direction:column;gap:6px;margin-top:14px;font-size:var(--fs-sm);color:#8FA3C4;text-align:left}.ec-p-hilfe b{color:#E6ECF7}
 /* Firmenfenster */
 .ec-fm{max-width:640px;width:min(640px,calc(100vw - 32px))}
 .ec-f-tk{font:800 var(--fs-sm)/1 var(--ff-text);background:var(--ui-act);color:var(--ui-act-fg);border-radius:var(--rss);padding:6px 8px;margin-right:9px;vertical-align:2px}
@@ -8109,11 +8136,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-786 - Economy Map: Seitenleiste einzeilig, Monde ohne Namensflaeche, i-Trefferflaeche frei"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-787 - Economy Map als zoombare Karte: 17 Sektoren, 77 Gruppen, 333 Firmen, belegte Beziehungen"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-786</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-787</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -8264,7 +8291,7 @@ window.fxLogoSvg=function(art){
      Aufbau in renderEcon(), js/wirtschaft.js) -->
 <div class="pc" id="pgEcon" style="display:none">
   <div style="margin-bottom:11px">
-    <div class="pg-titel">Economy Map</div><div class="pg-sub"><b>7</b> sectors &middot; <b>36</b> industry groups &middot; who supplies whom &middot; link your <b>theses</b> to the groups they hit</div>
+    <div class="pg-titel">Economy Map</div><div class="pg-sub"><b>17</b> sectors &middot; <b>77</b> industry groups &middot; <b>333</b> listed companies &middot; sourced links: who buys from whom &middot; link your <b>theses</b></div>
   </div>
   <div id="econBody"></div>
 </div>
