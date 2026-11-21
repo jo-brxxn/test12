@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
   const F = [];
   const main = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
   if (!/function snap\(\)\{[^\n]*gameplans/.test(main)) F.push('G: gameplans fehlt in snap()');
-  if (!/'bsGewichte','gameplans'\]/.test(main)) F.push('G: gameplans fehlt in neueFelderBehalten');
+  if (!/'bsGewichte','gameplans'[,\]]/.test(main)) F.push('G: gameplans fehlt in neueFelderBehalten');
   const b = await chromium.launch();
   for (const [W, H] of [[1366, 900], [390, 844]]) {
     const o = W + 'px';

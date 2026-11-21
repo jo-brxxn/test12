@@ -22978,3 +22978,4 @@ Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking ent
 
 - **785 (hierarchie):** Gruppentitel im Panel war 17 px = Kartentitel „Economy orbit“ → 15 px.
 - **786 (designregeln):** Seitenleiste „Economy Map“ brach um (25 px) → Eintrag „Economy“, Seitentitel bleibt. Monde (role=button) schlossen den Namen ein → Knopfflächen überlappten (F ÜBERDECKT 1180/1440) → Namen eigene, nicht klickbare Ebene. ⓘ-Trefferfläche ragte 7,5 px in den Orbit (elementFromPoint unten = svg) → Kopf 8 px Abstand unten.
+- **CI 786:** `gameplan` G suchte `neueFelderBehalten` mit festem Listenende (`'gameplans']`) → mit `econThesen` rot; Muster jetzt `'gameplans'[,\]]`. `runtime` klickte per `e.click()`, SVG-Elemente (Monde) haben keine → `CLICKTHROW`; SVG jetzt per echtem Klick-Event (lokal grün, 1906 Klicks). `altgeraet` D lokal rot auch auf 782/783 (CI dort grün) → Effekt der lokalen Testhilfe, kein App-Fehler.

@@ -61,7 +61,7 @@ const { chromium } = require(PW);
     const vis=e=>{const r=e.getBoundingClientRect();if(r.width<2||r.height<2)return false;for(let x=e;x;x=x.parentElement){const cs=getComputedStyle(x);if(cs.display==='none'||cs.visibility==='hidden')return false}return true};
     const els=[...document.querySelectorAll('button[onclick],[role=button][onclick]')].filter(e=>!e.closest('.ov')&&vis(e));
     const S=e=>(e.getAttribute('onclick')||'')+'|'+(e.textContent||e.title||'').trim().slice(0,40);
-    if(arg.sig){const e=els.filter(x=>S(x)===arg.sig)[arg.occ];if(!e)return false;try{e.click()}catch(x){console.error('CLICKTHROW '+x.message)}return true}
+    if(arg.sig){const e=els.filter(x=>S(x)===arg.sig)[arg.occ];if(!e)return false;try{if(typeof e.click==='function')e.click();else e.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}))}catch(x){console.error('CLICKTHROW '+x.message)}return true}
     const cnt={};return els.map(e=>{const sg=S(e);cnt[sg]=cnt[sg]||0;return{sig:sg,occ:cnt[sg]++,bad:re.test(e.getAttribute('onclick')||'')}}).filter(k=>!k.bad)})`;
   let geklickt = 0, nichtGefunden = 0;
   for (const t of TABS) {
