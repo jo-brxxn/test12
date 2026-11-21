@@ -22988,3 +22988,10 @@ Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking ent
 - **28 Beziehungen recherchiert**, jede mit Datum und Quelle (z. B. MSFT↔CEG Three Mile Island, META↔CRWV $14,2 Mrd., NVDA↔INTC $5 Mrd., WMT≈16 % von P&G laut 10-K). Mehr nur mit Quelle.
 - **Folgewirkungs-Vorschlag entfernt** (784 gestrichelt): war naiv (z. B. Cloud bullish via Cybersecurity); Firmen-Links mit Quelle ersetzen ihn.
 - Wächter `check/wirtschaft.js` neu (A–H): Karte in echter Größe, Flächen nach Stufe, nichts überlappt in Übersicht + 2 Zoomstufen bei 1920/1024, NVDA-Links/Filter/Zoom, Thesen, alte ids, Papierkorb, Firmenfenster, jede Beziehung mit Datum/Quelle/Typ. Gegenprobe rot.
+
+## 2026-11-21 — Economy Map zurück als Orbit (VERSION-CHECK-788)
+
+**Nutzer:** *„Ich will das aber als Orbit“* (787 war eine Gebietskarte). Katalog, Links, Filter, Thesen bleiben; nur die Darstellung.
+- **Aufbau:** 3 elliptische Bahnen (Stufe 1 innen, 2 Mitte, 3 außen), Planet je Sektor (Radius 34/16/11), Monde = Gruppen, Satelliten = Firmen.
+- **Gemessen beim Bau:** Übersicht zeigte zuerst nur 10 von 17 Sektornamen — der KI-Planet hat bei *Fit* nur 24,5 px Radius („Compute“ braucht ~37) und außen lagen die mittleren Systeme → Ausweichplätze innen/seitlich/weiter außen → 17/17. Beim Zoom fehlten NVDA/TSMC/INTC-Kästen: Monde wuchsen mit (26 px) und sperrten → Mond max. 9 px; verdeckte Linkpartner bekommen Ausweichplätze mit Haltelinie. Gruppennamen fehlten beim Zoom (Kandidaten im eigenen Satellitenkreis) → außerhalb des Kreises.
+- Wächter `check/wirtschaft.js` angepasst (Planeten nach Stufe, Gegenprobe = Beschriftung ohne Platzprüfung).

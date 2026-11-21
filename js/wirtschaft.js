@@ -59,7 +59,7 @@ function veraendert(id,fn){const th=econThesen[id];if(!th||th.del)return;fn(th);
 // ── Sitzung ───────────────────────────────────────────────────────────────
 let ecTh=null,ecSel=null,ecLink=false,ecFirma=null;
 const ecTags=new Set(),ecTypen=new Set(EC_TYPEN.map(x=>x[0]));
-const V={k:1,x:0,y:0,W:0,H:0};          // Zoom und Blickpunkt (Welt-Koordinaten oben links)
+const V={k:1,x:0,y:0,W:0,H:0};          // Zoom und Blickpunkt (Welt-Koordinaten oben links, Ursprung = Kern)
 let L=null;                              // Layout fuer die aktuelle Buehnengroesse
 let aktiv=false;                         // Rad-Zoom erst nach Klick in die Karte
 
@@ -98,49 +98,46 @@ function railHtml(){
   </div>`;
 }
 
-// ── Layout: Sektoren als Gebiete (squarified treemap), Gruppen darin, Firmen im Raster ──
-function squarify(items,x,y,w,h){
-  const out=[];let rest=items.filter(i=>i.v>0).sort((a,b)=>b.v-a.v);const total=rest.reduce((a,b)=>a+b.v,0);if(!total||w<=0||h<=0)return out;const sc=w*h/total;
-  let rx=x,ry=y,rw=w,rh=h;
-  const worst=(row,len)=>{const s=row.reduce((a,b)=>a+b.v*sc,0);const mx=Math.max(...row.map(r=>r.v*sc)),mn=Math.min(...row.map(r=>r.v*sc));return Math.max(len*len*mx/(s*s),s*s/(len*len*mn));};
-  while(rest.length){
-    const len=Math.min(rw,rh);let row=[rest[0]],i=1;
-    while(i<rest.length&&worst(row.concat(rest[i]),len)<=worst(row,len)){row.push(rest[i]);i++;}
-    rest=rest.slice(i);const s=row.reduce((a,b)=>a+b.v*sc,0);
-    if(rw>=rh){const cw=s/rh;let yy=ry;row.forEach(r=>{const hh=r.v*sc/cw;out.push({...r,x:rx,y:yy,w:cw,h:hh});yy+=hh;});rx+=cw;rw-=cw;}
-    else{const ch=s/rw;let xx=rx;row.forEach(r=>{const ww=r.v*sc/ch;out.push({...r,x:xx,y:ry,w:ww,h:ch});xx+=ww;});ry+=ch;rh-=ch;}
-  }
-  return out;
-}
-const STUFE={1:2.7,2:1,3:.5};
+// ── Layout: Orbit (Nutzer 2026-11-21: "Ich will das aber als Orbit") ────────────
+// Kern in der Mitte; innere Bahn = Stufe 1 (AI, Space, Energy), mittlere = Stufe 2, aeussere = Stufe 3
+// (Hintergrund). Je Sektor ein Planet (Groesse nach Stufe), Gruppen als Monde, Firmen als Satelliten.
+// Welt-Einheiten; Bahnen so weit, dass sich keine Systeme beruehren.
+const PLR={1:34,2:16,3:11};
 function layout(W,H){
-  const zonen=EC_ZONEN.map(z=>{const gs=EC_GRUPPEN.filter(g=>g.z===z.id);const n=gs.reduce((a,g)=>a+g.s.length,0);return{z,gs,v:STUFE[z.stufe]*Math.pow(n,.8)};});
-  const Z=squarify(zonen,0,0,W,H),G=[],F=new Map();
-  Z.forEach(zr=>{
-    const kopf=zr.z.stufe===1?26:20,pad=4;
-    const gr=squarify(zr.gs.map(g=>({g,v:g.s.length+2})),zr.x+pad,zr.y+kopf,zr.w-2*pad,zr.h-kopf-pad);
-    gr.forEach(r=>{
-      const g=r.g;G.push({g,x:r.x,y:r.y,w:r.w,h:r.h});
-      // Firmen: Raster im Gruppenfeld unter einem Kopfstreifen (16 % der Hoehe, mind. Platz fuer den Namen bei Zoom)
-      const kh=Math.min(r.h*.28,16),ix=r.x+2,iy=r.y+kh,iw=r.w-4,ih=r.h-kh-2,n=g.s.length;
-      let cols=Math.max(1,Math.round(Math.sqrt(n*iw/Math.max(1,ih))));cols=Math.min(cols,n);const rows=Math.ceil(n/cols);
-      const cw=iw/cols,ch=ih/rows;
-      g.s.forEach((s,i)=>{const c=i%cols,rr=Math.floor(i/cols);F.set(s.t,{x:ix+c*cw,y:iy+rr*ch,w:cw,h:ch,g:g.id});});
-    });
-  });
-  return{W,H,Z,G,F};
+  const sys=EC_ZONEN.map(z=>{
+    const gs=EC_GRUPPEN.filter(g=>g.z===z.id),rP=PLR[z.stufe];
+    const monde=gs.map(g=>({g,rc:Math.max(6.5,g.s.length*1.35)}));
+    const rcMax=Math.max(...monde.map(m=>m.rc));
+    const umfang=monde.reduce((a,m)=>a+2*(m.rc+2.4),0);
+    const Rm=Math.max(rP+rcMax+5,umfang/(2*Math.PI));
+    return{z,rP,monde,Rm,Rs:Rm+rcMax+5,Rl:Rm+rcMax+17};});   // Rl = mit Platz fuer den Namen
+  const ringe=[1,2,3].map(st=>sys.filter(x=>x.z.stufe===st));
+  const ex=Math.max(1,Math.min(1.7,W/H));   // Bahnen elliptisch: breite Buehne nutzen
+  let innen=26;const PZ=[],G=[],F=new Map();
+  ringe.forEach((rg,ri)=>{
+    const rsMax=Math.max(...rg.map(x=>x.Rl)),bedarf=rg.reduce((a,x)=>a+2*x.Rl*1.05,0)/(2*Math.PI);
+    const R=Math.max(innen+rsMax+4,bedarf);rg._R=R;
+    const ges=rg.reduce((a,x)=>a+x.Rl,0);let w=-Math.PI/2+(ri===1?Math.PI/rg.length:0);
+    rg.forEach(x=>{const anteil=x.Rl/ges*Math.PI*2;const a=w+anteil/2;w+=anteil;
+      x.cx=Math.cos(a)*R*ex;x.cy=Math.sin(a)*R;x.a=Math.atan2(x.cy,x.cx);PZ.push(x);
+      // Monde: Startwinkel nach aussen, gleichmaessig nach Platzbedarf verteilt
+      const um=x.monde.reduce((s2,m)=>s2+(m.rc+2.4),0);let wm=a;
+      x.monde.forEach(m=>{const am=(m.rc+2.4)/um*Math.PI*2;const b=wm+am/2;wm+=am;
+        const mx=x.cx+Math.cos(b)*x.Rm,my=x.cy+Math.sin(b)*x.Rm;G.push({g:m.g,x:mx,y:my,rc:m.rc,a:b,z:x});
+        const n=m.g.s.length;m.g.s.forEach((s2,k)=>{const c=b+Math.PI+(k+.5)/n*Math.PI*2;F.set(s2.t,{x:mx+Math.cos(c)*m.rc,y:my+Math.sin(c)*m.rc,g:m.g.id});});});});
+    innen=R+rsMax;});
+  const Rw=innen+6;
+  return{W,H,PZ,G,F,Rw,ex,ringe:ringe.map(r=>r._R)};
 }
 
-// ── Zeichnen (Bildschirm = (Welt - Blick) * Zoom), Schrift fest ──────────────
+// ── Zeichnen (Bildschirm = (Welt - Blick) * Zoom), Schrift fest, Beschriftung kollisionsfrei ──
 const mc=(()=>{try{return document.createElement('canvas').getContext('2d');}catch(e){return null;}})();
 const breite=(t,f)=>{if(!mc)return t.length*7;mc.font=f;return mc.measureText(t).width;};
 const sx=x=>(x-V.x)*V.k,sy=y=>(y-V.y)*V.k;
 function wirkung(){const th=ecTh&&econThesen[ecTh];const o={};if(th&&!th.del)Object.keys(th.d).forEach(g=>{o[g]=th.d[g];});return o;}
-function firmaPasst(t){
-  const f=FIRMA.get(t);if(!f)return false;
-  if(ecTags.size&&![...ecTags].every(x=>f.tags.includes(x)))return false;
-  return true;
-}
+function firmaPasst(t){const f=FIRMA.get(t);if(!f)return false;return!ecTags.size||[...ecTags].every(x=>f.tags.includes(x));}
+const ZEILEN={'Energy & Power':['Energy &','Power'],'Software & Internet':['Software &','Internet'],'Leisure & Travel':['Leisure &','Travel'],'Business Services':['Business','Services'],'Water & Waste':['Water &','Waste'],'AI & Compute':['AI &','Compute'],'Real Estate':['Real','Estate']};
+let _sterne=null;
 function zeichnen(){
   const svg=document.getElementById('ecKarte');if(!svg||!L)return;
   const W=V.W,H=V.H,k=V.k,im=wirkung();
@@ -148,76 +145,89 @@ function zeichnen(){
   const bez=sel?bezVon(sel).filter(b=>ecTypen.has(b[2])):[];
   const nahe=new Set(bez.flatMap(b=>[b[0],b[1]]));if(sel)nahe.add(sel);
   const filt=ecTags.size>0;
-  const im_=(x0,y0,w,h)=>x0<W&&y0<H&&x0+w>0&&y0+h>0;
-  let o='';
-  // Sektoren
-  L.Z.forEach(zr=>{
-    const z=zr.z,x=sx(zr.x),y=sy(zr.y),w=zr.w*k,h=zr.h*k;if(!im_(x,y,w,h))return;
-    o+=`<g class="ec-z" data-z="${z.id}"><rect x="${(x+1.5).toFixed(1)}" y="${(y+1.5).toFixed(1)}" width="${Math.max(0,w-3).toFixed(1)}" height="${Math.max(0,h-3).toFixed(1)}" rx="10" fill="${z.c}" fill-opacity="${z.stufe===1?.16:z.stufe===2?.11:.07}" stroke="${z.c}" stroke-opacity=".55"/>`;
-    const f=z.stufe===1?'800 14px Inter':'800 12px Inter',tw=breite(z.n.toUpperCase(),f)+z.n.length*1.1;
-    if(w>=tw+18&&h>=24)o+=`<text x="${(x+10).toFixed(1)}" y="${(y+(z.stufe===1?18:15)).toFixed(1)}" class="ec-zn${z.stufe===1?' gross':''}" fill="${z.c}">${escH(z.n.toUpperCase())}</text>`;
-    o+='</g>';
-  });
-  // Gruppen
-  L.G.forEach(gr=>{
-    const g=gr.g,z=ZO[g.z],x=sx(gr.x),y=sy(gr.y),w=gr.w*k,h=gr.h*k;if(!im_(x,y,w,h))return;
-    const v=im[g.id],kl=v?(v>0?' im-b':' im-s'):(ecTh?' im-off':'');
-    o+=`<g class="ec-g${kl}${ecSel===g.id?' sel':''}" data-g="${g.id}"><title>${escH(g.n)} · ${escH(g.was)}</title><rect class="ec-gr" x="${(x+1).toFixed(1)}" y="${(y+1).toFixed(1)}" width="${Math.max(0,w-2).toFixed(1)}" height="${Math.max(0,h-2).toFixed(1)}" rx="6" stroke="${z.c}"/>`;
-    const tw=breite(g.n,'700 11.5px Inter');
-    if(w>=tw+10&&h>=20)o+=`<text x="${(x+6).toFixed(1)}" y="${(y+14).toFixed(1)}" class="ec-gn">${escH(g.n)}</text>`;
-    o+='</g>';
-  });
-  // Firmen
-  const pos={};
-  FIRMA.forEach((f,t)=>{
-    const c=L.F.get(t);if(!c)return;const x=sx(c.x),y=sy(c.y),w=c.w*k,h=c.h*k;pos[t]=[x+w/2,y+h/2];
-    if(!im_(x,y,w,h))return;
-    const dim=(sel&&!nahe.has(t))||(filt&&!firmaPasst(t));const hell=sel&&nahe.has(t);
-    const tw=breite(t,'800 11px Inter');
-    const kl=`ec-f${dim?' dim':''}${hell?' hell':''}${sel===t?' sel':''}`;
-    if(w>=tw+10&&h>=18){
-      const nw=breite(f.n,'500 11px Inter'),mitName=w>=Math.max(tw,nw)+12&&h>=34;
-      const bh=mitName?32:18,bw=Math.min(w-4,Math.max(tw,mitName?nw:0)+12),bx=x+w/2-bw/2,by=y+h/2-bh/2;
-      o+=`<g class="${kl}" data-t="${escH(t)}"><rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh}" rx="5"/>
-        <text x="${(x+w/2).toFixed(1)}" y="${(by+13).toFixed(1)}" text-anchor="middle" class="ec-ft">${escH(t)}</text>${mitName?`<text x="${(x+w/2).toFixed(1)}" y="${(by+27).toFixed(1)}" text-anchor="middle" class="ec-fn">${escH(f.n)}</text>`:''}
-        ${MIT_BEZ.has(t)?`<circle cx="${(bx+bw-3).toFixed(1)}" cy="${(by+3).toFixed(1)}" r="3" class="ec-fl"/>`:''}</g>`;
-    }else{
-      const r=Math.max(2,Math.min(4,Math.min(w,h)*.22));
-      o+=`<g class="${kl}" data-t="${escH(t)}"><circle cx="${(x+w/2).toFixed(1)}" cy="${(y+h/2).toFixed(1)}" r="${r.toFixed(1)}" class="ec-fd"/></g>`;
-    }
-  });
-  // Beziehungen der gewaehlten Firma (Pfeil = Ware/Dienst fliesst vom Verkaeufer zum Kaeufer)
-  if(sel){
-    o+=`<defs>${Object.entries(TYPF).map(([k2,c])=>`<marker id="ecPf${k2}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4 0 8z" fill="${c}"/></marker>`).join('')}</defs>`;
-    bez.forEach(b=>{
-      const [kaeufer,verk,typ]=b;const p=pos[verk],q=pos[kaeufer];if(!p||!q)return;
-      const mx=(p[0]+q[0])/2,my=(p[1]+q[1])/2,dx=q[0]-p[0],dy=q[1]-p[1],l=Math.hypot(dx,dy)||1,kx=mx-dy/l*l*.18,ky=my+dx/l*l*.18;
-      const ux=q[0]-kx,uy=q[1]-ky,ul=Math.hypot(ux,uy)||1,ex=q[0]-ux/ul*12,ey=q[1]-uy/ul*12;
-      o+=`<path class="ec-l" d="M${p[0].toFixed(1)},${p[1].toFixed(1)} Q${kx.toFixed(1)},${ky.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}" stroke="${TYPF[typ]}" marker-end="url(#ecPf${typ})"><title>${escH(kaeufer+' · '+TYPN[typ]+' · '+verk)}</title></path>`;
-    });
-  }
-  svg.innerHTML=o;
-  const zt=document.getElementById('ecZoomT');if(zt)zt.textContent=Math.round(k*100)+'%';
+  // belegte Flaechen (Bildschirm): Kreise der Planeten/Monde + gesetzte Beschriftungen
+  const belegt=[];const frei=(b,ohneRing)=>b.x0>=2&&b.y0>=2&&b.x1<=W-2&&b.y1<=H-2&&!belegt.some(o=>!(ohneRing&&o.ring)&&b.x0<o.x1&&b.x1>o.x0&&b.y0<o.y1&&b.y1>o.y0);
+  const nimm=b=>{belegt.push(b);return b;};
+  if(!_sterne||_sterne.W!==W||_sterne.H!==H){let h=7;const rnd=()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return((h>>>0)%10000)/10000;};let st='';for(let i=0;i<Math.round(W*H/5200);i++)st+=`<circle cx="${(rnd()*W).toFixed(0)}" cy="${(rnd()*H).toFixed(0)}" r="${(rnd()*1.1+.2).toFixed(2)}" fill="#fff" opacity="${(rnd()*.5+.12).toFixed(2)}"/>`;_sterne={W,H,st};}
+  let o=`<defs><radialGradient id="ecKern"><stop offset="0" stop-color="#5fd0ff" stop-opacity=".5"/><stop offset=".55" stop-color="#2E6FB0" stop-opacity=".2"/><stop offset="1" stop-color="#0B1424" stop-opacity="0"/></radialGradient>
+    <filter id="ecGl"><feGaussianBlur stdDeviation="5"/></filter>${Object.entries(TYPF).map(([k2,c])=>`<marker id="ecPf${k2}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4 0 8z" fill="${c}"/></marker>`).join('')}</defs>${_sterne.st}`;
+  // Bahnen + Kern
+  const cx0=sx(0),cy0=sy(0);
+  L.ringe.forEach(R=>{o+=`<ellipse cx="${cx0.toFixed(1)}" cy="${cy0.toFixed(1)}" rx="${(R*k*L.ex).toFixed(1)}" ry="${(R*k).toFixed(1)}" fill="none" stroke="#2A3A5C" stroke-dasharray="2 6"/>`;});
+  const rk=Math.max(26,20*k);o+=`<circle cx="${cx0.toFixed(1)}" cy="${cy0.toFixed(1)}" r="${(rk*1.7).toFixed(1)}" fill="url(#ecKern)"/><circle cx="${cx0.toFixed(1)}" cy="${cy0.toFixed(1)}" r="${rk.toFixed(1)}" fill="#0E1E38" stroke="#5fd0ff" stroke-opacity=".6"/>`;
+  nimm({x0:cx0-rk,x1:cx0+rk,y0:cy0-rk,y1:cy0+rk});
+  if(rk>=40)o+=`<text x="${cx0.toFixed(1)}" y="${(cy0+4).toFixed(1)}" text-anchor="middle" class="ec-kern-t">Economy</text>`;
+  // Planeten (Sektoren) und ihre Mond-Bahnen
+  L.PZ.forEach(x=>{const px=sx(x.cx),py=sy(x.cy),r=x.rP*k;nimm({x0:px-r,x1:px+r,y0:py-r,y1:py+r});
+    o+=`<g class="ec-z" data-z="${x.z.id}"><title>${escH(x.z.n)}</title><circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${(x.Rm*k).toFixed(1)}" fill="none" stroke="${x.z.c}" stroke-opacity=".3"/>
+      <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${(r+7).toFixed(1)}" fill="${x.z.c}" opacity=".16"/><circle class="ec-pl" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="#0E1E38" stroke="${x.z.c}" stroke-width="${x.z.stufe===1?3:2}"/></g>`;});
+  // Monde samt Satellitenkreis als Sperrflaeche, bevor irgendeine Beschriftung gesetzt wird
+  L.G.forEach(m=>{const px=sx(m.x),py=sy(m.y),r=Math.max(4,3.3*k,m.rc*k+3),r0=Math.max(4,Math.min(9,3.3*k));nimm({x0:px-r,x1:px+r,y0:py-r,y1:py+r,ring:1});nimm({x0:px-r0,x1:px+r0,y0:py-r0,y1:py+r0});});
+  // Sektor-Namen zuerst (hoechster Rang): im Planeten, sonst aussen in Strahlrichtung hinter dem System
+  let txt='';
+  L.PZ.forEach(x=>{const px=sx(x.cx),py=sy(x.cy),r=x.rP*k,z=x.z,f=z.stufe===1?'800 13px Inter':'800 11.5px Inter',ze=ZEILEN[z.n]||[z.n],w=Math.max(...ze.map(l=>breite(l,f)))+6,h=ze.length*14;
+    const ox=Math.cos(x.a),oy=Math.sin(x.a),d=x.Rs*k+8,ax0=px+ox*d,ay0=py+oy*d;
+    const dI=Math.max(r+8,x.Rs*k*.55),tx=-oy,ty=ox,dT=x.Rs*k+6;
+    const kand=[[px,py-h/2+11,true],[ax0,ay0+(oy<0?-h+11:11)],[px-ox*(x.Rs*k+8),py-oy*(x.Rs*k+8)+(oy>0?-h+11:11)],[px+tx*dT,py+ty*dT+11-h/2],[px-tx*dT,py-ty*dT+11-h/2],
+      [px+ox*(d+22),py+oy*(d+22)+(oy<0?-h+11:11)],[px,py+r+14],[px,py-r-6-(h-14)],[px-ox*dI,py-oy*dI+11-h/2]];
+    for(const [ax,ay,innen] of kand){const b={x0:ax-w/2,x1:ax+w/2,y0:ay-11,y1:ay-11+h};if(innen?(w<=2*r-6&&h<=2*r-8):frei(b)){if(!innen)nimm(b);
+      txt+=`<text x="${ax.toFixed(1)}" y="${ay.toFixed(1)}" text-anchor="middle" class="ec-zn${z.stufe===1?' gross':''}" fill="${innen?'#E6ECF7':z.c}">${ze.map((l,i)=>`<tspan x="${ax.toFixed(1)}" dy="${i?14:0}">${escH(l)}</tspan>`).join('')}</text>`;break;}}});
+  // Monde (Gruppen)
+  L.G.forEach(m=>{const px=sx(m.x),py=sy(m.y),r=Math.max(4,Math.min(9,3.3*k));
+    const v=im[m.g.id],kl=v?(v>0?' im-b':' im-s'):(ecTh?' im-off':'');
+    o+=`<g class="ec-g${kl}${ecSel===m.g.id?' sel':''}" data-g="${m.g.id}"><title>${escH(m.g.n)} · ${escH(m.g.was)}</title>${k*m.rc>14?`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${(m.rc*k).toFixed(1)}" fill="none" stroke="${m.z.z.c}" stroke-opacity=".22"/>`:''}
+      <circle class="ec-gl" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${(r+6).toFixed(1)}" filter="url(#ecGl)"/><circle class="ec-gr" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" stroke="${m.z.z.c}"/></g>`;});
+  // Firmen (Satelliten) + Positionen fuer Linien
+  const pos={},fk=[];
+  FIRMA.forEach((f,t)=>{const c=L.F.get(t);if(!c)return;const x=sx(c.x),y=sy(c.y);pos[t]=[x,y];
+    const dim=(sel&&!nahe.has(t))||(filt&&!firmaPasst(t)),hell=sel&&nahe.has(t);fk.push({t,f,x,y,dim,hell});});
+  // Beziehungen der gewaehlten Firma (zur Mitte gebogen; Pfeil = Ware/Dienst vom Verkaeufer zum Kaeufer)
+  bez.forEach(b=>{const [kaeufer,verk,typ]=b;const p=pos[verk],q=pos[kaeufer];if(!p||!q)return;
+    const mx=(p[0]+q[0])/2,my=(p[1]+q[1])/2,kx=mx+(cx0-mx)*.35,ky=my+(cy0-my)*.35,ux=q[0]-kx,uy=q[1]-ky,ul=Math.hypot(ux,uy)||1;
+    o+=`<path class="ec-l" d="M${p[0].toFixed(1)},${p[1].toFixed(1)} Q${kx.toFixed(1)},${ky.toFixed(1)} ${(q[0]-ux/ul*9).toFixed(1)},${(q[1]-uy/ul*9).toFixed(1)}" stroke="${TYPF[typ]}" marker-end="url(#ecPf${typ})"><title>${escH(kaeufer+' · '+TYPN[typ]+' · '+verk)}</title></path>`;});
+  // Beschriftung in Rangfolge: Sektoren (oben) > gewaehlte Firma + Links > Gruppen > Firmen
+  const chip=(e,mitName)=>{const tw=breite(e.t,'800 11px Inter'),nw=mitName?breite(e.f.n,'500 11px Inter'):0,bw=Math.max(tw,nw)+12,bh=mitName?32:18;return{x0:e.x-bw/2,x1:e.x+bw/2,y0:e.y-bh/2,y1:e.y+bh/2,bw,bh};};
+  const gesetzt=new Set();
+  const verschoben=(c,dx,dy)=>({...c,x0:c.x0+dx,x1:c.x1+dx,y0:c.y0+dy,y1:c.y1+dy,dx,dy});
+  const setzeFirma=(e,ausweichen)=>{if(gesetzt.has(e.t))return;const mitName=k>=L.kName&&chip(e,true);let b=null;
+    if(mitName&&frei(mitName,1))b=mitName;else{const c=chip(e,false);if(frei(c,1))b=c;
+      else if(ausweichen){for(const [dx,dy] of [[0,-20],[0,20],[c.bw/2+6,0],[-c.bw/2-6,0],[c.bw/2+6,-20],[-c.bw/2-6,20],[0,-40],[0,40]]){const v=verschoben(c,dx,dy);if(frei(v,1)){b=v;break;}}}}
+    if(!b)return;nimm(b);gesetzt.add(e.t);e.b=b;};
+  const wichtig=fk.filter(e=>e.t===sel||e.hell);wichtig.forEach(e=>setzeFirma(e,true));
+  L.G.forEach(m=>{if(k<L.kGruppe&&!(ecSel===m.g.id))return;const px=sx(m.x),py=sy(m.y),r=Math.max(4,Math.min(9,3.3*k)),w=breite(m.g.n,'700 11.5px Inter')+4;
+    const ox=Math.cos(m.a),oy=Math.sin(m.a),R2=Math.max(r,m.rc*k+3),d=R2+6;const an=Math.abs(ox)<.35?'m':ox>0?'s':'e';
+    const kand=[[px+ox*d,py+oy*d+4+(Math.abs(oy)>.8?oy*5:0),an],[px,py+R2+15,'m'],[px,py-R2-6,'m'],[px+R2+5,py+4,'s'],[px-R2-5,py+4,'e'],[px-ox*d,py-oy*d+4,an==='s'?'e':an==='e'?'s':'m']];
+    for(const [ax,ay,a] of kand){const x0=a==='m'?ax-w/2:a==='s'?ax:ax-w;const b={x0,x1:x0+w,y0:ay-12,y1:ay+4};if(frei(b)){nimm(b);
+      txt+=`<text x="${ax.toFixed(1)}" y="${ay.toFixed(1)}" text-anchor="${a==='m'?'middle':a==='s'?'start':'end'}" class="ec-gn${ecSel===m.g.id?' sel':''}">${escH(m.g.n)}</text>`;break;}}});
+  if(k>=L.kFirma)fk.forEach(e=>{if(!e.dim||e.hell)setzeFirma(e,false);});
+  // Firmen zeichnen: Kasten mit Ticker (wenn gesetzt) oder Punkt
+  fk.forEach(e=>{const kl=`ec-f${e.dim?' dim':''}${e.hell?' hell':''}${sel===e.t?' sel':''}`;
+    if(e.b){const b=e.b,mitName=b.bh>18;txt+=`<g class="${kl}" data-t="${escH(e.t)}"><rect x="${b.x0.toFixed(1)}" y="${b.y0.toFixed(1)}" width="${b.bw.toFixed(1)}" height="${b.bh}" rx="5"/>
+      ${b.dx||b.dy?`<line x1="${e.x.toFixed(1)}" y1="${e.y.toFixed(1)}" x2="${((b.x0+b.x1)/2).toFixed(1)}" y2="${((b.y0+b.y1)/2).toFixed(1)}" class="ec-fz"/>`:''}<text x="${((b.x0+b.x1)/2).toFixed(1)}" y="${(b.y0+13).toFixed(1)}" text-anchor="middle" class="ec-ft">${escH(e.t)}</text>${mitName?`<text x="${((b.x0+b.x1)/2).toFixed(1)}" y="${(b.y0+27).toFixed(1)}" text-anchor="middle" class="ec-fn">${escH(e.f.n)}</text>`:''}${MIT_BEZ.has(e.t)?`<circle cx="${(b.x1-3).toFixed(1)}" cy="${(b.y0+3).toFixed(1)}" r="3" class="ec-fl"/>`:''}</g>`;}
+    else o+=`<g class="${kl}" data-t="${escH(e.t)}"><title>${escH(e.t+' · '+e.f.n)}</title><circle cx="${e.x.toFixed(1)}" cy="${e.y.toFixed(1)}" r="${Math.max(2.2,Math.min(4.5,k*.9)).toFixed(1)}" class="ec-fd${MIT_BEZ.has(e.t)?' lk':''}"/></g>`;});
+  svg.innerHTML=o+txt;
+  const zt=document.getElementById('ecZoomT');if(zt)zt.textContent=Math.round(k/L.k0*100)+'%';
 }
 let _rf=0;const neu=()=>{if(_rf)return;_rf=requestAnimationFrame(()=>{_rf=0;zeichnen();});};
 
 // ── Blick ─────────────────────────────────────────────────────────────────
-const KMIN=1,KMAX=18;
 function begrenzen(){
-  V.k=Math.max(KMIN,Math.min(KMAX,V.k));
-  const vw=V.W/V.k,vh=V.H/V.k;
-  V.x=Math.max(0,Math.min(V.W-vw,V.x));V.y=Math.max(0,Math.min(V.H-vh,V.y));
+  V.k=Math.max(L.k0,Math.min(L.k0*45,V.k));
+  const vw=V.W/V.k,vh=V.H/V.k,R=L.Rw,RX=L.Rw*L.ex;
+  const lo=a=>-R-a*.15,hi=(a)=>R-a*.85;
+  V.x=vw>=2*RX?-vw/2:Math.max(-RX-vw*.1,Math.min(RX-vw*.9,V.x));V.y=vh>=2*R?-vh/2:Math.max(-R-vh*.1,Math.min(R-vh*.9,V.y));
 }
+function fit(){V.k=L.k0;V.x=-V.W/(2*V.k);V.y=-V.H/(2*V.k);}
 function zoomUm(f,px,py){const wx=V.x+px/V.k,wy=V.y+py/V.k;V.k*=f;begrenzen();V.x=wx-px/V.k;V.y=wy-py/V.k;begrenzen();neu();}
 function zoomAuf(x,y,w,h){V.k=Math.min(V.W/(w*1.12),V.H/(h*1.12));begrenzen();V.x=x+w/2-V.W/V.k/2;V.y=y+h/2-V.H/V.k/2;begrenzen();neu();}
 export function ecZoom(a){
-  if(a==='fit'){V.k=1;V.x=0;V.y=0;neu();return;}
+  if(a==='fit'){fit();neu();return;}
   zoomUm(a==='in'?1.6:1/1.6,V.W/2,V.H/2);
 }
 function zoomAufFirmen(ts){
   const r=ts.map(t=>L.F.get(t)).filter(Boolean);if(!r.length)return;
-  const x0=Math.min(...r.map(c=>c.x)),y0=Math.min(...r.map(c=>c.y)),x1=Math.max(...r.map(c=>c.x+c.w)),y1=Math.max(...r.map(c=>c.y+c.h));
-  zoomAuf(x0,y0,Math.max(x1-x0,40),Math.max(y1-y0,30));
+  const x0=Math.min(...r.map(c=>c.x)),y0=Math.min(...r.map(c=>c.y)),x1=Math.max(...r.map(c=>c.x)),y1=Math.max(...r.map(c=>c.y));
+  zoomAuf(x0-8,y0-8,Math.max(x1-x0+16,40),Math.max(y1-y0+16,30));
 }
 
 // ── Panel rechts ──────────────────────────────────────────────────────────
@@ -250,7 +260,7 @@ function panelHtml(){
 const EC_MIN_W=600,EC_MIN_H=520;
 function kopfHtml(){
   const th=ecTh?econThesen[ecTh]:null;
-  return`<div class="ec-b-kopf"><span class="ec-kt ec-kt-d">Economy map</span>${abInfoBtn('Economy map',['<b>Areas</b> | sectors, sized by weight: <b>AI & Compute</b>, <b>Space</b>, <b>Energy & Power</b> largest','<b>Inside</b> | industry groups, then companies (listed only)','<b>Zoom</b> | names appear once they fit','<b>Tap a company</b> | it and every sourced link light up · arrow = goods flow from seller to buyer','<b>Links</b> | type, date and source of each relationship','<b>Tags</b> | filter, e.g. <i>Rate-sensitive</i> or <i>China exposure</i>'],'info-b ec-info')}
+  return`<div class="ec-b-kopf"><span class="ec-kt ec-kt-d">Economy orbit</span>${abInfoBtn('Economy orbit',['<b>Inner orbit</b> | the main sectors: <b>AI & Compute</b>, <b>Space</b>, <b>Energy & Power</b> · middle orbit = 10 sectors · outer orbit = background','<b>Planet</b> = sector · <b>moons</b> = industry groups · <b>satellites</b> = companies (listed only)','<b>Zoom</b> | names appear once they fit','<b>Tap a company</b> | it and every sourced link light up · arrow = goods flow from seller to buyer','<b>Links</b> | type, date and source of each relationship','<b>Tags</b> | filter, e.g. <i>Rate-sensitive</i> or <i>China exposure</i>'],'info-b ec-info')}
     <span class="ec-sp"></span>${th?`<span class="ec-b-th">${th.n.trim()?escH(th.n):'<i>Untitled thesis</i>'}</span>`:''}
     <div class="ec-zoom" role="group" aria-label="Zoom"><button onclick="ecZoom('out')" aria-label="Zoom out">−</button><span id="ecZoomT">100%</span><button onclick="ecZoom('in')" aria-label="Zoom in">+</button><button onclick="ecZoom('fit')" class="ec-fit">Fit</button></div></div>
     <div class="ec-filter"><span class="ec-fl-l">Tags</span>${EC_TAGS.map(([k,l])=>`<button class="ec-chip${ecTags.has(k)?' on':''}" onclick="ecTagFilter('${k}')" aria-pressed="${ecTags.has(k)}">${escH(l)}</button>`).join('')}
@@ -261,7 +271,7 @@ export function renderEcon(){
   if(ecTh&&(!econThesen[ecTh]||econThesen[ecTh].del)){ecTh=null;ecLink=false;}
   const fokus=document.activeElement&&document.activeElement.classList.contains('ec-th-in');
   body.innerHTML=`<div class="ec-raster">${railHtml()}
-    <div class="ec-buehne">${kopfHtml()}<div class="ec-b-in"><div class="ec-orbit" id="ecOrbit"><svg class="ec-svg" id="ecKarte" role="img" aria-label="Economy map"></svg></div><div id="ecPanel">${panelHtml()}</div></div></div></div>`;
+    <div class="ec-buehne">${kopfHtml()}<div class="ec-b-in"><div class="ec-orbit" id="ecOrbit"><svg class="ec-svg" id="ecKarte" role="img" aria-label="Economy orbit"></svg></div><div id="ecPanel">${panelHtml()}</div></div></div></div>`;
   const ob=document.getElementById('ecOrbit'),pg=document.getElementById('pgEcon');
   const einspaltig=getComputedStyle(ob.parentElement).gridTemplateColumns.trim().split(/\s+/).length===1;
   const W=Math.max(EC_MIN_W,Math.floor(ob.clientWidth));
@@ -270,7 +280,9 @@ export function renderEcon(){
   const frei=Math.floor((innerHeight-ob.getBoundingClientRect().top)/z+(pg?pg.scrollTop:0)-18);
   const H=einspaltig?Math.round(Math.min(760,Math.max(EC_MIN_H,W*.72))):Math.max(EC_MIN_H,frei);ob.style.height=H+'px';
   const svg=document.getElementById('ecKarte');svg.setAttribute('width',W);svg.setAttribute('height',H);svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  if(!L||L.W!==W||L.H!==H){const fx=L?V.x/L.W:0,fy=L?V.y/L.H:0;L=layout(W,H);V.W=W;V.H=H;V.x=fx*W;V.y=fy*H;begrenzen();}
+  if(!L||L.W!==W||L.H!==H){const alt=L?{k:V.k/L.k0,cx:V.x+V.W/V.k/2,cy:V.y+V.H/V.k/2}:null;L=layout(W,H);V.W=W;V.H=H;
+    L.k0=Math.min(W/(2*L.Rw*L.ex),H/(2*L.Rw))/1.02;L.kGruppe=L.k0*1.7;L.kFirma=L.k0*2.4;L.kName=L.k0*5.5;
+    if(alt){V.k=L.k0*alt.k;V.x=alt.cx-W/V.k/2;V.y=alt.cy-H/V.k/2;begrenzen();}else fit();}
   zeichnen();
   if(W>ob.clientWidth+2&&!ob._mitte){ob.scrollLeft=Math.round((W-ob.clientWidth)/2);ob._mitte=1;}
   bedienung(svg);
@@ -303,7 +315,7 @@ function tippen(ziel){
   const ft=el.closest('[data-t]'),gg=el.closest('[data-g]'),zz=el.closest('[data-z]');
   if(ft){ecFirmaWahl(ft.getAttribute('data-t'));return;}
   if(gg){ecGruppe(gg.getAttribute('data-g'));return;}
-  if(zz){const r=L.Z.find(x=>x.z.id===zz.getAttribute('data-z'));if(r)zoomAuf(r.x,r.y,r.w,r.h);return;}
+  if(zz){const r=L.PZ.find(x=>x.z.id===zz.getAttribute('data-z'));if(r)zoomAuf(r.cx-r.Rs,r.cy-r.Rs,2*r.Rs,2*r.Rs);return;}
   if(ecFirma){ecFirma=null;neu();panelNeu();}
 }
 // Groessenaenderung -> Neubau (Diagramme in echter Groesse)
@@ -327,7 +339,7 @@ export function ecGruppe(gid){
     pushU();veraendert(ecTh,th=>{const v=th.d[gid];if(v===1)th.d[gid]=-1;else if(v===-1)delete th.d[gid];else th.d[gid]=1;});
     ecSel=gid;renderEcon();return;
   }
-  ecSel=gid;ecFirma=null;const r=L&&L.G.find(x=>x.g.id===gid);if(r&&V.k<2.2)zoomAuf(r.x,r.y,r.w,r.h);else neu();panelNeu();
+  ecSel=gid;ecFirma=null;const r=L&&L.G.find(x=>x.g.id===gid);if(r&&V.k<L.kName)zoomAuf(r.x-r.rc-6,r.y-r.rc-6,2*r.rc+12,2*r.rc+12);else neu();panelNeu();
 }
 export function ecThNeu(){
   pushU();const id=uid()+uid().slice(0,3),now=Date.now();

@@ -7818,25 +7818,29 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .ec-orbit{position:relative;min-width:0;overflow-x:auto;overflow-y:hidden}
 .ec-svg{display:block;font-family:var(--ff-text);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .ec-svg:active{cursor:grabbing}
-.ec-svg .ec-zn{font-size:12px;font-weight:800;letter-spacing:.06em;filter:brightness(1.45)}.ec-svg .ec-zn.gross{font-size:14px}
 .ec-svg .ec-z{cursor:zoom-in}
-.ec-svg .ec-gr{fill:rgba(255,255,255,.035);stroke-opacity:.45;stroke-width:1}
-.ec-svg .ec-g{cursor:pointer}.ec-svg .ec-g:hover .ec-gr{fill:rgba(255,255,255,.07)}
-.ec-svg .ec-gn{font-size:11.5px;font-weight:700;fill:#C9D6E8;pointer-events:none}
-.ec-svg .ec-g.sel .ec-gr{stroke:#5fd0ff;stroke-opacity:1;stroke-width:2}
-.ec-svg .ec-g.im-b .ec-gr{stroke:#4C9BFF;stroke-opacity:1;stroke-width:2.5;fill:rgba(76,155,255,.16)}
-.ec-svg .ec-g.im-s .ec-gr{stroke:#FF5A64;stroke-opacity:1;stroke-width:2.5;fill:rgba(255,90,100,.14)}
-.ec-svg .ec-g.im-off{opacity:.45}
+.ec-svg .ec-z{cursor:zoom-in}.ec-svg .ec-pl{filter:brightness(1.35)}
+.ec-svg .ec-kern-t{font-size:13px;font-weight:800;fill:#E6ECF7}
+.ec-svg .ec-g{cursor:pointer;color:transparent}
+.ec-svg .ec-gr{fill:#10213D;stroke-width:2;filter:brightness(1.4)}.ec-svg .ec-g:hover .ec-gr{filter:brightness(1.9)}
+.ec-svg .ec-gl{fill:currentColor;opacity:0}
+.ec-svg .ec-gn{font-size:11.5px;font-weight:600;fill:#C9D6E8;paint-order:stroke;stroke:#0B1424;stroke-width:3px;pointer-events:none}.ec-svg .ec-gn.sel{fill:#fff;font-weight:800}
+.ec-svg .ec-g.sel .ec-gr{stroke:#5fd0ff;stroke-width:3;filter:none}
+.ec-svg .ec-g.im-b{color:#4C9BFF}.ec-svg .ec-g.im-s{color:#FF5A64}
+.ec-svg .ec-g.im-b .ec-gl,.ec-svg .ec-g.im-s .ec-gl{opacity:.8}.ec-svg .ec-g.im-b .ec-gr,.ec-svg .ec-g.im-s .ec-gr{stroke:currentColor;stroke-width:3;filter:none}
+.ec-svg .ec-g.im-off{opacity:.4}
+.ec-svg .ec-zn{font-size:11.5px;font-weight:800;paint-order:stroke;stroke:#0B1424;stroke-width:3px;pointer-events:none}.ec-svg .ec-zn.gross{font-size:13px}
 .ec-svg .ec-f{cursor:pointer}
 .ec-svg .ec-f rect{fill:#13254A;stroke:#2E4573;stroke-width:1}
 .ec-svg .ec-f .ec-ft{font-size:11px;font-weight:800;fill:#E6ECF7;pointer-events:none}
 .ec-svg .ec-f .ec-fn{font-size:11px;font-weight:500;fill:#AFC0DA;pointer-events:none}
-.ec-svg .ec-f .ec-fd{fill:#AFC0DA}.ec-svg .ec-f .ec-fl{fill:#5fd0ff}
+.ec-svg .ec-f .ec-fd{fill:#AFC0DA}.ec-svg .ec-f .ec-fd.lk{fill:#5fd0ff}.ec-svg .ec-f .ec-fl{fill:#5fd0ff}
 .ec-svg .ec-f:hover rect{stroke:#5fd0ff}
 .ec-svg .ec-f.dim{opacity:.18}
 .ec-svg .ec-f.hell rect{stroke:#5fd0ff;stroke-width:1.5;fill:#1B3566}.ec-svg .ec-f.hell .ec-fd{fill:#5fd0ff}
 .ec-svg .ec-f.sel rect{stroke:#fff;stroke-width:2.5;fill:#24447E}.ec-svg .ec-f.sel .ec-fd{fill:#fff}
 .ec-svg .ec-l{fill:none;stroke-width:2.2;opacity:.95;pointer-events:stroke}
+.ec-svg .ec-fz{stroke:#5fd0ff;stroke-width:1;opacity:.7}
 .ec-zoom{display:inline-flex;align-items:center;border:1px solid #2A3A5C;border-radius:var(--rss);overflow:hidden;background:rgba(16,30,56,.8)}
 .ec-zoom button{min-width:var(--h-s);height:var(--h-s);border:0;background:none;color:#E6ECF7;font:700 var(--fs-md)/1 var(--ff-text);cursor:pointer;padding:0 8px}
 .ec-zoom button+button,.ec-zoom span+button{border-left:1px solid #2A3A5C}
@@ -8136,11 +8140,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-787 - Economy Map als zoombare Karte: 17 Sektoren, 77 Gruppen, 333 Firmen, belegte Beziehungen"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-788 - Economy Map wieder als Orbit: 17 Sektor-Planeten auf 3 Bahnen, Gruppen-Monde, Firmen-Satelliten, Zoom/Filter/Links"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-787</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-788</span>
     </span>
   </div>
   <div class="hdr-r">

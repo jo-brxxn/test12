@@ -2,8 +2,8 @@
 // Nutzer 2026-11-21: komplette Wirtschaft nur mit boersennotierten Firmen, Hauptbereiche gross,
 // kleine im Hintergrund, Hauptgruppe + Tags, Beziehungen mit Quelle/Datum/Typ, zoombar + filterbar,
 // Klick auf ein Unternehmen hebt es und alle Verbindungen hervor. Thesen links bleiben.
-//  A) Seitenleiste "Economy", Seite "Economy Map"; alle Sektoren und alle Firmen des Katalogs auf der
-//     Karte; Karte in echter Groesse (SVG-Breite = viewBox = gezeichnet); Hauptbereiche groesser
+//  A) Seitenleiste "Economy", Seite "Economy Map"; alle Sektoren und alle Firmen des Katalogs im
+//     Orbit (Nutzer: "Ich will das aber als Orbit"); echte Groesse; Planeten nach Stufe groesser
 //  B) Nichts ueberlappt: Sektor-/Gruppennamen, Firmen-Kaesten und ihre Schrift (Uebersicht + 2 Zoomstufen,
 //     1920 und 1024 px)
 //  H) Klick auf NVDA: Linien = belegte Beziehungen, verbundene Firmen hell, Rest blass, Panel mit
@@ -14,7 +14,7 @@
 //  E) Loeschen -> Papierkorb (econth), Wiederherstellen
 //  F) Firmenfenster: NVDA echter SEC-Chart + Links mit Quelle, KO nur Platzhalter (keine erfundenen Zahlen)
 //  G) econThesen in snap(), applySnap (econVereinen) und neueFelderBehalten; jede Beziehung mit Datum + Quelle
-// --gegenprobe: Grabstein-Regel weg und Gruppennamen ohne Platzpruefung -> D und B rot.
+// --gegenprobe: Grabstein-Regel weg und Beschriftung ohne Platzpruefung -> D und B rot.
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const { chromium } = require(PW); const fs = require('fs'); const path = require('path');
 const { wartenBisDatenDa } = require('./warten.js');
@@ -32,7 +32,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
   const seite = async (W, H) => {
     const ctx = await b.newContext({ viewport: { width: W, height: H }, serviceWorkers: 'block' });
     if (GP) await ctx.route(/\/js\/wirtschaft\.js/, async r => { const res = await r.fetch(); let t = await res.text();
-      t = t.replace('(y.t===x.t&&y.del&&!x.del)', 'false').replace('if(w>=tw+10&&h>=20)o+=`<text', 'if(true)o+=`<text');
+      t = t.replace('(y.t===x.t&&y.del&&!x.del)', 'false').replace('const frei=(b,ohneRing)=>b.x0>=2', 'const frei=(b,ohneRing)=>true||b.x0>=2');
       r.fulfill({ response: res, body: t }); });
     const p = await ctx.newPage(); p._err = []; p.on('pageerror', e => p._err.push(e.message));
     await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) { } });
@@ -62,7 +62,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     await p.evaluate(() => showTab('econ')); await p.waitForTimeout(900);
     const a = await p.evaluate(async () => { const m = await import('/js/wirtschaft-katalog.js'); const s = document.getElementById('ecKarte'), pg = document.getElementById('pgEcon');
       const z = parseFloat(getComputedStyle(pg).zoom) || 1;
-      const fl = id => { const r = s.querySelector(`[data-z="${id}"] rect`); return r ? r.getBoundingClientRect().width * r.getBoundingClientRect().height : 0; };
+      const fl = id => { const r = s.querySelector(`[data-z="${id}"] .ec-pl`); return r ? r.getBoundingClientRect().width : 0; };
       return { titel: (document.querySelector('#pgEcon .pg-titel') || {}).textContent, zonen: s.querySelectorAll('[data-z]').length, zSoll: m.EC_ZONEN.length,
         firmen: s.querySelectorAll('[data-t]').length, fSoll: new Set(m.EC_GRUPPEN.flatMap(g => g.s.map(x => x.t))).size,
         w: +s.getAttribute('width'), vb: +s.getAttribute('viewBox').split(' ')[2], gez: s.getBoundingClientRect().width / z,
@@ -70,7 +70,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     if (a.titel !== 'Economy Map') F.push(o + ' A: Seitentitel "' + a.titel + '"');
     if (a.zonen !== a.zSoll || a.firmen !== a.fSoll) F.push(o + ` A: ${a.zonen}/${a.zSoll} Sektoren, ${a.firmen}/${a.fSoll} Firmen auf der Karte`);
     if (!a.w || Math.abs(a.w - a.vb) > 0.5 || Math.abs(a.gez - a.w) > 2) F.push(o + ` A: Karte nicht in echter Groesse (Breite ${a.w}, viewBox ${a.vb}, gezeichnet ${a.gez.toFixed(1)})`);
-    if (!(a.ai > a.fin && a.fin > a.agr)) F.push(o + ' A: Flaechen nicht nach Stufe (AI > Finance > Agriculture)');
+    if (!(a.ai > a.fin && a.fin > a.agr)) F.push(o + ' A: Planeten nicht nach Stufe (AI > Finance > Agriculture)');
     let u = await ueberlapp(p); if (u.length) F.push(o + ' B Uebersicht: ' + u.slice(0, 4).join(' · '));
     await p.evaluate(() => { ecZoom('in'); }); await p.waitForTimeout(200);
     u = await ueberlapp(p); if (u.length) F.push(o + ' B Zoom 160%: ' + u.slice(0, 4).join(' · '));
@@ -165,7 +165,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     await ctx.close();
   }
   await b.close();
-  if (GP) { const ok = F.some(f => /^D: /.test(f)) && F.some(f => / B /.test(f)); console.log(ok ? 'wirtschaft --gegenprobe: ok (ohne Grabstein-Regel D rot, Gruppennamen ohne Platzpruefung B rot)' : 'wirtschaft --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
+  if (GP) { const ok = F.some(f => /^D: /.test(f)) && F.some(f => / B /.test(f)); console.log(ok ? 'wirtschaft --gegenprobe: ok (ohne Grabstein-Regel D rot, Beschriftung ohne Platzpruefung B rot)' : 'wirtschaft --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (F.length) { console.log('wirtschaft: ' + F.length + ' Befund(e)\n  ' + F.join('\n  ')); process.exit(1); }
   console.log('wirtschaft: ok (alle Sektoren/Firmen in echter Groesse, Flaechen nach Stufe, nichts ueberlappt in 3 Zoomstufen 1920/1024, NVDA hebt Links + Quellen hervor, Typ-/Tag-Filter, Zoom, Thesen, Abgleich mit Grabstein + alte ids, Papierkorb, Firmenfenster nur echte Zahlen, jede Beziehung mit Datum/Quelle/Typ)');
 })().catch(e => { console.log('wirtschaft: ABBRUCH ' + e.message); process.exit(1); });
