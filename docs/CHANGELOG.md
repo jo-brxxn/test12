@@ -22958,6 +22958,7 @@ Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking ent
     - Jedes `pushU()` in `cloudPullRoh` muss `_undoMarke` zurücksetzen.
     - F allein schlägt nur an, wenn sich nach dem Abgleich etwas neu rechnet.
     - Gegenprobe ohne Rücksetzen → G rot.
+    - CI 783 rot in G: Erwähnungen von `pushU()` in Kommentaren wurden als Aufrufe mitgezählt (3 statt 1); lokal lief G nur in der Gegenprobe. G entfernt jetzt Kommentare vor dem Zählen. Normallauf und Gegenprobe sind grün.
 - **`klickscroll` B** (Paket 1): „Key events ohne Überhang“.
   - **Gemessen**: Samstag, keine High-/Medium-Termine, also keine `.db-ev-list` (nur „No high or medium impact events today“).
   - **Ursache**: Der Test hing vom Wochentag ab, nicht von der App.

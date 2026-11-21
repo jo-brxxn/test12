@@ -24,7 +24,8 @@ const warte = ms => new Promise(r => setTimeout(r, ms));
   // gesetzte Nutzer-Markierung machte das erste save() danach (Neuberechnung _biasScore/Bias)
   // zum Schritt "Asset · USD" im geteilten Verlauf (CI rot in F, nur wenn sich etwas neu rechnete).
   const pullOhneMarke = src => { const i = src.indexOf('async function cloudPullRoh('), j = src.indexOf('\nasync function ', i + 10), k = src.indexOf('\nfunction ', i + 10);
-    const body = src.slice(i, Math.min(j < 0 ? 1e9 : j, k < 0 ? 1e9 : k)); if (i < 0) return 'cloudPullRoh nicht gefunden';
+    // Kommentare raus (CI 783: die Erklaerung im Kommentar wurde als Aufruf mitgezaehlt)
+    const body = src.slice(i, Math.min(j < 0 ? 1e9 : j, k < 0 ? 1e9 : k)).replace(/\/\/[^\n]*/g, ''); if (i < 0) return 'cloudPullRoh nicht gefunden';
     const n = (body.match(/pushU\(\)/g) || []).length, ok = (body.match(/pushU\(\);_undoMarke=/g) || []).length;
     return n === ok ? null : `cloudPullRoh: ${n - ok} pushU() ohne Ruecksetzen von _undoMarke`; };
   { const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'main.js'), 'utf8');
