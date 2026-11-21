@@ -22975,3 +22975,5 @@ Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking ent
 - **Folgewirkung nur als Vorschlag** (gestrichelt, nicht gespeichert): Liefer- und Nachfrage-Schocks laufen in verschiedene Richtungen — eine automatische Übertragung ergab z. B. „Cloud bullish via Cybersecurity“.
 - **Gemessen beim Bau:** Orbit ragte 1000 px statt ~830 hoch — `getBoundingClientRect` misst Bildschirm-Pixel, die Seite ist am PC per `--pg-zoom` 1,205 skaliert → Zoom herausgerechnet. Beschriftungen: „Enterprise Software“ lag 7 px im Software-Planeten, „Machinery & Electrical“ in der Lücke Industry/Consumer → mehr Ausweichplätze (zweizeilig auch ohne „&“, weiter außen), Sperrrand 4 px, Bahn 322 → 336, Monde 80 → 78. „Metals &“ + „Nuclear & Uranium“ lasen sich als ein Name → 6 px Mindestabstand.
 - **Wächter:** `check/wirtschaft.js` (A–G, Gegenprobe), Seite in den Rundgängen von `klickscroll`, `ueberlappung`, `typo`, `hierarchie`, `designregeln`.
+
+- **785 (hierarchie):** Gruppentitel im Panel war 17 px = Kartentitel „Economy orbit“ → 15 px.
