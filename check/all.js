@@ -59,6 +59,8 @@ const PRUEFUNGEN = [
   { n: 'logoplatz', s: 40, d: 'Logo nie ueber dem Inhalt seiner Karte, auch mit PC-Zoom (1920/2560 px)', f: 'check/logoplatz.js', args: [], browser: true },
   { n: 'selectschnitt', s: 60, d: 'Auswahllisten: Platz >= 1,2 x Schrift, kein abgeschnittener Buchstabe (1920/1194/390 px)', f: 'check/selectschnitt.js', args: [], browser: true },
   { n: 'datavoll', s: 40, d: 'Data-Vollbild: ganze Flaeche, kein Scrollen (6/8 Panels), Kopf einzeilig, ✕ im Bild, Fenster deckt ganz ab, Esc', f: 'check/datavoll.js', args: [], browser: true },
+  { n: 'awaitzone', s: 25, d: 'Awaiting-Marke zeitzonenfest: derselbe Release ueber Mitternacht ohne Marke, echter fehlender mit', f: 'check/awaitzone.js', args: [], browser: true },
+  { n: 'chartzahlen', s: 40, d: 'Indikator-Charts aller Assets: nur Zahlen, kein NaN (1Y + Max)', f: 'check/chartzahlen.js', args: [], browser: true },
   { n: 'backpille', s: 20, d: 'Zurueck-Pille nur auf der Zielseite des Go-to, jeder andere Seitenwechsel raeumt sie ab', f: 'check/backpille.js', args: [], browser: true },
   { n: 'retailwahl', s: 29, d: 'Go to Retail: Paar-Auswahl (Waehrungen, bei USD + Non-FX getrennt)', f: 'check/retailwahl.js', args: [], browser: true },
   { n: 'stapel',    s: 27,  d: 'Asset-Stapel: Panelbreite haengt nicht an den Scores', f: 'check/stapel.js', args: [], browser: true },

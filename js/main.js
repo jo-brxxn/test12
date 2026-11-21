@@ -3112,7 +3112,10 @@ function adoptChartHist(ind,f,curatedForecast){
   // der Chart nicht hat (raw historyFull kennt den kuratierten Fallback
   // nicht, der wird erst weiter unten in applyIndDataFeed() berechnet).
   const last=pts[pts.length-1];
-  if(last&&last[0]===f.date&&last[2]==null&&curatedForecast!=null)last[2]=curatedForecast;
+  // ⚠ 782 (Nutzer-Foto 2026-11-20, GBP M4: Chart leer, Hover zeigt Werte): der kuratierte Forecast kommt als
+  // TEXT ("0.3%") - unumgewandelt machte er Min/Max des Charts zu NaN, alle Balken bekamen y/height NaN.
+  // Wie jeder andere Punkt durch parseNumLike.
+  if(last&&last[0]===f.date&&last[2]==null&&curatedForecast!=null){const cf=parseNumLike(curatedForecast);if(cf!=null&&isFinite(cf))last[2]=cf;}
   if(JSON.stringify(ind.chartHist||[])===JSON.stringify(pts))return false;
   ind.chartHist=pts;
   return true;

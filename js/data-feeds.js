@@ -64,9 +64,17 @@ function applyIndDataFeed(){
         // Eindeutigkeit (siehe kanonIndName in js/main.js).
         // Asset-eigene Zeile mit eigener Feed-Waehrung (764: China-Block = CNY)
         const feedCcy=assetEigenFeed(c.id,ind.name)||macroCcyFor(c.id),feed=assetEigenFeed(c.id,ind.name)?IND_DATA_FEED[feedCcy]:feed0;
+        // 782 (Nutzer-Foto 2026-11-20: JPY "Corporate Services Price Index" 1,40 %, Investing CSPI 3,7 %):
+        // der Feed fuellte die CSPI-Zeile bis 781 aus Trading Economics "CPI services" - einer anderen
+        // Reihe. Der Feed liefert das nicht mehr, ein schon uebernommener Fremdwert bliebe aber als
+        // "letzter Stand" stehen. Hier einmalig verwerfen: die Zeile zeigt "–" bis zum echten Release.
+        if(base==='Services Inflation'&&ind.research&&/CPI services/i.test(String(ind.research.event||''))){
+          ind.research={};ind.valHist=[];ind.valDates=[];ind.valDate=null;ind.chartHist=[];changed=true;
+        }
         if(!feed)return;
         const f=feedEntryFor(feed,ind.name);
         if(!f||f.actual==null)return;
+        if(base==='Services Inflation'&&/CPI services/i.test(String(f.event||'')))return;   // nie wieder als CSPI uebernehmen
         const r=ind.research||{};
         const na=f.actual;let nf=(f.forecast==null?null:f.forecast);const np=(f.previous==null?null:f.previous);
         // Liefert der Live-Feed (TradingView) KEINEN Forecast (z.B. CAD GDP),

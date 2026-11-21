@@ -35,6 +35,7 @@ const GEGENPROBE = process.argv.includes('--gegenprobe');
 const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
 
 const y = fs.readFileSync(path.join(ROOT, '.github/workflows/update-ff-calendar.yml'), 'utf8');
+const GP_ANY = process.argv.some(a => a.startsWith('--gegenprobe'));
 function block(start, ende) {
   const i = y.indexOf(start);
   if (i < 0) return null;
@@ -352,6 +353,13 @@ if (GEGENPROBE) {
     console.log(ok ? 'feedregeln --gegenprobe: ok (alte Regeln: Benchmark-Revision, S&P-Flash, Control Group; alte Aggregation: Erstdruck als Vorwert, Doppelpunkt bleibt - alles gemeldet)' : 'feedregeln --gegenprobe: FEHLER - nicht gemeldet\n  ' + F.join('\n  '));
     process.exit(ok ? 0 : 1);
   }
+  // H) JPY "Services Inflation" = CSPI nur aus Investing.com (782, Nutzer-Foto 2026-11-20: App 1,40 % = TE
+  //    "CPI services", Investing CSPI 3,7 %). Weder die TE-Seite japan/services-inflation noch ein weitergetragener
+  //    Fremdwert (source != investing) darf die Reihe fuellen.
+  if (/\|JPY\|japan\/services-inflation/.test(y)) fail('JPY CSPI', 'update-ff-calendar.yml laedt wieder japan/services-inflation (TE: CPI-Dienstleistungen, nicht der CSPI)');
+  if (!/prevOut\.JPY\["Services Inflation"\]\.source==="investing"/.test(y)) fail('JPY CSPI', 'Weitertragen des CSPI-Stands prueft die Quelle nicht (Fremdwert bliebe stehen)');
+  try { const jd = JSON.parse(fs.readFileSync(path.join(ROOT, 'ind_data.json'), 'utf8')); const e = jd.JPY && jd.JPY['Services Inflation'];
+    if (e && e.source && e.source !== 'investing' && !GP_ANY) console.log('  ⚠ JPY Services Inflation im aktuellen ind_data.json noch aus "' + e.source + '" - der naechste Feed-Lauf verwirft ihn'); } catch (e) { }
   if (F.length) { console.log(`feedregeln: ${F.length} Befund(e)\n  ` + F.join('\n  ')); process.exit(1); }
   console.log('feedregeln: ok (Indikator-Feed: NFP ohne Benchmark-Revision, US-PMI nur ISM, kein Tag mit zwei Titeln je Reihe, revidierter Vorwert, keine umdatierten/fremden Historienpunkte, TE-Datum und -Historie stabil; Bereinigung entfernt genau die eingeschleppten Punkte)');
 })();

@@ -391,7 +391,6 @@ jobs:
           corecpi_AUD|AUD|australia/core-inflation-rate
           corecpi_CHF|CHF|switzerland/core-inflation-rate
           ppi_CHF|CHF|switzerland/producer-prices-change
-          svcinfl_JPY|JPY|japan/services-inflation
           gdp_JPY|JPY|japan/gdp-growth
           emp_JPY|JPY|japan/employed-persons
           jolts_JPY|JPY|japan/job-vacancies
@@ -422,7 +421,11 @@ jobs:
               hhspend:{ind:"Retail Sales",anchor:"household spending",label:"Household Spending"},
               corecpi:{ind:"Core CPI",anchor:"(?:core inflation rate|core consumer pric|trimmed mean)"},
               ppi:{ind:"PPI",anchor:"producer pric"},
-              svcinfl:{ind:"Services Inflation",anchor:"(?:services producer pric|corporate services pric|services pric|services inflation)",label:"Services Inflation (CPI services)"},
+              // ⚠ svcinfl (japan/services-inflation) ENTFERNT 2026-11-21 (782): die Seite ist die
+              // Dienstleistungs-Inflation im VERBRAUCHERPREISINDEX (Okt 1,4 %), JPYs "Services Inflation"
+              // ist aber der Corporate Services Price Index (CSPI, Okt 3,7 % laut Investing.com). Der
+              // TE-Wert ueberschrieb den CSPI und wurde danach als "letzter Stand" weitergetragen
+              // (Nutzer-Foto 2026-11-20: App 1,40 % / Investing 3,7 %). Der CSPI kommt nur von Investing.
               gdp:{ind:"GDP Growth QoQ",anchor:"gdp"},
               // Japan fuehrt keine monatliche "Beschaeftigungsaenderung" wie
               // USA/Kanada/Australien. Die Zahl der Erwerbstaetigen ist die
@@ -2107,9 +2110,13 @@ jobs:
                 date:date,event:cspi.name,period:null,history:hist.slice(-4),source:"investing"
               };
               console.log("ind_data <- Investing.com: JPY Services Inflation (CSPI) "+cspi.actual+" ("+date+")");
-            }else if(prevOut.JPY&&prevOut.JPY["Services Inflation"]){
-              // Kein frisches CSPI-Event im Fenster -> letzten Stand behalten.
+            }else if(prevOut.JPY&&prevOut.JPY["Services Inflation"]&&prevOut.JPY["Services Inflation"].source==="investing"){
+              // Kein frisches CSPI-Event im Fenster -> letzten Stand behalten - aber NUR einen echten
+              // CSPI-Stand (source investing). Ein Fremdwert (frueher TE "CPI services") wird verworfen:
+              // dann steht die Zeile bis zum naechsten Release auf "Awaiting value" statt falsch.
               (out.JPY=out.JPY||{})["Services Inflation"]=prevOut.JPY["Services Inflation"];
+            }else if(out.JPY&&out.JPY["Services Inflation"]&&out.JPY["Services Inflation"].source!=="investing"){
+              delete out.JPY["Services Inflation"];
             }
 
             // (3) Revision (Nutzer-Wunsch 2026-07-21), seit 2026-10-27 in der

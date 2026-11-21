@@ -749,7 +749,12 @@ function indAwaitingEvent(symId,ind){
     if(isNaN(t))return;
     if(now-t<AWAIT_GRACE_H*3600e3)return;        // noch nicht faellig/zu frisch
     if(now-t>AWAIT_MAX_DAYS*864e5)return;
-    if(have&&ev.date<=have)return;               // wir haben schon Neueres
+    // ⚠ Zeitzonen (782, Nutzer-Foto 2026-11-20: JPY GDP "AWAITING" obwohl der Wert da war): Forex Factory
+    // fuehrt "Prelim GDP q/q" am 15.11. 18:50 New York = 16.11. 00:50 Berlin, unser Feed-Wert traegt das
+    // UTC-Datum 15.11. Der reine Datumsvergleich ("2026-11-16" > "2026-11-15") hielt denselben Release fuer
+    // einen neuen. Jetzt ueber die Uhrzeit: bis 36 h nach Tagesbeginn (UTC) unseres Werts = derselbe Release
+    // (Folge-Releases eines Indikators liegen mindestens eine Woche auseinander).
+    if(have&&(ev.date<=have||t<=Date.parse(have+'T00:00:00Z')+36*3600e3))return;   // wir haben schon Neueres / denselben
     if(!best||ev.date>best.date)best=ev;
   });
   return best;

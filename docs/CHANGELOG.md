@@ -22926,3 +22926,12 @@ Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking ent
 - `webkitkugel` (Safari-Engine): Kugel im Dashboard p95 33,5 ms (Grenze 26), am Stand 779 22,8 ms. Ursache: das „Atmen“ der Kondensstreifen (opacity-Animation an einem SVG-Kind) ließ WebKit das ganze Kugel-SVG jedes Bild neu zeichnen. Animation entfernt, Streifen statisch → p95 24,0 / 24,5 ms. (Befund F „Seitenprozess abgestürzt“ tritt auch am alten Stand auf: WPE-OpenGL dieser Umgebung.)
 - `kugelland`: Wächter rechnete mit festem Rand 26 → liest jetzt `GLOBE_RAND` aus `js/globe-zeichnen.js`.
 - Merksatz (docs/performance.md, Abschnitt Kugel): **keine Animation an Elementen innerhalb des Kugel-SVG** — auch nicht opacity.
+
+## 2026-11-21 — iPad-Fotos 20.11.: JPY CSPI, JPY GDP „Awaiting“, GBP M4 leerer Chart (VERSION-CHECK-782)
+
+1. **JPY „Corporate Services Price Index“ 1,40 % vs Investing 3,7 %** (*„Das beides widerspricht sich“*). Ursache: Feed-Workflow füllte die Reihe zusätzlich aus Trading Economics `japan/services-inflation` = Dienstleistungs-Inflation im VERBRAUCHERPREISINDEX (andere Reihe, Event „Services Inflation (CPI services)“); der „letzten Stand behalten“-Zweig trug den Fremdwert weiter.
+   - Workflow: TE-Quelle für JPY entfernt; Weitertragen nur bei `source:"investing"`, sonst Eintrag verwerfen.
+   - App (`applyIndDataFeed`): schon übernommener Fremdwert (Event „CPI services“) wird verworfen → Zeile zeigt den letzten echten CSPI-Stand (2,6 %, Feb.) mit OUT OF DATE (zählt nicht) bis zum Release 25.11.
+   - Wächter `feedregeln` H (Gegenprobe am alten Workflow: 2 Befunde).
+2. **JPY GDP q/q „AWAITING VALUE“ trotz Wert** (*„Da steht awaiting aber die Daten sind schon aktuell“*). Reproduziert am Datenstand 20.11. 06:09 UTC, Zeitzone Berlin: FF „Prelim GDP q/q“ 15.11. 18:50 New York = 16.11. 00:50 Berlin ohne Actual, Feed-Wert UTC-Datum 15.11.; `indAwaitingEvent` verglich Datumstexte. Jetzt Uhrzeit: bis 36 h nach Tagesbeginn (UTC) = derselbe Release. Wächter `awaitzone` (Gegenprobe rot).
+3. **GBP M4 Money Supply: Chart leer, Hover zeigt Werte** (*„Die Karte ist leer aber wenn ich drauf gehe erscheint das info Schild“*). Gemessen: 12 Balken mit `y="NaN" height="NaN"`; letzter Chart-Punkt trug den kuratierten Forecast als Text „0.3%“ (`adoptChartHist`), Min/Max → NaN. Fix: `parseNumLike`. Fehlerklasse: Wächter `chartzahlen` über alle 1073 Indikator-Reihen (Gegenprobe rot).
