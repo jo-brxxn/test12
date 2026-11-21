@@ -29,7 +29,15 @@ const REGEL = ':not(.ks-an){overflow-y:hidden!important}';
     await p.goto('http://127.0.0.1:' + PORT + '/index.html'); await wartenBisDatenDa(p); await p.waitForTimeout(3000);
     await p.evaluate(() => ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }));
     // B zuerst (Dashboard ist die Startseite)
-    const L = await p.evaluateHandle(() => [...document.querySelectorAll('.db-ev-list')].find(e => e.offsetParent && e.scrollHeight > e.clientHeight + 4));
+    // Eigene Termine fuer heute statt des Feed-Stands (CI 2026-11-21, Samstag: kein Termin ->
+    // es gab gar keine Liste, Befund "ohne Ueberhang" ohne Fehler der App - wie check/calpast.js).
+    await p.evaluate(() => {
+      const t = todayStr();
+      for (let i = 0; i < 16; i++) calEvts.push({ id: 'ks-test' + i, name: 'Scroll Test Release ' + (i + 1), date: t, time: String(6 + (i >> 1)).padStart(2, '0') + (i % 2 ? ':30' : ':00'), currencies: 'USD', impact: i % 2 ? 'medium' : 'high', src: 'ff' });
+      renderDash();
+    });
+    await p.waitForTimeout(600);
+    const L = await p.evaluateHandle(() => [...document.querySelectorAll('.db-ev-list')].find(e => e.offsetParent && e.scrollHeight > e.clientHeight + 4) || null);
     if (!(await L.evaluate(e => !!e))) F.push(`${o} B: Testaufbau - Key events ohne Ueberhang`);
     else {
       await L.evaluate(e => e.scrollIntoView({ block: 'center' })); await p.waitForTimeout(300);

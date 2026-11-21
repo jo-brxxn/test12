@@ -22936,3 +22936,31 @@ Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking ent
 2. **JPY GDP q/q „AWAITING VALUE“ trotz Wert** (*„Da steht awaiting aber die Daten sind schon aktuell“*). Reproduziert am Datenstand 20.11. 06:09 UTC, Zeitzone Berlin: FF „Prelim GDP q/q“ 15.11. 18:50 New York = 16.11. 00:50 Berlin ohne Actual, Feed-Wert UTC-Datum 15.11.; `indAwaitingEvent` verglich Datumstexte. Jetzt Uhrzeit: bis 36 h nach Tagesbeginn (UTC) = derselbe Release. Wächter `awaitzone` (Gegenprobe rot).
 3. **GBP M4 Money Supply: Chart leer, Hover zeigt Werte** (*„Die Karte ist leer aber wenn ich drauf gehe erscheint das info Schild“*). Gemessen: 12 Balken mit `y="NaN" height="NaN"`; letzter Chart-Punkt trug den kuratierten Forecast als Text „0.3%“ (`adoptChartHist`), Min/Max → NaN. Fix: `parseNumLike`. Fehlerklasse: Wächter `chartzahlen` über alle 1073 Indikator-Reihen (Gegenprobe rot).
 - **CI 781** (Pakete 2 + 6 rot, nach 782 geprüft): `kugelland` — die Wächter-Korrektur (Rand aus `GLOBE_RAND`) war beim Neustart der Sitzung verloren gegangen und nie im Commit; neu eingetragen, grün. `cards` — die einzeilige Data-Werkzeugzeile (777) wischt seitlich, der Wächter maß jede Kante gegen den Seitenrand: Elemente in einem waagerecht scrollenden Vorfahren sind jetzt ausgenommen (abgeschnittenes bleibt verboten), grün.
+
+## 2026-11-21 — CI 782 rot: Undo-Schritt aus dem Abgleich, Key events am Samstag (VERSION-CHECK-783)
+
+- **`undo` F** (Paket 4, schon in 781 rot): Gerät B zeigte nach dem ersten Abgleich als obersten Schritt „Asset · USD“ statt „Gameplan · JPY“.
+  - **Gemessen** (Aufrufer von `pushU`/`markPrefEdit`/`markUserEditTs` + jedes `save()` mit `_nutzer`/`undoOffen` auf B protokolliert):
+    - einziger Aufrufer: `pushU` aus `cloudPullRoh` (main.js ≈ 7765);
+    - das erste `save()` danach lief mit `_nutzer=true`.
+  - **Inhalt des Schritts**: nur abgeleitete Felder, z. B. `S.syms.#USD.rubrics.#….\_biasScore` 0.46→0.66 und Rubrik-`bias` EUR/CAD bull→neu.
+  - **Ursache**: `pushU()` stand dort aus der Zeit, als es nur „Undo-Kopie anlegen“ hieß.
+    - Seit 741 setzt `pushU()` die Nutzer-Markierung `_undoMarke`.
+    - Dadurch zählte die Neuberechnung nach dem Abgleich als Klick.
+    - Dieser Schritt ging in den geteilten Verlauf, also auf alle Geräte.
+    - Ein Undo hätte die Neuberechnung zurückgedreht.
+  - **Behoben an der Wurzel**:
+    - `pushU()` bleibt (`undoGrenze` speichert getippte Zeichen vor dem Übernehmen).
+    - `_undoMarke` wird danach auf den Wert davor zurückgesetzt.
+    - Der Datei-Import (`pushU();applySnap` ≈ 7142) ist eine echte Nutzer-Aktion und bleibt ein Schritt.
+  - **Fehlerklasse**: alle drei `undoFremd`-Aufrufe geprüft; nur dieser Pfad setzte eine Markierung.
+  - **Wächter**: `check/undo.js` G (statisch).
+    - Jedes `pushU()` in `cloudPullRoh` muss `_undoMarke` zurücksetzen.
+    - F allein schlägt nur an, wenn sich nach dem Abgleich etwas neu rechnet.
+    - Gegenprobe ohne Rücksetzen → G rot.
+- **`klickscroll` B** (Paket 1): „Key events ohne Überhang“.
+  - **Gemessen**: Samstag, keine High-/Medium-Termine, also keine `.db-ev-list` (nur „No high or medium impact events today“).
+  - **Ursache**: Der Test hing vom Wochentag ab, nicht von der App.
+  - **Behoben**: Der Test legt 16 eigene Termine für heute an, wie `check/calpast.js`.
+    - Lokal grün bei 1920 und 390 px.
+    - Gegenprobe ohne Sperre → A und B rot.

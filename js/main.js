@@ -7762,7 +7762,11 @@ async function cloudPullRoh(manual,forceOverwrite){
       const lokalVorher=snap();
       // Felder, die der Schreiber nicht kannte, behalten (siehe neueFelderBehalten).
       try{neueFelderBehalten(cd,JSON.parse(lokalVorher));}catch(e){}
-      pushU();const z0=_userEditZaehler;
+      // ⚠ pushU() hier nur fuer undoGrenze (getippte Zeichen vorher speichern) + Zaehler -
+      // NICHT als Nutzer-Markierung: sonst zaehlt das erste save() nach dem Abgleich (die
+      // Neuberechnung von _biasScore/Bias) als Klick und landet als Schritt "Asset · USD" im
+      // geteilten Undo-Verlauf (gemessen 2026-11-21, check/undo.js F; 783).
+      const _mkVorher=_undoMarke;pushU();_undoMarke=_mkVorher;const z0=_userEditZaehler;
       undoFremd(()=>{_flipCauseTag='sync';applySnap(JSON.stringify(cd));_flipCauseTag=null;});
       // ⚠ DREI-WEGE-ABGLEICH (Nutzer 2026-09-30: "manchmal wenn ich ein paar
       // button druecke ... kommt auf einmal ein Moment und dann gehen die

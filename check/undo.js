@@ -20,6 +20,15 @@ const FAKE = 'https://waechter-cloud.invalid', HIER = 'http://127.0.0.1:' + PORT
 const warte = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   const F = [];
+  // G (statisch, 2026-11-21, 783): der Abgleich ruft pushU() nur fuer undoGrenze - eine dabei
+  // gesetzte Nutzer-Markierung machte das erste save() danach (Neuberechnung _biasScore/Bias)
+  // zum Schritt "Asset · USD" im geteilten Verlauf (CI rot in F, nur wenn sich etwas neu rechnete).
+  const pullOhneMarke = src => { const i = src.indexOf('async function cloudPullRoh('), j = src.indexOf('\nasync function ', i + 10), k = src.indexOf('\nfunction ', i + 10);
+    const body = src.slice(i, Math.min(j < 0 ? 1e9 : j, k < 0 ? 1e9 : k)); if (i < 0) return 'cloudPullRoh nicht gefunden';
+    const n = (body.match(/pushU\(\)/g) || []).length, ok = (body.match(/pushU\(\);_undoMarke=/g) || []).length;
+    return n === ok ? null : `cloudPullRoh: ${n - ok} pushU() ohne Ruecksetzen von _undoMarke`; };
+  { const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'main.js'), 'utf8');
+    const g = pullOhneMarke(GP ? src.replace(/pushU\(\);_undoMarke=_mkVorher;/g, 'pushU();') : src); if (g) F.push('G: ' + g); }
   const b = await chromium.launch();
   let cloud = null;
   const geraet = async () => {
@@ -114,8 +123,8 @@ const warte = ms => new Promise(r => setTimeout(r, ms));
   }
   [A, B].forEach((p, i) => p._err.forEach(e => F.push('ABCD'[i] + ' JS-Fehler: ' + e)));
   await b.close();
-  if (GP) { const ok = F.some(f => /^B:/.test(f)); console.log(ok ? 'undo --gegenprobe: ok (Feed-Aenderung im Nutzer-Schritt gemeldet)' : 'undo --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
+  if (GP) { const ok = F.some(f => /^B:/.test(f)) && F.some(f => /^G:/.test(f)); console.log(ok ? 'undo --gegenprobe: ok (Feed-Aenderung im Nutzer-Schritt + Abgleich mit Nutzer-Markierung gemeldet)' : 'undo --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (F.length) { console.log('undo: ' + F.length + ' Befund(e)\n  ' + F.join('\n  ')); process.exit(1); }
-  console.log('undo: ok (Feld = 1 Schritt, Oeffnen = keiner, Feed bleibt draussen, 20 Schritte, nach Neuladen, Trade mit Grabstein, Undo auf Geraet B kommt auf A an, fremde Aenderung bleibt)');
+  console.log('undo: ok (Feld = 1 Schritt, Oeffnen = keiner, Feed bleibt draussen, 20 Schritte, nach Neuladen, Trade mit Grabstein, Undo auf Geraet B kommt auf A an, fremde Aenderung bleibt, Abgleich setzt keine Nutzer-Markierung)');
 })().catch(e => { console.log('undo: ABBRUCH ' + e.message); process.exit(1); });
 
