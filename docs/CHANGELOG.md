@@ -23027,3 +23027,15 @@ Nutzer: *„Bei der Weltkugel soll man auch erst tippen damit man scrollen kann�
   - Marker reagieren weiter auf den ersten Tipp.
   - Die Maus ist unverändert und dreht ohne Tipp, weil sich Ziehen nicht mit dem Rad beißt.
 - **Wächter:** `check/kugeltipp.js` A–D. Die Gegenprobe ohne Sperre meldet A und C rot.
+
+## 2026-11-22 — Price-Karte: Spalten-Rahmen in Gameplan-Bias-Farbe (VERSION-CHECK-791)
+
+Nutzer (Screenshot Copper, blaue Oberkante markiert): *„Mach diesen farbigen rahmen überall rum die Karte und mach das der die bias Farbe des gameplans annimmt“*.
+
+- **Vorher:** `.pk-col` hatte nur eine 3 px breite Oberkante in `--blue`.
+- **Jetzt:**
+  - Der Rahmen ist rundum 2 px breit, in der Farbe `--gpc` = `gpFarbe(id)` aus `js/gameplan.js`.
+  - Die Farbe ist Bullish blau, Bearish rot und ohne Bias grau (BC.neu).
+  - `neuZeichnen` in `gameplan.js` setzt die Farbe beim Umschalten sofort neu.
+- **Gemessen** (1194 px, Copper): alle vier Kanten 2 px; ohne Bias rgb(85,97,122), Bear rgb(220,36,48), Bull rgb(11,95,204).
+- **Wächter:** `check/preiskarte.js` I.

@@ -206,6 +206,7 @@ export function renderGameplan(){
 function neuZeichnen(id){
   if(curPage==='gameplan')renderGameplan();
   const l=document.getElementById('gpLeiste');
+  const pc=document.querySelector('#detail .ab-ptile.pk .pk-col');if(pc&&l&&l.dataset.gp===id)pc.style.setProperty('--gpc',farbe(gp(id).b));
   if(l&&l.dataset.gp===id){const t=document.createElement('div');t.innerHTML=gpLeisteHtml({id});l.replaceWith(t.firstElementChild);document.querySelectorAll('#gpLeiste .gp-ta,#gpLeiste .gp-th-in').forEach(ar);}
 }
 export function gpWaehle(id){gpSel=id;if(curPage==='gameplan'){renderGameplan();const d=document.getElementById('gpDetail');if(d&&innerWidth<760)d.scrollIntoView({block:'start',behavior:'smooth'});}}
@@ -270,6 +271,8 @@ export function gpHistZurueck(d){
   neuZeichnen(d.asset);
 }
 function gpHinweis(t){try{newsNoteHinweis(t);}catch(e){}}
+// Rahmen der Event-Spalte der Price-Karte in der Bias-Farbe des Gameplans (790)
+export function gpFarbe(id){return farbe(gp(id).b);}
 export function gpHatThese(id){return!!gp(id).th.trim();}
 export function gpKopie(id){const g=gameplans[id];if(!(g&&hatInhalt(g)))return null;const k=JSON.parse(JSON.stringify(g));delete k.h;return k;}   // ohne History
 export function gpName(id){return name(id);}

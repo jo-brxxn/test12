@@ -890,9 +890,9 @@ body.no-ui-anim .btn,body.no-ui-anim .ab,body.no-ui-anim .mover-row,body.no-ui-a
 .pk-col{display:flex;flex-direction:column;min-height:0;height:clamp(260px,36vh,380px);border:1px solid var(--bd);border-radius:var(--rs);background:var(--bg2);overflow:hidden}
 /* A2 (Nutzerwahl 2026-11-15): Spalte = weisse, erhoehte Karte mit blauer Oberkante, der Chart
    liegt auf einer grauen Flaeche - die Spalte hebt sich klar vom Chart ab. */
-html:not([data-fx-theme]) .pk-col{background:#FFFFFF;border-color:var(--bd2);border-top:3px solid var(--blue);box-shadow:0 4px 14px rgba(20,27,46,.12)}
+html:not([data-fx-theme]) .pk-col{background:#FFFFFF;border:2px solid var(--gpc,var(--bd2));box-shadow:0 4px 14px rgba(20,27,46,.12)}
 html:not([data-fx-theme]) .pk-main .ab-pk-chart{background:#F1F4F9;border-radius:var(--rs);padding:4px}
-[data-fx-theme] .pk-col{border-top:3px solid var(--blue);box-shadow:0 4px 14px rgba(0,0,0,.35)}
+[data-fx-theme] .pk-col{border:2px solid var(--gpc,var(--bd));box-shadow:0 4px 14px rgba(0,0,0,.35)}
 @container (max-width:720px){.pk-body{grid-template-columns:minmax(0,1fr)}.pk-col{order:2;height:auto;max-height:440px}}
 .pk-col-hd{display:flex;align-items:center;gap:8px;min-height:42px;padding:6px 8px 6px 12px;border-bottom:1px solid var(--bd);flex:0 0 auto}
 .pk-col-t{font:800 var(--fs-sm)/1.2 var(--ff-text);color:var(--t0)}
@@ -8145,11 +8145,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-790 - Economy Map wieder als Orbit: 17 Sektor-Planeten auf 3 Bahnen, Gruppen-Monde, Firmen-Satelliten, Zoom/Filter/Links"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-791 - Economy Map wieder als Orbit: 17 Sektor-Planeten auf 3 Bahnen, Gruppen-Monde, Firmen-Satelliten, Zoom/Filter/Links"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-790</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-791</span>
     </span>
   </div>
   <div class="hdr-r">

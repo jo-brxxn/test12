@@ -25,6 +25,7 @@
 //      Display "Lines ..."; 2 dazu -> 3 Linien, Fenster zu, ein dritter geht
 //      nicht; alle weg -> wieder Kerzen, Display "Candles ..."
 //   G) HANDY (390): Spalte UNTER dem Chart, Pfeile je Woche
+//   I) (791) Rahmen der Spalte rundum in der Bias-Farbe des Gameplans, live beim Umschalten
 // Gegenproben: --gegenprobe-leer (Tipp ins Leere wirkt nicht) -> C rot,
 //   --gegenprobe-linien (Vergleich als Kerzen) -> F rot,
 //   --gegenprobe-finger (Spalte ohne touchmove) -> D2 rot
@@ -226,6 +227,18 @@ const gruen = m => console.log('  ✓ ' + m);
     });
     if (!g.unter || g.n || g.rechts > 1) rot(`G: Spalte unter dem Chart ${g.unter}, ${g.n} Pfeile (erwartet 0), ueber den Rand ${g.rechts.toFixed(1)} px`);
     else gruen('G: Spalte unter dem Chart, keine Pfeile, nichts ragt ueber den Rand');
+    await ctx.close();
+  }
+  {
+    console.log('── 1366 px, Rahmen der Spalte (791)');
+    const { p, ctx } = await seite(1366, 900, 'USD');
+    const r = async () => p.evaluate(() => { const s = getComputedStyle(document.querySelector('#detail .ab-ptile.pk .pk-col')); return ['Top', 'Right', 'Bottom', 'Left'].map(k => s['border' + k + 'Color'] + '/' + s['border' + k + 'Width']); });
+    const z = {};
+    for (const bi of ['bear', 'bull']) { await p.evaluate(bi => gpBias('USD', bi), bi); await p.waitForTimeout(300); z[bi] = await r(); }
+    const soll = { bear: BC[1], bull: BC[0] };
+    const falsch = Object.keys(soll).filter(k => !z[k].every(x => x.startsWith(soll[k] + '/') && parseFloat(x.split('/')[1]) >= 2));
+    if (falsch.length) rot(`I: Rahmen nicht rundum in Bias-Farbe: ${falsch.map(k => k + ' ' + z[k].join(' ')).join(' · ')}`);
+    else gruen('I: Spalten-Rahmen rundum (2 px) in der Bias-Farbe des Gameplans, folgt dem Umschalten');
     await ctx.close();
   }
   await b.close();

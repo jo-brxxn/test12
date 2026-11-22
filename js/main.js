@@ -21,7 +21,7 @@ import {tjWiederherstellen,trades,mergeTrades,tjUebernehmen,renderJournal,tjDash
 // Country Profile der acht Waehrungen (Nutzer 2026-10-25, siehe Kopf von profil.js).
 import {zentralbankKarteHtml,zbFensterKontext} from './zentralbank.js';
 import {econThesen,econSetzeAlle,econVereinen,renderEcon,ecThNeu,ecThWahl,ecThTitel,ecThStatus,ecThLink,ecThLoeschen,ecThZurueck,ecThLabel,ecGruppe,ecAktie,ecFirmaWahl,ecFirmaZoom,ecTagFilter,ecTypFilter,ecZoom} from './wirtschaft.js';
-import {gameplans,gpRein,gpSetzeAlle,gpVereinen,gpLeisteHtml,gpNiveaus,renderGameplan,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpHistZurueck} from './gameplan.js';
+import {gameplans,gpRein,gpSetzeAlle,gpVereinen,gpLeisteHtml,gpNiveaus,renderGameplan,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpHistZurueck,gpFarbe} from './gameplan.js';
 // Hero-Zeichnung des Dashboards (Nutzer 2026-11-06, siehe Kopf von heroart.js).
 import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
@@ -12392,7 +12392,8 @@ function assetPreisKarteHtml(c){
   return`<div class="ab-ptile pk${pkAddAktiv()?' pk-add':''}">
     ${kopf}
     <div class="pk-body">
-      <div class="pk-col">${pkSpalteHtml(c.id)}</div>
+      ${/* Rahmen rundum in der Bias-Farbe des Gameplans - Nutzer 2026-11-22: "Mach diesen farbigen rahmen ueberall rum die Karte und mach das der die bias Farbe des gameplans annimmt" */''}
+      <div class="pk-col" style="--gpc:${gpFarbe(c.id)}">${pkSpalteHtml(c.id)}</div>
       <div class="pk-main"><div class="ab-pk-chart">${ch.html}</div>${fuss}</div>
     </div>
     ${/* 762 (Nutzer 2026-11-18): "Go to Trends" in die Zeile darueber (Trend score), spart eine Zeile */''}
