@@ -3117,6 +3117,31 @@ select:has(optgroup):not([data-nativ]):not(:disabled){pointer-events:none}
 .km-disp.km-klein{height:28px;padding:0 9px;gap:6px;margin-left:0}
 @media (hover:hover){.km-klein:hover{color:var(--t0);border-color:var(--bd3,var(--bd2))}}
 .km-menu{width:min(420px,calc(100vw - 16px))}
+/* Speicherplaetze der Data-Seite (Nutzer 2026-11-22: "wie eine gespeicherte
+   sitzposition im Auto"): Knopf "Saved" neben Display, Menue mit Liste. */
+.ds-knopf{height:34px;display:inline-flex;align-items:center;gap:7px;padding:0 11px;margin-left:6px}
+.ds-knopf b{font:700 var(--fs-xs)/1 var(--ff-num);color:var(--t2)}
+.ds-knopf.offen{border-color:var(--ui-act);box-shadow:inset 0 0 0 1px var(--ui-act)}
+.ds-menu{width:min(440px,calc(100vw - 16px))}
+.ds-save{width:100%;height:34px;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px}
+.ds-neu{display:flex;gap:6px;margin-top:6px}
+.ds-neu .finp{flex:1 1 auto;min-width:0;height:34px}
+.ds-ok{height:34px;flex:none}
+.ds-meld{margin-top:8px;font-size:var(--fs-xs);color:var(--t1)}
+.ds-meld i{color:var(--t2)}
+.ds-liste{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.ds-leer{font-size:var(--fs-sm);color:var(--t3);padding:4px 2px}
+.ds-zeile{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:6px;row-gap:4px;padding:6px 6px 6px 10px;border:1px solid var(--bd2);border-radius:9px;background:var(--bg1)}
+.ds-laden{min-width:0;min-height:34px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:0;border:none;background:none;cursor:pointer;text-align:left;color:var(--t1)}
+.ds-laden b{font:700 var(--fs-sm)/1.25 var(--ff-text);color:var(--t0);overflow-wrap:anywhere}
+.ds-laden span{font:500 var(--fs-xs)/1.3 var(--ff-text);color:var(--t2);overflow-wrap:anywhere}
+@media (hover:hover){.ds-laden:hover b{color:var(--ui-act)}}
+.ds-fuer{grid-column:1 / -1;justify-self:start;margin-bottom:2px;display:inline-flex;align-items:center;gap:5px;font:italic 500 var(--fs-xs)/1 var(--ff-text);color:var(--t2)}
+.ds-fuer select{height:28px;font-style:normal;font-size:var(--fs-xs)}
+.ds-akt{display:inline-flex;gap:2px}
+.ds-ic{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:8px;background:transparent;color:var(--t2);cursor:pointer}
+.ds-ic:disabled{opacity:.35;cursor:default}
+@media (hover:hover){.ds-ic:not(:disabled):hover{background:var(--bg5);color:var(--t0)}}
 .km-sek{padding:10px 14px}
 .km-sek+.km-sek{border-top:1px solid var(--bd)}
 .km-kacheln{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
@@ -8267,11 +8292,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-802 - Central bank: capital gaps closed, more detail, three colour previews (Marble/Bronze/Two-tone)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-803 - Data: saved views (Saved button) - store a comparison, load it again, load single-asset views for another asset"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-802</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-803</span>
     </span>
   </div>
   <div class="hdr-r">

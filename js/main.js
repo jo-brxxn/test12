@@ -6142,7 +6142,7 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte,gameplans,econThesen,profil},SNAP_REPLACER);}
+function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte,gameplans,econThesen,profil,dataSlots},SNAP_REPLACER);}
 // Banner-Quittungen der Zentralbank-Karte: nur Waehrung -> Datum, alles andere faellt raus.
 function zbEntscheidRein(v){
   const o={};
@@ -6386,7 +6386,7 @@ function applySnapRoh(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(_mergeSync?gpVereinen(gameplans,d.gameplans):d.gameplans);econSetzeAlle(_mergeSync?econVereinen(econThesen,d.econThesen):d.econThesen);if('profil' in d)profil=profilRein(d.profil);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(_mergeSync?gpVereinen(gameplans,d.gameplans):d.gameplans);econSetzeAlle(_mergeSync?econVereinen(econThesen,d.econThesen):d.econThesen);dataSlotsSetzen(_mergeSync?dataSlotsVereinen(dataSlots,d.dataSlots):d.dataSlots);if('profil' in d)profil=profilRein(d.profil);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6584,6 +6584,7 @@ function trashEntryLabel(t){
   if(!t||!t.data)return t&&t.kind==='folder'?'Folder':'Note';
   if(t.kind==='gphist'){const e=t.data.e||{};return(t.data.asset||'')+' · '+(e.th||'Gameplan').slice(0,80);}
   if(t.kind==='econth')return ecThLabel(t.data);
+  if(t.kind==='dslot')return dsLabel(t.data);
   const d=t.data;
   switch(t.kind){
     case'trade':return[(d.t&&d.t.a)||'Trade',d.t&&d.t.dir,d.t&&d.t.d].filter(Boolean).join(' · ');
@@ -6651,6 +6652,7 @@ function restoreTrashItem(id){
   pushU();
   if(t.kind==='gphist'){gpHistZurueck(t.data);}
   else if(t.kind==='econth'){ecThZurueck(t.data);}
+  else if(t.kind==='dslot'){dsZurueck(t.data);}
   else if(['trade','calev','pair','watch','palert','ealert','sym','rub','ind','widget'].includes(t.kind)){
     if(!trashZurueck(t)){alert('Could not restore this item - its place no longer exists.');return;}
   }
@@ -6978,7 +6980,7 @@ function loadState(){
       // Wert ist gespeichert, kommt aber nie an. Genau so ging der Test
       // 2026-09-07 aus (angepinnte Seed-Notiz nach dem Neuladen ohne Pin).
       btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};
-      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(d.gameplans);econSetzeAlle(d.econThesen);profil=profilRein(d.profil);
+      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(d.gameplans);econSetzeAlle(d.econThesen);dataSlotsSetzen(d.dataSlots);profil=profilRein(d.profil);
       seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};
       eventAlerts=pruneEventAlerts(d.eventAlerts||[]);
       priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];
@@ -7546,7 +7548,8 @@ function neueFelderBehalten(fremd,lokal){
   // gameplans: Gameplan je Asset (seit 2026-11-16, 737).
   // econThesen: Thesen der Economy Map (seit 2026-11-21, 784).
   // profil: Vor- und Nachname (seit 2026-11-22, 801).
-  ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
+  // dataSlots: Speicherplaetze der Data-Seite (seit 2026-11-22, 803).
+  ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil','dataSlots'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
   const fa=fremd.researchAnalysis,la=lokal.researchAnalysis;
@@ -16927,7 +16930,7 @@ function rerenderNotesHostRoh(){
 // (gespeicherte Tab-Stapel halten). 30 Tage, je Eintrag Restore / Delete forever.
 function datumKurz(iso){const d=new Date(iso);return isNaN(d)?'':fmtDayShort(d.toISOString().slice(0,10));}   // 768: zweistelliges Jahr wie ueberall (check/datum.js));}
 function trashArt(t){return t.kind==='note'?(t.data&&t.data.cb?'Bank note':notizIstChart(t.data)?'Chart note':'Note'):t.kind==='folder'?'Folder':(TRASH_ARTEN[t.kind]||t.kind);}
-const TRASH_ARTEN={gphist:'Gameplan',econth:'Thesis',trade:'Trade',calev:'Calendar event',pair:'Pair',watch:'Watchlist',palert:'Price alert',ealert:'Event alert',sym:'Asset',rub:'Card',ind:'Indicator',widget:'Dashboard card'};
+const TRASH_ARTEN={gphist:'Gameplan',econth:'Thesis',dslot:'Saved view',trade:'Trade',calev:'Calendar event',pair:'Pair',watch:'Watchlist',palert:'Price alert',ealert:'Event alert',sym:'Asset',rub:'Card',ind:'Indicator',widget:'Dashboard card'};
 function renderResearch(){
   const wrap=document.getElementById('resWrap');if(!wrap)return;
   const l=(research.trash||[]).filter(t=>t&&t.kind!=='folder').slice().sort((a,b)=>String(b.delAt).localeCompare(String(a.delAt)));
@@ -22914,6 +22917,194 @@ function dataDispTeile(){
   return t;
 }
 function dataDispKnopfHtml(){return kmKnopfHtml('data',dataDispTeile());}
+// ══ SPEICHERPLAETZE DER DATA-SEITE (Nutzer 2026-11-22) ══════════════════════
+// "das wenn man Sachen vergleicht das ganze speichert sodass man nicht immer
+// alles neu auswaehlen muss sondern es wie eine gespeicherte sitzposition im
+// Auto hat". Per Rueckfrage: NUR Speicherplaetze (nichts automatisch), fuer
+// alle fuenf Ansichten, ein Knopf in der Leiste oeffnet die Liste; und "wenn
+// man mehrere Indikatoren fuer nur ein Asset hat dann soll man auch das Asset
+// wechseln koennen" -> Platz mit genau einem Asset laesst sich fuer ein
+// anderes Asset laden (dieselben Charts, soweit es sie dort gibt).
+// Ein Platz merkt sich: Ansicht, deren Auswahl, Zeitraum, Candles|Line.
+// Gespeichert wie econThesen: {id:{n,t,m,r,f,to,px,s}} in snap(), je Platz
+// gewinnt die juengere Aenderung, Loeschen = Grabstein {del:1,t} (gewinnt bei
+// Gleichstand), Inhalt in den Papierkorb ('dslot').
+let dataSlots={},_dsOffen=false,_dsMeldung='',_dsNeu=false;
+const DS_MODI={assets:'By asset',inds:'By indicator',vs:'Asset vs asset',preis:'Prices',alle:'Compare all'};
+function dsSlotRein(v){
+  if(!v||typeof v!=='object')return null;
+  const t=+v.t||0;if(v.del)return{del:1,t};
+  if(!DS_MODI[v.m]||!v.s||typeof v.s!=='object')return null;
+  const n=typeof v.n==='string'?v.n.replace(/[<>]/g,'').trim().slice(0,60):'';
+  return{n:n||DS_MODI[v.m],t,m:v.m,r:v.r,f:v.f||null,to:v.to||null,px:v.px==='line'?'line':'candle',s:JSON.parse(JSON.stringify(v.s))};
+}
+function dataSlotsRein(v){
+  const o={};if(!v||typeof v!=='object'||Array.isArray(v))return o;
+  Object.keys(v).forEach(id=>{if(!/^[A-Za-z0-9_-]{1,40}$/.test(id))return;const e=dsSlotRein(v[id]);if(e)o[id]=e;});
+  // Grabsteine nach einem Jahr weg (wie bei den Thesen)
+  const alt=Date.now()-365*864e5;Object.keys(o).forEach(id=>{if(o[id].del&&o[id].t<alt)delete o[id];});
+  return o;
+}
+function dataSlotsSetzen(v){dataSlots=dataSlotsRein(v);}
+function dataSlotsVereinen(lokal,fremd){
+  const a=dataSlotsRein(lokal),b=dataSlotsRein(fremd),o=Object.assign({},a);
+  Object.keys(b).forEach(id=>{const x=o[id],y=b[id];if(!x||y.t>x.t||(y.t===x.t&&y.del&&!x.del))o[id]=y;});
+  return o;
+}
+const dsLebend=()=>Object.keys(dataSlots).filter(id=>!dataSlots[id].del).sort((a,b)=>dataSlots[b].t-dataSlots[a].t);
+// Stand der aktuellen Ansicht - nur die Teile, die zu ihr gehoeren
+function dsStand(){
+  const m=dataMode;let st;
+  if(m==='assets')st={a:dataAssets.slice(),ib:dataIndBase,io:Object.assign({},dataIndOverride)};
+  else if(m==='inds')st={a:dataAssets[0],il:dataIndList.slice()};
+  else if(m==='vs')st={va:dataVsAssets.slice(),vl:dataVsList.slice()};
+  else if(m==='preis')st={pl:dataPreisListe.slice(),pa:dataPreisAnsicht,ps:dataPreisSkala};
+  else st={al:dataAlle.map(x=>({a:x.a,k:x.k}))};
+  return{m,r:dataRange,f:dataCustomFrom,to:dataCustomTo,px:pxChartTyp,s:st};
+}
+function dsLeer(st){
+  const s=st.s;
+  return st.m==='assets'?!(s.a&&s.a.length):st.m==='inds'?!(s.il&&s.il.length):st.m==='vs'?!(s.vl&&s.vl.length):st.m==='preis'?!(s.pl&&s.pl.length):!(s.al&&s.al.length);
+}
+function dsRangeTxt(sl){const r=TIME_RANGES.find(x=>x[0]===sl.r);return sl.r==='CUSTOM'?'Custom':(r?r[1]:'');}
+// Das eine Asset eines Platzes (Vorlage), sonst null
+function dsEinAsset(sl){
+  const s=sl.s;
+  if(sl.m==='inds')return s.a||null;
+  if(sl.m==='alle'){const ids=[...new Set((s.al||[]).map(x=>x.a))];return ids.length===1&&syms.some(y=>y.id===ids[0])?ids[0]:null;}
+  return null;
+}
+function dsInhaltTxt(sl){
+  const s=sl.s,n=x=>(x||[]).length;
+  if(sl.m==='assets')return`${(s.a||[]).join(', ')} · ${s.ib||''}`;
+  if(sl.m==='inds')return`${s.a} · ${n(s.il)} indicator${n(s.il)===1?'':'s'}`;
+  if(sl.m==='vs')return`${(s.va||[]).join(' vs ')} · ${n(s.vl)} indicator${n(s.vl)===1?'':'s'}`;
+  if(sl.m==='preis')return`${n(s.pl)} price${n(s.pl)===1?'':'s'}`;
+  const ids=[...new Set((s.al||[]).map(x=>x.a))];return`${ids.slice(0,3).join(', ')}${ids.length>3?' +'+(ids.length-3):''} · ${n(s.al)} panel${n(s.al)===1?'':'s'}`;
+}
+// Panel-Schluessel eines Assets auf ein anderes umsetzen (Compare all)
+function dsSchluesselFuer(k,von,nach){
+  if(k==='p:'+von)return'p:'+nach;
+  const cc=x=>FX.includes(x)?x:(YIELD_CCY[x]||null),cv=cc(von),cn=cc(nach);
+  if(cv&&(k==='b2:'+cv||k==='b10:'+cv))return cn?k.split(':')[0]+':'+cn:null;
+  if(k.startsWith('i:'))return k;
+  return null;
+}
+function dsLaden(id,fuer){
+  const sl=dataSlots[id];if(!sl||sl.del)return;
+  try{
+    const s=JSON.parse(JSON.stringify(sl.s)),von=dsEinAsset(sl),nach=fuer&&von&&fuer!==von?fuer:null;
+    const fehlt=[];
+    if(nach){
+      const sym=syms.find(y=>y.id===nach),hat=new Set();
+      if(sym)dataIndGroupsOf(sym).forEach(g=>g.items.forEach(it=>hat.add(it.b)));
+      if(sl.m==='inds'){s.a=nach;s.il=(s.il||[]).filter(b=>{if(hat.has(b))return true;fehlt.push(b);return false;});}
+      else{
+        const namen=preisNamen();
+        s.al=(s.al||[]).map(x=>{const k=dsSchluesselFuer(x.k,von,nach);
+          const ok=k&&(k.startsWith('i:')?hat.has(k.slice(2)):namen.has(k));
+          if(!ok){fehlt.push(x.k.startsWith('i:')?x.k.slice(2):x.k.replace(/^(p|b2|b10):/,(m,a)=>a==='p'?'Price ':a==='b2'?'2Y yield ':'10Y yield '));return null;}
+          return{a:nach,k};}).filter(Boolean);
+      }
+    }
+    dataMode=sl.m;
+    if(sl.m==='assets'){dataAssets=(s.a||[]).slice(0,DATA_MAX_PANELS);dataIndBase=s.ib||dataIndBase;dataIndOverride=s.io||{};}
+    else if(sl.m==='inds'){dataAssets=[s.a];dataIndList=(s.il||[]).slice(0,DATA_MAX_PANELS);}
+    else if(sl.m==='vs'){dataVsAssets=(s.va||[]).slice(0,2);dataVsList=(s.vl||[]).slice(0,DATA_VS_MAX);}
+    else if(sl.m==='preis'){dataPreisListe=(s.pl||[]).slice(0,DATA_PREIS_MAX);dataPreisAnsicht=s.pa==='neben'?'neben':'eins';dataPreisSkala=s.ps==='bruch'?'bruch':'band';}
+    else dataAlle=(s.al||[]).slice(0,DATA_MAX_PANELS);
+    dataRange=sl.r==null?dataRange:sl.r;dataCustomFrom=sl.f||null;dataCustomTo=sl.to||null;
+    if(sl.px&&sl.px!==pxChartTyp)setPxChartTyp(sl.px);
+    _dsMeldung=`<b>${escH(sl.n)}</b> loaded${nach?` for <b>${escH(nach)}</b>`:''}`+(fehlt.length?` · <i>not available for ${escH(nach)}: ${escH(fehlt.join(', '))}</i>`:'');
+    renderDataTab();
+  }catch(e){alert('The saved view could not be loaded: '+(e&&e.message||e));}
+  dsZeichnen();
+}
+function dsSpeichern(id){
+  try{
+    const st=dsStand();
+    if(dsLeer(st)){_dsMeldung='<i>Nothing to save yet — pick at least one chart first</i>';dsZeichnen();return;}
+    pushU();
+    if(id&&dataSlots[id]&&!dataSlots[id].del){
+      dataSlots[id]=Object.assign(st,{n:dataSlots[id].n,t:Date.now()});
+      _dsMeldung=`<b>${escH(dataSlots[id].n)}</b> updated`;
+    }else{
+      const inp=document.getElementById('dsName');
+      const n=((inp&&inp.value)||'').replace(/[<>]/g,'').trim().slice(0,60)||`${DS_MODI[st.m]} · ${dsInhaltTxt(st)}`.slice(0,60);
+      const nid='ds'+Date.now().toString(36)+uid();
+      dataSlots[nid]=Object.assign(st,{n,t:Date.now()});_dsNeu=false;
+      _dsMeldung=`<b>${escH(n)}</b> saved`;
+    }
+    saveSoon();
+  }catch(e){alert('The view could not be saved: '+(e&&e.message||e));}
+  dsZeichnen();
+}
+function dsUmbenennen(id){
+  const sl=dataSlots[id];if(!sl||sl.del)return;
+  const n=prompt('Name of this saved view',sl.n);if(n==null)return;
+  const v=n.replace(/[<>]/g,'').trim().slice(0,60);if(!v||v===sl.n)return;
+  try{pushU();sl.n=v;sl.t=Date.now();saveSoon();}catch(e){alert('The name could not be saved: '+(e&&e.message||e));}
+  dsZeichnen();
+}
+function dsLoeschen(id){
+  const sl=dataSlots[id];if(!sl||sl.del)return;
+  if(!confirm(`Delete "${sl.n}"? It moves to the trash.`))return;
+  try{pushU();trashAblegen('dslot',{id,e:JSON.parse(JSON.stringify(sl))});dataSlots[id]={del:1,t:Date.now()};_dsMeldung=`<b>${escH(sl.n)}</b> moved to the trash`;saveSoon();}
+  catch(e){alert('The saved view could not be deleted: '+(e&&e.message||e));}
+  dsZeichnen();
+}
+// aus dem Papierkorb (restoreTrashItem)
+function dsZurueck(d){
+  if(!d||!d.id||!d.e)return;const e=dsSlotRein(d.e);if(!e||e.del)return;
+  dataSlots[d.id]=Object.assign(e,{t:Date.now()});saveSoon();if(curPage==='data')renderDataTab();
+}
+function dsLabel(d){return'Saved view · '+(((d&&d.e&&d.e.n)||'').trim()||'Untitled').slice(0,80);}
+// ── Knopf + Menue ──
+function dataSlotKnopfHtml(){
+  const n=dsLebend().length;
+  return`<button class="btn ds-knopf${_dsOffen?' offen':''}" id="dsKnopf" onclick="dsAuf()" aria-haspopup="true" aria-expanded="${_dsOffen}" title="Saved views — store this comparison and load it again with one tap">${icn('save',14)}<span>Saved</span>${n?`<b>${n}</b>`:''}</button>`;
+}
+function _dsDaneben(e){const t=e.target;if(t&&t.closest&&t.closest('#dsMenu,#dsKnopf,#gwPicker'))return;dsZu();}
+function _dsTaste(e){if(e.key==='Escape')dsZu();}
+function dsAuf(){
+  if(_dsOffen){dsZu();return;}
+  _dsOffen=true;_dsMeldung='';_dsNeu=false;dsZeichnen();
+  setTimeout(()=>{if(_dsOffen){document.addEventListener('pointerdown',_dsDaneben,true);document.addEventListener('keydown',_dsTaste);}},0);
+}
+function dsZu(){
+  _dsOffen=false;_dsNeu=false;document.removeEventListener('pointerdown',_dsDaneben,true);document.removeEventListener('keydown',_dsTaste);
+  const el=document.getElementById('dsMenu');if(el)el.remove();
+  const b=document.getElementById('dsKnopf');if(b){b.classList.remove('offen');b.setAttribute('aria-expanded','false');}
+}
+function dsNeuAuf(){_dsNeu=true;_dsMeldung='';dsZeichnen();setTimeout(()=>{const i=document.getElementById('dsName');if(i){i.focus();i.select();}},0);}
+function dsAssetOptionen(akt){
+  return dataAlleAssetGruppen().filter(g=>g.ids.every(id=>syms.some(y=>y.id===id))).map(g=>`<optgroup label="${escH(g.name)}">${g.ids.map(id=>`<option value="${escH(id)}"${id===akt?' selected':''}>${escH(id)}</option>`).join('')}</optgroup>`).join('');
+}
+function dsZeichnen(){
+  // Knopf-Zaehler auch bei geschlossenem Menue aktuell halten
+  const kn=document.getElementById('dsKnopf');
+  if(kn){const n=dsLebend().length,b=kn.querySelector('b');if(n&&!b)kn.insertAdjacentHTML('beforeend',`<b>${n}</b>`);else if(b){if(n)b.textContent=n;else b.remove();}}
+  if(!_dsOffen)return;
+  if(!kn||!kn.offsetParent){dsZu();return;}
+  kn.classList.add('offen');kn.setAttribute('aria-expanded','true');
+  let el=document.getElementById('dsMenu');
+  if(!el){el=document.createElement('div');el.id='dsMenu';el.className='data-picker ds-menu';el.setAttribute('role','dialog');el.setAttribute('aria-label','Saved views');document.body.appendChild(el);}
+  const st=dsStand(),leer=dsLeer(st);
+  const vorschlag=`${DS_MODI[st.m]} · ${leer?'':dsInhaltTxt(st)}`.slice(0,60);
+  const neu=_dsNeu?`<div class="ds-neu"><input class="finp" id="dsName" maxlength="60" value="${escH(vorschlag)}" aria-label="Name" onkeydown="if(event.key==='Enter')dsSpeichern()"><button class="btn ds-ok" onclick="dsSpeichern()">Save</button></div>`
+    :`<button class="btn ds-save" onclick="dsNeuAuf()"${leer?' disabled title="Pick at least one chart first"':''}>${icn('plus',14)}<span>Save current view</span></button>`;
+  const ids=dsLebend();
+  const liste=ids.length?ids.map(id=>{
+    const sl=dataSlots[id],ein=dsEinAsset(sl);
+    const fuer=ein?`<label class="ds-fuer" title="Load the same charts for another asset"><span>for</span><select onchange="dsLaden('${escJH(id)}',this.value)" aria-label="Load for asset">${dsAssetOptionen(ein)}</select></label>`:'';
+    return`<div class="ds-zeile"><button class="ds-laden" onclick="dsLaden('${escJH(id)}')" title="Load this view"><b>${escH(sl.n)}</b><span>${escH(DS_MODI[sl.m])} · ${escH(dsInhaltTxt(sl))}${dsRangeTxt(sl)?' · '+escH(dsRangeTxt(sl)):''}</span></button>
+      <span class="ds-akt"><button class="ds-ic" onclick="dsSpeichern('${escJH(id)}')" title="Overwrite with the current view"${leer?' disabled':''} aria-label="Overwrite">${icn('save',14)}</button><button class="ds-ic" onclick="dsUmbenennen('${escJH(id)}')" title="Rename" aria-label="Rename">${icn('edit',14)}</button><button class="ds-ic" onclick="dsLoeschen('${escJH(id)}')" title="Delete (moves to the trash)" aria-label="Delete">${icn('trash',14)}</button></span>${fuer}</div>`;
+  }).join(''):`<div class="ds-leer"><i>No saved views yet</i></div>`;
+  el.innerHTML=`<div class="km-sek"><span class="cmp-filter-lbl">Saved views</span>${neu}${_dsMeldung?`<div class="ds-meld">${_dsMeldung}</div>`:''}<div class="ds-liste">${liste}</div></div>`;
+  const r=kn.getBoundingClientRect(),stand=Math.round(r.left)+','+Math.round(r.bottom);
+  if(el.dataset.stand!==stand){delete el.dataset.fest;el.dataset.stand=stand;}
+  pickerAnkern(el,kn,true);
+}
 KM_MENUES.data=()=>{
   const sek=[];
   if(dataMode==='preis'){
@@ -23278,7 +23469,7 @@ function renderDataTabRoh(){
   const imSlot=!!el.closest('.mk-data-slot');
   const voll=dataVoll&&!imSlot;
   const vollKnopf=imSlot?'':`<button class="btn data-voll-b" onclick="dataVollUmschalten()" title="${voll?'Exit full screen (Esc)':'Full screen — only filter and time range above the charts'}" aria-label="${voll?'Exit full screen':'Full screen'}">${icn(voll?'x':'expand',14)}</button>`;
-  const kopf=(sub,filter,knopf,zeit,links2)=>voll?`<div class="data-head data-voll-kopf"><div class="data-voll-z">${filter}${knopf}${zeit}</div>${vollKnopf}</div>`:`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${vollKnopf}${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar+(links2||''),zeit)}</div></div>`;
+  const kopf=(sub,filter,knopf,zeit,links2)=>voll?`<div class="data-head data-voll-kopf"><div class="data-voll-z">${filter}${knopf}${zeit}</div>${vollKnopf}</div>`:`<div class="data-head"><div class="data-row"><div class="data-tt"><div class="data-h pg-titel">Data</div><div class="pg-sub">${escH(sub)}</div></div><span class="data-row-r">${vollKnopf}${filter}${knopf}</span>${abInfoBtn('Data',['Compare up to '+N+' panels. <b>By asset</b> shows one indicator for several assets, <b>By indicator</b> several indicators of one asset, <b>Asset vs asset</b> the same indicators for two assets, one row each, <b>Prices</b> up to '+DATA_PREIS_MAX+' prices in one chart (each line low → high). The time range applies to all panels.','Panels showing the <b>same indicator share one y-axis</b>, so their levels can be compared directly. Different indicators keep their own scale.','Bars = the released actual, red line = the consensus forecast; level series such as bond yields are drawn as a line.'])}</div><div class="data-row2">${chartLeisteHtml(modeBar+(links2||'')+dataSlotKnopfHtml(),zeit)}</div></div>`;
   let head,body,n=0;
   // Ein Preis-Panel (Side by side, Compare all): eigener Massstab, echte Preise.
   const preisPanelHtml=(k,titel,sub,ctrls,namen)=>{
@@ -28673,7 +28864,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{setProfil,profilDruckStart,profilDruckEnde,profilKlick,openScoreRegeln,srZahnrad,srTyp,srMax,ecThNeu,ecThWahl,ecThTitel,ecThStatus,ecThLink,ecThLoeschen,ecGruppe,ecAktie,ecFirmaWahl,ecFirmaZoom,ecTagFilter,ecTypFilter,ecZoom,dashMktAuf,dashMktUmschalten,dashMktWlSetzen,dataVollUmschalten,newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{dsStand,dsLebend,dataSlotsVereinen,dsAuf,dsZu,dsNeuAuf,dsLaden,dsSpeichern,dsUmbenennen,dsLoeschen,setProfil,profilDruckStart,profilDruckEnde,profilKlick,openScoreRegeln,srZahnrad,srTyp,srMax,ecThNeu,ecThWahl,ecThTitel,ecThStatus,ecThLink,ecThLoeschen,ecGruppe,ecAktie,ecFirmaWahl,ecFirmaZoom,ecTagFilter,ecTypFilter,ecZoom,dashMktAuf,dashMktUmschalten,dashMktWlSetzen,dataVollUmschalten,newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
@@ -28952,6 +29143,7 @@ Object.defineProperty(window,'research',{get:()=>research,set:v=>{research=v;},c
 Object.defineProperty(window,'researchFolders',{get:()=>researchFolders,set:v=>{researchFolders=v;},configurable:true});
 Object.defineProperty(window,'dataPreisListe',{get:()=>dataPreisListe,set:v=>{dataPreisListe=v;},configurable:true});
 Object.defineProperty(window,'dataAlle',{get:()=>dataAlle,set:v=>{dataAlle=v;},configurable:true});
+Object.defineProperty(window,'dataSlots',{get:()=>dataSlots,set:v=>{dataSlots=v;},configurable:true});
 Object.defineProperty(window,'dataMode',{get:()=>dataMode,configurable:true});
 Object.defineProperty(window,'dataPreisAnsicht',{get:()=>dataPreisAnsicht,configurable:true});
 Object.defineProperty(window,'researchAnalysis',{get:()=>researchAnalysis,set:v=>{researchAnalysis=v;},configurable:true});

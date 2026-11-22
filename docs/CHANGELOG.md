@@ -23202,3 +23202,10 @@ Nutzer (Fotos Settings + Dashboard, „Jonathan“ eingekreist): *„Füg in die
 - **Umgesetzt:** Voluten als Spirale (SVG), Eierstab, Gesims-Zahnschnitt an den Dachkanten + Tympanon-Schatten, Mäanderband im Fries, Basis Torus–Hohlkehle–Torus, Stufen mit Fugen; Paletten *Marble* (Elfenbein/Sandstein), *Bronze* (Steingrau + Bronze-Ornamente), *Two-tone* (Dach/Fries/Stufen dunkler)
 - **Größe unverändert** (gemessen 1180 px: Karte 587, Schaft 228×260 vorher = nachher; 390 px: 1279 / 256×152)
 - Umschalter im Kartenkopf ist **Vorschau**, bewusst nicht gespeichert/synchronisiert; fällt nach der Wahl weg. Midnight unverändert
+
+## 2026-11-22 — Data: Speicherplätze „Saved“ (VERSION-CHECK-803)
+- Nutzer, Screenshot Data/Compare all: *„Ich will eine neue Funktion bei data das wenn man Sachen vergleicht das ganze speichert sodass man nicht immer alles neu auswählen muss sondern es wie eine gespeicherte sitzposition im Auto hat“*
+- Rückfrage → *„Nur Speicherplätze“*, alle fünf Ansichten, Knopf mit Liste; dazu: *„wenn man mehrere Indikatoren für nur ein Asset hat dann soll man auch das Asset wechseln können“*
+- Umgesetzt: `dataSlots` (snap/Abgleich/Papierkorb), Knopf *Saved*, Menü mit *Save current view*, Laden, *for*-Asset (2-Spalten-Fenster über `<optgroup>`), Überschreiben, Umbenennen, Löschen
+- Gemessen: USD-Satz (Price, CPI, Unemployment, 2Y) für EUR = 4/4 Panels, für GOLD = 3/4, Meldung *not available for GOLD: 2Y yield USD*
+- Eingekreiste Stelle zwischen *Compare all* und *Candles*: im iPad-Foto wirkt das „l“ abgeschnitten; in Chromium gemessen 12 px Abstand (1024/1180/1366), Safari hier nicht verfügbar → **nicht reproduziert**, offen

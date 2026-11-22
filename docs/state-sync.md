@@ -393,3 +393,10 @@ in `seedNoteFlags` — winzig, aber gespeichert.
 
 - `profil` = {vor, nach} im Snapshot (`snap()`), Pflege über `profilRein()`; in `neueFelderBehalten` geschützt. Kein `localStorage`-Eigenleben. Der frühere Benutzername (`cfg.username`, nur lokal) ist entfernt.
 
+
+## Data-Speicherplätze (seit 2026-11-22, 803)
+
+- `dataSlots` = `{id:{n,t,m,r,f,to,px,s}}` im Snapshot (`snap()`), Pflege über `dataSlotsRein()`; beim Abgleich `dataSlotsVereinen` (je Platz jüngere Änderung `t`, Grabstein `{del:1,t}` gewinnt bei Gleichstand, nach 1 Jahr weg); in `neueFelderBehalten` geschützt. Inhalt beim Löschen in den Papierkorb (`dslot`).
+- `m` = Ansicht (`assets`/`inds`/`vs`/`preis`/`alle`), `s` = nur deren Auswahl, `r`/`f`/`to` = Zeitraum, `px` = Candles|Line (setzt beim Laden `pxChartTyp`).
+- Die laufende Auswahl der Data-Seite bleibt weiter **nur Sitzung** — gespeichert wird nur, was der Nutzer bewusst auf einen Platz legt (Rückfrage: *„Nur Speicherplätze“*).
+- Wächter `check/dataslots.js`.
