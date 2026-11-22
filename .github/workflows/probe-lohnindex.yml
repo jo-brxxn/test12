@@ -12,8 +12,10 @@ jobs:
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
           P="https://www.pxweb.bfs.admin.ch/api/v1/en"
           CODE=$(curl -sL -o db.json -w "%{http_code}" --max-time 60 "$P" || echo 000); echo "=== PX root $CODE $(wc -c < db.json)"; head -c 600 db.json; echo
-          for T in px-x-0304010000_201 px-x-0304010000_202 px-x-0304010000_102 px-x-0304010000_101 px-x-0304010000_103 px-x-0304010000_204; do
-            CODE=$(curl -sL -o t.json -w "%{http_code}" --max-time 60 "$P/$T/$T.px" || echo 000); echo "=== $T $CODE $(wc -c < t.json)"; head -c 500 t.json; echo
+          python3 -c "import json;d=json.load(open('db.json'));print([x['dbid'] for x in d if x['dbid'].startswith(('px-x-0304','px-x-0302','px-x-0303'))])"
+          for D in $(python3 -c "import json;d=json.load(open('db.json'));print(' '.join(x['dbid'] for x in d if x['dbid'].startswith('px-x-0304')))"); do
+            curl -sL -o l.json --max-time 60 "$P/$D" || true
+            echo "=== $D"; python3 -c "import json;d=json.load(open('l.json'));[print('   ',x.get('id'),'|',x.get('text')) for x in d]" 2>/dev/null || head -c 300 l.json
           done
           CODE=$(curl -sL -o te.html -w "%{http_code}" --max-time 60 -A "$UA" "https://tradingeconomics.com/switzerland/wage-growth" || echo 000)
           echo "=== TE wage-growth $CODE $(wc -c < te.html)"
