@@ -4069,7 +4069,12 @@ body.no-ui-anim .hud-live-dot{animation:none}
    deaktiviert, damit man ausserhalb der Kugel die Seite scrollen konnte -
    das war aber genau der Konflikt mit dem neuen Pan-Gesture, daher jetzt
    der ganze Host. */
-.globe-host{position:relative;display:flex;justify-content:center;align-items:center;padding:2px 0 4px;min-height:120px;touch-action:none;user-select:none;--gl-linie:#7ec4ff}
+.globe-host{position:relative;display:flex;justify-content:center;align-items:center;padding:2px 0 4px;min-height:120px;touch-action:pan-x pan-y;user-select:none;--gl-linie:#7ec4ff}
+/* 789, Nutzer 2026-11-22: "Bei der Weltkugel soll man auch erst tippen damit man scrollen kann"
+   (wie die Karten-Listen, 773). Ohne Tipp: Finger scrollt die SEITE, die Kugel dreht nicht.
+   Tipp auf die Kugel -> .gl-an: touch-action none, Ziehen dreht (alter Stand von oben).
+   Tipp daneben sperrt wieder. Maus unveraendert (Ziehen beisst sich nicht mit dem Rad). */
+.globe-host.gl-an{touch-action:none}
 .globe-host>svg{color:var(--gl-linie)}
 /* Heller Modus: Farbschema Atlas (Nutzer-Wahl 2026-11-08, js/globe.js GLOBE_PALETTEN) */
 .globe-host[data-palette=atlas]{--gl-linie:#0b5fcc;--hud:#0b5fcc}
@@ -8140,11 +8145,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-789 - Economy Map wieder als Orbit: 17 Sektor-Planeten auf 3 Bahnen, Gruppen-Monde, Firmen-Satelliten, Zoom/Filter/Links"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-790 - Economy Map wieder als Orbit: 17 Sektor-Planeten auf 3 Bahnen, Gruppen-Monde, Firmen-Satelliten, Zoom/Filter/Links"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-789</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-790</span>
     </span>
   </div>
   <div class="hdr-r">

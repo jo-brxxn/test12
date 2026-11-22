@@ -23014,3 +23014,16 @@ Nutzer (iPad-Screenshot, Platinum 6M): *„Wenn man zu schnell drüber hovert �
   - Die Zeitspannen-Schere nutzt Pointer mit `setPointerCapture` und nur bei aktiver Schere; das ist bewusst so.
   - Andere Tooltips laufen nur über chartHoverWrap.
 - **Wächter** `check/preiskarte.js` D2: Geste mit `pointercancel`, Spalte muss den Endpunkt zeigen. Gegenprobe `--gegenprobe-finger` meldet D2 rot.
+
+## 2026-11-22 — Weltkugel: erst tippen, dann drehen (VERSION-CHECK-790)
+
+Nutzer: *„Bei der Weltkugel soll man auch erst tippen damit man scrollen kann“* (Regel 773 der Karten-Listen).
+
+- **Vorher:** `.globe-host{touch-action:none}` (Wunsch 2026-07-28). Ein Finger auf der Kugel scrollte die Seite nie, und jeder Wisch drehte sie.
+- **Jetzt:**
+  - Ohne Tipp gilt `touch-action:pan-x pan-y`. `globeOnPointerDown` startet bei Finger oder Stift kein Ziehen, deshalb scrollt die Seite.
+  - Ein Tipp auf die Kugel (kein Marker) setzt `.gl-an`. Dann gilt `touch-action:none` und Ziehen dreht wie bisher.
+  - Ein Tipp außerhalb der Kugel sperrt wieder.
+  - Marker reagieren weiter auf den ersten Tipp.
+  - Die Maus ist unverändert und dreht ohne Tipp, weil sich Ziehen nicht mit dem Rad beißt.
+- **Wächter:** `check/kugeltipp.js` A–D. Die Gegenprobe ohne Sperre meldet A und C rot.

@@ -832,6 +832,8 @@ function globeHitTest(ev,host){
 function globeOnPointerDown(ev,host){
   if(globeMarkerAt(ev,host))return; // Marker-Klicks nicht als Drag-Start behandeln
   if(!globeHitTest(ev,host))return;
+  // Finger/Stift: erst nach einem Tipp drehen (789, siehe .globe-host.gl-an) - sonst scrollt die Seite
+  if(ev.pointerType!=='mouse'&&!host.classList.contains('gl-an'))return;
   if(_globeDrag)return; // schon ein Dreh-Drag aktiv, weitere gleichzeitige Finger ignorieren
   try{host.setPointerCapture(ev.pointerId);}catch(e){}
   closeGlobeTip();
@@ -984,12 +986,16 @@ function startGlobes(opt){
     h.addEventListener('pointerdown',ev=>{h.__ab={x:ev.clientX,y:ev.clientY};globeOnPointerDown(ev,h);});
     // Marker antippen (Canvas-Ebene, keine Elemente): Lage aus der Projektion,
     // nicht nach einem Ziehen (> 6 px).
-    h.addEventListener('click',ev=>{const a=h.__ab;if(a&&Math.hypot(ev.clientX-a.x,ev.clientY-a.y)>6)return;const id=globeMarkerAt(ev,h);if(id)globeMarkerClick(ev,id);});
+    h.addEventListener('click',ev=>{const a=h.__ab;if(a&&Math.hypot(ev.clientX-a.x,ev.clientY-a.y)>6)return;const id=globeMarkerAt(ev,h);if(id){globeMarkerClick(ev,id);return;}
+      if(globeHitTest(ev,h))h.classList.add('gl-an');});
     h.addEventListener('pointermove',ev=>{if(_globeDrag)return;const c=globeMarkerAt(ev,h)?'pointer':'';if(h.__cur!==c){h.style.cursor=c;h.__cur=c;}});
     h.addEventListener('pointermove',globeOnPointerMove);
     h.addEventListener('pointerup',globeOnPointerUp);
     h.addEventListener('pointercancel',globeOnPointerUp);
   });
+  // Tipp ausserhalb einer freigeschalteten Kugel sperrt sie wieder (789)
+  if(!window.__glSperre){window.__glSperre=1;document.addEventListener('pointerdown',ev=>{
+    document.querySelectorAll('.globe-host.gl-an').forEach(h=>{if(!h.contains(ev.target)||!globeHitTest(ev,h))h.classList.remove('gl-an');});},true);}
   ladeLandHD();          // einmalig; laeuft nebenher und baut danach neu auf
   _globeLast=performance.now();
   // ⚠ GEMESSEN 2026-09-12, Nutzer: "die Performance muss besser werden".

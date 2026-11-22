@@ -1876,6 +1876,7 @@ Nutzer: *„die history Karte nicht mehr scrollbar … das soll nur gehen wenn m
   - Klick (Tipp ohne Bewegung) schaltet frei (`.ks-an`); dieser Klick wird **geschluckt** (Zeilen sind oft Links). Klick daneben sperrt wieder.
   - Ausgenommen: Fenster (`.ov`) und Karten, die beim Tipp ihr Fenster öffnen (`.ab-auf`, `.abc-cal`).
   - Neue Liste mit eigenem Scrollbereich → in `KS_SEL` (`js/main.js`) **und** in die CSS-Regel „KARTEN SCROLLEN ERST NACH EINEM KLICK“. `check/klickscroll.js` findet vergessene an der Form.
+- **Weltkugel (790):** Finger dreht sie erst nach einem Tipp auf die Kugel (`.globe-host.gl-an`); ohne Tipp scrollt der Wisch die Seite. Ein Tipp daneben sperrt wieder. Maus dreht ohne Tipp. Geprüft von `check/kugeltipp.js`.
 - **Zurück-Pille gehört zur Zielseite (773):** Go-to aus einer Karte → Pille; jeder andere Seitenwechsel (Seitenleiste, Menü) räumt sie ab (`rueckwegAus`). Geprüft von `check/backpille.js`.
 - **Bias scores „Show all“ (773):** ein Knopf mittig unter **allen** Spalten, klappt alle drei gemeinsam auf/zu (`dashBiasAlleUmschalten`).
 - **Info-i (773):** jedes ⓘ — auch `.dw-hdr>.rinfo`, `.mx-card-title>.rinfo` — hat den `::before`-Kreis (0,6 × 17 px) und das i mit 72 % des Kreises; das i berührt den Kreis nie (`check/infoi.js` BUCHSTABE).
