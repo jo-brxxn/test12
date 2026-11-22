@@ -10,8 +10,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Katalog nach Job-Vacancy-Datensaetzen durchsuchen
         run: |
+          curl -sL --max-time 120 -o toc.txt "https://ec.europa.eu/eurostat/api/dissemination/catalogue/toc/txt?lang=en" || true
+          echo "=== TOC $(wc -c < toc.txt) Bytes"; grep -i "vacanc" toc.txt | head -30
+          grep -io -E "\"(jvs|ei_lmjv)[a-z0-9_]*\"" toc.txt | sort -u | tr -d '"' > ids.txt; cat ids.txt
+          head -c 300 toc.txt; echo
           curl -sL --max-time 120 -o flows.xml "https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/dataflow/ESTAT/all?detail=allstubs" || true
-          echo "=== Katalog $(wc -c < flows.xml) Bytes"
+          echo "=== Katalog $(wc -c < flows.xml) Bytes"; head -c 300 flows.xml; echo
           python3 - <<'PY'
           import re
           t=open('flows.xml',errors='ignore').read()
@@ -22,9 +26,8 @@ jobs:
       - name: Abfrage je gefundenem Datensatz
         run: |
           B="https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data"
-          for D in $(python3 -c "
-          import re;t=open('flows.xml',errors='ignore').read()
-          print(' '.join(i for i in re.findall(r'<s:Dataflow[^>]*id=\"([^\"]+)\"',t) if i.lower().startswith(('jvs','ei_lmjv'))))"); do
+          curl -sL --max-time 120 -o toc.txt "https://ec.europa.eu/eurostat/api/dissemination/catalogue/toc/txt?lang=en" || true
+          for D in $(grep -io -E '"(jvs|ei_lmjv)[a-z0-9_]*"' toc.txt | sort -u | tr -d '"'); do
             CODE=$(curl -sL -o v.json -w "%{http_code}" --max-time 60 "$B/$D?format=JSON&lang=EN&geo=EA20&sinceTimePeriod=2024-Q1" || echo 000)
             echo "=== $CODE $(wc -c < v.json) $D"
             python3 - <<'PY' || head -c 300 v.json
