@@ -2,7 +2,8 @@
 // Nutzer-Foto 2026-11-22 (EUR, Labour Market): "Job vacancies ist irgendwie kaputt und hat keine Historie".
 // Gemessen: ind_data.json hatte fuer EUR KEINE Reihe "JOLTS Job Openings" - die Zeile zeigte den kuratierten
 // Startwert 2,2 % vom 2026-03-18 (OUT OF DATE). Quelle jetzt: Eurostat jvs_q_nace2, Euroraum (EA20),
-// Wirtschaftszweige B-S, Quote der offenen Stellen (JOBRATE), quartalsweise, mit voller Historie.
+// Wirtschaftszweige B-S (Industrie, Bau, Dienstleistungen = Eurostat-Schlagzeile), Quote der offenen Stellen,
+// quartalsweise, mit voller Historie.
 // Datum: das Aktualisierungsdatum des Datensatzes (Eurostat "updated") fuer das juengste Quartal,
 // die Historie traegt das Quartalsende (datumArt "ref"). Nie geschaetzt: jede Zahl kommt von Eurostat.
 // Aufruf: node tools/stellen.mjs [--probe]   (--probe: nur ausgeben)
@@ -11,7 +12,9 @@ import fs from 'node:fs';
 const PROBE = process.argv.includes('--probe');
 const IND = 'JOLTS Job Openings', CCY = 'EUR';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
-const BASIS = 'https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/jvs_q_nace2?format=JSON&lang=EN&geo=EA20&nace_r2=B-S&indic_em=JOBRATE';
+// ⚠ jvs_q_nace2 endet mit 2025-Q4 und ist "not available for dissemination" (Sonde 2026-11-22, HTTP 404).
+// Nachfolger: jvs_q_r21 (NACE Rev. 2.1, Quote = indic_em JVR), Stand 2026-11-19 bis 2026-Q3.
+const BASIS = 'https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/jvs_q_r21?format=JSON&lang=EN&geo=EA20&indic_em=JVR&sizeclas=TOTAL';
 const pct = v => (Math.round(v * 10) / 10).toFixed(1) + '%';
 const qEnde = q => { const [y, n] = q.split('-Q').map(Number); return new Date(Date.UTC(y, n * 3, 0)).toISOString().slice(0, 10); };
 
@@ -39,12 +42,14 @@ const kat = d => Object.keys(j.dimension[d].category.index);
 if (PROBE) { j.id.forEach(d => console.log('[jv] Dimension', d, kat(d).slice(0, 12).join(','), kat(d).length > 12 ? '…' : '')); console.log('[jv] updated', j.updated); }
 // Schlagzeile der Eurostat-Meldung: saisonbereinigt nicht fuer alle Laender - nimm NSA (die Meldung zitiert NSA),
 // Groessenklasse gesamt. Beide werden im --probe ausgegeben, damit die Wahl gegen die Meldung pruefbar ist.
+const nace = ['B-S', 'B-T', 'B-N'].find(k => j.dimension.nace_r2_1 && k in j.dimension.nace_r2_1.category.index) || null;
+if (PROBE) console.log('[jv] NACE-Auswahl', nace, '| vorhanden:', kat('nace_r2_1').join(','));
+if (!nace) throw new Error('Eurostat: kein Gesamtaggregat B-S/B-T');
 const varianten = {};
-(j.dimension.s_adj ? kat('s_adj') : ['-']).forEach(sa => (j.dimension.sizeclas ? kat('sizeclas') : ['-']).forEach(sz => {
-  varianten[sa + '/' + sz] = reihe(j, { s_adj: sa, sizeclas: sz, geo: 'EA20', nace_r2: 'B-S', indic_em: 'JOBRATE', freq: 'Q', unit: 'PC' });
-}));
+(j.dimension.s_adj ? kat('s_adj') : ['-']).forEach(sa => { varianten[sa] = reihe(j, { s_adj: sa, sizeclas: 'TOTAL', nace_r2_1: nace, geo: 'EA20', indic_em: 'JVR', freq: 'Q' }); });
 if (PROBE) Object.entries(varianten).forEach(([k, r]) => console.log('[jv]', k, r.length, 'Quartale, letzte 4:', JSON.stringify(r.slice(-4))));
-const pts = varianten['NSA/TOTAL'] || varianten['NSA/-'] || Object.values(varianten)[0];
+// Schlagzeile der Eurostat-Meldung = nicht saisonbereinigt (NSA); SA nur, wenn NSA fehlt
+const pts = varianten.NSA && varianten.NSA.length ? varianten.NSA : varianten.SA;
 if (!pts || pts.length < 2) throw new Error('Eurostat: keine Reihe');
 const neu = pts[pts.length - 1], vor = pts[pts.length - 2];
 const upd = String(j.updated || '').slice(0, 10) || new Date().toISOString().slice(0, 10);
