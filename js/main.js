@@ -7310,6 +7310,9 @@ function openCloudM(){
 }
 function setCloudStatus(txt){
   const el=document.getElementById('cloudStatus');if(el)el.textContent=txt;
+  // Fenster zu (Save schliesst seit 2026-11-22) -> ein Fehler darf nicht ungesehen in der Statuszeile landen.
+  const ov=document.getElementById('mCloud');
+  if(/^✗/.test(String(txt||''))&&(!ov||getComputedStyle(ov).display==='none'))alert(txt);
 }
 function saveCloudCfg(){
   const url=document.getElementById('cloudUrl').value.trim().replace(/\/+$/,'');
@@ -7317,12 +7320,15 @@ function saveCloudCfg(){
   const syncId=document.getElementById('cloudSyncId').value.trim();
   if(!url||!key||!syncId){alert('Please fill in URL, API key and Sync ID.');return;}
   localStorage.setItem(CLOUD_CFG_KEY,JSON.stringify({url,key,syncId}));
-  // Das Fenster bleibt nach "Save" offen (Statuszeile zeigt den Sync).
+  // (Bis 2026-11-22 blieb das Fenster nach "Save" offen; jetzt schliesst es weiter unten.)
   // Ab hier IST das der gespeicherte Stand - sonst fragte ein Klick daneben
   // gleich darauf "Save changes?" nach etwas, das laengst gespeichert ist.
   guardArm('mCloud');
   updProfile();
   setCloudStatus('Saved. Syncing...');
+  // Regel 2026-11-22: Save schliesst das Fenster (vorher blieb es fuer die Statuszeile offen). Der Sync
+  // laeuft weiter; ein Fehler kommt als Meldung (setCloudStatus), weil die Statuszeile dann nicht sichtbar ist.
+  closeM('mCloud');
   // manual:true fuer die Status-Rueckmeldung ("Downloaded"/Fehlertext),
   // forceOverwrite:false, damit ein gerade erst getoggeltes pinEnabled/
   // introAnimEnabled (noch nicht ausgepusht) hier nicht vom alten
@@ -7548,7 +7554,7 @@ function neueFelderBehalten(fremd,lokal){
   // gameplans: Gameplan je Asset (seit 2026-11-16, 737).
   // econThesen: Thesen der Economy Map (seit 2026-11-21, 784).
   // profil: Vor- und Nachname (seit 2026-11-22, 801).
-  // dataSlots: Speicherplaetze der Data-Seite (seit 2026-11-22, 803).
+  // dataSlots: Speicherplaetze der Data-Seite (seit 2026-11-22, 804).
   ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil','dataSlots'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
@@ -16117,6 +16123,9 @@ function createPriceAlert(){
   save();
   document.getElementById('paLevel').value='';
   renderPriceAlertList();
+  // Regel 2026-11-22 (Nutzer: "wenn man bei so Fenstern auf speichern drueckt soll es dann auch direkt
+  // sich schliessen"): auch "Create alert" schliesst. Die Liste sieht man beim naechsten Oeffnen.
+  guardArm('mPriceAlert');closeM('mPriceAlert');
 }
 function delPriceAlert(id){pushU();const pa=priceAlerts.find(a=>a.id===id);if(pa)trashAblegen('palert',{a:{...pa}});priceAlerts=priceAlerts.filter(a=>a.id!==id);save();renderPriceAlertList();}
 function renderPriceAlertList(){

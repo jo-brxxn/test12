@@ -23203,7 +23203,21 @@ Nutzer (Fotos Settings + Dashboard, „Jonathan“ eingekreist): *„Füg in die
 - **Größe unverändert** (gemessen 1180 px: Karte 587, Schaft 228×260 vorher = nachher; 390 px: 1279 / 256×152)
 - Umschalter im Kartenkopf ist **Vorschau**, bewusst nicht gespeichert/synchronisiert; fällt nach der Wahl weg. Midnight unverändert
 
-## 2026-11-22 — Data: Speicherplätze „Saved“ (VERSION-CHECK-803)
+## 2026-11-22 — Speichern schließt das Fenster (VERSION-CHECK-803)
+
+Nutzer (Foto Settings, „Save“ eingekreist): *„Eine neue Regel wenn man bei so Fenstern auf speichern drückt soll es dann auch direkt sich schließen. Setz das auch bei den anderen Fenstern um“*.
+
+- **Bestand geprüft:** 13 Save/Create/Add-Knöpfe in Fenster-Knopfleisten schlossen schon. Offen blieben nur zwei:
+  - **Settings** (`saveCloudCfg`) — bewusst, wegen der Sync-Statuszeile.
+  - **Price alerts** (`createPriceAlert`, „Create alert“) — wegen der Liste darunter.
+- **Jetzt:**
+  - Beide schließen nach erfolgreichem Speichern; ein Eingabefehler lässt sie offen.
+  - Sync-Fehler (`✗ …`) erscheinen als Meldung, wenn das Settings-Fenster schon zu ist (`setCloudStatus`).
+- **Wächter:**
+  - Neu: `check/speichernzu.js` (statisch, Gegenprobe rot).
+  - `check/eingaben.js` C verlangt jetzt Schließen statt „kein Nachfragen“.
+
+## 2026-11-22 — Data: Speicherplätze „Saved“ (VERSION-CHECK-804)
 - Nutzer, Screenshot Data/Compare all: *„Ich will eine neue Funktion bei data das wenn man Sachen vergleicht das ganze speichert sodass man nicht immer alles neu auswählen muss sondern es wie eine gespeicherte sitzposition im Auto hat“*
 - Rückfrage → *„Nur Speicherplätze“*, alle fünf Ansichten, Knopf mit Liste; dazu: *„wenn man mehrere Indikatoren für nur ein Asset hat dann soll man auch das Asset wechseln können“*
 - Umgesetzt: `dataSlots` (snap/Abgleich/Papierkorb), Knopf *Saved*, Menü mit *Save current view*, Laden, *for*-Asset (2-Spalten-Fenster über `<optgroup>`), Überschreiben, Umbenennen, Löschen

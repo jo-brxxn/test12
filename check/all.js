@@ -38,6 +38,7 @@ const PRUEFUNGEN = [
   { n: 'scorediff', s: 43,  d: 'rechnet jeden Score gegen die Basis nach', f: 'check/scorediff.js', args: [basis], browser: true, kette: true },
   { n: 'summarydiff', s: 42, d: 'vergleicht jeden Kartentext gegen die Basis', f: 'check/summarydiff.js', args: [basis], browser: true, kette: true },
   { n: 'rules',     s: 1,   d: 'Versions-Bumps, Workflow-Ausgaben, neue Felder in snap() -> neueFelderBehalten', f: 'check/rules.js', args: [basis], browser: false, kette: true },
+  { n: 'speichernzu', s: 1, d: 'Speichern schliesst das Fenster: jeder Save/Create/Add-Knopf einer Fenster-Knopfleiste ruft closeM', f: 'check/speichernzu.js', args: [], browser: false },
   { n: 'structure', s: 1,   d: 'doppelte ids/Bloecke, Handler in der window-Bruecke, jeder Modul-Import exportiert', f: 'check/structure.js', args: ['index.html'], browser: false },
   { n: 'score',     s: 15,  d: 'Rechenkette, _symId, Bias gegen Rohdaten, Idempotenz', f: 'check/score.js', args: ['normalized'], browser: true },
   { n: 'display',   s: 27,  d: 'angezeigte Scores im DOM gegen den Sollwert, Feed-Zuordnung, News-Einordnung', f: 'check/display.js', args: ['normalized'], browser: true },

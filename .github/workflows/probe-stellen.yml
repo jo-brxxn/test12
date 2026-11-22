@@ -1,0 +1,26 @@
+# Sonde: EUR Job Vacancy Rate aus Eurostat (tools/stellen.mjs --probe) - schreibt NICHTS.
+# Anlass: Nutzer-Foto 2026-11-22 "Job vacancies ist irgendwie kaputt und hat keine Historie".
+name: Probe EUR job vacancy (Eurostat)
+on:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Varianten der Abfrage
+        run: |
+          B="https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data"
+          for Q in "jvs_q_nace2?format=JSON&lang=EN&geo=EA20" "jvs_q_nace2?format=JSON&lang=EN&geo=EA20&indic_em=JOBRATE" "jvs_q_nace2?format=JSON&lang=EN&geo=EA20&nace_r2=B-S" "jvs_q_nace2?format=JSON&lang=EN&geo=EA&indic_em=JOBRATE" "jvs_q_nace2?format=JSON&lang=EN&sinceTimePeriod=2025-Q1&geo=EA20" "ei_lmjv_q_r2?format=JSON&lang=EN&geo=EA20"; do
+            CODE=$(curl -sL -o v.json -w "%{http_code}" --max-time 60 "$B/$Q" || echo 000)
+            echo "=== $CODE $(wc -c < v.json) $Q"
+            python3 - <<'PY' || head -c 400 v.json
+          import json
+          j=json.load(open('v.json'))
+          if 'id' not in j: print(json.dumps(j)[:400]); raise SystemExit
+          print('updated',j.get('updated'),'size',j['size'])
+          for d in j['id']:
+              c=list(j['dimension'][d]['category']['index'].keys())
+              print('  ',d,len(c),c[:14] if d!='time' else c[-6:])
+          PY
+          done
