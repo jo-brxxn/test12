@@ -1,0 +1,11 @@
+# Sonde: EUR Job Vacancy Rate aus Eurostat (tools/stellen.mjs --probe) - schreibt NICHTS.
+# Anlass: Nutzer-Foto 2026-11-22 "Job vacancies ist irgendwie kaputt und hat keine Historie".
+name: Probe EUR job vacancy (Eurostat)
+on:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node tools/stellen.mjs --probe
