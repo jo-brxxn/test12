@@ -272,8 +272,8 @@ const OEFFNER = {
   }), titel);
   if (!gesp.da || gesp.offen) rot(`"Yes, save" speichert nicht / schliesst nicht: ${JSON.stringify(gesp)}`);
   await aufraeumen();
-  // Fenster, die nach ihrem EIGENEN Speichern offen bleiben: danach ist der
-  // Stand gespeichert, ein Klick daneben darf nicht mehr nachfragen.
+  // Speichern SCHLIESST das Fenster (Nutzer-Regel 2026-11-22: "wenn man bei so Fenstern auf speichern
+  // drueckt soll es dann auch direkt sich schliessen"). Bis dahin blieben Price alert und Settings offen.
   await p.route('https://waechter.invalid/**', r => r.abort());
   const offenGespeichert = [
     { id: 'mPriceAlert', src: `openPriceAlertM()`, tippen: [['#paLevel', '1.2345']], knopf: /Create alert/ },
@@ -284,15 +284,13 @@ const OEFFNER = {
     for (const [sel, v] of f.tippen) await p.locator(sel).fill(v);
     await p.locator(`#${f.id} button`, { hasText: f.knopf }).first().click();
     await p.waitForTimeout(250);
-    await p.mouse.click(5, H - 5);
-    await p.waitForTimeout(150);
     const st = await status(f.id);
-    if (st.nachfrage) rot(`${f.id}: nach dem eigenen Speichern fragt ein Klick daneben trotzdem "Save changes?"`);
-    else if (st.offen) rot(`${f.id}: nach dem eigenen Speichern schliesst ein Klick daneben nicht`);
+    if (st.nachfrage) rot(`${f.id}: nach dem eigenen Speichern fragt es "Save changes?"`);
+    else if (st.offen) rot(`${f.id}: "${f.knopf.source}" schliesst das Fenster nicht (Regel 2026-11-22)`);
     await aufraeumen();
   }
   await p.evaluate(() => { try { localStorage.removeItem('fxpro_cloud_cfg'); } catch (e) {} priceAlerts = []; save(); });
-  if (!fehler) gruen('zwei Knoepfe in Bias-Farben, Satz nennt die Notiz, daneben = zurueck, "Yes, save" speichert (Notiz-Editor); nach eigenem Speichern (Price alert, Settings) keine Nachfrage mehr');
+  if (!fehler) gruen('zwei Knoepfe in Bias-Farben, Satz nennt die Notiz, daneben = zurueck, "Yes, save" speichert (Notiz-Editor); Speichern schliesst das Fenster (Price alert, Settings)');
 
   // ── D: Pinned notes -> voller Editor ────────────────────────────────────
   console.log('D) Pinned notes oeffnen den vollen Notiz-Editor, angepinnt');

@@ -1574,6 +1574,7 @@ Frage ob man es speichern will … bearish nein und in bullish Farbe ja speicher
 - **Neue Notizen aus einer Karte** öffnen den vollständigen Editor (kein Einzeilen-Feld in der
   Karte); Vorbelegungen wie der Pin stehen sichtbar als Haken im Editor, nie still im Hintergrund.
 - Wächter: `check/eingaben.js`.
+- **Speichern schließt das Fenster** (Nutzer-Regel 2026-11-22: *„wenn man bei so Fenstern auf speichern drückt soll es dann auch direkt sich schließen. Setz das auch bei den anderen Fenstern um“*). Gilt für jedes Save/Create/Add — auch Settings und Price alert. Nur ein Eingabefehler (Meldung) lässt es offen. Rückmeldungen, die bisher im Fenster standen, kommen bei einem Fehler als Meldung. Wächter: `check/speichernzu.js` (statisch) + `check/eingaben.js` C.
 
 ## Design-Audit 2026-10-04 — Dauerregeln (VERSION-CHECK-588, Runde 2 ab 590)
 
