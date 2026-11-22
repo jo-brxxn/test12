@@ -6871,11 +6871,8 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
    Tokens: --zb-d* = Dach/Fries/Gebaelk/Stufen (bei Two-tone dunkler),
    --zb-akz = Ornament-Farbe. Midnight behaelt seine Werte (Paletten nur hell). */
 .zb-bau{--zb-dhell:var(--zb-hell);--zb-dstein:var(--zb-stein);--zb-dstein2:var(--zb-stein2);--zb-akz:var(--zb-kante)}
-html:not([data-fx-theme="midnight"]) .zb-bau[data-zbstil="marmor"]{--zb-hell:#FBF8F2;--zb-stein:#F0EADF;--zb-stein2:#E2D9C9;--zb-kante:#CBBDA4;--zb-laub:#A6936F;--zb-akz:#A08A66;
-  --zb-tief:rgba(70,52,24,.18);--zb-schatten:rgba(70,52,24,.10);--zb-dhell:#F6F0E4;--zb-dstein:#EAE1D1;--zb-dstein2:#DCD0BB}
-html:not([data-fx-theme="midnight"]) .zb-bau[data-zbstil="bronze"]{--zb-hell:#F8F9FB;--zb-stein:#E8EBEF;--zb-stein2:#D8DDE4;--zb-kante:#BCC3CE;--zb-laub:#A88B5E;--zb-akz:#A88B5E;
-  --zb-tief:rgba(20,27,46,.16);--zb-schatten:rgba(20,27,46,.09);--zb-dhell:#F1F3F6;--zb-dstein:#E1E5EB;--zb-dstein2:#D1D7DF}
-html:not([data-fx-theme="midnight"]) .zb-bau[data-zbstil="zwei"]{--zb-hell:#F8FAFC;--zb-stein:#EDF1F6;--zb-stein2:#E0E6EE;--zb-kante:#AEB9C9;--zb-laub:#7E8CA5;--zb-akz:#7E8CA5;
+/* Two-tone (Nutzerwahl 2026-11-22): Saeulen hell, Dach/Fries/Gebaelk/Stufen dunkler */
+html:not([data-fx-theme="midnight"]) .zb-bau{--zb-hell:#F8FAFC;--zb-stein:#EDF1F6;--zb-stein2:#E0E6EE;--zb-kante:#AEB9C9;--zb-laub:#7E8CA5;--zb-akz:#7E8CA5;
   --zb-tief:rgba(20,27,46,.20);--zb-schatten:rgba(20,27,46,.11);--zb-dhell:#DCE2EB;--zb-dstein:#CBD3DF;--zb-dstein2:#BAC4D2}
 /* Dachkoerper, Fries, Gebaelk, Stufen in den Dach-Tokens */
 .zb-gs-hell{stop-color:var(--zb-dhell)}.zb-gs-stein{stop-color:var(--zb-dstein)}.zb-gs-stein2{stop-color:var(--zb-dstein2)}
@@ -6912,13 +6909,6 @@ html:not([data-fx-theme="midnight"]) .zb-bau[data-zbstil="zwei"]{--zb-hell:#F8FA
 /* Stufen: Fugen + leichte Steinstruktur */
 .zb-st2,.zb-st3{background:repeating-linear-gradient(90deg,transparent 0 63px,var(--zb-kante) 63px 64px),linear-gradient(var(--zb-dhell),var(--zb-dstein2))}
 .zb-st3{background:repeating-linear-gradient(90deg,transparent 0 31px,var(--zb-kante) 31px 32px,transparent 32px 95px,var(--zb-kante) 95px 96px),linear-gradient(var(--zb-dstein),var(--zb-dstein2))}
-/* Umschalter der Vorschau im Kartenkopf */
-.zb-stil{margin-left:auto;display:inline-flex;height:28px;padding:2px;gap:2px;border:1px solid var(--bd);border-radius:999px;background:var(--bg3)}
-.zb-hd-sub+.zb-stil{margin-left:0}
-.zb-stil+.zb-arch{margin-left:0}
-.zb-stil-b{height:22px;padding:0 9px;border:none;border-radius:999px;background:transparent;color:var(--t2);font:600 var(--fs-xs)/1 var(--ff-text);cursor:pointer;white-space:nowrap}
-.zb-stil-b.on{background:var(--ui-act);color:var(--ui-act-fg)}
-@media (hover:hover){.zb-stil-b:not(.on):hover{background:var(--bg5);color:var(--t0)}}
 /* Archiv-Fenster */
 .zb-a{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px}
 .zb-a-liste{display:flex;flex-direction:column;gap:6px;max-height:62vh;overflow:auto;overscroll-behavior:none}
@@ -8292,11 +8282,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-805 - Data: saved views (Saved button) - store a comparison, load it again, load single-asset views for another asset"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-806 - Central bank: Two-tone colours fixed, preview switch removed"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-805</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-806</span>
     </span>
   </div>
   <div class="hdr-r">

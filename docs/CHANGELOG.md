@@ -23248,3 +23248,6 @@ Nutzer-Foto (EUR): *„Job vacancies ist irgendwie kaputt und hat keine Historie
 - Umgesetzt: `dataSlots` (snap/Abgleich/Papierkorb), Knopf *Saved*, Menü mit *Save current view*, Laden, *for*-Asset (2-Spalten-Fenster über `<optgroup>`), Überschreiben, Umbenennen, Löschen
 - Gemessen: USD-Satz (Price, CPI, Unemployment, 2Y) für EUR = 4/4 Panels, für GOLD = 3/4, Meldung *not available for GOLD: 2Y yield USD*
 - Eingekreiste Stelle zwischen *Compare all* und *Candles*: im iPad-Foto wirkt das „l“ abgeschnitten; in Chromium gemessen 12 px Abstand (1024/1180/1366), Safari hier nicht verfügbar → **nicht reproduziert**, offen
+
+## 2026-11-22 — Zentralbank: Two-tone fest (VERSION-CHECK-806)
+- Nutzer: *„Ich nehme übrigens two tone“* → Two-tone-Tokens direkt an `.zb-bau` (heller Modus), Marble/Bronze und der Vorschau-Umschalter entfernt

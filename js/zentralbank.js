@@ -139,20 +139,8 @@ function zbNotizZeile(n,dreht,lesen,i,anz){
 // Eine Saeule: Kapitell, Schaft (= kleine Pinned-notes-Karte), Basis.
 // Volute als echte Spirale (Redesign 2026-11-22, Nutzer: "mehr Details").
 const ZB_SPIRALE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a1 1 0 0 1 2 0a2 2 0 0 1-4 0a3 3 0 0 1 6 0a4 4 0 0 1-8 0a5 5 0 0 1 10 0"/></svg>';
-// Drei Farbvarianten zum Umschalten (Nutzer 2026-11-22: "Mach drei Optionen
-// zum umschalten ich sag dann was du machen sollst"). Nur Vorschau, bis der
-// Nutzer waehlt - deshalb bewusst NICHT gespeichert/synchronisiert; danach
-// bleibt eine Variante fest und der Umschalter faellt weg.
-const ZB_STILE=[['marmor','Marble'],['bronze','Bronze'],['zwei','Two-tone']];
-let ZB_STIL='marmor';
-function zbStil(k){
-  try{
-    if(!ZB_STILE.some(x=>x[0]===k))return;
-    ZB_STIL=k;
-    document.querySelectorAll('.zb-bau').forEach(e=>{e.dataset.zbstil=k;});
-    document.querySelectorAll('.zb-stil-b').forEach(b=>{const on=b.dataset.k===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
-  }catch(e){console.warn('zbStil',e);}
-}
+// Farbe: Two-tone (Nutzer 2026-11-22: "Ich nehme uebrigens two tone" - aus
+// den drei Vorschau-Varianten Marble/Bronze/Two-tone; Umschalter entfernt).
 function zbSaeuleHtml(sym,ccy,s,notizen,lesen,m){
   const dreht=zbDreht(sym,ccy,s.rub);
   const liste=zbSortiert(notizen);
@@ -251,14 +239,13 @@ function zentralbankKarteHtml(sym,nurKarte){
   // Der Bankname steht gross im Fries; im Kopf nur noch die Verknuepfung -
   // rechts, wo das Dach flach ist (links/mittig laege sie auf dem Dach).
   const verknuepft=ccy!==sym.id?`<span class="zb-hd-sub">linked via <b>${h(ccy)}</b></span>`:'';
-  const stilSchalter=`<span class="zb-stil" role="group" aria-label="Building colours (preview)">${ZB_STILE.map(([k,t])=>`<button type="button" class="zb-stil-b${k===ZB_STIL?' on':''}" data-k="${k}" aria-pressed="${k===ZB_STIL}" onclick="zbStil('${k}')" title="Preview: ${t}">${t}</button>`).join('')}</span>`;
   const archivBtn=`<button class="btn zb-arch" onclick="zbArchivAuf('${escJH(sym.id)}')" title="Notes of earlier meetings">${icn('folder',14)}<span>Archive</span><b>${archivTage.length}</b></button>`;
   // Go to Rate Probabilities unten rechts (Nutzer 2026-10-31, Regel "jede Karte
   // ein Go-to", check/kartenlook.js) - die Kategorie; der Schnellzugriff
   // darueber oeffnet dagegen direkt die Seite der Bank (openRateWatchFor).
   const karte=`<div class="ab-tile zb-card" id="zbKarte" data-ccy="${h(ccy)}">
-    <div class="ab-tile-hd">${ic}<span class="ab-tile-t">Central bank</span>${verknuepft}${stilSchalter}${archivBtn}${info}</div>
-    <div class="zb-bau" data-zbstil="${ZB_STIL}">
+    <div class="ab-tile-hd">${ic}<span class="ab-tile-t">Central bank</span>${verknuepft}${archivBtn}${info}</div>
+    <div class="zb-bau">
       ${zbGiebelHtml(ccy)}
       <div class="zb-fries"><div class="zb-fries-z"><span class="zb-orn" aria-hidden="true"></span><span class="zb-name">${h(bank.name)}</span><span class="zb-orn r" aria-hidden="true"></span></div></div>
       <div class="zb-zahn" aria-hidden="true"></div>
@@ -457,4 +444,4 @@ function zbArchivZeichnen(){
 
 export {zentralbankKarteHtml,zbFensterKontext,zbSitzungen,zbNotizen,ZB_SAEULEN};
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window,{zbStil,zbEntscheidAuf,zbEntscheidSetzen,zbNeuFenster,zbVerschieben,zbQuittieren,zbArchivAuf,zbArchivZeig,zbSitzungen,zbNotizen});
+Object.assign(window,{zbEntscheidAuf,zbEntscheidSetzen,zbNeuFenster,zbVerschieben,zbQuittieren,zbArchivAuf,zbArchivZeig,zbSitzungen,zbNotizen});

@@ -1953,6 +1953,7 @@ Hover-Ring `.chv-dot` 7 px. Geprüft: `check/chartpunkte.js` C.
 - Details: `docs/makro.md`.
 
 ## Central bank (seit 2026-10-27, `js/zentralbank.js`)
+- **Farbe Two-tone + Details (seit 2026-11-22, 806, Nutzerwahl aus drei Vorschauen):** Säulen hell (`--zb-stein` #EDF1F6), Dach/Fries/Gebälk/Stufen dunkler (`--zb-d*` #CBD3DF), Ornamente `--zb-akz` #7E8CA5; Kapitell mit Steinblock (keine weißen Zwickel), Spiral-Voluten, Eierstab; Giebel-Gesims mit Zahnschnitt + Tympanon-Schatten; Mäander im Fries; Basis Torus–Hohlkehle–Torus; Stufen mit Fugen. **Größe und Schreibfläche unverändert** (Nutzer: *„nicht noch größer … genug reinschreiben … nicht zu überladen“*). Midnight unverändert.
 
 - **Jedes Asset, volle Breite, die vier Schnellzugriffe als Zeile darüber** (seit 642, Nutzer: *„die 4 Buttons … wieder als Zeile dadrüber und mach dafür die central bank Karte maximal breit dann hat man auch mehr Platz und die Notizen werden größer lass die Höhe aber so“*; 639–641 standen die Knöpfe als Spalte rechts daneben, 641 mit 2/3 zu 1/3). Darunter das Country profile. Non-FX zeigt die verknüpfte Bank (`macroCcyFor`), ohne Verknüpfung nur den Hinweis auf die Asset-Einstellungen.
 - **Kopf: nur *Central bank*, rechts *linked via USD* (Non-FX), *Archive n*, ⓘ** — der Bankname steht groß im Fries (seit 642; links/mittig läge er auf dem Dach).
