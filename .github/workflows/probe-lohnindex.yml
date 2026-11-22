@@ -1,0 +1,23 @@
+# Sonde: Schweizer Lohnindex (jaehrlich) - schreibt NICHTS.
+# Anlass: Nutzer 2026-11-22 "Ja bind eine Quelle ein" (CHF Wage Index, Avg Hourly Earnings).
+name: Probe CHF wage index
+on:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: BFS PXWeb + Trading Economics
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          P="https://www.pxweb.bfs.admin.ch/api/v1/en"
+          CODE=$(curl -sL -o db.json -w "%{http_code}" --max-time 60 "$P" || echo 000); echo "=== PX root $CODE $(wc -c < db.json)"; head -c 600 db.json; echo
+          for T in px-x-0304010000_201 px-x-0304010000_202 px-x-0304010000_102 px-x-0304010000_101 px-x-0304010000_103 px-x-0304010000_204; do
+            CODE=$(curl -sL -o t.json -w "%{http_code}" --max-time 60 "$P/$T/$T.px" || echo 000); echo "=== $T $CODE $(wc -c < t.json)"; head -c 500 t.json; echo
+          done
+          CODE=$(curl -sL -o te.html -w "%{http_code}" --max-time 60 -A "$UA" "https://tradingeconomics.com/switzerland/wage-growth" || echo 000)
+          echo "=== TE wage-growth $CODE $(wc -c < te.html)"
+          grep -o -E 'Wages? (?:Growth )?in Switzerland[^<]{0,200}|<meta name="description" content="[^"]{0,300}' te.html | head -4
+          CODE=$(curl -sL -o te2.html -w "%{http_code}" --max-time 60 -A "$UA" "https://tradingeconomics.com/switzerland/employed-persons" || echo 000)
+          echo "=== TE employed-persons $CODE $(wc -c < te2.html)"
+          grep -o -E '<meta name="description" content="[^"]{0,300}' te2.html | head -2
