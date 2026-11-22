@@ -19,29 +19,26 @@ jobs:
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
           B="https://www.ishares.com/us/products/239855/ishares-silver-trust-fund"
-          echo "## A) iShares SLV" >> $GITHUB_STEP_SUMMARY
-          for U in "$B" "$B/1467271812596.ajax?fileType=csv&fileName=SLV_holdings&dataType=fund" "$B/1467271812596.ajax?fileType=xls&fileName=iShares-Silver-Trust_fund&dataType=fund"; do
-            CODE=$(curl -sL -o a.out -w "%{http_code}" --max-time 60 -A "$UA" "$U" || echo 000)
-            SZ=$(wc -c < a.out 2>/dev/null || echo 0)
-            echo "- HTTP $CODE, $SZ Bytes: \`$U\`" >> $GITHUB_STEP_SUMMARY
-            echo "=== $CODE $SZ $U"; head -c 1500 a.out | tr -d '\r' | head -40; echo
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            grep -io -E "(ounces|shares outstanding|tonnes)[^<]{0,120}" a.out | head -8 >> $GITHUB_STEP_SUMMARY || true
-            grep -c -E "<ss:Row|<Row" a.out >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            cp a.out "slv_$(echo $U | md5sum | cut -c1-6).out"
-          done
-          # Historie in der Fonds-Datei (SpreadsheetML): Zeilen mit Datum + Shares Outstanding zaehlen
-          python3 - <<'PY' >> $GITHUB_STEP_SUMMARY || true
-          import glob,re
-          for f in glob.glob('slv_*.out'):
-              t=open(f,errors='ignore').read()
-              rows=re.findall(r'<ss:Row>(.*?)</ss:Row>',t,re.S)
-              if not rows: continue
-              print(f'\n{f}: {len(rows)} Zeilen (SpreadsheetML)')
-              for r in rows[:3]+rows[-3:]:
-                  print('  ',' | '.join(re.sub(r'<[^>]+>','',c).strip() for c in re.findall(r'<ss:Cell.*?</ss:Cell>',r,re.S))[:200])
+          curl -sL -o page.html --max-time 60 -A "$UA" "$B"
+          echo "=== Seite $(wc -c < page.html) Bytes"
+          echo "--- Fundstellen Ounces/Shares Outstanding/Tonnes (Text):"
+          python3 - <<'PY'
+          import re,html
+          t=open('page.html',errors='ignore').read()
+          txt=re.sub(r'<script.*?</script>|<style.*?</style>','',t,flags=re.S)
+          txt=html.unescape(re.sub(r'<[^>]+>',' ',txt));txt=re.sub(r'\s+',' ',txt)
+          for k in ['Ounces','Shares Outstanding','Tonnes','Net Assets','Silver per Share','as of']:
+              for m in list(re.finditer(k,txt))[:4]:print(k,'::',txt[max(0,m.start()-60):m.end()+90])
+          links=sorted(set(re.findall(r'href="([^"]*ajax\?[^"]*)"',t)))
+          print('--- ajax-Links:',len(links))
+          for l in links[:20]:print(html.unescape(l))
+          open('links.txt','w').write('\n'.join(html.unescape(l) for l in links))
           PY
+          while read L; do [ -z "$L" ] && continue; U="https://www.ishares.com$L"
+            CODE=$(curl -sL -o x.out -w "%{http_code}" --max-time 60 -A "$UA" "$U" || echo 000)
+            echo "=== $CODE $(wc -c < x.out) $U"; head -c 700 x.out | tr -d '\r' | head -12; echo
+            grep -c -E "<ss:Row" x.out || true
+          done < links.txt
       - name: B) Sprott PSLV + C) abrdn SIVR
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -50,7 +47,5 @@ jobs:
             CODE=$(curl -sL -o b.out -w "%{http_code}" --max-time 60 -A "$UA" "$U" || echo 000)
             SZ=$(wc -c < b.out 2>/dev/null || echo 0)
             echo "- HTTP $CODE, $SZ Bytes: \`$U\`" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            grep -io -E "(ounces|oz)[^<]{0,100}" b.out | head -6 >> $GITHUB_STEP_SUMMARY || true
-            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "=== $CODE $SZ $U"; grep -io -E "(ounces|oz)[^<]{0,100}" b.out | head -6 || true
           done
