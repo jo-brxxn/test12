@@ -6830,6 +6830,64 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 [data-fx-theme="midnight"] .zb-schaft{background:repeating-linear-gradient(90deg,transparent 0 10px,rgba(0,0,0,.18) 10px 11px,rgba(255,255,255,.05) 11px 12px),
   linear-gradient(90deg,var(--zb-stein2) 0%,var(--zb-stein) 16%,var(--zb-hell) 50%,var(--zb-stein) 84%,var(--zb-stein2) 100%)}
 [data-fx-theme="midnight"] .zb-st,[data-fx-theme="midnight"] .zb-aba{box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+/* ── Bank-Redesign 2026-11-22 (Nutzer: Luecken am Kapitell "mach da auch Farbe
+   hin", "besseres Bank Design also mehr Details und ein wenig mehr schlichte
+   Farben das es nicht so eintoenig wirkt"; Antwort: "Mach drei Optionen zum
+   umschalten", Details: Kapitell, Giebel-Relief, Basis + Stufen, Fries-
+   Ornament - "nicht noch groesser ... genug reinschreiben ... nicht zu
+   ueberladen"). Keine Hoehe/Breite geaendert: Kapitell 28, Fries-Padding,
+   Stufen 36/7/7 wie vorher; Schreibflaeche der Saeulen unveraendert.
+   Tokens: --zb-d* = Dach/Fries/Gebaelk/Stufen (bei Two-tone dunkler),
+   --zb-akz = Ornament-Farbe. Midnight behaelt seine Werte (Paletten nur hell). */
+.zb-bau{--zb-dhell:var(--zb-hell);--zb-dstein:var(--zb-stein);--zb-dstein2:var(--zb-stein2);--zb-akz:var(--zb-kante)}
+html:not([data-fx-theme="midnight"]) .zb-bau[data-zbstil="marmor"]{--zb-hell:#FBF8F2;--zb-stein:#F0EADF;--zb-stein2:#E2D9C9;--zb-kante:#CBBDA4;--zb-laub:#A6936F;--zb-akz:#A08A66;
+  --zb-tief:rgba(70,52,24,.18);--zb-schatten:rgba(70,52,24,.10);--zb-dhell:#F6F0E4;--zb-dstein:#EAE1D1;--zb-dstein2:#DCD0BB}
+html:not([data-fx-theme="midnight"]) .zb-bau[data-zbstil="bronze"]{--zb-hell:#F8F9FB;--zb-stein:#E8EBEF;--zb-stein2:#D8DDE4;--zb-kante:#BCC3CE;--zb-laub:#A88B5E;--zb-akz:#A88B5E;
+  --zb-tief:rgba(20,27,46,.16);--zb-schatten:rgba(20,27,46,.09);--zb-dhell:#F1F3F6;--zb-dstein:#E1E5EB;--zb-dstein2:#D1D7DF}
+html:not([data-fx-theme="midnight"]) .zb-bau[data-zbstil="zwei"]{--zb-hell:#F8FAFC;--zb-stein:#EDF1F6;--zb-stein2:#E0E6EE;--zb-kante:#AEB9C9;--zb-laub:#7E8CA5;--zb-akz:#7E8CA5;
+  --zb-tief:rgba(20,27,46,.20);--zb-schatten:rgba(20,27,46,.11);--zb-dhell:#DCE2EB;--zb-dstein:#CBD3DF;--zb-dstein2:#BAC4D2}
+/* Dachkoerper, Fries, Gebaelk, Stufen in den Dach-Tokens */
+.zb-gs-hell{stop-color:var(--zb-dhell)}.zb-gs-stein{stop-color:var(--zb-dstein)}.zb-gs-stein2{stop-color:var(--zb-dstein2)}
+.zb-p1{fill:var(--zb-dstein2);stroke:var(--zb-akz)}
+.zb-fries{background:linear-gradient(var(--zb-dhell),var(--zb-dstein) 55%,var(--zb-dstein2))}
+.zb-zahn{background:repeating-linear-gradient(90deg,var(--zb-dstein2) 0 11px,transparent 11px 19px),linear-gradient(var(--zb-dstein),var(--zb-dstein))}
+.zb-architrav{background:linear-gradient(var(--zb-dstein) 0 45%,var(--zb-kante) 45% calc(45% + 1px),var(--zb-dhell) calc(45% + 1px),var(--zb-dstein2))}
+.zb-st{background:linear-gradient(var(--zb-dhell),var(--zb-dstein) 60%,var(--zb-dstein2))}
+/* Giebel-Relief: Gesims mit Zahnschnitt entlang der Dachkanten, Schatten im Tympanon */
+.zb-g-zahn{fill:none;stroke:var(--zb-kante);stroke-width:3;stroke-dasharray:3 5}
+.zb-g-schatten{fill:var(--zb-tief);opacity:.35}
+/* Fries: Maeanderband statt duenner Linie links/rechts vom Namen */
+.zb-orn{flex:0 1 120px;height:10px;background:var(--zb-akz);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='10'%3E%3Cpath d='M0 9.4H11.4V.6H2.6V6.8H8.4V3.4H5.4' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E") left center/12px 10px repeat-x;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='10'%3E%3Cpath d='M0 9.4H11.4V.6H2.6V6.8H8.4V3.4H5.4' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E") left center/12px 10px repeat-x}
+.zb-orn.r{background:var(--zb-akz);transform:scaleX(-1)}
+.zb-orn::after{content:none}
+/* Kapitell: durchgehender Steinblock unter Abakus und Voluten - schliesst die
+   weissen Zwickel zwischen Volute, Schale und Schaft (gemessen 2026-11-22:
+   Schaft 9 px eingerueckt, Schale ab 22 px gerundet -> je Seite eine Luecke) */
+.zb-kap::before{content:"";position:absolute;left:9px;right:9px;top:10px;bottom:0;
+  background:linear-gradient(var(--zb-stein2),var(--zb-stein));border-left:1px solid var(--zb-kante);border-right:1px solid var(--zb-kante)}
+.zb-kap::after{z-index:0;background:linear-gradient(var(--zb-hell),var(--zb-stein2))}
+/* Eierstab unter dem Abakus */
+.zb-eier{position:absolute;left:24px;right:24px;top:11px;height:7px;z-index:1;
+  background:radial-gradient(ellipse 3px 3.4px at 50% 40%,var(--zb-kante) 0 2.6px,transparent 3px) left top/10px 7px repeat-x;opacity:.75}
+.zb-vol{background:radial-gradient(circle at 40% 35%,var(--zb-hell),var(--zb-stein2) 70%);display:block}
+.zb-vol svg{width:100%;height:100%;display:block}
+.zb-vol path{fill:none;stroke:var(--zb-akz);stroke-width:1.3;stroke-linecap:round}
+.zb-vol.r svg{transform:scaleX(-1)}
+/* Basis: zwei Wuelste (Torus - Hohlkehle - Torus) in derselben Hoehe */
+.zb-fuss{background:radial-gradient(ellipse 52% 120% at 50% 28%,rgba(255,255,255,.55),transparent 60%),
+  linear-gradient(var(--zb-hell) 0,var(--zb-stein) 30%,var(--zb-kante) 46%,var(--zb-stein2) 52%,var(--zb-hell) 64%,var(--zb-stein2) 100%)}
+/* Stufen: Fugen + leichte Steinstruktur */
+.zb-st2,.zb-st3{background:repeating-linear-gradient(90deg,transparent 0 63px,var(--zb-kante) 63px 64px),linear-gradient(var(--zb-dhell),var(--zb-dstein2))}
+.zb-st3{background:repeating-linear-gradient(90deg,transparent 0 31px,var(--zb-kante) 31px 32px,transparent 32px 95px,var(--zb-kante) 95px 96px),linear-gradient(var(--zb-dstein),var(--zb-dstein2))}
+/* Umschalter der Vorschau im Kartenkopf */
+.zb-stil{margin-left:auto;display:inline-flex;height:28px;padding:2px;gap:2px;border:1px solid var(--bd);border-radius:999px;background:var(--bg3)}
+.zb-hd-sub+.zb-stil{margin-left:0}
+.zb-stil+.zb-arch{margin-left:0}
+.zb-stil-b{height:22px;padding:0 9px;border:none;border-radius:999px;background:transparent;color:var(--t2);font:600 var(--fs-xs)/1 var(--ff-text);cursor:pointer;white-space:nowrap}
+.zb-stil-b.on{background:var(--ui-act);color:var(--ui-act-fg)}
+@media (hover:hover){.zb-stil-b:not(.on):hover{background:var(--bg5);color:var(--t0)}}
 /* Archiv-Fenster */
 .zb-a{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px}
 .zb-a-liste{display:flex;flex-direction:column;gap:6px;max-height:62vh;overflow:auto;overscroll-behavior:none}
@@ -8203,11 +8261,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-800 - Mirrored macro cards: badge colour follows the card's own score"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-801 - Central bank: capital gaps closed, more detail, three colour previews (Marble/Bronze/Two-tone)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-800</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-801</span>
     </span>
   </div>
   <div class="hdr-r">

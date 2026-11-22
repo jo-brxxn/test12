@@ -23175,3 +23175,12 @@ Umgesetzt:
 - **Fix:** Bias gespiegelter Makro-Karten aus der **eigenen Summe** (Schwelle ±2, `rubBiasAusScore`), `rubAutoBiasNeeded` schließt sie nicht mehr aus; COT bleibt bei seiner Vorzeichen-Regel
 - **Score unverändert** (`check/scorediff.js`: 0 von 215 Karten-Scores, Symbol-Score gleich); Kartentexte an 20 Stellen anderes Bias-Wort → `SUMMARY_ENGINE_VERSION` 16
 - **Wächter** `check/kartenbias.js`: 172 Karten grün, Gegenprobe 20 Funde
+
+## 2026-11-22 — Zentralbank: Lücken am Kapitell, mehr Details, drei Farb-Vorschauen (VERSION-CHECK-801)
+- Nutzer, Screenshot (Kapitelle eingekreist): *„Die eingekreisten Stellen sind Lücken die keinen Sinn ergeben mach da auch Farbe hin und mach ein besseres Bank Design also mehr Details und ein wenig mehr schlichte Farben das es nicht so eintönig wirkt“*
+- **Gemessen:** Schaft 9 px gegenüber den Voluten eingerückt, Schale (`.zb-kap::after`) erst ab 22 px und unten gerundet → je Säule links/rechts ein weißer Zwickel zwischen Volute, Schale und Schaft
+- **Fix Lücken:** `.zb-kap::before` = durchgehender Steinblock unter Abakus und Voluten
+- **Rückfrage** Farben → Nutzer: *„Mach drei Optionen zum umschalten ich sag dann was du machen sollst“*; Details: Kapitell, Giebel-Relief, Basis + Stufen, Fries-Ornament — *„nicht noch größer … genug reinschreiben … nicht zu überladen“*
+- **Umgesetzt:** Voluten als Spirale (SVG), Eierstab, Gesims-Zahnschnitt an den Dachkanten + Tympanon-Schatten, Mäanderband im Fries, Basis Torus–Hohlkehle–Torus, Stufen mit Fugen; Paletten *Marble* (Elfenbein/Sandstein), *Bronze* (Steingrau + Bronze-Ornamente), *Two-tone* (Dach/Fries/Stufen dunkler)
+- **Größe unverändert** (gemessen 1180 px: Karte 587, Schaft 228×260 vorher = nachher; 390 px: 1279 / 256×152)
+- Umschalter im Kartenkopf ist **Vorschau**, bewusst nicht gespeichert/synchronisiert; fällt nach der Wahl weg. Midnight unverändert

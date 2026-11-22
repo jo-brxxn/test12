@@ -137,6 +137,22 @@ function zbNotizZeile(n,dreht,lesen,i,anz){
     </div>`;
 }
 // Eine Saeule: Kapitell, Schaft (= kleine Pinned-notes-Karte), Basis.
+// Volute als echte Spirale (Redesign 2026-11-22, Nutzer: "mehr Details").
+const ZB_SPIRALE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a1 1 0 0 1 2 0a2 2 0 0 1-4 0a3 3 0 0 1 6 0a4 4 0 0 1-8 0a5 5 0 0 1 10 0"/></svg>';
+// Drei Farbvarianten zum Umschalten (Nutzer 2026-11-22: "Mach drei Optionen
+// zum umschalten ich sag dann was du machen sollst"). Nur Vorschau, bis der
+// Nutzer waehlt - deshalb bewusst NICHT gespeichert/synchronisiert; danach
+// bleibt eine Variante fest und der Umschalter faellt weg.
+const ZB_STILE=[['marmor','Marble'],['bronze','Bronze'],['zwei','Two-tone']];
+let ZB_STIL='marmor';
+function zbStil(k){
+  try{
+    if(!ZB_STILE.some(x=>x[0]===k))return;
+    ZB_STIL=k;
+    document.querySelectorAll('.zb-bau').forEach(e=>{e.dataset.zbstil=k;});
+    document.querySelectorAll('.zb-stil-b').forEach(b=>{const on=b.dataset.k===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
+  }catch(e){console.warn('zbStil',e);}
+}
 function zbSaeuleHtml(sym,ccy,s,notizen,lesen,m){
   const dreht=zbDreht(sym,ccy,s.rub);
   const liste=zbSortiert(notizen);
@@ -145,7 +161,7 @@ function zbSaeuleHtml(sym,ccy,s,notizen,lesen,m){
   const neu=lesen?'':`<div class="ab-nt-add"><button type="button" class="finp ab-nt-neu" onclick="zbNeuFenster('${escJH(ccy)}','${s.k}')" title="Opens the note window — title, text, tags, bias and the related event">＋ New note…</button></div>`;
   const zins=s.k==='allg'?zbZinsZeileHtml(sym,ccy,m,lesen):'';
   return`<div class="zb-s" style="--zb-a:var(${s.a})">
-    <div class="zb-kap" aria-hidden="true"><span class="zb-vol l"></span><span class="zb-aba"></span><span class="zb-vol r"></span></div>
+    <div class="zb-kap" aria-hidden="true"><span class="zb-vol l">${ZB_SPIRALE}</span><span class="zb-aba"></span><span class="zb-eier"></span><span class="zb-vol r">${ZB_SPIRALE}</span></div>
     <div class="zb-schaft">
       <div class="zb-s-hd"><span class="zb-s-ic">${icn(s.ic,13)}</span><span class="zb-s-t">${h(s.t)}</span>${dreht?`<span class="zb-s-inv" title="For ${h(sym.name||sym.id)} this pillar reads inverse: the colours are flipped against the ${h(ccy)} view">inverse</span>`:''}<span class="zb-s-n">${notizen.length}</span></div>
       <div class="zb-inhalt">${zins}${neu}<div class="ab-nt-list zb-liste">${zeilen}</div></div>
@@ -187,6 +203,8 @@ function zbGiebelHtml(ccy){
       </defs>
       <polygon points="0,120 500,3 1000,120" fill="url(#zbGDach)"/>
       <polygon points="64,112 500,22 936,112" fill="url(#zbGTymp)"/>
+      <polygon class="zb-g-schatten" points="64,112 500,22 936,112 900,112 500,30 100,112"/>
+      <polyline class="zb-g-zahn" points="30,114 500,12 970,114" vector-effect="non-scaling-stroke"/>
       <polyline class="zb-g-tiefe" points="64,112 500,22 936,112" vector-effect="non-scaling-stroke"/>
       <polyline class="zb-g-licht" points="0,120 500,3 1000,120" vector-effect="non-scaling-stroke"/>
       <line class="zb-g-boden" x1="64" y1="112" x2="936" y2="112" vector-effect="non-scaling-stroke"/>
@@ -233,13 +251,14 @@ function zentralbankKarteHtml(sym,nurKarte){
   // Der Bankname steht gross im Fries; im Kopf nur noch die Verknuepfung -
   // rechts, wo das Dach flach ist (links/mittig laege sie auf dem Dach).
   const verknuepft=ccy!==sym.id?`<span class="zb-hd-sub">linked via <b>${h(ccy)}</b></span>`:'';
+  const stilSchalter=`<span class="zb-stil" role="group" aria-label="Building colours (preview)">${ZB_STILE.map(([k,t])=>`<button type="button" class="zb-stil-b${k===ZB_STIL?' on':''}" data-k="${k}" aria-pressed="${k===ZB_STIL}" onclick="zbStil('${k}')" title="Preview: ${t}">${t}</button>`).join('')}</span>`;
   const archivBtn=`<button class="btn zb-arch" onclick="zbArchivAuf('${escJH(sym.id)}')" title="Notes of earlier meetings">${icn('folder',14)}<span>Archive</span><b>${archivTage.length}</b></button>`;
   // Go to Rate Probabilities unten rechts (Nutzer 2026-10-31, Regel "jede Karte
   // ein Go-to", check/kartenlook.js) - die Kategorie; der Schnellzugriff
   // darueber oeffnet dagegen direkt die Seite der Bank (openRateWatchFor).
   const karte=`<div class="ab-tile zb-card" id="zbKarte" data-ccy="${h(ccy)}">
-    <div class="ab-tile-hd">${ic}<span class="ab-tile-t">Central bank</span>${verknuepft}${archivBtn}${info}</div>
-    <div class="zb-bau">
+    <div class="ab-tile-hd">${ic}<span class="ab-tile-t">Central bank</span>${verknuepft}${stilSchalter}${archivBtn}${info}</div>
+    <div class="zb-bau" data-zbstil="${ZB_STIL}">
       ${zbGiebelHtml(ccy)}
       <div class="zb-fries"><div class="zb-fries-z"><span class="zb-orn" aria-hidden="true"></span><span class="zb-name">${h(bank.name)}</span><span class="zb-orn r" aria-hidden="true"></span></div></div>
       <div class="zb-zahn" aria-hidden="true"></div>
@@ -438,4 +457,4 @@ function zbArchivZeichnen(){
 
 export {zentralbankKarteHtml,zbFensterKontext,zbSitzungen,zbNotizen,ZB_SAEULEN};
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window,{zbEntscheidAuf,zbEntscheidSetzen,zbNeuFenster,zbVerschieben,zbQuittieren,zbArchivAuf,zbArchivZeig,zbSitzungen,zbNotizen});
+Object.assign(window,{zbStil,zbEntscheidAuf,zbEntscheidSetzen,zbNeuFenster,zbVerschieben,zbQuittieren,zbArchivAuf,zbArchivZeig,zbSitzungen,zbNotizen});
