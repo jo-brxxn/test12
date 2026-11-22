@@ -203,6 +203,8 @@ const IND_EVENT_MATCHERS={
   'China New Loans':(n,c)=>c==='CNY'&&/^new (yuan )?loans$/.test((n||'').toLowerCase().trim()),
   'China Retail Sales':(n,c)=>c==='CNY'&&/^retail sales (yoy|y\/y)$/.test((n||'').toLowerCase().trim()),
   'China NBS Manufacturing PMI':(n,c)=>c==='CNY'&&/^(nbs |official )?manufacturing pmi$/.test((n||'').toLowerCase().trim()),
+  // 790: Silber - China Industrial Production (cal_hist-Titel "Industrial Production YoY")
+  'China Industrial Production':(n,c)=>c==='CNY'&&/^industrial production (yoy|y\/y)$/.test((n||'').toLowerCase().trim()),
   // 766: SILVER (US-Industrie) und OIL (Bohrtuerme) - gleichlautend mit den Workflow-RULES.
   'US ISM Manufacturing PMI':(n,c)=>c==='USD'&&/^ism manufacturing pmi$/.test((n||'').toLowerCase().trim()),
   'US Industrial Production':(n,c)=>c==='USD'&&/^industrial production (mom|m\/m)$/.test((n||'').toLowerCase().trim()),

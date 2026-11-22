@@ -95,15 +95,17 @@ const init = () => { try { localStorage.setItem('fxpro_help_seen', '1'); localSt
    const n=BOND.has(i.name)?1:Math.min(1.8,Math.max(0.4,mag(i)*decay(i,rub)*mkt(i,sid)));return (BIAS[i.bias]||0)*w*n};
  // Modell 28 (2026-10-25), nur die acht Waehrungen - hier UNABHAENGIG nachgebaut:
  // Nur-Anzeige-Zeilen 0, PPI/Core PPI/Erstantraege halbes Gewicht, Bloecke gedeckelt.
- const M28A={_:['PCE','10Y Bond Yield','ZEW Economic Sentiment'],EUR:['GDP Growth QoQ','Retail Sales'],GBP:['Retail Sales']};
+ // 10Y zaehlt seit Modell 39 wieder
+ const M28A={_:['PCE','ZEW Economic Sentiment'],EUR:['GDP Growth QoQ','Retail Sales'],GBP:['Retail Sales']};
  const m28a=(bn,sid)=>FX.includes(sid)&&(M28A._.includes(bn)||(M28A[sid]||[]).includes(bn));
  const M28M={'PPI':0.5,'Core PPI':0.5,'Unemployment Claims':0.5};
  const M28D=[[['2Y Bond Yield','2Y Yield Gap (20d)'],1.25],[['NFP / Employment Change','Unemployment Rate'],1],[['Consumer Confidence'],0.5]];
  const indM28=(i,rub,sid)=>{const bn=strip(i.name);if(ZERO.has(bn)||m28a(bn,sid))return 0;const r=indRoh(i,rub,sid);
    const isPkt=typeof i.pkt==='number'&&isFinite(i.pkt);return FX.includes(sid)&&M28M[bn]!=null&&!isPkt&&!stale(i)?r*M28M[bn]:r};
  const indMine=(i,rub,sid)=>{const bn=strip(i.name);let v=indM28(i,rub,sid);
-   if(FX.includes(sid)&&v){const g=M28D.find(x=>x[0].includes(bn));if(g){const s=(rub.indicators||[]).filter(o=>g[0].includes(strip(o.name))).reduce((a,o)=>a+indM28(o,rub,sid),0);
-     if(Math.abs(s)>g[1]+1e-9)v=v*g[1]/Math.abs(s);}}
+   // Modell 39: 2Y + 10Y zusammen <= 1 bei JEDEM Asset; liegt eine Zeile in zwei Bloecken, gilt der staerkste Schnitt
+   if(v){let f=1;[[['2Y Bond Yield','10Y Bond Yield'],1]].concat(FX.includes(sid)?M28D:[]).filter(g=>g[0].includes(bn)).forEach(g=>{const s=(rub.indicators||[]).filter(o=>g[0].includes(strip(o.name))).reduce((a,o)=>a+indM28(o,rub,sid),0);
+     if(Math.abs(s)>g[1]+1e-9)f=Math.min(f,g[1]/Math.abs(s));});v=v*f;}
    return rnd2(v)};
  const F=[];let nInd=0;const symMine={},trk={};
  syms.forEach(s=>{let sum=0,n=0;(s.rubrics||[]).forEach(rub=>{let rs=0;(rub.indicators||[]).forEach(i=>{nInd++;const mine=indMine(i,rub,s.id),app=SC.indScore(i,rub);

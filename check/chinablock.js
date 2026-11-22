@@ -6,7 +6,8 @@
 //  A) AUD Economic Growth hat China New Loans + China Retail Sales (Gewicht 0,5/0,5), Kupfer zusaetzlich
 //     China NBS Manufacturing PMI (0,75/0,375/0,375) - Summe je Asset <= 1,5
 //  B) Beat (Actual > Forecast) -> bullish, Miss -> bearish; Betrag hoechstens das Gewicht (Altersabschlag)
-//  C) kein anderes Asset hat die Zeilen (Silber, Gold, NZD, USD), der Block wird NICHT gespiegelt
+//  C) kein anderes Asset hat die Zeilen (Gold, NZD, USD), der Block wird NICHT gespiegelt
+//     (seit 790 hat Silber NBS PMI + Industrial Production je 0,5, Beat bullish, unten gestrichelt)
 //  D) Kalender-Muster treffen die echten Titel (cal_hist) und keine falschen (Caixin, YTD, Loan Prime Rate)
 // --gegenprobe: ohne Feed-Weiche (CNY) -> B rot.
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
@@ -21,6 +22,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     'China New Loans': { actual: '1500B', forecast: '1200B', previous: '1300B', date: '2026-11-12', event: 'New Yuan Loans', history: [] },
     'China Retail Sales': { actual: '2.1%', forecast: '2.8%', previous: '3.0%', date: '2026-11-14', event: 'Retail Sales YoY', history: [] },
     'China NBS Manufacturing PMI': { actual: '50.6', forecast: '49.8', previous: '49.8', date: '2026-10-31', event: 'NBS Manufacturing PMI', history: [] },
+    'China Industrial Production': { actual: '6.1%', forecast: '5.5%', previous: '5.8%', date: '2026-11-14', event: 'Industrial Production YoY', history: [] },
   };
   await ctx.route(/\/ind_data\.json/, async r => { const res = await r.fetch(); const d = await res.json(); d.CNY = CNY; r.fulfill({ response: res, body: JSON.stringify(d) }); });
   if (GP) await ctx.route(/\/js\/data-feeds\.js/, async r => { const res = await r.fetch(); let t = await res.text(); t = t.replace('feed=assetEigenFeed(c.id,ind.name)?IND_DATA_FEED[feedCcy]:feed0', 'feed=feed0'); r.fulfill({ response: res, body: t }); });
@@ -35,8 +37,10 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     });
     return out;
   });
-  const soll = { AUD: { 'China New Loans': 0.5, 'China Retail Sales': 0.5 }, COPPER: { 'China NBS Manufacturing PMI': 0.75, 'China New Loans': 0.375, 'China Retail Sales': 0.375 } };
-  const richtung = { 'China New Loans': 1, 'China Retail Sales': -1, 'China NBS Manufacturing PMI': 1 };
+  const soll = { AUD: { 'China New Loans': 0.5, 'China Retail Sales': 0.5 }, COPPER: { 'China NBS Manufacturing PMI': 0.75, 'China New Loans': 0.375, 'China Retail Sales': 0.375 },
+    // 790: Silber NBS PMI + Industrial Production je 0,5, Beat bullish trotz inverser Wachstums-Karte
+    SILVER: { 'China NBS Manufacturing PMI': 0.5, 'China Industrial Production': 0.5 } };
+  const richtung = { 'China New Loans': 1, 'China Retail Sales': -1, 'China NBS Manufacturing PMI': 1, 'China Industrial Production': 1 };
   for (const [id, m] of Object.entries(soll)) {
     const z = R[id]; const summe = Object.values(m).reduce((a, x) => a + x, 0);
     if (summe > 1.5 + 1e-9) F.push(`A: ${id} China-Block ${summe} > 1,5`);
@@ -49,7 +53,7 @@ const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe'
     }
     if (z.length !== Object.keys(m).length) F.push(`A: ${id} hat ${z.length} China-Zeilen statt ${Object.keys(m).length}`);
   }
-  ['SILVER', 'GOLD', 'NZD', 'USD'].forEach(id => { if (R[id].length) F.push(`C: ${id} hat China-Zeilen: ${R[id].map(x => x.n).join(', ')}`); });
+  ['GOLD', 'NZD', 'USD'].forEach(id => { if (R[id].length) F.push(`C: ${id} hat China-Zeilen: ${R[id].map(x => x.n).join(', ')}`); });
   // D: Kalender-Muster
   const D = await p.evaluate(async () => {
     const m = await import('/js/event-matchers.js'); const M = m.IND_EVENT_MATCHERS; const t = (k, n, c) => !!(M[k] && M[k](n, c));

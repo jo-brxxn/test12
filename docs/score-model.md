@@ -847,3 +847,29 @@ ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
   - 4H im Trend-Schritt, `e4` nur 30 Tage (Feed-Größe).
 - **Öl-Terminkurve:** wird nur gesammelt (`oel_kurve.json`: WTI 1./2. Monat, Brent), nicht gewertet.
 - **Geprüft von** `check/zusatzzeilen.js`.
+
+
+## Modell 39 (2026-11-22, VERSION-CHECK-792): Renditen-Deckel überall, Silber invers, Regel je Indikator
+
+- **Nutzer:** *„überall den Score-Einfluss von dem 2-Year, 10-Year Yield auf insgesamt 1“* — Rückfrage: *„Überall 2Y+10Y = 1“*.
+  - `DECKEL_ALLE` in `js/score.js`: 2Y + 10Y zusammen höchstens ±1, bei **jedem** Asset.
+  - Der 10Y zählt bei Währungen wieder; er ist nicht mehr in `M28_NUR_ANZEIGE`. Damit ist die Modell-28-Entscheidung zurückgenommen.
+  - Liegt eine Zeile in zwei Deckeln (FX: 2Y auch in „Rate expectations“ mit dem Yield Gap ≤ 1,25), gilt der stärkste Schnitt.
+- **Silber:** Zahnrad Inflation, Interest Rates, Labour Market und Economic Growth = **inverse**, wie beim Dollar umgedreht (`MACRO_DERIVE_RULES.SILVER`).
+  - Einmalig gesetzt durch `silberRegeln790`, die Marke `indRules._m790` wird synchronisiert.
+  - Eigene Zeile **US ISM Manufacturing PMI**: inverse (Nutzer: *„Den manufacturing inverse den anderen so lassen“*). **US Industrial Production** zählt weiter Beat = bullish.
+  - ⚠ ISM steckt doppelt drin: als gespiegelte *Manufacturing PMI* (Gewicht 1) und als eigene Zeile (0,5). Beide zählen invers.
+- **China-Block Silber:** NBS Manufacturing PMI + China Industrial Production, je 0,5, Beat = bullish (Nachfrage). Die Zeilen sind asset-eigen und vom Karten-Invers unberührt.
+  - Sie stehen unten in Economic Growth, mit gestrichelter Linie abgetrennt (`.ind-china-start`, gilt für jeden China-Block).
+  - **Gemessen** (`cal_hist` 2016–2026, Überraschung gegen den Silberkurs, Signalrendite):
+
+    | Zeile | 1 T | 5 T | 20 T |
+    |---|---|---|---|
+    | NBS PMI | −0,23 % (t −0,9) | +0,62 % (t +1,3) | +1,52 % (t +1,8) |
+    | Industrial Production | +0,29 % (t +1,3) | +0,20 % (t +0,4) | −0,86 % (t −0,8) |
+
+  - Ergebnis: kein |t| ≥ 2, Industrial Production ohne erkennbares Signal. Aufgenommen auf Nutzerwahl.
+- **Regel je Indikator** (`sym.indRules`, in `ASSET_SYNC_FIELDS`): Im Zahnrad hat jede Karte darunter „Single indicators“ mit der Wahl *Card/Default*, *Bullish* oder *Bearish*.
+  - Bei einer gespiegelten Zeile wird statt der Karten-Regel die USD-Zeile gleich oder umgedreht übernommen.
+  - Bei einer eigenen Zeile wird sie zustandslos aus Actual/Forecast/Previous neu eingestuft (`indRegelnAnwenden` am Ende von `deriveMacroBiasAll`).
+- **Geprüft von** `check/silberregeln.js`, `check/modell28.js`, `check/scorenachrechnung.js`, `check/chinablock.js` und `check/zusatzzeilen.js`.

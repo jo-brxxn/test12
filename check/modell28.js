@@ -6,7 +6,7 @@
 //   A) Yield Curve (10Y-2Y): UNABHAENGIG aus bond_data.json nachgerechnet
 //      (Abstand 10Y-2Y, 5- gegen 21-Tage-Schnitt, 3 bp Totzone, +-0,5;
 //      Versteilerung bearish) - bei allen acht Waehrungen.
-//   B) 10Y Bond Yield zaehlt bei Waehrungen 0, bei Nicht-FX unveraendert.
+//   B) 10Y Bond Yield zaehlt seit Modell 39 (2026-11-22) wieder ueberall; 2Y + 10Y zusammen <= 1 bei JEDEM Asset.
 //   C) Nur-Anzeige-Zeilen zaehlen NICHT im Divisor (symTrackedCount) - sonst
 //      doppelt bestraft (Merksatz "Altersgrenze" in docs/score-model.md).
 //   D) Deckel: kein Block ueber seinem Maximum; Score-Fenster nennt den Grund.
@@ -43,7 +43,7 @@ function kurveSoll(c, gestern) {
   const ist = await p.evaluate(async F8 => {
     const SC = await import('/js/score.js'), indIsStale = SC.indIsStale, symTrackedCount = SC.symTrackedCount, indScoreParts = SC.indScoreParts, indScore = SC.indScore;
     const o = { heute: todayStr(), kurve: {}, zehn: [], nonfx10: 0, divisor: [], deckel: [], fenster: '' };
-    const NA = { _: ['PCE', '10Y Bond Yield', 'ZEW Economic Sentiment'], EUR: ['GDP Growth QoQ', 'Retail Sales'], GBP: ['Retail Sales'] };
+    const NA = { _: ['PCE', 'ZEW Economic Sentiment'], EUR: ['GDP Growth QoQ', 'Retail Sales'], GBP: ['Retail Sales'] };
     syms.forEach(s => {
       const fx = F8.includes(s.id);
       let n = 0;
@@ -52,10 +52,11 @@ function kurveSoll(c, gestern) {
         (r.indicators || []).forEach(i => {
           const bn = stripPeriodSuffix(i.name).base, t = indScoreParts(i, r);
           if (fx && i.name === 'Yield Curve (10Y-2Y)') o.kurve[s.id] = i.pkt;
-          if (fx && bn === '10Y Bond Yield' && t.total !== 0) o.zehn.push(s.id + ' ' + t.total);
+          if (fx && bn === '10Y Bond Yield' && t.total !== 0) o.zehn.push(s.id + ' ' + t.total);   // seit 39: soll vorkommen
           if (!fx && bn === '10Y Bond Yield' && t.total !== 0) o.nonfx10++;
           // Modell 30: MPC Vote Split zaehlt 0 (SCORE_ZERO) und steht nicht im Divisor
           if (bn !== 'MPC Vote Split' && !indIsStale(i) && !(fx && (NA._.includes(bn) || (NA[s.id] || []).includes(bn)))) n++;
+          [['yields', ['2Y Bond Yield', '10Y Bond Yield'], 1]].forEach(([id, namen, max]) => { if (namen.includes(bn)) { blk[id] = blk[id] || { max, s: 0 }; blk[id].s += indScore(i, r); } });
           if (fx) [['rates', ['2Y Bond Yield', '2Y Yield Gap (20d)'], 1.25], ['jobs', ['NFP / Employment Change', 'Unemployment Rate'], 1], ['conf', ['Consumer Confidence'], 0.5]]
             .forEach(([id, namen, max]) => { if (namen.includes(bn)) { blk[id] = blk[id] || { max, s: 0 }; blk[id].s += indScore(i, r); } });
         });
@@ -75,7 +76,7 @@ function kurveSoll(c, gestern) {
     if (ist.kurve[c] == null) fail('KURVE FEHLT', c);
     else if (Math.abs(ist.kurve[c] - soll) > 1e-9) fail('KURVE', `${c}: ${ist.kurve[c]} statt ${soll} (unabhaengig aus bond_data.json)`);
   });
-  ist.zehn.forEach(x => fail('10Y ZAEHLT BEI WAEHRUNG', x));
+  if (!ist.zehn.length) fail('10Y WAEHRUNG', 'keine Waehrung zaehlt ihren 10Y-Trend - seit Modell 39 zaehlt er wieder (mit dem 2Y gedeckelt)');
   if (!ist.nonfx10) fail('10Y NICHT-FX', 'kein Nicht-FX-Asset zaehlt seinen 10Y-Trend mehr - Modell 28 gilt nur fuer Waehrungen');
   ist.divisor.forEach(x => fail('DIVISOR', x));
   ist.deckel.forEach(x => fail('DECKEL', x));
@@ -86,5 +87,5 @@ function kurveSoll(c, gestern) {
   await b.close();
   if (GEGENPROBE) { if (F.length) { console.log(`modell28 --gegenprobe: ok (rot wie erwartet, ${F.length} Befund(e))`); process.exit(0); } console.log('modell28 --gegenprobe: FEHLER - Waechter bleibt gruen'); process.exit(1); }
   if (F.length) { console.log(`modell28: ${F.length} Befund(e)`); F.forEach(f => console.log('  ' + f)); process.exit(1); }
-  console.log(`modell28: ok (Zinskurve bei ${geprueft} Waehrungen unabhaengig nachgerechnet, 10Y bei Waehrungen 0 und bei ${ist.nonfx10} Nicht-FX-Zeilen unveraendert, Divisor ohne Nur-Anzeige-Zeilen, kein Block ueber seinem Deckel)`);
+  console.log(`modell28: ok (Zinskurve bei ${geprueft} Waehrungen unabhaengig nachgerechnet, 10Y zaehlt bei ${ist.zehn.length} Waehrungen und ${ist.nonfx10} Nicht-FX-Zeilen, 2Y+10Y <= 1, Divisor ohne Nur-Anzeige-Zeilen, kein Block ueber seinem Deckel)`);
 })().catch(e => { console.log('modell28: ABBRUCH ' + e.message); process.exit(1); });

@@ -23039,3 +23039,32 @@ Nutzer (Screenshot Copper, blaue Oberkante markiert): *„Mach diesen farbigen r
   - `neuZeichnen` in `gameplan.js` setzt die Farbe beim Umschalten sofort neu.
 - **Gemessen** (1194 px, Copper): alle vier Kanten 2 px; ohne Bias rgb(85,97,122), Bear rgb(220,36,48), Bull rgb(11,95,204).
 - **Wächter:** `check/preiskarte.js` I.
+
+## 2026-11-22 — Silber invers, China-Block, Regel je Indikator, Renditen-Deckel (VERSION-CHECK-792, Score-Modell 39)
+
+Nutzer:
+- *„das Zahnrad einstellst, genauso wie bei Gold, dass Inflation schlecht, Arbeitsmarkt auch schlecht und Wirtschaftswachstum schlecht … China-Indikatoren … abgetrennt … mit so einer kleinen gestrichelten Linie ganz unten … positiv zählen … im Zahnrad … einzelne Indikatoren bearish setzen … überall den Score-Einfluss von dem 2-Year, 10-Year Yield auf insgesamt 1“*.
+- Rückfragen:
+  - China = NBS PMI + Industrial Production (max. 1,0)
+  - *„Den manufacturing inverse den anderen so lassen“*
+  - *„Überall 2Y+10Y = 1“*
+  - Realzins: *„Was ist denn tips“* → bleibt vorerst TIPS
+
+Umgesetzt:
+- Silber-Zahnrad: alle vier Makro-Karten inverse.
+- ISM-Zeile inverse, Industrial Production unverändert.
+- China-Block: NBS PMI + Industrial Production je 0,5, unten gestrichelt.
+  - Neue Workflow-Regel CNY *Industrial Production YoY*.
+  - Neues Kalender-Muster.
+- Zahnrad: „Single indicators“ je Karte (Card/Default · Bullish · Bearish), synchronisiert als `indRules`.
+- Renditen-Deckel: 2Y + 10Y ≤ 1 überall; 10Y zählt bei Währungen wieder.
+- Messung, Vorbehalte und Regeln: `docs/score-model.md` „Modell 39“.
+
+Gemessen in der App (Repo-Daten):
+- 15 gespiegelte Silber-Zeilen sind das Gegenteil von USD.
+- Renditen bei USD und Gold je 0,5 statt 0,75 (Deckel ×0,67).
+
+Wächter:
+- Neu: `check/silberregeln.js` (Gegenprobe → rot).
+- Angepasst: `modell28`, `scorenachrechnung`, `chinablock`, `zusatzzeilen`, `regeln`.
+- ⚠ Bis zum nächsten Workflow-Lauf steht *China Industrial Production* ohne Wert (neutral).

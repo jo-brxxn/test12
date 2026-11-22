@@ -76,9 +76,8 @@ function zinsSoll(bond, ccy) {
     syms.forEach(sym => (sym.rubrics || []).forEach(rub => (rub.indicators || []).forEach(i => {
       const t = indScoreParts(i, rub);
       const istFx = ['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD'].includes(sym.id);
-      // Modell 28: bei Waehrungen zaehlt 10Y nur noch als Anzeige (Kurve ersetzt sie); 2Y darf im Zins-Block gedeckelt sein.
-      if (istFx && i.name === '10Y Bond Yield' && t.total !== 0) out.bond.push({ id: sym.id, n: i.name, v: t.total, grund: '10Y zaehlt bei Waehrungen seit Modell 28 nicht mehr' });
-      else if (/^(2Y|10Y) Bond Yield$/.test(i.name) && !t.deckel && ![0, 0.75, -0.75].includes(roundSc(t.total))) out.bond.push({ id: sym.id, n: i.name, v: t.total });
+      // Modell 39: 10Y zaehlt wieder ueberall, 2Y + 10Y zusammen gedeckelt (t.deckel) - sonst je 0,75.
+      if (/^(2Y|10Y) Bond Yield$/.test(i.name) && !t.deckel && ![0, 0.75, -0.75].includes(roundSc(t.total))) out.bond.push({ id: sym.id, n: i.name, v: t.total });
       if (i.name === '2Y Yield Gap (20d)' && istFx) out.gap[sym.id] = i.pkt;
       if (i.name === 'CB Tone' || i.name === 'Next CB Move') out.weg.push(sym.id + ':' + i.name);
     })));

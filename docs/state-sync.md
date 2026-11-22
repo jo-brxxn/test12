@@ -386,3 +386,5 @@ in `seedNoteFlags` — winzig, aber gespeichert.
 
 - `trade.gp = [{id, b, th, en, br, t}]` — **Kopie** beim Speichern (neuer Trade oder anderes Asset), reist mit dem Trade (`tradeJournal`). FX-Paar = beide Währungen.
 - Fehlt die These → Fenster `mTradeGp` (Pflicht), Eingabe geht über `gpAusTrade()` in `gameplans` (synchronisiert wie jeder Plan). Geprüft von `check/tradegameplan.js`.
+
+- **`indRules` je Asset (seit 792):** Regel je Indikator aus dem Zahnrad (`{Basisname:'same'|'inverse'}`). Steht in `ASSET_SYNC_FIELDS` und reist mit `syms`. Die Marke `_m790` verhindert, dass die einmalige Silber-Einstellung eine spätere eigene Wahl auf einem anderen Gerät überschreibt.

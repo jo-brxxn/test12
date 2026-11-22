@@ -1499,6 +1499,8 @@ jobs:
               {ind:"China New Loans",period:null,test:(t,c)=>c==="CNY"&&/^new (yuan )?loans$/.test(t)},
               {ind:"China Retail Sales",period:"y/y",test:(t,c)=>c==="CNY"&&/^retail sales (yoy|y\/y)$/.test(t)},
               {ind:"China NBS Manufacturing PMI",period:null,test:(t,c)=>c==="CNY"&&/^(nbs |official )?manufacturing pmi$/.test(t)},
+              // 790: Silber (Nutzer 2026-11-22: China-Industrie). cal_hist-Titel "Industrial Production YoY"
+              {ind:"China Industrial Production",period:"y/y",test:(t,c)=>c==="CNY"&&/^industrial production (yoy|y\/y)$/.test(t)},
               // ⚠ 2026-11-10 (Sonde probe-tv-titel.yml auf dem Runner): TradingView
               // hat Anfang November Reihen UMBENANNT, samt ihrer Vergangenheit -
               // der alte Titel verschwindet, die Reihe fiel am 03.11. 16:22 ganz
