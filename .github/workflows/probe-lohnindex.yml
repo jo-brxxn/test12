@@ -12,14 +12,22 @@ jobs:
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
           P="https://www.pxweb.bfs.admin.ch/api/v1/en"
           CODE=$(curl -sL -o db.json -w "%{http_code}" --max-time 60 "$P" || echo 000); echo "=== PX root $CODE $(wc -c < db.json)"; head -c 600 db.json; echo
-          python3 -c "import json;d=json.load(open('db.json'));print([x['dbid'] for x in d if x['dbid'].startswith(('px-x-0304','px-x-0302','px-x-0303'))])"
-          for D in $(python3 -c "import json;d=json.load(open('db.json'));print(' '.join(x['dbid'] for x in d if x['dbid'].startswith('px-x-0304')))"); do
-            curl -sL -o l.json --max-time 60 "$P/$D" || true
-            echo "=== $D"; python3 -c "import json;d=json.load(open('l.json'));[print('   ',x.get('id'),'|',x.get('text')) for x in d]" 2>/dev/null || head -c 300 l.json
-          done
+          for L in de en; do for T in px-x-0304010000_201 px-x-0304010000_101; do
+            CODE=$(curl -sL -o m.json -w "%{http_code}" --max-time 60 "https://www.pxweb.bfs.admin.ch/api/v1/$L/$T/$T.px" || echo 000)
+            echo "=== GET $L $T $CODE"; head -c 700 m.json; echo
+          done; done
           CODE=$(curl -sL -o te.html -w "%{http_code}" --max-time 60 -A "$UA" "https://tradingeconomics.com/switzerland/wage-growth" || echo 000)
           echo "=== TE wage-growth $CODE $(wc -c < te.html)"
-          grep -o -E 'Wages? (?:Growth )?in Switzerland[^<]{0,200}|<meta name="description" content="[^"]{0,300}' te.html | head -4
+          grep -o -E '<meta name="description" content="[^"]{0,300}' te.html | head -1
+          python3 - <<'PY'
+          import re,html
+          t=open('te.html',errors='ignore').read()
+          txt=re.sub(r'\s+',' ',html.unescape(re.sub(r'<[^>]+>',' ',re.sub(r'<script.*?</script>|<style.*?</style>','',t,flags=re.S))))
+          for k in ['Frequency','Quarterly','Yearly','Annual','Last Release','Next Release']:
+              for m in list(re.finditer(k,txt))[:2]:print(k,'::',txt[max(0,m.start()-80):m.end()+120])
+          for r in re.findall(r'<tr[^>]*data-category[\s\S]*?</tr>',t)[:12]:
+              print('ROW',re.sub(r'\s+',' ',re.sub(r'<[^>]+>',' ',r)).strip()[:160])
+          PY
           CODE=$(curl -sL -o te2.html -w "%{http_code}" --max-time 60 -A "$UA" "https://tradingeconomics.com/switzerland/employed-persons" || echo 000)
           echo "=== TE employed-persons $CODE $(wc -c < te2.html)"
           grep -o -E '<meta name="description" content="[^"]{0,300}' te2.html | head -2
