@@ -2363,6 +2363,17 @@ jobs:
           node tools/geldmenge.mjs
           rm -f mg_prev.json
 
+      # ── EUR JOB VACANCY RATE (Eurostat jvs_q_r21, tools/stellen.mjs) ── 2026-11-22, VERSION-CHECK-804
+      # Nutzer-Foto: "Job vacancies ist irgendwie kaputt und hat keine Historie". Vorher keine Reihe (Startwert
+      # vom 18.03.). Faellt Eurostat aus, bleibt der letzte Stand aus HEAD stehen.
+      - name: Fetch EUR job vacancy rate (Eurostat) -> ind_data.json
+        continue-on-error: true
+        run: |
+          node tools/stellen.mjs || node -e '
+            const fs=require("fs"),{execSync}=require("child_process");
+            try{const alt=JSON.parse(execSync("git show HEAD:ind_data.json").toString());const e=alt.EUR&&alt.EUR["JOLTS Job Openings"];
+              if(e){const out=JSON.parse(fs.readFileSync("ind_data.json","utf8"));(out.EUR=out.EUR||{})["JOLTS Job Openings"]=e;fs.writeFileSync("ind_data.json",JSON.stringify(out));console.log("[jv] Eurostat aus - letzter Stand bleibt",e.actual,e.date);}}catch(x){console.log("[jv] kein Vorstand",x.message);}'
+
       # Hochgerechnete Werte (feed_zusatz.json) - Nutzer 2026-11-10, bewusste
       # Ausnahme von "nie schaetzen": gilt nur, bis ein echter Release kommt.
       - name: Add estimated values (feed_zusatz.json) -> ind_data.json
