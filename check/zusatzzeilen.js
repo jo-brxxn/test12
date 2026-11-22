@@ -3,7 +3,8 @@
 // Sachen bei Öl hinzu die du meinst. Die Vorschläge von Erdgas und btc auch übernehmen." Rueckfragen
 // 2026-11-19: Silber "Wie gesagt (Beat bullish)", Oel Rig Count, Erdgas + BTC "trotzdem".
 // ind_data.json und btc_score.json werden hier eingeschleust:
-//  A) SILVER: US ISM Manufacturing PMI + US Industrial Production je 0,5, Beat -> +, Miss -> -
+//  A) SILVER: US ISM Manufacturing PMI + US Industrial Production je 0,5; IP Beat -> +, ISM seit 790 invers
+//     (Nutzer 2026-11-22: "Den manufacturing inverse den anderen so lassen", sym.indRules)
 //  B) OIL: Oil Rig Count 0,5, mehr Bohrtuerme -> bearish, weniger -> bullish (ohne Forecast: gegen Vorwoche)
 //  C) NATGAS: Gas Storage vs 5Y - Aenderung unter dem 5-Jahres-Schnitt derselben Woche -> +0,5, darueber -> -0,5
 //  D) BTC: BTC Sentiment Score >= 70 -> -0,5, <= 30 -> +0,5, dazwischen 0
@@ -38,7 +39,7 @@ const tag = n => { const d = new Date(); d.setUTCDate(d.getUTCDate() - n); retur
       const fremd = []; ['GOLD', 'COPPER', 'SOL', 'USD', 'SP500'].forEach(id => { const s = syms.find(x => x.id === id); (s.rubrics || []).forEach(r => (r.indicators || []).forEach(i => { if (['US ISM Manufacturing PMI', 'US Industrial Production', 'Oil Rig Count', 'Gas Storage vs 5Y', 'BTC Sentiment Score'].includes(stripPeriodSuffix(i.name).base)) fremd.push(id + ':' + i.name); })); });
       return { ism: z('SILVER', 'Economic Growth', 'US ISM Manufacturing PMI'), ip: z('SILVER', 'Economic Growth', 'US Industrial Production'), rig: z('OIL', 'Economic Growth', 'Oil Rig Count'), gas: z('NATGAS', 'Economic Growth', 'Gas Storage vs 5Y'), btc: z('BTC', 'COT Data', 'BTC Sentiment Score'), fremd };
     });
-    const soll = fall === 'hoch' ? { ism: 1, ip: 1, rig: -1, gas: 1, btc: -1 } : fall === 'tief' ? { ism: -1, ip: -1, rig: 1, gas: -1, btc: 1 } : { ism: 1, ip: 1, rig: 0, gas: 1, btc: 0 };
+    const soll = fall === 'hoch' ? { ism: -1, ip: 1, rig: -1, gas: 1, btc: -1 } : fall === 'tief' ? { ism: 1, ip: -1, rig: 1, gas: -1, btc: 1 } : { ism: -1, ip: 1, rig: 0, gas: 1, btc: 0 };
     const tagK = { ism: 'A', ip: 'A', rig: 'B', gas: 'C', btc: 'D' };
     for (const k of Object.keys(soll)) {
       const r = R[k]; if (!r) { F.push(`${fall} ${tagK[k]}: Zeile ${k} fehlt`); continue; }
@@ -63,5 +64,5 @@ const tag = n => { const d = new Date(); d.setUTCDate(d.getUTCDate() - n); retur
   await b.close();
   if (GP) { const ok = F.some(f => / B: /.test(f)); console.log(ok ? 'zusatzzeilen --gegenprobe: ok (Rig Count falsch herum gemeldet)' : 'zusatzzeilen --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
   if (F.length) { console.log('zusatzzeilen: ' + F.length + ' Befund(e)\n  ' + F.join('\n  ')); process.exit(1); }
-  console.log('zusatzzeilen: ok (Silber ISM + IP je 0,5 Beat bullish, Oel Rig Count mehr = bearish, Erdgas vs 5-Jahres-Schnitt +-0,5, BTC Sentiment 70/30 +-0,5, nur bei ihrem Asset, Kalender-Muster)');
+  console.log('zusatzzeilen: ok (Silber ISM invers + IP Beat bullish je 0,5, Oel Rig Count mehr = bearish, Erdgas vs 5-Jahres-Schnitt +-0,5, BTC Sentiment 70/30 +-0,5, nur bei ihrem Asset, Kalender-Muster)');
 })().catch(e => { console.log('zusatzzeilen: ABBRUCH ' + e.message); process.exit(1); });

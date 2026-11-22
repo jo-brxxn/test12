@@ -23040,7 +23040,42 @@ Nutzer (Screenshot Copper, blaue Oberkante markiert): *„Mach diesen farbigen r
 - **Gemessen** (1194 px, Copper): alle vier Kanten 2 px; ohne Bias rgb(85,97,122), Bear rgb(220,36,48), Bull rgb(11,95,204).
 - **Wächter:** `check/preiskarte.js` I.
 
-## 2026-11-22 — Asset-Kopf: „Score“ statt „Next event“, Fenster „How the score works“, Settings überarbeitet (VERSION-CHECK-792)
+## 2026-11-22 — Silber invers, China-Block, Regel je Indikator, Renditen-Deckel (VERSION-CHECK-792, Score-Modell 39)
+
+Nutzer:
+- *„das Zahnrad einstellst, genauso wie bei Gold, dass Inflation schlecht, Arbeitsmarkt auch schlecht und Wirtschaftswachstum schlecht … China-Indikatoren … abgetrennt … mit so einer kleinen gestrichelten Linie ganz unten … positiv zählen … im Zahnrad … einzelne Indikatoren bearish setzen … überall den Score-Einfluss von dem 2-Year, 10-Year Yield auf insgesamt 1“*.
+- Rückfragen:
+  - China = NBS PMI + Industrial Production (max. 1,0)
+  - *„Den manufacturing inverse den anderen so lassen“*
+  - *„Überall 2Y+10Y = 1“*
+  - Realzins: *„Was ist denn tips“* → bleibt vorerst TIPS
+
+Umgesetzt:
+- Silber-Zahnrad: alle vier Makro-Karten inverse.
+- ISM-Zeile inverse, Industrial Production unverändert.
+- China-Block: NBS PMI + Industrial Production je 0,5, unten gestrichelt.
+  - Neue Workflow-Regel CNY *Industrial Production YoY*.
+  - Neues Kalender-Muster.
+- Zahnrad: „Single indicators“ je Karte (Card/Default · Bullish · Bearish), synchronisiert als `indRules`.
+- Renditen-Deckel: 2Y + 10Y ≤ 1 überall; 10Y zählt bei Währungen wieder.
+- Messung, Vorbehalte und Regeln: `docs/score-model.md` „Modell 39“.
+
+Gemessen in der App (Repo-Daten):
+- 15 gespiegelte Silber-Zeilen sind das Gegenteil von USD.
+- Renditen bei USD und Gold je 0,5 statt 0,75 (Deckel ×0,67).
+
+Wächter:
+- Neu: `check/silberregeln.js` (Gegenprobe → rot).
+- Angepasst: `modell28`, `scorenachrechnung`, `chinablock`, `zusatzzeilen`, `regeln`.
+- ⚠ Bis zum nächsten Workflow-Lauf steht *China Industrial Production* ohne Wert (neutral).
+
+## 2026-11-22 — Indikator-Zeilen: Rand in Act-Farbe (VERSION-CHECK-793)
+- Nutzer, Screenshot (SLV, Makro-Karten, Ränder gelb markiert): *„Diese Ränder an den Indikatoren färb die mal in der Farbe des jeweiligen actual Werts“*
+- Vorher: `tr.ind-row` hatte immer `border-left:3px solid var(--bd2)` (grau)
+- Jetzt: `:has(>td.ir-act.<klasse>)` setzt die Randfarbe aus derselben Klasse wie die Zahl; neutral bleibt grau
+- Gemessen (Playwright, USD, 24 Zeilen): Randfarbe = Act-Farbe in **24/24** farbigen bzw. neutral-grauen Zeilen, **0 Abweichungen**
+
+## 2026-11-22 — Asset-Kopf: „Score“ statt „Next event“, Fenster „How the score works“, Settings überarbeitet (VERSION-CHECK-794)
 
 Nutzer (Foto Silver, „Next event“ eingekreist): *„Entfern das bei allen Assets oben mit Next Event und mach dort Score hin. Ich möchte das wenn man darauf klickt sich ein Fenster öffnet wo Ultra übersichtlich drin steht wie sich der Score ergibt. Arbeite viel mit Farben fasse die Indikatoren in Kategorien zusammen und sag was genau wann passiert. Aber kurz kein Fließtext. Und mach in dem Fenster oben rechts ein Zahnrad hin … settings Fenster … in der Leiste das Zahnrad auch überall entfernen … Überarbeite auch das nochmal. ZB sollen da nicht die ganzen Assets stehen das kann man über einen Filter lösen“*.
 
@@ -23070,10 +23105,11 @@ Nutzer (Foto Silver, „Next event“ eingekreist): *„Entfern das bei allen As
   - Vorher stand jedes Nicht-FX-Asset als eigene Kachel im Fenster.
   - Hinweise als Kurzzeilen.
 - **Befund nebenbei (nicht geändert):**
-  - Silber, Platin, BTC, Öl u. a. haben keine Karten-Regel (alle Makro-Karten *Off*).
+  - Platin, BTC, Öl u. a. haben keine Karten-Regel (alle Makro-Karten *Off*). Silber hat seit 792 (andere Session) inverse.
   - Ihre Makro-Zeilen zählen trotzdem mit dem **zuletzt gespeicherten** Bias, den der Feed bei *Off* nie neu rechnet.
-  - Gemessen frisch geladen: Silber PPI bullish gegen USD bearish, GDP bearish gegen USD bullish.
+  - Gemessen frisch geladen (vor 792): Silber/Platin PPI bullish gegen USD bearish, GDP bearish gegen USD bullish.
   - Dem Nutzer gemeldet, Entscheidung offen.
+- **Nach dem Merge mit 792/793:** Regel je Indikator (`indRules`) schlägt im Fenster die Karten-Regel (eigene Zeile „own rule“), Renditen-Deckel *Yields (2Y + 10Y) together max ±1* für alle Assets.
 - **Wächter:** `check/scoreregeln.js` A–E.
   - **A:** jede Asset-Seite zeigt Score und kein Next event/Zahnrad.
   - **B:** Regel je Zeile, Beitrag ≤ Fensterwert.

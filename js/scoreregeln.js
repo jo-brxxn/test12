@@ -1,5 +1,5 @@
 'use strict';
-// ══ SCORE-REGELN: "WIE ENTSTEHT DER SCORE" (Nutzer 2026-11-22, VERSION-CHECK-789) ══
+// ══ SCORE-REGELN: "WIE ENTSTEHT DER SCORE" (Nutzer 2026-11-22, VERSION-CHECK-794) ══
 // Nutzer (Foto der Silver-Seite, "Next event" eingekreist): "Entfern das bei
 // allen Assets oben mit Next Event und mach dort Score hin. Ich moechte das
 // wenn man darauf klickt sich ein Fenster oeffnet wo Ultra uebersichtlich drin
@@ -126,6 +126,9 @@ export function srFensterHtml(sym) {
     const r = regeln[rub.name];
     return r === 'same' ? 1 : r === 'inverse' ? -1 : null;
   };
+  // Regel je Indikator (Zahnrad "Single indicators", sym.indRules) schlaegt die Karten-Regel.
+  const vzZ = x => { const r = h.indRegel(sym, x.ind); return r === 'same' ? 1 : r === 'inverse' ? -1 : vz(x.rub); };
+  const eigenR = x => !!h.indRegel(sym, x.ind);
   const mal = (p, v) => v == null ? '±' + Math.abs(Array.isArray(p) ? p[0] : p) : Array.isArray(p) ? p.map(x => x * v) : p * v;
   const vor = rub => nonFx && lc && h.MACRO_DERIVE_RUBS.includes(rub.name) ? lc + ' ' : '';
   const gew = `×${h.SCORE_NORM_MIN}–${h.SCORE_NORM_MAX}`;
@@ -154,12 +157,15 @@ export function srFensterHtml(sym) {
   } else {
     rubs.forEach(rub => {
       const v = vz(rub), kurz = RUB_KURZ[rub.name] || rub.name;
+      if (rel.filter(x => x.rub === rub).every(eigenR)) return;   // alle Zeilen mit eigener Regel
       if (v == null) mz.push(zeile(`${kurz}: not linked`, '±1', 'bias set by hand'));
       else mz.push(zeile(`${vor(rub)}${kurz} beats / misses forecast`, mal([1, -1], v), v < 0 ? 'inverse · × weight' : '× weight'));
     });
+    rel.filter(eigenR).forEach(x => mz.push(zeile(`${vor(x.rub)}${h.indName(x.ind)} beats / misses`, mal([1, -1], vzZ(x)), 'own rule · × weight')));
     if (rel.length) mz.push(zeile('No forecast: vs previous', '±0.5', '× weight'));
   }
-  von('eigen').forEach(x => mz.push(zeile(`${h.indName(x.ind)} beats / misses`, [1, -1].map(v => v * (typeof x.ind.gew === 'number' ? x.ind.gew : 1)), 'own row · × weight')));
+  von('eigen').forEach(x => { const r = h.indRegel(sym, x.ind), g = typeof x.ind.gew === 'number' ? x.ind.gew : 1;
+    mz.push(zeile(`${h.indName(x.ind)} beats / misses`, [1, -1].map(v => v * g * (r === 'inverse' ? -1 : 1)), (r === 'inverse' ? 'own row · inverse' : 'own row') + ' · × weight')); });
   if (rel.length || hat('eigen')) {
     mz.push(zeile('Weight: surprise size · age · market impact', gew));
     mz.push(zeile(`Overdue > ${h.IND_STALE_CYCLES} own cycles`, 0));
@@ -171,11 +177,12 @@ export function srFensterHtml(sym) {
 
   // Rates & yields
   const rz = [];
-  von('bond').forEach(x => rz.push(zeile(`${vor(x.rub)}${x.ind.name.replace(' Bond Yield', '')} yield trend up / down`, mal([h.BOND_PKT, -h.BOND_PKT], vz(x.rub)), `SMA${h.BOND_SMA_FAST} vs SMA${h.BOND_SMA_SLOW}`)));
-  von('kurve').forEach(x => rz.push(zeile(`${vor(x.rub)}Curve 10Y−2Y steeper / flatter`, mal([-h.KURVE_PKT, h.KURVE_PKT], vz(x.rub)))));
+  von('bond').forEach(x => rz.push(zeile(`${vor(x.rub)}${x.ind.name.replace(' Bond Yield', '')} yield trend up / down`, mal([h.BOND_PKT, -h.BOND_PKT], vzZ(x)), `SMA${h.BOND_SMA_FAST} vs SMA${h.BOND_SMA_SLOW}`)));
+  von('kurve').forEach(x => rz.push(zeile(`${vor(x.rub)}Curve 10Y−2Y steeper / flatter`, mal([-h.KURVE_PKT, h.KURVE_PKT], vzZ(x)))));
   von('zinsdiff').forEach(x => h.ZINSDIFF_STUFEN.slice().reverse().forEach(([bp, p]) =>
-    rz.push(zeile(`${vor(x.rub)}2Y gap to peers ±${bp} bp in ${h.ZINSDIFF_TAGE}d`, mal([p, -p], vz(x.rub)), 'widens / narrows'))));
+    rz.push(zeile(`${vor(x.rub)}2Y gap to peers ±${bp} bp in ${h.ZINSDIFF_TAGE}d`, mal([p, -p], vzZ(x)), 'widens / narrows'))));
   if (fx) { const g = h.M28_DECKEL.find(d => d.id === 'rates'); if (g && z.some(x => g.namen.includes(h.stripPeriodSuffix(x.ind.name).base) && x.typ !== 'anzeige')) rz.push(zeile(g.name + ' together', 'max ±' + g.max)); }
+  h.DECKEL_ALLE.forEach(g => { if (z.some(x => x.typ === 'bond' && g.namen.includes(x.ind.name))) rz.push(zeile(g.name + ' together', 'max ±' + g.max)); });
   if (hat('realzins')) rz.push(zeile('US 10Y real yield rising / falling', [-h.REALZINS_PKT, h.REALZINS_PKT]));
   if (rz.length) rz.push(zeile(`Change < ${Math.round(h.BOND_DEAD_BAND * 100)} bp`, 0, 'dead band'));
   html += blockHtml('rates', '', rz);
@@ -186,7 +193,7 @@ export function srFensterHtml(sym) {
   von('roh').forEach(x => {
     const id = Object.keys(h.ROHSTOFF_NAME).find(k => h.ROHSTOFF_NAME[k] === x.ind.name);
     const w = ((korb.find(e => e[0] === id) || [])[1]) || 1, v = vz(x.rub);
-    oz.push(zeile(`${vor(x.rub)}${h.ROHSTOFF_KURZ(id)} above / below 1D EMA20`, mal([st[0][1] * w, -st[0][1] * w], v), `weight ${w}`));
+    oz.push(zeile(`${vor(x.rub)}${h.ROHSTOFF_KURZ(id)} above / below 1D EMA20`, mal([st[0][1] * w, -st[0][1] * w], vzZ(x)), `weight ${w}`));
   });
   if (hat('roh')) {
     oz.push(zeile(st.slice(1).map(s => `${s[0]}+ days`).join(' / ') + ' on that side', st.slice(1).map(s => '×' + Math.round(s[1] / st[0][1] * 100) / 100).join(' / ')));

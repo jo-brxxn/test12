@@ -813,7 +813,8 @@ function awaitingIndicators(){
 //      Verbrauchervertrauen hoechstens +-0,5 (Wirkung ~0, Faktor bis 1,8).
 //      Beim Deckeln werden alle Mitglieder im selben Verhaeltnis gekuerzt -
 //      jede Zeile zeigt ihren echten Anteil, die Summe ist genau der Deckel.
-const M28_NUR_ANZEIGE={_alle:['PCE','10Y Bond Yield','ZEW Economic Sentiment'],EUR:['GDP Growth QoQ','Retail Sales'],GBP:['Retail Sales']};
+// 10Y Bond Yield zaehlt seit Modell 39 wieder (Nutzer 2026-11-22: "ueberall ... 2-Year, 10-Year Yield auf insgesamt 1"), gedeckelt mit dem 2Y.
+const M28_NUR_ANZEIGE={_alle:['PCE','ZEW Economic Sentiment'],EUR:['GDP Growth QoQ','Retail Sales'],GBP:['Retail Sales']};
 const M28_GRUND={
   'PCE':'Predictable from CPI and PPI before it is released (release-day effect t 0.5) — shown only.',
   '10Y Bond Yield':'Replaced by the Yield Curve (10Y−2Y) row: a rising 10-year yield alone is no signal — if it rises faster than the 2-year it is bearish. Shown only.',
@@ -838,19 +839,27 @@ function m28Roh(ind,rub,symId,ohne,sid){
   if(mult==null||p.zero||p.stale||p.fest)return p;
   return Object.assign({},p,{w:p.w*mult,base:p.base*mult,total:p.total*mult,mult});
 }
+// Renditen-Deckel fuer ALLE Assets (Modell 39, Nutzer 2026-11-22: "ueberall den Score-Einfluss von
+// dem 2-Year, 10-Year Yield auf insgesamt 1"). Liegt eine Zeile in mehreren Deckeln (FX: 2Y auch im
+// Block "Rate expectations" mit dem Yield Gap), gilt der STAERKSTE Schnitt.
+const DECKEL_ALLE=[{id:'yields',name:'Yields (2Y + 10Y)',namen:['2Y Bond Yield','10Y Bond Yield'],max:1}];
 function indScoreParts(ind,rub,symId,ohneAltersgrenze){
   const sid=m28Fx(rub,symId);
-  if(!sid)return indScorePartsRoh(ind,rub,symId,ohneAltersgrenze);
-  const p=m28Roh(ind,rub,symId,ohneAltersgrenze,sid);
+  const roh=i=>sid?m28Roh(i,rub,symId,ohneAltersgrenze,sid):indScorePartsRoh(i,rub,symId,ohneAltersgrenze);
+  const p=roh(ind);
   if(p.zero||p.stale||!p.total)return p;
   const base=stripPeriodSuffix(ind.name).base;
-  const g=M28_DECKEL.find(x=>x.namen.includes(base));
-  if(!g)return p;
-  const summe=((rub&&rub.indicators)||[]).filter(i=>g.namen.includes(stripPeriodSuffix(i.name).base))
-    .reduce((s,i)=>s+(i===ind?p.total:m28Roh(i,rub,symId,ohneAltersgrenze,sid).total),0);
-  if(Math.abs(summe)<=g.max+1e-9)return p;
-  const f=g.max/Math.abs(summe);
-  return Object.assign({},p,{base:p.base*f,total:p.total*f,deckel:{name:g.name,max:g.max,summe,f}});
+  const gruppen=DECKEL_ALLE.concat(sid?M28_DECKEL:[]).filter(x=>x.namen.includes(base));
+  let best=null;
+  gruppen.forEach(g=>{
+    const summe=((rub&&rub.indicators)||[]).filter(i=>g.namen.includes(stripPeriodSuffix(i.name).base))
+      .reduce((s,i)=>s+(i===ind?p.total:roh(i).total),0);
+    if(Math.abs(summe)<=g.max+1e-9)return;
+    const f=g.max/Math.abs(summe);
+    if(!best||f<best.f)best={name:g.name,max:g.max,summe,f};
+  });
+  if(!best)return p;
+  return Object.assign({},p,{base:p.base*best.f,total:p.total*best.f,deckel:best});
 }
 function m28DeckelText(d){return`${d.name}: together at most ±${d.max}; the block adds up to ${d.summe>0?'+':''}${Math.round(d.summe*100)/100}, so every row of it is cut ×${d.f.toFixed(2)}`;}
 function indScorePartsRoh(ind,rub,symId,ohneAltersgrenze){
@@ -1935,7 +1944,7 @@ function symScoreCmp(sym){
 // anderen Metallen ... Naturalgas ... gleich wie bei Oel"): zwei neue Assets; NATGAS mit eigener Zeile
 // Gas Storage (EIA, woechentlich, halbes Gewicht, Abbau = bullish) wie OIL Oil Inventories. Die Scores der
 // bestehenden Assets aendern sich nicht.
-const SCORE_MODEL_VERSION=38;
+const SCORE_MODEL_VERSION=39;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.
@@ -2034,7 +2043,7 @@ export {
   invalidateRateStepCache,rateAtDate,pairCarryAdjAt,symTrackedCount,_fxRefCountCache,invalidateCmpCache,beginRenderPass,syncSidebarScores,
   fxRefCount,symCmpFactor,symScoreCmp,SCORE_MODEL_VERSION,SCORE_MODEL_TAG,scoreHistEntryCurrent,STRENGTH_MIN_OBS,STRENGTH_Z_BANDS,
   symScoreAvg,symOwnHistory,symOwnZ,symStrength10,symStrengthMissing,pairScore,rowScore,fmtDate,
-  m28NurAnzeige,M28_GEWICHT,M28_DECKEL,
+  m28NurAnzeige,M28_GEWICHT,M28_DECKEL,DECKEL_ALLE,
 };
 // Kompatibilitaets-Bruecke: onclick-referenzierte Namen (
 // openDataQuality, openScoreInfo*) PLUS Namen, die check/score.js/

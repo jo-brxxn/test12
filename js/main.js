@@ -967,7 +967,7 @@ import {
   invalidateRateStepCache,rateAtDate,pairCarryAdjAt,symTrackedCount,_fxRefCountCache,invalidateCmpCache,beginRenderPass,syncSidebarScores,
   fxRefCount,symCmpFactor,symScoreCmp,SCORE_MODEL_VERSION,SCORE_MODEL_TAG,scoreHistEntryCurrent,STRENGTH_MIN_OBS,STRENGTH_Z_BANDS,
   symScoreAvg,symOwnHistory,symOwnZ,symStrength10,symStrengthMissing,pairScore,rowScore,fmtDate,
-  m28NurAnzeige,M28_GEWICHT,M28_DECKEL,
+  m28NurAnzeige,M28_GEWICHT,M28_DECKEL,DECKEL_ALLE,
 } from './score.js';
 import {
   evtMatchesSym,todayStr,daysUntil,evtTimeValid,isEvtPast,dateAddStr,countdownLbl,countdownHtml,fmtDayHdr,
@@ -1002,7 +1002,7 @@ function isCrypto(id){return assetCls(id)==='crypto';}
 // zur Wahrung des bisherigen Verhaltens: alle Krypto-Coins teilen sich die
 // Gruppe 'crypto', S&P 500 und Nasdaq die Gruppe 'usidx'. Symbol-Identität
 // (id/name/full/linkCcy-Anzeige) bleibt erhalten.
-const ASSET_SYNC_FIELDS=['bias','rubrics','genBull','genBear','noteRubs','notes','noteTable','_notesMigrated','quickNote','linkCcy','deriveRules'];
+const ASSET_SYNC_FIELDS=['bias','rubrics','genBull','genBear','noteRubs','notes','noteTable','_notesMigrated','quickNote','linkCcy','deriveRules','indRules'];
 function symSyncGroup(id){
   const s=syms.find(x=>x.id===id);if(!s)return null;
   if(s.syncGroup!==undefined)return s.syncGroup||null;
@@ -4328,17 +4328,19 @@ const ASSET_EIGENE_IND={
   // gemessen ist ein Beat fuer Silber eher bearish (Zinskanal), so gewollt, dokumentiert in score-model.md.
   // OIL Baker-Hughes-Bohrtuerme (mehr = bearish, t +2,3). NATGAS Speicher gegen den 5-Jahres-Schnitt
   // derselben Woche und BTC Sentiment-Gesamtwert: beide ohne Beleg, Nutzer "trotzdem".
-  SILVER:{'Economic Growth':['US ISM Manufacturing PMI','US Industrial Production']},
+  // 790 (Nutzer 2026-11-22): China-Industrie fuer Silber, unten in der Karte gestrichelt abgetrennt, Beat = bullish
+  // (Nachfrage). Gemessen 2016-2026 schwach: NBS PMI 20 T +1,5 % t +1,8; IP 1 T t +1,3, 20 T t -0,8.
+  SILVER:{'Economic Growth':['US ISM Manufacturing PMI','US Industrial Production','China NBS Manufacturing PMI','China Industrial Production']},
   OIL:{'Economic Growth':['Oil Inventories','Oil Rig Count']},
   NATGAS:{'Economic Growth':['Gas Storage','Gas Storage vs 5Y']},
   BTC:{'COT Data':['BTC Sentiment Score']}};
 // Feed-Waehrung einer Asset-eigenen Zeile, wenn sie NICHT die verknuepfte Waehrung ist (764: China = CNY).
-const ASSET_EIGEN_FEED={'China New Loans':'CNY','China Retail Sales':'CNY','China NBS Manufacturing PMI':'CNY'};
+const ASSET_EIGEN_FEED={'China New Loans':'CNY','China Retail Sales':'CNY','China NBS Manufacturing PMI':'CNY','China Industrial Production':'CNY'};
 function assetEigenFeed(symId,name){return istAssetEigen(symId,name)?(ASSET_EIGEN_FEED[stripPeriodSuffix(name||'').base]||null):null;}
 // Gewicht je Asset und Zeile (764, Rueckfrage: "je nach Messung"): Summe des China-Blocks <= 1,5.
 const ASSET_EIGEN_GEWICHT={AUD:{'China New Loans':0.5,'China Retail Sales':0.5},
   COPPER:{'China NBS Manufacturing PMI':0.75,'China New Loans':0.375,'China Retail Sales':0.375},
-  SILVER:{'US ISM Manufacturing PMI':0.5,'US Industrial Production':0.5},OIL:{'Oil Rig Count':0.5}};
+  SILVER:{'US ISM Manufacturing PMI':0.5,'US Industrial Production':0.5,'China NBS Manufacturing PMI':0.5,'China Industrial Production':0.5},OIL:{'Oil Rig Count':0.5}};
 // ── REALZINS (seit 2026-11-19, VERSION-CHECK-765, Score-Modell 36) ──
 // Nutzer 2026-11-18: "Realzinsen auch ueberall hinzufuegen", Rueckfrage 2026-11-19: "Mach es nur bei
 // nicht fx und nicht bei Energie". Quelle: US Treasury Daily Par Real Yield Curve, 10 YR (Workflow ->
@@ -4355,6 +4357,7 @@ function istAssetEigen(symId,name){
   return !!m&&Object.values(m).some(l=>l.includes(b));
 }
 function addAssetEigeneInds(rubrics,sym){
+  silberRegeln790(sym);
   const m=sym&&ASSET_EIGENE_IND[sym.id];
   if(!m)return;
   Object.keys(m).forEach(rn=>{
@@ -4703,6 +4706,10 @@ const MACRO_DERIVE_RULES={
   NAS:{Inflation:'inverse','Interest Rates':'inverse','Labour Market':'same','Economic Growth':'same'},
   // 768: Russell 2000 wie der S&P 500 (US-Aktienindex).
   RUSSELL:{Inflation:'inverse','Interest Rates':'inverse','Labour Market':'same','Economic Growth':'same'},
+  // 790 (Nutzer 2026-11-22): "genauso wie bei Gold, dass Inflation schlecht, Arbeitsmarkt auch schlecht und
+  // Wirtschaftswachstum schlecht. Also genau inverse als beim Dollar." China-Zeilen sind asset-eigen und zaehlen
+  // davon unberuehrt Beat = bullish.
+  SILVER:{Inflation:'inverse','Interest Rates':'inverse','Labour Market':'inverse','Economic Growth':'inverse'},
 };
 // Aktien: dieselben Regeln wie der S&P 500 (Nutzer 2026-11-13: "die Indikatoren sollen die gleichen wie bei sp500 sein also ... so gewertet werden").
 STOCK_IDS.forEach(id=>{MACRO_DERIVE_RULES[id]={...MACRO_DERIVE_RULES.SP500};});
@@ -4722,6 +4729,40 @@ function invertBias(b){return b==='bull'?'bear':b==='bear'?'bull':'neu';}
 function effDeriveRules(sym){
   if(sym&&sym.deriveRules)return sym.deriveRules;
   return(sym&&MACRO_DERIVE_RULES[sym.id])||{};
+}
+// ── Regel je Indikator (790, Nutzer 2026-11-22: "dass selbst wenn man eine Kategorie ... bullish setzt ...
+// man immer noch einzelne Indikatoren bearish setzen kann"). sym.indRules = {Basisname:'same'|'inverse'},
+// synchronisiert (ASSET_SYNC_FIELDS). Ohne Eintrag gilt die Karten-Regel (gespiegelte Zeile) bzw. die
+// eigene Rechnung (asset-eigene Zeile). 'same' = starker Wert bullish, 'inverse' = starker Wert bearish.
+// Zustandslos: die eigene Zeile wird aus Actual/Forecast/Previous neu eingestuft, nie aus ihrem Bias -
+// mehrfaches Anwenden kippt also nichts hin und her.
+function indRegel(sym,ind){const r=sym&&sym.indRules&&sym.indRules[stripPeriodSuffix(ind.name).base];return r==='same'||r==='inverse'?r:null;}
+function indRegelEigenSetzen(ind,regel){
+  const q=ind.research||{};if(q.actual==null||q.actual==='')return;
+  const nat=researchBias(stripPeriodSuffix(ind.name).base,q.actual,q.forecast,q.previous);
+  ind.bias=regel==='same'?nat:invertBias(nat);
+}
+function indRegelnAnwenden(sym,srcSym){
+  (sym.rubrics||[]).forEach(r=>{
+    if(!MACRO_DERIVE_RUBS.includes(r.name)||!r.indicators)return;
+    const src=srcSym&&srcSym.rubrics.find(x=>x.name===r.name);
+    r.indicators.forEach(ind=>{
+      const regel=indRegel(sym,ind);if(!regel)return;
+      if(istAssetEigen(sym.id,ind.name))indRegelEigenSetzen(ind,regel);
+      else{
+        const si=src&&src.indicators&&src.indicators.find(i=>i.name===ind.name);if(!si)return;
+        ind.bias=regel==='same'?si.bias:invertBias(si.bias);
+      }
+    });
+  });
+}
+// Einmalig je Geraet + synchron: Silber auf inverse (Zahnrad) und die eigene ISM-Zeile inverse
+// (Nutzer: "Den manufacturing inverse den anderen so lassen"). Marke in indRules, damit eine spaetere
+// eigene Wahl im Zahnrad nicht vom naechsten Geraet ueberschrieben wird.
+function silberRegeln790(sym){
+  if(!sym||sym.id!=='SILVER'||(sym.indRules&&sym.indRules._m790))return;
+  sym.deriveRules=Object.assign({},MACRO_DERIVE_RULES.SILVER);
+  sym.indRules=Object.assign({},sym.indRules||{},{'US ISM Manufacturing PMI':'inverse',_m790:1});
 }
 function deriveMacroBiasAll(){
   syms.forEach(sym=>{
@@ -4766,6 +4807,7 @@ function deriveMacroBiasAll(){
         if(srcInd.trendCmp)ind.trendCmp=srcInd.trendCmp.slice();
       });
     });
+    indRegelnAnwenden(sym,srcSym);
   });
 }
 const MACRO_RUB_INFO={
@@ -12601,7 +12643,10 @@ function renderIndRow(ind,ri,ii,rub,total,pairPos){
   const awEv=stale?null:indAwaitingEvent(getSym().id,ind);
   const awaitBadge=awEv?`<span class="ir-await" title="${escH(awEv.name)} was due on ${escH(awEv.date)}, but no source has delivered a value yet. Nothing is estimated - the figures shown are still the last confirmed ones${(ind.research&&ind.research.date)?` from ${escH(ind.research.date)}`:''}.">AWAITING VALUE</span>`:'';
   const pairCls=pairPos?` ind-pair-row ind-pair-${pairPos}`:'';
-  const mainRow=`<tr class="ind-row ${glowClass(ind.bias)}${stale?' ind-stale':''}${pairCls}" data-indbase="${escH(stripPeriodSuffix(ind.name).base)}" data-indid="${escH(ind.id)}" onclick="toggleIndDetailRow(event,'${escH(ind.id)}')" onpointerdown="biasPressStart(event,'ind',${ri},${ii})" onpointerup="biasPressEnd()" onpointerleave="biasPressEnd()" onpointercancel="biasPressEnd()" oncontextmenu="return false" title="Tap to expand · long-press to set bias">
+  // China-Block unten gestrichelt abgetrennt (790, Nutzer 2026-11-22: "leicht in der Karte aber noch abgetrennt ... mit so einer kleinen gestrichelten Linie ganz unten")
+  const _vor=rub&&rub.indicators?rub.indicators[rub.indicators.indexOf(ind)-1]:null;
+  const chinaStart=/^China /.test(stripPeriodSuffix(ind.name).base)&&!!_vor&&!/^China /.test(stripPeriodSuffix(_vor.name).base);
+  const mainRow=`<tr class="ind-row ${glowClass(ind.bias)}${stale?' ind-stale':''}${pairCls}${chinaStart?' ind-china-start':''}" data-indbase="${escH(stripPeriodSuffix(ind.name).base)}" data-indid="${escH(ind.id)}" onclick="toggleIndDetailRow(event,'${escH(ind.id)}')" onpointerdown="biasPressStart(event,'ind',${ri},${ii})" onpointerup="biasPressEnd()" onpointerleave="biasPressEnd()" onpointercancel="biasPressEnd()" oncontextmenu="return false" title="Tap to expand · long-press to set bias">
     <td class="ir-name"><span class="ir-name-txt" title="${escH(indName(ind))}">${escH(indName(ind))}</span>${staleBadge}${estBadge}${awaitBadge}
     </td>
     <td class="ir-act${actCls?' '+actCls:''}" title="${escH(actTxt)}">${escH(actTxt)}</td>
@@ -13504,6 +13549,19 @@ function renderAssetCfgBody(){
         </div>
         ${mirror}
       </div>`;
+      // Einzelne Indikatoren (790): eigene Regel statt der Karten-Regel, z. B. Karte Bullish, eine Zeile Bearish.
+      const inds=(r.indicators||[]);
+      if(inds.length){
+        const n=inds.filter(i=>indRegel(c,i)).length;
+        h+=`<details class="acfg-inds"${n?' open':''}><summary>Single indicators${n?` · <b>${n}</b> own rule${n>1?'s':''}`:''}</summary>`
+          +inds.map(i=>{const b=stripPeriodSuffix(i.name).base,rg=indRegel(c,i),eig=istAssetEigen(c.id,i.name);
+            return`<div class="acfg-indrow"><span class="acfg-indname">${escH(indName(i))}${eig?' <i>own data</i>':''}</span>
+              <div class="acfg-seg">
+                <button class="${!rg?'on-off':''}" onclick="setAssetIndRule('${escJs(b)}','')" title="${eig?'Own data: strong value counts bullish':'Follows the card rule'}">${eig?'Default':'Card'}</button>
+                <button class="${rg==='same'?'on-bull':''}" onclick="setAssetIndRule('${escJs(b)}','same')" title="Strong data → Bullish">Bullish</button>
+                <button class="${rg==='inverse'?'on-bear':''}" onclick="setAssetIndRule('${escJs(b)}','inverse')" title="Strong data → Bearish">Bearish</button>
+              </div></div>`;}).join('')+`</details>`;
+      }
     });
   }
   el.innerHTML=h;
@@ -13519,6 +13577,10 @@ function assetCfgApply(){
   if(curPage==='dash')renderDash();else if(curPage==='pairs')renderPairs();
 }
 function setAssetLinkCcy(v){const c=getSym();if(!c)return;pushU();c.linkCcy=(v==='__none__')?null:v;assetCfgApply();}
+function setAssetIndRule(name,rule){const c=getSym();if(!c)return;pushU();c.indRules=Object.assign({},c.indRules||{});if(rule)c.indRules[name]=rule;else delete c.indRules[name];
+  // Zurueck auf "Card"/"Default": eigene Zeile sofort neu aus ihren Werten einstufen (sonst bliebe der umgedrehte Bias stehen)
+  if(!rule)(c.rubrics||[]).forEach(r=>(r.indicators||[]).forEach(i=>{if(stripPeriodSuffix(i.name).base===name&&istAssetEigen(c.id,i.name)){const q=i.research||{};if(q.actual!=null&&q.actual!=='')i.bias=researchBias(name,q.actual,q.forecast,q.previous);}}));
+  assetCfgApply();}
 function setAssetDeriveRule(rub,rule){const c=getSym();if(!c)return;pushU();if(!c.deriveRules)c.deriveRules=Object.assign({},effDeriveRules(c));c.deriveRules[rub]=rule;assetCfgApply();}
 function toggleAssetSync(otherId){
   const c=getSym();if(!c)return;const other=syms.find(s=>s.id===otherId);if(!other)return;pushU();
@@ -27717,7 +27779,7 @@ document.addEventListener('visibilitychange',()=>{
 try{sprungtestStart();}catch(e){}
 // Score-Regeln-Fenster (2026-11-22): liest dieselben Konstanten wie die Rechnung.
 try{srHelfer({syms:()=>syms,FX,BC,escH,icn,openM,closeM,openAssetCfg,isNonFx,effLinkCcy,effDeriveRules,MACRO_DERIVE_RUBS,stripPeriodSuffix,indName,indIsCorePaired,
-  SCORE_ZERO,m28NurAnzeige,M28_GEWICHT,M28_DECKEL,SCORE_NORM_MIN,SCORE_NORM_MAX,IND_STALE_CYCLES,BOND_HALF_PT,BOND_PKT,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,
+  SCORE_ZERO,m28NurAnzeige,M28_GEWICHT,M28_DECKEL,DECKEL_ALLE,indRegel,SCORE_NORM_MIN,SCORE_NORM_MAX,IND_STALE_CYCLES,BOND_HALF_PT,BOND_PKT,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,
   KURVE_IND,KURVE_PKT,ZINSDIFF_IND,ZINSDIFF_STUFEN,ZINSDIFF_TAGE,REALZINS_IND,REALZINS_PKT,ROHSTOFF_NAME,ROHSTOFF_KORB,ROHSTOFF_STUFEN,ROHSTOFF_KURZ,
   COT_NET_HALF,COT_WOW_BASE,COT_NETZ_AB,COT_NETZ_PKT,COT_MAX,COT_WOW_STUFEN,RETAIL_IND_NAME,RETAIL_AB,RETAIL_STIMME,RETAIL_WACHS_PKT,RETAIL_WACHS_TAGE,
   SEAS_IND_NAME,SEAS_HIT_HOCH,SEAS_HIT_TIEF,TREND_IND,TREND_PKT,TREND_PKT_H,TREND_NEUTRAL_ATR,TREND_EMA_N,TREND_EMA_H,TREND_ATR_N,
@@ -28652,7 +28714,7 @@ Object.assign(window,{openScoreRegeln,srZahnrad,srTyp,srMax,ecThNeu,ecThWahl,ecT
   openBiasPicker,biasPickerChoose,closeBiasPicker,biasPickerOutside,togRubImp,togRubCollapse,delRub,mvRub,addRub,
   openInfoM,saveInfoM,setIndBias,syncIndOrderGlobal,syncMacroIndAddRemove,delInd,mvInd,addInd,cloneRubsFromUSD,
   confirmAddSym,openAddSym,renameFeldAls,FX_LINK_CCYS,escJs,escJH,openAssetCfg,renderAssetCfgBody,assetCfgApply,setAssetLinkCcy,
-  setAssetDeriveRule,toggleAssetSync,openDelSym,confirmDelSym,autoPairBias,BIAS_LBL,flipCauseLines,FLIP_CAUSE_TXT,
+  setAssetDeriveRule,setAssetIndRule,indRegel,indRegelEigenSetzen,toggleAssetSync,openDelSym,confirmDelSym,autoPairBias,BIAS_LBL,flipCauseLines,FLIP_CAUSE_TXT,
   flipCauseBlock,queueScoreFlipAlert,triggerFlipGlow,setSuppressBiasFlipAlerts,recomputeAllSymBiases,
   recomputeAllPairBiases,rubAutoBiasNeeded,RUB_AUTO_BIAS_THRESHOLD,recomputeRubricAutoBias,SUM_PHRASE,sumPhrase,IND_FAMILY,indFamily,RUB_TREND_WORDS,RUB_TREND_DEFAULT,rubTrendWord,
   sumIndSource,sumIndInfo,joinFrags,famDriverPhrase,famContextPhrase,RUB_ANCHOR_IND,summarizeGeneric,findIndByBase,

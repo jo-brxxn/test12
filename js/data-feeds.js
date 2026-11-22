@@ -52,6 +52,12 @@ function applyIndDataFeed(){
     (c.rubrics||[]).forEach(rub=>{
       if(!rub.indicators)return;
       rub.indicators.forEach(ind=>{
+        // 790: eigene Zeile mit Einzelregel (Zahnrad, sym.indRules) - der Feed stuft sie "natuerlich" ein,
+        // die Regel dreht danach. Damit ein zweiter Lauf ohne neue Daten nichts meldet (Idempotenz,
+        // check/score.js F), wird die Regel hier gleich mit angewendet und nur echte Aenderung gezaehlt.
+        const _rg=!fxAsset&&window.indRegel&&istAssetEigen(c.id,ind.name)?window.indRegel(c,ind):null;
+        const _vor=_rg?JSON.stringify(ind):null,_chVor=changed;
+        (()=>{
         const base=stripPeriodSuffix(ind.name).base;
         // Asset-eigene Zeile eines Non-FX-Assets (Oil Inventories bei OIL,
         // 2026-11-01): wird nicht von der Waehrung gespiegelt, also rechnet
@@ -176,6 +182,8 @@ function applyIndDataFeed(){
         if(r.interval)ind.research.interval=r.interval;
         ind.name=f.period?base+' '+f.period:base;
         changed=true;
+        })();
+        if(_rg){window.indRegelEigenSetzen(ind,_rg);changed=JSON.stringify(ind)===_vor?_chVor:true;}
       });
     });
   });

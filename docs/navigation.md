@@ -1701,7 +1701,7 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **Firmenfenster:** *What it does* (Gruppe), Umsatz/Gewinn nur echt (SEC, 13 Aktien), Forecasts/CapEx/*Where the money goes* Platzhalter-Rahmen ohne Zahlen, Links mit Quelle, verknüpfte Thesen
 - Wächter `check/wirtschaft.js` (A–H + Gegenprobe)
 
-## Asset-Kopf: Knopf „Score“ + Fenster „How the score works“ (seit 2026-11-22, 792)
+## Asset-Kopf: Knopf „Score“ + Fenster „How the score works“ (seit 2026-11-22, 794)
 
 - Kopfleiste: **Score · History · Backtester · Data quality** + Summary-Schalter. Kein *Next event* (steht in der Gameplan-Leiste), **kein Zahnrad** in der Leiste.
 - *Score* öffnet `#mScoreRegeln` (`js/scoreregeln.js`): nur **Regeln**, keine aktuellen Werte (die stehen hinter der Score-Zahl, `openScoreInfoSym`). Blöcke je Kategorie mit eigener Farbe, Zeile = *Ereignis → +x / −x*, nur Regeln für Zeilen, die das Asset hat; Punkte aus denselben Konstanten wie die Rechnung.
