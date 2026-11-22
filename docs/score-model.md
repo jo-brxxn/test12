@@ -873,3 +873,18 @@ ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
   - Bei einer gespiegelten Zeile wird statt der Karten-Regel die USD-Zeile gleich oder umgedreht übernommen.
   - Bei einer eigenen Zeile wird sie zustandslos aus Actual/Forecast/Previous neu eingestuft (`indRegelnAnwenden` am Ende von `deriveMacroBiasAll`).
 - **Geprüft von** `check/silberregeln.js`, `check/modell28.js`, `check/scorenachrechnung.js`, `check/chinablock.js` und `check/zusatzzeilen.js`.
+
+
+## Modell 40 (2026-11-22, VERSION-CHECK-799): Global Yields
+
+- **Nutzer:** *„einen neuen Indikator bei Inflation … global yields. Es sollen alle 10y yields der Währungen genommen werden … daraus ein yield … Trend durch einen Daily 90 Ema … überall bei Non fx außer yields … über Ema negativ 0.5“*.
+- **Rechnung** (`applyGlobalYieldsFeed`, `js/data-feeds.js`):
+  - Durchschnitt der acht 10Y-Renditen aus `bond_data.json` (USD, EUR, GBP, CHF, JPY, CAD, AUD, NZD), je Tag mit dem letzten bekannten Wert jeder Reihe.
+  - Erst ab dem Tag, an dem alle acht Reihen Werte haben; heute ab 2026-06-14, 161 Tage.
+  - Tagesschluss (bis gestern) gegen EMA 90 des Durchschnitts. Über der EMA → **−0,5**, darunter → **+0,5**, gleich → 0.
+  - Feste Punkte (`ind.pkt`), kein Altersabschlag, nicht im 2Y+10Y-Deckel.
+- **Wo:** Inflation-Karte jedes Nicht-FX-Assets außer den Yield-Assets, also auch Energie (`globalYieldsGilt`).
+  - Die Zeile zählt als eigene Zeile mit natürlicher Richtung „inverse“: Bei Karten mit Regel *same* steht sie unter „Inverse“.
+- **Stand 2026-11-21:** Durchschnitt 3,78 %, EMA 3,84 % → +0,5 überall.
+- ⚠ **Ohne Messung aufgenommen** (Nutzerwunsch). Die gemeinsame Historie beginnt erst im Juni 2026, ein Backtest ist damit noch nicht sinnvoll.
+- **Geprüft von** `check/globalyields.js`: unabhängig aus `bond_data.json` nachgerechnet; die Gegenprobe mit gedrehtem Vorzeichen wird rot.

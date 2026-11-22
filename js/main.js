@@ -49,7 +49,7 @@ export {scoreAssets,closeM,assetEigenFeed,trashAblegen,newsNoteHinweis,
   DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,
   applyRevisionToValHist,applyTrendModel,checkPriceAlerts,fmtDayHdr,indBiasInputSig,indBiasPinned,
   invalidateRateStepCache,isNonFx,macroCcyFor,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,
-  resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,todayStr,trackIndValues,widgets,feedEntryFor,kanonIndName,istAssetEigen,REALZINS_IND,realzinsGilt,
+  resetNonFxIndBias,resolvePairPriceSeries,save,stripPeriodSuffix,todayStr,trackIndValues,widgets,feedEntryFor,kanonIndName,istAssetEigen,REALZINS_IND,realzinsGilt,GLOBAL_YIELDS_IND,globalYieldsGilt,
   // Was js/preiskarte.js (Price-Karte, zirkulaerer Import) von hier liest.
   abCalNachTag,dataAlleAssetGruppen,dataAlleItems,pickerAnkern,preisChartHtml,abFenster,pkMarkenAn,pkMarkenUmschalten,
   IND_AUTO_RUBS,IND_EVENT_MATCHERS,calEvts,cloudAutoSync,evtMatchesSym,getSym,markLsUpdatedSeen,
@@ -4067,6 +4067,7 @@ const IND_INFO_DEFAULTS={
   'China New Loans':'New yuan loans granted by Chinese banks in the month (PBoC), in billion CNY. More credit than expected means stronger Chinese demand: bullish for AUD and copper. China block, see weight in the row.',
   'China Retail Sales':'Chinese retail sales, year-over-year in % (NBS). Stronger consumption than expected is bullish for AUD and copper. China block, see weight in the row.',
   'China NBS Manufacturing PMI':'Official Chinese manufacturing PMI (NBS), above 50 = expansion. China is about half of world copper demand - a beat is bullish for copper.',
+  'Global Yields':'Average of the 10-year government yields of all currencies in the app (USD, EUR, GBP, CHF, JPY, CAD, AUD, NZD), daily, from the day all of them have data. Trend: daily close vs 90-day EMA. Above the EMA = global yields rising = bearish −0.5, below = bullish +0.5. Fixed points. On every non-FX asset except the yield assets.',
   '10Y Real Yield':'US 10-year real yield (TIPS, US Treasury real yield curve), in %. Trend like the bond yields (5-day vs 21-day average, 3 bp dead band). Rising real yields are bearish for metals, crypto, indices and stocks (higher opportunity cost, heavier discounting). Fixed ±0.5. Not on FX, energy or yields.',
   'US ISM Manufacturing PMI':'US ISM manufacturing index, above 50 = expansion. Industrial demand for silver: a beat counts as bullish (0.5). Measured 2016-2026, beats tended to weigh on silver via higher yields - kept as chosen.',
   'US Industrial Production':'US industrial production, month-over-month in %. Industrial demand for silver: a beat counts as bullish (0.5).',
@@ -4351,13 +4352,21 @@ const ASSET_EIGEN_GEWICHT={AUD:{'China New Loans':0.5,'China Retail Sales':0.5},
 const REALZINS_IND='10Y Real Yield';
 const REALZINS_KLASSEN=['metal','crypto','index','stock'];
 function realzinsGilt(id){return REALZINS_KLASSEN.includes(assetCls(id));}
+// ── GLOBAL YIELDS (seit 2026-11-22, VERSION-CHECK-799, Score-Modell 40) ──
+// Nutzer: "bei Inflation ... einen neuen Indikator ... global yields. Es sollen alle 10y yields der Waehrungen
+// genommen werden die es auf der Webseite gibt und daraus ein yield gemacht werden von dem der Trend durch einen
+// Daily 90 Ema genommen wird. Diesen Indikator soll es ueberall bei Non fx ausser yields geben. Ueberall soll er
+// bei positivem Trend also ueber Ema negativ 0.5 zaehlen". Rechnung: applyGlobalYieldsFeed (js/data-feeds.js).
+const GLOBAL_YIELDS_IND='Global Yields';
+function globalYieldsGilt(id){return isNonFx(id)&&!YIELD_CCY[id];}
 function istAssetEigen(symId,name){
   const b=stripPeriodSuffix(name||'').base,m=ASSET_EIGENE_IND[symId];
   if(b===REALZINS_IND&&realzinsGilt(symId))return true;
+  if(b===GLOBAL_YIELDS_IND&&globalYieldsGilt(symId))return true;
   return !!m&&Object.values(m).some(l=>l.includes(b));
 }
 function addAssetEigeneInds(rubrics,sym){
-  silberRegeln790(sym);
+  silberRegeln790(sym);silberRegeln798(sym);
   const m=sym&&ASSET_EIGENE_IND[sym.id];
   if(!m)return;
   Object.keys(m).forEach(rn=>{
@@ -4741,7 +4750,7 @@ function indRegel(sym,ind){const r=sym&&sym.indRules&&sym.indRules[stripPeriodSu
 // Realzins zaehlt "steigt = bearish", also 'inverse') > Karten-Regel. null = Karte ohne Regel (manuell).
 function indRichtung(sym,rub,ind){
   const rg=indRegel(sym,ind);if(rg)return rg;
-  if(istAssetEigen(sym.id,ind.name))return stripPeriodSuffix(ind.name).base===REALZINS_IND?'inverse':'same';
+  if(istAssetEigen(sym.id,ind.name))return [REALZINS_IND,GLOBAL_YIELDS_IND].includes(stripPeriodSuffix(ind.name).base)?'inverse':'same';
   const k=rub&&effDeriveRules(sym)[rub.name];return k==='same'||k==='inverse'?k:null;
 }
 // Zeile zaehlt anders herum als ihre Karte -> steht ganz unten, abgetrennt (Nutzer 2026-11-22: "wenn in den
@@ -4778,6 +4787,12 @@ function silberRegeln790(sym){
   if(!sym||sym.id!=='SILVER'||(sym.indRules&&sym.indRules._m790))return;
   sym.deriveRules=Object.assign({},MACRO_DERIVE_RULES.SILVER);
   sym.indRules=Object.assign({},sym.indRules||{},{'US ISM Manufacturing PMI':'inverse',_m790:1});
+}
+// 798 (Nutzer 2026-11-22: "Die China Indikatoren sind doch auch invers also trag das in den settings auch so ein"):
+// die drei Zeilen unter "Inverse" stehen im Zahnrad sichtbar auf Bullish statt "Default". Einmalig, Marke synchron.
+function silberRegeln798(sym){
+  if(!sym||sym.id!=='SILVER'||!sym.indRules||sym.indRules._m798)return;
+  sym.indRules=Object.assign({},sym.indRules,{'China NBS Manufacturing PMI':'same','China Industrial Production':'same','US Industrial Production':'same',_m798:1});
 }
 function deriveMacroBiasAll(){
   syms.forEach(sym=>{
@@ -6316,6 +6331,7 @@ function reapplyLiveFeeds(){
    ()=>applyRohstoffFeed(),
    // US-Realzins (765) - laeuft in applyBondDataFeed mit, steht hier ausdruecklich (check/structure.js).
    ()=>applyRealzinsFeed(),
+   ()=>applyGlobalYieldsFeed(),
    // Erdgas gegen 5-Jahres-Schnitt + BTC-Sentiment-Gesamtwert (766).
    ()=>applyGasFuenfJFeed(),
    ()=>applyBtcScoreFeed(),
@@ -16316,7 +16332,7 @@ function autoFetchFF(){
 // Daten-Feeds nach js/data-feeds.js ausgekoppelt (docs/module-split.md).
 import {
   IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,
-  isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,applyRealzinsFeed,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
+  isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,applyRealzinsFeed,applyGlobalYieldsFeed,globalYieldsReihe,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,holeNewsArchiv,newsArchivFuer,newsVollstaendig,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
   tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
@@ -27798,7 +27814,7 @@ try{sprungtestStart();}catch(e){}
 // Score-Regeln-Fenster (2026-11-22): liest dieselben Konstanten wie die Rechnung.
 try{srHelfer({syms:()=>syms,FX,BC,escH,icn,openM,closeM,openAssetCfg,isNonFx,effLinkCcy,effDeriveRules,MACRO_DERIVE_RUBS,stripPeriodSuffix,indName,indIsCorePaired,
   SCORE_ZERO,m28NurAnzeige,M28_GEWICHT,M28_DECKEL,DECKEL_ALLE,indRegel,SCORE_NORM_MIN,SCORE_NORM_MAX,IND_STALE_CYCLES,BOND_HALF_PT,BOND_PKT,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,
-  KURVE_IND,KURVE_PKT,ZINSDIFF_IND,ZINSDIFF_STUFEN,ZINSDIFF_TAGE,REALZINS_IND,REALZINS_PKT,ROHSTOFF_NAME,ROHSTOFF_KORB,ROHSTOFF_STUFEN,ROHSTOFF_KURZ,
+  KURVE_IND,KURVE_PKT,ZINSDIFF_IND,ZINSDIFF_STUFEN,ZINSDIFF_TAGE,REALZINS_IND,REALZINS_PKT,GLOBAL_YIELDS_IND,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,ROHSTOFF_NAME,ROHSTOFF_KORB,ROHSTOFF_STUFEN,ROHSTOFF_KURZ,
   COT_NET_HALF,COT_WOW_BASE,COT_NETZ_AB,COT_NETZ_PKT,COT_MAX,COT_WOW_STUFEN,RETAIL_IND_NAME,RETAIL_AB,RETAIL_STIMME,RETAIL_WACHS_PKT,RETAIL_WACHS_TAGE,
   SEAS_IND_NAME,SEAS_HIT_HOCH,SEAS_HIT_TIEF,TREND_IND,TREND_PKT,TREND_PKT_H,TREND_NEUTRAL_ATR,TREND_EMA_N,TREND_EMA_H,TREND_ATR_N,
   SENT_MAP,SENT_IND_NAMES,ZEILE_PKT,BTC_SCORE_HOCH,BTC_SCORE_TIEF,istAssetEigen});}catch(e){}

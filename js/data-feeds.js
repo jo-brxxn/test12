@@ -10,7 +10,7 @@
 // das allgemeine Muster) - dieses Modul exportiert deshalb weiter unten
 // die Namen, die main.js zurueck braucht.
 import {BC,FX} from './constants.js';
-import {DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,feedEntryFor,kanonIndName,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,applyRevisionToValHist,applyTrendModel,checkPriceAlerts,curPage,escH,fmtDayHdr,indBiasInputSig,indBiasPinned,invalidateRateStepCache,isNonFx,macroCcyFor,openM,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,resetNonFxIndBias,REALZINS_IND,realzinsGilt,resolvePairPriceSeries,save,stripPeriodSuffix,syms,todayStr,trackIndValues,widgets,istAssetEigen,assetEigenFeed} from './main.js';
+import {DATA_BASE,FEED_TIMEOUT_MS,DATA_LIVE_OK,feedEntryFor,kanonIndName,IND_RESEARCH_DATA,LOWER_IS_BETTER_RE,SB_CATS,adoptChartHist,adoptFeedHistory,applyRevisionToValHist,applyTrendModel,checkPriceAlerts,curPage,escH,fmtDayHdr,indBiasInputSig,indBiasPinned,invalidateRateStepCache,isNonFx,macroCcyFor,openM,parseNumLike,pushU,recordScoreHist,renderDash,rerender,rerenderBald,researchBias,resetNonFxIndBias,REALZINS_IND,realzinsGilt,GLOBAL_YIELDS_IND,globalYieldsGilt,resolvePairPriceSeries,save,stripPeriodSuffix,syms,todayStr,trackIndValues,widgets,istAssetEigen,assetEigenFeed} from './main.js';
 
 // ── INDIKATOR-WERTE AUS ECHTER API-QUELLE (ind_data.json) ──
 // ind_data.json wird stündlich per GitHub Action aus TradingViews
@@ -347,6 +347,7 @@ function applyBondDataFeed(){
     });
   });
   if(applyRealzinsFeed(yesterday))changed=true;
+  if(applyGlobalYieldsFeed(yesterday))changed=true;
   if(changed)syms.forEach(c=>{if(isNonFx(c.id))resetNonFxIndBias(c);});
   return changed;
 }
@@ -385,6 +386,67 @@ function applyRealzinsFeed(yesterday=isoMinusDays(todayStr(),1)){
       changed=true;
     }
     if(ind.bias!==bias){ind.bias=bias;changed=true;}
+    if(ind.pkt!==pkt){ind.pkt=pkt;changed=true;}
+    if(ind.trendBias&&ind.trendBias!=='neu'){ind.trendBias='neu';changed=true;}
+  });
+  return changed;
+}
+// ── GLOBAL YIELDS (seit 2026-11-22, VERSION-CHECK-799, Score-Modell 40) ──
+// Ein Durchschnitt der 10Y-Renditen ALLER Waehrungen der App (bond_data.json, 8 Reihen), je Tag mit dem
+// letzten bekannten Wert jeder Reihe, erst ab dem Tag, an dem alle Reihen da sind (sonst springt der
+// Durchschnitt, wenn eine Reihe dazukommt). Trend: Tagesschluss gegen EMA 90 des Durchschnitts.
+// Ueber der EMA -> bearish -0,5, darunter -> bullish +0,5 (feste Punkte, ind.pkt), gleich -> 0.
+// Zeile in der Inflation-Karte jedes Nicht-FX-Assets ausser den Yield-Assets (globalYieldsGilt).
+// Weniger als 90 gemeinsame Tage -> keine Wertung, nichts geschaetzt.
+const GLOBAL_YIELDS_PKT=0.5,GLOBAL_YIELDS_EMA=90;
+function globalYieldsReihe(yesterday=isoMinusDays(todayStr(),1)){
+  if(!BOND_DATA_FEED)return null;
+  const rs=Object.keys(BOND_DATA_FEED).map(c=>{const e=BOND_DATA_FEED[c]&&BOND_DATA_FEED[c]['10Y Bond Yield'];
+    const ser=e&&Array.isArray(e.series)?e.series.filter(x=>x&&x[0]&&x[0]<=yesterday&&isFinite(Number(x[1]))).map(x=>[String(x[0]).slice(0,10),Number(x[1])]):[];
+    return ser.length?{c,ser}:null;}).filter(Boolean);
+  if(rs.length<2)return null;
+  const tage=[...new Set(rs.flatMap(r=>r.ser.map(x=>x[0])))].sort();
+  const letzte={},idx={};rs.forEach(r=>{idx[r.c]=0;});
+  const out=[];
+  tage.forEach(d=>{
+    rs.forEach(r=>{while(idx[r.c]<r.ser.length&&r.ser[idx[r.c]][0]<=d){letzte[r.c]=r.ser[idx[r.c]][1];idx[r.c]++;}});
+    if(rs.every(r=>letzte[r.c]!=null))out.push([d,rs.reduce((a,r)=>a+letzte[r.c],0)/rs.length]);
+  });
+  return{ccys:rs.map(r=>r.c),reihe:out};
+}
+function applyGlobalYieldsFeed(yesterday=isoMinusDays(todayStr(),1)){
+  const g=globalYieldsReihe(yesterday);
+  let sg=null;
+  if(g&&g.reihe.length>=GLOBAL_YIELDS_EMA){
+    const k=2/(GLOBAL_YIELDS_EMA+1);let ema=g.reihe.slice(0,GLOBAL_YIELDS_EMA).reduce((a,x)=>a+x[1],0)/GLOBAL_YIELDS_EMA;
+    for(let i=GLOBAL_YIELDS_EMA;i<g.reihe.length;i++)ema=g.reihe[i][1]*k+ema*(1-k);
+    const a=g.reihe[g.reihe.length-1],p=g.reihe[g.reihe.length-2];
+    const bias=a[1]>ema?'bear':a[1]<ema?'bull':'neu';
+    sg={aDate:a[0],aVal:a[1],pDate:p?p[0]:null,pVal:p?p[1]:null,ema,bias,n:g.ccys.length};
+  }
+  let changed=false;
+  syms.forEach(c=>{
+    const rub=(c.rubrics||[]).find(r=>r&&r.name==='Inflation');
+    if(!rub||!Array.isArray(rub.indicators))return;
+    const idx=rub.indicators.findIndex(i=>i&&i.name===GLOBAL_YIELDS_IND);
+    if(!globalYieldsGilt(c.id)){if(idx>=0){rub.indicators.splice(idx,1);changed=true;}return;}
+    if(!sg)return;
+    let ind=idx>=0?rub.indicators[idx]:null;
+    if(!ind){
+      ind={id:'gy'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:GLOBAL_YIELDS_IND,bias:'neu',imp:false,date:'',interval:'',points:[]};
+      const n=rub.indicators.findIndex(i=>i&&(i.name===REALZINS_IND||stripPeriodSuffix(i.name).base==='10Y Bond Yield'));
+      const n2=rub.indicators.findIndex(i=>i&&i.name===REALZINS_IND);
+      rub.indicators.splice(n2>=0?n2+1:(n>=0?n+1:rub.indicators.length),0,ind);changed=true;
+    }
+    const pkt=sg.bias==='bull'?GLOBAL_YIELDS_PKT:sg.bias==='bear'?-GLOBAL_YIELDS_PKT:0;
+    const aStr=fmtYield(sg.aVal),pStr=sg.pVal==null?null:fmtYield(sg.pVal),emaStr=fmtYield(sg.ema);
+    const bondColor=sg.bias==='bull'?'bond-up':sg.bias==='bear'?'bond-down':'bond-flat';
+    const r=ind.research||{};
+    if(!(r.bond&&r.globalYields&&r.actual===aStr&&r.previous===pStr&&r.date===sg.aDate&&r.ema===emaStr&&r.ccys===sg.n)){
+      ind.research={actual:aStr,forecast:null,previous:pStr,date:sg.aDate,prevDate:sg.pDate,source:'',bond:true,globalYields:true,ema:emaStr,ccys:sg.n,bondColor};
+      changed=true;
+    }
+    if(ind.bias!==sg.bias){ind.bias=sg.bias;changed=true;}
     if(ind.pkt!==pkt){ind.pkt=pkt;changed=true;}
     if(ind.trendBias&&ind.trendBias!=='neu'){ind.trendBias='neu';changed=true;}
   });
@@ -873,7 +935,7 @@ function updFFLastUpd(){
 
 
 export {
-  IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,applyRealzinsFeed,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
+  IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,applyRealzinsFeed,applyGlobalYieldsFeed,globalYieldsReihe,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
   isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,holeNewsArchiv,newsArchivFuer,newsVollstaendig,NEWS_AI,fetchNewsAi,mergeNewsAi,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
