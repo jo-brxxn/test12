@@ -1710,7 +1710,7 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **Settings:** Währung als Chips, verbundene Assets nur als Chips (× löst), neue über die gruppierte Liste „＋ Link asset“ (2-Spalten-Fenster) — nie wieder eine Kachel je Asset.
 
 
-## Data: Speicherplätze „Saved“ (seit 2026-11-22, 804)
+## Data: Speicherplätze „Saved“ (seit 2026-11-22, 805)
 - Knopf **Saved n** in der Werkzeugzeile hinter Display → Menü: *Save current view* (Name, Vorschlag aus Ansicht + Inhalt), Liste: Antippen = laden, Überschreiben / Umbenennen / Löschen
 - Gilt für **alle fünf Ansichten**; nichts wird automatisch gespeichert
 - Platz mit **genau einem Asset** (By indicator, Compare all mit einem Asset): Auswahl *for* lädt dieselben Charts für ein anderes Asset; was dort fehlt, steht in der Meldung (*not available for GOLD: …*), wird nie ersetzt

@@ -7554,7 +7554,7 @@ function neueFelderBehalten(fremd,lokal){
   // gameplans: Gameplan je Asset (seit 2026-11-16, 737).
   // econThesen: Thesen der Economy Map (seit 2026-11-21, 784).
   // profil: Vor- und Nachname (seit 2026-11-22, 801).
-  // dataSlots: Speicherplaetze der Data-Seite (seit 2026-11-22, 804).
+  // dataSlots: Speicherplaetze der Data-Seite (seit 2026-11-22, 805).
   ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil','dataSlots'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
@@ -21664,6 +21664,11 @@ function indChartSeries(ind,symId){
   const base=stripPeriodSuffix(ind.name).base;
   let pts=[],unit=null;
   if(ccy&&BOND_INDS.includes(base)){pts=bondSeriesPts(ccy,base);unit='%';}
+  // 804 (Nutzer-Foto 2026-11-22: "hat keine Historie"): berechnete Zins-Zeilen zeigen die Reihe, aus der sie
+  // gerechnet werden - Kurve = 10Y minus 2Y derselben Waehrung, Realzins = US-TIPS, Global Yields = der Durchschnitt.
+  else if(ccy&&base===KURVE_IND){pts=bondSpreadPts(ccy);unit=' pp';}
+  else if(base===REALZINS_IND){pts=bondSeriesPts('USD',REALZINS_IND);unit='%';}
+  else if(base===GLOBAL_YIELDS_IND){const g=globalYieldsReihe(todayStr());pts=g?g.reihe.map(x=>[x[0],Math.round(x[1]*1000)/1000,null]):[];unit='%';}
   else if(r.cot&&id){pts=cotHistPts(id,base);unit='%';}
   else if(r.sent&&r.sentKey){pts=sentHistPts(r.sentKey);unit=r.sentKey==='aaii'?'%':'';}
   if(pts.length<2){try{const ab=abgeleiteteReihe(ind,id);if(ab&&ab.pts&&ab.pts.length>=2){pts=ab.pts;unit=ab.unit;}}catch(e){}}

@@ -8,19 +8,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Varianten der Abfrage
+      - name: Katalog nach Job-Vacancy-Datensaetzen durchsuchen
+        run: |
+          curl -sL --max-time 120 -o flows.xml "https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/dataflow/ESTAT/all?detail=allstubs" || true
+          echo "=== Katalog $(wc -c < flows.xml) Bytes"
+          python3 - <<'PY'
+          import re
+          t=open('flows.xml',errors='ignore').read()
+          for m in re.finditer(r'<s:Dataflow[^>]*id="([^"]+)"[^>]*>(.*?)</s:Dataflow>',t,re.S):
+              name=' '.join(re.findall(r'<c:Name[^>]*xml:lang="en"[^>]*>([^<]*)</c:Name>',m.group(2)))
+              if re.search(r'vacanc',name,re.I) or m.group(1).lower().startswith(('jvs','ei_lmjv')): print('   ',m.group(1),'|',name)
+          PY
+      - name: Abfrage je gefundenem Datensatz
         run: |
           B="https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data"
-          for Q in "jvs_q_nace2?format=JSON&lang=EN&geo=EA20" "jvs_q_nace2?format=JSON&lang=EN&geo=EA20&indic_em=JOBRATE" "jvs_q_nace2?format=JSON&lang=EN&geo=EA20&nace_r2=B-S" "jvs_q_nace2?format=JSON&lang=EN&geo=EA&indic_em=JOBRATE" "jvs_q_nace2?format=JSON&lang=EN&sinceTimePeriod=2025-Q1&geo=EA20" "ei_lmjv_q_r2?format=JSON&lang=EN&geo=EA20"; do
-            CODE=$(curl -sL -o v.json -w "%{http_code}" --max-time 60 "$B/$Q" || echo 000)
-            echo "=== $CODE $(wc -c < v.json) $Q"
-            python3 - <<'PY' || head -c 400 v.json
+          for D in $(python3 -c "
+          import re;t=open('flows.xml',errors='ignore').read()
+          print(' '.join(i for i in re.findall(r'<s:Dataflow[^>]*id=\"([^\"]+)\"',t) if i.lower().startswith(('jvs','ei_lmjv'))))"); do
+            CODE=$(curl -sL -o v.json -w "%{http_code}" --max-time 60 "$B/$D?format=JSON&lang=EN&geo=EA20&sinceTimePeriod=2024-Q1" || echo 000)
+            echo "=== $CODE $(wc -c < v.json) $D"
+            python3 - <<'PY' || head -c 300 v.json
           import json
           j=json.load(open('v.json'))
-          if 'id' not in j: print(json.dumps(j)[:400]); raise SystemExit
-          print('updated',j.get('updated'),'size',j['size'])
+          if 'id' not in j: print(json.dumps(j)[:300]); raise SystemExit
+          print('   updated',j.get('updated'),'size',j['size'])
           for d in j['id']:
               c=list(j['dimension'][d]['category']['index'].keys())
-              print('  ',d,len(c),c[:14] if d!='time' else c[-6:])
+              print('     ',d,len(c),c[:14] if d!='time' else c[-6:])
           PY
           done
