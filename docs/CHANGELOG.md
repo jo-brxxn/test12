@@ -22995,3 +22995,22 @@ Nutzer: *„bei der Weltkugel oben und unten die Wörter Signal und Tracking ent
 - **Aufbau:** 3 elliptische Bahnen (Stufe 1 innen, 2 Mitte, 3 außen), Planet je Sektor (Radius 34/16/11), Monde = Gruppen, Satelliten = Firmen.
 - **Gemessen beim Bau:** Übersicht zeigte zuerst nur 10 von 17 Sektornamen — der KI-Planet hat bei *Fit* nur 24,5 px Radius („Compute“ braucht ~37) und außen lagen die mittleren Systeme → Ausweichplätze innen/seitlich/weiter außen → 17/17. Beim Zoom fehlten NVDA/TSMC/INTC-Kästen: Monde wuchsen mit (26 px) und sperrten → Mond max. 9 px; verdeckte Linkpartner bekommen Ausweichplätze mit Haltelinie. Gruppennamen fehlten beim Zoom (Kandidaten im eigenen Satellitenkreis) → außerhalb des Kreises.
 - Wächter `check/wirtschaft.js` angepasst (Planeten nach Stufe, Gegenprobe = Beschriftung ohne Platzprüfung).
+
+## 2026-11-22 — Price-Karte: Spalte bleibt beim schnellen Wischen stehen (VERSION-CHECK-789)
+
+Nutzer (iPad-Screenshot, Platinum 6M): *„Wenn man zu schnell drüber hovert … hängt sich es auf“* — Tooltip Tue Sep 29, Spalte links „Week of Mon, Sep 7“.
+
+- **Reproduziert** (Chromium, CDP-Touch, Platinum 6M): Wischen mit kurzem senkrechten Anteil →
+  - `pointercancel`, danach **2** pointermove gegenüber **12** touchmove
+  - Tooltip (`chartHoverWrap`, hängt an touchmove) läuft bis *Thu Sep 17*
+  - Spalte (`pkHoverAnbinden`, hing an pointermove) bleibt bei *Week of Mon, Jun 1*
+- Maus (Chromium + WebKit, 1–40 Schritte): kein Fehler.
+- **Ursache**: zwei Ereignisquellen für eine Geste. Der Browser übernimmt die Geste zum Scrollen und beendet nur die Pointer-Kette.
+- **Fix** `js/preiskarte.js`:
+  - Finger: die Spalte folgt `touchstart`/`touchmove`, also derselben Quelle wie der Tooltip.
+  - `pointermove` gilt nur noch für die Maus.
+- **Nachher**: gleiche Geste ergibt *Week of Mon, Sep 14*, passend zum Tooltip.
+- **Fehlerklasse**:
+  - Die Zeitspannen-Schere nutzt Pointer mit `setPointerCapture` und nur bei aktiver Schere; das ist bewusst so.
+  - Andere Tooltips laufen nur über chartHoverWrap.
+- **Wächter** `check/preiskarte.js` D2: Geste mit `pointercancel`, Spalte muss den Endpunkt zeigen. Gegenprobe `--gegenprobe-finger` meldet D2 rot.

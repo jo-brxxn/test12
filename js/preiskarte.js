@@ -333,13 +333,23 @@ function pkTagAn(e){
 function pkHoverAnbinden(){
   const el=pkLage();if(!el||el.__hov)return;el.__hov=1;
   const box=el.closest('.ab-pk-chart')||el.parentElement;
-  box.addEventListener('pointermove',e=>{
+  // ⚠ Finger: Spalte folgt touchmove, NICHT pointermove (2026-11-22, VERSION-CHECK-789).
+  // Gemessen: Wischen mit kurzem senkrechten Anteil -> der Browser uebernimmt die Geste,
+  // schickt pointercancel und danach keine pointermove mehr (2 statt 12), touchmove laeuft
+  // weiter. Der Tooltip (chartHoverWrap) haengt an touchmove und lief bis Sep 17, die
+  // Spalte blieb bei "Week of Mon, Jun 1" stehen. Beide jetzt aus derselben Quelle.
+  const finger=cx=>{
     if(pkAdd)return;
+    const t=pkTagAn({clientX:cx});if(!t)return;
+    pkHover=null;if(!(pkSel&&pkSel.k===t.k))pkWaehle(t.k,true);
+  };
+  box.addEventListener('pointermove',e=>{
+    if(pkAdd||e.pointerType!=='mouse')return;
     const t=pkTagAn(e);
-    if(!t){if(e.pointerType==='mouse')pkHoverSetzen(null);return;}
-    if(e.pointerType==='mouse')pkHoverSetzen(t.L.a,t.k);
-    else{pkHover=null;if(!(pkSel&&pkSel.k===t.k))pkWaehle(t.k,true);}
+    pkHoverSetzen(t?t.L.a:null,t?t.k:null);
   });
+  box.addEventListener('touchstart',e=>{const t=e.touches[0];if(t)finger(t.clientX);},{passive:true});
+  box.addEventListener('touchmove',e=>{const t=e.touches[0];if(t)finger(t.clientX);},{passive:true});
   box.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')pkHoverSetzen(null);});
 }
 function pkMoveWaehle(k){

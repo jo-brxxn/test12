@@ -26,7 +26,9 @@
 //      nicht; alle weg -> wieder Kerzen, Display "Candles ..."
 //   G) HANDY (390): Spalte UNTER dem Chart, Pfeile je Woche
 // Gegenproben: --gegenprobe-leer (Tipp ins Leere wirkt nicht) -> C rot,
-//   --gegenprobe-linien (Vergleich als Kerzen) -> F rot
+//   --gegenprobe-linien (Vergleich als Kerzen) -> F rot,
+//   --gegenprobe-finger (Spalte ohne touchmove) -> D2 rot
+//   D2 (789): Wischen mit senkrechtem Anteil -> pointercancel; Spalte laeuft trotzdem mit
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const fs = require('fs');
@@ -35,6 +37,8 @@ const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 const GP_L = process.argv.includes('--gegenprobe-leer');
 const GP_K = process.argv.includes('--gegenprobe-linien');
+const GP_F = process.argv.includes('--gegenprobe-finger');
+const M_F = "  box.addEventListener('touchmove',e=>{const t=e.touches[0];if(t)finger(t.clientX);},{passive:true});";
 const PK = fs.readFileSync(path.join(__dirname, '..', 'js', 'preiskarte.js'), 'utf8');
 const M_L = '  if(pkSel)pkWaehle(null);\n},true);';
 const M_K = "preisChartHtml(keys,W,H,{typ:'linie',";
@@ -45,17 +49,18 @@ const rot = m => { console.log('  ✗ ' + m); fehler++; };
 const gruen = m => console.log('  ✓ ' + m);
 
 (async () => {
-  if ((GP_L && !PK.includes(M_L)) || (GP_K && !PK.includes(M_K))) { rot('Gegenprobe: Marke im Code nicht gefunden'); process.exit(1); }
+  if ((GP_L && !PK.includes(M_L)) || (GP_K && !PK.includes(M_K)) || (GP_F && !PK.includes(M_F))) { rot('Gegenprobe: Marke im Code nicht gefunden'); process.exit(1); }
   let pk = PK;
   if (GP_L) pk = pk.replace(M_L, '\n},true);');
   if (GP_K) pk = pk.replace(M_K, "preisChartHtml(keys,W,H,{typ:'kerze',");
+  if (GP_F) pk = pk.replace(M_F, '');
   const b = await chromium.launch();
   const HIER = new globalThis.URL(URL).origin;
   const perr = [];
   async function seite(w, h, asset) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
     await ctx.route(u => u.origin !== HIER, r => ['fetch', 'xhr'].includes(r.request().resourceType()) ? r.abort() : r.fallback());
-    if (GP_L || GP_K) await ctx.route(u => u.origin === HIER && /\/js\/preiskarte\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: pk }));
+    if (GP_L || GP_K || GP_F) await ctx.route(u => u.origin === HIER && /\/js\/preiskarte\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: pk }));
     const p = await ctx.newPage(); p.on('pageerror', e => perr.push(String(e)));
     await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); localStorage.removeItem('fxpro_pk_marken'); } catch (e) {} });
     await p.goto(URL); await wartenBisDatenDa(p);
@@ -124,6 +129,19 @@ const gruen = m => console.log('  ✓ ' + m);
     if (!d1.sel || !/\d/.test(d1.t)) rot(`D: Finger ueber dem Chart zeigt keinen Tag (${JSON.stringify(d1)})`);
     else if (!d2.sel || d2.t !== d1.t) rot(`D: nach dem Loslassen weg (${JSON.stringify(d2)})`);
     else gruen(`D: Finger zieht ueber den Chart -> Spalte "${d1.t}", bleibt nach dem Loslassen`);
+    await p.evaluate(() => pkModusSetzen('next')); await p.waitForTimeout(300);
+    // D2 (789): Wischen mit kurzem senkrechten Anteil -> Browser schickt pointercancel, danach
+    //   keine pointermove mehr; die Spalte muss trotzdem bis zum Endpunkt mitlaufen (wie der Tooltip)
+    await p.evaluate(() => { window.__pkCancel = 0; document.addEventListener('pointercancel', () => window.__pkCancel++, true); });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width * 0.1, y: yy }] });
+    for (let i = 1; i <= 4; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: box.x + box.width * 0.1 + 2 * i, y: yy + 8 * i }] }); await p.waitForTimeout(16); }
+    for (let i = 1; i <= 8; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: box.x + box.width * 0.1 + 8 + (x1 - box.x - box.width * 0.1 - 8) * i / 8, y: yy + 32 }] }); await p.waitForTimeout(16); }
+    await p.waitForTimeout(200);
+    const d3 = await p.evaluate(() => ({ cancel: window.__pkCancel, t: (document.querySelector('.pk-col-t') || {}).textContent || '' }));
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await p.waitForTimeout(300);
+    if (!d3.cancel) rot('D2: Testgeste loest kein pointercancel aus - Pruefung wirkungslos');
+    else if (d3.t !== d1.t) rot(`D2: nach pointercancel bleibt die Spalte bei "${d3.t}" statt "${d1.t}" (Tooltip laeuft weiter)`);
+    else gruen(`D2: schnelles Wischen mit pointercancel -> Spalte laeuft mit bis "${d3.t}"`);
     await p.evaluate(() => pkModusSetzen('next')); await p.waitForTimeout(300);
     // E (seit 739): + Mark -> Punkt (ziehen, rastet auf Kerzenmitte) -> Tipp -> Linie -> zweiter Ort
     //   -> Kasten mit Bullish/Bearish + Text, Rahmen in Bias-Farbe -> Done -> Callout im Chart;
@@ -212,7 +230,7 @@ const gruen = m => console.log('  ✓ ' + m);
   }
   await b.close();
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));
-  if (GP_L || GP_K) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: Waechter bleibt gruen.'); process.exit(fehler ? 0 : 1); }
+  if (GP_L || GP_K || GP_F) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: Waechter bleibt gruen.'); process.exit(fehler ? 0 : 1); }
   console.log(fehler ? `\n✗ preiskarte: ${fehler} Befund(e)` : '\n✓ preiskarte: Aufbau, Pfeile, Spalte, Ausblenden, eigene Pfeile, Vergleich, Handy');
   process.exit(fehler ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });
