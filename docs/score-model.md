@@ -893,3 +893,10 @@ ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
 - Jede Makro-Karte: Bias aus **ihrer eigenen** Summe, Schwelle ±2 — auch gespiegelte Karten auf Non-FX-Assets (same/inverse); die Zeilen werden weiter einzeln gespiegelt
 - Ausnahme COT Data (Vorzeichen-Regel)
 - Grund: Badge zeigte -3.97 in Neutral-Farbe (SILVER), weil der Bias 1:1 von USD kam. Wächter `check/kartenbias.js`
+
+
+## Modell 41 (2026-11-22, VERSION-CHECK-808): keine COT-Geisterzeilen
+
+- Assets ohne COT-Bericht (`COT_SYMS`), also Eisenerz, DAX, die 8 Yields und die 13 Aktien, trugen drei **leere** Zeilen: Net Bullish, Net Bearish und WoW Change.
+- Diese Zeilen zählten im Teiler mit (`symTrackedCount`) und verdünnten den Score; gemessen bei 23 Assets, z. B. Eisenerz 30 → 27, DAX 25 → 22.
+- `applyCotDataFeed` entfernt sie jetzt (Regel „keine Geisterzeile“). Geprüft von `check/chartreihen.js` B.

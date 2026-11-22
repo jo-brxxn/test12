@@ -99,6 +99,7 @@ const JR_MODELL_NOTIZ={
   38:'new assets Platinum (scored like Silver), Iron Ore (like Copper), Russell 2000 (like the S&P 500) and Nikkei 225 (like the DAX, linked to JPY); all get the US real yield row; existing scores unchanged',
   39:'2Y and 10Y yield together at most ±1 on every asset (the 10Y counts again on currencies); Silver: Inflation, Labour Market and Economic Growth now scored inverse to the US data, own row US ISM Manufacturing PMI inverse, new China NBS Manufacturing PMI + China Industrial Production (0.5 each, beat bullish); single indicators can override their card rule in the gear menu',
   40:'new row Global Yields in Inflation on every non-FX asset except yields: average of all eight 10Y yields vs its 90-day EMA, above = bearish −0.5, below = bullish +0.5',
+  41:'assets without a COT report (Iron Ore, DAX, yields, stocks) no longer carry three empty COT rows that counted in the divisor',
   34:'new asset SOL (Solana), scored like BTC (crypto group: mirrored macro cards, own COT, seasonality and Crypto Fear & Greed); existing scores unchanged',
   33:'new assets Copper (scored like Silver) and Natural Gas (like WTI Oil, with its own row Gas Storage: weekly EIA natural gas storage, half weight, a draw is bullish); existing scores unchanged',
   30:'new row OIL Oil Inventories (weekly EIA crude stocks, half weight, a draw is bullish); GBP MPC Vote Split (hike-cut-hold) is shown only and counts 0',

@@ -395,6 +395,7 @@ jobs:
           emp_JPY|JPY|japan/employed-persons
           jolts_JPY|JPY|japan/job-vacancies
           emp_EUR|EUR|euro-area/employment-change
+          emp_CHF|CHF|switzerland/employed-persons
           URLS
           node -e '
             const fs=require("fs");
@@ -2173,7 +2174,7 @@ jobs:
               let tepN=0,tepSkip=0;
               // Reihen, deren TE-Seite eine ANDERE Umfrage misst als die
               // gleichnamige Reihe der RULES: nur Kalender, nie ind_data.
-              const TE_NUR_KALENDER={"CAD|Services PMI":"S&P Global statt Ivey"};
+              const TE_NUR_KALENDER={"CAD|Services PMI":"S&P Global statt Ivey","JPY|Services Inflation":"CPI services statt CSPI"};   // JPY: 807, der Fremdwert kam ueber tepKeep jeden Lauf zurueck
               const heute=new Date().toISOString().slice(0,10);
               tep.forEach(e=>{
                 const ind=e.ind;
@@ -2212,10 +2213,25 @@ jobs:
                 // Eintrag, ihre Historie begann deshalb in JEDEM Lauf neu:
                 // gemessen 17 von 17 TE-Reihen mit genau 1 Punkt.
                 const sameSeries=!e.label;
-                const carriedHist=(sameSeries&&cur&&Array.isArray(cur.historyFull))?cur.historyFull:(pTe&&Array.isArray(pTe.historyFull)?pTe.historyFull:[]);
+                // ⚠ 807 (Nutzer-Foto 2026-11-22, gemessen: EUR/GBP/JPY/CAD/AUD-PMI je 1 Punkt): TV liefert fuer
+                // diese Reihen einen Eintrag mit LEERER historyFull - das leere Array gewann gegen die eigene
+                // TE-Historie (pTe), die damit in jedem Lauf verloren ging. Jetzt: beide vereinigt.
+                const carriedHist=[...((sameSeries&&cur&&Array.isArray(cur.historyFull))?cur.historyFull:[]),...((pTe&&Array.isArray(pTe.historyFull))?pTe.historyFull:[])];
                 const histByDate={};
                 carriedHist.forEach(h=>{if(h&&h[0])histByDate[h[0]]=h;});
                 histByDate[e.date]=[e.date,e.actual,e.forecast||null];
+                // Vorwert der Seite als eigener Punkt (veroeffentlichte Zahl, kein Schaetzwert), datiert auf das
+                // Ende seiner Bezugsperiode - nur wenn die Historie dort noch keinen Release hat (45 Tage davor).
+                if(e.previous!=null&&e.ref){
+                  const MO={january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+                  const QW={first:1,second:2,third:3,fourth:4};
+                  const [rw,ry]=String(e.ref).toLowerCase().split(" ");const y=+ry;
+                  let vEnde=null;
+                  if(MO[rw]&&y){const m=MO[rw]-1,yy=m?y:y-1,mm=m||12;vEnde=new Date(Date.UTC(yy,mm,0)).toISOString().slice(0,10);}
+                  else if(QW[rw]&&y){const q=QW[rw]-1,yy=q?y:y-1,qq=q||4;vEnde=new Date(Date.UTC(yy,qq*3,0)).toISOString().slice(0,10);}
+                  const grenze=new Date(Date.parse(e.date+"T00:00:00Z")-45*864e5).toISOString().slice(0,10);
+                  if(vEnde&&vEnde<e.date&&!Object.keys(histByDate).some(d=>d>=grenze&&d<e.date))histByDate[vEnde]=[vEnde,e.previous,null];
+                }
                 const mergedHist=Object.values(histByDate).filter(h=>String(h[0]).slice(0,10)>=HIST_FULL_FROM).sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0);
                 out[e.country][ind]={actual:e.actual,forecast:e.forecast||((cur&&cur.date===e.date)?cur.forecast:null)||null,
                   previous:e.previous,date:e.date,event:evName,source:"tepage",ref:e.ref||null,

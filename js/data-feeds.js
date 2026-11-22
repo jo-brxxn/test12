@@ -471,6 +471,18 @@ function zeileSetzen(symId,rubName,name,v){   // v: {bias,pkt,research} oder nul
 // NATGAS: Speicher-Aenderung der letzten EIA-Woche gegen den Schnitt derselben ISO-Woche der fuenf
 // Vorjahre (EIA-Praxis "vs 5-year average"). Quelle: ind_data.json USD["Gas Storage"].historyFull.
 function isoWoche(d){const t=new Date(d+'T00:00:00Z'),w=(t.getUTCDay()+6)%7;t.setUTCDate(t.getUTCDate()-w+3);const j=new Date(Date.UTC(t.getUTCFullYear(),0,4));return 1+Math.round(((t-j)/864e5-3+((j.getUTCDay()+6)%7))/7);}
+// 807: dieselbe Rechnung fuer JEDE Woche der Historie (Chart der Zeile "Gas Storage vs 5Y")
+function gasFuenfJahreReihe(){
+  const e=IND_DATA_FEED&&IND_DATA_FEED.USD&&IND_DATA_FEED.USD['Gas Storage'];
+  const h=e&&Array.isArray(e.historyFull)?e.historyFull:null;if(!h)return[];
+  const zahl=x=>{const m=/^\s*(-?\d+(?:\.\d+)?)/.exec(String(x==null?'':x).replace(/,/g,''));return m?+m[1]:null;};
+  const pts=h.filter(x=>x&&x[0]).map(x=>[String(x[0]).slice(0,10),zahl(x[1])]).filter(x=>x[1]!=null);
+  const out=[];
+  pts.forEach(([d,a])=>{const j=+d.slice(0,4),w=isoWoche(d);
+    const vj=pts.filter(x=>+x[0].slice(0,4)>=j-5&&+x[0].slice(0,4)<j&&isoWoche(x[0])===w).map(x=>x[1]);
+    if(vj.length>=4)out.push([d,Math.round((a-vj.reduce((s,x)=>s+x,0)/vj.length)*10)/10,null]);});
+  return out;
+}
 function gasFuenfJahre(){
   const e=IND_DATA_FEED&&IND_DATA_FEED.USD&&IND_DATA_FEED.USD['Gas Storage'];
   const h=e&&Array.isArray(e.historyFull)?e.historyFull:null;if(!h||!e.date)return null;
@@ -935,7 +947,7 @@ function updFFLastUpd(){
 
 
 export {
-  IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,applyRealzinsFeed,applyGlobalYieldsFeed,globalYieldsReihe,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
+  IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,applyRealzinsFeed,applyGlobalYieldsFeed,globalYieldsReihe,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,applyGasFuenfJFeed,gasFuenfJahreReihe,fetchBtcScore,applyBtcScoreFeed,
   isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,holeNewsArchiv,newsArchivFuer,newsVollstaendig,NEWS_AI,fetchNewsAi,mergeNewsAi,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,

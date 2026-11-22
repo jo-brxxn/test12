@@ -25,7 +25,7 @@ import {gameplans,gpRein,gpSetzeAlle,gpVereinen,gpLeisteHtml,gpNiveaus,renderGam
 // Hero-Zeichnung des Dashboards (Nutzer 2026-11-06, siehe Kopf von heroart.js).
 import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
-import {bsHelfer,bsAuf,btcSentimentScore} from './btc-sentiment.js';
+import {bsHelfer,bsAuf,btcSentimentScore,bsDaten,bsLaden,scoreReihe as bsScoreReihe} from './btc-sentiment.js';
 import {srHelfer,openScoreRegeln,srZahnrad,srTyp,srMax} from './scoreregeln.js';
 import {AI_MARKEN,aiMarkeMono} from './marken-icons.js';
 import {sprungLog,sprungtestStart} from './sprungtest.js';
@@ -16377,7 +16377,7 @@ function autoFetchFF(){
 // Daten-Feeds nach js/data-feeds.js ausgekoppelt (docs/module-split.md).
 import {
   IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,
-  isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,applyRealzinsFeed,applyGlobalYieldsFeed,globalYieldsReihe,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
+  isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,applyRealzinsFeed,applyGlobalYieldsFeed,gasFuenfJahreReihe,globalYieldsReihe,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,holeNewsArchiv,newsArchivFuer,newsVollstaendig,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
   tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
@@ -20816,7 +20816,15 @@ function applyCotDataFeed(){
     if(ind.cotTrendPts){delete ind.cotTrendPts;changed=true;}
   };
   syms.forEach(c=>{
-    if(!COT_SYMS.includes(c.id))return;
+    // 807: Assets ohne COT-Bericht (Eisenerz, DAX, Yields, Aktien) trugen drei LEERE COT-Zeilen, die im
+    // Teiler mitzaehlten (Geisterzeilen, gemessen bei 23 Assets) - weg damit, es gibt keine Datenlage.
+    if(!COT_SYMS.includes(c.id)){
+      const rub=(c.rubrics||[]).find(r=>r.name==='COT Data');
+      if(rub&&Array.isArray(rub.indicators)){const n0=rub.indicators.length;
+        rub.indicators=rub.indicators.filter(i=>{const b=stripPeriodSuffix(i.name).base;return !((COT_NET_HALF.has(b)||b===COT_WOW_BASE)&&!(i.research&&i.research.cot));});
+        if(rub.indicators.length!==n0)changed=true;}
+      return;
+    }
     const m=cotMetrics(COT_DATA.symbols[c.id]);
     if(!m)return;
     const rub=(c.rubrics||[]).find(r=>r.name==='COT Data');
@@ -21668,6 +21676,11 @@ function indChartSeries(ind,symId){
   // gerechnet werden - Kurve = 10Y minus 2Y derselben Waehrung, Realzins = US-TIPS, Global Yields = der Durchschnitt.
   else if(ccy&&base===KURVE_IND){pts=bondSpreadPts(ccy);unit=' pp';}
   else if(base===REALZINS_IND){pts=bondSeriesPts('USD',REALZINS_IND);unit='%';}
+  else if(base==='Gas Storage vs 5Y'){pts=gasFuenfJahreReihe();unit='B';}
+  else if(base==='BTC Sentiment Score'){const D=bsDaten();
+    if(D)pts=bsScoreReihe(D).map(x=>[new Date(x[0]).toISOString().slice(0,10),Math.round(x[1]*10)/10,null]);
+    else if(!indChartSeries._bsLaedt){try{const pr=bsLaden();if(pr){indChartSeries._bsLaedt=1;pr.then(()=>{if(curPage==='cur')renderDetail();}).finally(()=>{indChartSeries._bsLaedt=0;});}}catch(e){indChartSeries._bsLaedt=0;}}
+    unit='';}
   else if(base===GLOBAL_YIELDS_IND){const g=globalYieldsReihe(todayStr());pts=g?g.reihe.map(x=>[x[0],Math.round(x[1]*1000)/1000,null]):[];unit='%';}
   else if(r.cot&&id){pts=cotHistPts(id,base);unit='%';}
   else if(r.sent&&r.sentKey){pts=sentHistPts(r.sentKey);unit=r.sentKey==='aaii'?'%':'';}

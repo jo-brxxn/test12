@@ -23267,3 +23267,21 @@ Fortsetzung des Nutzer-Fotos (EUR Job Vacancy Rate „kaputt, keine Historie“)
   - Quellen-Link der Zeile zeigt auf Eurostat.
 - **Werte (Sonde):** 2026-Q3 **2,0 %**, Vorquartal 2,1 %, 83 Quartale ab 2006.
 - **App-Test mit diesem Format:** Wert 2,0 %, Chart 24 Punkte (Test), Step bearish −0,47.
+
+## 2026-11-22 — Alle Zeilen ohne Historie durchgegangen (VERSION-CHECK-808, Score-Modell 41)
+
+Nutzer: *„Ja dann schau dir das alles an und beheb das“* (Liste aus 807).
+
+Gemessen je Zeile (`indChartSeries` über alle Assets, `ind_data.json`):
+
+| Zeile | Ursache | Fix |
+|---|---|---|
+| EUR/GBP/JPY/CAD/AUD Manufacturing PMI (+ abhängige Assets) | Trading-Economics-Reihe hat **1 Punkt**. Der Workflow nahm die leere `historyFull` des TV-Eintrags statt der eigenen TE-Historie; die Historie ging in jedem Lauf verloren. | Beide Historien werden vereinigt. Dazu kommt der **Vorwert der Seite** als Punkt am Ende seiner Bezugsperiode, nur wenn dort noch kein Release steht. Ab dem nächsten Lauf mind. 2 Punkte. |
+| JPY Services Inflation (CSPI) | Der falsche TE-Wert „CPI services“ wurde über „kept from previous run“ (`tepKeep`) **jeden Lauf zurückgebracht**. | `TE_NUR_KALENDER` „JPY\|Services Inflation“. Der CSPI kommt nur von Investing.com (Historie 4 Punkte, wenn Investing nicht blockt). |
+| CHF Employment Level | Gar keine Quelle, nur der Startwert vom 04.06. | TE-Seite `switzerland/employed-persons` im Seiten-Abruf. |
+| CHF Wage Index | Jährlicher Wert, keine Quelle | ⚠ offen: Der BFS-Lohnindex erscheint einmal im Jahr. |
+| Gas Storage vs 5Y | Reihe nicht gebaut | `gasFuenfJahreReihe()` liefert dieselbe Rechnung für jede Woche, 199 Punkte. |
+| BTC Sentiment Score | Reihe nicht gebaut, Daten nur auf der BTC-Seite geladen | `scoreReihe` aus `btc_sentiment.json`, beim Aufklappen nachgeladen, 2704 Tage. |
+| COT-Zeilen bei 23 Assets ohne COT | leere Geisterzeilen, zählten im Teiler | entfernt (Score-Modell 41) |
+
+- **Wächter:** neu `check/chartreihen.js` (Gegenprobe → rot).

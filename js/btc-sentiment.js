@@ -64,6 +64,8 @@ const SCORE_IND = IND.filter(i => i.score);
 
 // ── Daten laden + aufbereiten ────────────────────────────────────────────
 export function bsDaten() { return D; }
+// 807: fuer den Chart der Score-Zeile "BTC Sentiment Score" (Asset-Seite BTC) - laedt die Daten einmal nach
+export function bsLaden() { return holen(); }
 function holen() {
   if (ROH || laden) return laden;
   laden = fetch(H.DATA_BASE + 'btc_sentiment.json?t=' + Math.floor(Date.now() / 3e5), { signal: AbortSignal.timeout(H.FEED_TIMEOUT_MS), cache: 'no-store' })
