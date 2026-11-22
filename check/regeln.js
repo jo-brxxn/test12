@@ -49,13 +49,14 @@ function zinsSoll(bond, ccy) {
   // A) COT-Tabelle an eingespeisten Werten + echte Zeilen gegen die Regel
   const a = await p.evaluate(() => {
     const out = { tab: [], zeilen: [] };
-    [[62, 38, 0, 0.75, 0], [55, 45, 3, 0, 0.75], [55, 45, -5, 0, -1.05], [55, 45, 7.5, 0, 1.275], [55, 45, 12, 0, 1.35],
-     [60, 40, 10, 0.75, 0.75], [30, 70, -12, -0.75, -0.75], [30, 70, 5, -0.75, 1.05], [59.9, 40.1, 2.9, 0, 0]]
+    // Modell 42 (2026-11-22): Netto-Positionierung zaehlt 0 (nur Anzeige), Woche mit dem Trend bis +-1,35
+    [[62, 38, 0, 0, 0], [55, 45, 3, 0, 0.75], [55, 45, -5, 0, -1.05], [55, 45, 7.5, 0, 1.275], [55, 45, 12, 0, 1.35],
+     [60, 40, 10, 0, 1.35], [30, 70, -12, 0, -1.35], [30, 70, 5, 0, 1.05], [59.9, 40.1, 2.9, 0, 0]]
       .forEach(([l, s, d, netz, wow]) => { const c = cotPunkte({ longPct: l, shortPct: s, dNetPct: d }); out.tab.push({ l, d, netz, wow, ist: c }); });
     syms.forEach(sym => {
       const rub = (sym.rubrics || []).find(r => r.name === 'COT Data'); if (!rub || !COT_DATA || !COT_DATA.symbols || !COT_DATA.symbols[sym.id]) return;
       const m = cotMetrics(COT_DATA.symbols[sym.id]); if (!m) return;
-      const s0 = cotPunkte(m), k = ['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD'].includes(sym.id) ? -1 : 1;   // Modell 28: Waehrungen gegen die Spekulanten
+      const s0 = cotPunkte(m), k = 1;   // Modell 42: ueberall mit dem Trend (Modell 28 drehte die Waehrungen)
       const soll = { netz: k * s0.netz, wow: k * s0.wow };
       const w = n => { const i = rub.indicators.find(x => stripPeriodSuffix(x.name).base === n); return i ? indScore(i, rub) : null; };
       out.zeilen.push({ id: sym.id, soll, netz: roundSc((w('Net Bullish Positioning') || 0) + (w('Net Bearish Positioning') || 0)), wow: w('WoW Change in Net Position (%)') });

@@ -75,7 +75,7 @@ const init = () => { try { localStorage.setItem('fxpro_help_seen', '1'); localSt
  const stale=i=>{const r=i.research;if(!r||!r.date)return false;if(r.bond||r.cot||r.sent)return false;if(DATA_LIVE_OK.ind===false)return false;if(guess(i))return false;const c=cycle(i);const age=(new Date(today)-new Date(String(r.date).slice(0,10)))/864e5;if(!(age>=0))return false;return age/c>2};
  // Modell 30 (2026-11-01): Oil Inventories (nur OIL) halbes Gewicht, MPC Vote Split 0.
  // Modell 33 (2026-11-16): Gas Storage (nur NATGAS) halbes Gewicht.
- const ZERO=new Set(['MPC Vote Split']);
+ const ZERO=new Set(['MPC Vote Split','Net Bullish Positioning','Net Bearish Positioning']);   // 42: COT-Netto nur Anzeige
  const half=(i,rub)=>{const bn=strip(i.name);if(BOND.has(i.name))return true;if(bn==='Oil Inventories'||bn==='Gas Storage')return true;if(bn==='Net Bullish Positioning'||bn==='Net Bearish Positioning')return true;if(i.name==='Seasonality'||i.name==='Retail Positioning')return true;
    if(bn==='WoW Change in Net Position (%)'){const v=parseFloat(String((i.research||{}).actual??'').replace(',','.'));if(isFinite(v)&&Math.abs(v)<3)return true}
    if(SENT.has(bn))return true;if(i.name==='Risk Correlation')return true;

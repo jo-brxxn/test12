@@ -900,3 +900,14 @@ ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
 - Assets ohne COT-Bericht (`COT_SYMS`), also Eisenerz, DAX, die 8 Yields und die 13 Aktien, trugen drei **leere** Zeilen: Net Bullish, Net Bearish und WoW Change.
 - Diese Zeilen zählten im Teiler mit (`symTrackedCount`) und verdünnten den Score; gemessen bei 23 Assets, z. B. Eisenerz 30 → 27, DAX 25 → 22.
 - `applyCotDataFeed` entfernt sie jetzt (Regel „keine Geisterzeile“). Geprüft von `check/chartreihen.js` B.
+
+
+## Modell 42 (2026-11-22, VERSION-CHECK-810): COT mit dem Trend, Netto nur Anzeige
+
+- **Nutzer:** *„ich möchte praktisch Trends mitnehmen. Das heißt, eine positive Week-over-Week-Änderung bleibt bullish … und auch andersrum … stelle es bitte aktuell auf komplett neutral, sodass man es nur sieht“*.
+- **Wochenänderung:**
+  - Zählt bei **allen** Assets in Richtung der Änderung, Stufen 3/5/7,5/10 Punkte → 0,75/1,05/1,275/1,35.
+  - Modell 28 hatte sie bei den acht Währungen gedreht. Das ist damit zurückgenommen, **gegen die Messung** von 2016–2026 (t −2,1 für die alte Regel mit den Spekulanten).
+- **Netto-Positionierung** (Net Bullish/Bearish): nur Anzeige, `SCORE_ZERO`, nicht im Teiler.
+- **Offen:** die Regel des Nutzers „ab 3 Wochen Zunahme/Abnahme Effekt 0, danach zählt die neue Richtung“. Siehe Erinnerung in `CLAUDE.md`.
+- **Geprüft von** `check/regeln.js` (COT-Tabelle + echte Zeilen), `check/scorenachrechnung.js` und `check/modell28.js`.

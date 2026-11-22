@@ -202,7 +202,8 @@ const SEAS_RETAIL_HALF=new Set(['Seasonality','Retail Positioning']);
 // Release-Tag -5,1 bp in Signalrichtung (t -0,35), bis D+5 +6,9 bp (t 0,24):
 // kein messbarer Effekt -> "Nur Anzeige". Hier statt in M28_NUR_ANZEIGE,
 // weil die Zeile auch auf GBYIELD (an GBP gespiegelt) 0 zaehlen muss.
-const SCORE_ZERO=new Set(['MPC Vote Split']);
+// Modell 42 (2026-11-22): COT-Netto-Positionierung nur Anzeige, nicht im Teiler (Nutzer: "komplett neutral, sodass man es nur sieht")
+const SCORE_ZERO=new Set(['MPC Vote Split','Net Bullish Positioning','Net Bearish Positioning']);
 // Rubriken OHNE Trend-Anteil (Nutzer-Entscheid 2026-07-05): in der Interest-
 // Rates-Rubrik zaehlt KEIN Trend-Bonus in den Score und es erscheint kein
 // Trend-Chip - weder fuer die Bond-Renditen (25-Tage-Vergleich) noch fuer
@@ -1944,7 +1945,7 @@ function symScoreCmp(sym){
 // anderen Metallen ... Naturalgas ... gleich wie bei Oel"): zwei neue Assets; NATGAS mit eigener Zeile
 // Gas Storage (EIA, woechentlich, halbes Gewicht, Abbau = bullish) wie OIL Oil Inventories. Die Scores der
 // bestehenden Assets aendern sich nicht.
-const SCORE_MODEL_VERSION=41;
+const SCORE_MODEL_VERSION=42;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.

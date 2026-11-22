@@ -20776,7 +20776,8 @@ function cotWarningActive(){
 const COT_NETZ_AB=60,COT_NETZ_PKT=0.75,COT_MAX=1.5;
 const COT_WOW_STUFEN=[[10,1.35],[7.5,1.275],[5,1.05],[3,0.75]];
 function cotPunkte(m){
-  const netz=m.longPct>=COT_NETZ_AB?COT_NETZ_PKT:m.shortPct>=COT_NETZ_AB?-COT_NETZ_PKT:0;
+  // Modell 42: Netto-Positionierung nur Anzeige - zaehlt 0 (Regel offen, siehe applyCotDataFeed)
+  const netz=0;
   const d=+m.dNetPct||0,st=COT_WOW_STUFEN.find(([ab])=>Math.abs(d)>=ab);
   let wow=st?Math.sign(d)*st[1]:0;
   const summe=Math.max(-COT_MAX,Math.min(COT_MAX,netz+wow));
@@ -20787,9 +20788,8 @@ function cotPunkte(m){
 // kontra=true: die Regel fuer die acht Waehrungen (seit Modell 28 gegen die
 // Spekulanten). Ohne Argument entscheidet das gewaehlte Asset.
 function cotRegelText(kontra){
-  if(kontra===undefined)kontra=typeof selId!=='undefined'&&FX.includes(selId);
-  if(kontra)return`Against the speculators (= with the commercials, since 2026-10-25): ${COT_NETZ_AB}% or more of the large speculators long gives −${COT_NETZ_PKT}, ${COT_NETZ_AB}% or more short gives +${COT_NETZ_PKT}, otherwise 0. Weekly change of their long share: from ${COT_WOW_STUFEN.slice().reverse().map(([ab,p])=>ab+' pts → '+p).join(', ')}, AGAINST the direction of the change. Together at most ±${COT_MAX}. Why: measured 2016–2026, the speculators are long after the currency has risen (+197 bp in the 13 weeks before they cross 60%) and the currency gives back afterwards (−28 bp in 4 weeks, −56 bp in 13).`;
-  return`Net positioning: ${COT_NETZ_AB}% or more long gives +${COT_NETZ_PKT}, ${COT_NETZ_AB}% or more short gives −${COT_NETZ_PKT}, otherwise 0. Weekly change of the long share: from ${COT_WOW_STUFEN.slice().reverse().map(([ab,p])=>ab+' pts → '+p).join(', ')} (in the direction of the change). Together at most ±${COT_MAX}; the weekly part is cut back if the sum would go over.`;
+  // Modell 42 (2026-11-22): eine Regel fuer alle Assets - kontra bleibt als Parameter fuer Aufrufer erhalten
+  return`Net positioning (long / short share of the large speculators): shown only, counts 0 - the rule is still open. Weekly change of their long share: from ${COT_WOW_STUFEN.slice().reverse().map(([ab,p])=>ab+' pts → '+p).join(', ')}, in the direction of the change (trend following), on every asset. At most ±${COT_MAX}.`;
 }
 function applyCotDataFeed(){
   if(!COT_DATA||!COT_DATA.symbols)return false;
@@ -20844,11 +20844,14 @@ function applyCotDataFeed(){
     // Die Non-Commercials folgen dem Preis (Korrelation mit den letzten 12
     // Wochen +0,26); gegen sie stehen die Commercials. Nicht-FX (Gold, Oel,
     // Indizes) bleiben bei der alten Richtung - dort ist nichts gemessen.
-    const kontra=FX.includes(c.id)?-1:1;
-    const cp0=cotPunkte(m),cp={netz:kontra*cp0.netz,wow:kontra*cp0.wow,summe:kontra*cp0.summe};
-    const nb=kontra<0?(cp0.netz>0?cp.netz:0):(cp.netz>0?cp.netz:0),ns=kontra<0?(cp0.netz<0?cp.netz:0):(cp.netz<0?cp.netz:0);
-    setOne(rub,'Net Bullish Positioning',cotPct(m.longPct),cotPct(m.prevLongPct),nb>0?'bull':nb<0?'bear':'neu',nb);
-    setOne(rub,'Net Bearish Positioning',cotPct(m.shortPct),cotPct(m.prevShortPct),ns>0?'bull':ns<0?'bear':'neu',ns);
+    // ⚠ Modell 42 (Nutzer 2026-11-22): "ich moechte praktisch Trends mitnehmen. Das heisst, eine positive
+    // Week-over-Week-Aenderung bleibt bullish ... Und stelle es [die Netto-Positionierung] bitte aktuell auf
+    // komplett neutral, sodass man es nur sieht." -> WoW ueberall MIT den Spekulanten (auch die acht
+    // Waehrungen, Modell 28 drehte sie), Netto-Positionierung nur Anzeige (SCORE_ZERO, nicht im Teiler).
+    // OFFEN beim Nutzer: Regel "ab 3 Wochen Zunahme/Abnahme Effekt 0, danach zaehlt die neue Richtung".
+    const cp=cotPunkte(m);
+    setOne(rub,'Net Bullish Positioning',cotPct(m.longPct),cotPct(m.prevLongPct),'neu',0);
+    setOne(rub,'Net Bearish Positioning',cotPct(m.shortPct),cotPct(m.prevShortPct),'neu',0);
     // Einheit pp (Prozentpunkte des Long-Anteils), nicht % - 2026-10-16.
     setOne(rub,'WoW Change in Net Position (%)',cotPct(m.dNetPct,true).replace('%','pp'),null,cp.wow>0?'bull':cp.wow<0?'bear':'neu',cp.wow);
     // Karten-Bias direkt aus dem Score-Vorzeichen ableiten: die COT-Karte

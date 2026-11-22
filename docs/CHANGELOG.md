@@ -23301,3 +23301,12 @@ Nutzer: *„bind eine Quelle ein und halt in der Beschreibung fest das der nur e
   - Über die normale Altersgrenze (2 Zyklen). Bei quartalsweiser Reihe heißt das: OUT OF DATE, wenn ~6 Monate nach dem erwarteten nächsten Release nichts kam.
   - Der Startwert vom 24.04. steht deshalb bis zum ersten TE-Wert auf OUT OF DATE und zählt 0.
 - **Zuerst** brach der rote Kasten nicht um (abgeschnitten, rechtsbündig geerbt). Behoben mit `white-space:normal`, `text-align:left`.
+
+## 2026-11-22 — COT: Wochenänderung mit dem Trend, Netto-Positionierung nur Anzeige (VERSION-CHECK-810, Score-Modell 42)
+
+- **Auslöser:** Nutzer-Foto JPY („Net Bullish Positioning 64,5 % → −0,75, ist das richtig?“). Das war die Modell-28-Regel gegen die Spekulanten, also kein Rechenfehler.
+- **Neue Regel** (Nutzer: Trends mitnehmen):
+  - Die Wochenänderung zählt überall mit der Richtung der Änderung, auch bei den Währungen.
+  - Die Netto-Positionierung zählt 0 und ist nur Anzeige.
+- **Offen (Nutzer „Oder nein. Erinnere mich … in jeder Nachricht“):** Netto-Regel „ab 3 Wochen gleicher Richtung 0, danach zählt die neue Richtung“. Als Erinnerungspflicht in `CLAUDE.md`.
+- **Wächter angepasst:** `regeln` (Tabelle + Vorzeichen), `scorenachrechnung` (ZERO), `modell28` (Teiler).
