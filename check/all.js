@@ -177,6 +177,7 @@ const PRUEFUNGEN = [
   { n: 'datakarte', s: 40, d: 'Data-Karte der Macro-Reihe: nichts abgeschnitten, kein eigenes Scrollen, Add ganz sichtbar, Panels wie seit 748', f: 'check/datakarte.js', args: [], browser: true },
   { n: 'hovertip', s: 60, d: 'Hover-Info: ganz sichtbar, oberste Ebene, direkt ueber dem Punkt (Data, Asset-Seite, COT)', f: 'check/hovertip.js', args: [], browser: true },
   { n: 'chinablock', s: 20, d: 'China-Block im Score: AUD 0,5+0,5, Kupfer 0,75+0,375+0,375, Beat bullish, nicht gespiegelt, Kalender-Muster', f: 'check/chinablock.js', args: [], browser: true },
+  { n: 'profil', s: 30, d: 'Profil: Vor-/Nachname -> Initialen + Begruessung (sonst Trader), im Sync, langes Druecken = Dark/Light', f: 'check/profil.js', args: [], browser: true },
   { n: 'scoreregeln', s: 45, d: 'Score-Fenster: Score statt Next event auf jeder Asset-Seite, jede Zeile mit Regel und Beitrag <= Fensterwert, Zahnrad nur Nicht-FX, Verbinden ueber Filter', f: 'check/scoreregeln.js', args: [], browser: true },
   { n: 'realzins', s: 30, d: 'US-Realzins: Inflation-Karte nur Nicht-FX ohne Energie/Yields, steigt -0,5 / faellt +0,5 / flach 0, sichtbar', f: 'check/realzins.js', args: [], browser: true },
   { n: 'zusatzzeilen', s: 40, d: 'Eigene Zeilen Silber (ISM/IP), Oel (Rig Count), Erdgas (vs 5 Jahre), BTC (Sentiment-Gesamtwert): Richtung, Gewicht, nur beim Asset', f: 'check/zusatzzeilen.js', args: [], browser: true },

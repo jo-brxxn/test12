@@ -277,7 +277,7 @@ const OEFFNER = {
   await p.route('https://waechter.invalid/**', r => r.abort());
   const offenGespeichert = [
     { id: 'mPriceAlert', src: `openPriceAlertM()`, tippen: [['#paLevel', '1.2345']], knopf: /Create alert/ },
-    { id: 'mCloud', src: `openCloudM()`, tippen: [['#cloudUsername', 'Waechter'], ['#cloudUrl', 'https://waechter.invalid'], ['#cloudKey', 'k'], ['#cloudSyncId', 'waechter']], knopf: /^Save$/ },
+    { id: 'mCloud', src: `openCloudM()`, tippen: [['#cloudUrl', 'https://waechter.invalid'], ['#cloudKey', 'k'], ['#cloudSyncId', 'waechter']], knopf: /^Save$/ },
   ];
   for (const f of offenGespeichert) {
     await oeffne(f.src);

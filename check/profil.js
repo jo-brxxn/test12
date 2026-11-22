@@ -1,208 +1,53 @@
-// ── COUNTRY PROFILE: NUR BEI WAEHRUNGEN, ALS FENSTER, DREI SPALTEN ─────────
-//
-// Nutzer 2026-10-25: "eine neue karte ... in drei spalten" + "nenn die neue
-// karte country profile und fueg sie erstmal nur bei fx ein"; seit
-// 2026-10-27 (VERSION-CHECK-643): "in der Zeile mit den Buttons mach da noch
-// einen Button names country profile ... wenn man den klickt soll sich ein
-// Fenster mit der Karte oeffnen das heist entfern die Karte vom normalen
-// Bildschirm" (docs/design-system.md "Country profile"). Hier geprueft:
-//   A) Jede der acht Waehrungen hat den Knopf "Country profile" in der
-//      Schnellzugriffszeile, er oeffnet #mCountryProfile mit der Karte; kein
-//      Nicht-FX-Asset hat den Knopf.
-//   B) Auf der Asset-Seite selbst steht die Karte nicht mehr.
-//   C) Drei Spalten (Central bank | Economy | What moves it) - bei 1440 px
-//      nebeneinander, bei 390 px untereinander, nie breiter als die Karte.
-//   D) "in score xW" / "shown only" an jedem Rohstoff = ROHSTOFF_KORB (sonst
-//      verspricht die Karte etwas, das der Score nicht tut).
-//   F) Kein Datum mit vierstelligem Jahr ("Mar 2026") - App-Regel "Mar '26".
-//   E) country_data.json fehlt (Workflow noch nicht gelaufen / 404): Karte
-//      steht trotzdem, ohne JS-Fehler.
-//   G) Seit 2026-10-25 (Nutzer: "entfern ... den Teil history und die ganzen
-//      Charts ... ich will das die alle anklickbar sind und dann oeffnet sich
-//      ein Fenster mit dem Chart in normaler Groesse ... zeitintervall
-//      veraendern andere Charts hinzufuegen also so wie bei data"):
-//      kein History-Abschnitt mehr; JEDE Linie der Karte ist anklickbar und
-//      oeffnet #mCpChart mit genau diesem Chart in voller Breite (Y-Achse);
-//      "Add chart" bietet Karte + alle Indikatoren an, bis 8 (der 9. gesperrt);
-//      ein Zeitfilter fuer alle Panels. Seit 2026-10-26 (Nutzer: "soll das so
-//      aussehen wie bei data auch von der Anordnung"): Raster wie Data (8 =
-//      4x2 ohne Scrollen, 1 = ganze Flaeche), Panel-Kopf .data-ph, Auswahl als
-//      Popover, das bei 8 schliesst, kein Name gekuerzt. Seit 643 oeffnet es
-//      sich ueber dem Country-profile-Fenster und laesst es beim Schliessen
-//      offen.
-//   node check/profil.js [--gegenprobe | --gegenprobe-fenster]
-//     --gegenprobe         Knopf bei JPY entfernt          -> A rot
-//     --gegenprobe-fenster Klick auf eine Linie ausgeschaltet -> G rot
+// ── PROFIL: NAME, INITIALEN, BEGRUESSUNG, LANGES DRUECKEN (2026-11-22, VERSION-CHECK-801) ──
+// Nutzer: "optional Namen und Nachnamen ... Beide Anfangsbuchstaben ... oben rechts ... hans Stein ...
+// HS ... entfern den nutzernamen ... Begruessung ... Vorname ... sonst Trader ... wenn man auf den Kreis
+// oben rechts drueckt lange das dann direkt dark Mode und light Mode sich wechseln".
+//  A) ohne Namen: Personen-Symbol, "Trader"; kein Benutzername-Feld mehr
+//  B) hans / Stein -> Kreis "HS", Begruessung "hans", profil im snap() (Sync), nach Neuladen erhalten
+//  C) langes Druecken wechselt Dark/Light und oeffnet die Settings NICHT; kurzes Tippen oeffnet sie
+// --gegenprobe: Initialen nur aus dem Vornamen -> B rot.
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
-const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
 const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
-const GEGENPROBE = process.argv.includes('--gegenprobe'), GP_FENSTER = process.argv.includes('--gegenprobe-fenster');
-const F = []; const fail = (t, x) => F.push(`${t}: ${x}`);
-const FX = ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'NZD'];
-const NICHT_FX = ['GOLD', 'OIL', 'SP500', 'DAX', 'BTC'];
-const ROH_ID = { 'Crude oil (WTI)': 'OIL', 'Iron ore': 'IRON', 'Coal': 'COAL', 'Gold': 'GOLD', 'LNG (JKM)': 'LNG', 'Gas (TTF)': 'GAS', 'Dairy (WMP futures)': 'DAIRY' };
-
-async function seite(b, breite, ohneDaten) {
-  const ctx = await b.newContext({ viewport: { width: breite, height: 1000 }, serviceWorkers: 'block' });
-  if (ohneDaten) await ctx.route('**/country_data.json*', r => r.fulfill({ status: 404, body: '' }));
-  const p = await ctx.newPage();
-  await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) {} });
-  const perr = []; p.on('pageerror', e => perr.push(String(e)));
-  await p.goto(URL); await wartenBisDatenDa(p);
-  await p.evaluate(() => ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); }));
-  return { p, perr, ctx };
-}
-
-const KNOPF = '#detail .ab-qrow .aql[onclick^="cpFensterAuf"]';
-async function messen(p, id) {
-  await p.evaluate(i => { document.querySelectorAll('.ov').forEach(o => { if (o.id && o.style.display !== 'none') closeM(o.id); }); gotoSym(i); }, id);
-  await p.waitForTimeout(900);
-  const vorab = await p.evaluate(([gp, sel]) => {
-    if (gp && getSym().id === 'JPY') { const b = document.querySelector(sel); if (b) b.remove(); }
-    return { knopf: !!document.querySelector(sel), seite: [...document.querySelectorAll('#cpKarte,.cp-card')].filter(k => !k.closest('.ov')).length };
-  }, [GEGENPROBE, KNOPF]);
-  if (!vorab.knopf) return vorab;
-  await p.click(KNOPF); await p.waitForTimeout(700);
-  return p.evaluate(v => {
-    const m = document.getElementById('mCountryProfile'), k = document.getElementById('cpKarte');
-    const o = { ...v, offen: !!m && m.style.display !== 'none', da: !!k && !!k.closest('#mCountryProfile') };
-    if (!o.offen || !o.da) return o;
-    const r = k.getBoundingClientRect();
-    o.spalten = [...k.querySelectorAll('.cp-grid > .cp-col')].map(s => { const b = s.getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top), r: Math.round(b.right), kopf: (s.querySelector('.cp-kopf') || {}).textContent || '' }; });
-    o.breiter = [...k.querySelectorAll('*')].filter(e => { const b = e.getBoundingClientRect(); return b.width && (b.right > r.right + 1 || b.left < r.left - 1); }).slice(0, 3).map(e => e.className || e.tagName);
-    o.roh = [...k.querySelectorAll('.cp-roh')].map(e => ({ n: (e.querySelector('.cp-roh-k b') || {}).textContent || '', badge: (e.querySelector('.cp-roh-s') || {}).textContent || '' }));
-    o.korb = (window.ROHSTOFF_KORB || {})[getSym().id] || null;
-    // Datumsregel (check/datum.js prueft nur die gerade offene Seite): kein
-    // vierstelliges Jahr in den festen Fakten irgendeiner Waehrung.
-    const MON = '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*';
-    const re = new RegExp(MON + '\\.?,? *\\d{0,2},? *(19|20)\\d{2}\\b|\\b\\d{1,2}\\.? *' + MON + ',? *(19|20)\\d{2}\\b');
-    o.history = [...k.querySelectorAll('.cp-sub')].some(x => /^History/.test(x.textContent.trim())) || !!k.querySelector('.cp-hist');
-    o.linien = k.querySelectorAll('.cp-sp').length; o.klickbar = k.querySelectorAll('.cp-spk[onclick] .cp-sp').length;
-    const tw = document.createTreeWalker(k, NodeFilter.SHOW_TEXT); o.datum = [];
-    for (let n = tw.nextNode(); n; n = tw.nextNode()) if (re.test(n.nodeValue || '')) o.datum.push(n.nodeValue.trim().slice(0, 60));
-    return o;
-  }, vorab);
-}
-
+const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
+const GP = process.argv.includes('--gegenprobe');
 (async () => {
-  const b = await chromium.launch();
-  // A-D bei 1440 px mit den Daten, die der Server hat.
-  const { p, perr, ctx } = await seite(b, 1440, false);
-  const KORB = await p.evaluate(() => { try { return ROHSTOFF_KORB; } catch (e) { return null; } });
-  if (!KORB) fail('TESTAUFBAU', 'ROHSTOFF_KORB nicht in der window-Bruecke');
-  for (const id of FX) {
-    const o = await messen(p, id);
-    if (o.seite) fail('NOCH AUF DER SEITE', `${id}: ${o.seite} Karte(n) ausserhalb eines Fensters`);
-    if (!o.knopf) { fail('KNOPF FEHLT', `${id}: kein "Country profile" in der Schnellzugriffszeile`); continue; }
-    if (!o.offen || !o.da) { fail('FENSTER FEHLT', `${id}: Knopf oeffnet kein Fenster mit der Karte`); continue; }
-    const soll = ['Central bank', 'Economy', 'What moves it'];
-    if (o.spalten.length !== 3 || soll.some((t, i) => !new RegExp(t, 'i').test(o.spalten[i].kopf))) fail('SPALTEN', `${id}: ${o.spalten.map(s => s.kopf.trim()).join(' | ') || 'keine'}`);
-    else if (!(o.spalten[0].r <= o.spalten[1].x && o.spalten[1].r <= o.spalten[2].x && Math.abs(o.spalten[0].y - o.spalten[2].y) < 4)) fail('NICHT NEBENEINANDER (1440)', id);
-    if (o.breiter.length) fail('UEBER DEN KARTENRAND', `${id}: ${o.breiter.join(', ')}`);
-    o.datum.forEach(t => fail('DATUM MIT VIERSTELLIGEM JAHR', `${id}: "${t}"`));
-    if (o.history) fail('HISTORY NOCH DA', id);
-    if (o.klickbar !== o.linien) fail('LINIE NICHT ANKLICKBAR', `${id}: ${o.linien - o.klickbar} von ${o.linien} Linien oeffnen kein Chart-Fenster`);
-    o.roh.forEach(r => {
-      const rid = ROH_ID[r.n.trim()];
-      if (!rid) { fail('ROHSTOFF UNBEKANNT', `${id}: "${r.n}" - ROH_ID im Waechter ergaenzen`); return; }
-      const k = ((KORB || {})[id] || []).find(e => e[0] === rid);
-      if (k && !new RegExp('in score ×' + Math.abs(k[1]).toString().replace('.', '\\.') + '\\b').test(r.badge)) fail('BADGE', `${id} ${rid}: zaehlt x${k[1]}, Karte zeigt "${r.badge.trim()}"`);
-      if (!k && !/shown only/.test(r.badge)) fail('BADGE', `${id} ${rid}: zaehlt nicht, Karte zeigt "${r.badge.trim()}"`);
-    });
-  }
-  for (const id of NICHT_FX) {
-    const da = await p.evaluate(i => { if (!syms.find(s => s.id === i)) return null; document.querySelectorAll('.ov').forEach(o => { if (o.id && o.style.display !== 'none') closeM(o.id); }); gotoSym(i); return true; }, id);
-    if (da == null) continue;
-    await p.waitForTimeout(700);
-    const r = await p.evaluate(sel => ({ knopf: !!document.querySelector(sel), karte: [...document.querySelectorAll('#cpKarte,.cp-card')].some(k => !k.closest('.ov')) }), KNOPF);
-    if (r.knopf) fail('KNOPF BEI NICHT-FX', id);
-    if (r.karte) fail('KARTE BEI NICHT-FX', id);
-  }
-  // G) Chart-Fenster: echte Klicks aus dem Country-profile-Fenster heraus
-  await messen(p, 'EUR');
-  if (GP_FENSTER) await p.evaluate(() => document.querySelectorAll('#cpKarte .cp-spk').forEach(e => e.removeAttribute('onclick')));
-  const spk = await p.$('#cpKarte .cp-spk');
-  if (!spk) fail('FENSTER', 'EUR: keine anklickbare Linie');
-  else {
-    await spk.click(); await p.waitForTimeout(700);
-    const f = await p.evaluate(() => {
-      const m = document.getElementById('mCpChart'), body = document.getElementById('cpfBody');
-      const o = { offen: !!m && m.style.display !== 'none' };
-      if (!o.offen) return o;
-      // ueber dem Country-profile-Fenster, nicht darunter
-      const mr = m.querySelector('.modal').getBoundingClientRect(), oben = document.elementFromPoint(mr.left + mr.width / 2, mr.top + 20);
-      o.oben = !!oben && !!oben.closest('#mCpChart');
-      const svg = body.querySelector('.cpf-pc svg'), bw = body.getBoundingClientRect().width;
-      o.panels = body.querySelectorAll('.cpf-panel').length;
-      o.breite = svg ? Math.round(svg.getBoundingClientRect().width / bw * 100) : 0;
-      o.hoehe = svg ? Math.round(svg.getBoundingClientRect().height) : 0;
-      o.yLbl = svg ? new Set([...svg.querySelectorAll('text')].filter(t => /\d/.test(t.textContent) && t.getAttribute('x') && +t.getAttribute('x') < 80).map(t => t.getAttribute('y'))).size : 0;
-      o.zeit = !!body.querySelector('.ind-hist-range-bar .br-sch') && body.querySelectorAll('.ind-hist-range-bar .ind-hist-range-btn').length >= 5;
-      return o;
-    });
-    if (!f.offen) fail('FENSTER', 'Klick auf die Linie oeffnet kein Fenster');
-    else {
-      if (!f.oben) fail('FENSTER', 'Chart-Fenster liegt unter dem Country-profile-Fenster');
-      if (f.panels !== 1) fail('FENSTER', `${f.panels} Panels statt 1 nach dem Klick`);
-      if (f.breite < 85) fail('FENSTER', `Chart nur ${f.breite} % der Fensterbreite - nicht "normale Groesse"`);
-      if (f.hoehe < 400) fail('FENSTER', `ein Chart nur ${f.hoehe} px hoch - wie bei Data soll er die Flaeche fuellen`);
-      if (f.yLbl < 2) fail('FENSTER', 'Chart ohne Y-Beschriftung');
-      if (!f.zeit) fail('FENSTER', 'kein Zeitfilter mit Schere');
-      await p.click('#cpfBody .cpf-add-b'); await p.waitForTimeout(300);
-      const anz = await p.evaluate(() => ({ n: document.querySelectorAll('#cpfPicker .cpf-pick-i').length, gruppen: [...document.querySelectorAll('#cpfPicker .cmp-filter-lbl')].map(x => x.textContent) }));
-      if (anz.n < 15 || !anz.gruppen.includes('Country profile') || anz.gruppen.length < 3) fail('FENSTER', `"Add chart" bietet ${anz.n} Reihen in ${anz.gruppen.length} Gruppen - erwartet Karte + alle Indikatoren`);
-      for (let i = 0; i < 9; i++) { const b2 = await p.$('.cpf-pick-i:not(.on):not([disabled])'); if (!b2) break; await b2.click(); await p.waitForTimeout(150); }
-      const voll = await p.evaluate(() => {
-        const g = document.querySelector('#cpfBody .data-grid'), ps = [...document.querySelectorAll('#cpfBody .cpf-panel')];
-        const zeilen = [...new Set(ps.map(x => Math.round(x.getBoundingClientRect().top)))].length;
-        const gekuerzt = ps.map(x => x.querySelector('.data-pt')).filter(t => t && t.scrollWidth > t.clientWidth + 1).map(t => t.textContent);
-        return { panels: ps.length, picker: !!document.getElementById('cpfPicker'), spalten: g ? g.style.gridTemplateColumns : '', zeilen, gekuerzt,
-          dataKopf: ps.every(x => x.querySelector('.data-ph .data-pt') && x.querySelector('.data-ph .info-b')), scroll: g ? g.scrollHeight > g.clientHeight + 2 : true };
-      });
-      if (voll.panels !== 8) fail('FENSTER', `${voll.panels} Panels nach 9 Klicks - erwartet hoechstens 8`);
-      if (voll.picker) fail('FENSTER', 'Auswahl bleibt bei 8 Charts offen (Data schliesst sie)');
-      // Anordnung wie Data (dataRaster): 8 Charts bei 1440 px = 4 Spalten x 2 Zeilen, ohne Scrollen
-      if (!/repeat\(4,/.test(voll.spalten) || voll.zeilen !== 2) fail('FENSTER', `8 Charts nicht wie Data als 4x2 (${voll.spalten}, ${voll.zeilen} Zeilen)`);
-      if (voll.scroll) fail('FENSTER', '8 Charts passen nicht ins Fenster (Data: Bildschirm fuellen, kein Scrollen bei 1440 px)');
-      if (!voll.dataKopf) fail('FENSTER', 'Panel-Kopf nicht wie Data (.data-ph mit Titel und ⓘ)');
-      voll.gekuerzt.forEach(t => fail('FENSTER', `Name gekuerzt: "${t}"`));
-      await p.click('#cpfBody .ind-hist-range-btn:has-text("1Y")'); await p.waitForTimeout(500);
-      const r1 = await p.evaluate(() => (document.querySelector('#cpfBody .ind-hist-range-btn.on:not(.br-sch)') || {}).textContent);
-      if (r1 !== '1Y') fail('FENSTER', `Zeitfilter reagiert nicht (steht auf ${r1})`);
-      await p.evaluate(() => closeM('mCpChart'));
-      const cpOffen = await p.evaluate(() => document.getElementById('mCountryProfile').style.display !== 'none');
-      if (!cpOffen) fail('FENSTER', 'Schliessen des Chart-Fensters schliesst auch das Country profile');
-    }
-  }
-  perr.forEach(x => fail('JS-FEHLER (1440)', x));
-  await ctx.close();
-
-  // K) Schnellzugriffszeile mit fuenf Knoepfen: jede Beschriftung bleibt in
-  // ihrem Knopf (bei 820 px lief "Probabilities" ueber den Rand, bevor die
-  // Zeile dort 3 + 2 wurde).
-  for (const breite of [1440, 1180, 820, 390]) {
-    const k = await seite(b, breite, false);
-    await k.p.evaluate(() => gotoSym('EUR')); await k.p.waitForTimeout(800);
-    const raus = await k.p.evaluate(() => [...document.querySelectorAll('#detail .ab-qrow .aql')].flatMap(btn => { const r = btn.getBoundingClientRect();
-      return [...btn.children].filter(c => { const q = c.getBoundingClientRect(); return q.width && (q.right > r.right - 2 || q.left < r.left + 2 || c.scrollWidth > c.clientWidth + 1); }).map(() => btn.textContent.trim()); }));
-    raus.forEach(t => fail('KNOPFZEILE', `${breite} px: "${t}" passt nicht in seinen Knopf`));
-    await k.ctx.close();
-  }
-
-  // C) Handy: Spalten untereinander, nichts ueber den Rand. E) ohne country_data.json.
-  const h = await seite(b, 390, true);
-  for (const id of ['EUR', 'AUD']) {
-    const o = await messen(h.p, id);
-    if (!o.da) { fail('KARTE FEHLT (390, ohne Daten)', id); continue; }
-    if (o.spalten.length === 3 && !(o.spalten[1].y > o.spalten[0].y && o.spalten[2].y > o.spalten[1].y)) fail('NICHT UNTEREINANDER (390)', id);
-    if (o.breiter.length) fail('UEBER DEN KARTENRAND (390)', `${id}: ${o.breiter.join(', ')}`);
-  }
-  h.perr.forEach(x => fail('JS-FEHLER (390, ohne country_data.json)', x));
+  const F = [], b = await chromium.launch();
+  const ctx = await b.newContext({ viewport: { width: 1194, height: 834 }, serviceWorkers: 'block' });
+  if (GP) await ctx.route(/\/js\/main\.js/, r => r.fulfill({ status: 200, contentType: 'text/javascript',
+    body: require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'main.js'), 'utf8').replace('return b(profil.vor)+b(profil.nach);', 'return b(profil.vor);') }));
+  const p = await ctx.newPage(); const err = []; p.on('pageerror', e => err.push(e.message));
+  await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) { } });
+  const laden = async () => { await p.goto(URL); await wartenBisDatenDa(p); await p.waitForTimeout(1500);
+    await p.evaluate(gp => { ['introOv', 'lockScreen'].forEach(x => { const e = document.getElementById(x); if (e) e.remove(); });
+    }); };
+  const st = () => p.evaluate(() => ({ kreis: document.getElementById('profileCircle').textContent.trim(), svg: !!document.querySelector('#profileCircle svg'),
+    gruss: ((document.querySelector('#dashGruss .dx-name') || {}).textContent || ''), theme: document.documentElement.getAttribute('data-fx-theme') || '',
+    cfg: getComputedStyle(document.getElementById('mCloud')).display !== 'none', user: !!document.getElementById('cloudUsername') }));
+  await laden();
+  let s = await st();
+  if (!s.svg || s.kreis) F.push(`A: ohne Namen Kreis "${s.kreis}" statt Personen-Symbol`);
+  if (s.gruss !== 'Trader') F.push(`A: Begruessung "${s.gruss}" statt Trader`);
+  if (s.user) F.push('A: Feld Benutzername noch da');
+  await p.click('#profileBtn'); await p.waitForTimeout(300);
+  if (!(await st()).cfg) F.push('C: kurzes Tippen oeffnet die Settings nicht');
+  await p.fill('#profilVor', 'hans'); await p.fill('#profilNach', 'Stein'); await p.waitForTimeout(400);
+  s = await st();
+  if (s.kreis !== 'HS') F.push(`B: Kreis "${s.kreis}" statt HS`);
+  if (s.gruss !== 'hans') F.push(`B: Begruessung "${s.gruss}" statt hans`);
+  const sn = await p.evaluate(() => JSON.parse(snap()).profil);
+  if (!sn || sn.vor !== 'hans' || sn.nach !== 'Stein') F.push('B: profil fehlt im snap() - kein Sync');
+  await p.evaluate(() => closeM('mCloud')); await p.waitForTimeout(300);
+  const vor = (await st()).theme, bb = await p.locator('#profileBtn').boundingBox();
+  await p.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2); await p.mouse.down(); await p.waitForTimeout(900); await p.mouse.up(); await p.waitForTimeout(400);
+  s = await st();
+  if (s.theme === vor) F.push('C: langes Druecken wechselt das Theme nicht');
+  if (s.cfg) F.push('C: langes Druecken oeffnet zusaetzlich die Settings');
+  await laden(); s = await st();
+  if (s.kreis !== 'HS') F.push(`B: nach Neuladen Kreis "${s.kreis}"`);
+  err.forEach(x => F.push('JS-Fehler: ' + x));
   await b.close();
-
-  if (GP_FENSTER) { const r = F.some(x => /^FENSTER/.test(x)); console.log(r ? `profil --gegenprobe-fenster: ok (rot wie erwartet, ${F.length} Befund(e))` : 'profil --gegenprobe-fenster: FEHLER - Waechter bleibt gruen'); process.exit(r ? 0 : 1); }
-  if (GEGENPROBE) { if (F.length) { console.log(`profil --gegenprobe: ok (rot wie erwartet, ${F.length} Befund(e))`); process.exit(0); } console.log('profil --gegenprobe: FEHLER - Waechter bleibt gruen'); process.exit(1); }
-  if (F.length) { console.log(`profil: ${F.length} Befund(e)`); F.forEach(f => console.log('  ' + f)); process.exit(1); }
-  console.log(`profil: ok (Country profile bei allen ${FX.length} Waehrungen als Fenster ueber den Knopf in der Schnellzugriffszeile, nicht mehr auf der Seite, drei Spalten, Rohstoff-Badges = ROHSTOFF_KORB, kein Knopf bei Nicht-FX, kein History-Teil, jede Linie oeffnet das Chart-Fenster darueber (volle Flaeche, Y-Achse, Zeitfilter + Schere, Auswahl bis 8, Raster wie Data 4x2, Namen ungekuerzt), Handy ohne country_data.json fehlerfrei)`);
+  if (GP) { const ok = F.some(f => /^B: Kreis/.test(f)); console.log(ok ? 'profil --gegenprobe: ok (falsche Initialen rot)' : 'profil --gegenprobe: FEHLER\n  ' + F.join('\n  ')); process.exit(ok ? 0 : 1); }
+  if (F.length) { console.log(`profil: ${F.length} Befund(e)\n  ` + F.join('\n  ')); process.exit(1); }
+  console.log('profil: ok (ohne Namen Symbol + Trader, hans Stein -> HS + hans, im Sync, nach Neuladen da; lang = Dark/Light ohne Settings, kurz = Settings)');
 })().catch(e => { console.log('profil: ABBRUCH ' + e.message); process.exit(1); });

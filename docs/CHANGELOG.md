@@ -23176,7 +23176,25 @@ Umgesetzt:
 - **Score unverändert** (`check/scorediff.js`: 0 von 215 Karten-Scores, Symbol-Score gleich); Kartentexte an 20 Stellen anderes Bias-Wort → `SUMMARY_ENGINE_VERSION` 16
 - **Wächter** `check/kartenbias.js`: 172 Karten grün, Gegenprobe 20 Funde
 
-## 2026-11-22 — Zentralbank: Lücken am Kapitell, mehr Details, drei Farb-Vorschauen (VERSION-CHECK-801)
+## 2026-11-22 — Profil: Name statt Benutzername, Initialen, Begrüßung, langes Drücken = Dark/Light (VERSION-CHECK-801)
+
+Nutzer (Fotos Settings + Dashboard, „Jonathan“ eingekreist): *„Füg in diesen Einstellungen einen Slot hinzu wo man optional Namen und Nachnamen angibt. Beide Anfangsbuchstaben sollen dann oben rechts stehen also hans Stein dann stehen im Kreis die Buchstaben HS. Und entfern den nutzernamen. Bei der Begrüßung soll dann der Vorname genommen werden. Wenn der nicht angegeben ist dann steht da Trader … wenn man auf den Kreis oben rechts drückt lange das dann direkt dark Mode und light Mode sich wechseln“*.
+
+- **Vorher:**
+  - Begrüßung fest „Jonathan“ (`DASH_NAME`).
+  - Kreis aus Benutzername oder Sync-ID (`cloudUsername`, nur lokal in der Cloud-Konfiguration).
+- **Jetzt:**
+  - Settings → **Profile**: *First name* / *Last name* (optional, wirkt beim Tippen).
+  - Feld `profil` {vor, nach} in `snap()`, `loadState`, `applySnap`, `neueFelderBehalten` → auf allen Geräten gleich.
+  - Kreis = erster Buchstabe von Vor- + Nachname, ohne Namen das Personen-Symbol.
+  - Begrüßung = Vorname, sonst **Trader**.
+  - Feld *Username* und `cfg.username` entfernt.
+- **Langes Drücken (550 ms)** auf den Kreis = `toggleFxTheme()`; der folgende Klick wird verschluckt, kurzes Tippen öffnet die Settings wie bisher. Kein iOS-Kontextmenü (`-webkit-touch-callout:none`).
+- **Gemessen:** hans/Stein → „HS“, „Good afternoon, hans!“, Theme light → midnight per langem Druck, Settings bleiben zu; nach Neuladen beides erhalten.
+- **Hinweis:** Der Name wird so angezeigt, wie er eingetippt wurde (keine automatische Großschreibung).
+- **Wächter:** `check/profil.js` A–C, Gegenprobe meldet B rot. `check/eingaben.js` ohne `#cloudUsername`.
+
+## 2026-11-22 — Zentralbank: Lücken am Kapitell, mehr Details, drei Farb-Vorschauen (VERSION-CHECK-802)
 - Nutzer, Screenshot (Kapitelle eingekreist): *„Die eingekreisten Stellen sind Lücken die keinen Sinn ergeben mach da auch Farbe hin und mach ein besseres Bank Design also mehr Details und ein wenig mehr schlichte Farben das es nicht so eintönig wirkt“*
 - **Gemessen:** Schaft 9 px gegenüber den Voluten eingerückt, Schale (`.zb-kap::after`) erst ab 22 px und unten gerundet → je Säule links/rechts ein weißer Zwickel zwischen Volute, Schale und Schaft
 - **Fix Lücken:** `.zb-kap::before` = durchgehender Steinblock unter Abakus und Voluten

@@ -388,3 +388,8 @@ in `seedNoteFlags` — winzig, aber gespeichert.
 - Fehlt die These → Fenster `mTradeGp` (Pflicht), Eingabe geht über `gpAusTrade()` in `gameplans` (synchronisiert wie jeder Plan). Geprüft von `check/tradegameplan.js`.
 
 - **`indRules` je Asset (seit 792):** Regel je Indikator aus dem Zahnrad (`{Basisname:'same'|'inverse'}`). Steht in `ASSET_SYNC_FIELDS` und reist mit `syms`. Die Marke `_m790` verhindert, dass die einmalige Silber-Einstellung eine spätere eigene Wahl auf einem anderen Gerät überschreibt.
+
+## Profil (seit 2026-11-22, 801)
+
+- `profil` = {vor, nach} im Snapshot (`snap()`), Pflege über `profilRein()`; in `neueFelderBehalten` geschützt. Kein `localStorage`-Eigenleben. Der frühere Benutzername (`cfg.username`, nur lokal) ist entfernt.
+

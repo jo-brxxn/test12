@@ -460,6 +460,12 @@ body{font-family:var(--ff-text);background-image:linear-gradient(180deg,rgba(27,
    bleiben. */
 .profile-circle{width:34px;height:34px;border-radius:50%;background:var(--blue);color:var(--on-accent);border:1px solid var(--bd2);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 1px 5px rgba(0,0,0,.28);transition:transform .15s ease,box-shadow .15s ease}@media (hover:hover){.profile-btn:hover .profile-circle{transform:scale(1.07);box-shadow:0 2px 9px rgba(0,0,0,.38)}}
 .profile-btn:active .profile-circle{transform:scale(.95)}
+/* Langes Druecken = Dark/Light (2026-11-22): kein iOS-Kontextmenue, keine Textauswahl */
+.profile-btn{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.set-profil{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.set-profil-f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.set-profil-f .m-inp{margin:0}
+.set-profil-f i{font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3)}
 .profile-name{display:none}
 /* Initialen im Profil-Kreis (statt generischem Personen-Icon), sobald ein
    Sync-Name bekannt ist - siehe updProfile(). Hintergrund erbt jetzt von
@@ -8261,11 +8267,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-801 - Central bank: capital gaps closed, more detail, three colour previews (Marble/Bronze/Two-tone)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-802 - Central bank: capital gaps closed, more detail, three colour previews (Marble/Bronze/Two-tone)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-801</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-802</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -8273,7 +8279,7 @@ window.fxLogoSvg=function(art){
     <button class="btn" id="redoBtn" onclick="doRedo()" disabled title="Forward (Redo)">→</button>
     <input type="file" id="impFile" accept=".json" style="display:none" onchange="importData(this)">
     <button class="btn" onclick="openHelpM()" title="How the scoring works"><svg class="ic ic-help" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span class="btn-lbl"> Help</span></button>
-    <button class="profile-btn" id="profileBtn" onclick="openCloudM()" title="Settings & cloud sync">
+    <button class="profile-btn" id="profileBtn" onclick="profilKlick(event)" onpointerdown="profilDruckStart(event)" onpointerup="profilDruckEnde()" onpointerleave="profilDruckEnde()" onpointercancel="profilDruckEnde()" oncontextmenu="return false" title="Settings · long press: dark / light mode">
       <span class="profile-circle" id="profileCircle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
       <span class="profile-name" id="profileName">Sync</span>
     </button>
@@ -8970,6 +8976,12 @@ window.fxLogoSvg=function(art){
          Muster wie jede andere Einstellungs-Zeile in diesem Modal. -->
     <div class="set-cols">
       <div class="set-col">
+        <!-- Profil (Nutzer 2026-11-22): optional Vor- und Nachname -> Initialen oben rechts, Vorname in der Begruessung -->
+        <div class="set-sec">Profile</div>
+        <div class="set-row set-profil">
+          <label class="set-profil-f"><span class="dm-lbl">First name <i>optional</i></span><input class="m-inp" id="profilVor" placeholder="e.g. Hans" maxlength="40" autocomplete="given-name" oninput="setProfil()"></label>
+          <label class="set-profil-f"><span class="dm-lbl">Last name <i>optional</i></span><input class="m-inp" id="profilNach" placeholder="e.g. Stein" maxlength="40" autocomplete="family-name" oninput="setProfil()"></label>
+        </div>
         <div class="set-sec">Appearance</div>
         <!-- Nutzer-Wunsch 2026-10-24: "einen Schalter fuer dark und light mode
              ... light mode soll terminal pro sein und der darkmode soll Midnight
@@ -9033,10 +9045,6 @@ window.fxLogoSvg=function(art){
     <h3 style="font-size:var(--fs-base);margin:14px 0 10px"><span class="h-ic" data-ic="cloud"></span>Cloud Sync</h3>
     <div style="font-size:var(--fs-sm);color:var(--t2);line-height:1.6;margin-bottom:10px">Connect a free <a href="https://supabase.com" target="_blank" rel="noopener" style="color:var(--blue)">Supabase</a> project to automatically sync your data across all your devices (iPad, iPhone, PC). The credentials are stored only locally on this device.</div>
     <div class="set-cloud-grid">
-      <div>
-        <label class="dm-lbl">Username (shown on your profile)</label>
-        <input class="m-inp" id="cloudUsername" placeholder="e.g. Jonathan">
-      </div>
       <div>
         <label class="dm-lbl">Project URL</label>
         <input class="m-inp" id="cloudUrl" placeholder="https://xxxxx.supabase.co">
