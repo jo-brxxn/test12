@@ -23133,3 +23133,7 @@ Nutzer (iPad-Foto Silber, Economic Growth, Linie markiert): *„mach eine richti
   - Silber: US Industrial Production, China NBS PMI und China IP stehen unter „Inverse“, die Act-Zellen sind rot (Miss).
 - **Dauerregel** in `docs/design-system.md`.
 - **Wächter:** `check/silberregeln.js` C neu.
+
+## 2026-11-22 — Rand in Act-Farbe wieder entfernt (VERSION-CHECK-796)
+- Nutzer: *„Ne mach den Rand wie ganz am Anfang das ist doch blöd“* → `tr.ind-row` wieder durchgehend `--bd2` (grau), `:has()`-Regeln aus 793 gelöscht
+- Davor gemessen (Nutzer-Screenshot 13:33, Pixel): Rand und Act-Zahl waren **identisch** (#0B5FCC / #DC2430) — der Eindruck „unterschiedlich“ kam von der Kantenglättung der dünnen Schrift gegenüber der vollen 3-px-Fläche

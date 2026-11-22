@@ -89,11 +89,6 @@ ausdrücklich als Richtung beschriftet und die Score-Wirkung kommt aus
 ⚠ Gilt genauso für erklärende Texte: das Info-Fenster behauptete
 „counting +0.5" aus der Richtung, wo −0,5 galt.
 
-## Indikator-Zeile: linker Rand = Farbe des Actual-Werts (seit 2026-11-22, 793)
-- Rand folgt der Klasse der Act-Zelle (`act-good`/`bond-up` blau, `act-bad`/`bond-down` rot, `bond-flat` amber) — reines CSS per `:has()`, keine zweite Rechnung
-- **Neutral bleibt grau** (`--bd2`), nicht Navy: Navy = „aktiv“
-- gilt für alle `.ind-table` (Makro-Karten **und** Sectors)
-
 ## ⚠️ Datum: immer mit Jahr, immer zweistellig — und es gibt VIER Formatierer
 
 Nutzer-Regel, **zweimal** gesetzt (2026-09-05 und 2026-09-17, wörtlich:
