@@ -23285,3 +23285,19 @@ Gemessen je Zeile (`indChartSeries` über alle Assets, `ind_data.json`):
 | COT-Zeilen bei 23 Assets ohne COT | leere Geisterzeilen, zählten im Teiler | entfernt (Score-Modell 41) |
 
 - **Wächter:** neu `check/chartreihen.js` (Gegenprobe → rot).
+
+## 2026-11-22 — CHF Lohnwachstum mit Quelle, roter Hinweis „Rare release“ (VERSION-CHECK-809)
+
+Nutzer: *„bind eine Quelle ein und halt in der Beschreibung fest das der nur einmal pro Jahr kommt und mach das in rot deutlich und dann kann man den ja nach paar Monaten auf out of date stellen oder“*.
+
+- **Quellen gesucht (Sonde `probe-lohnindex.yml`):**
+  - BFS PXWeb führt nur die Lohnstrukturerhebung (Lohnniveaus, alle 2 Jahre), nicht den Lohnindex.
+  - Trading Economics `switzerland/wage-growth`: „Switzerland Nominal Wage Growth“, **quartalsweise**, NSA, 1991–2026. Satz: „Wages in Switzerland increased 0.40 percent in March of 2026“, Vorwert 1,80.
+- **Umgesetzt:**
+  - TE-Seite im Seiten-Abruf (`wage_CHF`, Anker „wages“, Label „Wage Growth“).
+  - Die Zeile ist auf quartalsweise gestellt, die Quelle verlinkt.
+  - Roter Kasten `.ind-selten` in der aufgeklappten Zeile: „Rare release · quartalsweise mit mehreren Monaten Verzug · offizieller Index nur einmal im Jahr“.
+- **Out of date:**
+  - Über die normale Altersgrenze (2 Zyklen). Bei quartalsweiser Reihe heißt das: OUT OF DATE, wenn ~6 Monate nach dem erwarteten nächsten Release nichts kam.
+  - Der Startwert vom 24.04. steht deshalb bis zum ersten TE-Wert auf OUT OF DATE und zählt 0.
+- **Zuerst** brach der rote Kasten nicht um (abgeschnitten, rechtsbündig geerbt). Behoben mit `white-space:normal`, `text-align:left`.

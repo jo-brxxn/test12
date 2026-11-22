@@ -396,6 +396,7 @@ jobs:
           jolts_JPY|JPY|japan/job-vacancies
           emp_EUR|EUR|euro-area/employment-change
           emp_CHF|CHF|switzerland/employed-persons
+          wage_CHF|CHF|switzerland/wage-growth
           URLS
           node -e '
             const fs=require("fs");
@@ -435,7 +436,9 @@ jobs:
               // Aussage. Damit auf der Karte trotzdem sichtbar ist, WELCHE
               // Reihe das ist, traegt sie ein eigenes Label.
               emp:{ind:"NFP / Employment Change",anchor:"(?:employed persons|employment change|employment in)",label:"Employed Persons"},
-              jolts:{ind:"JOLTS Job Openings",anchor:"job (?:vacanc|offers|openings)",label:"Job Vacancies"}
+              jolts:{ind:"JOLTS Job Openings",anchor:"job (?:vacanc|offers|openings)",label:"Job Vacancies"},
+              // 809 (Nutzer 2026-11-22 "bind eine Quelle ein"): CHF-Lohnwachstum, TE quartalsweise y/y (BFS-Lohnindex)
+              wage:{ind:"Avg Hourly Earnings",anchor:"wages",label:"Wage Growth"}
             };
             // Abschliessende Verbliste: auf derselben Seite stehen Prognose
             // ("is expected to be"), Durchschnitt ("averaged") und Ausblick

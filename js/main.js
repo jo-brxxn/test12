@@ -3598,7 +3598,7 @@ const IND_RESEARCH_DATA={
     {rubric:'Labour Market',indicator:'Unemployment Rate',applicable:true,actual:'3.0% n.s.a. / 3.1% s.a.',forecast:'2.9%',previous:'3.0%',releaseDate:'2026-06-09',interval:'monthly',source:'https://www.investing.com/economic-calendar/unemployment-rate-sa-296'},
     {rubric:'Labour Market',indicator:'ADP Employment',applicable:false},
     {rubric:'Labour Market',indicator:'JOLTS Job Openings',applicable:false},
-    {rubric:'Labour Market',indicator:'Avg Hourly Earnings',applicable:true,actual:'1.8% (Lohnindex-Jahresdurchschnitt 2025)',forecast:null,previous:'1.7% (2024)',releaseDate:'2026-04-24',interval:'annual',source:'https://www.bfs.admin.ch/bfs/en/home/statistics/work-income/wages-income-employment-labour-costs/trend-wages.html'},
+    {rubric:'Labour Market',indicator:'Avg Hourly Earnings',applicable:true,actual:'1.8% (Lohnindex-Jahresdurchschnitt 2025)',forecast:null,previous:'1.7% (2024)',releaseDate:'2026-04-24',interval:'quarterly',source:'https://tradingeconomics.com/switzerland/wage-growth'},   // 809: Feed TE quartalsweise (BFS-Lohnindex), vorher nur der Jahreswert
     {rubric:'Labour Market',indicator:'Unemployment Claims',applicable:false},
     {rubric:'Economic Growth',indicator:'GDP Growth QoQ',applicable:true,actual:'0.4% (SECO, sportbereinigt, Q1 2026)',forecast:'0.3-0.4%',previous:'0.2%',releaseDate:'2026-06-02',interval:'quarterly',source:'https://www.investing.com/economic-calendar/switzerland-gross-domestic-product-(gdp)-qoq-122'},
     {rubric:'Economic Growth',indicator:'Manufacturing PMI',applicable:true,actual:'57.3 (procure.ch/UBS)',forecast:'54.0',previous:'54.5',releaseDate:'2026-06-02',interval:'monthly',source:'https://www.investing.com/economic-calendar/procure.ch-pmi-278'},
@@ -12702,6 +12702,10 @@ function indZeilenWerte(ind,rub){
     const revNote=r.revisedFrom?`<div class="ind-data-src" style="padding-top:0"><span class="ind-data-lbl">Previous revised:</span> originally reported as <b>${escH(r.revisedFrom)}</b>, now restated as <b>${escH(P.val??'–')}</b></div>`:'';
     detailBody=`<div class="ind-data-src">${bondDates} ${srcLink}${secLink}${erkl}</div>${revNote}`;
   }
+  // 809 (Nutzer 2026-11-22: "halt in der Beschreibung fest das der nur einmal pro Jahr kommt und mach das in rot
+  // deutlich"): Schweizer Lohnzahlen erscheinen selten und spaet - roter Hinweis in der aufgeklappten Zeile.
+  if(stripPeriodSuffix(ind.name).base==='Avg Hourly Earnings'&&macroCcyFor(getSym().id)==='CHF')
+    detailBody+=`<div class="ind-selten"><b>Rare release</b> · Swiss wage growth comes out <b>quarterly</b> with a delay of several months · the official wage index only <b>once a year</b> · check the date before you rely on it</div>`;
   return{actTxt,actCls,fcTxt,prevTxt,prevCls,detailBody,erkl};
 }
 function renderIndRow(ind,ri,ii,rub,total,pairPos){

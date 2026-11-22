@@ -11,10 +11,10 @@ jobs:
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
           P="https://www.pxweb.bfs.admin.ch/api/v1/en"
-          CODE=$(curl -sL -o db.json -w "%{http_code}" --max-time 60 "$P" || echo 000); echo "=== PX root $CODE $(wc -c < db.json)"; head -c 600 db.json; echo
+          CODE=$(curl -sL -o db.json -w "%{http_code}" --max-time 60 "$P" || echo 000); echo "=== PX root $CODE $(wc -c < db.json)"; head -c 600 db.json || true; echo
           for L in de en; do for T in px-x-0304010000_201 px-x-0304010000_101; do
             CODE=$(curl -sL -o m.json -w "%{http_code}" --max-time 60 "https://www.pxweb.bfs.admin.ch/api/v1/$L/$T/$T.px" || echo 000)
-            echo "=== GET $L $T $CODE"; head -c 700 m.json; echo
+            echo "=== GET $L $T $CODE"; head -c 700 m.json || true; echo
           done; done
           CODE=$(curl -sL -o te.html -w "%{http_code}" --max-time 60 -A "$UA" "https://tradingeconomics.com/switzerland/wage-growth" || echo 000)
           echo "=== TE wage-growth $CODE $(wc -c < te.html)"
