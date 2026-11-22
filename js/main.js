@@ -21661,6 +21661,11 @@ function indChartSeries(ind,symId){
   const base=stripPeriodSuffix(ind.name).base;
   let pts=[],unit=null;
   if(ccy&&BOND_INDS.includes(base)){pts=bondSeriesPts(ccy,base);unit='%';}
+  // 804 (Nutzer-Foto 2026-11-22: "hat keine Historie"): berechnete Zins-Zeilen zeigen die Reihe, aus der sie
+  // gerechnet werden - Kurve = 10Y minus 2Y derselben Waehrung, Realzins = US-TIPS, Global Yields = der Durchschnitt.
+  else if(ccy&&base===KURVE_IND){pts=bondSpreadPts(ccy);unit=' pp';}
+  else if(base===REALZINS_IND){pts=bondSeriesPts('USD',REALZINS_IND);unit='%';}
+  else if(base===GLOBAL_YIELDS_IND){const g=globalYieldsReihe(todayStr());pts=g?g.reihe.map(x=>[x[0],Math.round(x[1]*1000)/1000,null]):[];unit='%';}
   else if(r.cot&&id){pts=cotHistPts(id,base);unit='%';}
   else if(r.sent&&r.sentKey){pts=sentHistPts(r.sentKey);unit=r.sentKey==='aaii'?'%':'';}
   if(pts.length<2){try{const ab=abgeleiteteReihe(ind,id);if(ab&&ab.pts&&ab.pts.length>=2){pts=ab.pts;unit=ab.unit;}}catch(e){}}

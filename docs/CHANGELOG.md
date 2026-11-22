@@ -23217,3 +23217,28 @@ Nutzer (Foto Settings, „Save“ eingekreist): *„Eine neue Regel wenn man bei
   - Neu: `check/speichernzu.js` (statisch, Gegenprobe rot).
   - `check/eingaben.js` C verlangt jetzt Schließen statt „kein Nachfragen“.
 
+
+## 2026-11-22 — Berechnete Zins-Zeilen mit Historie im Chart (VERSION-CHECK-804)
+
+Nutzer-Foto (EUR): *„Job vacancies ist irgendwie kaputt und hat keine Historie gleiches gilt für den anderen Indikator am Foto“*, gemeint ist auch Yield Curve (10Y-2Y).
+
+- **Gemessen:** `indChartSeries` lieferte über alle 43 Assets **< 2 Punkte** für:
+  - Yield Curve (10Y-2Y): 8 Währungen
+  - 10Y Real Yield: 25 Assets
+  - Global Yields: 27 Assets
+  - EUR JOLTS (Job Vacancy Rate)
+  - u. a.
+- **Ursache:** Die drei Zins-Zeilen werden aus `bond_data.json` gerechnet, der Chart kannte ihre Reihe aber nicht.
+- **Fix:** In `indChartSeries` liefern die drei Zeilen jetzt ihre Reihe:
+  - Kurve = `bondSpreadPts(ccy)`
+  - Realzins = US-TIPS-Reihe
+  - Global Yields = `globalYieldsReihe()`
+- **Nachher:** Alle drei haben eine Historie. EUR-Kurve: Reihe ab 2026-04-30.
+- **Job Vacancy Rate EUR:** Es gibt keine Feed-Reihe, angezeigt wird der Startwert 2,2 % vom 18.03. Die Eurostat-Quelle (`tools/stellen.mjs`) ist in Prüfung, die erste Sonde lieferte HTTP 404.
+- **Weitere Zeilen ohne Historie (offen):**
+  - EUR/GBP/JPY/CAD/AUD Manufacturing PMI (Trading Economics, sammelt sich auf)
+  - CHF NFP + Avg Hourly Earnings
+  - JPY Services Inflation
+  - Gas Storage vs 5Y
+  - BTC Sentiment Score
+  - COT-Zeilen bei Assets ohne COT
