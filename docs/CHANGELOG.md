@@ -23143,3 +23143,10 @@ Nutzer (iPad-Foto Silber, Economic Growth, Linie markiert): *„mach eine richti
 - Gemessen: Name+Score **#F09CA1** auf Zeile **#2E3C5E** (eigene Leistenfarben `--sb-*` seit 2026-10-24, für Kontrast ≥4,5)
 - Kontrast echte Bias-Farben auf der Zeile: bear **2,25**, bull **1,83**, neutral **1,76** — dem Nutzer vorgelegt, gewählt: *„Echte Bias-Farben 1:1“*
 - `--sb-bull/bear/neu` → `var(--green/--red/--amber)` (folgt damit auch dem Dark Mode)
+
+## 2026-11-22 — Kein Trennstrich am Rand der Asset-Kopfleiste (VERSION-CHECK-798)
+- Nutzer, Screenshot (Strich vor „Score“ eingekreist): *„Entfern den Strich … ganz an den Rändern sollen nie Striche stehen weil es dann nichts mehr zum abgrenzen gibt“*
+- **Gemessen:** Strich = `border-left` von `.dmeta-controls` (1px #C9D6E8), nicht von „Score“ (`.dmeta-ctrl:first-child` hatte schon `border-left:none`). `.dmeta-controls` ist das **erste Kind** von `.dmeta` → links davon nichts
+- **Fehlerklasse** (Scan 15 Seiten + Asset-Seite): bei **390 px** bricht die Leiste um, „Backtester“ und der Schalter begannen mit Strich am Zeilenanfang; dazu 11 px Versatz gegenüber „Score“
+- **Fix:** Container ohne Rand, `padding-left:0;overflow-x:clip`; jedes `.dmeta-ctrl` `margin-left:-1px;padding-left:11px` → Strich am Zeilenanfang liegt im abgeschnittenen Bereich, alle Zeilen bündig
+- **Wächter** `check/randstrich.js` (1180/390 px): grün; Gegenprobe (alter Strich) → **12 Funde**. Einzige andere Fundstelle: `hl-row` = Wichtigkeits-Balken der Schlagzeilen, bewusst ausgenommen

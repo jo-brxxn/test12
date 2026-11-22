@@ -89,6 +89,12 @@ ausdrücklich als Richtung beschriftet und die Score-Wirkung kommt aus
 ⚠ Gilt genauso für erklärende Texte: das Info-Fenster behauptete
 „counting +0.5" aus der Richtung, wo −0,5 galt.
 
+## ⚠️ Kein Trennstrich am Rand (seit 2026-11-22, 798)
+- Nutzer: *„ganz an den Rändern sollen nie Striche stehen weil es dann nichts mehr zum abgrenzen gibt“*
+- Ein Strich trennt **zwei** Dinge — steht auf einer Seite nichts, fällt er weg
+- Gilt auch **nach Umbruch**: Zeilenanfang/-ende einer umbrechenden Leiste → Strich 1 px außerhalb (`margin-left:-1px`) + Container `overflow-x:clip`, `padding-left:0` (Muster: `.dmeta-controls`)
+- Geprüft von `check/randstrich.js`
+
 ## ⚠️ Datum: immer mit Jahr, immer zweistellig — und es gibt VIER Formatierer
 
 Nutzer-Regel, **zweimal** gesetzt (2026-09-05 und 2026-09-17, wörtlich:

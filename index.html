@@ -2339,7 +2339,7 @@ body.compact-view .rub-summary{display:block}
    alten .dmeta stand die Leiste an letzter Stelle einer Zeile, die selbst
    umbrach; in der neuen Kopfleiste muss sie das selbst koennen. */
 .dmeta-controls{display:flex;align-items:stretch;flex-wrap:wrap;min-width:0;
-  padding-left:14px;margin-left:4px;border-left:1px solid var(--bd)}
+  padding-left:14px;margin-left:4px}
 @media(max-width:640px){.dmeta-controls{padding-left:0;margin-left:0;border-left:none}}
 /* Nutzer-Korrektur 2026-08-04: der Historie-Button sah als eigener
    Quadrat-Button mit hellem Kartenhintergrund (.cfg-gear) neben dem
@@ -6530,7 +6530,21 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 .dmeta-i{border-left:none;padding-left:0}
 .dmeta-l{font:600 var(--fs-2xs)/1.2 var(--ff-text);letter-spacing:1px;color:var(--t2)}
 .dmeta-v{font:600 var(--fs-base)/1.3 var(--ff-text);color:var(--t0)}
-.dmeta-controls{margin-left:10px;padding-left:4px;border-left:1px solid var(--bd)}
+/* Kein linker Rand am Container (Nutzer 2026-11-22, eingekreist vor "Score":
+   "ganz an den Raendern sollen nie Striche stehen weil es dann nichts mehr
+   zum abgrenzen gibt"). Gemessen: .dmeta-controls ist das ERSTE Kind von
+   .dmeta - links davon steht nichts mehr, seit "Next event" weg ist.
+   Bricht die Leiste um (390 px: "Backtester" und der Schalter beginnen eine
+   neue Zeile), stuende dort derselbe Strich am Zeilenanfang. Darum steht
+   jeder Strich 1 px links ausserhalb seines Elements, und der Container
+   schneidet links ab (padding-left 0 + overflow-x:clip): am Zeilenanfang
+   liegt der Strich im abgeschnittenen Bereich, zwischen zwei Knoepfen nicht.
+   Waechter: check/randstrich.js.
+   Jedes Element gleicher Innenabstand links (auch das erste), damit
+   umgebrochene Zeilen buendig unter "Score" beginnen (390 px gemessen: 11 px
+   Versatz, solange nur :first-child padding-left 0 hatte). */
+.dmeta-controls{margin-left:3px;padding-left:0;overflow-x:clip}
+.dmeta-controls>.dmeta-ctrl{margin-left:-1px;padding-left:11px}
 .dmeta-ctrl{border-left-color:var(--bd);padding:0 11px}
 /* Rechtsbuendig heisst buendig mit dem Karteninhalt: das letzte Element ohne
    Innenabstand rechts (gemessen: 12 px Luecke, 2026-09-25). */
@@ -8189,11 +8203,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-797 - Sidebar: selected asset name and score in the real bias colours"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-798 - Asset header: no divider at the edge of the Score/History/Backtester/Data quality bar, also after wrapping"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-797</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-798</span>
     </span>
   </div>
   <div class="hdr-r">

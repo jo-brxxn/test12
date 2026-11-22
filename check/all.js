@@ -100,6 +100,7 @@ const PRUEFUNGEN = [
   { n: 'tradegameplan', s: 40, d: 'Neuer Trade: Gameplan im Formular, Kopie am Trade, leerer Plan -> Pflicht-Fenster, Eingabe auch im Gameplan', f: 'check/tradegameplan.js', args: [], browser: true },
   { n: 'fensterrahmen', s: 30, d: 'Fenster zwischen Kopfzeile und Seitenleiste (Handy: unter der Kopfzeile), Pfeil-Tipp schliesst + wirkt, Ungespeichertes fragt nach', f: 'check/fensterrahmen.js', args: [], browser: true },
   { n: 'ueberlappung', s: 90, d: 'Nichts ueberlappt: Preisleisten (24 Trades), Gameplan-Linien im Chart, Rundgang ueber 8 Seiten (Text auf Text), 1194/390 px', f: 'check/ueberlappung.js', args: [], browser: true },
+  { n: 'randstrich', s: 40, d: 'Kein Trennstrich am Rand: jeder 1-2-px-Strich hat auf seiner Seite einen Nachbarn (auch nach Umbruch), 15 Seiten + Asset-Seite, 1180/390 px', f: 'check/randstrich.js', args: [], browser: true },
   { n: 'chipraster', s: 20, d: 'Auswahlfenster: alle Knoepfe gleich breit, im Raster untereinander', f: 'check/chipraster.js', args: [], browser: true },
   { n: 'zoomhover', s: 30, d: 'PC-Seiten-Zoom: Hover-Linie, Trade-Chart und COT-Tooltip liegen an der Maus', f: 'check/zoomhover.js', args: [], browser: true },
   { n: 'datumfeld', s: 1, d: 'Datum-/Zeit-Felder ragen auf dem iPad nicht ueber ihre Spalte (globale Regel min-width:0/max-width:100%)', f: 'check/datumfeld.js', args: [], browser: false },
