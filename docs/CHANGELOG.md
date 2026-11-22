@@ -23137,3 +23137,9 @@ Nutzer (iPad-Foto Silber, Economic Growth, Linie markiert): *„mach eine richti
 ## 2026-11-22 — Rand in Act-Farbe wieder entfernt (VERSION-CHECK-796)
 - Nutzer: *„Ne mach den Rand wie ganz am Anfang das ist doch blöd“* → `tr.ind-row` wieder durchgehend `--bd2` (grau), `:has()`-Regeln aus 793 gelöscht
 - Davor gemessen (Nutzer-Screenshot 13:33, Pixel): Rand und Act-Zahl waren **identisch** (#0B5FCC / #DC2430) — der Eindruck „unterschiedlich“ kam von der Kantenglättung der dünnen Schrift gegenüber der vollen 3-px-Fläche
+
+## 2026-11-22 — Seitenleiste: ausgewähltes Asset in echter Bias-Farbe (VERSION-CHECK-797)
+- Nutzer, Screenshot (Silver ausgewählt): *„die Farben davon sind so blass mach die in bias Farbe und nicht blass“*
+- Gemessen: Name+Score **#F09CA1** auf Zeile **#2E3C5E** (eigene Leistenfarben `--sb-*` seit 2026-10-24, für Kontrast ≥4,5)
+- Kontrast echte Bias-Farben auf der Zeile: bear **2,25**, bull **1,83**, neutral **1,76** — dem Nutzer vorgelegt, gewählt: *„Echte Bias-Farben 1:1“*
+- `--sb-bull/bear/neu` → `var(--green/--red/--amber)` (folgt damit auch dem Dark Mode)

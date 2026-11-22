@@ -1516,8 +1516,12 @@ html:not([data-fx-theme]) .pk-main .ab-pk-chart{background:#F1F4F9;border-radius
    Glyphe (renderSidebar). Eigene Werte statt --bias-*: die sind fuer helle
    Karten gebaut und kaemen auf der dunklen Leiste auf ~2:1. GEMESSEN gegen
    die markierte Zeile (hell #3E444E / Midnight #1B2740): bull 4,57 / 6,94,
-   bear 4,66 / 7,07, neutral 4,59 / 6,97. */
-#navSidebar{--sb-bull:#85B4F1;--sb-bear:#F09CA1;--sb-neu:#A2B2D2}
+   bear 4,66 / 7,07, neutral 4,59 / 6,97.
+   ⚠ Seit 2026-11-22 (797) die ECHTEN Bias-Tokens: Nutzer "die Farben davon
+   sind so blass mach die in bias Farbe und nicht blass". Bewusst entschieden
+   gegen den gemessenen Kontrast (Zeile #2E3C5E: bear 2,25 / bull 1,83 /
+   neu 1,76) - per AskUserQuestion als "Echte Bias-Farben 1:1" gewaehlt. */
+#navSidebar{--sb-bull:var(--green);--sb-bear:var(--red);--sb-neu:var(--amber)}
 #navSidebar .ab.np-asset.on .an[data-bv="bull"],#navSidebar .ab.np-asset.on .an[data-bv="bull"]~.np-score{color:var(--sb-bull)}
 #navSidebar .ab.np-asset.on .an[data-bv="bear"],#navSidebar .ab.np-asset.on .an[data-bv="bear"]~.np-score{color:var(--sb-bear)}
 #navSidebar .ab.np-asset.on .an[data-bv="neu"],#navSidebar .ab.np-asset.on .an[data-bv="neu"]~.np-score{color:var(--sb-neu)}
@@ -8185,11 +8189,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-796 - Indicator rows: left edge back to plain grey"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-797 - Sidebar: selected asset name and score in the real bias colours"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-796</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-797</span>
     </span>
   </div>
   <div class="hdr-r">

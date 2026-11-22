@@ -1140,8 +1140,9 @@ dann die Flagge weht und sie in richtiger Farbe ist und das die Schrift dann
 die bullish oder bearish oder neutral bias Farbe hat … Score auch in der
 Farbe“*): nur die `.on`-Zeile zeigt das farbige, animierte Symbol
 (`assetIconHtml`) statt der Glyphe und trägt Name + Score in Bias-Farbe
-(`data-bv` am `.an`, eigene Leisten-Tokens `--sb-bull/-bear/-neu`, gemessen
-≥ 4,57:1 auf der markierten Zeile in hell und Midnight). Alle anderen Zeilen
+(`data-bv` am `.an`, Leisten-Tokens `--sb-bull/-bear/-neu` = **seit 2026-11-22
+(797) die echten Bias-Tokens** `--green/--red/--amber` — Nutzer: *„nicht blass“*,
+bewusst gewählt trotz Kontrast ~2:1 auf der Zeile; nicht wieder aufhellen). Alle anderen Zeilen
 bleiben wie unten beschrieben. `check/display.js` lässt `data-bv` in der
 Leiste nur an der `.on`-Zeile zu.
 
