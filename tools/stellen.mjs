@@ -14,7 +14,9 @@ const IND = 'JOLTS Job Openings', CCY = 'EUR';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 // ⚠ jvs_q_nace2 endet mit 2025-Q4 und ist "not available for dissemination" (Sonde 2026-11-22, HTTP 404).
 // Nachfolger: jvs_q_r21 (NACE Rev. 2.1, Quote = indic_em JVR), Stand 2026-11-19 bis 2026-Q3.
-const BASIS = 'https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/jvs_q_r21?format=JSON&lang=EN&geo=EA20&indic_em=JVR&sizeclas=TOTAL';
+// Euroraum: seit 2026 EA21 (Bulgarien) - EA20 endet mit 2026-Q1 (Sonde 2026-11-22). "EA" = jeweilige Zusammensetzung.
+const GEOS = ['EA', 'EA21', 'EA20'];
+const BASIS = 'https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/jvs_q_r21?format=JSON&lang=EN&indic_em=JVR&sizeclas=TOTAL' + GEOS.map(g => '&geo=' + g).join('');
 const pct = v => (Math.round(v * 10) / 10).toFixed(1) + '%';
 const qEnde = q => { const [y, n] = q.split('-Q').map(Number); return new Date(Date.UTC(y, n * 3, 0)).toISOString().slice(0, 10); };
 
@@ -46,10 +48,13 @@ const nace = ['B-S', 'B-T', 'B-N'].find(k => j.dimension.nace_r2_1 && k in j.dim
 if (PROBE) console.log('[jv] NACE-Auswahl', nace, '| vorhanden:', kat('nace_r2_1').join(','));
 if (!nace) throw new Error('Eurostat: kein Gesamtaggregat B-S/B-T');
 const varianten = {};
-(j.dimension.s_adj ? kat('s_adj') : ['-']).forEach(sa => { varianten[sa] = reihe(j, { s_adj: sa, sizeclas: 'TOTAL', nace_r2_1: nace, geo: 'EA20', indic_em: 'JVR', freq: 'Q' }); });
+const geos = GEOS.filter(g => g in j.dimension.geo.category.index);
+(j.dimension.s_adj ? kat('s_adj') : ['-']).forEach(sa => geos.forEach(g => { varianten[sa + '/' + g] = reihe(j, { s_adj: sa, sizeclas: 'TOTAL', nace_r2_1: nace, geo: g, indic_em: 'JVR', freq: 'Q' }); }));
 if (PROBE) Object.entries(varianten).forEach(([k, r]) => console.log('[jv]', k, r.length, 'Quartale, letzte 4:', JSON.stringify(r.slice(-4))));
 // Schlagzeile der Eurostat-Meldung = nicht saisonbereinigt (NSA); SA nur, wenn NSA fehlt
-const pts = varianten.NSA && varianten.NSA.length ? varianten.NSA : varianten.SA;
+// je Bereinigung die Euroraum-Reihe mit dem juengsten Quartal (bei Gleichstand die laengste)
+const best = sa => geos.map(g => varianten[sa + '/' + g] || []).filter(r => r.length).sort((a, b) => (b[b.length - 1][0] > a[a.length - 1][0]) - (b[b.length - 1][0] < a[a.length - 1][0]) || b.length - a.length)[0];
+const pts = best('NSA') || best('SA');
 if (!pts || pts.length < 2) throw new Error('Eurostat: keine Reihe');
 const neu = pts[pts.length - 1], vor = pts[pts.length - 2];
 const upd = String(j.updated || '').slice(0, 10) || new Date().toISOString().slice(0, 10);
