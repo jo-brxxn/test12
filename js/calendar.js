@@ -217,6 +217,9 @@ function actualColorInverted(assetId,indName){
   const rub=(sym.rubrics||[]).find(r=>MACRO_DERIVE_RUBS.includes(r.name)
     &&(r.indicators||[]).some(i=>stripPeriodSuffix(i.name).base===base||i.displayName===indName));
   if(!rub)return false;
+  // 793: Richtung je Zeile (Einzelregel im Zahnrad, eigene Zeilen wie China zaehlen natuerlich) statt nur der Karte
+  const ind=rub.indicators.find(i=>stripPeriodSuffix(i.name).base===base||i.displayName===indName);
+  if(window.indRichtung&&ind)return window.indRichtung(sym,rub,ind)==='inverse';
   return effDeriveRules(sym)[rub.name]==='inverse';
 }
 // assetId ist optional. Ohne ihn (Haupt-Kalender, waehrungsweite Auswertungen)

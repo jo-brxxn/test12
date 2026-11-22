@@ -4737,6 +4737,21 @@ function effDeriveRules(sym){
 // Zustandslos: die eigene Zeile wird aus Actual/Forecast/Previous neu eingestuft, nie aus ihrem Bias -
 // mehrfaches Anwenden kippt also nichts hin und her.
 function indRegel(sym,ind){const r=sym&&sym.indRules&&sym.indRules[stripPeriodSuffix(ind.name).base];return r==='same'||r==='inverse'?r:null;}
+// Richtung einer Zeile fuer DIESES Asset (793): Einzelregel > eigene Zeile (natuerlich 'same', der
+// Realzins zaehlt "steigt = bearish", also 'inverse') > Karten-Regel. null = Karte ohne Regel (manuell).
+function indRichtung(sym,rub,ind){
+  const rg=indRegel(sym,ind);if(rg)return rg;
+  if(istAssetEigen(sym.id,ind.name))return stripPeriodSuffix(ind.name).base===REALZINS_IND?'inverse':'same';
+  const k=rub&&effDeriveRules(sym)[rub.name];return k==='same'||k==='inverse'?k:null;
+}
+// Zeile zaehlt anders herum als ihre Karte -> steht ganz unten, abgetrennt (Nutzer 2026-11-22: "wenn in den
+// settings ein Indikator invers gemacht wird also anders als die anderen dann soll er ganz am Schluss der
+// Karte und abgetrennt stehen")
+function indAbweichend(sym,rub,ind){
+  if(!sym||!rub||!isNonFx(sym.id)||!MACRO_DERIVE_RUBS.includes(rub.name))return false;
+  const k=effDeriveRules(sym)[rub.name];if(k!=='same'&&k!=='inverse')return false;
+  const r=indRichtung(sym,rub,ind);return !!r&&r!==k;
+}
 function indRegelEigenSetzen(ind,regel){
   const q=ind.research||{};if(q.actual==null||q.actual==='')return;
   const nat=researchBias(stripPeriodSuffix(ind.name).base,q.actual,q.forecast,q.previous);
@@ -12534,8 +12549,14 @@ function indPairGroupPositions(inds){
 function renderIndsTable(rub,ri){
   const inds=rub.indicators||[];
   const total=inds.length;
-  const pairPos=indPairGroupPositions(inds);
-  const rows=inds.map((ind,ii)=>renderIndRow(ind,ri,ii,rub,total,pairPos[ii])).join('');
+  // 793: Zeilen, die anders herum zaehlen als die Karte, ganz unten hinter einer gestrichelten Linie
+  // mit "Inverse" in der Mitte. Reihenfolge nur in der Anzeige - ii bleibt der echte Index (Knoepfe).
+  const sym=getSym();
+  const mitIdx=inds.map((ind,ii)=>({ind,ii,ab:indAbweichend(sym,rub,ind)}));
+  const geordnet=mitIdx.filter(x=>!x.ab).concat(mitIdx.filter(x=>x.ab));
+  const pairPos=indPairGroupPositions(geordnet.map(x=>x.ind));
+  const erstAb=geordnet.findIndex(x=>x.ab);
+  const rows=geordnet.map((x,k)=>(k===erstAb?`<tr class="ind-sep-row" aria-hidden="true"><td colspan="6"><span>Inverse</span></td></tr>`:'')+renderIndRow(x.ind,ri,x.ii,rub,total,x.ab?'':pairPos[k])).join('');
   // Feste Spaltenbreiten (colgroup + table-layout:fixed) statt einer
   // Mindestbreite mit Scrollcontainer (Nutzer-Wunsch 2026-08-03: die Tabelle
   // darf nicht mehr horizontal wegscrollbar sein, sie muss immer auf die
@@ -12643,10 +12664,7 @@ function renderIndRow(ind,ri,ii,rub,total,pairPos){
   const awEv=stale?null:indAwaitingEvent(getSym().id,ind);
   const awaitBadge=awEv?`<span class="ir-await" title="${escH(awEv.name)} was due on ${escH(awEv.date)}, but no source has delivered a value yet. Nothing is estimated - the figures shown are still the last confirmed ones${(ind.research&&ind.research.date)?` from ${escH(ind.research.date)}`:''}.">AWAITING VALUE</span>`:'';
   const pairCls=pairPos?` ind-pair-row ind-pair-${pairPos}`:'';
-  // China-Block unten gestrichelt abgetrennt (790, Nutzer 2026-11-22: "leicht in der Karte aber noch abgetrennt ... mit so einer kleinen gestrichelten Linie ganz unten")
-  const _vor=rub&&rub.indicators?rub.indicators[rub.indicators.indexOf(ind)-1]:null;
-  const chinaStart=/^China /.test(stripPeriodSuffix(ind.name).base)&&!!_vor&&!/^China /.test(stripPeriodSuffix(_vor.name).base);
-  const mainRow=`<tr class="ind-row ${glowClass(ind.bias)}${stale?' ind-stale':''}${pairCls}${chinaStart?' ind-china-start':''}" data-indbase="${escH(stripPeriodSuffix(ind.name).base)}" data-indid="${escH(ind.id)}" onclick="toggleIndDetailRow(event,'${escH(ind.id)}')" onpointerdown="biasPressStart(event,'ind',${ri},${ii})" onpointerup="biasPressEnd()" onpointerleave="biasPressEnd()" onpointercancel="biasPressEnd()" oncontextmenu="return false" title="Tap to expand · long-press to set bias">
+  const mainRow=`<tr class="ind-row ${glowClass(ind.bias)}${stale?' ind-stale':''}${pairCls}" data-indbase="${escH(stripPeriodSuffix(ind.name).base)}" data-indid="${escH(ind.id)}" onclick="toggleIndDetailRow(event,'${escH(ind.id)}')" onpointerdown="biasPressStart(event,'ind',${ri},${ii})" onpointerup="biasPressEnd()" onpointerleave="biasPressEnd()" onpointercancel="biasPressEnd()" oncontextmenu="return false" title="Tap to expand · long-press to set bias">
     <td class="ir-name"><span class="ir-name-txt" title="${escH(indName(ind))}">${escH(indName(ind))}</span>${staleBadge}${estBadge}${awaitBadge}
     </td>
     <td class="ir-act${actCls?' '+actCls:''}" title="${escH(actTxt)}">${escH(actTxt)}</td>
@@ -28714,7 +28732,7 @@ Object.assign(window,{openScoreRegeln,srZahnrad,srTyp,srMax,ecThNeu,ecThWahl,ecT
   openBiasPicker,biasPickerChoose,closeBiasPicker,biasPickerOutside,togRubImp,togRubCollapse,delRub,mvRub,addRub,
   openInfoM,saveInfoM,setIndBias,syncIndOrderGlobal,syncMacroIndAddRemove,delInd,mvInd,addInd,cloneRubsFromUSD,
   confirmAddSym,openAddSym,renameFeldAls,FX_LINK_CCYS,escJs,escJH,openAssetCfg,renderAssetCfgBody,assetCfgApply,setAssetLinkCcy,
-  setAssetDeriveRule,setAssetIndRule,indRegel,indRegelEigenSetzen,toggleAssetSync,openDelSym,confirmDelSym,autoPairBias,BIAS_LBL,flipCauseLines,FLIP_CAUSE_TXT,
+  setAssetDeriveRule,setAssetIndRule,indRegel,indRegelEigenSetzen,indRichtung,indAbweichend,toggleAssetSync,openDelSym,confirmDelSym,autoPairBias,BIAS_LBL,flipCauseLines,FLIP_CAUSE_TXT,
   flipCauseBlock,queueScoreFlipAlert,triggerFlipGlow,setSuppressBiasFlipAlerts,recomputeAllSymBiases,
   recomputeAllPairBiases,rubAutoBiasNeeded,RUB_AUTO_BIAS_THRESHOLD,recomputeRubricAutoBias,SUM_PHRASE,sumPhrase,IND_FAMILY,indFamily,RUB_TREND_WORDS,RUB_TREND_DEFAULT,rubTrendWord,
   sumIndSource,sumIndInfo,joinFrags,famDriverPhrase,famContextPhrase,RUB_ANCHOR_IND,summarizeGeneric,findIndByBase,

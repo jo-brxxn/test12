@@ -23118,3 +23118,18 @@ Nutzer (Foto Silver, „Next event“ eingekreist): *„Entfern das bei allen As
   - **E:** Verbinden über das Filterfenster, × löst.
   - Gegenprobe (Retail ohne Regel) meldet B rot.
 
+## 2026-11-22 — Zeilen gegen die Karten-Regel unten mit „Inverse“, Act-Farbe je Zeile (VERSION-CHECK-795)
+
+Nutzer (iPad-Foto Silber, Economic Growth, Linie markiert): *„mach eine richtige Lücke mit einer gestrichelten Linie wo in der Mitte des gestrichelten invers steht. Das sollst du auch ab sofort immer machen wenn in den settings ein Indikator invers gemacht wird also anders als die anderen dann soll er ganz am Schluss der Karte und abgetrennt stehen.“*
+
+- **Gemessen vorher (Foto):**
+  - Die Trennlinie lief durch den Text „US Industrial Production m/m“.
+  - China NBS PMI 49,3 gegen Forecast 50 stand **blau**, obwohl der Wert ein Miss (bear) ist.
+- **Ursache der Farbe:** `actualColorInverted` drehte die Act-Farbe nach der Regel der **Karte**, also auch bei eigenen Zeilen, die natürlich zählen.
+- **Jetzt:**
+  - `indRichtung(sym,rub,ind)`: Einzelregel, sonst eigene Zeile (Realzins = inverse, sonst same), sonst Karte.
+  - `indAbweichend` sortiert die abweichenden Zeilen in der Anzeige ans Ende.
+  - Davor steht die Trennzeile `.ind-sep-row` mit „Inverse“.
+  - Silber: US Industrial Production, China NBS PMI und China IP stehen unter „Inverse“, die Act-Zellen sind rot (Miss).
+- **Dauerregel** in `docs/design-system.md`.
+- **Wächter:** `check/silberregeln.js` C neu.

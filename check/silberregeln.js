@@ -4,7 +4,7 @@
 // gestrichelten Linie ganz unten ... positiv zaehlen ... im Zahnrad ... einzelne Indikatoren bearish setzen".
 //  A) SILVER: Inflation, Interest Rates, Labour Market, Economic Growth = inverse; ISM-Zeile inverse (indRules)
 //  B) jede gespiegelte Zeile der drei Karten = Gegenteil der USD-Zeile
-//  C) China NBS PMI + China Industrial Production unten, erste China-Zeile mit gestrichelter Linie
+//  C) (793) Zeilen gegen die Karten-Regel (US IP, China) ganz unten hinter gestrichelter Linie "Inverse"
 //  D) Zahnrad: Einzelzeile NFP auf Bullish -> wie USD; zurueck auf Card -> wieder invers; Zeilen im Menue
 // --gegenprobe: Einzelregeln werden nicht angewendet -> D rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
@@ -31,11 +31,15 @@ const MARKE = '    indRegelnAnwenden(sym,srcSym);';
         const soll = ui.bias === 'bull' ? 'bear' : 'bull'; if (i.bias !== soll) out.f.push(`${k}/${i.name}: USD ${ui.bias}, Silber ${i.bias}`); }); });
     return out; }, KARTEN);
   if (!bz.n) F.push('B: keine gespiegelte Zeile mit Bias - Pruefung wirkungslos'); else if (bz.f.length) F.push('B: ' + bz.f.join(' · ')); else OK.push(`B: ${bz.n} gespiegelte Zeilen = Gegenteil von USD`);
-  const c = await p.evaluate(() => { const r = getSym().rubrics.find(x => x.name === 'Economic Growth'); const n = r.indicators.map(i => i.name);
-    const tr = document.querySelector('#detail tr.ind-china-start'); const td = tr && tr.querySelector('td');
-    return { letzte: n.slice(-2), start: tr && tr.dataset.indbase, stil: td ? getComputedStyle(td).borderTopStyle : null, gew: r.indicators.filter(i => /^China /.test(i.name)).map(i => i.gew) }; });
-  if (c.letzte.join('|') !== 'China NBS Manufacturing PMI|China Industrial Production' || c.start !== 'China NBS Manufacturing PMI' || c.stil !== 'dashed' || c.gew.join() !== '0.5,0.5') F.push(`C: ${JSON.stringify(c)}`);
-  else OK.push('C: China NBS PMI + IP je 0,5 ganz unten, gestrichelte Linie davor');
+  // C (793): abweichende Zeilen (zaehlen anders herum als die Karte) ganz unten hinter "Inverse"; Farbe der Act-Zelle = eigene Richtung
+  const c = await p.evaluate(() => { const r = getSym().rubrics.find(x => x.name === 'Economic Growth');
+    const t = [...document.querySelectorAll('#detail .ind-table')].find(x => x.querySelector('tr[data-indbase="China NBS Manufacturing PMI"]'));
+    const rows = t ? [...t.querySelectorAll('tbody>tr')] : []; const i = rows.findIndex(x => x.classList.contains('ind-sep-row'));
+    const nach = i < 0 ? [] : rows.slice(i + 1).filter(x => x.classList.contains('ind-row')).map(x => x.dataset.indbase);
+    const sep = i < 0 ? null : rows[i]; const linie = sep ? getComputedStyle(sep.querySelector('span'), '::before').borderTopStyle : null;
+    return { nach, text: sep ? sep.innerText.trim() : null, linie, gew: r.indicators.filter(x => /^China /.test(x.name)).map(x => x.gew) }; });
+  if (c.nach.join('|') !== 'US Industrial Production|China NBS Manufacturing PMI|China Industrial Production' || !/^inverse$/i.test(c.text || '') || c.linie !== 'dashed' || c.gew.join() !== '0.5,0.5') F.push(`C: ${JSON.stringify(c)}`);
+  else OK.push('C: US IP + China NBS PMI + China IP (je 0,5) ganz unten hinter gestrichelter Linie "Inverse"');
   const d = await p.evaluate(async () => { const nfp = () => getSym().rubrics.find(x => x.name === 'Labour Market').indicators.find(i => i.name === 'NFP / Employment Change');
     const usd = syms.find(x => x.id === 'USD').rubrics.find(x => x.name === 'Labour Market').indicators.find(i => i.name === 'NFP / Employment Change').bias;
     openAssetCfg(); await new Promise(r => setTimeout(r, 300)); const zeilen = document.querySelectorAll('#assetCfgBody .acfg-indrow').length;

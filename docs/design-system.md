@@ -2108,3 +2108,15 @@ Nutzer 2026-11-19: *„ein zahnrad … Fenster mit Filter mit allen assets … 6
 - **Watchlist aus:** alle 6 frei.
 - Leere Plätze füllen weiter die Standards (EUR/USD, GBP/USD, USD/JPY, Gold, Silber, S&P 500).
 - Zustand `dashMktWahl` geräteübergreifend (`docs/state-sync.md`).
+
+
+## Zeilen gegen die Karten-Regel: ganz unten, „Inverse“ (Dauerregel seit 2026-11-22, 795)
+
+- **Nutzer:** *„ab sofort immer … wenn in den settings ein Indikator invers gemacht wird also anders als die anderen dann soll er ganz am Schluss der Karte und abgetrennt stehen“*. Dazu: *„eine richtige Lücke mit einer gestrichelten Linie wo in der Mitte des gestrichelten invers steht“*.
+- **Welche Zeilen:** Jede Zeile einer Makro-Karte (Nicht-FX mit Zahnrad-Regel), deren Richtung von der Karten-Regel abweicht (`indAbweichend` in `js/main.js`).
+  - Grund kann eine Einzelregel im Zahnrad sein.
+  - Grund kann auch sein, dass eine eigene Zeile natürlich zählt (Beat = bullish), während die Karte invers ist, z. B. Silber: US Industrial Production und der China-Block.
+- **Anzeige:** Die Zeilen werden in der Anzeige ans Ende sortiert; die gespeicherte Reihenfolge bleibt.
+  - Davor steht eine Trennzeile `.ind-sep-row`: Lücke, gestrichelte Linie, „INVERSE“ in der Mitte.
+- **Farbe der Act-Zelle:** folgt der Richtung der Zeile (`indRichtung`), nicht nur der Karte.
+- **Geprüft von** `check/silberregeln.js` C.
