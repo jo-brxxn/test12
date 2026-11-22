@@ -23150,3 +23150,22 @@ Nutzer (iPad-Foto Silber, Economic Growth, Linie markiert): *„mach eine richti
 - **Fehlerklasse** (Scan 15 Seiten + Asset-Seite): bei **390 px** bricht die Leiste um, „Backtester“ und der Schalter begannen mit Strich am Zeilenanfang; dazu 11 px Versatz gegenüber „Score“
 - **Fix:** Container ohne Rand, `padding-left:0;overflow-x:clip`; jedes `.dmeta-ctrl` `margin-left:-1px;padding-left:11px` → Strich am Zeilenanfang liegt im abgeschnittenen Bereich, alle Zeilen bündig
 - **Wächter** `check/randstrich.js` (1180/390 px): grün; Gegenprobe (alter Strich) → **12 Funde**. Einzige andere Fundstelle: `hl-row` = Wichtigkeits-Balken der Schlagzeilen, bewusst ausgenommen
+
+## 2026-11-22 — Profil: Name statt Benutzername, Initialen, Begrüßung, langes Drücken = Dark/Light (VERSION-CHECK-799)
+
+Nutzer (Fotos Settings + Dashboard, „Jonathan“ eingekreist): *„Füg in diesen Einstellungen einen Slot hinzu wo man optional Namen und Nachnamen angibt. Beide Anfangsbuchstaben sollen dann oben rechts stehen also hans Stein dann stehen im Kreis die Buchstaben HS. Und entfern den nutzernamen. Bei der Begrüßung soll dann der Vorname genommen werden. Wenn der nicht angegeben ist dann steht da Trader … wenn man auf den Kreis oben rechts drückt lange das dann direkt dark Mode und light Mode sich wechseln“*.
+
+- **Vorher:**
+  - Begrüßung fest „Jonathan“ (`DASH_NAME`).
+  - Kreis aus Benutzername oder Sync-ID (`cloudUsername`, nur lokal in der Cloud-Konfiguration).
+- **Jetzt:**
+  - Settings → **Profile**: *First name* / *Last name* (optional, wirkt beim Tippen).
+  - Feld `profil` {vor, nach} in `snap()`, `loadState`, `applySnap`, `neueFelderBehalten` → auf allen Geräten gleich.
+  - Kreis = erster Buchstabe von Vor- + Nachname, ohne Namen das Personen-Symbol.
+  - Begrüßung = Vorname, sonst **Trader**.
+  - Feld *Username* und `cfg.username` entfernt.
+- **Langes Drücken (550 ms)** auf den Kreis = `toggleFxTheme()`; der folgende Klick wird verschluckt, kurzes Tippen öffnet die Settings wie bisher. Kein iOS-Kontextmenü (`-webkit-touch-callout:none`).
+- **Gemessen:** hans/Stein → „HS“, „Good afternoon, hans!“, Theme light → midnight per langem Druck, Settings bleiben zu; nach Neuladen beides erhalten.
+- **Hinweis:** Der Name wird so angezeigt, wie er eingetippt wurde (keine automatische Großschreibung).
+- **Wächter:** `check/profil.js` A–C, Gegenprobe meldet B rot. `check/eingaben.js` ohne `#cloudUsername`.
+

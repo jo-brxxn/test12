@@ -6117,7 +6117,7 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte,gameplans,econThesen},SNAP_REPLACER);}
+function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte,gameplans,econThesen,profil},SNAP_REPLACER);}
 // Banner-Quittungen der Zentralbank-Karte: nur Waehrung -> Datum, alles andere faellt raus.
 function zbEntscheidRein(v){
   const o={};
@@ -6360,7 +6360,7 @@ function applySnapRoh(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(_mergeSync?gpVereinen(gameplans,d.gameplans):d.gameplans);econSetzeAlle(_mergeSync?econVereinen(econThesen,d.econThesen):d.econThesen);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(_mergeSync?gpVereinen(gameplans,d.gameplans):d.gameplans);econSetzeAlle(_mergeSync?econVereinen(econThesen,d.econThesen):d.econThesen);if('profil' in d)profil=profilRein(d.profil);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6670,6 +6670,13 @@ let zbEntscheid={};
 // bsGewichte (seit 2026-11-14, VERSION-CHECK-723): Gewichte der Komponenten im
 // BTC-Sentiment-Score ({etf:1, funding:2, ...}, fehlend = 1). Laeuft ueber
 // snap()/applySnap() + neueFelderBehalten() wie zbEntscheid - auf allen Geraeten gleich.
+// Profil (Nutzer 2026-11-22: "optional Namen und Nachnamen ... Beide Anfangsbuchstaben ... oben rechts
+// ... Bei der Begruessung ... der Vorname ... Wenn der nicht angegeben ist dann steht da Trader").
+// Ersetzt den Benutzernamen der Cloud-Sync-Einstellungen. Synchronisiert ueber snap() (Regel 1).
+let profil={vor:'',nach:''};
+function profilRein(v){const t=x=>typeof x==='string'?x.replace(/[<>]/g,'').trim().slice(0,40):'';return{vor:t(v&&v.vor),nach:t(v&&v.nach)};}
+function profilInitialen(){const b=x=>{const m=String(x||'').match(/\p{L}|\d/u);return m?m[0].toUpperCase():'';};return b(profil.vor)+b(profil.nach);}
+function profilVorname(){return profil.vor||'Trader';}
 let bsGewichte={};
 function bsGewichteRein(v){const o={};if(v&&typeof v==='object')Object.keys(v).forEach(k=>{const w=+v[k];if(/^[a-z0-9_]{1,20}$/.test(k)&&isFinite(w)&&w>=0&&w<=5)o[k]=w;});return o;}
 let syms,pairCats,pairs,noteCats,research,researchFolders=[],researchAnalysis={},calEvts,widgets,customIds=[],rubOrder=[],sbOrder={},catOrder=[],rateWatchCustom={},indLinkCustom={},btReasons={},seedNoteFlags={},dashV=0,eventAlerts=[],priceAlerts=[],dashRemovedTypes=[];
@@ -6945,7 +6952,7 @@ function loadState(){
       // Wert ist gespeichert, kommt aber nie an. Genau so ging der Test
       // 2026-09-07 aus (angepinnte Seed-Notiz nach dem Neuladen ohne Pin).
       btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};
-      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(d.gameplans);econSetzeAlle(d.econThesen);
+      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(d.gameplans);econSetzeAlle(d.econThesen);profil=profilRein(d.profil);
       seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};
       eventAlerts=pruneEventAlerts(d.eventAlerts||[]);
       priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];
@@ -7265,7 +7272,7 @@ function rezPurgeHintText(){
 function openCloudM(){
   try{updPinToggleBtn()}catch(e){}
   const cfg=getCloudCfg()||{};
-  document.getElementById('cloudUsername').value=cfg.username||'';
+  {const v=document.getElementById('profilVor'),n=document.getElementById('profilNach');if(v)v.value=profil.vor;if(n)n.value=profil.nach;}
   document.getElementById('cloudUrl').value=cfg.url||'';
   document.getElementById('cloudKey').value=cfg.key||'';
   document.getElementById('cloudSyncId').value=cfg.syncId||'';
@@ -7277,12 +7284,11 @@ function setCloudStatus(txt){
   const el=document.getElementById('cloudStatus');if(el)el.textContent=txt;
 }
 function saveCloudCfg(){
-  const username=document.getElementById('cloudUsername').value.trim();
   const url=document.getElementById('cloudUrl').value.trim().replace(/\/+$/,'');
   const key=document.getElementById('cloudKey').value.trim();
   const syncId=document.getElementById('cloudSyncId').value.trim();
   if(!url||!key||!syncId){alert('Please fill in URL, API key and Sync ID.');return;}
-  localStorage.setItem(CLOUD_CFG_KEY,JSON.stringify({username,url,key,syncId}));
+  localStorage.setItem(CLOUD_CFG_KEY,JSON.stringify({url,key,syncId}));
   // Das Fenster bleibt nach "Save" offen (Statuszeile zeigt den Sync).
   // Ab hier IST das der gespeicherte Stand - sonst fragte ein Klick daneben
   // gleich darauf "Save changes?" nach etwas, das laengst gespeichert ist.
@@ -7295,22 +7301,37 @@ function saveCloudCfg(){
   // Cloud-Stand ueberschrieben wird (siehe Kommentar bei cloudPull).
   cloudPull(true,false);
 }
-// Profil-Button oben rechts: zeigt den eingetragenen Benutzernamen (oder
-// ersatzweise die Sync-ID), wenn der Cloud-Sync eingerichtet ist, sonst "Log in".
+// Profil-Button oben rechts: Initialen aus Vor- und Nachname (seit 2026-11-22, "hans Stein ... HS").
+// Ohne Namen bleibt das Personen-Symbol stehen. Der Benutzername der Cloud-Einstellungen ist weg.
+const PROFIL_ICON_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>';
 function updProfile(){
-  const el=document.getElementById('profileName');if(!el)return;
-  const cfg=getCloudCfg();
-  const name=cfg&&(cfg.username||cfg.syncId)?(cfg.username||cfg.syncId):'Sync';
-  el.textContent=name;
-  // Profil-Kreis: Initialen des Sync-Namens (professioneller als das
-  // generische Personen-Icon); ohne eingerichteten Sync bleibt das
-  // Personen-SVG aus dem statischen HTML stehen.
+  const ini=profilInitialen(),voll=[profil.vor,profil.nach].filter(Boolean).join(' ');
+  const el=document.getElementById('profileName');if(el)el.textContent=voll||'Settings';
   const c=document.getElementById('profileCircle');
-  if(c&&cfg&&(cfg.username||cfg.syncId)){
-    const ini=String(cfg.username||cfg.syncId).replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase()||'FX';
-    c.textContent=ini;c.classList.add('ini');
-  }
+  if(c){if(ini){c.textContent=ini;c.classList.add('ini');}else if(c.classList.contains('ini')){c.innerHTML=PROFIL_ICON_SVG;c.classList.remove('ini');}}
+  const b=document.getElementById('profileBtn');
+  if(b)b.title=(voll?voll+' · ':'')+'Settings · long press: dark / light mode';
+  const g=document.querySelector('#dashGruss .dx-name');if(g)g.textContent=profilVorname();
 }
+// Eingabe in den Settings wirkt sofort (wie jeder Schalter dort) und wird synchronisiert.
+function setProfil(){
+  const v=document.getElementById('profilVor'),n=document.getElementById('profilNach');
+  profil=profilRein({vor:v?v.value:profil.vor,nach:n?n.value:profil.nach});
+  updProfile();
+  try{save();}catch(e){alert('Could not save your name: '+(e&&e.message||e));}
+}
+// Langes Druecken auf den Kreis oben rechts = Dark/Light wechseln (Nutzer 2026-11-22). Kurz = Settings
+// wie bisher. Nach einem langen Druck wird der folgende click verschluckt, sonst ginge das Fenster auf.
+let _profLangT=null,_profLang=false;
+function profilDruckStart(e){
+  if(e.button!=null&&e.button!==0)return;
+  _profLang=false;clearTimeout(_profLangT);
+  _profLangT=setTimeout(()=>{_profLang=true;_profLangT=null;try{toggleFxTheme();}catch(x){alert('Could not switch the theme: '+(x&&x.message||x));}
+    try{navigator.vibrate&&navigator.vibrate(15);}catch(x){}},PROFIL_LANG_MS);
+}
+function profilDruckEnde(){clearTimeout(_profLangT);_profLangT=null;}
+function profilKlick(e){if(_profLang){_profLang=false;e.preventDefault();e.stopPropagation();return;}openCloudM();}
+const PROFIL_LANG_MS=550;
 // ── Globale Suche (Nutzer-Wunsch 2026-07-16): ein Feld fuer Assets,
 // Indikatoren, Kalender-Events und Tabs. "/" oeffnet sie, Pfeiltasten +
 // Enter navigieren, Klick springt direkt an die Stelle.
@@ -7498,7 +7519,8 @@ function neueFelderBehalten(fremd,lokal){
   // bsGewichte: Gewichte des BTC-Sentiment-Scores (seit 2026-11-14, 723).
   // gameplans: Gameplan je Asset (seit 2026-11-16, 737).
   // econThesen: Thesen der Economy Map (seit 2026-11-21, 784).
-  ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
+  // profil: Vor- und Nachname (seit 2026-11-22, 799).
+  ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
   const fa=fremd.researchAnalysis,la=lokal.researchAnalysis;
@@ -8131,7 +8153,7 @@ const MODAL_GUARD_TABELLE={
   mTrade:TJ_GUARD,
   mTradeGp:TJG_GUARD,
   mTradeClose:TJ_GUARD_ZU,
-  mCloud:{felder:['cloudUsername','cloudUrl','cloudKey','cloudSyncId'],
+  mCloud:{felder:['cloudUrl','cloudKey','cloudSyncId'],
     save:()=>{saveCloudCfg();if(!modalIsDirty('mCloud'))closeM('mCloud');},was:'Your sync settings'},
 };
 Object.keys(MODAL_GUARD_TABELLE).forEach(id=>registerModalGuard(id,MODAL_GUARD_TABELLE[id]));
@@ -18094,7 +18116,6 @@ function esiCardHtml(){
 // Geruests gestartet. renderDash() laeuft bei jedem Feed-Takt - ersetzte es
 // das ganze innerHTML, baute es jedes Mal die Kugel neu (docs/performance.md:
 // eine Seite = ein Aufbau). Neu gefuellt werden nur die [data-slot]-Hüllen.
-const DASH_NAME='Jonathan';
 function dashGruss(d){
   const h=(d||new Date()).getHours();
   return h>=5&&h<12?'Good morning':h>=12&&h<18?'Good afternoon':'Good evening';
@@ -18103,7 +18124,7 @@ function dashZu(id){const el=document.getElementById(id);if(el)el.scrollIntoView
 function dashHeroHtml(){
   const now=new Date(),ses=dashSessions(now);
   const upd=priceDataLastFetch?new Date(priceDataLastFetch).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):null;
-  return`<div class="pg-titel dx-gruss" id="dashGruss">${dashGruss(now)}, <span class="dx-name">${escH(DASH_NAME)}</span>!</div>
+  return`<div class="pg-titel dx-gruss" id="dashGruss">${dashGruss(now)}, <span class="dx-name">${escH(profilVorname())}</span>!</div>
     <div class="pg-sub dx-hero-sub">Here's your market overview.</div>
     <div class="dx-hero-meta"><b>Live data</b><span class="dx-sep">|</span><span id="dashUhr">${upd?'Last update '+escH(upd):'Updating'}</span><span class="dx-sep">|</span>${ses.length?`<b>${escH(ses.join(' + '))}</b>&nbsp;open`:'<i>Markets closed</i>'}</div>`;
 }
@@ -28625,7 +28646,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{openScoreRegeln,srZahnrad,srTyp,srMax,ecThNeu,ecThWahl,ecThTitel,ecThStatus,ecThLink,ecThLoeschen,ecGruppe,ecAktie,ecFirmaWahl,ecFirmaZoom,ecTagFilter,ecTypFilter,ecZoom,dashMktAuf,dashMktUmschalten,dashMktWlSetzen,dataVollUmschalten,newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{setProfil,profilDruckStart,profilDruckEnde,profilKlick,openScoreRegeln,srZahnrad,srTyp,srMax,ecThNeu,ecThWahl,ecThTitel,ecThStatus,ecThLink,ecThLoeschen,ecGruppe,ecAktie,ecFirmaWahl,ecFirmaZoom,ecTagFilter,ecTypFilter,ecZoom,dashMktAuf,dashMktUmschalten,dashMktWlSetzen,dataVollUmschalten,newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-
