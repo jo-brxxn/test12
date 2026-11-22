@@ -23168,7 +23168,15 @@ Umgesetzt:
   - Regeln und Stand: `docs/score-model.md` „Modell 40“.
 - **Wächter:** neu `check/globalyields.js` (Gegenprobe → rot).
 
-## 2026-11-22 — Profil: Name statt Benutzername, Initialen, Begrüßung, langes Drücken = Dark/Light (VERSION-CHECK-800)
+## 2026-11-22 — Karten-Badge neutral trotz -3.97 (VERSION-CHECK-800)
+- Nutzer, Screenshot SILVER: *„Prüf warum das eingekreiste bei dem Score neutral ist und beheb das“* (Economic Growth **-3.97**, Rahmen grau)
+- **Gemessen:** Badge-Zahl = `rubScore` der Silver-Karte (**-3.97**, inkl. China-Zeilen unter „Inverse“); Badge-Farbe = `rub.bias`, in `deriveMacroBiasAll` **1:1 von USD Economic Growth** gespiegelt (**+1.64 → neu**, invertiert weiter neu)
+- **Klasse:** 20 Karten (Gold/Indizes/Aktien/US Yield Economic Growth **+2.21** neutral statt bullish, DE Yield Inflation +2.24, Silver -3.97); seit 795/798/799 tragen gespiegelte Karten eigene Zeilen/Regeln
+- **Fix:** Bias gespiegelter Makro-Karten aus der **eigenen Summe** (Schwelle ±2, `rubBiasAusScore`), `rubAutoBiasNeeded` schließt sie nicht mehr aus; COT bleibt bei seiner Vorzeichen-Regel
+- **Score unverändert** (`check/scorediff.js`: 0 von 215 Karten-Scores, Symbol-Score gleich); Kartentexte an 20 Stellen anderes Bias-Wort → `SUMMARY_ENGINE_VERSION` 16
+- **Wächter** `check/kartenbias.js`: 172 Karten grün, Gegenprobe 20 Funde
+
+## 2026-11-22 — Profil: Name statt Benutzername, Initialen, Begrüßung, langes Drücken = Dark/Light (VERSION-CHECK-801)
 
 Nutzer (Fotos Settings + Dashboard, „Jonathan“ eingekreist): *„Füg in diesen Einstellungen einen Slot hinzu wo man optional Namen und Nachnamen angibt. Beide Anfangsbuchstaben sollen dann oben rechts stehen also hans Stein dann stehen im Kreis die Buchstaben HS. Und entfern den nutzernamen. Bei der Begrüßung soll dann der Vorname genommen werden. Wenn der nicht angegeben ist dann steht da Trader … wenn man auf den Kreis oben rechts drückt lange das dann direkt dark Mode und light Mode sich wechseln“*.
 

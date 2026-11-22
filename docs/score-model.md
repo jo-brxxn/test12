@@ -888,3 +888,8 @@ ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
 - **Stand 2026-11-21:** Durchschnitt 3,78 %, EMA 3,84 % → +0,5 überall.
 - ⚠ **Ohne Messung aufgenommen** (Nutzerwunsch). Die gemeinsame Historie beginnt erst im Juni 2026, ein Backtest ist damit noch nicht sinnvoll.
 - **Geprüft von** `check/globalyields.js`: unabhängig aus `bond_data.json` nachgerechnet; die Gegenprobe mit gedrehtem Vorzeichen wird rot.
+
+## Karten-Bias = eigene Kartensumme (seit 2026-11-22, 800)
+- Jede Makro-Karte: Bias aus **ihrer eigenen** Summe, Schwelle ±2 — auch gespiegelte Karten auf Non-FX-Assets (same/inverse); die Zeilen werden weiter einzeln gespiegelt
+- Ausnahme COT Data (Vorzeichen-Regel)
+- Grund: Badge zeigte -3.97 in Neutral-Farbe (SILVER), weil der Bias 1:1 von USD kam. Wächter `check/kartenbias.js`

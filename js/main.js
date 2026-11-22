@@ -4811,7 +4811,12 @@ function deriveMacroBiasAll(){
       const rule=rules[r.name];
       if(rule!=='same'&&rule!=='inverse')return;
       const src=srcSym.rubrics.find(x=>x.name===r.name);if(!src)return;
-      r.bias=rule==='same'?src.bias:invertBias(src.bias);
+      // Karten-Bias wird NICHT mehr 1:1 von der Waehrungskarte gespiegelt
+      // (Nutzer 2026-11-22, SILVER Economic Growth: Badge -3.97 stand neutral,
+      // weil USD Economic Growth +1.64 = neutral war). Seit 795/798/799 tragen
+      // die Karten eigene Zeilen (China, Global Yields) und Regeln je Zeile -
+      // die Zahl im Badge ist die eigene Kartensumme, also folgt die Farbe ihr.
+      // Gesetzt unten nach indRegelnAnwenden, Schwelle wie rubAutoBias.
       if(r.indicators&&src.indicators)r.indicators.forEach(ind=>{
         const srcInd=src.indicators.find(i=>i.name===ind.name);if(!srcInd)return;
         // Niveau-Zeilen (Modell 22) NICHT spiegeln: die Waehrungszeile traegt den
@@ -4838,6 +4843,11 @@ function deriveMacroBiasAll(){
       });
     });
     indRegelnAnwenden(sym,srcSym);
+    sym.rubrics.forEach(r=>{
+      if(!MACRO_DERIVE_RUBS.includes(r.name)||!r.indicators)return;
+      const rule=rules[r.name];if(rule!=='same'&&rule!=='inverse')return;
+      const sc=rubScore(r);r.bias=rubBiasAusScore(r,sc);r._biasScore=sc;
+    });
   });
 }
 const MACRO_RUB_INFO={
@@ -7535,7 +7545,7 @@ function neueFelderBehalten(fremd,lokal){
   // bsGewichte: Gewichte des BTC-Sentiment-Scores (seit 2026-11-14, 723).
   // gameplans: Gameplan je Asset (seit 2026-11-16, 737).
   // econThesen: Thesen der Economy Map (seit 2026-11-21, 784).
-  // profil: Vor- und Nachname (seit 2026-11-22, 800).
+  // profil: Vor- und Nachname (seit 2026-11-22, 801).
   ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
@@ -13868,13 +13878,11 @@ function recomputeAllPairBiases(){
 // assets (see deriveMacroBiasAll) always take their bias 1:1 from the linked
 // FX currency instead of deriving it from their own score.
 function rubAutoBiasNeeded(sym,rub){
-  if(rub.name==='COT Data')return false;
-  if(isNonFx(sym.id)&&macroCcyFor(sym.id)){
-    const rule=effDeriveRules(sym)[rub.name];
-    if(rule==='same'||rule==='inverse')return false;
-  }
-  return true;
+  // Gespiegelte Makro-Karten (same/inverse) seit 2026-11-22 eingeschlossen:
+  // ihr Bias folgt der eigenen Kartensumme (siehe deriveMacroBiasAll).
+  return rub.name!=='COT Data';
 }
+function rubBiasAusScore(rub,sc){const t=RUB_AUTO_BIAS_THRESHOLD[rub.name]||2;return sc<=-t?'bear':sc>=t?'bull':'neu';}
 // "Risk Environment" bekommt wie COT Data eine eigene, niedrigere Schwelle
 // (Nutzer-Wunsch 2026-07-21: "Der Kartenbias von Risk Correlation soll
 // schon bei -1 oder 1 bearish bzw. bullish werden") - die normale +/-2-
@@ -13891,8 +13899,7 @@ function recomputeRubricAutoBias(){
       if(!rub.indicators||!rubAutoBiasNeeded(sym,rub))return;
       const sc=rubScore(rub);
       if(rub._biasScore!==sc){
-        const t=RUB_AUTO_BIAS_THRESHOLD[rub.name]||2;
-        rub.bias=sc<=-t?'bear':sc>=t?'bull':'neu';
+        rub.bias=rubBiasAusScore(rub,sc);
         rub._biasScore=sc;
       }
     });
@@ -14677,7 +14684,11 @@ function summarizeRub(sym,rub){
 // der Karten-Score ein anderer ist.
 // V15 (2026-09-25): summarizeCot() nennt auch den Trend (1D/4H), wenn er
 // beitraegt - er steckt seit heute im Karten-Score.
-const SUMMARY_ENGINE_VERSION=15;
+// V16 (2026-11-22): gespiegelte Makro-Karten (Non-FX, same/inverse) nehmen
+// ihren Bias aus der eigenen Kartensumme statt 1:1 von der Waehrungskarte -
+// das Bias-Wort im Kartentext aendert sich an 20 Karten (Silver Economic
+// Growth -3.97 jetzt bearish, Indizes/Aktien Economic Growth +2.21 bullish).
+const SUMMARY_ENGINE_VERSION=16;
 // Nimmt jetzt auch `sym` entgegen: der Asset-Bezug-Schlusssatz (2026-07-21)
 // haengt fuer Non-FX-Assets zusaetzlich von effDeriveRules(sym)[rub.name] ab
 // (die same/inverse-Karteneinstellung, die deriveMacroBiasAll() auch fuer
