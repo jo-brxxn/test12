@@ -47,6 +47,7 @@ export function srTyp(sid, rub, ind) {
   const h = H, base = h.stripPeriodSuffix(ind.name).base, rn = rub && rub.name;
   if (h.SCORE_ZERO.has(base) || (h.FX.includes(sid) && h.m28NurAnzeige(base, sid))) return 'anzeige';
   if (ind.name === h.REALZINS_IND) return 'realzins';
+  if (ind.name === h.GLOBAL_YIELDS_IND) return 'globalyields';
   if (h.BOND_HALF_PT.has(ind.name)) return 'bond';
   if (ind.name === h.KURVE_IND) return 'kurve';
   if (ind.name === h.ZINSDIFF_IND) return 'zinsdiff';
@@ -71,6 +72,7 @@ export function srMax(sid, rub, ind, typ) {
   switch (typ) {
     case 'anzeige': return 0;
     case 'realzins': return h.REALZINS_PKT;
+    case 'globalyields': return h.GLOBAL_YIELDS_PKT;
     case 'bond': return h.BOND_PKT;
     case 'kurve': return h.KURVE_PKT;
     case 'zinsdiff': return Math.max(...h.ZINSDIFF_STUFEN.map(s => s[1]));
@@ -184,6 +186,7 @@ export function srFensterHtml(sym) {
   if (fx) { const g = h.M28_DECKEL.find(d => d.id === 'rates'); if (g && z.some(x => g.namen.includes(h.stripPeriodSuffix(x.ind.name).base) && x.typ !== 'anzeige')) rz.push(zeile(g.name + ' together', 'max ±' + g.max)); }
   h.DECKEL_ALLE.forEach(g => { if (z.some(x => x.typ === 'bond' && g.namen.includes(x.ind.name))) rz.push(zeile(g.name + ' together', 'max ±' + g.max)); });
   if (hat('realzins')) rz.push(zeile('US 10Y real yield rising / falling', [-h.REALZINS_PKT, h.REALZINS_PKT]));
+  if (hat('globalyields')) rz.push(zeile('Global yields above / below EMA ' + h.GLOBAL_YIELDS_EMA, [-h.GLOBAL_YIELDS_PKT, h.GLOBAL_YIELDS_PKT], 'average of all 10Y yields'));
   if (rz.length) rz.push(zeile(`Change < ${Math.round(h.BOND_DEAD_BAND * 100)} bp`, 0, 'dead band'));
   html += blockHtml('rates', '', rz);
 

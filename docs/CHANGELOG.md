@@ -23150,8 +23150,25 @@ Nutzer (iPad-Foto Silber, Economic Growth, Linie markiert): *„mach eine richti
 - **Fehlerklasse** (Scan 15 Seiten + Asset-Seite): bei **390 px** bricht die Leiste um, „Backtester“ und der Schalter begannen mit Strich am Zeilenanfang; dazu 11 px Versatz gegenüber „Score“
 - **Fix:** Container ohne Rand, `padding-left:0;overflow-x:clip`; jedes `.dmeta-ctrl` `margin-left:-1px;padding-left:11px` → Strich am Zeilenanfang liegt im abgeschnittenen Bereich, alle Zeilen bündig
 - **Wächter** `check/randstrich.js` (1180/390 px): grün; Gegenprobe (alter Strich) → **12 Funde**. Einzige andere Fundstelle: `hl-row` = Wichtigkeits-Balken der Schlagzeilen, bewusst ausgenommen
+## 2026-11-22 — Global Yields, China-Zeilen im Zahnrad sichtbar, China IP mit Werten (VERSION-CHECK-799, Score-Modell 40)
 
-## 2026-11-22 — Profil: Name statt Benutzername, Initialen, Begrüßung, langes Drücken = Dark/Light (VERSION-CHECK-799)
+Nutzer (zwei iPad-Fotos):
+- *„Die China Indikatoren sind doch auch invers also trag das in den settings auch so ein. Und bei dem einen Indikator gehen die Werte reparier das.“*
+- Neuer Indikator *„global yields“*.
+
+Umgesetzt:
+- **Zahnrad Silber:** China NBS PMI, China IP und US IP stehen sichtbar auf **Bullish** statt „Default“ (`silberRegeln798`, Marke `_m798`). Sie sind die Zeilen unter „Inverse“.
+- **China Industrial Production ohne Werte:**
+  - Gemessen: In `ind_data.json` fehlte die Reihe, weil die Workflow-Regel aus 792 noch nicht gelaufen war.
+  - Der manuell gestartete Lauf (2026-11-22 12:30) lieferte 4,8 % (Fc 5,3 %, Prev 5,5 %, 16.11.).
+  - Die Zeile zeigt jetzt Werte, Miss = bearish.
+- **Global Yields:**
+  - Durchschnitt der acht 10Y-Renditen gegen EMA 90, ±0,5.
+  - Bei allen Nicht-FX außer Yields, in der Inflation-Karte.
+  - Regeln und Stand: `docs/score-model.md` „Modell 40“.
+- **Wächter:** neu `check/globalyields.js` (Gegenprobe → rot).
+
+## 2026-11-22 — Profil: Name statt Benutzername, Initialen, Begrüßung, langes Drücken = Dark/Light (VERSION-CHECK-800)
 
 Nutzer (Fotos Settings + Dashboard, „Jonathan“ eingekreist): *„Füg in diesen Einstellungen einen Slot hinzu wo man optional Namen und Nachnamen angibt. Beide Anfangsbuchstaben sollen dann oben rechts stehen also hans Stein dann stehen im Kreis die Buchstaben HS. Und entfern den nutzernamen. Bei der Begrüßung soll dann der Vorname genommen werden. Wenn der nicht angegeben ist dann steht da Trader … wenn man auf den Kreis oben rechts drückt lange das dann direkt dark Mode und light Mode sich wechseln“*.
 

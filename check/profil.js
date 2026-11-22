@@ -1,4 +1,4 @@
-// ── PROFIL: NAME, INITIALEN, BEGRUESSUNG, LANGES DRUECKEN (2026-11-22, VERSION-CHECK-799) ──
+// ── PROFIL: NAME, INITIALEN, BEGRUESSUNG, LANGES DRUECKEN (2026-11-22, VERSION-CHECK-800) ──
 // Nutzer: "optional Namen und Nachnamen ... Beide Anfangsbuchstaben ... oben rechts ... hans Stein ...
 // HS ... entfern den nutzernamen ... Begruessung ... Vorname ... sonst Trader ... wenn man auf den Kreis
 // oben rechts drueckt lange das dann direkt dark Mode und light Mode sich wechseln".

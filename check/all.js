@@ -172,6 +172,7 @@ const PRUEFUNGEN = [
   { n: 'kartenauf', s: 40, d: 'History- und Kalender-Karte: kein inneres Scrollen, Tipp irgendwo oeffnet das Fenster, Knoepfe wirken allein', f: 'check/kartenauf.js', args: [], browser: true },
   { n: 'kugeltipp', s: 20, d: 'Weltkugel: Finger dreht erst nach einem Tipp, sonst scrollt die Seite; Maus unveraendert', f: 'check/kugeltipp.js', args: [], browser: true },
   { n: 'silberregeln', s: 25, d: 'Silber: Karten invers zu USD, ISM invers, China-Block unten gestrichelt, Regel je Indikator im Zahnrad', f: 'check/silberregeln.js', args: [], browser: true },
+  { n: 'globalyields', s: 20, d: 'Global Yields: Durchschnitt aller 10Y-Renditen gegen EMA 90, bei allen Nicht-FX ausser Yields, unabhaengig nachgerechnet', f: 'check/globalyields.js', args: [], browser: true },
   { n: 'datakarte', s: 40, d: 'Data-Karte der Macro-Reihe: nichts abgeschnitten, kein eigenes Scrollen, Add ganz sichtbar, Panels wie seit 748', f: 'check/datakarte.js', args: [], browser: true },
   { n: 'hovertip', s: 60, d: 'Hover-Info: ganz sichtbar, oberste Ebene, direkt ueber dem Punkt (Data, Asset-Seite, COT)', f: 'check/hovertip.js', args: [], browser: true },
   { n: 'chinablock', s: 20, d: 'China-Block im Score: AUD 0,5+0,5, Kupfer 0,75+0,375+0,375, Beat bullish, nicht gespiegelt, Kalender-Muster', f: 'check/chinablock.js', args: [], browser: true },
