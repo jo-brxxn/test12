@@ -2820,6 +2820,14 @@ body.res-return-active #resBackBar{display:flex}
 .ind-table thead th.iht-trend{text-align:center}
 .ind-table tbody tr.ind-row{border-left:3px solid var(--bd2);border-bottom:1px solid var(--bd)}
 .ind-table tbody tr.ind-row:last-child{border-bottom:none}
+/* Linker Rand in der Farbe des Actual-Werts (Nutzer 2026-11-22, Screenshot
+   gelb markiert: "Diese Raender an den Indikatoren faerb die mal in der Farbe
+   des jeweiligen actual Werts"). Liest die Klasse der Act-Zelle - EINE
+   Quelle, Rand und Zahl koennen nie auseinanderlaufen. Neutral bleibt grau
+   (--bd2): Navy ist "aktiv" (Design-Audit), keine Bias-Aussage. */
+.ind-table tbody tr.ind-row:has(>td.ir-act.act-good),.ind-table tbody tr.ind-row:has(>td.ir-act.bond-up){border-left-color:var(--green)}
+.ind-table tbody tr.ind-row:has(>td.ir-act.act-bad),.ind-table tbody tr.ind-row:has(>td.ir-act.bond-down){border-left-color:var(--red)}
+.ind-table tbody tr.ind-row:has(>td.ir-act.bond-flat){border-left-color:var(--amber)}
 /* .ind-pair-row (IND_PAIR_GROUPS, siehe indPairGroupPositions weiter unten):
    Indikatoren, die sich das Score-Gewicht teilen (CPI+Core CPI, 2Y/10Y/
    Spread, ...) bekommen eine gemeinsam umrandete Box statt einzelner
@@ -8155,11 +8163,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-792 - Economy Map wieder als Orbit: 17 Sektor-Planeten auf 3 Bahnen, Gruppen-Monde, Firmen-Satelliten, Zoom/Filter/Links"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-793 - Indicator rows: left edge in the colour of the actual value"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-792</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-793</span>
     </span>
   </div>
   <div class="hdr-r">

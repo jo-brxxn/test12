@@ -23068,3 +23068,9 @@ Wächter:
 - Neu: `check/silberregeln.js` (Gegenprobe → rot).
 - Angepasst: `modell28`, `scorenachrechnung`, `chinablock`, `zusatzzeilen`, `regeln`.
 - ⚠ Bis zum nächsten Workflow-Lauf steht *China Industrial Production* ohne Wert (neutral).
+
+## 2026-11-22 — Indikator-Zeilen: Rand in Act-Farbe (VERSION-CHECK-793)
+- Nutzer, Screenshot (SLV, Makro-Karten, Ränder gelb markiert): *„Diese Ränder an den Indikatoren färb die mal in der Farbe des jeweiligen actual Werts“*
+- Vorher: `tr.ind-row` hatte immer `border-left:3px solid var(--bd2)` (grau)
+- Jetzt: `:has(>td.ir-act.<klasse>)` setzt die Randfarbe aus derselben Klasse wie die Zahl; neutral bleibt grau
+- Gemessen (Playwright, USD, 24 Zeilen): Randfarbe = Act-Farbe in **24/24** farbigen bzw. neutral-grauen Zeilen, **0 Abweichungen**
