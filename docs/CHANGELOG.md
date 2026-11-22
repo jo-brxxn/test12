@@ -23251,3 +23251,19 @@ Nutzer-Foto (EUR): *„Job vacancies ist irgendwie kaputt und hat keine Historie
 
 ## 2026-11-22 — Zentralbank: Two-tone fest (VERSION-CHECK-806)
 - Nutzer: *„Ich nehme übrigens two tone“* → Two-tone-Tokens direkt an `.zb-bau` (heller Modus), Marble/Bronze und der Vorschau-Umschalter entfernt
+
+## 2026-11-22 — EUR Job Vacancy Rate aus Eurostat (VERSION-CHECK-807)
+
+Fortsetzung des Nutzer-Fotos (EUR Job Vacancy Rate „kaputt, keine Historie“).
+
+- **Ursache gemessen:**
+  - Für EUR gab es keine Feed-Reihe; angezeigt wurde der kuratierte Startwert 2,2 % vom 18.03. (OUT OF DATE).
+  - Eurostat hat `jvs_q_nace2` stillgelegt (HTTP 404 „not available for dissemination“, endet 2025-Q4).
+  - Nachfolger ist `jvs_q_r21` (NACE Rev. 2.1, Stand 19.11.2026, bis 2026-Q3). Gefunden über das Eurostat-Inhaltsverzeichnis per Sonde `probe-stellen.yml`.
+  - EA20 endet 2026-Q1. Seit 2026 gilt **EA21** (Bulgarien) mit Daten bis Q3.
+- **Fix:**
+  - `tools/stellen.mjs`: Euroraum, B-T, Quote JVR, nicht saisonbereinigt (Eurostat-Schlagzeile); es wird die Euroraum-Reihe mit dem jüngsten Quartal genommen.
+  - Neuer Schritt im täglichen Datenlauf. Fällt Eurostat aus, bleibt der letzte Stand stehen.
+  - Quellen-Link der Zeile zeigt auf Eurostat.
+- **Werte (Sonde):** 2026-Q3 **2,0 %**, Vorquartal 2,1 %, 83 Quartale ab 2006.
+- **App-Test mit diesem Format:** Wert 2,0 %, Chart 24 Punkte (Test), Step bearish −0,47.
