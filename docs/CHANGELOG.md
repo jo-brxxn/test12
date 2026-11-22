@@ -23039,3 +23039,46 @@ Nutzer (Screenshot Copper, blaue Oberkante markiert): *„Mach diesen farbigen r
   - `neuZeichnen` in `gameplan.js` setzt die Farbe beim Umschalten sofort neu.
 - **Gemessen** (1194 px, Copper): alle vier Kanten 2 px; ohne Bias rgb(85,97,122), Bear rgb(220,36,48), Bull rgb(11,95,204).
 - **Wächter:** `check/preiskarte.js` I.
+
+## 2026-11-22 — Asset-Kopf: „Score“ statt „Next event“, Fenster „How the score works“, Settings überarbeitet (VERSION-CHECK-792)
+
+Nutzer (Foto Silver, „Next event“ eingekreist): *„Entfern das bei allen Assets oben mit Next Event und mach dort Score hin. Ich möchte das wenn man darauf klickt sich ein Fenster öffnet wo Ultra übersichtlich drin steht wie sich der Score ergibt. Arbeite viel mit Farben fasse die Indikatoren in Kategorien zusammen und sag was genau wann passiert. Aber kurz kein Fließtext. Und mach in dem Fenster oben rechts ein Zahnrad hin … settings Fenster … in der Leiste das Zahnrad auch überall entfernen … Überarbeite auch das nochmal. ZB sollen da nicht die ganzen Assets stehen das kann man über einen Filter lösen“*.
+
+- **Rückfragen:**
+  - Im Feld steht wörtlich „Score“, als Knopf im Stil von History.
+  - Das Fenster zeigt **Regeln** („allgemein was wann passiert, nicht wie die Werte aktuell sind“). Die aktuellen Werte bleiben hinter der Score-Zahl (`openScoreInfoSym`).
+  - Das Zahnrad gibt es nur bei Nicht-FX.
+  - In den Settings wird die Liste zum Filter.
+- **Kopfleiste:**
+  - `detailMetaHtml(c,controls)` ohne „Next event“; erster Knopf ist **Score** → `openScoreRegeln(id)`.
+  - Das Zahnrad ist aus der Leiste raus.
+  - Der nächste Termin steht weiter in der Gameplan-Leiste.
+- **Fenster** `#mScoreRegeln` (`js/scoreregeln.js`, Helfer-Muster wie `bsHelfer`):
+  - Oben drei Bias-Kacheln (≤ −3 / Neutral / ≥ +3).
+  - Darunter farbige Blöcke: Macro releases (`--a-lab`), Rates & yields (`--a-rate`), Commodities (`--a-infl`), Positioning & sentiment (`--a-cot`), Price trend (`--a-grow`) und Seasonality.
+  - Jede Zeile hat die Form *Ereignis → +x / −x*, Punkte in Bias-Farbe.
+  - Unten die Endrechnung (Bias aus der Rohsumme, angezeigt = roh × Faktor).
+  - Zahnrad oben rechts → schließt das Fenster, öffnet `openAssetCfg()`.
+- **Eine Wahrheit:**
+  - Welche Regeln erscheinen, folgt aus den echten Zeilen (`srTyp`).
+  - Die Punkte kommen aus denselben Konstanten wie die Rechnung (`BOND_PKT`, `COT_WOW_STUFEN`, `TREND_PKT` …).
+  - Nicht-FX zeigt die Karten-Regel des Assets (inverse → Vorzeichen gedreht).
+  - Gemessen (1194 px): 43 Assets, 1229 Zeilen, keine ohne Regel. Kein echter Beitrag liegt über dem Fensterwert (`srMax`).
+- **Settings:**
+  - Verbundene Währung als Chip-Reihe.
+  - Verbundene Assets nur als Chips mit ×. Neue kommen über „＋ Link asset“ (gruppierte Liste → 2-Spalten-Fenster).
+  - Vorher stand jedes Nicht-FX-Asset als eigene Kachel im Fenster.
+  - Hinweise als Kurzzeilen.
+- **Befund nebenbei (nicht geändert):**
+  - Silber, Platin, BTC, Öl u. a. haben keine Karten-Regel (alle Makro-Karten *Off*).
+  - Ihre Makro-Zeilen zählen trotzdem mit dem **zuletzt gespeicherten** Bias, den der Feed bei *Off* nie neu rechnet.
+  - Gemessen frisch geladen: Silber PPI bullish gegen USD bearish, GDP bearish gegen USD bullish.
+  - Dem Nutzer gemeldet, Entscheidung offen.
+- **Wächter:** `check/scoreregeln.js` A–E.
+  - **A:** jede Asset-Seite zeigt Score und kein Next event/Zahnrad.
+  - **B:** Regel je Zeile, Beitrag ≤ Fensterwert.
+  - **C:** Sentiment-Schwellen gegen `sentEval`.
+  - **D:** Zahnrad nur Nicht-FX → Settings; FX-COT gedreht; Gold-Inflation gedreht.
+  - **E:** Verbinden über das Filterfenster, × löst.
+  - Gegenprobe (Retail ohne Regel) meldet B rot.
+

@@ -2034,6 +2034,7 @@ export {
   invalidateRateStepCache,rateAtDate,pairCarryAdjAt,symTrackedCount,_fxRefCountCache,invalidateCmpCache,beginRenderPass,syncSidebarScores,
   fxRefCount,symCmpFactor,symScoreCmp,SCORE_MODEL_VERSION,SCORE_MODEL_TAG,scoreHistEntryCurrent,STRENGTH_MIN_OBS,STRENGTH_Z_BANDS,
   symScoreAvg,symOwnHistory,symOwnZ,symStrength10,symStrengthMissing,pairScore,rowScore,fmtDate,
+  m28NurAnzeige,M28_GEWICHT,M28_DECKEL,
 };
 // Kompatibilitaets-Bruecke: onclick-referenzierte Namen (
 // openDataQuality, openScoreInfo*) PLUS Namen, die check/score.js/

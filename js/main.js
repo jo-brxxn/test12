@@ -26,6 +26,7 @@ import {gameplans,gpRein,gpSetzeAlle,gpVereinen,gpLeisteHtml,gpNiveaus,renderGam
 import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
 import {bsHelfer,bsAuf,btcSentimentScore} from './btc-sentiment.js';
+import {srHelfer,openScoreRegeln,srZahnrad,srTyp,srMax} from './scoreregeln.js';
 import {AI_MARKEN,aiMarkeMono} from './marken-icons.js';
 import {sprungLog,sprungtestStart} from './sprungtest.js';
 import {STOCK_IDS,STOCK_ACCENT,STOCK_DEF,aktienHelfer,aktienDatenHolen,aktieWarnHtml,karteProfil,karteBewertung,karteQualitaet,karteAnalysten,karteZahlen} from './aktien.js';
@@ -966,6 +967,7 @@ import {
   invalidateRateStepCache,rateAtDate,pairCarryAdjAt,symTrackedCount,_fxRefCountCache,invalidateCmpCache,beginRenderPass,syncSidebarScores,
   fxRefCount,symCmpFactor,symScoreCmp,SCORE_MODEL_VERSION,SCORE_MODEL_TAG,scoreHistEntryCurrent,STRENGTH_MIN_OBS,STRENGTH_Z_BANDS,
   symScoreAvg,symOwnHistory,symOwnZ,symStrength10,symStrengthMissing,pairScore,rowScore,fmtDate,
+  m28NurAnzeige,M28_GEWICHT,M28_DECKEL,
 } from './score.js';
 import {
   evtMatchesSym,todayStr,daysUntil,evtTimeValid,isEvtPast,dateAddStr,countdownLbl,countdownHtml,fmtDayHdr,
@@ -8437,11 +8439,11 @@ function setSbEdit(v){sbEditMode=!!v;renderSidebar();}
 function renderDetail(){sprungLog('renderDetail');
   beginRenderPass();
   const c=getSym();if(!c)return;
-  const{events:symEvts,nextHighDate}=getSymEventsCompact(c.id);
+  const{events:symEvts}=getSymEventsCompact(c.id);
   const evtOpen=!!evtSectionOpen[c.id];
-  // ⚠ nextLbl ist FERTIGES Markup (countdownHtml traegt das Heute-Ausrufe-
-  // zeichen), darf an der Einbaustelle also NICHT noch einmal durch escH().
-  const nextLbl=nextHighDate?(nextHighDate===todayStr()?countdownHtml(nextHighDate):`${escH(fmtDayHdr(nextHighDate))} (${countdownHtml(nextHighDate)})`):'–';
+  // "Next event" ist seit 2026-11-22 aus der Kopfleiste raus (Nutzer: "Entfern
+  // das bei allen Assets oben mit Next Event und mach dort Score hin") - der
+  // naechste Termin steht weiter in der Gameplan-Leiste ("Next ... 1d").
   // Nutzer-Foto 2026-08-04: History-Button, Kompakt-Regler und (bei Non-FX)
   // das Asset-Einstellungen-Zahnrad ziehen aus der stabs-row (neben Quick
   // Note, die gleichzeitig entfernt wird) in die Kopfzeilen-Leiste
@@ -8457,13 +8459,18 @@ function renderDetail(){sprungLog('renderDetail');
   // AskUserQuestion bestaetigt) hier in der Kopfzeilen-Leiste erreichbar -
   // Klick schaltet zwischen Macro/Notes um wie zuvor die Buttons.
   const dmetaControls=`<div class="dmeta-controls">
+    ${/* "Score" (Nutzer 2026-11-22): oeffnet das Regeln-Fenster "How the score
+         works" (js/scoreregeln.js) - steht an der Stelle von "Next event". */''}
+    <div class="dmeta-ctrl"><button class="dmeta-hist-btn" onclick="openScoreRegeln('${escJs(c.id)}')" title="How the score works: which event adds or removes how many points, by category">Score</button></div>
     ${/* Knopf "Price chart" am 2026-11-01 entfernt (Nutzer: "Entfern den Button
          preischart oben in der Leiste") - seine Aufgabe (Releases je Tag) hat
          die Price-Karte uebernommen (js/preiskarte.js). */''}
     <div class="dmeta-ctrl"><button class="dmeta-hist-btn" onclick="openHistModal('${c.id}')" title="History (${HIST_DAYS}D): last ${HIST_DAYS} days, colored by event outcome vs. forecast">History</button></div>
     <div class="dmeta-ctrl"><button class="dmeta-hist-btn" onclick="openBacktester('${c.id}')" title="Backtester: every rate hike and cut on file, and the inflation, labour and growth readings the central bank had in front of it — three releases each, so the trend into the decision is visible">Backtester</button></div>
     <div class="dmeta-ctrl"><button class="dmeta-hist-btn" onclick="openDataQuality('${c.id}')" title="Data quality &amp; weighting: spread, median surprise, half-life and measured market impact of every indicator of this asset">Data quality</button></div>
-    ${isNonFx(c.id)?`<div class="dmeta-ctrl"><button class="cfg-gear" onclick="openAssetCfg()" title="Asset settings: linked currency, connection with other assets & automatic bias">${icn('gear',17)}</button></div>`:''}
+    ${/* Zahnrad (Asset-Settings) seit 2026-11-22 nicht mehr in der Leiste, sondern
+         oben rechts im Score-Fenster (Nutzer: "in der Leiste das Zahnrad auch
+         ueberall entfernen und das in das neue Fenster verschieben"). */''}
     ${/* Der Schalter blendet die Karten-Zusammenfassungen ein (AN) bzw. aus.
        Die sichtbare Beschriftung "SUMMARIES" vom 2026-10-04 (Design-Audit D8)
        ist am 2026-10-06 auf Nutzer-Wunsch wieder weg ("entfern die
@@ -8483,7 +8490,7 @@ function renderDetail(){sprungLog('renderDetail');
          Asset-Seite ueberhaupt keine Ueberschrift mehr. */''}
     <div class="ahead">${assetMotivHtml(c.id)}
       <div class="ahead-l"><div class="atitle">${assetIconHtml(c.id,34)?`<span class="atitle-flag">${assetIconHtml(c.id,34)}</span>`:''}${escH(c.name)}${scoreBadge(symScoreCmp(c),'Displayed score = raw sum of all indicators × fairness factor (Ø FX indicator count / own tracked count), so assets tracking fewer indicators can reach the same heights - tap for the full breakdown incl. the factor.','det-'+c.id,`openScoreInfoSym('${c.id}')`,c.bias)}</div><div class="afull">${escH(c.full)}</div></div>
-      ${detailMetaHtml(c,nextLbl,dmetaControls)}
+      ${detailMetaHtml(c,dmetaControls)}
     </div>
     ${/* ⚠ Zugeklappt wird die Sektion GAR NICHT mehr gezeichnet: ihr
          Auf-/Zu-Schalter sitzt jetzt im Fuss der Kalenderkarte. Vorher stand
@@ -12987,7 +12994,7 @@ function rubAutoDerived(sym,rub){
   const rule=effDeriveRules(sym)[rub.name];
   return rule==='same'||rule==='inverse';
 }
-function setRubBias(ri,b){const _c=getSym(),_r0=getRub(ri);if(_c&&_r0&&rubAutoDerived(_c,_r0)){alert('This card\'s bias is mirrored automatically from '+macroCcyFor(_c.id)+'. Change or disable the rule via the asset settings (gear button).');return;}pushU();const r=getRub(ri);if(!r)return;r.bias=b;r._biasScore=rubScore(r);syncMacroRub(ri);_flipCauseTag='manual';recomputeAuto();_flipCauseTag=null;save();renderSidebar();renderDetail();if(curPage==='dash')renderDash();else if(curPage==='pairs')renderPairs();}
+function setRubBias(ri,b){const _c=getSym(),_r0=getRub(ri);if(_c&&_r0&&rubAutoDerived(_c,_r0)){alert('This card\'s bias is mirrored automatically from '+macroCcyFor(_c.id)+'. Change or disable the rule via Score → gear (asset settings).');return;}pushU();const r=getRub(ri);if(!r)return;r.bias=b;r._biasScore=rubScore(r);syncMacroRub(ri);_flipCauseTag='manual';recomputeAuto();_flipCauseTag=null;save();renderSidebar();renderDetail();if(curPage==='dash')renderDash();else if(curPage==='pairs')renderPairs();}
 // ── BIAS-PICKER (ersetzt die ▲/◆/▼-Buttons, Nutzer-Wunsch 2026-07-22) ──
 // Long-Press auf eine Rubrik-Karte, einen Indikator, eine Notes-Kategorie
 // oder einen Notes-Eintrag öffnet dieses kleine Popover statt der vorher
@@ -13003,13 +13010,13 @@ function openBiasPicker(kind,ri,ii,x,y){
   let obj,lockMsg=null,label;
   if(kind==='rub'){
     obj=getRub(ri);if(!obj)return;
-    if(rubAutoDerived(c,obj))lockMsg='This card\'s bias is mirrored automatically from '+macroCcyFor(c.id)+'. Change or disable the rule via the asset settings (gear button).';
+    if(rubAutoDerived(c,obj))lockMsg='This card\'s bias is mirrored automatically from '+macroCcyFor(c.id)+'. Change or disable the rule via Score → gear (asset settings).';
     label=obj.name;
     _biasPickerApply=b=>setRubBias(ri,b);
   }else if(kind==='ind'){
     obj=getInd(ri,ii);if(!obj)return;
     const r0=getRub(ri);
-    if(r0&&rubAutoDerived(c,r0))lockMsg='This indicator\'s bias is mirrored automatically from '+macroCcyFor(c.id)+'. Change or disable the rule via the asset settings (gear button).';
+    if(r0&&rubAutoDerived(c,r0))lockMsg='This indicator\'s bias is mirrored automatically from '+macroCcyFor(c.id)+'. Change or disable the rule via Score → gear (asset settings).';
     label=indName(obj);
     _biasPickerApply=b=>setIndBias(ri,ii,b);
   }else return;
@@ -13301,7 +13308,7 @@ function saveInfoM(){
   obj.info=document.getElementById('mInfoTxt').value;
   save();closeM('mInfo');
 }
-function setIndBias(ri,ii,b){const _c=getSym(),_r0=getRub(ri);if(_c&&_r0&&rubAutoDerived(_c,_r0)){alert('This indicator\'s bias is mirrored automatically from '+macroCcyFor(_c.id)+'. Change or disable the rule via the asset settings (gear button).');return;}pushU();const ind=getInd(ri,ii);if(!ind)return;const _old=ind.bias,_before=indScore(ind,_r0);ind.bias=b;
+function setIndBias(ri,ii,b){const _c=getSym(),_r0=getRub(ri);if(_c&&_r0&&rubAutoDerived(_c,_r0)){alert('This indicator\'s bias is mirrored automatically from '+macroCcyFor(_c.id)+'. Change or disable the rule via Score → gear (asset settings).');return;}pushU();const ind=getInd(ri,ii);if(!ind)return;const _old=ind.bias,_before=indScore(ind,_r0);ind.bias=b;
   // Manuelle Wahl pinnt gegen den GERADE AKTUELLEN Automatik-Input-Stand
   // (Actual/Forecast/Previous/Datum) - siehe indBiasInputSig/indBiasPinned bei
   // applyTrendModel. Bleibt der Stand unveraendert, lassen alle Automatik-
@@ -13445,23 +13452,30 @@ function renderAssetCfgBody(){
   const el=document.getElementById('assetCfgBody');if(!el)return;
   const t=document.getElementById('mAssetCfgTitle');if(t)t.textContent=c.name+' – Settings';
   const lc=effLinkCcy(c);
-  let h=`<div class="acfg-sec">${icn('link',14)} Linked Currency</div>
-    <div class="acfg-hint">This asset's indicators and news are linked to this currency (one-way – the asset inherits the values but does not affect the currency). "No link" = fully manual, no automatic values.</div>
-    <select class="m-inp" onchange="setAssetLinkCcy(this.value)">
-      <option value="__none__"${lc===null?' selected':''}>No link</option>
-      ${FX_LINK_CCYS.map(x=>`<option value="${x}"${lc===x?' selected':''}>${x}</option>`).join('')}
-    </select>`;
+  // Ueberarbeitet 2026-11-22 (Nutzer: "Ueberarbeite auch das nochmal. ZB sollen
+  // da nicht die ganzen Assets stehen das kann man ueber einen Filter loesen"):
+  // Waehrung als Chip-Reihe statt Dropdown; bei den verbundenen Assets stehen
+  // nur die verbundenen als Chips (x loest), neue kommen ueber eine gruppierte
+  // Liste, die automatisch das 2-Spalten-Fenster oeffnet (gwAuf). Vorher stand
+  // jedes Nicht-FX-Asset als eigener Knopf im Fenster.
+  const chip=(v,lbl,on)=>`<button type="button" class="cmp-chip${on?' on':''}" onclick="setAssetLinkCcy('${v}')" aria-pressed="${on}">${lbl}</button>`;
+  let h=`<div class="acfg-sec">${icn('link',14)} Linked currency</div>
+    <div class="acfg-hint"><b>Inherits</b> its macro values · <i>one-way</i> · <b>None</b> = all manual</div>
+    <div class="acfg-chips">${chip('__none__','None',lc===null)}${FX_LINK_CCYS.map(x=>chip(x,x,lc===x)).join('')}</div>`;
   const myG=symSyncGroup(c.id);
-  const others=syms.filter(s=>s.id!==c.id&&isNonFx(s.id));
-  h+=`<div class="acfg-sec">${icn('shuffle',14)} Link with other assets</div>
-    <div class="acfg-hint">Linked assets always update together – bias, cards, notes, linked currency and auto-bias rules are mirrored between them.</div>
-    <div class="acfg-syncgrid">
-      ${others.length?others.map(s=>{const on=!!myG&&symSyncGroup(s.id)===myG;return`<button class="acfg-syncbtn${on?' on':''}" onclick="toggleAssetSync('${escJs(s.id)}')"><span>${on?'✓':'＋'}</span><span>${escH(s.name)}</span></button>`;}).join(''):`<div class="acfg-hint">No other assets available.</div>`}
+  const verbunden=myG?syms.filter(s=>s.id!==c.id&&symSyncGroup(s.id)===myG):[];
+  const frei=syms.filter(s=>s.id!==c.id&&isNonFx(s.id)&&!verbunden.includes(s)).map(s=>s.id);
+  h+=`<div class="acfg-sec">${icn('shuffle',14)} Linked assets</div>
+    <div class="acfg-hint"><b>Always update together</b> · bias, cards, notes, rules</div>
+    <div class="acfg-chips">
+      ${verbunden.map(s=>`<span class="acfg-link">${escH(s.name)}<button type="button" onclick="toggleAssetSync('${escJs(s.id)}')" aria-label="Unlink ${escH(s.name)}" title="Unlink">×</button></span>`).join('')}
+      ${frei.length?`<select class="m-inp acfg-add" title="Link asset" aria-label="Link asset" onchange="if(this.value)toggleAssetSync(this.value)"><option value="" hidden selected>＋ Link asset</option>${sbCatsOptgroups(frei,id=>{const s=syms.find(x=>x.id===id);return`<option value="${escH(id)}">${escH(s?s.name:id)}</option>`;})}</select>`:''}
+      ${!verbunden.length&&!frei.length?'<span class="acfg-hint">No other assets available.</span>':''}
     </div>`;
   if(lc){
     const rules=effDeriveRules(c);
     h+=`<div class="acfg-sec">${icn('gear',14)} Automatic bias (from ${escH(lc)})</div>
-      <div class="acfg-hint">For each category, decide whether strong data is treated as bullish or bearish – or exclude the category, in which case its bias stays manual. The score is calculated from this automatically.</div>`;
+      <div class="acfg-hint">Strong ${escH(lc)} data → <b style="color:${BC.bull}">Bullish</b> or <b style="color:${BC.bear}">Bearish</b> · <b>Off</b> = manual</div>`;
     const srcSym=syms.find(s=>s.id===lc);
     const arrow=b=>b==='bull'?'▲':b==='bear'?'▼':'◆';
     // NUR die 4 echten Makro-Karten sind hier sinnvoll waehlbar (Nutzer-
@@ -16227,6 +16241,7 @@ import {
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
   tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
   _ccyEditWidgetId,openCcyCfgM,renderCcyCfgBody,toggleCcyAsset,updFFLastUpd,
+  REALZINS_PKT,ZEILE_PKT,BTC_SCORE_HOCH,BTC_SCORE_TIEF,
 } from './data-feeds.js';
 // ══ NOTE CATS ════════════════════════════════════════════════════
 // ══ ARCHIVE — NOTIZEN UND ORDNER ═════════════════════════════════
@@ -17516,19 +17531,12 @@ function symSourceLabel(c){
 // (abReihenTitel) - die waren ausdruecklich nicht gemeint.
 // Gezeichnet wird wieder detailMetaHtml(): die schmale Zeile mit
 // "Next event" und der Knopfleiste, so wie vor dem 518er Umbau.
-function detailMetaHtml(c,nextLbl,extraControlsHtml){
+function detailMetaHtml(c,extraControlsHtml){
   // "Last update", "Data quality" und "Source" sind auf Nutzer-Wunsch aus der
-  // Leiste geflogen (2026-08-23) - es bleibt nur "Next event". symDataQuality()
-  // und symSourceLabel() rechnen die Werte weiterhin, werden aber aktuell
-  // nirgends aufgerufen; sie stehen fuer den Fall bereit, dass die Angaben
-  // zurueckkommen sollen.
-  const mi=(lbl,val,title)=>`<div class="dmeta-i"${title?` title="${escH(title)}"`:''}><div class="dmeta-l">${lbl}</div><div class="dmeta-v">${val}</div></div>`;
-  // extraControlsHtml (Nutzer-Foto 2026-08-04): History/Settings/Kompakt-
-  // Regler haengen sich hier ganz rechts an die Leiste an (siehe Aufrufer
-  // in renderDetail()) - optional, damit detailMetaHtml() ohne dieses
-  // Argument (falls je von woanders aufgerufen) unveraendert funktioniert.
+  // Leiste geflogen (2026-08-23), "Next event" am 2026-11-22 (ersetzt durch
+  // den Knopf "Score"). symDataQuality() und symSourceLabel() rechnen weiter,
+  // werden aber nirgends aufgerufen.
   return`<div class="dmeta">
-    <span class="dmeta-evic" aria-hidden="true">${icn('calendar',20)}</span>${mi('Next event',nextLbl,'Next high-impact calendar event for this asset')}
     ${extraControlsHtml||''}
   </div>`;
 }
@@ -27707,6 +27715,13 @@ document.addEventListener('visibilitychange',()=>{
 
 // ══ INIT ══════════════════════════════════════════════════════════
 try{sprungtestStart();}catch(e){}
+// Score-Regeln-Fenster (2026-11-22): liest dieselben Konstanten wie die Rechnung.
+try{srHelfer({syms:()=>syms,FX,BC,escH,icn,openM,closeM,openAssetCfg,isNonFx,effLinkCcy,effDeriveRules,MACRO_DERIVE_RUBS,stripPeriodSuffix,indName,indIsCorePaired,
+  SCORE_ZERO,m28NurAnzeige,M28_GEWICHT,M28_DECKEL,SCORE_NORM_MIN,SCORE_NORM_MAX,IND_STALE_CYCLES,BOND_HALF_PT,BOND_PKT,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,
+  KURVE_IND,KURVE_PKT,ZINSDIFF_IND,ZINSDIFF_STUFEN,ZINSDIFF_TAGE,REALZINS_IND,REALZINS_PKT,ROHSTOFF_NAME,ROHSTOFF_KORB,ROHSTOFF_STUFEN,ROHSTOFF_KURZ,
+  COT_NET_HALF,COT_WOW_BASE,COT_NETZ_AB,COT_NETZ_PKT,COT_MAX,COT_WOW_STUFEN,RETAIL_IND_NAME,RETAIL_AB,RETAIL_STIMME,RETAIL_WACHS_PKT,RETAIL_WACHS_TAGE,
+  SEAS_IND_NAME,SEAS_HIT_HOCH,SEAS_HIT_TIEF,TREND_IND,TREND_PKT,TREND_PKT_H,TREND_NEUTRAL_ATR,TREND_EMA_N,TREND_EMA_H,TREND_ATR_N,
+  SENT_MAP,SENT_IND_NAMES,ZEILE_PKT,BTC_SCORE_HOCH,BTC_SCORE_TIEF,istAssetEigen});}catch(e){}
 try{bsHelfer({DATA_BASE,FEED_TIMEOUT_MS,openM,dashFensterGross,gewichte:()=>bsGewichte,setGewichte:g=>{pushU();bsGewichte=bsGewichteRein(g);save();},meldung:t=>alert(t)});}catch(e){}
 try{aktienHelfer({escH,biasCss,fmtDayHdr,daysUntil,abTile,AB_LEER,DATA_BASE,FEED_TIMEOUT_MS,renderDetail,curPage:()=>curPage,getSym,nachDaten:()=>renderSidebar()});}catch(e){}
 // Aktien-Kennzahlen frueh laden: die Seitenleiste zeigt Warnzeichen fuer Finanzrisiken.
@@ -28530,7 +28545,7 @@ brushReg('hist',{apply(von,bis){histZoom={von,bis};histAktivTag=null;histNeuZeic
 // Asset-Seite: EINE Spanne fuer alle Charts der Seite (abFenster).
 brushReg('ab',{apply(von,bis){abZoom={von,bis};renderDetail();},reset(){abZoom=null;renderDetail();},
   setze(von,bis){abZoom={von,bis};},loesche(){abZoom=null;}});
-Object.assign(window,{ecThNeu,ecThWahl,ecThTitel,ecThStatus,ecThLink,ecThLoeschen,ecGruppe,ecAktie,ecFirmaWahl,ecFirmaZoom,ecTagFilter,ecTypFilter,ecZoom,dashMktAuf,dashMktUmschalten,dashMktWlSetzen,dataVollUmschalten,newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
+Object.assign(window,{openScoreRegeln,srZahnrad,srTyp,srMax,ecThNeu,ecThWahl,ecThTitel,ecThStatus,ecThLink,ecThLoeschen,ecGruppe,ecAktie,ecFirmaWahl,ecFirmaZoom,ecTagFilter,ecTypFilter,ecZoom,dashMktAuf,dashMktUmschalten,dashMktWlSetzen,dataVollUmschalten,newsArchivDa,infoBoxZeigen,infoBoxWeg,abKarteAuf,trashArt,trashEntryLabel,basisSetzen,basisVonPlatte,gpHistAblegen,gpHistAuf,gpHistLoeschen,gpWaehle,gpAuf,gpBias,gpText,gpArt,gpWert,renderGameplan,toggleSetupKlasse,stkMakroAuf,stkMakroZu,stkMakroMerk,dashKatSetzen,dashBiasSpalteUmschalten,dashBiasAlleUmschalten,bsAuf,btcSentimentScore,fgVollAuf,fgVollSetz,fgVollHover,sektorZeile,sektorNeuLaden,makroDatenSchalten,makroDatenZurueck,makroSektorenSchalten,brushReset,brushAnbinden,brushReg,brushChipHtml,brushSchere,brushSchereHtml,faktenFenster,hwDetail,jrDetail,kurzHtml,kurzDom,openKontextSettings,setKontextSlot,resetKontextSlots,
   // Feste-Punkte-Regeln (2026-09-24) - das Score-Fenster in js/score.js liest sie ueber window.
   retailBiasFor,retailRegelText,cotRegelText,cotPunkte,zinsdiffRegelText,kurveRegelText,kurveFuer,applyKurveFeed,KURVE_IND,ROHSTOFF_NUR_FX,trendRegelText,trendWerte,trendTagesReihe,applyTrendFeed,korbReihe,preisReiheAnzeige,preisReiheRechnung,KORB_NAME,retailGoTo,openRetailPartnerPicker,closeRetailPartnerPicker,retailPartnerWaehlen,ladeLogoHtml,ladePreisArchiv,preisReiheLang,preisArchivNoetig,preisAnfang,fetchPriceHistMeta,TREND_PKT_H,tvEconReihe,fetchTvEconData,TVECON_MAP,seasProfilHtml,abgeleiteteReihe,setDataRange,setDataRangeCustom,rangesFuerTiefe,MINI_RANGES,toggleAbTrendLinie,setAbTrendLinienVal,abTrendOverlayDaten,fetchTrendData,nachPreisFeed,TREND_IND,TREND_PKT,TREND_NEUTRAL_ATR,zinsdiffFuer,rohstoffRegelText,rohstoffWert,rohstoffTrend,applyNiveauFeed,nivAlle,nivWerte,nivRegelText,NIV,INFL_ZIEL,rohstoffReihe,ROHSTOFF_NAME,ROHSTOFF_KORB,applyZinsDiffFeed,applyRohstoffFeed,macroCcyFor,
   // Backtester: sechs Handler an inline onclick=/onchange= (Waehrungs-

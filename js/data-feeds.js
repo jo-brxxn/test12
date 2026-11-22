@@ -871,6 +871,7 @@ export {
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
   tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,ladeKerzenArchiv,kerzenArchivBei,kerzenAb,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
   _ccyEditWidgetId,openCcyCfgM,renderCcyCfgBody,toggleCcyAsset,updFFLastUpd,
+  REALZINS_PKT,ZEILE_PKT,BTC_SCORE_HOCH,BTC_SCORE_TIEF,
 };
 // Kompatibilitaets-Bruecke: openCcyCfgM/toggleCcyAsset per inline onclick=/
 // onchange=/... im generierten HTML aufgerufen; applyIndDataFeed/
