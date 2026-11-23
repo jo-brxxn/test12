@@ -11,7 +11,16 @@ on:
     # Startverzug bis 58 Minuten. GitHub verzoegert und verwirft geplante
     # Laeufe bei Last - und die hoechste Last liegt zur vollen Stunde.
     - cron: '17 * * * *'
+    # ⚠ 811 (Nutzer-Foto 2026-11-23: Dashboard S&P/Nasdaq/NVIDIA ohne Tagesaenderung): am 23.11. liefen
+    # trotz Stundenplan nur 00:15 und 07:38 UTC - 8 h ohne Kurse, ueber den US-Handelsbeginn hinweg.
+    # Zweiter Startpunkt je Stunde (Minute 47) = doppelte Chance; die concurrency-Gruppe reiht Laeufe
+    # hintereinander ein, statt sie parallel auf ind_data.json pushen zu lassen.
+    - cron: '47 * * * *'
   workflow_dispatch:
+
+concurrency:
+  group: update-ff-calendar
+  cancel-in-progress: false
 
 permissions:
   contents: write

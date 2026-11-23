@@ -3,17 +3,25 @@
 // anderen Indikator" (Yield Curve) -> "Ja dann schau dir das alles an und beheb das".
 //  A) Yield Curve (8 FX), 10Y Real Yield, Global Yields, Gas Storage vs 5Y: Chart-Reihe >= 2 Punkte
 //  B) Assets ohne COT-Bericht tragen keine COT-Zeilen (Net Bullish/Bearish, WoW) mehr
-// --gegenprobe: Kurve ohne eigene Reihe -> A rot
+//  C) (811) Kopien des letzten Schlusses am Reihenende (Tage ohne Handel) machen die Dashboard-Kachel nicht
+//     zu 0,00 %: eingeschleust 2 Kopien bei SP500 -> Kachel zeigt die Aenderung des letzten echten Tages
+// --gegenprobe: Kurve ohne eigene Reihe + Kachel ohne Kopien-Filter -> A und C rot
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const { chromium } = require(PW);
 const { wartenBisDatenDa } = require('./warten.js');
 const PORT = process.env.PORT || 8935, GP = process.argv.includes('--gegenprobe');
 const MARKE = "  else if(ccy&&base===KURVE_IND){pts=bondSpreadPts(ccy);unit=' pp';}";
+const MARKE2 = 'const s=ohneKopienAmEnde((m.s';
 (async () => {
   const F = [], OK = [];
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 1366, height: 900 }, serviceWorkers: 'block' });
-  if (GP) await ctx.route(/\/js\/main\.js/, async r => { const res = await r.fetch(); const t = await res.text(); if (!t.includes(MARKE)) F.push('Gegenprobe: Marke fehlt'); r.fulfill({ response: res, body: t.replace(MARKE, '') }); });
+  await ctx.route(/price_data\.json/, async r => { const res = await r.fetch(); const j = await res.json(); const s = j.SP500 && j.SP500.series;
+    if (s && s.length > 2) { const l = s[s.length - 1]; const t = d => new Date(Date.parse(d + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10);   // datum-ok: Testreihe
+      s.push([t(l[0])].concat(l.slice(1)), [t(t(l[0]))].concat(l.slice(1))); }
+    r.fulfill({ response: res, body: JSON.stringify(j) }); });
+  await ctx.addInitScript(() => { try { localStorage.setItem('fxpro_dash_mkt', JSON.stringify({ wl: false, l: ['SP500/USD'] })); } catch (e) { } });
+  if (GP) await ctx.route(/\/js\/main\.js/, async r => { const res = await r.fetch(); const t = await res.text(); if (!t.includes(MARKE)) F.push('Gegenprobe: Marke fehlt'); r.fulfill({ response: res, body: t.replace(MARKE, '').replace(MARKE2, 'const s=((m.s') }); });
   const p = await ctx.newPage(); const err = []; p.on('pageerror', e => err.push(e.message));
   await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); } catch (e) { } });
   await p.goto('http://127.0.0.1:' + PORT + '/index.html'); await wartenBisDatenDa(p); await p.waitForTimeout(1500);
@@ -25,6 +33,9 @@ const MARKE = "  else if(ccy&&base===KURVE_IND){pts=bondSpreadPts(ccy);unit=' pp
   if (r.leer.length || Object.keys(r.n).length < 4) F.push(`A: ohne Historie ${r.leer.slice(0, 6).join(' · ') || '-'}; gefunden ${JSON.stringify(r.n)}`);
   else OK.push(`A: ${Object.entries(r.n).map(([k, v]) => v + '× ' + k).join(', ')} - alle mit Historie`);
   if (r.geist.length) F.push('B: COT-Geisterzeilen ' + r.geist.slice(0, 6).join(' · ')); else OK.push('B: keine COT-Zeilen bei Assets ohne COT-Bericht');
+  await p.evaluate(() => showTab('dash')); await p.waitForTimeout(1500);
+  const c = await p.evaluate(() => { const k = [...document.querySelectorAll('#dbMarket .dx-mkt')].find(x => /S&P 500/.test(x.innerText)); return k ? k.querySelector('.dx-mkt-c').innerText.replace(/\s+/g, ' ') : null; });
+  if (!c || /\(0\.00%\)/.test(c)) F.push('C: S&P-Kachel mit Kopien am Ende -> ' + c); else OK.push('C: Kopien am Reihenende uebersprungen, Kachel ' + c);
   if (err.length) F.push('JS: ' + err.slice(0, 2).join(' | '));
   await b.close();
   OK.forEach(m => console.log('  ✓ ' + m)); F.forEach(m => console.log('  ✗ ' + m));

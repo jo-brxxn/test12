@@ -23310,3 +23310,21 @@ Nutzer: *„bind eine Quelle ein und halt in der Beschreibung fest das der nur e
   - Die Netto-Positionierung zählt 0 und ist nur Anzeige.
 - **Offen (Nutzer „Oder nein. Erinnere mich … in jeder Nachricht“):** Netto-Regel „ab 3 Wochen gleicher Richtung 0, danach zählt die neue Richtung“. Als Erinnerungspflicht in `CLAUDE.md`.
 - **Wächter angepasst:** `regeln` (Tabelle + Vorzeichen), `scorenachrechnung` (ZERO), `modell28` (Teiler).
+
+## 2026-11-23 — Score-Fenster COT nachgezogen, Dashboard-Kacheln ohne 0,00 %, zweiter Datenlauf-Startpunkt (VERSION-CHECK-811)
+
+Nutzer (zwei iPad-Fotos):
+- *„Hast du das da bei der Score Erklärung schon erneuert?“* — nein. Das Fenster zeigte für AUD noch „against them / against the move“.
+- Neue Regel: *„jede Scoreänderung bei den betroffenen Assets eingetragen werden muss“* → `CLAUDE.md` Regel 3.
+- *„am Dashboard haben die in der Watchlist teilweise keine Preis Daten“* (S&P 500, Nasdaq, NVIDIA „0.0000 (0.00%)“).
+
+Umsetzung:
+- **Score-Fenster** (`js/scoreregeln.js`): COT-Netto „shown only · rule still open“ mit 0, Wochenänderung „with the move“ mit positiven Stufen bei jedem Asset. `check/scoreregeln.js` D prüft jetzt die neue Regel.
+- **0,00 % gemessen:**
+  - `price_data.json` führte SP500/NAS/NVDA/AAPL/DAX am 21., 22. und 23.11. mit **identischen** OHLC-Werten. Das sind Kopien für Tage ohne Handel, Montag vor Handelsbeginn eingeschlossen.
+  - Die Kachel verglich Kopie gegen Kopie.
+  - Fix: `ohneKopienAmEnde()` (`js/data-feeds.js`) in Kachel, `perfReturn` und `priceChangeInfo`. Gezählt wird der letzte echte Handelstag: S&P −0,88 %, Nasdaq −0,88 %, NVIDIA −2,14 % (Freitag).
+- **Warum keine Montagskurse:** Der Datenlauf („stündlich“) lief am 23.11. nur 00:15 und 07:38 UTC. Das sind 8 h ohne Lauf über den Handelsbeginn hinweg; GitHub verwirft geplante Läufe bei Last.
+  - Zweiter Startpunkt `47 * * * *`.
+  - `concurrency`-Gruppe, damit sich die Läufe nicht überschneiden.
+- **Wächter:** `check/chartreihen.js` C (eingeschleuste Kopien → Kachel ≠ 0,00 %, Gegenprobe rot).

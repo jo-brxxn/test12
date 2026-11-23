@@ -708,7 +708,19 @@ function relTime(iso){
 // an Wochenenden/Feiertagen wird wie beim Bond-Feed der letzte verfuegbare
 // Vortageswert genommen). bias folgt direkt dem Vorzeichen der Veraenderung
 // (positiv = bullish, negativ = bearish, wie ueberall sonst in der App).
+// 811 (Nutzer-Foto 2026-11-23: S&P 500, Nasdaq, NVIDIA "0.0000 (0.00%)" im Dashboard): der Datenlauf traegt fuer
+// Tage ohne neuen Kurs (Wochenende, Montag vor Handelsbeginn) eine KOPIE des letzten Schlusses ein - gemessen:
+// SP500 21./22./23.11. identisch 6910.39 / 7150.39 / 7198.67 / 6882.66. Fuer jede Veraenderung zaehlt deshalb der
+// letzte ECHTE Handelstag: angehaengte, in allen Feldern gleiche Kopien am Ende fallen weg.
+function ohneKopienAmEnde(series){
+  if(!Array.isArray(series))return series;
+  let n=series.length;
+  const gleich=(a,b)=>a&&b&&a.length===b.length&&a.slice(1).every((v,i)=>+v===+b[i+1]);
+  while(n>2&&gleich(series[n-1],series[n-2]))n--;
+  return n===series.length?series:series.slice(0,n);
+}
 function priceChangeInfo(series){
+  series=ohneKopienAmEnde(series);
   if(!Array.isArray(series)||!series.length)return null;
   const latestEntry=series[series.length-1];
   if(!latestEntry)return null;
@@ -947,7 +959,7 @@ function updFFLastUpd(){
 
 
 export {
-  IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,applyRealzinsFeed,applyGlobalYieldsFeed,globalYieldsReihe,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,applyGasFuenfJFeed,gasFuenfJahreReihe,fetchBtcScore,applyBtcScoreFeed,
+  IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,applyRealzinsFeed,applyGlobalYieldsFeed,globalYieldsReihe,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,applyGasFuenfJFeed,gasFuenfJahreReihe,ohneKopienAmEnde,fetchBtcScore,applyBtcScoreFeed,
   isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,holeNewsArchiv,newsArchivFuer,newsVollstaendig,NEWS_AI,fetchNewsAi,mergeNewsAi,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,

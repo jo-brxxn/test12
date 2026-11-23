@@ -16381,7 +16381,7 @@ function autoFetchFF(){
 // Daten-Feeds nach js/data-feeds.js ausgekoppelt (docs/module-split.md).
 import {
   IND_DATA_FEED,fetchIndData,indResearchEntry,indResearchSource,applyIndDataFeed,BOND_INDS,BOND_DATA_FEED,fetchBondData,
-  isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,applyRealzinsFeed,applyGlobalYieldsFeed,gasFuenfJahreReihe,globalYieldsReihe,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
+  isoMinusDays,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,bondSma,bondPick,fmtYield,applyBondDataFeed,applyRealzinsFeed,applyGlobalYieldsFeed,gasFuenfJahreReihe,ohneKopienAmEnde,globalYieldsReihe,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,applyGasFuenfJFeed,fetchBtcScore,applyBtcScoreFeed,
   PRICE_DATA_FEED,priceDataLastFetch,fetchPriceData,autoFetchPriceData,NEWS_DATA,fetchNewsData,autoFetchNewsData,holeNewsArchiv,newsArchivFuer,newsVollstaendig,RISK_INDEX_DATA,
   fetchRiskIndexData,autoFetchRiskIndex,relTime,priceChangeInfo,assetTickerInfo,pairTickerInfo,FX_PAIR_PRIORITY,canonicalFxPairs,
   tickerInfoForItem,tickerChipHtml,computeFxMovers,priceSeriesFor,priceSeriesAnzeige,kerzenArchivBei,pairPriceSeries,fmtPriceTick,CCY_MAX_ASSETS,ccyAllOptions,
@@ -17846,7 +17846,7 @@ function renditeAenderung(id,days){
 }
 function perfReturn(id,days){
   // Waehrungen seit 2026-09-26 als Korb (gegen die sieben anderen).
-  const s=ohneWochenende(preisReiheRechnung(id),id);
+  const s=ohneKopienAmEnde(ohneWochenende(preisReiheRechnung(id),id));   // 811
   if(!Array.isArray(s)||s.length<2)return null;
   const last=s[s.length-1];
   const lastV=Number(last[1]);
@@ -18292,7 +18292,7 @@ function dashMarktHtml(){
     if(!g){renderDash();return;}
     const t=document.createElement('template');t.innerHTML=dashMarktHtml();const n=t.content.firstElementChild;if(n)g.replaceWith(n);});
   const kach=dashMktListe().map((m,i)=>{
-    const s=(m.s||[]).filter(p=>isFinite(+p[1])&&+p[1]>0);
+    const s=ohneKopienAmEnde((m.s||[]).filter(p=>isFinite(+p[1])&&+p[1]>0));   // 811: Kopien ohne Handel am Ende weg
     const weg=m.wl?`<button class="dx-mkt-weg" onclick="event.stopPropagation();watchEntfernen('${escJH(m.n)}')" title="Remove ${escH(m.lbl)} from the watchlist" aria-label="Remove ${escH(m.lbl)} from the watchlist">${icn('x',14)}</button>`:'';
     if(s.length<2)return`<div class="dx-mkt${m.wl?' dx-mkt-wl':''}" role="button" tabindex="0" onclick="${m.go}"><span class="dx-mkt-n">${m.ic}<span>${escH(m.lbl)}</span></span><span class="dx-mkt-p">–</span><span class="dx-mkt-c"><i>No price data</i></span>${weg}</div>`;
     const last=s[s.length-1],lv=+last[1];
