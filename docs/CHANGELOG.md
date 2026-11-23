@@ -23363,3 +23363,8 @@ Nutzer: *„die pinned Notes Karte … nur noch Notes … auf diese Karte klicke
   - Neu: `check/notizordner.js` A–E; Gegenprobe (Abgleich ohne Lösch-Marker) meldet E rot.
   - `check/eingaben.js`: D auf die Notes-Karte umgestellt, Öffner für beide neuen Fenster.
 
+
+## 2026-11-23 — Quellen-Link der Zentralbank-Reihen (VERSION-CHECK-814)
+- Beim Prüfen der neuen USD/NZD-Reihen gemessen: Link unter der Zeile = `tradingview.com/economic-calendar` für **alle sechs** Reihen aus `tools/geldmenge.mjs` (USD, NZD, CHF, AUD, CAD, JPY) — `src` las nur kuratierte Links + TV-Rückfall, nie `f.source`
+- Fix: `FEED_QUELLE_LINK` (js/data-feeds.js) je Herkunft → Fed H.6, RBNZ C50, SNB, RBA, BoC, BoJ; EUR/GBP bleiben TV (stimmt)
+- Gemessen danach: 6/6 Links auf die Zentralbank; Wächter `check/geldmenge.js` D (Gegenprobe: fehlender Schlüssel → rot)

@@ -78,6 +78,9 @@ fs.readdirSync(path.join(ROOT, 'cal_hist')).filter(f => /^\d{4}\.json$/.test(f))
 }
 // ── D) App ──
 {
+  { const df = lies('js/data-feeds.js'), q = [...mg.matchAll(/quelle: '(\w+)'/g)].map(m => m[1]).filter(x => x !== 'te');
+    q.forEach(k => { if (!new RegExp('\\n  ' + k + ":'https://").test(df)) fail('D', `Quellen-Link fuer "${k}" fehlt in FEED_QUELLE_LINK (Zeile zeigte tradingview.com)`); });
+    if (!/const src=FEED_QUELLE_LINK\[f\.source\]\|\|/.test(df)) fail('D', 'Quellen-Link liest f.source nicht'); }
   if (!/\['Money Supply',\['USD','EUR','GBP','CHF','JPY','CAD','AUD','NZD'\]\]/.test(main)) fail('D', 'Money Supply nicht fuer alle acht Waehrungen angelegt');
   ['USD', 'EUR', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD', 'NZD'].forEach(c => { if (!new RegExp('\\n  ' + c + ":\\{'Money Supply':'(M|Broad Money)").test(main)) fail('D', `${c}: Anzeigename fehlt`); });
   if (!em.includes("IND_EVENT_MATCHERS['Money Supply'].nurTermin=true;")) fail('D', 'Kalender-Muster liefert auch den Wert (USD-Bestand!)');

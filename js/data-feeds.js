@@ -34,6 +34,18 @@ async function fetchIndData(){
 // auf den TradingView-Fallback "herunterfällt".
 // Kuratierter (statischer) Research-Eintrag eines Indikators - Quelle fuer
 // Felder, die der Live-Feed (TradingView) nicht immer liefert.
+// Reihen aus tools/geldmenge.mjs tragen ihre Herkunft in f.source - der Link
+// unter der Zeile zeigt auf genau diese Zentralbank (2026-11-23: USD/NZD zeigten
+// "tradingview.com", obwohl die Zahl von der Fed bzw. der RBNZ kommt; dieselbe
+// Klasse bei CHF/AUD/CAD/JPY). Wächter: check/geldmenge.js.
+const FEED_QUELLE_LINK={
+  fed:'https://www.federalreserve.gov/releases/h6/',
+  rbnz:'https://www.rbnz.govt.nz/statistics/series/lending-and-monetary/depository-corporations-money-and-credit-aggregates',
+  snb:'https://data.snb.ch/en/topics/snb#!/cube/snbmonagg',
+  rba:'https://www.rba.gov.au/statistics/tables/',
+  boc:'https://www.bankofcanada.ca/rates/banking-and-financial-statistics/monetary-aggregates/',
+  boj:'https://www.boj.or.jp/en/statistics/money/ms/index.htm',
+};
 function indResearchEntry(ccy,base){
   const data=IND_RESEARCH_DATA[ccy];
   if(!data)return null;
@@ -95,7 +107,7 @@ function applyIndDataFeed(){
         // (Das serverseitige ind_data.json borgt ebenfalls nicht mehr.)
         // src = reiner Anzeige-Link ("Quelle ansehen"), NICHT die Datenherkunft;
         // die echte Datenherkunft steht in f.source (tv/ff/investing).
-        const src=indResearchSource(macroCcyFor(c.id),base)||r.source||'https://www.tradingview.com/economic-calendar/';
+        const src=FEED_QUELLE_LINK[f.source]||indResearchSource(macroCcyFor(c.id),base)||r.source||'https://www.tradingview.com/economic-calendar/';
         // Trend-System speist sich AUCH aus diesem Feed (deckt weit mehr
         // Indikatoren ab als der Kalender-Sync): Werte-Historie fortschreiben
         // und dasselbe Trend-Modell wie in syncIndicatorBiases anwenden -
