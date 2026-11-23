@@ -2131,4 +2131,5 @@ Nutzer 2026-11-19: *„ein zahnrad … Fenster mit Filter mit allen assets … 6
 - Jede Karte und jedes Kartenraster nimmt den Token, **nie ein festes px-Literal**.
   - Bis 816 hatten `.tr-card`, `.mx-card`, `.cot-card`, `.tj-card`, `.dw`, `.ab-cards`, `.ab-orow` und `.gp2` je eigene 14 px.
 - Kacheln **innerhalb** einer Karte (Market overview, Kennzahlen) behalten ihren eigenen Abstand.
+- **Seitenrand = Kartenabstand** (Nutzer 2026-11-23, 817: *„mach da den gleichen Abstand wie zwischen den Karten“*): `.pc`/`.dp` rundum `var(--gap-block)` (8 px), Dashboard `#pgDash` 10 px wie `--dx-gap`. Vorher 14 px, ab 760 px 16/22 px, am Handy 10 px.
 

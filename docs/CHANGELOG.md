@@ -23397,3 +23397,25 @@ Nutzer: *„Ich finde die aktuellen Abstände zwischen den ganzen einzelnen Kart
 - **Ursache der Streuung:** Acht Kartenklassen hatten den Abstand als festes Literal statt über `--gap-block`. Alle hängen jetzt am Token.
 - **Wächter grün:** `ueberlappung`, `kartenlook`, `dashboard`, `layout`, `breit`, `rahmen`.
 
+## 2026-11-23 — Seitenrand = Kartenabstand (VERSION-CHECK-817)
+
+Nutzer (Foto Dashboard, Ränder links/rechts markiert): *„Auch die Abstände zu den Seiten“*. Nach dem ersten Ansatz (−40 %) korrigiert: *„mach da den gleichen Abstand wie zwischen den Karten“*.
+
+- **Vorher:**
+  - `.pc` und `.dp` hatten 14 px.
+  - Ab 760 px Breite 16 px oben/unten und 22 px seitlich.
+  - Am Handy hatte die Asset-Seite 10 px.
+- **Jetzt:**
+  - Überall `var(--gap-block)` = 8 px.
+  - Das Dashboard hat 10 px wie sein Kartenabstand (`--dx-gap`).
+- **Gemessen** (links / rechts in px):
+
+  | Seite | 1194 px | 390 px |
+  |---|---|---|
+  | Dashboard | 10 / 10 | 8 / 8 |
+  | Asset-Seite | 8 / 8 | 8 / 8 |
+  | Journal | 8 / 8 | 8 / 8 |
+  | Gameplan | 8 / 8 | 8 / 8 |
+
+- **Wächter grün:** `hierarchie` (Seitentitel jetzt bei x 84 / y 62, auf allen Seiten gleich), `ueberlappung`, `dashboard`, `breit`, `kartenlook`, `kopfleiste`, `layout`.
+
