@@ -1,5 +1,5 @@
 'use strict';
-// ══ NOTES: ORDNER MIT MINDMAP (Nutzer 2026-11-23, VERSION-CHECK-812) ══════════
+// ══ NOTES: ORDNER MIT MINDMAP (Nutzer 2026-11-23, VERSION-CHECK-813) ══════════
 // Nutzer: "die pinned Notes Karte ... nur noch Notes ... auf diese Karte klicken ... Fenster ... einen
 // Ordner erstellen ... links wie bei der Preis Karte eine Leiste wo ein Button fuer create new folder ist
 // und dadrunter die ganzen Ordner ... rechts davon ca 2 Drittel ... Mindmap ... Anfangs ist dort nur der

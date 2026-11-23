@@ -3504,7 +3504,7 @@ const IND_DISPLAY_NAMES={
   JPY:{'Money Supply':'M3 Money Stock y/y','Central Bank Rate':'BoJ Policy Rate','NFP / Employment Change':'Employment Change','Avg Hourly Earnings':'Average Cash Earnings','JOLTS Job Openings':'Jobs/Applicants Ratio','Services Inflation':'Corporate Services Price Index','Consumer Confidence':'Consumer Confidence (Cabinet Office)'},
   CAD:{'Money Supply':'M2++ Money Supply y/y','Central Bank Rate':'BoC Overnight Rate','NFP / Employment Change':'Net Employment Change','Avg Hourly Earnings':'Avg Hourly Wages (Permanent)','Services PMI':'Ivey PMI','Consumer Confidence':'Conference Board Consumer Confidence'},
   AUD:{'Money Supply':'M3 Money Supply y/y','Central Bank Rate':'RBA Cash Rate','NFP / Employment Change':'Employment Change','Avg Hourly Earnings':'Wage Price Index','Consumer Confidence':'Westpac Consumer Sentiment'},
-  NZD:{'Money Supply':'M3 Money Supply m/m','Central Bank Rate':'RBNZ Official Cash Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Labour Cost Index','Consumer Confidence':'ANZ-Roy Morgan Consumer Confidence','Core CPI':'Non-tradables CPI','Business Confidence':'ANZ Business Confidence','GDT Price Index':'Global Dairy Trade Price Index','Terms of Trade':'Terms of Trade (goods)','Building Permits':'Building Consents','Inflation Expectations':'Business Inflation Expectations (RBNZ, 2 years ahead)'},
+  NZD:{'Money Supply':'Broad Money (M3) y/y','Central Bank Rate':'RBNZ Official Cash Rate','NFP / Employment Change':'Employment Change (QoQ)','Avg Hourly Earnings':'Labour Cost Index','Consumer Confidence':'ANZ-Roy Morgan Consumer Confidence','Core CPI':'Non-tradables CPI','Business Confidence':'ANZ Business Confidence','GDT Price Index':'Global Dairy Trade Price Index','Terms of Trade':'Terms of Trade (goods)','Building Permits':'Building Consents','Inflation Expectations':'Business Inflation Expectations (RBNZ, 2 years ahead)'},
 };
 const IND_RESEARCH_DATA={
   USD:{entries:[
@@ -4063,7 +4063,7 @@ const IND_INFO_DEFAULTS={
   'GDT Price Index':'Global Dairy Trade auction — % change of the average dairy price vs. the previous auction (every 2 weeks). Dairy is New Zealand\'s largest export.',
   'Terms of Trade':'Export prices relative to import prices, quarter-over-quarter in %. Rising terms of trade lift national income.',
   'Building Permits':'New residential building consents, month-over-month change in %. A leading indicator for construction activity.',
-  'Money Supply':'Growth of the broad money supply of the central bank (EUR/CHF/JPY/AUD/NZD M3, GBP M4, USD M2, CAD M2++), in %. Faster growth than expected or than last time counts as bullish (more inflation pressure, more hawkish).',
+  'Money Supply':'Growth of the broad money supply of the central bank (EUR/CHF/JPY/AUD M3, NZD broad money, GBP M4, USD M2, CAD M2++), in % — year on year, GBP month on month. Faster growth than expected or than last time counts as bullish (more inflation pressure, more hawkish).',
   'Oil Inventories':'Weekly change of US commercial crude oil stocks (EIA, Wednesday), in million barrels. A draw (below forecast) is bullish for oil, a build is bearish. Counts half.',
   'China New Loans':'New yuan loans granted by Chinese banks in the month (PBoC), in billion CNY. More credit than expected means stronger Chinese demand: bullish for AUD and copper. China block, see weight in the row.',
   'China Retail Sales':'Chinese retail sales, year-over-year in % (NBS). Stronger consumption than expected is bullish for AUD and copper. China block, see weight in the row.',
@@ -7555,7 +7555,7 @@ function neueFelderBehalten(fremd,lokal){
   // gameplans: Gameplan je Asset (seit 2026-11-16, 737).
   // econThesen: Thesen der Economy Map (seit 2026-11-21, 784).
   // profil: Vor- und Nachname (seit 2026-11-22, 801).
-  // notizOrdner: Notes-Ordner mit Mindmap (seit 2026-11-23, 812).
+  // notizOrdner: Notes-Ordner mit Mindmap (seit 2026-11-23, 813).
   // dataSlots: Speicherplaetze der Data-Seite (seit 2026-11-22, 805).
   ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil','dataSlots','notizOrdner'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
@@ -8163,7 +8163,7 @@ function unsavedKeepEditing(){_unsavedFor=null;closeM('mUnsaved');}
 //   mEvtAlertPicker  - nur eine Auswahl, "Next" fuehrt erst zum Formular
 //   mAssetCfg/mCcyCfg und die Schalter in mCloud - wirken sofort beim Klick
 const MODAL_GUARD_TABELLE={
-  // Notes-Ordner (812): Punkt (Titel, Inhalt + Bias/Ast/Ordner als Zustand) und Ordnername.
+  // Notes-Ordner (813): Punkt (Titel, Inhalt + Bias/Ast/Ordner als Zustand) und Ordnername.
   mNoPunkt:{felder:['noPtTi','noPtTx'],extra:()=>punktZustand(),save:()=>ORDNER_WINDOW.punktSpeichern(),was:'This point'},
   mNoName:{felder:['noNameIn'],save:()=>ORDNER_WINDOW.ordnerNameSpeichern(),was:'This folder name'},
   mResNote:{felder:['resNTitle','resNBody','resNTags','resNFav','resNPin','resNEvt'],
@@ -12037,7 +12037,7 @@ function abPinnedHtml(c){
         <button onclick="togResPin('${escJH(n.id)}')" title="Unpin">${icn('pin',13)}</button>
       </span>
     </div>`).join('');
-  // Seit 812 (Nutzer 2026-11-23: "die pinned Notes Karte ... nur noch Notes"): die Karte zeigt die Ordner
+  // Seit 813 (Nutzer 2026-11-23: "die pinned Notes Karte ... nur noch Notes"): die Karte zeigt die Ordner
   // (js/notizordner.js); bisherige Pinned notes stehen darunter, bis sie einsortiert sind. Den Einstieg
   // "New pinned note" gibt es nicht mehr - Neues entsteht als Punkt in einem Ordner.
   return ordnerKarteHtml(c,zeilen,list.length);
@@ -28062,7 +28062,7 @@ document.addEventListener('visibilitychange',()=>{
 
 // ══ INIT ══════════════════════════════════════════════════════════
 try{sprungtestStart();}catch(e){}
-// Notes-Ordner (812).
+// Notes-Ordner (813).
 try{ordnerHelfer({pushU,save,BC,escH,escJH,syms:()=>syms,curPage:()=>curPage,renderDetail,openM,closeM,guardArm,
   abTileIcon:()=>abTileIcon('Pinned notes'),abInfoBtn,sbCatsOptgroups,pinnedVon:id=>abNotizen(id).filter(n=>n.pin),
   // Einsortiert = verlaesst Pinned wie "Unpin" (togResPin): landet in der History, geht nicht verloren.

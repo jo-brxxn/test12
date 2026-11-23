@@ -1715,7 +1715,7 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Gilt für **alle fünf Ansichten**; nichts wird automatisch gespeichert
 - Platz mit **genau einem Asset** (By indicator, Compare all mit einem Asset): Auswahl *for* lädt dieselben Charts für ein anderes Asset; was dort fehlt, steht in der Meldung (*not available for GOLD: …*), wird nie ersetzt
 
-## Asset-Seite: Karte „Notes“ (seit 2026-11-23, 812)
+## Asset-Seite: Karte „Notes“ (seit 2026-11-23, 813)
 
 - Ersetzt „Pinned notes“. Karte = Ordnerliste (Name, „shared · n assets“, Bias-Balken, Anzahl Punkte); Tipp irgendwo öffnet `#mNotesOrdner`.
 - Fenster: links Leiste (≈ ⅓) mit **＋ Create new folder** und den Ordnern, rechts (≈ ⅔) Kopf mit *Shared with* (Chips, ＋ Asset über das 2-Spalten-Fenster), Rename, Delete, **＋ Add point**; darunter die Mindmap als **Baum von links nach rechts** (Entwurf B): Ordnername links, je Ebene eine Spalte, rechtwinklige Linien in der Bias-Farbe des Hauptasts, Höhen gemessen → nichts überlappt. Leerer Ordner: nur der Name in der Mitte.

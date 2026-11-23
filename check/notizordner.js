@@ -1,4 +1,4 @@
-// ── NOTES: ORDNER MIT MINDMAP (Nutzer 2026-11-23, VERSION-CHECK-812) ─────────────
+// ── NOTES: ORDNER MIT MINDMAP (Nutzer 2026-11-23, VERSION-CHECK-813) ─────────────
 //  A) Karte heisst "Notes", Tipp oeffnet das Fenster; Ordner anlegen, Punkte + Unterpunkt anlegen
 //  B) Baum: kein Knoten ueberlappt einen anderen, jeder Unterpunkt steht rechts von seinem Eltern-Punkt
 //  C) Teilen: derselbe Ordner erscheint beim zweiten Asset; im snap() (Sync), nach Neuladen erhalten

@@ -63,7 +63,7 @@ const AUSNAHMEN = {
 // Die ECHTEN Oeffnungswege je Fenster. Ein neu eingetragenes Fenster ohne
 // Eintrag hier ist rot: ungetesteter Schutz ist kein Schutz.
 const OEFFNER = {
-  // Notes-Ordner (812): erst das Ordner-Fenster von USD (mit Ordner), dann Punkt bzw. Ordnername.
+  // Notes-Ordner (813): erst das Ordner-Fenster von USD (mit Ordner), dann Punkt bzw. Ordnername.
   mNoPunkt: [`(ordnerAuf('USD'),Object.values(JSON.parse(snap()).notizOrdner||{}).some(o=>!o.del&&o.assets.includes('USD'))||(ordnerNeu(),document.getElementById('noNameIn').value='WAECHTER folder',ordnerNameSpeichern()),punktNeu())`],
   mNoName: [`(ordnerAuf('USD'),ordnerNeu())`],
   mResNote: [
@@ -295,8 +295,8 @@ const OEFFNER = {
   await p.evaluate(() => { try { localStorage.removeItem('fxpro_cloud_cfg'); } catch (e) {} priceAlerts = []; save(); });
   if (!fehler) gruen('zwei Knoepfe in Bias-Farben, Satz nennt die Notiz, daneben = zurueck, "Yes, save" speichert (Notiz-Editor); Speichern schliesst das Fenster (Price alert, Settings)');
 
-  // ── D: Notes-Karte (seit 812) -> Fenster mit Ordnern ────────────────────
-  // Bis 811 hiess die Karte "Pinned notes" mit Einstieg "New pinned note" in den Notiz-Editor. Nutzer
+  // ── D: Notes-Karte (seit 813) -> Fenster mit Ordnern ────────────────────
+  // Bis 812 hiess die Karte "Pinned notes" mit Einstieg "New pinned note" in den Notiz-Editor. Nutzer
   // 2026-11-23: Karte "Notes", Tipp oeffnet das Ordner-Fenster; Neues entsteht als Punkt (dort geprueft:
   // check/notizordner.js). Hier nur: kein Eingabefeld in der Karte, Tipp oeffnet das Fenster.
   console.log('D) Notes-Karte ohne Eingabefeld, Tipp oeffnet das Ordner-Fenster');
