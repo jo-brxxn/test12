@@ -1945,7 +1945,10 @@ function symScoreCmp(sym){
 // anderen Metallen ... Naturalgas ... gleich wie bei Oel"): zwei neue Assets; NATGAS mit eigener Zeile
 // Gas Storage (EIA, woechentlich, halbes Gewicht, Abbau = bullish) wie OIL Oil Inventories. Die Scores der
 // bestehenden Assets aendern sich nicht.
-const SCORE_MODEL_VERSION=42;
+// 42 -> 43 (2026-11-23, Nutzer: "Find bei nzd und usd Daten die weiter zurueckgehen" -> "Ja mach das alles"):
+// NZD Money Supply als JAHRESRATE des RBNZ Broad money (vorher Monatsrate aus TE), USD M2 direkt aus
+// Fed H.6 (vorher Rate aus TV-Bestaenden, ohne Vormonat). Regel unveraendert (Actual vs Fc/Prev).
+const SCORE_MODEL_VERSION=43;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.

@@ -23328,3 +23328,12 @@ Umsetzung:
   - Zweiter Startpunkt `47 * * * *`.
   - `concurrency`-Gruppe, damit sich die Läufe nicht überschneiden.
 - **Wächter:** `check/chartreihen.js` C (eingeschleuste Kopien → Kachel ≠ 0,00 %, Gegenprobe rot).
+
+## 2026-11-23 — Money Supply: lange Historie für USD und NZD (VERSION-CHECK-812, Score-Modell 43)
+- Nutzer: *„Find bei nzd und usd Daten die weiter zurückgehen da muss es was geben“* → *„Ja mach das alles“*
+- Vorher: USD **6 Punkte** (Rate aus TV-Beständen, ohne Vormonat), NZD **2 Punkte** (Monatsrate aus TE-Seitentext)
+- Sonde `probe-money-history.yml` (3 Runden, CI): FRED vom Runner nicht erreichbar; **Fed-H.6-Paket** 200 (M2.M **813 Monate 01/1959–09/2026**); RBNZ 403, **Wayback-Kopie C50 long run** = Broad money **453 Monate 03/1988–11/2025** (nur ~1 Sicherung/Jahr); OECD MEI NZ M3 1977–2018 (eingestellt), IMF IFS NZ 2013–05/2025
+- TE „Money Supply M3“ NZ = RBNZ Broad money (09/2026 459.840 vs 11/2025 443.578, +4,5 % p.a.)
+- Probelauf `geldmenge.mjs --probe` (CI, Dev-Branch): USD **5.7 %** (09/2026, Vormonat 5.6 %, 801 Monate); NZD **4.5 %** (09/2026, Vormonat 4.1 %, 443 Monate); 11/2025 = 4.5 % = RBNZ-eigene Jahresrate (Kontrolle)
+- Score: NZD jetzt Jahresrate statt Monatsrate → Modell 43 + Journal-Zeile; USD erstmals mit Vormonat
+- Wächter `check/geldmenge.js` umgestellt (kein USD aus TV, `jahresraten()` nachgerechnet, Fed M2.M, RBNZ MCA.MDB.BM), Gegenprobe rot

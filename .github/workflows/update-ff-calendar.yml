@@ -1706,13 +1706,12 @@ jobs:
               {ind:"MPC Vote Split",period:null,test:(t,c)=>c==="GBP"&&t==="boe mpc vote split"},
               // Geldmenge (Nutzer 2026-11-01: "m3 money supply ... bei inflation").
               // EUR = M3 Vorjahresrate (EZB); GBP fuehrt kein M3, nur M4 m/m (BoE);
-              // USD hat seit 2006 kein M3 - TV fuehrt den M2-BESTAND ("Money
-              // Supply", Billionen), die Jahresrate entsteht unten in
-              // usM2Jahresrate aus zwei echten Bestaenden. JPY/CHF/AUD/CAD/NZD
-              // kommen aus tools/geldmenge.mjs (Zentralbanken).
+              // USD (M2, Fed H.6 ab 1959) und JPY/CHF/AUD/CAD/NZD kommen aus
+              // tools/geldmenge.mjs (Zentralbanken). Bis 2026-11-23 rechnete
+              // hier usM2Jahresrate die USD-Rate aus TV-Bestaenden (6 Punkte,
+              // ohne Vormonat) - entfernt, EINE Quelle je Zeile.
               {ind:"Money Supply",period:null,test:(t,c)=>c==="EUR"&&/^m3 money supply annual growth$/.test(t)},   // "... YoY" fuehrt seit 10/2026 den Bestand
               {ind:"Money Supply",period:null,test:(t,c)=>c==="GBP"&&/^m4 money supply mom$/.test(t)},
-              {ind:"Money Supply",period:null,test:(t,c)=>c==="USD"&&t==="us m2 money supply yoy"},
             ];
             const readEvts=f=>{
               let tv;
@@ -1797,28 +1796,6 @@ jobs:
                 evts.push({country:"GB",title:"BoE MPC Vote Split",date:o.date,actual:a,forecast:wert(o,"forecast"),previous:wert(o,"previous")});n++;
               });
               console.log("ind_data: MPC vote split from "+n+" meeting(s)");
-            })();
-            // ── USD M2: Jahresrate aus dem Bestand (2026-11-01) ───────────
-            // TradingView fuehrt nur den Bestand ("Money Supply", z. B. 23.41T).
-            // Ein Vergleich Bestand gegen Vorwert waere fast immer "hoeher" -
-            // deshalb Jahresrate = Bestand / Bestand des Releases 11-13 Monate
-            // vorher. Ohne diesen Vorjahresbestand KEIN Wert (Regel 4).
-            (function usM2Jahresrate(){
-              const F={K:1e3,M:1e6,B:1e9,T:1e12},st={};
-              evts.forEach(ev=>{
-                if(!ev||ev.country!=="US"||norm(ev.title||ev.indicator||"")!=="money supply")return;
-                if(ev.actual==null||ev.actual===""||!isFinite(+ev.actual))return;
-                const d=new Date(ev.date);if(isNaN(d))return;
-                st[d.toISOString().slice(0,10)]=+ev.actual*(F[String(ev.scale||"").toUpperCase()]||1);
-              });
-              const tage=Object.keys(st).sort(),rate={};
-              tage.forEach(d=>{
-                const t=Date.parse(d),v0=tage.filter(x=>{const a=(t-Date.parse(x))/864e5;return a>=335&&a<=395;}).pop();
-                if(v0&&st[v0]>0)rate[d]=(st[d]/st[v0]-1)*100;
-              });
-              const r=Object.keys(rate).sort();
-              r.forEach((d,i)=>evts.push({country:"US",title:"US M2 Money Supply YoY",date:d+"T12:00:00Z",actual:rate[d].toFixed(1)+"%",forecast:null,previous:i>0?rate[r[i-1]].toFixed(1)+"%":null}));
-              console.log("ind_data: US M2 YoY from "+r.length+" of "+tage.length+" level release(s)");
             })();
             console.log("ind_data: "+(wide?wide.length:0)+" TV events in 95d window, "+(recent?recent.length:0)+" in 45d window, hist windows: "+histN.join("/"));
             // Pro (ccy|ind) ALLE Events mit Actual sammeln (nicht nur das
@@ -2380,7 +2357,7 @@ jobs:
           '
           rm -f nt_*.csv nt_prev.json
 
-      # ── GELDMENGE JPY/CHF/AUD/CAD/NZD (Zentralbanken, tools/geldmenge.mjs) ──
+      # ── GELDMENGE USD/JPY/CHF/AUD/CAD/NZD (Zentralbanken, tools/geldmenge.mjs) ──
       # Nutzer 2026-11-01: "m3 money supply ... ueberall" - per Rueckfrage die
       # Quellen der Zentralbanken (Sonde probe-money-sources.yml). Faellt eine
       # Quelle aus, bleibt ihr letzter Stand (mg_prev.json = Stand vor dem Lauf).
