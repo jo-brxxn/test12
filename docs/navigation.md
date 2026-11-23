@@ -1722,3 +1722,10 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Punkt = Titel (immer ganz), Inhalt (gekürzt), Bias; **New branch** oder **Branch of a point**. Tipp auf einen Punkt = Bearbeiten/Löschen (Unterpunkte rücken eine Ebene hoch). **Kein Verschieben per Ziehen** (Nutzerwahl).
 - Bisherige Pinned notes stehen in Karte und Leiste („to sort“), bis sie einsortiert sind: **Sort in** → Punkt, Notiz verlässt Pinned (landet in der History). Kein „New pinned note“ mehr.
 
+
+## Price-Karte: Notiz-Kästen verschieben (seit 2026-11-23, 815)
+- **1. Tipp** = Kasten ausgewählt (Ring in Bias-Farbe, Hinweis *Drag to move · tap again to edit*)
+- **Ziehen** = nur der Kasten wandert; Punkt + Linie bleiben auf der Kerze (`pm.d`), neue Lage wie beim Setzen gespeichert (`pm.bd/bo/bp`)
+- **2. Tipp** = Notiz-Fenster (bearbeiten, Bias, löschen); Tipp daneben / Esc = abwählen
+- Maus: Kasten auch ohne Auswahl ziehbar; Finger: erst antippen, sonst scrollt die Seite
+- Wächter `check/preiskarte.js` E (Gegenprobe `--gegenprobe-verschieben`)

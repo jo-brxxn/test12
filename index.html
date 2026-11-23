@@ -8181,6 +8181,11 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .pk-nt{position:absolute;transform:translate(-50%,-50%);z-index:5;pointer-events:auto;max-width:200px;padding:6px 11px;border:1.5px solid var(--c);border-radius:9px;background:var(--card);color:var(--t1);font:600 var(--fs-sm)/1.3 var(--ff-text);text-align:left;cursor:pointer;box-shadow:0 2px 8px rgba(20,27,46,.14);white-space:normal;overflow-wrap:anywhere}
 .pk-nt.re{transform:translate(-100%,-50%)}.pk-nt.li{transform:translate(0,-50%)}
 .pk-nt:hover{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent),0 2px 8px rgba(20,27,46,.14)}
+/* Ausgewaehlt (Nutzer 2026-11-23: antippen = verschieben, nochmal = bearbeiten): Ring in Bias-Farbe,
+   ziehbar - touch-action:none nur am gewaehlten Kasten, sonst scrollt ein Finger auf einem Kasten die Seite nicht mehr */
+.pk-nt.gew{z-index:7;cursor:grab;touch-action:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 38%,transparent),0 4px 14px rgba(20,27,46,.2)}
+.pk-nt.gew:active{cursor:grabbing}
+.pk-gew-hint{padding:0 12px;pointer-events:none}
 .pk-mk{position:absolute;inset:0;z-index:6;pointer-events:none}
 .pk-mk-dot{width:16px;height:16px;margin:-8px 0 0 -8px;pointer-events:auto;cursor:grab;touch-action:none;box-shadow:0 0 0 3px var(--card),0 0 0 6px color-mix(in srgb,var(--t1) 25%,transparent);transition:left .06s linear,top .06s linear}
 .pk-mk-dot.zieh{animation:pkPuls 1.6s ease-in-out infinite}
@@ -8341,11 +8346,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-814 - Money Supply rows link to their central bank (Fed, RBNZ, SNB, RBA, BoC, BoJ) instead of tradingview.com"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-815 - Price card: tap a note to move it, tap again to edit"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-814</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-815</span>
     </span>
   </div>
   <div class="hdr-r">

@@ -205,7 +205,7 @@ function pkFlaggenHtml(id,api,tage,B){
   const liste=[];
   B.forEach(b=>{if(!b.eig.length||b.i1<0)return;b.eig.forEach(nt=>liste.push({nt,b}));});
   if(!liste.length)return'';
-  let lin='',dots='',boxen='';
+  let lin='',dots='',boxen='',gewDa=false;
   const ym=d=>api.ym?api.ym(d):api.y(d),kl=(v,a,z)=>Math.max(a,Math.min(z,v));
   liste.forEach(({nt,b},n)=>{
     const pm=nt.pm||{};
@@ -219,11 +219,77 @@ function pkFlaggenHtml(id,api,tage,B){
     if(pm.bp!=null&&api.yv)by=api.yv(+pm.bp);else if(pm.by!=null)by=+pm.by;else by=ay-0.22-(n%3)*0.1;
     bx=kl(bx,0.03,0.97);by=kl(by,0.06,0.94);
     const txt=String(nt.title||'').trim()||'Note',tip=tagKurz(tage[i])+' · '+txt+(nt.body?' · '+String(nt.body).replace(/\s+/g,' ').slice(0,60):'');
-    lin+=`<line x1="${(ax*100).toFixed(3)}" y1="${(ay*100).toFixed(3)}" x2="${(bx*100).toFixed(3)}" y2="${(by*100).toFixed(3)}" vector-effect="non-scaling-stroke"/>`;
+    lin+=`<line data-nt="${escH(nt.id)}" x1="${(ax*100).toFixed(3)}" y1="${(ay*100).toFixed(3)}" x2="${(bx*100).toFixed(3)}" y2="${(by*100).toFixed(3)}" vector-effect="non-scaling-stroke"/>`;
     dots+=`<span class="pk-nt-dot" style="left:${pctL(ax)};top:${pctL(ay)}" aria-hidden="true"></span>`;
-    boxen+=`<button type="button" class="pk-nt${bx>0.8?' re':bx<0.2?' li':''}" data-nt="${escH(nt.id)}" style="left:${pctL(bx)};top:${pctL(by)};--c:${bcol(nt.bias)}" title="${escH(tip)}" onclick="event.stopPropagation();pkNotizAuf('${escJH(nt.id)}')">${escH(txt)}</button>`;
+    const gew=pkNtGew===nt.id;if(gew)gewDa=true;
+    boxen+=`<button type="button" class="pk-nt${bx>0.8?' re':bx<0.2?' li':''}${gew?' gew':''}" data-nt="${escH(nt.id)}" style="left:${pctL(bx)};top:${pctL(by)};--c:${bcol(nt.bias)}" title="${escH(gew?'Drag to move · tap again to edit':tip)}" aria-pressed="${gew}" onclick="event.stopPropagation();pkNotizTipp('${escJH(nt.id)}')">${escH(txt)}</button>`;
   });
-  return`<svg class="pk-nt-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lin}</svg>${dots}${boxen}`;
+  const hint=gewDa?`<span class="pk-mk-hint pk-gew-hint" role="status"><span>Drag to move · tap again to edit</span></span>`:'';
+  return`<svg class="pk-nt-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lin}</svg>${dots}${boxen}${hint}`;
+}
+// ── Kasten antippen = auswaehlen + verschieben, nochmal antippen = bearbeiten ──
+// Nutzer 2026-11-23: "Stichpunkte die man in die Price Karte schreibt soll man einfach
+// Antippen koennen und dann verschieben koennen. Wenn man sie nochmal klickt kann man sie
+// veraendern". Rueckfrage: NUR der Kasten wandert - Punkt und Linie bleiben auf der Kerze
+// (pm.d), gespeichert wird die neue Lage wie beim Setzen (pm.bd/bo + Preis pm.bp).
+// Maus: ein ausgewaehlter ODER noch nicht ausgewaehlter Kasten laesst sich direkt ziehen;
+// Finger: erst antippen (dann touch-action:none), dann ziehen - sonst scrollt die Seite.
+let pkNtGew=null,_pkNtZ=null,_pkNtKlickWeg=false;
+function pkNtMarkieren(){
+  document.querySelectorAll('.ab-ptile.pk .pk-nt[data-nt]').forEach(b=>{const on=b.dataset.nt===pkNtGew;b.classList.toggle('gew',on);b.setAttribute('aria-pressed',String(on));});
+  document.querySelectorAll('.ab-ptile.pk .pk-gew-hint').forEach(h=>h.remove());
+  if(pkNtGew){const b=document.querySelector(`.ab-ptile.pk .pk-nt[data-nt="${CSS.escape(pkNtGew)}"]`),el=b&&b.parentElement;
+    if(el)el.insertAdjacentHTML('beforeend','<span class="pk-mk-hint pk-gew-hint" role="status"><span>Drag to move · tap again to edit</span></span>');}
+}
+function pkNotizTipp(nid){
+  if(_pkNtKlickWeg){_pkNtKlickWeg=false;return;}       // Ende eines Ziehens ist kein Tipp
+  if(pkNtGew===nid){pkNtGew=null;pkNtMarkieren();pkNotizAuf(nid);return;}
+  pkNtGew=nid;pkNtMarkieren();
+}
+function pkNtAbwaehlen(){if(pkNtGew){pkNtGew=null;pkNtMarkieren();}}
+document.addEventListener('pointerdown',e=>{
+  _pkNtKlickWeg=false;
+  if(pkForm)return;
+  const t=e.target,b=t&&t.closest&&t.closest('.ab-ptile.pk .pk-nt[data-nt]');
+  if(!b){if(pkNtGew&&!(t&&t.closest&&t.closest('.pk-gew-hint')))pkNtAbwaehlen();return;}
+  if(e.pointerType!=='mouse'&&b.dataset.nt!==pkNtGew)return;   // Finger: erst auswaehlen
+  const el=b.parentElement,r=el&&el.getBoundingClientRect();if(!r||!r.width)return;
+  _pkNtZ={id:e.pointerId,nid:b.dataset.nt,b,el,x:e.clientX,y:e.clientY,w:r.width,h:r.height,
+    fx0:parseFloat(b.style.left)/100,fy0:parseFloat(b.style.top)/100,fx:null,fy:null,bewegt:false};
+},true);
+document.addEventListener('pointermove',e=>{
+  const z=_pkNtZ;if(!z||e.pointerId!==z.id)return;
+  const dx=e.clientX-z.x,dy=e.clientY-z.y;
+  if(!z.bewegt&&Math.abs(dx)+Math.abs(dy)<6)return;
+  if(!z.bewegt){z.bewegt=true;if(pkNtGew!==z.nid){pkNtGew=z.nid;pkNtMarkieren();}}
+  e.preventDefault();
+  z.fx=pkKl(z.fx0+dx/z.w,0.03,0.97);z.fy=pkKl(z.fy0+dy/z.h,0.06,0.94);
+  z.b.style.left=pctL(z.fx);z.b.style.top=pctL(z.fy);
+  z.b.classList.toggle('re',z.fx>0.8);z.b.classList.toggle('li',z.fx<0.2);
+  const ln=z.el.querySelector(`.pk-nt-svg line[data-nt="${CSS.escape(z.nid)}"]`);
+  if(ln){ln.setAttribute('x2',(z.fx*100).toFixed(3));ln.setAttribute('y2',(z.fy*100).toFixed(3));}
+},{passive:false});
+document.addEventListener('pointerup',e=>{
+  const z=_pkNtZ;if(!z||e.pointerId!==z.id)return;_pkNtZ=null;
+  if(!z.bewegt||z.fx==null)return;
+  // Nur der Klick, den DIESES Ziehen ausloest, ist kein Tipp. Kein Zeitfenster: ein schneller
+  // zweiter Tipp (gemessen 2026-11-23, < 0,4 s) wurde sonst verschluckt. Der naechste
+  // pointerdown loescht die Marke (Finger-Ziehen erzeugt oft gar keinen Klick).
+  _pkNtKlickWeg=true;
+  pkNtLageSpeichern(z.nid,z.fx,z.fy);
+},true);
+document.addEventListener('pointercancel',()=>{_pkNtZ=null;},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')pkNtAbwaehlen();});
+// Neue Lage speichern - dieselbe Rechnung wie beim Setzen (pkSpeichern). Regel 6: try/catch.
+function pkNtLageSpeichern(nid,fx,fy){
+  const n=resNotes().find(x=>x&&x.id===nid&&x.pm),L=pkL();if(!n||!L)return;
+  try{
+    const pm=Object.assign({},n.pm),bi=pkNaechster(L,fx);
+    pm.bd=L.tage[bi];pm.bo=+(fx-L.x(bi)).toFixed(4);delete pm.bp;delete pm.by;
+    if(L.pv){const v=L.pv(fy);if(isFinite(v))pm.bp=+v.toPrecision(7);}
+    if(pm.bp==null)pm.by=+fy.toFixed(4);
+    pushU();n.pm=pm;n.up=new Date().toISOString();save();
+  }catch(e){alert('The note could not be moved: '+(e&&e.message||e));if(typeof window.renderDetail==='function')window.renderDetail();}
 }
 // Spaeter tippen: das Notiz-Fenster (Text, Bias, Loeschen - mit Nachfrage bei Ungespeichertem)
 function pkNotizAuf(nid){try{if(typeof window.openResNote==='function')window.openResNote(nid);}catch(e){alert('The note could not be opened: '+(e&&e.message||e));}}
@@ -705,5 +771,5 @@ function pkZustand(){return{sel:pkSel,hover:pkHover,add:pkAdd,form:pkForm,vgl:JS
 export {pkBandLegende,pkLageHtml,pkSpalteHtml,pkNachAufbau,pkVergleichAktiv,pkVglListe,pkVglSkalaWert,pkReleases,pkEimer,PFEIL,pkAddAktiv};
 function pkAddAktiv(){return pkAdd;}
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window,{pkWaehle,pkMarkenSchalter,pkAddUmschalten,pkFormAuf,pkPunktOk,pkLinieOk,pkNotizAuf,pkFormText,pkFormBias,pkFormZu,pkSpeichern,pkEigenWeg,
+Object.assign(window,{pkWaehle,pkMarkenSchalter,pkAddUmschalten,pkFormAuf,pkPunktOk,pkLinieOk,pkNotizAuf,pkNotizTipp,pkFormText,pkFormBias,pkFormZu,pkSpeichern,pkEigenWeg,
   pkModusSetzen,pkMoveWaehle,pkBewegungen,pkVglAuf,pkVglAsset,pkVglGruppe,pkVglUmschalten,pkVglWeg,pkVglSkalaSetzen,pkZustand,pkReleases});

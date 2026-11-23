@@ -23368,3 +23368,10 @@ Nutzer: *„die pinned Notes Karte … nur noch Notes … auf diese Karte klicke
 - Beim Prüfen der neuen USD/NZD-Reihen gemessen: Link unter der Zeile = `tradingview.com/economic-calendar` für **alle sechs** Reihen aus `tools/geldmenge.mjs` (USD, NZD, CHF, AUD, CAD, JPY) — `src` las nur kuratierte Links + TV-Rückfall, nie `f.source`
 - Fix: `FEED_QUELLE_LINK` (js/data-feeds.js) je Herkunft → Fed H.6, RBNZ C50, SNB, RBA, BoC, BoJ; EUR/GBP bleiben TV (stimmt)
 - Gemessen danach: 6/6 Links auf die Zentralbank; Wächter `check/geldmenge.js` D (Gegenprobe: fehlender Schlüssel → rot)
+
+## 2026-11-23 — Price-Karte: Notiz-Kasten antippen = verschieben, nochmal = bearbeiten (VERSION-CHECK-815)
+- Nutzer: *„Stichpunkte die man in die Price Karte schreibt soll man einfach Antippen können und dann verschieben können. Wenn man sie nochmal klickt kann man sie verändern“*; Rückfrage → **nur der Kasten** wandert
+- Vorher: 1. Tipp öffnete sofort das Notiz-Fenster, Lage nur beim Setzen wählbar
+- Gemessen (Playwright 1180): Maus — Tipp 1 → ausgewählt + Hinweis, Ziehen −120/+60 px → Kasten exakt −120/+60, `pm.bd` 10-14→10-09, `pm.d` gleich, nach Neuaufbau gleiche Lage, Tipp 2 → Fenster. Finger (CDP-Touch) — Ziehen ohne Auswahl bewegt nichts, nach Tipp −100/+40 px, Seite scrollt nicht (0), Tipp 2 → Fenster
+- Fehler beim Messen gefunden: schneller 2. Tipp (< 0,4 s) wurde verschluckt (Zeitfenster gegen den Klick nach dem Ziehen) → jetzt nur DER Klick des Ziehens, Marke beim nächsten pointerdown gelöscht
+- Erinnerungen an Fristen (Fed-H.6-Ende 31.03.2027, NZD-Lücke) jetzt in `CLAUDE.md` „⏰ Fristen“ (Nutzer: *„Erinner dich selber in einer Datei die du immer liest“*)

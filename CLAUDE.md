@@ -149,6 +149,12 @@ entschieden: *„ab 3 Wochen Zunahme oder Abnahme soll der Score-Effekt erstmal 
 Woche wieder in eine Richtung, zählt diese“*. Jede Antwort endet (vor der Versionszeile) mit einer kurzen
 Erinnerung daran, bis der Nutzer die Regel festlegt. Danach diesen Abschnitt entfernen.
 
+## ⏰ Fristen — bei JEDER Sitzung prüfen (Nutzer 2026-11-23: *„Erinner dich selber in einer Datei die du immer liest“*)
+
+Ist das Datum erreicht oder überschritten: **von dir aus ansprechen**, erledigen (mit OK), dann die Zeile löschen.
+- **ab 2027-02-01 — USD Money Supply umziehen:** die Fed stellt die fertigen H.6-Pakete (Data Download Program) am **31.03.2027** ein; `tools/geldmenge.mjs` `USD()` liest `datadownload/Output.aspx?rel=H6&filetype=zip`. Vorher per Sonde (`probe-money-history.yml`) den Nachfolger finden und umstellen, sonst steht USD ab April 2027 still.
+- **ab 2027-01-01 — NZD-Lücke prüfen:** Broad money 12/2025–07/2026 fehlt (RBNZ-Archivkopie nur bis 11/2025). Prüfen, ob die neue Wayback-Sicherung angekommen ist (`ind_data.json` NZD `levels`); sonst fehlen die NZD-Jahresraten 12/2026–07/2027.
+
 ## Meta-Grundsatz: wo eine neue Regel hingehört
 
 **Jede dauerhafte Nutzer-Präferenz muss dokumentiert werden** (Nutzer-Wunsch

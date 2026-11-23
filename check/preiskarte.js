@@ -21,6 +21,9 @@
 //   E) EIGENER PFEIL: + Mark -> Tag -> Popover; leer speichern geht nicht;
 //      gespeichert = Notiz mit pm, Flagge mit Text im Chart (seit 2026-11-15), "Mine" in der Spalte;
 //      loeschen -> aus den Notizen, im Papierkorb
+//      (seit 2026-11-23, 815) Kasten: 1. Tipp = ausgewaehlt (Ring, Hinweis, KEIN Fenster),
+//      Ziehen = Kasten wandert, neue Lage gespeichert (pm.bd/bp), Kerze pm.d bleibt;
+//      2. Tipp = Notiz-Fenster
 //   F) VERGLEICH: Gruppen-Fenster; 1 Kurs dazu -> 2 Linien, keine Kerzen,
 //      Display "Lines ..."; 2 dazu -> 3 Linien, Fenster zu, ein dritter geht
 //      nicht; alle weg -> wieder Kerzen, Display "Candles ..."
@@ -28,7 +31,8 @@
 //   I) (791) Rahmen der Spalte rundum in der Bias-Farbe des Gameplans, live beim Umschalten
 // Gegenproben: --gegenprobe-leer (Tipp ins Leere wirkt nicht) -> C rot,
 //   --gegenprobe-linien (Vergleich als Kerzen) -> F rot,
-//   --gegenprobe-finger (Spalte ohne touchmove) -> D2 rot
+//   --gegenprobe-finger (Spalte ohne touchmove) -> D2 rot,
+//   --gegenprobe-verschieben (1. Tipp oeffnet sofort das Fenster) -> E rot
 //   D2 (789): Wischen mit senkrechtem Anteil -> pointercancel; Spalte laeuft trotzdem mit
 const PW = process.env.PW_PATH || '/opt/node22/lib/node_modules/playwright';
 const URL = process.env.CHECK_URL || 'http://127.0.0.1:8935/index.html';
@@ -39,6 +43,8 @@ const { wartenBisDatenDa } = require('./warten.js');
 const GP_L = process.argv.includes('--gegenprobe-leer');
 const GP_K = process.argv.includes('--gegenprobe-linien');
 const GP_F = process.argv.includes('--gegenprobe-finger');
+const GP_V = process.argv.includes('--gegenprobe-verschieben');
+const M_V = '  if(pkNtGew===nid){pkNtGew=null;pkNtMarkieren();pkNotizAuf(nid);return;}';
 const M_F = "  box.addEventListener('touchmove',e=>{const t=e.touches[0];if(t)finger(t.clientX);},{passive:true});";
 const PK = fs.readFileSync(path.join(__dirname, '..', 'js', 'preiskarte.js'), 'utf8');
 const M_L = '  if(pkSel)pkWaehle(null);\n},true);';
@@ -50,18 +56,19 @@ const rot = m => { console.log('  ✗ ' + m); fehler++; };
 const gruen = m => console.log('  ✓ ' + m);
 
 (async () => {
-  if ((GP_L && !PK.includes(M_L)) || (GP_K && !PK.includes(M_K)) || (GP_F && !PK.includes(M_F))) { rot('Gegenprobe: Marke im Code nicht gefunden'); process.exit(1); }
+  if ((GP_L && !PK.includes(M_L)) || (GP_K && !PK.includes(M_K)) || (GP_F && !PK.includes(M_F)) || (GP_V && !PK.includes(M_V))) { rot('Gegenprobe: Marke im Code nicht gefunden'); process.exit(1); }
   let pk = PK;
   if (GP_L) pk = pk.replace(M_L, '\n},true);');
   if (GP_K) pk = pk.replace(M_K, "preisChartHtml(keys,W,H,{typ:'kerze',");
   if (GP_F) pk = pk.replace(M_F, '');
+  if (GP_V) pk = pk.replace(M_V, '  pkNotizAuf(nid);return;');
   const b = await chromium.launch();
   const HIER = new globalThis.URL(URL).origin;
   const perr = [];
   async function seite(w, h, asset) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
     await ctx.route(u => u.origin !== HIER, r => ['fetch', 'xhr'].includes(r.request().resourceType()) ? r.abort() : r.fallback());
-    if (GP_L || GP_K || GP_F) await ctx.route(u => u.origin === HIER && /\/js\/preiskarte\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: pk }));
+    if (GP_L || GP_K || GP_F || GP_V) await ctx.route(u => u.origin === HIER && /\/js\/preiskarte\.js$/.test(u.pathname), r => r.fulfill({ status: 200, contentType: 'application/javascript', body: pk }));
     const p = await ctx.newPage(); p.on('pageerror', e => perr.push(String(e)));
     await p.addInitScript(() => { try { localStorage.setItem('fxpro_help_seen', '1'); localStorage.setItem('fxpro_intro_anim_enabled', '0'); localStorage.removeItem('fxpro_pk_marken'); } catch (e) {} });
     await p.goto(URL); await wartenBisDatenDa(p);
@@ -180,8 +187,23 @@ const gruen = m => console.log('  ✓ ' + m);
       e1.gespeichert = await p.evaluate(() => { const n = resNotes().find(x => x.pm && x.title === 'Waechter-Notiz'); const k = n && document.querySelector(`.pk-nt[data-nt="${n.id}"]`);
         return n ? { id: n.id, bias: n.bias, a: n.pm.a, bd: !!n.pm.bd, bp: n.pm.bp != null, kasten: !!k, rand: k && getComputedStyle(k).borderTopColor, linie: document.querySelectorAll('.ab-ptile.pk .pk-nt-svg line').length } : null; });
       if (e1.gespeichert && e1.gespeichert.kasten) {
-        await p.click(`.pk-nt[data-nt="${e1.gespeichert.id}"]`); await p.waitForTimeout(500);
-        e1.fenster = await p.evaluate(() => { const m = document.getElementById('mResNote'); return !!m && getComputedStyle(m).display !== 'none'; });
+        const fensterOffen = () => p.evaluate(() => { const m = document.getElementById('mResNote'); return !!m && getComputedStyle(m).display !== 'none'; });
+        const kz = () => p.evaluate(id => { const k = document.querySelector(`.pk-nt[data-nt="${id}"]`), n = resNotes().find(x => x.id === id); const r = k && k.getBoundingClientRect();
+          return { gew: !!k && k.classList.contains('gew'), hint: !!document.querySelector('.ab-ptile.pk .pk-gew-hint'), x: r && r.x + r.width / 2, y: r && r.y + r.height / 2, d: n && n.pm.d, bd: n && n.pm.bd, bp: n && n.pm.bp }; }, e1.gespeichert.id);
+        // 1. Tipp: auswaehlen, kein Fenster
+        await p.click(`.pk-nt[data-nt="${e1.gespeichert.id}"]`); await p.waitForTimeout(400);
+        const k1 = await kz(); e1.tipp1 = { gew: k1.gew, hint: k1.hint, fenster: await fensterOffen() };
+        if (e1.tipp1.fenster) { await p.evaluate(() => { try { closeM('mResNote'); } catch (e) { } }); await p.waitForTimeout(300); }
+        // Ziehen: Kasten wandert, Lage gespeichert, Kerze bleibt
+        const k1b = await kz();
+        await p.mouse.move(k1b.x, k1b.y); await p.mouse.down();
+        for (let i = 1; i <= 8; i++) await p.mouse.move(k1b.x - 10 * i, k1b.y + 5 * i);
+        await p.mouse.up(); await p.waitForTimeout(400);
+        const k2 = await kz();
+        e1.zug = { dx: Math.round(k2.x - k1b.x), dy: Math.round(k2.y - k1b.y), dGleich: k2.d === k1b.d, bdNeu: k2.bd !== k1b.bd || k2.bp !== k1b.bp, fenster: await fensterOffen() };
+        // 2. Tipp: Fenster
+        await p.mouse.click(k2.x, k2.y); await p.waitForTimeout(500);
+        e1.fenster = await fensterOffen();
         await p.evaluate(() => { try { closeM('mResNote'); } catch (e) { } }); await p.waitForTimeout(300);
         await p.evaluate(id => pkEigenWeg(id), e1.gespeichert.id); await p.waitForTimeout(600);
         e1.weg = await p.evaluate(id => ({ n: resNotes().some(x => x.id === id), trash: (research.trash || []).some(t => t.data && t.data.id === id), kasten: !!document.querySelector(`.pk-nt[data-nt="${id}"]`) }), e1.gespeichert.id);
@@ -195,9 +217,11 @@ const gruen = m => console.log('  ✓ ' + m);
     else if (!e1.leer.pop || e1.leer.n) rot(`E: leer gespeichert (Kasten ${e1.leer.pop}, Notizen ${e1.leer.n})`);
     else if (e1.rand !== BC[1]) rot(`E: Rahmen nach Bearish ${e1.rand} statt ${BC[1]}`);
     else if (!e1.gespeichert || e1.gespeichert.bias !== 'bear' || e1.gespeichert.a !== 'EUR' || !e1.gespeichert.bd || !e1.gespeichert.bp || !e1.gespeichert.kasten || e1.gespeichert.rand !== BC[1] || !e1.gespeichert.linie) rot(`E: gespeichert ${JSON.stringify(e1.gespeichert)}`);
-    else if (!e1.fenster) rot('E: Tipp auf den Kasten oeffnet kein Notiz-Fenster');
+    else if (!e1.tipp1 || !e1.tipp1.gew || !e1.tipp1.hint || e1.tipp1.fenster) rot(`E: 1. Tipp auf den Kasten -> ${JSON.stringify(e1.tipp1)} (erwartet: ausgewaehlt, Hinweis, kein Fenster)`);
+    else if (!e1.zug || Math.abs(e1.zug.dx + 80) > 3 || Math.abs(e1.zug.dy - 40) > 3 || !e1.zug.dGleich || !e1.zug.bdNeu || e1.zug.fenster) rot(`E: Ziehen des Kastens -> ${JSON.stringify(e1.zug)} (erwartet -80/+40 px, Kerze gleich, Lage gespeichert, kein Fenster)`);
+    else if (!e1.fenster) rot('E: 2. Tipp auf den Kasten oeffnet kein Notiz-Fenster');
     else if (e1.weg.n || !e1.weg.trash || e1.weg.kasten) rot(`E: loeschen -> ${JSON.stringify(e1.weg)}`);
-    else gruen(`E: + Mark -> Punkt gezogen (Kerze ${zg.i0} -> ${zg.i}), Tipp -> Linie -> Kasten; leer nicht speicherbar; Bearish = roter Rahmen; Notiz mit Datum + Preis des Kastens, Callout mit Linie; Tipp -> Notiz-Fenster; loeschen -> Papierkorb`);
+    else gruen(`E: + Mark -> Punkt gezogen (Kerze ${zg.i0} -> ${zg.i}), Tipp -> Linie -> Kasten; leer nicht speicherbar; Bearish = roter Rahmen; Notiz mit Datum + Preis des Kastens, Callout mit Linie; 1. Tipp = auswaehlen, Ziehen ${e1.zug && e1.zug.dx}/${e1.zug && e1.zug.dy} px gespeichert (Kerze bleibt), 2. Tipp -> Notiz-Fenster; loeschen -> Papierkorb`);
     // F
     await p.click('#pkVglBtn'); await p.waitForTimeout(250);
     await p.evaluate(() => pkVglGruppe('Metals')); await p.waitForTimeout(200);
@@ -243,7 +267,7 @@ const gruen = m => console.log('  ✓ ' + m);
   }
   await b.close();
   if (perr.length) rot('JS-Fehler: ' + perr.slice(0, 3).join(' | '));
-  if (GP_L || GP_K || GP_F) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: Waechter bleibt gruen.'); process.exit(fehler ? 0 : 1); }
+  if (GP_L || GP_K || GP_F || GP_V) { console.log(fehler ? `\nGegenprobe ok: ${fehler} Befund(e), wie erwartet rot.` : '\nGegenprobe FEHLGESCHLAGEN: Waechter bleibt gruen.'); process.exit(fehler ? 0 : 1); }
   console.log(fehler ? `\n✗ preiskarte: ${fehler} Befund(e)` : '\n✓ preiskarte: Aufbau, Pfeile, Spalte, Ausblenden, eigene Pfeile, Vergleich, Handy');
   process.exit(fehler ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });
