@@ -1,0 +1,116 @@
+# Sonde: lange Geldmengen-Historie fuer USD und NZD - schreibt NICHTS.
+# Anlass: Nutzer 2026-11-23 "Find bei nzd und usd Daten die weiter zurueckgehen
+# da muss es was geben". Stand: USD 6 Punkte (Jahresrate aus TV-Bestaenden),
+# NZD 2 Punkte (TE-Seitentext, RBNZ 403). Aus der Claude-Umgebung sind alle
+# Quellen gesperrt - deshalb misst dieser Lauf auf dem GitHub-Laeufer.
+# Je Kandidat: HTTP-Status, Zahl der Werte, erster/letzter Monat, letzter Wert.
+name: Probe money supply history (USD, NZD)
+on:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kandidaten abfragen
+        run: |
+          python3 - <<'PY'
+          import urllib.request, urllib.parse, json, re, io, zipfile, csv, ssl
+          UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+          def hol(url, timeout=60):
+              try:
+                  r = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"}), timeout=timeout)
+                  return r.status, r.read(), r.headers.get("content-type", "")
+              except urllib.error.HTTPError as e:
+                  return e.code, e.read()[:400], ""
+              except Exception as e:
+                  return 0, str(e).encode()[:300], ""
+          def bericht(name, url, pts, code, extra=""):
+              if pts:
+                  print(f"=== {name} :: {code} :: {len(pts)} Werte :: {pts[0][0]} .. {pts[-1][0]} :: letzter {pts[-1][1]} {extra}\n    {url}")
+              else:
+                  print(f"=== {name} :: {code} :: KEINE Werte {extra}\n    {url}")
+          # ── FRED CSV (ohne Schluessel) ──
+          for sid, txt in [("M2SL", "USD M2 sa"), ("M2NS", "USD M2 nsa"), ("M1SL", "USD M1 sa"), ("M3SL", "USD M3 (bis 2006)"),
+                           ("MABMM301NZM189S", "NZD M3 Bestand (OECD, monatl.)"), ("MABMM301NZQ189S", "NZD M3 Bestand (OECD, quartal)"),
+                           ("MABMM301NZM657S", "NZD M3 Wachstum m/m (OECD)"), ("MANMM101NZM189S", "NZD M1 Bestand (OECD)"),
+                           ("MABMM301NZQ657S", "NZD M3 Wachstum q/q (OECD)"), ("MYAGM2NZM196N", "NZD M2 (IMF IFS via FRED)"),
+                           ("MYAGM3NZM196N", "NZD M3 (IMF IFS via FRED)")]:
+              url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+              code, b, ct = hol(url)
+              pts = []
+              if code == 200:
+                  for row in csv.reader(io.StringIO(b.decode("utf8", "ignore"))):
+                      if len(row) >= 2 and re.match(r"\d{4}-\d{2}-\d{2}", row[0]) and row[1] not in ("", "."):
+                          pts.append((row[0][:7], row[1]))
+              bericht(f"FRED {sid} ({txt})", url, pts, code, "" if pts or code != 200 else b[:160])
+          # ── DBnomics ──
+          for path, txt in [("IMF/IFS/M.NZ.FMB_XDC", "NZD Broad money IMF IFS"), ("IMF/IFS/M.NZ.FM1_XDC", "NZD M1 IMF IFS"),
+                            ("IMF/IFS/M.US.FM2_XDC", "USD M2 IMF IFS"), ("FED/H6/M2.M", "USD M2 FED H6")]:
+              url = f"https://api.db.nomics.world/v22/series/{path}?observations=1&format=json"
+              code, b, ct = hol(url)
+              pts = []
+              try:
+                  d = json.loads(b); s = d["series"]["docs"][0]
+                  pts = [(p, v) for p, v in zip(s["period"], s["value"]) if v not in (None, "NA")]
+              except Exception as e:
+                  pass
+              bericht(f"DBnomics {path} ({txt})", url, pts, code, "" if pts else b[:200])
+          for q in ["new zealand broad money", "new zealand money supply M3", "RBNZ monetary aggregates"]:
+              url = "https://api.db.nomics.world/v22/search?q=" + urllib.parse.quote(q) + "&limit=10"
+              code, b, ct = hol(url)
+              print(f"=== DBnomics Suche '{q}' :: {code}")
+              try:
+                  for x in json.loads(b)["results"]["docs"][:10]:
+                      print("    ", x.get("provider_code"), x.get("code"), "|", (x.get("name") or "")[:90], "|", x.get("nb_series"))
+              except Exception as e:
+                  print("    ", b[:200])
+          # ── IMF (neue SDMX-API) ──
+          for url in ["https://api.imf.org/external/sdmx/2.1/data/IMF.STA,MFS_DC/NZL.BRDM_XDC.M?startPeriod=1980",
+                      "https://api.imf.org/external/sdmx/3.0/data/dataflow/IMF.STA/MFS_DC/+/NZL.*.M",
+                      "http://dataservices.imf.org/REST/SDMX_JSON.svc/CompactData/IFS/M.NZ.FMB_XDC"]:
+              code, b, ct = hol(url)
+              print(f"=== IMF :: {code} :: {ct} :: {len(b)} Bytes\n    {url}\n    {b[:300]!r}")
+          # ── OECD SDMX ──
+          for url in ["https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_FINMARK,4.0/NZL.M.MABM......?startPeriod=1980&format=csvfilewithlabels",
+                      "https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_FINMARK,/NZL..MABM+MANM.....?format=csvfilewithlabels"]:
+              code, b, ct = hol(url)
+              t = b.decode("utf8", "ignore")
+              zeilen = [z for z in t.splitlines() if "NZL" in z]
+              print(f"=== OECD :: {code} :: {len(zeilen)} Zeilen mit NZL\n    {url}\n    {t[:300]!r}")
+              for z in zeilen[:2] + zeilen[-2:]: print("     ", z[:220])
+          # ── RBNZ direkt + Wayback-Kopie ──
+          for f in ["hc50.xlsx", "hc50-broad-money.xlsx", "hc50lr.xlsx", "hc50-long-run.xlsx"]:
+              url = "https://www.rbnz.govt.nz/-/media/project/sites/rbnz/files/statistics/series/c/c50/" + f
+              code, b, ct = hol(url)
+              print(f"=== RBNZ direkt {f} :: {code} :: {ct} :: {len(b)} Bytes")
+              code, b, ct = hol("http://archive.org/wayback/available?url=" + urllib.parse.quote(url))
+              try:
+                  snap = json.loads(b)["archived_snapshots"].get("closest")
+              except Exception:
+                  snap = None
+              print(f"    Wayback: {snap}")
+              if snap and snap.get("available"):
+                  raw = re.sub(r"/web/(\d+)/", r"/web/\1id_/", snap["url"])
+                  code, b, ct = hol(raw, 120)
+                  print(f"    Wayback-Datei :: {code} :: {ct} :: {len(b)} Bytes")
+                  try:
+                      z = zipfile.ZipFile(io.BytesIO(b)); ss = z.read("xl/sharedStrings.xml").decode("utf8", "ignore")
+                      print("    Texte:", [x for x in re.findall(r"<t[^>]*>([^<]{2,80})</t>", ss) if re.search(r"M1|M2|M3|[Bb]road|Money|19\d\d|Series", x)][:25])
+                      sh = [n for n in z.namelist() if n.startswith("xl/worksheets/")]
+                      print("    Blaetter:", sh[:6])
+                      for n in sh[:2]:
+                          x = z.read(n).decode("utf8", "ignore")
+                          zahlen = re.findall(r'<c r="A(\d+)"[^>]*><v>([\d.]+)</v>', x)
+                          if zahlen: print(f"    {n}: Spalte A Zeilen {zahlen[0]} .. {zahlen[-1]} ({len(zahlen)} Werte, Excel-Datum)")
+                  except Exception as e:
+                      print("    kein xlsx:", e)
+          code, b, ct = hol("https://www.rbnz.govt.nz/statistics/series/data-file-index-page")
+          print(f"=== RBNZ Index :: {code} :: c50-Links: {sorted(set(re.findall(rb'[\w/.-]*c50[\w.-]*\.xlsx', b)))[:10]}")
+          # ── Trading Economics: wie weit reicht die Seite? ──
+          code, b, ct = hol("https://tradingeconomics.com/new-zealand/money-supply-m3")
+          t = b.decode("utf8", "ignore")
+          print(f"=== TE NZ M3 :: {code} :: Beschreibung: {re.findall(r'averaged [^.]{0,200}', t)[:1]}")
+          code, b, ct = hol("https://tradingeconomics.com/united-states/money-supply-m2")
+          t = b.decode("utf8", "ignore")
+          print(f"=== TE US M2 :: {code} :: Beschreibung: {re.findall(r'averaged [^.]{0,200}', t)[:1]}")
+          PY
