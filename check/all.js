@@ -87,6 +87,7 @@ const PRUEFUNGEN = [
   { n: 'regeln',    s: 24,  d: 'COT, Rendite-Trends, 2Y-Zinsdifferenz, Carry, Rohstoffe, Score-Fenster, Momentum weg', f: 'check/regeln.js', args: [], browser: true },
   { n: 'niveau',    s: 20,  d: 'Niveau-Block seit Modell 28 entfernt: keine Zeile an keinem Asset, alter Stand wird aufgeraeumt', f: 'check/niveau.js', args: [], browser: true },
   { n: 'modell28',  s: 20,  d: 'Modell 28: Zinskurve 10Y-2Y unabhaengig nachgerechnet, 10Y nur Anzeige bei Waehrungen, Divisor, Deckel', f: 'check/modell28.js', args: [], browser: true },
+  { n: 'notizordner', s: 40, d: 'Notes-Karte: Ordner-Fenster, Punkte/Unterpunkte als Baum ohne Ueberlappung, geteilt bei zweitem Asset, Pinned einsortiert, Abgleich mit Loesch-Marker', f: 'check/notizordner.js', args: [], browser: true },
   { n: 'profil',    s: 30,  d: 'Country profile: nur bei Waehrungen, als Fenster ueber den 5. Knopf der Schnellzugriffszeile, drei Spalten, Rohstoff-Badges = Score, Knopfbeschriftungen passen, ohne country_data.json fehlerfrei', f: 'check/profil.js', args: [], browser: true },
   { n: 'makro',     s: 82,  d: 'MACRO-Zeile: ein Schalter Data, Data-Seite an Ort und Stelle (Vergleich, zurueck, Asset-Wechsel)', f: 'check/makro.js', args: [], browser: true },
   { n: 'trades',    s: 50,  d: 'Journal: kein Trade geht verloren - Abgleich laedt eigene hoch, alte App, zwei Tabs, Upload-Fehler sichtbar + Wiederholung, Grabstein', f: 'check/trades.js', args: [], browser: true },

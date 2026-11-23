@@ -2046,6 +2046,63 @@ body.compact-view .rub-summary{display:block}
 .acfg-link{display:inline-flex;align-items:center;gap:2px;min-height:34px;padding:0 4px 0 12px;border:1px solid var(--ui-act);border-radius:999px;background:rgba(var(--ui-act-rgb),.12);color:var(--ui-act);font-size:var(--fs-sm);font-weight:600}
 .acfg-link button{width:28px;height:28px;border:none;background:none;color:inherit;font-size:16px;line-height:1;cursor:pointer;border-radius:50%}
 .acfg-add{width:auto;min-width:150px;margin:0;height:34px;padding:0 12px;font-weight:600}
+/* ══ Notes-Ordner (812): Karte, Fenster, Mindmap (Entwurf B) ══ */
+.no-karte .no-kl{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.no-kz{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 10px;border:1px solid var(--bd);border-radius:var(--rs);background:var(--bg2);text-align:left;cursor:pointer;font-family:inherit;color:var(--t1)}
+.no-kz-n{flex:1;min-width:0;font-size:var(--fs-sm);font-weight:700;color:var(--t0);display:flex;flex-direction:column}
+.no-kz-n i{font-weight:400;font-size:var(--fs-xs);color:var(--t3)}
+.no-kz-c,.no-f-c{font-size:var(--fs-xs);color:var(--t3);font-family:var(--ff-num);flex:none}
+.no-bb{display:flex;width:44px;height:4px;border-radius:2px;overflow:hidden;background:var(--bg4);flex:none}
+.no-bb i{display:block;height:100%}
+.no-kp{margin-top:10px;padding-top:8px;border-top:1px dashed var(--bd2)}
+.no-kp-t{display:block;font-size:var(--fs-xs);font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.modal.no-win{max-width:min(1120px,100%);width:100%;height:calc(100dvh - var(--ov-t,0px) - 36px);max-height:780px;display:flex;flex-direction:column;padding-bottom:0}
+.no-hd{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.no-hd h3{margin:0;flex:1}
+.no-sub{font-size:var(--fs-xs);color:var(--t3)}
+.no-body{flex:1;min-height:0;display:flex;border:1px solid var(--bd);border-radius:var(--rs);overflow:hidden}
+.no-rail{width:31%;min-width:220px;max-width:310px;flex:none;background:var(--bg1);border-right:1px solid var(--bd);padding:12px;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+.no-newf{min-height:40px;border:none;border-radius:var(--rs);background:var(--ui-act);color:var(--ui-act-fg);font-weight:700;font-size:var(--fs-sm);font-family:inherit;cursor:pointer}
+.no-lbl{font-size:var(--fs-xs);font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin:8px 2px 2px}
+.no-f{display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 10px;border-radius:var(--rs);border:1px solid transparent;background:none;text-align:left;cursor:pointer;font-family:inherit;color:var(--t1)}
+.no-f-n{flex:1;min-width:0;font-size:var(--fs-sm);font-weight:600;display:flex;flex-direction:column;gap:5px}
+.no-f.on{background:var(--bg2);border-color:var(--bd);box-shadow:0 1px 3px rgba(20,30,50,.08)}
+.no-f.on .no-f-n{color:var(--t0)}
+.no-leer{font-size:var(--fs-xs);color:var(--t3);padding:4px 2px}
+.no-pin{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 10px;border-left:3px solid var(--nb);background:var(--bg2);border-radius:var(--rss)}
+.no-pin-t{flex:1;min-width:0;font-size:var(--fs-sm);color:var(--t1)}
+.no-pin .btn{min-height:28px;padding:0 10px}
+.no-main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--bg2)}
+.no-main-leer{align-items:center;justify-content:center}
+.no-hinweis{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:var(--fs-sm);color:var(--t2)}
+.no-hinweis i{color:var(--t3)}
+.no-kopf{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:10px 12px;border-bottom:1px solid var(--bd)}
+.no-share{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.no-share-l{font-size:var(--fs-xs);font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--t3)}
+.no-share-c{display:inline-flex;align-items:center;gap:2px;min-height:28px;padding:0 4px 0 10px;border:1px solid var(--bd2);border-radius:999px;font-size:var(--fs-xs);font-weight:600;color:var(--t1)}
+.no-share-c:not(:has(button)){padding-right:10px}
+.no-share-c button{width:24px;height:24px;border:none;background:none;color:var(--t3);font-size:15px;cursor:pointer;border-radius:50%}
+.no-kopf .no-share-add{width:auto;min-width:96px;max-width:160px;flex:none;margin:0;height:28px;padding:0 10px;font-size:var(--fs-xs);font-weight:600}
+.no-kopf-r{display:flex;gap:6px;flex-wrap:wrap}
+.no-canvas{position:relative;flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:var(--bg1)}
+.no-svg{position:absolute;left:0;top:0;pointer-events:none}
+.no-svg path{fill:none;stroke-width:2;stroke-opacity:.7;stroke-linejoin:round}
+.no-root{position:absolute;width:150px;padding:12px;border-radius:12px;background:var(--bg2);border:2px solid var(--ui-act);font-weight:800;font-size:var(--fs-md);color:var(--t0);text-align:center;overflow-wrap:anywhere}
+.no-pt{position:absolute;width:196px;display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border-radius:var(--rs);background:var(--bg2);border:1px solid var(--bd);text-align:left;cursor:pointer;font-family:inherit;color:var(--t1)}
+@media (hover:hover){.no-pt:hover{border-color:var(--bd2);box-shadow:0 2px 8px rgba(20,30,50,.10)}.no-kz:hover,.no-f:hover{border-color:var(--bd2)}}
+.no-pt-d{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none;margin-top:4px}
+.no-pt-x{min-width:0;display:flex;flex-direction:column;gap:2px}
+.no-pt-x b{font-size:var(--fs-sm);font-weight:700;color:var(--t0);overflow-wrap:anywhere}
+.no-pt-x i{font-style:normal;font-size:var(--fs-xs);color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.no-pt-ta{min-height:96px;resize:vertical}
+.no-seg{display:flex;border:1px solid var(--bd2);border-radius:var(--rss);overflow:hidden;margin:2px 0 10px}
+.no-seg button{flex:1;min-height:34px;border:none;border-right:1px solid var(--bd);background:var(--bg2);color:var(--t2);font-weight:700;font-size:var(--fs-sm);font-family:inherit;cursor:pointer}
+.no-seg button:last-child{border-right:0}
+.no-seg button.on{background:var(--ui-act);color:var(--ui-act-fg)}
+.no-seg button.b-bull.on{background:rgba(var(--blue-rgb),.16);color:var(--blue)}
+.no-seg button.b-bear.on{background:rgba(var(--red-rgb),.14);color:var(--red)}
+.no-seg button:disabled{opacity:.45;cursor:default}
+@media (max-width:700px){.no-share{flex:1 1 100%}.no-kopf-r{flex:1 1 100%;justify-content:flex-end}.no-body{flex-direction:column}.no-rail{width:100%;max-width:none;max-height:38%;border-right:0;border-bottom:1px solid var(--bd)}}
 /* How the score works (2026-11-22) */
 .sr-modal{max-width:620px}
 .sr-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -8284,11 +8341,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-811 - Central bank: Two-tone colours fixed, preview switch removed"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-812 - Notes statt Pinned notes: Ordner je Asset (teilbar), Fenster mit Ordnerleiste und Mindmap als Baum, Punkte mit Titel/Inhalt/Bias, Pinned notes einmalig einsortieren"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-811</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-812</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -8890,6 +8947,38 @@ window.fxLogoSvg=function(art){
     <div class="sr-hd"><h3 id="srTitel">How the score works</h3><button type="button" class="cfg-gear sr-gear" id="srGear" onclick="srZahnrad()" title="Asset settings" aria-label="Asset settings" hidden></button></div>
     <div id="srBody"></div>
     <div class="m-btns"><button class="btn g" onclick="closeM('mScoreRegeln')">Close</button></div>
+  </div>
+</div>
+<!-- NOTES-ORDNER (Nutzer 2026-11-23, 812, js/notizordner.js): links Ordner, rechts Mindmap (Entwurf B) -->
+<div class="ov" id="mNotesOrdner" style="display:none">
+  <div class="modal no-win">
+    <div class="no-hd"><h3 id="noTitel">Notes</h3><span class="no-sub" id="noSub"></span></div>
+    <div class="no-body" id="noBody"></div>
+    <div class="m-btns"><button class="btn" onclick="closeM('mNotesOrdner')">Close</button></div>
+  </div>
+</div>
+<div class="ov" id="mNoPunkt" style="display:none">
+  <div class="modal" style="max-width:460px">
+    <h3 id="noPtTitel">New point</h3>
+    <div id="noPtOrdWrap" hidden><label class="dm-lbl" for="noPtOrd">Folder</label><select class="m-inp" id="noPtOrd" data-nativ onchange="punktOrdnerWechsel()"></select></div>
+    <label class="dm-lbl" for="noPtTi">Title</label>
+    <input class="m-inp" id="noPtTi" maxlength="120" placeholder="e.g. Real yields 2.1 %">
+    <label class="dm-lbl" for="noPtTx">Content</label>
+    <textarea class="m-inp no-pt-ta" id="noPtTx" maxlength="4000" placeholder="Details — shown shortened in the map"></textarea>
+    <span class="dm-lbl">Bias</span>
+    <div class="no-seg" id="noPtBias"><button type="button" data-v="bull" class="b-bull" onclick="punktBias('bull')">Bullish</button><button type="button" data-v="neu" onclick="punktBias('neu')">Neutral</button><button type="button" data-v="bear" class="b-bear" onclick="punktBias('bear')">Bearish</button></div>
+    <span class="dm-lbl">Place on</span>
+    <div class="no-seg"><button type="button" id="noPtArtNeu" onclick="punktArt('neu')">New branch</button><button type="button" id="noPtArtAst" onclick="punktArt('ast')">Branch of a point</button></div>
+    <select class="m-inp no-pt-par" id="noPtPar" data-nativ hidden aria-label="Parent point"></select>
+    <div class="m-btns"><button class="btn" id="noPtDel" style="margin-right:auto" onclick="punktLoeschen()" hidden>Delete</button><button class="btn" onclick="closeMGuarded('mNoPunkt')">Cancel</button><button class="btn g" onclick="punktSpeichern()">Save</button></div>
+  </div>
+</div>
+<div class="ov" id="mNoName" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <h3 id="noNameTitel">New folder</h3>
+    <label class="dm-lbl" for="noNameIn">Folder name</label>
+    <input class="m-inp" id="noNameIn" maxlength="80" placeholder="e.g. Q1 2027 thesis" onkeydown="if(event.key==='Enter')ordnerNameSpeichern()">
+    <div class="m-btns"><button class="btn" onclick="closeMGuarded('mNoName')">Cancel</button><button class="btn g" onclick="ordnerNameSpeichern()">Save</button></div>
   </div>
 </div>
 <!-- MODAL: Sentiment-Info (i-Buttons im Sentiment-Tab) -->

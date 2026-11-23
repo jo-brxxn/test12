@@ -26,6 +26,7 @@ import {gameplans,gpRein,gpSetzeAlle,gpVereinen,gpLeisteHtml,gpNiveaus,renderGam
 import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
 import {bsHelfer,bsAuf,btcSentimentScore,bsDaten,bsLaden,scoreReihe as bsScoreReihe} from './btc-sentiment.js';
+import {ordnerHelfer,notizOrdner,noSetzeAlle,noVereinen,ordnerKarteHtml,ORDNER_WINDOW,punktZustand} from './notizordner.js';
 import {srHelfer,openScoreRegeln,srZahnrad,srTyp,srMax} from './scoreregeln.js';
 import {AI_MARKEN,aiMarkeMono} from './marken-icons.js';
 import {sprungLog,sprungtestStart} from './sprungtest.js';
@@ -6142,7 +6143,7 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte,gameplans,econThesen,profil,dataSlots},SNAP_REPLACER);}
+function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte,gameplans,econThesen,profil,dataSlots,notizOrdner},SNAP_REPLACER);}
 // Banner-Quittungen der Zentralbank-Karte: nur Waehrung -> Datum, alles andere faellt raus.
 function zbEntscheidRein(v){
   const o={};
@@ -6386,7 +6387,7 @@ function applySnapRoh(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(_mergeSync?gpVereinen(gameplans,d.gameplans):d.gameplans);econSetzeAlle(_mergeSync?econVereinen(econThesen,d.econThesen):d.econThesen);dataSlotsSetzen(_mergeSync?dataSlotsVereinen(dataSlots,d.dataSlots):d.dataSlots);if('profil' in d)profil=profilRein(d.profil);calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(_mergeSync?gpVereinen(gameplans,d.gameplans):d.gameplans);econSetzeAlle(_mergeSync?econVereinen(econThesen,d.econThesen):d.econThesen);dataSlotsSetzen(_mergeSync?dataSlotsVereinen(dataSlots,d.dataSlots):d.dataSlots);if('profil' in d)profil=profilRein(d.profil);noSetzeAlle(_mergeSync?noVereinen(notizOrdner,d.notizOrdner):('notizOrdner' in d?d.notizOrdner:notizOrdner));calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6980,7 +6981,7 @@ function loadState(){
       // Wert ist gespeichert, kommt aber nie an. Genau so ging der Test
       // 2026-09-07 aus (angepinnte Seed-Notiz nach dem Neuladen ohne Pin).
       btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};
-      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(d.gameplans);econSetzeAlle(d.econThesen);dataSlotsSetzen(d.dataSlots);profil=profilRein(d.profil);
+      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(d.gameplans);econSetzeAlle(d.econThesen);dataSlotsSetzen(d.dataSlots);profil=profilRein(d.profil);noSetzeAlle(d.notizOrdner);
       seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};
       eventAlerts=pruneEventAlerts(d.eventAlerts||[]);
       priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];
@@ -7554,8 +7555,9 @@ function neueFelderBehalten(fremd,lokal){
   // gameplans: Gameplan je Asset (seit 2026-11-16, 737).
   // econThesen: Thesen der Economy Map (seit 2026-11-21, 784).
   // profil: Vor- und Nachname (seit 2026-11-22, 801).
+  // notizOrdner: Notes-Ordner mit Mindmap (seit 2026-11-23, 812).
   // dataSlots: Speicherplaetze der Data-Seite (seit 2026-11-22, 805).
-  ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil','dataSlots'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
+  ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil','dataSlots','notizOrdner'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
   const fa=fremd.researchAnalysis,la=lokal.researchAnalysis;
@@ -8161,6 +8163,9 @@ function unsavedKeepEditing(){_unsavedFor=null;closeM('mUnsaved');}
 //   mEvtAlertPicker  - nur eine Auswahl, "Next" fuehrt erst zum Formular
 //   mAssetCfg/mCcyCfg und die Schalter in mCloud - wirken sofort beim Klick
 const MODAL_GUARD_TABELLE={
+  // Notes-Ordner (812): Punkt (Titel, Inhalt + Bias/Ast/Ordner als Zustand) und Ordnername.
+  mNoPunkt:{felder:['noPtTi','noPtTx'],extra:()=>punktZustand(),save:()=>ORDNER_WINDOW.punktSpeichern(),was:'This point'},
+  mNoName:{felder:['noNameIn'],save:()=>ORDNER_WINDOW.ordnerNameSpeichern(),was:'This folder name'},
   mResNote:{felder:['resNTitle','resNBody','resNTags','resNFav','resNPin','resNEvt'],
     extra:()=>JSON.stringify([(_resFids||[]).slice().sort(),_resBias]),
     save:()=>saveResNote(),was:'This note'},
@@ -8271,7 +8276,7 @@ addEventListener('resize',nivBald);
 // Steht die Nachfrage offen, fuehrt Escape zurueck ins Fenster (der
 // harmlose Weg, wie der Klick neben die Nachfrage).
 const ESC_MODALS=['mAddSym','mAssetCfg','mHist','mAddPair','mRename','mDelSym','mInfo','mCloud','mRateWatch','mIndLink','mBackup','mTrash',
-  'mPinHist','mGpHist','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose'];
+  'mPinHist','mGpHist','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose','mNotesOrdner','mNoPunkt','mNoName'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const nf=document.getElementById('mUnsaved');
@@ -12031,22 +12036,11 @@ function abPinnedHtml(c){
         <button onclick="abNoteMove('${escJH(n.id)}','${escJH(c.id)}',1)" ${i===list.length-1?'disabled':''} title="Move down">▼</button>
         <button onclick="togResPin('${escJH(n.id)}')" title="Unpin">${icn('pin',13)}</button>
       </span>
-    </div>`).join('')||`<div class="ab-nt-empty">Nothing pinned for ${escH(c.name)} yet. New notes from here are pinned straight away.</div>`;
-  // Nutzer 2026-09-30: "Wenn man bei den pinned Notes eine neue Notiz
-  // schreiben will dann will ich das sich direkt das Fenster oeffnet und man
-  // alles einstellen kann". Deshalb kein Eingabefeld mehr, sondern ein
-  // Einstieg in derselben Form an derselben Stelle: ein Tipp oeffnet den
-  // vollstaendigen Notiz-Editor (Titel, Text, Ordner, Tags, Bias, Event,
-  // Favorit, Pin) - vorbelegt mit diesem Asset und angepinnt.
-  return`<div class="ab-ntile">
-    <div class="ab-tile-hd">${abTileIcon('Pinned notes')}<span class="ab-tile-t">Pinned notes</span><span class="ab-tile-s">${list.length}</span>${abInfoBtn('Pinned notes',['Your pinned notes for this asset. "New pinned note" opens the full note window — title, text, folders, tags, bias and the related event, all in one place. The note is pinned straight away; you can untick that in the window.','The colour of each note follows the bias you gave it. Notes sync across your devices.'])}
-</div>
-    <div class="ab-nt-add">
-      <button type="button" class="finp ab-nt-neu" onclick="newResNoteForAsset('${escJH(c.id)}')" title="Opens the note window with everything to set — pinned to ${escH(c.name)}">＋ New pinned note on ${escH(c.name)}…</button>
-    </div>
-    <div class="ab-nt-list">${zeilen}</div>
-    <div class="ab-goto"><button class="ab-goto-b" onclick="pinHistAuf('${escJH(c.id)}')" title="Unpinned notes of ${escH(c.name)}">History${pinHist(c.id).length?' · '+pinHist(c.id).length:''} →</button></div>
-  </div>`;
+    </div>`).join('');
+  // Seit 812 (Nutzer 2026-11-23: "die pinned Notes Karte ... nur noch Notes"): die Karte zeigt die Ordner
+  // (js/notizordner.js); bisherige Pinned notes stehen darunter, bis sie einsortiert sind. Den Einstieg
+  // "New pinned note" gibt es nicht mehr - Neues entsteht als Punkt in einem Ordner.
+  return ordnerKarteHtml(c,zeilen,list.length);
 }
 
 /** Eine schmale Zwischenueberschrift ueber einer Rasterreihe. */
@@ -28068,6 +28062,11 @@ document.addEventListener('visibilitychange',()=>{
 
 // ══ INIT ══════════════════════════════════════════════════════════
 try{sprungtestStart();}catch(e){}
+// Notes-Ordner (812).
+try{ordnerHelfer({pushU,save,BC,escH,escJH,syms:()=>syms,curPage:()=>curPage,renderDetail,openM,closeM,guardArm,
+  abTileIcon:()=>abTileIcon('Pinned notes'),abInfoBtn,sbCatsOptgroups,pinnedVon:id=>abNotizen(id).filter(n=>n.pin),
+  // Einsortiert = verlaesst Pinned wie "Unpin" (togResPin): landet in der History, geht nicht verloren.
+  pinEntfernen:id=>{const n=resNotes().find(x=>x.id===id);if(!n)return;n.pin=false;n.up=new Date().toISOString();delete n.hist;notizHistStempel(n,n.up);if(n.seed)setSeedNoteFlag(n.id,'pin',false);}});}catch(e){}
 // Score-Regeln-Fenster (2026-11-22): liest dieselben Konstanten wie die Rechnung.
 try{srHelfer({syms:()=>syms,FX,BC,escH,icn,openM,closeM,openAssetCfg,isNonFx,effLinkCcy,effDeriveRules,MACRO_DERIVE_RUBS,stripPeriodSuffix,indName,indIsCorePaired,
   SCORE_ZERO,m28NurAnzeige,M28_GEWICHT,M28_DECKEL,DECKEL_ALLE,indRegel,SCORE_NORM_MIN,SCORE_NORM_MAX,IND_STALE_CYCLES,BOND_HALF_PT,BOND_PKT,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,

@@ -23328,3 +23328,29 @@ Umsetzung:
   - Zweiter Startpunkt `47 * * * *`.
   - `concurrency`-Gruppe, damit sich die Läufe nicht überschneiden.
 - **Wächter:** `check/chartreihen.js` C (eingeschleuste Kopien → Kachel ≠ 0,00 %, Gegenprobe rot).
+
+## 2026-11-23 — Karte „Notes“: Ordner mit Mindmap statt Pinned notes (VERSION-CHECK-812)
+
+Nutzer: *„die pinned Notes Karte … nur noch Notes … auf diese Karte klicken … Fenster … Ordner erstellen … links wie bei der Preis Karte … create new folder … rechts davon ca 2 Drittel … Mindmap … Anfangs nur der Ordner Name in der Mitte, oben rechts … Stichpunkt hinzufügen … Titel und Inhalt … Titel immer komplett lesbar … Inhalt abgekürzt … Bias … neuer Ast oder Ast von einer bestehenden Notiz … 3 verschiedene Designvorlagen“*.
+
+- **Entwürfe** (Bilder im Chat): A Orbit-Karten, B Baum links → rechts, C zwei Seiten mit Blasen. Gewählt: **B**.
+- **Rückfragen:**
+  - beliebig viele Ordner je Asset;
+  - teilen = derselbe Ordner bei mehreren Assets;
+  - Pinned notes bleiben vorerst und werden einmalig einsortiert (werden Punkt, verlassen Pinned);
+  - Karte = Ordnerliste;
+  - Tipp auf Punkt = Bearbeiten;
+  - kein Ziehen.
+- **Umsetzung:**
+  - `js/notizordner.js` (Helfer-Muster).
+  - Fenster `#mNotesOrdner`, `#mNoPunkt`, `#mNoName`; Eingabe-Schutz und Escape eingetragen.
+  - Feld `notizOrdner` im Sync mit Lösch-Markern.
+- **Weggefallen:** Einstieg „New pinned note“ in der Karte. Bestehende Pinned notes bleiben sichtbar und bedienbar, bis sie einsortiert sind.
+- **Gemessen** (1194 px):
+  - Wurzel + 6 Punkte in 2 Ebenen passen ohne Scrollen ins Fenster.
+  - 0 Überlappungen, auch mit einem dreizeiligen Titel.
+  - Geteilter Ordner erscheint nach dem Neuladen bei Gold.
+- **Wächter:**
+  - Neu: `check/notizordner.js` A–E; Gegenprobe (Abgleich ohne Lösch-Marker) meldet E rot.
+  - `check/eingaben.js`: D auf die Notes-Karte umgestellt, Öffner für beide neuen Fenster.
+

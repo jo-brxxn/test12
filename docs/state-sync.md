@@ -400,3 +400,11 @@ in `seedNoteFlags` — winzig, aber gespeichert.
 - `m` = Ansicht (`assets`/`inds`/`vs`/`preis`/`alle`), `s` = nur deren Auswahl, `r`/`f`/`to` = Zeitraum, `px` = Candles|Line (setzt beim Laden `pxChartTyp`).
 - Die laufende Auswahl der Data-Seite bleibt weiter **nur Sitzung** — gespeichert wird nur, was der Nutzer bewusst auf einen Platz legt (Rückfrage: *„Nur Speicherplätze“*).
 - Wächter `check/dataslots.js`.
+
+## Notes-Ordner (seit 2026-11-23, 812)
+
+- `notizOrdner` im Snapshot: `{ordnerId:{id,name,assets[],t,del?,p:{punktId:{id,par,ti,tx,b,t,del?}}}}` (`js/notizordner.js`, `noRein`).
+- Abgleich `noVereinen`: Ordnerkopf (Name, Assets, Löschen) nach neuerem `t`, **jeder Punkt einzeln** nach neuerem `t`. Gelöschtes bleibt als Marker `{del}` — ohne ihn käme es vom anderen Gerät zurück (`check/notizordner.js` E).
+- Geteilt = **ein** Ordner mit mehreren Assets in `assets[]`, keine Kopie.
+- In `neueFelderBehalten` geschützt.
+

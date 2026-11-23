@@ -1714,3 +1714,11 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Knopf **Saved n** in der Werkzeugzeile hinter Display → Menü: *Save current view* (Name, Vorschlag aus Ansicht + Inhalt), Liste: Antippen = laden, Überschreiben / Umbenennen / Löschen
 - Gilt für **alle fünf Ansichten**; nichts wird automatisch gespeichert
 - Platz mit **genau einem Asset** (By indicator, Compare all mit einem Asset): Auswahl *for* lädt dieselben Charts für ein anderes Asset; was dort fehlt, steht in der Meldung (*not available for GOLD: …*), wird nie ersetzt
+
+## Asset-Seite: Karte „Notes“ (seit 2026-11-23, 812)
+
+- Ersetzt „Pinned notes“. Karte = Ordnerliste (Name, „shared · n assets“, Bias-Balken, Anzahl Punkte); Tipp irgendwo öffnet `#mNotesOrdner`.
+- Fenster: links Leiste (≈ ⅓) mit **＋ Create new folder** und den Ordnern, rechts (≈ ⅔) Kopf mit *Shared with* (Chips, ＋ Asset über das 2-Spalten-Fenster), Rename, Delete, **＋ Add point**; darunter die Mindmap als **Baum von links nach rechts** (Entwurf B): Ordnername links, je Ebene eine Spalte, rechtwinklige Linien in der Bias-Farbe des Hauptasts, Höhen gemessen → nichts überlappt. Leerer Ordner: nur der Name in der Mitte.
+- Punkt = Titel (immer ganz), Inhalt (gekürzt), Bias; **New branch** oder **Branch of a point**. Tipp auf einen Punkt = Bearbeiten/Löschen (Unterpunkte rücken eine Ebene hoch). **Kein Verschieben per Ziehen** (Nutzerwahl).
+- Bisherige Pinned notes stehen in Karte und Leiste („to sort“), bis sie einsortiert sind: **Sort in** → Punkt, Notiz verlässt Pinned (landet in der History). Kein „New pinned note“ mehr.
+

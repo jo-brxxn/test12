@@ -63,6 +63,9 @@ const AUSNAHMEN = {
 // Die ECHTEN Oeffnungswege je Fenster. Ein neu eingetragenes Fenster ohne
 // Eintrag hier ist rot: ungetesteter Schutz ist kein Schutz.
 const OEFFNER = {
+  // Notes-Ordner (812): erst das Ordner-Fenster von USD (mit Ordner), dann Punkt bzw. Ordnername.
+  mNoPunkt: [`(ordnerAuf('USD'),Object.values(JSON.parse(snap()).notizOrdner||{}).some(o=>!o.del&&o.assets.includes('USD'))||(ordnerNeu(),document.getElementById('noNameIn').value='WAECHTER folder',ordnerNameSpeichern()),punktNeu())`],
+  mNoName: [`(ordnerAuf('USD'),ordnerNeu())`],
   mResNote: [
     `newResNoteIn('USD','')`,                    // Asset-Seite "+ New note"
     `newResNoteForAsset('USD')`,                 // Watchlist + Pinned notes
@@ -292,47 +295,21 @@ const OEFFNER = {
   await p.evaluate(() => { try { localStorage.removeItem('fxpro_cloud_cfg'); } catch (e) {} priceAlerts = []; save(); });
   if (!fehler) gruen('zwei Knoepfe in Bias-Farben, Satz nennt die Notiz, daneben = zurueck, "Yes, save" speichert (Notiz-Editor); Speichern schliesst das Fenster (Price alert, Settings)');
 
-  // ── D: Pinned notes -> voller Editor ────────────────────────────────────
-  console.log('D) Pinned notes oeffnen den vollen Notiz-Editor, angepinnt');
+  // ── D: Notes-Karte (seit 812) -> Fenster mit Ordnern ────────────────────
+  // Bis 811 hiess die Karte "Pinned notes" mit Einstieg "New pinned note" in den Notiz-Editor. Nutzer
+  // 2026-11-23: Karte "Notes", Tipp oeffnet das Ordner-Fenster; Neues entsteht als Punkt (dort geprueft:
+  // check/notizordner.js). Hier nur: kein Eingabefeld in der Karte, Tipp oeffnet das Fenster.
+  console.log('D) Notes-Karte ohne Eingabefeld, Tipp oeffnet das Ordner-Fenster');
   await p.evaluate(() => { gotoSym('USD'); });
   await p.waitForTimeout(500);
-  const karte = await p.evaluate(() => {
-    const t = [...document.querySelectorAll('.ab-ntile')].find(x => /Pinned notes/.test(x.textContent));
-    if (!t) return null;
-    const neu = t.querySelector('.ab-nt-neu');
-    return { felder: t.querySelectorAll('input,textarea').length, einstieg: !!neu, text: neu ? neu.textContent.trim() : '' };
-  });
-  if (!karte) rot('Pinned-notes-Karte nicht gefunden');
+  const karte = await p.evaluate(() => { const t = document.querySelector('.no-karte'); return t ? { felder: t.querySelectorAll('input,textarea').length } : null; });
+  if (!karte) rot('Notes-Karte nicht gefunden');
   else {
-    if (karte.felder) rot(`Pinned-notes-Karte hat noch ${karte.felder} Eingabefeld(er) - neue Notizen sollen im Fenster entstehen`);
-    if (!karte.einstieg) rot('Pinned-notes-Karte hat keinen Einstieg in den Notiz-Editor');
-    else {
-      await p.locator('.ab-ntile .ab-nt-neu').first().click();
-      await p.waitForTimeout(200);
-      const ed = await p.evaluate(() => ({
-        offen: document.getElementById('mResNote').style.display !== 'none',
-        pin: document.getElementById('resNPin').checked,
-        ort: _resFids.slice(), soll: researchGenFidFor('USD'),
-        felder: ['resNTitle', 'resNBody', 'resNTags', 'resNEvt', 'resNFav', 'resNPin', 'resNPlaceAsset'].filter(i => !document.getElementById(i)),
-      }));
-      if (!ed.offen) rot('Einstieg oeffnet den Notiz-Editor nicht');
-      if (!ed.pin) rot('Notiz-Editor aus Pinned notes: Pin-Haken nicht gesetzt');
-      if (!ed.ort.includes(ed.soll)) rot(`Notiz-Editor aus Pinned notes: Asset nicht als Ort gesetzt (${JSON.stringify(ed.ort)})`);
-      if (ed.felder.length) rot(`Notiz-Editor: Felder fehlen: ${ed.felder.join(', ')}`);
-      const t2 = 'WAECHTER-D ' + Date.now();
-      await p.locator('#resNTitle').fill(t2);
-      await p.locator('#mResNote .m-btns button', { hasText: /^Save$/ }).click();
-      await p.waitForTimeout(400);
-      const erg = await p.evaluate(t => {
-        const n = research.notes.find(x => x && x.title === t);
-        const t0 = [...document.querySelectorAll('.ab-ntile')].find(x => /Pinned notes/.test(x.textContent));
-        const erste = t0 && t0.querySelector('.ab-nt-ti');
-        return { da: !!n, pin: !!(n && n.pin), oben: erste ? erste.textContent.trim() : null };
-      }, t2);
-      if (!erg.da || !erg.pin) rot(`gespeicherte Notiz aus Pinned notes nicht angepinnt: ${JSON.stringify(erg)}`);
-      else if (erg.oben !== t2) rot(`neue angepinnte Notiz steht nicht oben in der Karte (oben: "${erg.oben}")`);
-      else gruen(`Karte ohne Eingabefeld, Einstieg "${karte.text}" -> voller Editor mit USD und Pin -> gespeichert, oben angepinnt`);
-    }
+    if (karte.felder) rot(`Notes-Karte hat ${karte.felder} Eingabefeld(er) - Neues entsteht im Fenster`);
+    const kb = await p.locator('.no-karte .ab-tile-hd').boundingBox();
+    await p.mouse.click(kb.x + 60, kb.y + kb.height / 2 + 40); await p.waitForTimeout(300);
+    const auf = await p.evaluate(() => document.getElementById('mNotesOrdner').style.display !== 'none');
+    if (!auf) rot('Tipp auf die Notes-Karte oeffnet das Ordner-Fenster nicht'); else gruen('Notes-Karte ohne Eingabefeld, Tipp oeffnet das Ordner-Fenster');
   }
   await aufraeumen();
   await p.close();
