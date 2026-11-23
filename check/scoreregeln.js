@@ -70,7 +70,10 @@ const GP = process.argv.includes('--gegenprobe');
   if (!eur.offen) F.push('D: Knopf "Score" oeffnet das Fenster nicht');
   if (eur.gear) F.push('D: Zahnrad bei EUR (FX hat keine Settings)');
   const cot = eur.z.find(z => /COT speculators/.test(z[0]));
-  if (!cot || !/^−/.test(cot[1])) F.push(`D: EUR COT nicht gegen die Spekulanten (${cot && cot[1]})`);
+  // Modell 42 (2026-11-22): Netto nur Anzeige (0), Woche mit dem Trend (positive Stufen) - auch bei Waehrungen
+  const wo = eur.z.find(z => /Long share w\/w/.test(z[0]));
+  if (!cot || !/^0$/.test(cot[1].trim())) F.push(`D: EUR COT-Netto nicht nur Anzeige (${cot && cot[1]})`);
+  if (!wo || /−/.test(wo[1])) F.push(`D: EUR COT-Woche nicht mit dem Trend (${wo && wo[1]})`);
   await p.evaluate(() => closeM('mScoreRegeln'));
   const gold = await fenster('GOLD');
   if (!gold.gear) F.push('D: kein Zahnrad bei GOLD');

@@ -81,6 +81,10 @@ passenden Datei (oder `docs/CHANGELOG.md`) nachschlagen, nicht raten.
    `js/journal.js` — sonst steht der Modellwechsel ohne Inhalt in der
    History), bei Formulierungs-Logik `SUMMARY_ENGINE_VERSION`.
    Erzwungen von `check/rules.js` bzw. `check/journal.js`. Details: `docs/workflow.md`.
+   **Jede Score-Regeländerung auch im Score-Fenster der betroffenen Assets eintragen** (Nutzer-Regel
+   2026-11-23: *„jede Scoreänderung bei den betroffenen Assets eingetragen werden muss“*):
+   `js/scoreregeln.js` („How the score works“), die Zeilenregel `cotRegelText`/Erklärtexte und
+   `JR_MODELL_NOTIZ` gehören zur selben Änderung wie die Rechnung.
 4. **Nie schätzen/raten/hart eintragen.** Fehlt ein echter Wert aus einer
    Live-Quelle, erzeugt das eine Dashboard-Meldung statt eines geschätzten
    Werts. Policy-Details: `docs/data-sources.md`.
