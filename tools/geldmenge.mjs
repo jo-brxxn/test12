@@ -11,9 +11,20 @@
 //        fuer die breite Geldmenge ist M2++ -> M2PP_12MTH (Vorjahresrate)
 //   JPY  BoJ stat-search, Tabelle md02_m_1_en.html: M3, Vorjahresrate der
 //        Durchschnittsbestaende
-//   NZD  RBNZ sperrt den Runner (403, Cloudflare - wie beim Core CPI 2026-10-27)
-//        -> Trading Economics: aktueller und Vormonats-Bestand aus der
-//        Seitenbeschreibung -> Monatsrate. Historie waechst mit jedem Lauf.
+//   NZD  RBNZ sperrt den Runner (403, Cloudflare - wie beim Core CPI 2026-10-27).
+//        Seit 2026-11-23 (Nutzer: "Find bei nzd und usd Daten die weiter
+//        zurueckgehen"): BESTAND Broad money (RBNZ C50, MCA.MDB.BM) aus der
+//        Wayback-Kopie von hc50-long-run.xlsx (ab 03/1988) + die zwei neuesten
+//        Bestaende von Trading Economics ("Money Supply M3" = dieselbe Zahl,
+//        gemessen 09/2026 459.840 vs RBNZ 11/2025 443.578 bei +4,5 % p.a.).
+//        Daraus die JAHRESRATE (vorher Monatsrate) - wie die uebrigen sieben.
+//        Die Bestaende reisen im Eintrag mit (levels), damit spaetere Laeufe
+//        die Vorjahresmonate haben. Monate ohne Bestand bleiben leer.
+//   USD  Seit 2026-11-23: M2 saisonbereinigt monatlich (SERIES_NAME "M2.M")
+//        aus dem H.6-Paket der Fed (Data Download Program, ab 01/1959) ->
+//        Jahresrate ab 01/1960. Vorher die Rate aus TV-Bestaenden (6 Punkte).
+//        ⚠ Die Fed stellt die fertigen DDP-Pakete am 31.03.2027 ein (steht in
+//        der Datei selbst) - bis dahin auf den Nachfolger umziehen.
 // Nie geschaetzt (Regel 4): jede Zahl ist eine veroeffentlichte Rate oder
 // das Verhaeltnis zweier veroeffentlichter Bestaende.
 // Datum: der Release (SNB PublishingDate, sonst der Tag, an dem dieser Lauf
@@ -23,6 +34,7 @@
 // Aufruf: node tools/geldmenge.mjs [--probe]   (--probe: nur ausgeben)
 //   im Workflow nach dem Indikator-Schritt; Vorstand aus mg_prev.json.
 import fs from 'node:fs';
+import zlib from 'node:zlib';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 const PROBE = process.argv.includes('--probe');
@@ -39,6 +51,32 @@ async function hol(url) {
   const r = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(40000) });
   if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + url);
   return await r.text();
+}
+async function holBin(url, ms = 120000) {
+  const r = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(ms) });
+  if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + url);
+  return Buffer.from(await r.arrayBuffer());
+}
+// Eine Datei aus einem ZIP (xlsx, Fed-Paket) - zentrales Verzeichnis lesen, kein Zusatzpaket
+function entpacke(buf, name) {
+  let e = buf.length - 22;
+  while (e >= 0 && buf.readUInt32LE(e) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('kein ZIP');
+  const n = buf.readUInt16LE(e + 10); let o = buf.readUInt32LE(e + 16);
+  for (let i = 0; i < n; i++) {
+    const meth = buf.readUInt16LE(o + 10), csz = buf.readUInt32LE(o + 20), fl = buf.readUInt16LE(o + 28), xl = buf.readUInt16LE(o + 30), cl = buf.readUInt16LE(o + 32), lo = buf.readUInt32LE(o + 42);
+    const fn = buf.toString('utf8', o + 46, o + 46 + fl);
+    if (fn === name) {
+      const start = lo + 30 + buf.readUInt16LE(lo + 26) + buf.readUInt16LE(lo + 28), roh = buf.subarray(start, start + csz);
+      return (meth === 8 ? zlib.inflateRawSync(roh) : roh).toString('utf8');
+    }
+    o += 46 + fl + xl + cl;
+  }
+  throw new Error('nicht im ZIP: ' + name);
+}
+// Jahresraten aus Bestaenden {YYYY-MM: Zahl}: nur wo BEIDE echten Bestaende da sind
+function jahresraten(lv) {
+  return Object.keys(lv).sort().filter(ym => lv[vorJahr(ym)] > 0 && lv[ym] > 0).map(ym => [ym, (lv[ym] / lv[vorJahr(ym)] - 1) * 100]);
 }
 
 // Jede Quelle liefert {quelle, event, art, pts:[[YYYY-MM, Zahl]], pub?}
@@ -90,16 +128,69 @@ const QUELLEN = {
     zeilen.forEach(z => { const m = (z[0] || '').match(/^(\d{4})\/(\d{2})$/); if (m && z[sp] !== undefined && z[sp] !== '' && isFinite(+z[sp].replace(/,/g, ''))) pts.push([m[1] + '-' + m[2], +z[sp].replace(/,/g, '')]); });
     return { quelle: 'boj', event: 'M3 Money Stock YoY (BoJ)', art: 'y/y', pts };
   },
-  async NZD() {
+  async NZD(alt) {
+    const lv = {};
+    if (alt && alt.source === 'rbnz' && alt.levels) Object.assign(lv, alt.levels);
+    // 1) RBNZ C50 long run (Broad money) ueber die neueste Wayback-Kopie
+    const ORIG = 'https://www.rbnz.govt.nz/-/media/project/sites/rbnz/files/statistics/series/c/c50/hc50-long-run.xlsx';
+    let wb = '';
+    try {
+      const cdx = JSON.parse(await hol('http://web.archive.org/cdx/search/cdx?url=' + encodeURIComponent(ORIG) + '&output=json&fl=timestamp&filter=statuscode:200'));
+      const ts = (cdx.slice(1).pop() || [])[0];
+      if (!ts) throw new Error('keine Sicherung');
+      // Neue Sicherung anstossen, wenn die letzte aelter als 30 Tage ist (Save Page Now, oeffentlich) -
+      // die Datei selbst kommt erst im naechsten Lauf; schlaegt es fehl, bleibt alles wie es ist.
+      const alter = (Date.now() - Date.UTC(+ts.slice(0, 4), +ts.slice(4, 6) - 1, +ts.slice(6, 8))) / 864e5;
+      if (alter > 30 && !PROBE) { try { await fetch('https://web.archive.org/save/' + ORIG, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(60000) }); wb = ' (Sicherung angestossen)'; } catch (e) { wb = ' (Sicherung nicht angestossen: ' + e.message + ')'; } }
+      const buf = await holBin(`http://web.archive.org/web/${ts}id_/${ORIG}`);
+      const ss = [...entpacke(buf, 'xl/sharedStrings.xml').matchAll(/<si>([\s\S]*?)<\/si>/g)].map(m => m[1].replace(/<[^>]+>/g, ''));
+      const zeilen = {};
+      for (const m of entpacke(buf, 'xl/worksheets/sheet1.xml').matchAll(/<c r="([A-Z]+)(\d+)"([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+        let v = (/<v>(.*?)<\/v>/.exec(m[4] || '') || [])[1] || '';
+        if (/t="s"/.test(m[3]) && v !== '') v = ss[+v];
+        (zeilen[+m[2]] = zeilen[+m[2]] || {})[m[1]] = v;
+      }
+      const idZ = Object.values(zeilen).find(z => z.A === 'Series Id');
+      const spalte = idZ && Object.keys(idZ).find(k => idZ[k] === 'MCA.MDB.BM');
+      if (!spalte) throw new Error('Reihe MCA.MDB.BM fehlt');
+      let n = 0;
+      Object.values(zeilen).forEach(z => {
+        const d = +z.A, v = +z[spalte];
+        if (!(d > 20000 && v > 0)) return;
+        lv[new Date(Date.UTC(1899, 11, 30) + d * 864e5).toISOString().slice(0, 7)] = v; n++;
+      });
+      wb = ` RBNZ-Kopie ${ts.slice(0, 8)}: ${n} Monate` + wb;
+    } catch (e) { wb = ' RBNZ-Kopie: ' + e.message; }
+    // 2) die zwei neuesten Bestaende von Trading Economics (faellt TE aus, bleibt die RBNZ-Kopie)
+    let te = '';
+    try {
     const t = await hol('https://tradingeconomics.com/new-zealand/money-supply-m3');
     const m = t.match(/Money Supply M3 in New Zealand (?:increased|decreased|remained unchanged) (?:to|at) ([\d.,]+) NZD Million in ([A-Za-z]+) from ([\d.,]+) NZD Million in ([A-Za-z]+) of (\d{4})/);
     if (!m) throw new Error('TE NZD: Beschreibung nicht lesbar');
-    const a = +m[1].replace(/,/g, ''), b = +m[3].replace(/,/g, ''), mo = MON[m[2].toLowerCase()];
-    if (!(a > 0 && b > 0) || !mo) throw new Error('TE NZD: Werte nicht lesbar');
+    const a = +m[1].replace(/,/g, ''), b = +m[3].replace(/,/g, ''), mo = MON[m[2].toLowerCase()], vmo = MON[m[4].toLowerCase()];
+    if (!(a > 0 && b > 0) || !mo || !vmo) throw new Error('TE NZD: Werte nicht lesbar');
     // Jahr: das genannte gehoert zum Vormonat; liegt der Bezugsmonat davor im Jahr (Januar), ist es das Folgejahr
-    const vmo = MON[m[4].toLowerCase()], j = +m[5] + (mo < vmo ? 1 : 0);
-    const ym = j + '-' + String(mo).padStart(2, '0');
-    return { quelle: 'te', event: 'M3 Money Supply MoM (RBNZ via Trading Economics)', art: 'm/m', pts: [[ym, (a / b - 1) * 100]] };
+    const j = +m[5] + (mo < vmo ? 1 : 0), ym = j + '-' + String(mo).padStart(2, '0'), vym = m[5] + '-' + String(vmo).padStart(2, '0');
+    // die RBNZ-Datei (amtlich, revidiert) geht vor; TE fuellt nur Monate, die dort (noch) fehlen
+    if (!lv[ym]) lv[ym] = a; if (!lv[vym]) lv[vym] = b;
+    te = ` TE ${vym} ${b} -> ${ym} ${a}`;
+    } catch (e) { te = ' TE: ' + e.message; }
+    if (!Object.keys(lv).length) throw new Error('weder RBNZ-Kopie noch TE:' + wb + te);
+    return { quelle: 'rbnz', event: 'Broad Money (M3) YoY (RBNZ C50, latest via Trading Economics)', art: 'y/y', ab: '1989-03', levels: lv, pts: jahresraten(lv), code: wb + te };
+  },
+  async USD() {
+    const buf = await holBin('https://www.federalreserve.gov/datadownload/Output.aspx?rel=H6&filetype=zip');
+    const x = entpacke(buf, 'h6_data.xml');
+    const blk = x.match(/<(?:\w+:)?Series [^>]*SERIES_NAME="M2\.M"[^>]*>([\s\S]*?)<\/(?:\w+:)?Series>/);
+    if (!blk) throw new Error('Fed H.6: Reihe M2.M fehlt');
+    const lv = {};
+    for (const o of blk[1].matchAll(/<(?:\w+:)?Obs [^>]*>/g)) {
+      const v = (/OBS_VALUE="([^"]+)"/.exec(o[0]) || [])[1], d = (/TIME_PERIOD="([^"]+)"/.exec(o[0]) || [])[1];
+      if (d && v != null && isFinite(+v) && +v > 0) lv[d.slice(0, 7)] = +v;
+    }
+    const n = Object.keys(lv).length;
+    if (n < 24) throw new Error('Fed H.6: nur ' + n + ' Monate M2');
+    return { quelle: 'fed', event: 'M2 Money Supply YoY (Fed H.6)', art: 'y/y', ab: '1960-01', pts: jahresraten(lv), code: ` Fed M2.M: ${n} Monate` };
   },
 };
 
@@ -109,7 +200,7 @@ function eintrag(ccy, r, alt) {
   const altOk = alt && alt.source === r.quelle && Array.isArray(alt.historyFull);
   if (altOk) alt.historyFull.forEach(h => { if (h && h[0]) map[String(h[0]).slice(0, 7)] = h[1]; });
   r.pts.forEach(([ym, v]) => { map[ym] = pct(v); });
-  const yms = Object.keys(map).sort().filter(ym => ym >= '2007-01');
+  const yms = Object.keys(map).sort().filter(ym => ym >= (r.ab || '2007-01'));
   if (!yms.length) return null;
   const neu = yms[yms.length - 1], vor = yms[yms.length - 2];
   // Release-Datum: SNB/RBA nennen es; sonst der erste Lauf, der den Monat sah.
@@ -119,6 +210,7 @@ function eintrag(ccy, r, alt) {
     event: r.event, period: r.art, source: r.quelle, ref: neu, datumArt: 'ref',
     history: yms.slice(-4).map(ym => [ym === neu ? datum : ende(ym), map[ym]]),
     historyFull: yms.map(ym => [ende(ym), map[ym], null]),
+    ...(r.levels ? { levels: r.levels } : {}),
   };
 }
 
@@ -128,7 +220,7 @@ try { alt = JSON.parse(fs.readFileSync('mg_prev.json', 'utf8')); } catch (e) {}
 for (const ccy of Object.keys(QUELLEN)) {
   const vorher = alt[ccy] && alt[ccy][IND];
   try {
-    const r = await QUELLEN[ccy]();
+    const r = await QUELLEN[ccy](vorher);
     if (!r.pts.length) throw new Error('keine Punkte');
     const e = eintrag(ccy, r, vorher);
     if (!e) throw new Error('kein Eintrag');
