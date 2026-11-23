@@ -23375,3 +23375,25 @@ Nutzer: *„die pinned Notes Karte … nur noch Notes … auf diese Karte klicke
 - Gemessen (Playwright 1180): Maus — Tipp 1 → ausgewählt + Hinweis, Ziehen −120/+60 px → Kasten exakt −120/+60, `pm.bd` 10-14→10-09, `pm.d` gleich, nach Neuaufbau gleiche Lage, Tipp 2 → Fenster. Finger (CDP-Touch) — Ziehen ohne Auswahl bewegt nichts, nach Tipp −100/+40 px, Seite scrollt nicht (0), Tipp 2 → Fenster
 - Fehler beim Messen gefunden: schneller 2. Tipp (< 0,4 s) wurde verschluckt (Zeitfenster gegen den Klick nach dem Ziehen) → jetzt nur DER Klick des Ziehens, Marke beim nächsten pointerdown gelöscht
 - Erinnerungen an Fristen (Fed-H.6-Ende 31.03.2027, NZD-Lücke) jetzt in `CLAUDE.md` „⏰ Fristen“ (Nutzer: *„Erinner dich selber in einer Datei die du immer liest“*)
+
+## 2026-11-23 — Abstände zwischen den Karten ~40 % kleiner (VERSION-CHECK-816)
+
+Nutzer: *„Ich finde die aktuellen Abstände zwischen den ganzen einzelnen Karten zu gros. Kann du die um so 40 Prozent reduzieren“*.
+
+- **Gemessen vorher** (1194 px, Abstand Karte → Karte):
+  - Dashboard 16;
+  - Asset-Seite 14 waagerecht / 29 senkrecht (mit Reihenüberschrift);
+  - Journal 14 / 12;
+  - Gameplan 14 / 12;
+  - Regime 14;
+  - COT/Saisonalität 18.
+- **Nachher:**
+  - Dashboard 10 (−38 %);
+  - Asset-Seite 8 / 17 (−43 % / −41 %);
+  - Journal 8 / 7;
+  - Gameplan 8 / 7;
+  - Regime 8;
+  - Saisonalität 12 (−33 %).
+- **Ursache der Streuung:** Acht Kartenklassen hatten den Abstand als festes Literal statt über `--gap-block`. Alle hängen jetzt am Token.
+- **Wächter grün:** `ueberlappung`, `kartenlook`, `dashboard`, `layout`, `breit`, `rahmen`.
+

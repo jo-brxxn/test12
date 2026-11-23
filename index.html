@@ -214,7 +214,9 @@ body{font-family:var(--ff-text);background-image:linear-gradient(180deg,rgba(27,
      margin-top - die News-Karte klebte dadurch direkt am Raster.
      MERKSATZ: Abstaende gehoeren wie die Schriftgroessen auf eine Skala,
      nicht je Stelle einzeln geraten. */
-  --gap-block:14px;
+  /* 2026-11-23 (Nutzer: "Abstaende zwischen den ganzen einzelnen Karten zu gross ... um so 40 Prozent"):
+     14 -> 8 px (-43 %), Dashboard --dx-gap 16 -> 10 (-38 %). Kacheln INNERHALB einer Karte unveraendert. */
+  --gap-block:8px;
   /* 2026-09-22 Bild-Design: Kopfzeile + Leiste #0D1B2F, gemessen am Nutzerbild. */
   --chrome-bg:#0D1B2F;
   /* ══ BIAS-FARBEN ALS TOKEN ══════════════════════════════════════════
@@ -2605,7 +2607,7 @@ body.compact-view .rub-summary{display:block}
 .carry-lk-op{font-size:18px;color:var(--t3);padding-bottom:2px}
 .carry-lk-dir{margin-top:9px;font-size:var(--fs-base);font-weight:700}
 /* ── SCORE TRENDS ── */
-.tr-card{background:linear-gradient(180deg,var(--bg2),var(--bg1));border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin-bottom:14px;box-shadow:0 2px 14px rgba(0,0,0,.22)}
+.tr-card{background:linear-gradient(180deg,var(--bg2),var(--bg1));border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin-bottom:var(--gap-block);box-shadow:0 2px 14px rgba(0,0,0,.22)}
 .tr-card-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid var(--bd)}
 /* ⓘ in die Titelzeile, Legende volle Breite darunter (sonst rutschte das ⓘ
    hinter die lange Legende in die dritte Zeile, 2026-09-26) */
@@ -3340,7 +3342,7 @@ body.data-voll #pgData{position:fixed;left:0;right:0;bottom:0;top:56px;z-index:1
 .data-indsel{font:600 var(--fs-sm)/1.2 var(--ff-text)!important;padding:6px 10px!important}
 .data-pc{flex:1 1 auto;min-height:0;padding:6px 10px 4px;overflow:hidden}
 /* ── MATRIX / STRENGTH ── */
-.mx-card{background:linear-gradient(180deg,var(--bg2),var(--bg1));border:1px solid var(--bd);border-radius:14px;margin-bottom:14px;overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.22)}
+.mx-card{background:linear-gradient(180deg,var(--bg2),var(--bg1));border:1px solid var(--bd);border-radius:14px;margin-bottom:var(--gap-block);overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.22)}
 .mx-card-title{font-size:var(--fs-kt);font-weight:700;color:var(--t0);padding:11px 14px;border-bottom:1px solid var(--bd);background:linear-gradient(180deg,var(--bg4),var(--bg3));display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .mx-card-title small{font-weight:500;color:var(--t3);font-size:var(--fs-2xs);font-family:var(--ff-num)}
 .mx-rank-head,.mx-rank-row{display:grid;grid-template-columns:26px 48px 1fr 52px 74px 56px;align-items:center;gap:9px;padding:7px 14px}
@@ -3366,7 +3368,7 @@ body.data-voll #pgData{position:fixed;left:0;right:0;bottom:0;top:56px;z-index:1
 .cot-empty{color:var(--t3);font-size:14px;padding:16px 4px;line-height:1.6;font-family:var(--ff-num)}
 .cot-meta{font-size:var(--fs-base);color:var(--t3);margin-bottom:12px;font-family:var(--ff-num)}
 .cot-meta b{color:var(--t1)}
-.cot-card{background:linear-gradient(180deg,var(--bg2),var(--bg1));border:1px solid var(--bd);border-radius:14px;margin-bottom:14px;overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.22)}
+.cot-card{background:linear-gradient(180deg,var(--bg2),var(--bg1));border:1px solid var(--bd);border-radius:14px;margin-bottom:var(--gap-block);overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.22)}
 /* Filter im Kartenkopf (Retail, Put/Call, Net flow, Seasonality): rechts; auf
    dem Handy eigene Zeile - sonst brach er um, sobald das ✕ erschien, und
    sprang (2026-11-08, check/filterfest.js A bei 390 px) */
@@ -3631,7 +3633,7 @@ body.no-ui-anim .ind-data-body.ind-data-reveal{animation:none}
    liest sich eine Karte dadurch als erhabene Flaeche statt als blosser
    Farbfleck - der Effekt aus der Nutzer-Vorlage (2026-08-23), aber sehr
    zurueckhaltend dosiert (4.5% Weiss), damit er nicht als Rahmen wirkt. */
-.dw{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:14px;transition:border-color .15s,box-shadow .15s;box-shadow:var(--shadow-card),inset 0 1px 0 rgba(255,255,255,.5)}
+.dw{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:var(--gap-block);transition:border-color .15s,box-shadow .15s;box-shadow:var(--shadow-card),inset 0 1px 0 rgba(255,255,255,.5)}
 @media (hover:hover){.dw:hover{border-color:var(--bd2);box-shadow:var(--shadow-pop)}}
 /* Majors-Karte ist jetzt das erste Element der 'left'-Zone im Radial-Layout
    (frueher ein eigenstaendiges <aside>, Nutzer-Wunsch 2026-07-27) - selbe
@@ -5759,7 +5761,7 @@ body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
    Wochenende schmal. Win/Loss in Bias-Farbe, Aktiv = Navy (--ui-act).
    Handy (<760 px): kompakte Zellen, ganze Namen in Tabelle/Tages-Fenster. */
 :root{--flame:#E8590C;--flame-rgb:232,89,12}
-.tj-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:14px 16px 16px;margin-bottom:14px;min-width:0}
+.tj-card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:14px 16px 16px;margin-bottom:var(--gap-block);min-width:0}
 .tj-kh{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 14px;margin-bottom:12px}
 .tj-kt{font-size:var(--fs-kt);font-weight:700;color:var(--t0);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .tj-kh-r{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--fs-sm);color:var(--t2);font-variant-numeric:tabular-nums}
@@ -5780,7 +5782,7 @@ body.no-ui-anim .bias-picker,body.no-ui-anim .tab-menu{animation:none}
 .tj-heute{height:34px}
 .tj-monat{font-size:var(--fs-kt);font-weight:700;color:var(--t0);min-width:150px;text-align:center;font-variant-numeric:tabular-nums}
 /* Kennzahl-Kacheln */
-.tj-kacheln{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.tj-kacheln{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:var(--gap-block)}
 .tj-kachel{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow-card);padding:12px 16px 14px;display:flex;flex-direction:column;gap:6px;min-width:0;min-height:124px}
 .tj-kl{font-size:var(--fs-xs);font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px}
 .tj-ki{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:0}
@@ -6565,9 +6567,9 @@ body.no-ui-anim #navSidebar .np-sub-wrap{transition:none}
 /* Asset-Kopfreihe: die globale Schriftskala statt der verkleinerten der
    .ab-cards (die Karten sind 2x2 doppelt so breit wie vorher). */
 .ab-cards>.ab-orow{--fs-hero:30px;--fs-xl:24px;--fs-lg:17px;--fs-md:15px;--fs-base:13px;--fs-sm:12px;--fs-xs:11px;--fs-2xs:11px;
-  grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap-block)}
 @media(max-width:640px){.ab-cards>.ab-orow{grid-template-columns:minmax(0,1fr)}}
-.ab-cards{gap:14px}
+.ab-cards{gap:var(--gap-block)}
 /* Die Reihen-Ueberschrift "Overview" steht im Bild nicht - der Asset-Kopf
    ist jetzt selbst eine Karte und damit der Anfang der Seite. */
 .ab-cards>.ab-rtitel:first-child{display:none}
@@ -7797,7 +7799,7 @@ body.anim-enter:not(.no-data-anim) .rank-div>.rank-bar.neg,body.anim-enter:not(.
    Theme dunkel - er ist eine Zeichnung, kein Datenfeld.
    Raster mit festen Reihen: Hero | Kennzahlen / Market | World map /
    Events | Sentiment & COT | Insights / Bias | Movers / Performance. */
-#dashWidgets{--dx-r:16px;--dx-gap:16px;--dx-rand:rgba(var(--blue-rgb),.16);
+#dashWidgets{--dx-r:16px;--dx-gap:10px;--dx-rand:rgba(var(--blue-rgb),.16);
   --hero-bg1:#0C1A33;--hero-bg2:#0B5FCC;--hero-dot:rgba(125,187,255,.55);--hero-up:#4C9BFF;--hero-dn:rgba(214,226,245,.55);--hero-glow:#2F7BFF;--hero-line:#8FD0FF}
 :root[data-fx-theme] #dashWidgets{--hero-bg1:#070E1D;--hero-bg2:#0E2A5C}
 .dx{display:flex;flex-direction:column;gap:var(--dx-gap)}
@@ -8150,7 +8152,7 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
   .gp-zwei{grid-template-columns:1fr}
 }
 /* Seite (G2) */
-.gp2{display:grid;grid-template-columns:minmax(240px,300px) 1fr;gap:14px;align-items:start}
+.gp2{display:grid;grid-template-columns:minmax(240px,300px) 1fr;gap:var(--gap-block);align-items:start}
 .gp2-l{background:var(--card);border:1px solid var(--bd2);border-radius:var(--r);box-shadow:var(--shadow-card);padding:8px;max-height:calc(100vh - 170px);overflow:auto;position:sticky;top:12px}
 .gp-grp{font:700 var(--fs-xs)/1 var(--ff-text);letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin:10px 8px 5px}
 .gp-li{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;background:transparent;border-radius:var(--rss);padding:7px 10px 7px 16px;position:relative;cursor:pointer;color:var(--t1);min-height:var(--h-l)}
@@ -8162,7 +8164,7 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .gp-d{background:var(--card);border:1px solid var(--bd2);border-left:5px solid var(--c);border-radius:var(--r);box-shadow:var(--shadow-card);padding:14px 16px;background-image:linear-gradient(180deg,color-mix(in srgb,var(--c) 6%,transparent),transparent 110px)}
 .gp-d-k{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:var(--h-m)}
 .gp-d-t{font:700 var(--fs-kt)/1.2 var(--ff-text);color:var(--t1);margin-right:auto}
-.gp-d-g{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.gp-d-g{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
 .gp-box{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:2px 12px 12px;min-width:0;display:flex;flex-direction:column}
 .gp-box>.gp-ta-th{flex:1 1 auto;min-height:90px}
 .gp-box.e,.gp-box.x{background:color-mix(in srgb,var(--k) 7%,var(--card))}
@@ -8208,7 +8210,7 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .ab-ptile.pk-add .pk-chart .chv-tip,.ab-ptile.pk-add .pk-chart .chv-x,.ab-ptile.pk-add .pk-chart .chv-dot{display:none!important}
 
 /* ── Trash-Seite + History der Pinned notes (755) ── */
-.tr-karte{margin-top:14px}
+.tr-karte{margin-top:var(--gap-block)}
 .tr-wrap{overflow-x:auto}
 .tr-tbl{width:100%;border-collapse:collapse;font-size:var(--fs-md)}
 .tr-tbl th{text-align:left;font-size:var(--fs-sm);color:var(--t3);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--bd)}
@@ -8346,11 +8348,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-815 - Price card: tap a note to move it, tap again to edit"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-816 - Abstaende zwischen den Karten um rund 40 Prozent kleiner (14 auf 8 px, Dashboard 16 auf 10 px)"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-815</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-816</span>
     </span>
   </div>
   <div class="hdr-r">

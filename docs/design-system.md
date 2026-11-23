@@ -2123,3 +2123,12 @@ Nutzer 2026-11-19: *„ein zahnrad … Fenster mit Filter mit allen assets … 6
   - Davor steht eine Trennzeile `.ind-sep-row`: Lücke, gestrichelte Linie, „INVERSE“ in der Mitte.
 - **Farbe der Act-Zelle:** folgt der Richtung der Zeile (`indRichtung`), nicht nur der Karte.
 - **Geprüft von** `check/silberregeln.js` C.
+
+## Abstände zwischen Karten (seit 2026-11-23, 816)
+
+- Nutzer: *„die aktuellen Abstände zwischen den ganzen einzelnen Karten zu groß … um so 40 Prozent reduzieren“*.
+- **Ein Wert:** `--gap-block` = **8 px** (vorher 14). Das Dashboard nutzt `--dx-gap` = **10 px** (vorher 16).
+- Jede Karte und jedes Kartenraster nimmt den Token, **nie ein festes px-Literal**.
+  - Bis 816 hatten `.tr-card`, `.mx-card`, `.cot-card`, `.tj-card`, `.dw`, `.ab-cards`, `.ab-orow` und `.gp2` je eigene 14 px.
+- Kacheln **innerhalb** einer Karte (Market overview, Kennzahlen) behalten ihren eigenen Abstand.
+
