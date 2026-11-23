@@ -3,7 +3,12 @@
 # da muss es was geben". Stand: USD 6 Punkte (Jahresrate aus TV-Bestaenden),
 # NZD 2 Punkte (TE-Seitentext, RBNZ 403). Aus der Claude-Umgebung sind alle
 # Quellen gesperrt - deshalb misst dieser Lauf auf dem GitHub-Laeufer.
-# Je Kandidat: HTTP-Status, Zahl der Werte, erster/letzter Monat, letzter Wert.
+# Runde 1 (2026-11-23): FRED vom Laeufer nicht erreichbar (Verbindung 0),
+#   RBNZ direkt 403, aber Wayback-Kopien von hc50.xlsx (M1 + Broad money ab
+#   12/2016) und hc50-long-run.xlsx (Broad money, 456 Monate); DBnomics IMF
+#   NZ Broad money nur 2013-2025.
+# Runde 2: Fed-Downloadpaket H.6, DBnomics-Suche (FED/OECD/IMF), Wayback-
+#   Dateien ganz auslesen + wie oft das Archiv sie neu sichert.
 name: Probe money supply history (USD, NZD)
 on:
   workflow_dispatch:
@@ -14,9 +19,9 @@ jobs:
       - name: Kandidaten abfragen
         run: |
           python3 - <<'PY'
-          import urllib.request, urllib.parse, json, re, io, zipfile, csv, ssl
+          import urllib.request, urllib.parse, json, re, io, zipfile, csv, datetime
           UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-          def hol(url, timeout=60):
+          def hol(url, timeout=90):
               try:
                   r = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"}), timeout=timeout)
                   return r.status, r.read(), r.headers.get("content-type", "")
@@ -24,93 +29,94 @@ jobs:
                   return e.code, e.read()[:400], ""
               except Exception as e:
                   return 0, str(e).encode()[:300], ""
-          def bericht(name, url, pts, code, extra=""):
-              if pts:
-                  print(f"=== {name} :: {code} :: {len(pts)} Werte :: {pts[0][0]} .. {pts[-1][0]} :: letzter {pts[-1][1]} {extra}\n    {url}")
-              else:
-                  print(f"=== {name} :: {code} :: KEINE Werte {extra}\n    {url}")
-          # ── FRED CSV (ohne Schluessel) ──
-          for sid, txt in [("M2SL", "USD M2 sa"), ("M2NS", "USD M2 nsa"), ("M1SL", "USD M1 sa"), ("M3SL", "USD M3 (bis 2006)"),
-                           ("MABMM301NZM189S", "NZD M3 Bestand (OECD, monatl.)"), ("MABMM301NZQ189S", "NZD M3 Bestand (OECD, quartal)"),
-                           ("MABMM301NZM657S", "NZD M3 Wachstum m/m (OECD)"), ("MANMM101NZM189S", "NZD M1 Bestand (OECD)"),
-                           ("MABMM301NZQ657S", "NZD M3 Wachstum q/q (OECD)"), ("MYAGM2NZM196N", "NZD M2 (IMF IFS via FRED)"),
-                           ("MYAGM3NZM196N", "NZD M3 (IMF IFS via FRED)")]:
-              url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+          # ── USD: Fed Data Download Program, ganzes H.6-Paket ──
+          for url in ["https://www.federalreserve.gov/datadownload/Output.aspx?rel=H6&filetype=zip",
+                      "https://www.federalreserve.gov/datadownload/Choose.aspx?rel=H6"]:
+              code, b, ct = hol(url, 120)
+              print(f"=== Fed DDP :: {code} :: {ct} :: {len(b)} Bytes\n    {url}")
+              if code == 200 and b[:2] == b"PK":
+                  z = zipfile.ZipFile(io.BytesIO(b)); print("    Teile:", z.namelist()[:10])
+                  for n in z.namelist():
+                      if not n.lower().endswith(".csv"): continue
+                      t = z.read(n).decode("utf8", "ignore"); rows = list(csv.reader(io.StringIO(t)))
+                      kopf = rows[:6]
+                      print(f"    {n}: {len(rows)} Zeilen; Kopf:")
+                      for r in kopf: print("      ", [c[:60] for c in r[:8]])
+                      daten = [r for r in rows if r and re.match(r"\d{4}-\d{2}", r[0])]
+                      if daten: print(f"      Daten {daten[0][0]} .. {daten[-1][0]} ({len(daten)}); erste: {daten[0][:5]} letzte: {daten[-1][:5]}")
+                  for n in z.namelist():
+                      if n.lower().endswith(".xml") and len(z.read(n)) < 3_000_000:
+                          x = z.read(n).decode("utf8", "ignore")
+                          print(f"    {n}: Reihen mit M2:", sorted(set(re.findall(r'SERIES_NAME="([^"]*M2[^"]*)"', x)))[:12])
+              elif code == 200:
+                  t = b.decode("utf8", "ignore")
+                  print("    Links:", sorted(set(re.findall(r'(Output\.aspx\?[^"\']{0,200}|Build\.aspx\?[^"\']{0,120}|PackageDownload[^"\']{0,120})', t)))[:12])
+          # ── DBnomics: Datensaetze und Reihen suchen ──
+          def dbn(path, q=None, dims=None, n=20):
+              qs = {"limit": n, "observations": 0}
+              if q: qs["q"] = q
+              if dims: qs["dimensions"] = json.dumps(dims)
+              url = f"https://api.db.nomics.world/v22/series/{path}?" + urllib.parse.urlencode(qs)
               code, b, ct = hol(url)
-              pts = []
-              if code == 200:
-                  for row in csv.reader(io.StringIO(b.decode("utf8", "ignore"))):
-                      if len(row) >= 2 and re.match(r"\d{4}-\d{2}-\d{2}", row[0]) and row[1] not in ("", "."):
-                          pts.append((row[0][:7], row[1]))
-              bericht(f"FRED {sid} ({txt})", url, pts, code, "" if pts or code != 200 else b[:160])
-          # ── DBnomics ──
-          for path, txt in [("IMF/IFS/M.NZ.FMB_XDC", "NZD Broad money IMF IFS"), ("IMF/IFS/M.NZ.FM1_XDC", "NZD M1 IMF IFS"),
-                            ("IMF/IFS/M.US.FM2_XDC", "USD M2 IMF IFS"), ("FED/H6/M2.M", "USD M2 FED H6")]:
-              url = f"https://api.db.nomics.world/v22/series/{path}?observations=1&format=json"
-              code, b, ct = hol(url)
-              pts = []
+              print(f"=== DBnomics {path} q={q} dims={dims} :: {code}")
               try:
-                  d = json.loads(b); s = d["series"]["docs"][0]
-                  pts = [(p, v) for p, v in zip(s["period"], s["value"]) if v not in (None, "NA")]
-              except Exception as e:
-                  pass
-              bericht(f"DBnomics {path} ({txt})", url, pts, code, "" if pts else b[:200])
-          for q in ["new zealand broad money", "new zealand money supply M3", "RBNZ monetary aggregates"]:
-              url = "https://api.db.nomics.world/v22/search?q=" + urllib.parse.quote(q) + "&limit=10"
-              code, b, ct = hol(url)
-              print(f"=== DBnomics Suche '{q}' :: {code}")
-              try:
-                  for x in json.loads(b)["results"]["docs"][:10]:
-                      print("    ", x.get("provider_code"), x.get("code"), "|", (x.get("name") or "")[:90], "|", x.get("nb_series"))
+                  for s in json.loads(b)["series"]["docs"][:n]:
+                      print("    ", s.get("series_code"), "|", (s.get("series_name") or "")[:110], "|", s.get("indexed_at", "")[:10])
               except Exception as e:
                   print("    ", b[:200])
-          # ── IMF (neue SDMX-API) ──
-          for url in ["https://api.imf.org/external/sdmx/2.1/data/IMF.STA,MFS_DC/NZL.BRDM_XDC.M?startPeriod=1980",
-                      "https://api.imf.org/external/sdmx/3.0/data/dataflow/IMF.STA/MFS_DC/+/NZL.*.M",
-                      "http://dataservices.imf.org/REST/SDMX_JSON.svc/CompactData/IFS/M.NZ.FMB_XDC"]:
+          dbn("FED", q="M2")
+          dbn("FED/H6", q="M2", n=25)
+          dbn("OECD/MEI", q="monetary aggregates", dims={"LOCATION": ["USA", "NZL"]}, n=25)
+          dbn("IMF/IFS", q="money", dims={"REF_AREA": ["NZ"]}, n=25)
+          dbn("IMF/IFS", q="money", dims={"REF_AREA": ["US"]}, n=25)
+          dbn("IMF/MFS", q="broad money", dims={"REF_AREA": ["NZ"]}, n=15)
+          # gefundene Kandidaten mit Werten
+          def dbw(path):
+              url = f"https://api.db.nomics.world/v22/series/{path}?observations=1&format=json"
               code, b, ct = hol(url)
-              print(f"=== IMF :: {code} :: {ct} :: {len(b)} Bytes\n    {url}\n    {b[:300]!r}")
-          # ── OECD SDMX ──
-          for url in ["https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_FINMARK,4.0/NZL.M.MABM......?startPeriod=1980&format=csvfilewithlabels",
-                      "https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_FINMARK,/NZL..MABM+MANM.....?format=csvfilewithlabels"]:
-              code, b, ct = hol(url)
-              t = b.decode("utf8", "ignore")
-              zeilen = [z for z in t.splitlines() if "NZL" in z]
-              print(f"=== OECD :: {code} :: {len(zeilen)} Zeilen mit NZL\n    {url}\n    {t[:300]!r}")
-              for z in zeilen[:2] + zeilen[-2:]: print("     ", z[:220])
-          # ── RBNZ direkt + Wayback-Kopie ──
-          for f in ["hc50.xlsx", "hc50-broad-money.xlsx", "hc50lr.xlsx", "hc50-long-run.xlsx"]:
-              url = "https://www.rbnz.govt.nz/-/media/project/sites/rbnz/files/statistics/series/c/c50/" + f
-              code, b, ct = hol(url)
-              print(f"=== RBNZ direkt {f} :: {code} :: {ct} :: {len(b)} Bytes")
-              code, b, ct = hol("http://archive.org/wayback/available?url=" + urllib.parse.quote(url))
               try:
-                  snap = json.loads(b)["archived_snapshots"].get("closest")
+                  s = json.loads(b)["series"]["docs"][0]; pts = [(p, v) for p, v in zip(s["period"], s["value"]) if v not in (None, "NA")]
+                  print(f"=== WERTE {path} :: {len(pts)} :: {pts[0]} .. {pts[-1]}")
               except Exception:
-                  snap = None
-              print(f"    Wayback: {snap}")
-              if snap and snap.get("available"):
-                  raw = re.sub(r"/web/(\d+)/", r"/web/\1id_/", snap["url"])
-                  code, b, ct = hol(raw, 120)
-                  print(f"    Wayback-Datei :: {code} :: {ct} :: {len(b)} Bytes")
-                  try:
-                      z = zipfile.ZipFile(io.BytesIO(b)); ss = z.read("xl/sharedStrings.xml").decode("utf8", "ignore")
-                      print("    Texte:", [x for x in re.findall(r"<t[^>]*>([^<]{2,80})</t>", ss) if re.search(r"M1|M2|M3|[Bb]road|Money|19\d\d|Series", x)][:25])
-                      sh = [n for n in z.namelist() if n.startswith("xl/worksheets/")]
-                      print("    Blaetter:", sh[:6])
-                      for n in sh[:2]:
-                          x = z.read(n).decode("utf8", "ignore")
-                          zahlen = re.findall(r'<c r="A(\d+)"[^>]*><v>([\d.]+)</v>', x)
-                          if zahlen: print(f"    {n}: Spalte A Zeilen {zahlen[0]} .. {zahlen[-1]} ({len(zahlen)} Werte, Excel-Datum)")
-                  except Exception as e:
-                      print("    kein xlsx:", e)
-          code, b, ct = hol("https://www.rbnz.govt.nz/statistics/series/data-file-index-page")
-          print(f"=== RBNZ Index :: {code} :: c50-Links: {sorted(set(re.findall(rb'[\w/.-]*c50[\w.-]*\.xlsx', b)))[:10]}")
-          # ── Trading Economics: wie weit reicht die Seite? ──
-          code, b, ct = hol("https://tradingeconomics.com/new-zealand/money-supply-m3")
-          t = b.decode("utf8", "ignore")
-          print(f"=== TE NZ M3 :: {code} :: Beschreibung: {re.findall(r'averaged [^.]{0,200}', t)[:1]}")
-          code, b, ct = hol("https://tradingeconomics.com/united-states/money-supply-m2")
-          t = b.decode("utf8", "ignore")
-          print(f"=== TE US M2 :: {code} :: Beschreibung: {re.findall(r'averaged [^.]{0,200}', t)[:1]}")
+                  print(f"=== WERTE {path} :: {code} :: keine")
+          for p in ["OECD/MEI/USA.MABMM201.STSA.M", "OECD/MEI/USA.MABMM201.NCML.M", "OECD/MEI/NZL.MABMM301.STSA.M", "OECD/MEI/NZL.MABMM301.NCML.M",
+                    "OECD/MEI/NZL.MABMM301.NCML.Q", "OECD/MEI/NZL.MANMM101.NCML.M", "OECD/KEI/MA.USA.ST.M", "OECD/KEI/MA.NZL.ST.Q"]:
+              dbw(p)
+          # ── NZD: Wayback-Dateien ganz auslesen ──
+          def xlsx_lesen(b):
+              z = zipfile.ZipFile(io.BytesIO(b))
+              ss = re.findall(r"<si>(.*?)</si>", z.read("xl/sharedStrings.xml").decode("utf8", "ignore"), re.S)
+              ss = [re.sub(r"<[^>]+>", "", s) for s in ss]
+              x = z.read("xl/worksheets/sheet1.xml").decode("utf8", "ignore")
+              zeilen = {}
+              for m in re.finditer(r'<c r="([A-Z]+)(\d+)"([^>]*?)(?:/>|>(.*?)</c>)', x, re.S):
+                  col, row, attr, inner = m.group(1), int(m.group(2)), m.group(3), m.group(4) or ""
+                  v = re.search(r"<v>(.*?)</v>", inner); v = v.group(1) if v else ""
+                  if 't="s"' in attr and v != "": v = ss[int(v)]
+                  zeilen.setdefault(row, {})[col] = v
+              return zeilen
+          def xd(v):
+              try: return (datetime.date(1899, 12, 30) + datetime.timedelta(days=int(float(v)))).isoformat()[:7]
+              except Exception: return v
+          for f in ["hc50.xlsx", "hc50-long-run.xlsx"]:
+              url = "https://www.rbnz.govt.nz/-/media/project/sites/rbnz/files/statistics/series/c/c50/" + f
+              code, b, ct = hol("http://web.archive.org/cdx/search/cdx?url=" + urllib.parse.quote(url) + "&output=json&fl=timestamp,statuscode,length&filter=statuscode:200")
+              try:
+                  snaps = json.loads(b)[1:]
+              except Exception:
+                  snaps = []
+              print(f"=== Wayback {f}: {len(snaps)} Sicherungen; letzte 12: {[s[0][:8] for s in snaps[-12:]]}")
+              if not snaps: continue
+              code, b, ct = hol(f"http://web.archive.org/web/{snaps[-1][0]}id_/{url}", 120)
+              try:
+                  z = xlsx_lesen(b)
+              except Exception as e:
+                  print("    nicht lesbar", e); continue
+              rows = sorted(z)
+              for r in rows[:6]: print("    Kopf", r, {k: v[:50] for k, v in sorted(z[r].items())[:8]})
+              daten = [r for r in rows if re.match(r"^\d{4,5}(\.0)?$", z[r].get("A", "")) and int(float(z[r]["A"])) > 20000]
+              if daten:
+                  a, e = z[daten[0]], z[daten[-1]]
+                  print(f"    Daten {xd(a['A'])} .. {xd(e['A'])} ({len(daten)} Monate)")
+                  print("    erste:", {k: v[:14] for k, v in sorted(a.items())}, "\n    letzte:", {k: v[:14] for k, v in sorted(e.items())})
           PY
