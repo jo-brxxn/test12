@@ -20470,6 +20470,19 @@ function cotTickCountdown(){
   else el.innerHTML=`<b>${teile[0]}</b>d <b>${teile[1]}</b>h <b>${teile[2]}</b>m <b>${teile[3]}</b>s`;
 }
 // Leitet aus {long,short,dLong,dShort,oi,dOi} alle Kennzahlen ab.
+// Wie viele Wochen IN FOLGE der Long-Anteil in dieselbe Richtung lief, bis einschliesslich
+// der neuesten (Modell 44, Nutzer 2026-11-24). Aus s.history (Wochenberichte); fehlt der
+// neueste Bericht dort, wird er angehaengt. Aenderung auf 0,1 Pkt gerundet - eine Woche mit
+// "0.0" unterbricht die Serie. Ohne Verlauf: 0 (dann gilt die Staffel wie bisher).
+function cotSerie(s){
+  const h=Array.isArray(s&&s.history)?s.history:null;if(!h||!h.length)return 0;
+  const anteil=x=>{const L=+x.long,S=+x.short;return L+S>0&&isFinite(L)&&isFinite(S)?L/(L+S)*100:null;};
+  const ser=h.map(anteil).filter(v=>v!=null);
+  const last=h[h.length-1];if(!(+last.long===+s.long&&+last.short===+s.short)){const v=anteil(s);if(v!=null)ser.push(v);}
+  let n=0,dir=0;
+  for(let i=ser.length-1;i>0;i--){const d=Math.sign(Math.round((ser[i]-ser[i-1])*10));if(!d)break;if(!dir)dir=d;if(d!==dir)break;n++;}
+  return n;
+}
 function cotMetrics(s){
   if(!s)return null;
   const L=+s.long,S=+s.short,tot=L+S;
@@ -20480,7 +20493,7 @@ function cotMetrics(s){
   const prevLongPct=pTot>0?pL/pTot*100:longPct;
   const prevShortPct=pTot>0?pS/pTot*100:shortPct;
   const dNetPct=longPct-prevLongPct; // WoW-Aenderung des Long%-Anteils (wie Drittanbieter-Tools)
-  return{L,S,longPct,shortPct,net,netPct,dL,dS,dNet:dL-dS,dNetPct,prevLongPct,prevShortPct,oi:+s.oi||0,dOi:+s.dOi||0};
+  return{L,S,longPct,shortPct,net,netPct,dL,dS,dNet:dL-dS,dNetPct,prevLongPct,prevShortPct,oi:+s.oi||0,dOi:+s.dOi||0,serie:cotSerie(s)};
 }
 function cotColor(v){return v>0?'#0B5FCC':v<0?'#DC2430':'var(--t3)';}
 // Kennzahlen fuer EINE Zeile der Verlaufstabelle, inkl. Woche-zu-Woche-Delta
@@ -20769,21 +20782,29 @@ function cotWarningActive(){
 // Anteil zeigt. Widersprechen sich beide, heben sie sich teilweise auf.
 const COT_NETZ_AB=60,COT_NETZ_PKT=0.75,COT_MAX=1.5;
 const COT_WOW_STUFEN=[[10,1.35],[7.5,1.275],[5,1.05],[3,0.75]];
+// Modell 44 (Nutzer 2026-11-24, Entwurf vom 22.11.: "ab 3 Wochen Zunahme oder Abnahme soll der
+// Score-Effekt erstmal 0 sein; geht es danach eine Woche wieder in eine Richtung, zaehlt diese" ->
+// "dann ist die Regel in die andere Richtung"; Rueckfrage: gilt fuer die WOCHENAENDERUNG, die
+// Umschwung-Woche zaehlt nach der normalen Staffel). Netto-Positionierung bleibt reine Anzeige.
+const COT_SERIE_RUHE=3;
 function cotPunkte(m){
   // Modell 42: Netto-Positionierung nur Anzeige - zaehlt 0 (Regel offen, siehe applyCotDataFeed)
   const netz=0;
   const d=+m.dNetPct||0,st=COT_WOW_STUFEN.find(([ab])=>Math.abs(d)>=ab);
-  let wow=st?Math.sign(d)*st[1]:0;
+  // Modell 44 (Nutzer 2026-11-24): ab der COT_SERIE_RUHE-ten Woche in Folge in dieselbe Richtung
+  // zaehlt die Wochenaenderung 0 (Trend erschoepft); die Woche, die dreht, zaehlt wieder nach der Staffel.
+  const ruht=(+m.serie||0)>=COT_SERIE_RUHE;
+  let wow=st&&!ruht?Math.sign(d)*st[1]:0;
   const summe=Math.max(-COT_MAX,Math.min(COT_MAX,netz+wow));
   const gekappt=Math.abs(netz+wow)>COT_MAX;
   wow=Math.round((summe-netz)*1000)/1000;
-  return{netz,wow,summe,gekappt,stufe:st?st[0]:null};
+  return{netz,wow,summe,gekappt,stufe:st?st[0]:null,ruht,serie:+m.serie||0};
 }
 // kontra=true: die Regel fuer die acht Waehrungen (seit Modell 28 gegen die
 // Spekulanten). Ohne Argument entscheidet das gewaehlte Asset.
 function cotRegelText(kontra){
   // Modell 42 (2026-11-22): eine Regel fuer alle Assets - kontra bleibt als Parameter fuer Aufrufer erhalten
-  return`Net positioning (long / short share of the large speculators): shown only, counts 0 - the rule is still open. Weekly change of their long share: from ${COT_WOW_STUFEN.slice().reverse().map(([ab,p])=>ab+' pts → '+p).join(', ')}, in the direction of the change (trend following), on every asset. At most ±${COT_MAX}.`;
+  return`Net positioning (long / short share of the large speculators): shown only, counts 0. Weekly change of their long share: from ${COT_WOW_STUFEN.slice().reverse().map(([ab,p])=>ab+' pts → '+p).join(', ')}, in the direction of the change (trend following), on every asset. From the ${COT_SERIE_RUHE}rd week in a row in the same direction: 0 (trend exhausted) - the week that turns counts again. At most ±${COT_MAX}.`;
 }
 function applyCotDataFeed(){
   if(!COT_DATA||!COT_DATA.symbols)return false;
@@ -20842,7 +20863,7 @@ function applyCotDataFeed(){
     // Week-over-Week-Aenderung bleibt bullish ... Und stelle es [die Netto-Positionierung] bitte aktuell auf
     // komplett neutral, sodass man es nur sieht." -> WoW ueberall MIT den Spekulanten (auch die acht
     // Waehrungen, Modell 28 drehte sie), Netto-Positionierung nur Anzeige (SCORE_ZERO, nicht im Teiler).
-    // OFFEN beim Nutzer: Regel "ab 3 Wochen Zunahme/Abnahme Effekt 0, danach zaehlt die neue Richtung".
+    // Modell 44 (2026-11-24): ab der 3. Woche in Folge gleicher Richtung zaehlt die Woche 0 (cotPunkte).
     const cp=cotPunkte(m);
     setOne(rub,'Net Bullish Positioning',cotPct(m.longPct),cotPct(m.prevLongPct),'neu',0);
     setOne(rub,'Net Bearish Positioning',cotPct(m.shortPct),cotPct(m.prevShortPct),'neu',0);
@@ -28071,7 +28092,7 @@ try{ordnerHelfer({pushU,save,BC,escH,escJH,syms:()=>syms,curPage:()=>curPage,ren
 try{srHelfer({syms:()=>syms,FX,BC,escH,icn,openM,closeM,openAssetCfg,isNonFx,effLinkCcy,effDeriveRules,MACRO_DERIVE_RUBS,stripPeriodSuffix,indName,indIsCorePaired,
   SCORE_ZERO,m28NurAnzeige,M28_GEWICHT,M28_DECKEL,DECKEL_ALLE,indRegel,SCORE_NORM_MIN,SCORE_NORM_MAX,IND_STALE_CYCLES,BOND_HALF_PT,BOND_PKT,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,
   KURVE_IND,KURVE_PKT,ZINSDIFF_IND,ZINSDIFF_STUFEN,ZINSDIFF_TAGE,REALZINS_IND,REALZINS_PKT,GLOBAL_YIELDS_IND,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,ROHSTOFF_NAME,ROHSTOFF_KORB,ROHSTOFF_STUFEN,ROHSTOFF_KURZ,
-  COT_NET_HALF,COT_WOW_BASE,COT_NETZ_AB,COT_NETZ_PKT,COT_MAX,COT_WOW_STUFEN,RETAIL_IND_NAME,RETAIL_AB,RETAIL_STIMME,RETAIL_WACHS_PKT,RETAIL_WACHS_TAGE,
+  COT_NET_HALF,COT_WOW_BASE,COT_NETZ_AB,COT_NETZ_PKT,COT_MAX,COT_WOW_STUFEN,COT_SERIE_RUHE,RETAIL_IND_NAME,RETAIL_AB,RETAIL_STIMME,RETAIL_WACHS_PKT,RETAIL_WACHS_TAGE,
   SEAS_IND_NAME,SEAS_HIT_HOCH,SEAS_HIT_TIEF,TREND_IND,TREND_PKT,TREND_PKT_H,TREND_NEUTRAL_ATR,TREND_EMA_N,TREND_EMA_H,TREND_ATR_N,
   SENT_MAP,SENT_IND_NAMES,ZEILE_PKT,BTC_SCORE_HOCH,BTC_SCORE_TIEF,istAssetEigen});}catch(e){}
 try{bsHelfer({DATA_BASE,FEED_TIMEOUT_MS,openM,dashFensterGross,gewichte:()=>bsGewichte,setGewichte:g=>{pushU();bsGewichte=bsGewichteRein(g);save();},meldung:t=>alert(t)});}catch(e){}

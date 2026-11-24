@@ -102,6 +102,7 @@ const JR_MODELL_NOTIZ={
   41:'assets without a COT report (Iron Ore, DAX, yields, stocks) no longer carry three empty COT rows that counted in the divisor',
   42:'COT: net positioning shown only (0, not in the divisor); weekly change counts with the speculators on every asset, the eight currencies included (trend following)',
   43:'Money Supply: NZD now annual growth of RBNZ broad money (was monthly change), USD M2 straight from the Fed H.6 release (was derived from calendar levels, no previous value); history back to 1989 (NZD) and 1960 (USD)',
+  44:'COT weekly change: from the 3rd week in a row in the same direction it counts 0 (trend exhausted); the week that turns counts again with the normal steps',
   34:'new asset SOL (Solana), scored like BTC (crypto group: mirrored macro cards, own COT, seasonality and Crypto Fear & Greed); existing scores unchanged',
   33:'new assets Copper (scored like Silver) and Natural Gas (like WTI Oil, with its own row Gas Storage: weekly EIA natural gas storage, half weight, a draw is bullish); existing scores unchanged',
   30:'new row OIL Oil Inventories (weekly EIA crude stocks, half weight, a draw is bullish); GBP MPC Vote Split (hike-cut-hold) is shown only and counts 0',

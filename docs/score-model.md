@@ -911,3 +911,11 @@ ließ gestern weg. Geprüft von `check/scorenachrechnung.js` (D, E).
 - **Netto-Positionierung** (Net Bullish/Bearish): nur Anzeige, `SCORE_ZERO`, nicht im Teiler.
 - **Offen:** die Regel des Nutzers „ab 3 Wochen Zunahme/Abnahme Effekt 0, danach zählt die neue Richtung“. Siehe Erinnerung in `CLAUDE.md`.
 - **Geprüft von** `check/regeln.js` (COT-Tabelle + echte Zeilen), `check/scorenachrechnung.js` und `check/modell28.js`.
+
+## Modell 44 (2026-11-24): COT-Wochenänderung ruht ab der 3. Woche in Folge
+- Nutzer (Entwurf 22.11., entschieden 24.11.): *„ab 3 Wochen Zunahme oder Abnahme soll der Score-Effekt erstmal 0 sein; geht es danach eine Woche wieder in eine Richtung, zählt diese“* → *„dann ist die Regel in die andere Richtung“*
+- Rückfrage: gilt für die **Wochenänderung**; die drehende Woche zählt nach der **normalen Staffel** (≥ 3/5/7,5/10 Pkt → 0,75/1,05/1,275/1,35)
+- Serie = Wochen in Folge, in denen der Long-Anteil in dieselbe Richtung lief (Änderung auf 0,1 Pkt gerundet, „0.0“ unterbricht), aus `COT_DATA.symbols[id].history` (`cotSerie`); ab `COT_SERIE_RUHE` = 3 → 0
+- Wochen 1–2 einer Serie zählen wie bisher; Netto-Positionierung bleibt 0 (Anzeige)
+- Score-Fenster: Zeile *3rd+ week in a row same direction → 0*; `cotRegelText`; `JR_MODELL_NOTIZ` 44
+- Wächter `check/regeln.js` (Tabelle mit Serie + Serie unabhängig aus dem Verlauf nachgerechnet)

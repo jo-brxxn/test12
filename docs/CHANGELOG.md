@@ -23419,3 +23419,11 @@ Nutzer (Foto Dashboard, Ränder links/rechts markiert): *„Auch die Abstände z
 
 - **Wächter grün:** `hierarchie` (Seitentitel jetzt bei x 84 / y 62, auf allen Seiten gleich), `ueberlappung`, `dashboard`, `breit`, `kartenlook`, `kopfleiste`, `layout`.
 
+
+## 2026-11-24 — COT: Wochenänderung ruht ab der 3. Woche in Folge (VERSION-CHECK-818, Score-Modell 44)
+- Offene Regel seit 22.11. entschieden. Nutzer: *„Ja genau dann ist die Regel in die andere Richtung“*; Rückfragen → gilt für die **Wochenänderung**, Umschwung-Woche nach **normaler Staffel**
+- Regel: Serie (Wochen in Folge gleicher Richtung des Long-Anteils, 0,1 Pkt gerundet) ≥ 3 → 0; Wochen 1–2 und die drehende Woche zählen wie bisher; Netto bleibt Anzeige
+- Gemessen (COT 2026-11-17): GBP +3,7 Serie 5, AUD −4,7 Serie 3, NAS −10,8 Serie 3, COPPER −3,9 Serie 8 → je 0 (vorher ±0,75…1,35); CHF Serie 3 mit +0,6 (vorher schon 0)
+- `scorediff`: Symbol-Score 4/43 (GBP 0.2→−0.7, AUD −3.5→−2.8, COPPER 0.2→0.7, NAS 2.9→3.9), Karten 4/215, Paare 15/42
+- Score-Fenster-Zeile, `cotRegelText`, `JR_MODELL_NOTIZ` 44; Erinnerungspflicht in `CLAUDE.md` entfernt
+- Wächter `check/regeln.js`: Tabelle mit Serie + Serie unabhängig aus dem Verlauf; Gegenprobe (Regel aus) → 2 Befunde rot

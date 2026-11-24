@@ -210,8 +210,9 @@ export function srFensterHtml(sym) {
   if (hat('cot')) {
     // Modell 42 (2026-11-22): Netto-Positionierung nur Anzeige, Wochenaenderung bei JEDEM Asset mit dem Trend
     const wow = h.COT_WOW_STUFEN.slice().sort((a, b) => a[0] - b[0]);
-    pz.push(zeile('COT speculators long / short share', 0, 'shown only · rule still open'));
+    pz.push(zeile('COT speculators long / short share', 0, 'shown only'));
     pz.push(zeile(`Long share w/w ${wow.map(s => '+' + s[0]).join(' · ')} pts`, { stufen: wow.map(s => s[1]) }, 'with the move · trend following'));
+    pz.push(zeile(`${h.COT_SERIE_RUHE}rd+ week in a row same direction`, 0, 'trend exhausted · the turning week counts again'));
     pz.push(zeile('COT total', 'max ±' + h.COT_MAX));
   }
   if (hat('retail')) {

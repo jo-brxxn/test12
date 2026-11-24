@@ -141,14 +141,6 @@ passenden Datei (oder `docs/CHANGELOG.md`) nachschlagen, nicht raten.
     `faktenFenster()`, `hwZeile()`. Geprüft von `check/fliesstext.js`.
     Details: `docs/design-system.md` „Kein Fließtext".
 
-## ⏰ Offene Nutzer-Entscheidung — in JEDER Antwort erinnern (seit 2026-11-22)
-
-Nutzer: *„Erinnere mich bitte jetzt ab sofort in jeder Nachricht daran, das zu denken und zu bearbeiten.“*
-**COT-Netto-Positionierung:** zählt seit Modell 42 nur als Anzeige (0). Entwurf des Nutzers, noch nicht
-entschieden: *„ab 3 Wochen Zunahme oder Abnahme soll der Score-Effekt erstmal 0 sein; geht es danach eine
-Woche wieder in eine Richtung, zählt diese“*. Jede Antwort endet (vor der Versionszeile) mit einer kurzen
-Erinnerung daran, bis der Nutzer die Regel festlegt. Danach diesen Abschnitt entfernen.
-
 ## ⏰ Fristen — bei JEDER Sitzung prüfen (Nutzer 2026-11-23: *„Erinner dich selber in einer Datei die du immer liest“*)
 
 Ist das Datum erreicht oder überschritten: **von dir aus ansprechen**, erledigen (mit OK), dann die Zeile löschen.

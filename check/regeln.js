@@ -51,19 +51,27 @@ function zinsSoll(bond, ccy) {
     const out = { tab: [], zeilen: [] };
     // Modell 42 (2026-11-22): Netto-Positionierung zaehlt 0 (nur Anzeige), Woche mit dem Trend bis +-1,35
     [[62, 38, 0, 0, 0], [55, 45, 3, 0, 0.75], [55, 45, -5, 0, -1.05], [55, 45, 7.5, 0, 1.275], [55, 45, 12, 0, 1.35],
-     [60, 40, 10, 0, 1.35], [30, 70, -12, 0, -1.35], [30, 70, 5, 0, 1.05], [59.9, 40.1, 2.9, 0, 0]]
-      .forEach(([l, s, d, netz, wow]) => { const c = cotPunkte({ longPct: l, shortPct: s, dNetPct: d }); out.tab.push({ l, d, netz, wow, ist: c }); });
+     [60, 40, 10, 0, 1.35], [30, 70, -12, 0, -1.35], [30, 70, 5, 0, 1.05], [59.9, 40.1, 2.9, 0, 0],
+     // Modell 44: Serie = Wochen in Folge gleicher Richtung; ab 3 -> 0, Umschwung (Serie 1) nach Staffel
+     [55, 45, 4, 0, 0.75, 2], [55, 45, 4, 0, 0, 3], [55, 45, -10.8, 0, 0, 5], [55, 45, -3, 0, -0.75, 1]]
+      .forEach(([l, s, d, netz, wow, serie]) => { const c = cotPunkte({ longPct: l, shortPct: s, dNetPct: d, serie }); out.tab.push({ l, d, netz, wow, serie, ist: c }); });
     syms.forEach(sym => {
       const rub = (sym.rubrics || []).find(r => r.name === 'COT Data'); if (!rub || !COT_DATA || !COT_DATA.symbols || !COT_DATA.symbols[sym.id]) return;
       const m = cotMetrics(COT_DATA.symbols[sym.id]); if (!m) return;
-      const s0 = cotPunkte(m), k = 1;   // Modell 42: ueberall mit dem Trend (Modell 28 drehte die Waehrungen)
+      // Serie UNABHAENGIG aus dem Verlauf (nicht cotSerie): Long-Anteil je Woche, Aenderung auf 0,1 Pkt
+      const sx = COT_DATA.symbols[sym.id], hh = (sx.history || []).map(x => x.long / (x.long + x.short) * 100);
+      const la = (sx.history || []).slice(-1)[0]; if (!la || la.long !== sx.long || la.short !== sx.short) hh.push(sx.long / (sx.long + sx.short) * 100);
+      let n = 0, dir = 0; for (let i = hh.length - 1; i > 0; i--) { const dd = Math.sign(Math.round((hh[i] - hh[i - 1]) * 10)); if (!dd || (dir && dd !== dir)) break; dir = dd; n++; }
+      const s0 = cotPunkte(Object.assign({}, m, { serie: n })), k = 1;   // Modell 42: ueberall mit dem Trend (Modell 28 drehte die Waehrungen)
+      out.serien = out.serien || []; out.serien.push(sym.id + ':' + n + (m.serie !== n ? '≠' + m.serie : ''));
       const soll = { netz: k * s0.netz, wow: k * s0.wow };
       const w = n => { const i = rub.indicators.find(x => stripPeriodSuffix(x.name).base === n); return i ? indScore(i, rub) : null; };
       out.zeilen.push({ id: sym.id, soll, netz: roundSc((w('Net Bullish Positioning') || 0) + (w('Net Bearish Positioning') || 0)), wow: w('WoW Change in Net Position (%)') });
     });
     return out;
   });
-  a.tab.forEach(c => { if (Math.abs(c.ist.netz - c.netz) > 1e-9 || Math.abs(c.ist.wow - c.wow) > 1e-9) fail('COT-REGEL', `long ${c.l}% · Woche ${c.d} -> netto ${c.ist.netz} / Woche ${c.ist.wow}, Soll ${c.netz} / ${c.wow}`); });
+  a.tab.forEach(c => { if (Math.abs(c.ist.netz - c.netz) > 1e-9 || Math.abs(c.ist.wow - c.wow) > 1e-9) fail('COT-REGEL', `long ${c.l}% · Woche ${c.d}${c.serie ? ' · Serie ' + c.serie : ''} -> netto ${c.ist.netz} / Woche ${c.ist.wow}, Soll ${c.netz} / ${c.wow}`); });
+  (a.serien || []).filter(x => x.includes('≠')).forEach(x => fail('COT-SERIE', `${x} (unabhaengig ≠ App)`));
   a.zeilen.forEach(z => {
     if (Math.abs(z.netz - z.soll.netz) > 0.006) fail('COT-ZEILE NETTO', `${z.id}: ${z.netz} statt ${z.soll.netz}`);
     if (z.wow != null && Math.abs(z.wow - roundTo(z.soll.wow)) > 0.006) fail('COT-ZEILE WOCHE', `${z.id}: ${z.wow} statt ${z.soll.wow}`);
