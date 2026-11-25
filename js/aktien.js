@@ -173,11 +173,7 @@ export function aktieRisiken(id){
   return STK_RISIKO_REGELN.map(([k,t,regel,f])=>{let w=null;try{w=f(s);}catch(x){}return w?{k,t,regel,w}:null;}).filter(Boolean);
 }
 // Schwere Warnung fuer die Seitenleiste: Schulden, Zinsdeckung, Verlust, Cash-Abfluss
-const STK_SCHWER=['schulden','zinsen','verlust','cash'];
-export function aktieWarnHtml(id){
-  const l=aktieRisiken(id).filter(r=>STK_SCHWER.includes(r.k));if(!l.length)return'';
-  return`<span class="np-risk" title="${e(l.map(r=>r.t+': '+r.w).join(' · '))}" aria-label="${l.length} risk flag${l.length>1?'s':''}">!</span>`;
-}
+// aktieWarnHtml (Warnzeichen "!" in der Seitenleiste) am 2026-11-25 entfernt - Risiken nur noch in der Firmenkarte.
 function risikoHtml(id){
   const l=aktieRisiken(id);if(!ST)return'';
   if(!l.length)return`<div class="stk-risk stk-risk-ok"><b>No major financial red flags</b> <i>debt, cash flow, dilution, valuation checked</i></div>`;

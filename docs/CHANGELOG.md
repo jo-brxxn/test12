@@ -23471,3 +23471,10 @@ Nutzer: *„Wir hatten ja die Notes Karte verändert aber ich will jetzt neben d
 - Gemessen (1180 + 390 px): Vorlage → 2 Ordner/4 Fragen, neue Frage am Ordnerende, ▲ verschiebt, Umhängen nach *Market*, Löschen → Papierkorb → zurück, nach Neuladen da; Kartentitel 17 px; nichts ragt bei 390 px heraus
 - Beim Messen behoben: Titel brach neben der Anzahl um (Anzahl jetzt unter dem Titel); Vorschau folgte nicht der Anzeige-Reihenfolge; Pflicht-ⓘ an jeder Karte (hierarchie), Esc-Schutz + Öffner für die drei Fenster (eingaben)
 - Wächter `check/checklisten.js` neu (Gegenprobe rot); `hierarchie`/`designregeln` um die Seite erweitert
+
+## 2026-11-25 — Rote „!“ bei Aktien aus der Asset-Liste entfernt (VERSION-CHECK-823)
+- Nutzer: *„in Assets … extrem breit, weil bei manchen Aktien diese roten Ausrufezeichen … Warum stehen die da? Und bitte entfernen die.“*
+- Herkunft: Warnzeichen für schwere Finanzrisiken (2026-11-13, `aktieWarnHtml`): Amazon (FCF −46,9 Mrd.), Oracle (D/E 2,52, FCF −28,7 Mrd.), Intel (Zinsdeckung 1,5×, Marge −20,1 %), CoreWeave (D/E 16,45, Zinsdeckung 0,0×, Marge −25,6 %, FCF −20,4 Mrd.)
+- **Gemessen (1180 px):** Asset-Liste so breit wie ihre breiteste Zeile — mit „!“ **228 px**, ohne **201 px** (für ALLE Assets)
+- Fix: Zeichen, `aktieWarnHtml`, `STK_SCHWER` und CSS `.np-risk` entfernt; Risiken bleiben in der Firmenkarte der Aktie
+- Fehlerklasse: jede Zeile nur Symbol/Name/Score → Wächter `check/aktien.js` F (kein `.np-risk`, keine Zeile mit > 3 Bausteinen); Gegenprobe (Zusatz in jeder Zeile) → rot bei 1440 und 390 px

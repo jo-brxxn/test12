@@ -1752,3 +1752,7 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 ## Trash nur über die Settings (seit 2026-11-25, 822)
 - Nutzer: *„links in der Leiste … die Kategorie Trash wegkommt. Die soll nur in den Einstellungen öffnbar sein“*
 - `'notes'` (Trash-Seite) nicht mehr in `TAB_ORDER`, in `ENTFERNTE_TABS` (fliegt auch aus gespeicherten Stapeln), Kürzel `g r` entfernt; Seite bleibt, geöffnet über den Knopf **Trash** in den Settings (`mCloud`)
+
+## Asset-Liste der Leiste: nur Symbol · Name · Score (seit 2026-11-25, 823)
+- Die Liste ist so breit wie ihre breiteste Zeile — jeder Zusatz in einer Zeile (z. B. das frühere rote „!“ bei Aktien, +27 px) streckt sie für alle Assets
+- Warnungen zu Aktien stehen nur in der Firmenkarte; Wächter `check/aktien.js` F

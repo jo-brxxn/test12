@@ -17,10 +17,10 @@ const PW=process.env.PW_PATH||'/opt/node22/lib/node_modules/playwright';
 //   E) kein Seitenueberlauf, keine JS-Fehler
 //   F) Risiko-Markierung (Nutzer 2026-11-13: "wenn es große Risikos wie hohe
 //      Verschuldung gibt dann das kennzeichnen"): CRWV (Testdaten: D/E 4.8,
-//      Verlust, Cash-Abfluss) traegt "High debt" in der Firmenkarte und ein
-//      Warnzeichen in der Seitenleiste; NVDA traegt kein Warnzeichen
+//      Verlust, Cash-Abfluss) traegt "High debt" in der Firmenkarte. Seit 2026-11-25 KEIN Warnzeichen
+//      mehr in der Seitenleiste (Nutzer: machte die Asset-Liste "extrem breit") - keine Zeile traegt .np-risk
 // Gegenprobe --gegenprobe: ausgeliefertes main.js ohne die Company-Reihe -> C rot.
-// Gegenprobe --gegenprobe-risiko: Schulden-Regel und Seitenleisten-Warnung aus -> F rot.
+// Gegenprobe --gegenprobe-risiko: Schulden-Regel aus -> F rot (Firmenkarte ohne "High debt").
 const {chromium}=require(PW);const path=require('path');
 const { wartenBisDatenDa } = require('./warten.js');
 const PORT=process.env.PORT||8935,GP=process.argv.includes('--gegenprobe'),GPR=process.argv.includes('--gegenprobe-risiko');
@@ -31,7 +31,7 @@ const AKTIEN=['AAPL','MSFT','GOOGL','AMZN','NVDA','META','TSLA','AVGO','ORCL','A
     const ctx=await b.newContext({viewport:{width:W,height:H},serviceWorkers:'block'});
     await ctx.route(/stock_data\.json/,r=>r.fulfill({path:path.join(__dirname,'fixtures','stock_test.json'),contentType:'application/json'}));
     if(GP)await ctx.route(/\/js\/main\.js/,async r=>{const res=await r.fetch();let t=await res.text();t=t.replace("${aktie?`${abReihenTitel('Company')}","${false?`${abReihenTitel('Company')}");r.fulfill({response:res,body:t});});
-    if(GPR)await ctx.route(/\/js\/aktien\.js/,async r=>{const res=await r.fetch();let t=await res.text();t=t.replace("return (s.de!=null&&s.de>1.5)","return false&&(s.de!=null&&s.de>1.5)").replace("const STK_SCHWER=['schulden','zinsen','verlust','cash'];","const STK_SCHWER=[];");r.fulfill({response:res,body:t});});
+    if(GPR)await ctx.route(/\/js\/aktien\.js/,async r=>{const res=await r.fetch();let t=await res.text();t=t.replace("return (s.de!=null&&s.de>1.5)","return false&&(s.de!=null&&s.de>1.5)");r.fulfill({response:res,body:t});});
     const p=await ctx.newPage();const err=[];p.on('pageerror',e=>err.push(e.message));
     await p.addInitScript(()=>{try{localStorage.setItem('fxpro_help_seen','1');localStorage.setItem('fxpro_intro_anim_enabled','0');}catch(e){}});
     await p.goto('http://127.0.0.1:'+PORT+'/index.html');await wartenBisDatenDa(p);
@@ -43,9 +43,11 @@ const AKTIEN=['AAPL','MSFT','GOOGL','AMZN','NVDA','META','TSLA','AVGO','ORCL','A
     A.s.forEach(x=>{if(!/:stock:USD$/.test(x))F.push(o+' A: '+x+' (erwartet Klasse stock, Makro USD)');});
     // F) Warnzeichen in der Seitenleiste (Daten laden nach ~2,5 s)
     await p.waitForTimeout(3500);
-    const sb=await p.evaluate(()=>Object.fromEntries(['CRWV','NVDA'].map(id=>{const b=document.querySelector('#sidebar [data-sym="'+id+'"]');return[id,!!(b&&b.querySelector('.np-risk'))];})));
-    if(!sb.CRWV)F.push(o+' F: CoreWeave ohne Warnzeichen in der Seitenleiste');
-    if(sb.NVDA)F.push(o+' F: NVIDIA mit Warnzeichen, obwohl keine schwere Finanzwarnung');
+    const sb=await p.evaluate(()=>document.querySelectorAll('#sidebar .np-risk').length);
+    if(sb)F.push(o+' F: '+sb+' Warnzeichen "!" in der Seitenleiste (entfernt 2026-11-25, machte die Liste breit)');
+    // Fehlerklasse: die Liste ist so breit wie ihre breiteste Zeile - jede Zeile nur Symbol, Name, Score
+    const extra=await p.evaluate(()=>[...document.querySelectorAll('#sidebar .np-asset')].filter(x=>x.children.length>3).map(x=>x.dataset.sym));
+    if(extra.length)F.push(o+' F: Zeilen mit Zusatz neben Symbol/Name/Score (streckt die ganze Liste): '+extra.slice(0,5).join(', '));
     for(const id of ['NVDA','INTC','CRWV']){
       await p.evaluate(id=>{document.querySelectorAll('.ov').forEach(x=>{x.style.display='none';});gotoSym(id);},id);await p.waitForTimeout(1800);
       const L=await p.evaluate(()=>{
@@ -68,7 +70,7 @@ const AKTIEN=['AAPL','MSFT','GOOGL','AMZN','NVDA','META','TSLA','AVGO','ORCL','A
     await ctx.close();
   }
   await b.close();
-  if(GPR){const ok=F.some(f=>/F: CoreWeave/.test(f));console.log(ok?'aktien --gegenprobe-risiko: ok (fehlende Risiko-Markierung gemeldet)':'aktien --gegenprobe-risiko: FEHLER');process.exit(ok?0:1);}
+  if(GPR){const ok=F.some(f=>/F: CoreWeave-Firmenkarte/.test(f));console.log(ok?'aktien --gegenprobe-risiko: ok (fehlende Risiko-Markierung gemeldet)':'aktien --gegenprobe-risiko: FEHLER');process.exit(ok?0:1);}
   if(GP){const ok=F.some(f=>/C: Karte "Company" fehlt/.test(f));console.log(ok?'aktien --gegenprobe: ok (fehlende Company-Reihe gemeldet)':'aktien --gegenprobe: FEHLER\n  '+F.join('\n  '));process.exit(ok?0:1);}
   if(F.length){console.log('aktien: '+F.length+' Befund(e)\n  '+F.slice(0,30).join('\n  '));process.exit(1);}
   console.log('aktien: ok (Kategorie Stocks mit 13 Aktien, Risiko-Markierung, Makro wie S&P 500, Company/Valuation/Growth & quality + Analysts/Earnings/Seasonality, Werte = Datei)');
