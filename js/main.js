@@ -32,7 +32,7 @@ import {chkHelfer,checklisten,chkSetzeAlle,chkVereinen,renderChecklisten,CHK_WIN
 import {srHelfer,openScoreRegeln,srZahnrad,srTyp,srMax} from './scoreregeln.js';
 import {AI_MARKEN,aiMarkeMono} from './marken-icons.js';
 import {sprungLog,sprungtestStart} from './sprungtest.js';
-import {STOCK_IDS,STOCK_ACCENT,STOCK_DEF,aktienHelfer,aktienDatenHolen,aktieWarnHtml,karteProfil,karteBewertung,karteQualitaet,karteAnalysten,karteZahlen} from './aktien.js';
+import {STOCK_IDS,STOCK_ACCENT,STOCK_DEF,aktienHelfer,aktienDatenHolen,karteProfil,karteBewertung,karteQualitaet,karteAnalysten,karteZahlen} from './aktien.js';
 // Sektoren-Katalog der MACRO-Zeile (2026-11-12, nur Anzeige) - dieselbe Liste baut sektor_data.json.
 import {SEKTOREN,SEKTOR_FRISCH_TAGE,sektorTitelBasis} from './sektoren-katalog.js';
 import {kachelBildHtml,kachelLaender,kachelFormenLaden,kachelFormenDa} from './kachelbild.js';
@@ -8534,7 +8534,10 @@ function renderSidebar(){
         <button data-sym="${id}" class="np ab np-asset${on?' on':''}" onclick="sbClick('${escJs(id)}')" onpointerdown="sbPressStart('${escJs(id)}')" onpointerup="sbPressEnd()" onpointerleave="sbPressEnd()" onpointercancel="sbPressEnd()" data-tip="${escH(c.name)} ${escH(scTxt)}" aria-label="${escH(c.name)} ${escH(scTxt)}">
           ${sbSymbolHtml(id,on)}
           <span class="an np-lbl"${bv?` data-bv="${bv}"`:''}>${escH(c.name)}</span>
-          ${/* Aktien: Warnzeichen bei schweren Finanzrisiken (Nutzer 2026-11-13) */''}${assetCls(id)==='stock'?aktieWarnHtml(id):''}
+          ${/* Warnzeichen "!" bei schweren Finanzrisiken (2026-11-13) am 2026-11-25 ENTFERNT (Nutzer: "extrem
+             breit, weil bei manchen Aktien diese roten Ausrufezeichen ... bitte entfernen"). Gemessen: die Asset-
+             Liste ist so breit wie ihre breiteste Zeile - das "!" (16 px + 4 px Abstand) streckte sie fuer ALLE
+             Assets von 201 auf 228 px. Die Risiken stehen weiter in der Firmenkarte der Aktie (risikoHtml). */''}
           <span class="np-score">${escH(scTxt)}</span>
         </button>
         ${bearb?`<span class="np-asset-edit">

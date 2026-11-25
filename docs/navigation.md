@@ -1753,7 +1753,11 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Nutzer: *„links in der Leiste … die Kategorie Trash wegkommt. Die soll nur in den Einstellungen öffnbar sein“*
 - `'notes'` (Trash-Seite) nicht mehr in `TAB_ORDER`, in `ENTFERNTE_TABS` (fliegt auch aus gespeicherten Stapeln), Kürzel `g r` entfernt; Seite bleibt, geöffnet über den Knopf **Trash** in den Settings (`mCloud`)
 
-## Notes: Währungsordner (seit 2026-11-25, 823)
+## Asset-Liste der Leiste: nur Symbol · Name · Score (seit 2026-11-25, 823)
+- Die Liste ist so breit wie ihre breiteste Zeile — jeder Zusatz in einer Zeile (z. B. das frühere rote „!“ bei Aktien, +27 px) streckt sie für alle Assets
+- Warnungen zu Aktien stehen nur in der Firmenkarte; Wächter `check/aktien.js` F
+
+## Notes: Währungsordner (seit 2026-11-25, 824)
 
 - Jede der 8 Währungen hat automatisch den Ordner **„<Währung>“** und direkt darunter **„Old“**, beide mit den festen Ästen **Inflation · Labour market · Economy** (feste Ids `fx-AUD`/`fx-AUD-old`, `b-infl`/`b-lab`/`b-eco`; Gelöschtes wird nicht neu angelegt).
 - Tipp auf einen Ast = neuer Punkt an diesem Ast. Im Punkt-Fenster **Move to Old** → Punkt samt Unterpunkten in denselben Ast von Old.
