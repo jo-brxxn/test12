@@ -84,9 +84,13 @@ export function ordnerKarteHtml(c, pinnedZeilen, pinnedAnzahl) {
   const zeilen = l.map(o => `<button type="button" class="no-kz" onclick="ordnerAuf('${escJH(c.id)}','${escJH(o.id)}')" title="Open ${e(o.name)}">
       <span class="no-kz-n">${e(o.name)}${(o.assets || []).length > 1 ? `<i>shared · ${o.assets.length} assets</i>` : ''}</span>${biasBalken(o)}<span class="no-kz-c">${punkte(o).length}</span></button>`).join('');
   return `<div class="ab-ntile ab-auf no-karte" onclick="abKarteAuf(event,()=>ordnerAuf('${escJH(c.id)}'))" title="Open notes">
-    <div class="ab-tile-hd">${H.abTileIcon()}<span class="ab-tile-t">Notes</span><span class="ab-tile-s">${l.length}</span>${H.abInfoBtn('Notes', ['Folders with a mind map for this asset. Tap the card to open them.', 'A folder can be shared with other assets: it then shows on each of them, and changes appear everywhere.', 'Pinned notes from before stay below until you sort them into a folder.'])}</div>
-    <div class="no-kl">${zeilen || `<div class="ab-nt-empty"><i>No folders yet</i> · tap to create one</div>`}</div>
-    ${pinnedAnzahl ? `<div class="no-kp"><span class="no-kp-t">Pinned notes · ${pinnedAnzahl} to sort</span><div class="ab-nt-list">${pinnedZeilen}</div></div>` : ''}
+    <div class="ab-tile-hd">${H.abTileIcon()}<span class="ab-tile-t">Notes</span><span class="ab-tile-s">${pinnedAnzahl + l.length}</span>${H.abInfoBtn('Notes', ['Pinned notes on top, folders with a mind map below. Tap a free spot of the card to open the folders.', 'A folder can be shared with other assets: it then shows on each of them, and changes appear everywhere.', 'A pinned note can be moved into a folder in the folder window (Move to folder).'])}</div>
+    ${/* Seit 2026-11-25 (Nutzer: "neben den Ordnern doch wieder die Option ... Notizen anzuheften", Rueckfrage:
+         Pinned oben, Ordner darunter): Einstieg "New pinned note" ist zurueck. */''}
+    <span class="no-kp-t">Pinned notes · ${pinnedAnzahl}</span>
+    <div class="ab-nt-add"><button type="button" class="finp ab-nt-neu" onclick="newResNoteForAsset('${escJH(c.id)}')" title="Opens the note window — pinned to ${e(c.name)}">＋ New pinned note on ${e(c.name)}…</button></div>
+    <div class="ab-nt-list">${pinnedZeilen || `<div class="ab-nt-empty"><i>Nothing pinned yet</i></div>`}</div>
+    <div class="no-kp"><span class="no-kp-t">Folders · ${l.length}</span><div class="no-kl">${zeilen || `<div class="ab-nt-empty"><i>No folders yet</i> · tap to create one</div>`}</div></div>
     <div class="ab-goto"><button class="ab-goto-b" onclick="pinHistAuf('${escJH(c.id)}')" title="Unpinned notes of ${e(c.name)}">History →</button></div>
   </div>`;
 }
@@ -113,8 +117,8 @@ function zeichnen() {
       <button type="button" class="no-newf" onclick="ordnerNeu()">＋ Create new folder</button>
       <div class="no-lbl">Folders</div>
       ${l.map(o => `<button type="button" class="no-f${o.id === _sel ? ' on' : ''}" onclick="ordnerWahl('${escJH(o.id)}')"><span class="no-f-n">${e(o.name)}${biasBalken(o)}</span><span class="no-f-c">${punkte(o).length}</span></button>`).join('') || '<div class="no-leer"><i>No folders yet</i></div>'}
-      ${pin.length ? `<div class="no-lbl">Pinned notes to sort · ${pin.length}</div>
-        ${pin.map(n => `<div class="no-pin" style="--nb:${biasFarbe(n.bias)}"><span class="no-pin-t">${e(n.title || 'Untitled note')}</span><button type="button" class="btn" onclick="ordnerPinEinsortieren('${escJH(n.id)}')" ${l.length ? '' : 'disabled title="Create a folder first"'}>Sort in</button></div>`).join('')}` : ''}
+      ${pin.length ? `<div class="no-lbl">Pinned notes · ${pin.length}</div>
+        ${pin.map(n => `<div class="no-pin" style="--nb:${biasFarbe(n.bias)}"><span class="no-pin-t">${e(n.title || 'Untitled note')}</span><button type="button" class="btn" onclick="ordnerPinEinsortieren('${escJH(n.id)}')" ${l.length ? 'title="Move this note into a folder as a point"' : 'disabled title="Create a folder first"'}>Move to folder</button></div>`).join('')}` : ''}
     </div>`;
   const o = notizOrdner[_sel];
   let main = '';
@@ -330,7 +334,7 @@ export function ordnerPinEinsortieren(noteId) {
 function punktFenster(p, ordnerId) {
   const e = H.escH;
   _bias = biasOk(p.b); _art = p.par ? 'ast' : 'neu';
-  document.getElementById('noPtTitel').textContent = _pt ? 'Edit point' : _pinId ? 'Sort pinned note into a folder' : 'New point';
+  document.getElementById('noPtTitel').textContent = _pt ? 'Edit point' : _pinId ? 'Move pinned note to a folder' : 'New point';
   document.getElementById('noPtTi').value = p.ti || '';
   document.getElementById('noPtTx').value = p.tx || '';
   const of = document.getElementById('noPtOrdWrap'), os = document.getElementById('noPtOrd');

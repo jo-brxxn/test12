@@ -23449,3 +23449,17 @@ Nutzer (Foto Dashboard, Ränder links/rechts markiert): *„Auch die Abstände z
 - **Gemessen danach** (Baum mit 28 Punkten): Start Fit 0,60; 1 Finger +200/−100 px verschoben; Pinch auf 1,74; Strg+Rad; Fit zurück; Ziehen auf einem Punkt öffnet nichts, Tipp öffnet das Bearbeiten-Fenster; Wischen über die Ordnerleiste: alle `scrollLeft` 0
 - Beim Messen gefunden: Zoom-Leiste verdeckte in Fit ein Blatt unten rechts → Fit lässt unten Platz (0 Überlappungen)
 - Wächter `check/notizordner.js` Z, Gegenprobe `--gegenprobe-fest` rot
+
+## 2026-11-25 — Notes-Karte: Anheften wieder möglich (VERSION-CHECK-821)
+
+Nutzer: *„Wir hatten ja die Notes Karte verändert aber ich will jetzt neben den Ordnern doch wieder die Option haben dort Notizen anzuheften.“*
+
+- **Rückfragen:** Pinned notes oben, Ordner darunter. „Sort in“ bleibt freiwillig als **Move to folder**.
+- **Karte:**
+  - Abschnitt *Pinned notes · n* mit „＋ New pinned note on …“ (voller Editor, angepinnt) und den bekannten Zeilen.
+  - Darunter *Folders · n*.
+  - Die Zahl im Kopf ist Pinned + Ordner.
+- **Gemessen:** Die Pinned-Liste wuchs auf die ganze Kartenhöhe (`flex:1`), deshalb klaffte zwischen der letzten Notiz und den Ordnern eine Lücke. Jetzt hat sie `flex:0 0 auto`.
+- **Ordner-Fenster:** Abschnitt *Pinned notes* statt *to sort*, Knopf *Move to folder*.
+- **Wächter:** `check/eingaben.js` D prüft wieder, dass der Einstieg den Editor angepinnt öffnet. `notizordner`, `hierarchie`, `kartentitel` und `ueberlappung` sind grün.
+

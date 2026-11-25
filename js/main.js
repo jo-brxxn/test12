@@ -12048,9 +12048,9 @@ function abPinnedHtml(c){
         <button onclick="togResPin('${escJH(n.id)}')" title="Unpin">${icn('pin',13)}</button>
       </span>
     </div>`).join('');
-  // Seit 813 (Nutzer 2026-11-23: "die pinned Notes Karte ... nur noch Notes"): die Karte zeigt die Ordner
-  // (js/notizordner.js); bisherige Pinned notes stehen darunter, bis sie einsortiert sind. Den Einstieg
-  // "New pinned note" gibt es nicht mehr - Neues entsteht als Punkt in einem Ordner.
+  // Seit 813 heisst die Karte "Notes" mit Ordnern (js/notizordner.js). Seit 821 (Nutzer 2026-11-25: "neben
+  // den Ordnern doch wieder die Option ... Notizen anzuheften"): Pinned notes OBEN mit "New pinned note",
+  // Ordner darunter; "Move to folder" im Ordner-Fenster ist freiwillig.
   return ordnerKarteHtml(c,zeilen,list.length);
 }
 

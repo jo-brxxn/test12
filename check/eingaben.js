@@ -299,17 +299,26 @@ const OEFFNER = {
   // Bis 812 hiess die Karte "Pinned notes" mit Einstieg "New pinned note" in den Notiz-Editor. Nutzer
   // 2026-11-23: Karte "Notes", Tipp oeffnet das Ordner-Fenster; Neues entsteht als Punkt (dort geprueft:
   // check/notizordner.js). Hier nur: kein Eingabefeld in der Karte, Tipp oeffnet das Fenster.
-  console.log('D) Notes-Karte ohne Eingabefeld, Tipp oeffnet das Ordner-Fenster');
+  console.log('D) Notes-Karte: kein Eingabefeld, New pinned note -> Editor, Tipp oeffnet das Ordner-Fenster');
   await p.evaluate(() => { gotoSym('USD'); });
   await p.waitForTimeout(500);
   const karte = await p.evaluate(() => { const t = document.querySelector('.no-karte'); return t ? { felder: t.querySelectorAll('input,textarea').length } : null; });
   if (!karte) rot('Notes-Karte nicht gefunden');
   else {
     if (karte.felder) rot(`Notes-Karte hat ${karte.felder} Eingabefeld(er) - Neues entsteht im Fenster`);
+    // Seit 821 wieder: "New pinned note" oeffnet den vollen Notiz-Editor, angepinnt mit dem Asset.
+    const ein = await p.locator('.no-karte .ab-nt-neu').count();
+    if (!ein) rot('Notes-Karte hat keinen Einstieg "New pinned note"');
+    else {
+      await p.locator('.no-karte .ab-nt-neu').first().click(); await p.waitForTimeout(200);
+      const ed = await p.evaluate(() => ({ offen: document.getElementById('mResNote').style.display !== 'none', pin: document.getElementById('resNPin').checked }));
+      if (!ed.offen || !ed.pin) rot(`"New pinned note" oeffnet den Editor nicht angepinnt: ${JSON.stringify(ed)}`);
+      await p.evaluate(() => closeM('mResNote')); await p.waitForTimeout(150);
+    }
     const kb = await p.locator('.no-karte .ab-tile-hd').boundingBox();
     await p.mouse.click(kb.x + 60, kb.y + kb.height / 2 + 40); await p.waitForTimeout(300);
     const auf = await p.evaluate(() => document.getElementById('mNotesOrdner').style.display !== 'none');
-    if (!auf) rot('Tipp auf die Notes-Karte oeffnet das Ordner-Fenster nicht'); else gruen('Notes-Karte ohne Eingabefeld, Tipp oeffnet das Ordner-Fenster');
+    if (!auf) rot('Tipp auf die Notes-Karte oeffnet das Ordner-Fenster nicht'); else gruen('Notes-Karte ohne Eingabefeld, New pinned note -> Editor angepinnt, Tipp oeffnet das Ordner-Fenster');
   }
   await aufraeumen();
   await p.close();
