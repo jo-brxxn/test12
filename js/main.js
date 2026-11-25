@@ -10789,7 +10789,7 @@ function abRetailVerlauf(sym){
 // Der Schnitt allein haette "Rueckenwind" in den Score geschrieben, wo die
 // Mehrheit der Jahre das Gegenteil sagt. Gemessen greift die Bedingung bei
 // 3 von 13 Assets mit Datenlage (OIL, AUD, SP500 -> 0).
-const SEAS_HIT_HOCH=60, SEAS_HIT_TIEF=40;
+const SEAS_HIT_HOCH=60, SEAS_HIT_TIEF=40, SEAS_GRAU_PKT=0.25;
 function seasBiasFor(id){
   const D=SEASONALITY_DATA;
   const A=D&&D.assets?D.assets[id]:null;
@@ -10799,9 +10799,19 @@ function seasBiasFor(id){
   const avg=Number(m[1]),hit=Number(m[2]);
   if(!isFinite(avg)||!isFinite(hit))return{bias:'neu',txt:null,grund:'no value for this month'};
   const einig=(avg>=0&&hit>=SEAS_HIT_HOCH)||(avg<0&&hit<=SEAS_HIT_TIEF);
-  return{bias:einig?(avg>=0?'bull':'bear'):'neu',avg,hit,einig,
+  // Graubereich (Nutzer 2026-11-25, Screenshot AUD Nov: Schnitt -0,48 %, nur
+  // 44 % Treffer -> 0, "Bau mit maximal 0.5 im Score wieder seasonality ein";
+  // Wahl "Abgestuft"): Trefferquote zwischen 40 und 60 % widerspricht dem
+  // Schnitt nicht, bestaetigt ihn aber auch nicht -> halber Beitrag (±0,25)
+  // in Richtung des Schnitts, als feste Punkte (ind.pkt). 0 nur noch, wenn
+  // die Trefferquote in die GEGENrichtung zeigt (OIL Sep: +0,32 % bei 38 %)
+  // oder der Schnitt genau 0 ist.
+  const grau=!einig&&avg!==0&&(avg>0?hit>=SEAS_HIT_TIEF:hit<=SEAS_HIT_HOCH);
+  const richtung=avg>=0?'bull':'bear';
+  return{bias:einig||grau?richtung:'neu',avg,hit,einig,grau,
+    pkt:grau?(avg>0?SEAS_GRAU_PKT:-SEAS_GRAU_PKT):undefined,
     txt:`${seasFmt(avg,A.unit)} · up in ${hit}%`,
-    grund:einig?null:'average and hit rate disagree'};
+    grund:einig||grau?null:avg===0?'flat average':'hit rate points the other way'};
 }
 
 // ── Retail: gegen die Menge, nach der Regel des Nutzers ──────────────────
@@ -10854,7 +10864,7 @@ function retailRegelText(){
   return`Each pair votes against the crowd: ${RETAIL_AB}% or more long counts −${RETAIL_STIMME}, ${100-RETAIL_AB}% or less long counts +${RETAIL_STIMME}, anything in between 0. If the crowd moved further into that extreme by ${RETAIL_WACHS_PKT} points or more over the last ${RETAIL_WACHS_TAGE} days, the vote counts double (±${RETAIL_STIMME*2}). A currency's score is the average of its pair votes, so at most ±1.`;
 }
 function seasRegelText(){
-  return`Counts ±0.5, and only when the average and the hit rate agree — a positive average needs at least ${SEAS_HIT_HOCH}% up years, a negative one at most ${SEAS_HIT_TIEF}%.`;
+  return`±0.5 when average and hit rate agree (≥ ${SEAS_HIT_HOCH}% up years for a positive average, ≤ ${SEAS_HIT_TIEF}% for a negative one) · ±${SEAS_GRAU_PKT} in the grey zone (${SEAS_HIT_TIEF}–${SEAS_HIT_HOCH}%) · 0 when the hit rate points the other way.`;
 }
 
 /** Der Score-Beitrag einer Kachel als kurze Zeile darunter. */
@@ -10951,7 +10961,8 @@ function applySeasRetailFeed(){
       ind.bias=erg.bias;changed=true;
     }
     // Feste Punkte nur dort, wo die Regel eine Zahl liefert (Retail seit
-    // 2026-09-24); Saisonalitaet bleibt Bias x Halbgewicht. Von Hand
+    // 2026-09-24; Saisonalitaet seit 2026-11-25 nur im Graubereich ±0,25,
+    // sonst Bias x Halbgewicht = ±0,5). Von Hand
     // gesetzter Bias hebt die Zahl auf.
     const pkt=(!gepinnt&&typeof erg.pkt==='number')?erg.pkt:undefined;
     if(pkt===undefined){if('pkt' in ind){delete ind.pkt;changed=true;}}
@@ -11894,7 +11905,7 @@ function abGrafikHtml(art,c){
   // "aligned" sagen und der Score trotzdem 0 zeigen. Frueher stand die
   // Doppelbedingung hier als eigener Ausdruck mit fest eingetippten 60/40.
   let sb=null;try{sb=seasBiasFor(c.id);}catch(e){}
-  const stark=!!(sb&&sb.einig);
+  const stark=!!(sb&&sb.einig),grau=!!(sb&&sb.grau);
   return abTileZ('seas','Seasonality',
     `<span class="ab-tile-s">${escH(A.proxy||'')} · ${cur?cur[3]:'–'}y</span>`,
     `<div class="ab-big" style="color:${cur?biasCss(+cur[1]>=0?'bull':'bear'):'var(--t3)'}">${cur?`${seasFmt(cur[1],A.unit)} in ${SEAS_MON[jetzt-1]}`:'–'}</div>
@@ -11902,14 +11913,14 @@ function abGrafikHtml(art,c){
      <div class="ab-foot">
        <span><span class="ab-foot-l">Up in</span> <b>${cur?cur[2]:'–'}%</b> <span class="ab-foot-n">of years</span></span>
        <span><span class="ab-foot-l">Sample</span> <b>${cur?cur[3]:'–'}</b> <span class="ab-foot-n">years</span></span>
-       <span><span class="ab-foot-l">Signal</span> <b style="color:${stark?biasCss(+cur[1]>=0?'bull':'bear'):'var(--t3)'}">${stark?'aligned':'mixed'}</b></span>
+       <span><span class="ab-foot-l">Signal</span> <b style="color:${stark||grau?biasCss(+cur[1]>=0?'bull':'bear'):'var(--t3)'}">${stark?'aligned':grau?'partial':'mixed'}</b></span>
      </div>
      ${abScoreZeile(c,SEAS_IND_NAME,sb&&sb.grund)}`,null,
     [A.basis==='pairs'
        ?`Average calendar-month move of the <b>${escH(c.id)} basket</b> against the 7 other majors over ${cur?cur[3]:'–'} years — the same basket as the price chart.`
        :`Average calendar-month ${A.unit==='bp'?'change in basis points':'move'} over ${cur?cur[3]:'–'} years, from ${escH(A.proxy||'a long-run price proxy')}${A.inv?', inverted so the sign matches this asset':''}.`,
      `The dashed line is this year's actual move month by month on its own scale (exact values in the right column), so you see at a glance whether ${escH(new Date().getFullYear()+'')} follows the pattern.`,
-     `"Aligned" means the average return and the hit rate point the same way — ${escH(SEAS_MON[jetzt-1])} ${stark?'does':'does not'}.`,
+     `<b>Aligned</b> = average and hit rate point the same way · <b>partial</b> = hit rate in the grey zone · ${escH(SEAS_MON[jetzt-1])}: <b>${stark?'aligned':grau?'partial':'mixed'}</b>.`,
      escH(seasRegelText())]);
 }
 // ── Notizen-Karte: unbegrenzt, hervorhebbar, sortierbar ─────────────────
@@ -28093,7 +28104,7 @@ try{srHelfer({syms:()=>syms,FX,BC,escH,icn,openM,closeM,openAssetCfg,isNonFx,eff
   SCORE_ZERO,m28NurAnzeige,M28_GEWICHT,M28_DECKEL,DECKEL_ALLE,indRegel,SCORE_NORM_MIN,SCORE_NORM_MAX,IND_STALE_CYCLES,BOND_HALF_PT,BOND_PKT,BOND_SMA_FAST,BOND_SMA_SLOW,BOND_DEAD_BAND,
   KURVE_IND,KURVE_PKT,ZINSDIFF_IND,ZINSDIFF_STUFEN,ZINSDIFF_TAGE,REALZINS_IND,REALZINS_PKT,GLOBAL_YIELDS_IND,GLOBAL_YIELDS_PKT,GLOBAL_YIELDS_EMA,ROHSTOFF_NAME,ROHSTOFF_KORB,ROHSTOFF_STUFEN,ROHSTOFF_KURZ,
   COT_NET_HALF,COT_WOW_BASE,COT_NETZ_AB,COT_NETZ_PKT,COT_MAX,COT_WOW_STUFEN,COT_SERIE_RUHE,RETAIL_IND_NAME,RETAIL_AB,RETAIL_STIMME,RETAIL_WACHS_PKT,RETAIL_WACHS_TAGE,
-  SEAS_IND_NAME,SEAS_HIT_HOCH,SEAS_HIT_TIEF,TREND_IND,TREND_PKT,TREND_PKT_H,TREND_NEUTRAL_ATR,TREND_EMA_N,TREND_EMA_H,TREND_ATR_N,
+  SEAS_IND_NAME,SEAS_HIT_HOCH,SEAS_HIT_TIEF,SEAS_GRAU_PKT,TREND_IND,TREND_PKT,TREND_PKT_H,TREND_NEUTRAL_ATR,TREND_EMA_N,TREND_EMA_H,TREND_ATR_N,
   SENT_MAP,SENT_IND_NAMES,ZEILE_PKT,BTC_SCORE_HOCH,BTC_SCORE_TIEF,istAssetEigen});}catch(e){}
 try{bsHelfer({DATA_BASE,FEED_TIMEOUT_MS,openM,dashFensterGross,gewichte:()=>bsGewichte,setGewichte:g=>{pushU();bsGewichte=bsGewichteRein(g);save();},meldung:t=>alert(t)});}catch(e){}
 try{aktienHelfer({escH,biasCss,fmtDayHdr,daysUntil,abTile,AB_LEER,DATA_BASE,FEED_TIMEOUT_MS,renderDetail,curPage:()=>curPage,getSym,nachDaten:()=>renderSidebar()});}catch(e){}
@@ -28972,7 +28983,7 @@ Object.assign(window,{dsStand,dsLebend,dataSlotsVereinen,dsAuf,dsZu,dsNeuAuf,dsL
   tagesKerzen,ohneWochenende,istWochenende,tagMitWochentag,kerzenWochenendeErlaubt,KERZEN_WOCHENENDE_OK,priceSeriesFor,
   abCotChart,abCotId,abRetailZeilen,abRetailVerlauf,navBleibtOffen,abHandelstage,abAchseFuer,bondSeriesOhlc,
   seasBiasFor,retailBiasFor,abScoreZeile,applySeasRetailFeed,SEAS_IND_NAME,RETAIL_IND_NAME,
-  SEAS_HIT_HOCH,SEAS_HIT_TIEF,RETAIL_AB,RETAIL_STIMME,retailAenderung,retailStimme,cotPunkte,cotRegelText,
+  SEAS_HIT_HOCH,SEAS_HIT_TIEF,SEAS_GRAU_PKT,RETAIL_AB,RETAIL_STIMME,retailAenderung,retailStimme,cotPunkte,cotRegelText,
   setAbChartRange,setAbChartRangeVal,AB_RANGES,AB_INVERS_KLASSEN,AB_INVERS_ARTEN,
   assetMonthCalHtml,abCalShift,abCalPick,openAssetCal,closeAssetCal,renderAssetCalBody,setAbCalSicht,setCalpRange,calpMehr,calpDaten,calVergangen,abCalNachTag,abTagStr,AB_MONATE,AB_WOCHENTAGE,
   openRecoverM,recoverNotiz,recoverAlle,notizenAusSicherungen,

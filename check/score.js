@@ -160,7 +160,8 @@ const MODE = process.argv[2] || 'normalized';
     if(Math.abs(teile.norm-1)>1e-9)add('Normierung wirkt auf Saisonalitaet/Retail',
       {sym:sym.id,ind:ind.name,norm:Math.round(teile.norm*1000)/1000});
     // Saisonalitaet Halbgewicht; Retail seit 2026-09-24 feste Punkte (ind.pkt).
-    if(ind.name==='Seasonality'&&Math.abs(teile.w-0.5)>1e-9)add('Saisonalitaet nicht Halbgewicht',{sym:sym.id,ind:ind.name,w:teile.w});
+    // Seit Modell 45: Graubereich = feste ±0,25 (ind.pkt), sonst Halbgewicht.
+    if(ind.name==='Seasonality'&&(teile.fest?Math.abs(Math.abs(ind.pkt)-0.25)>1e-9:Math.abs(teile.w-0.5)>1e-9))add('Saisonalitaet weder Halbgewicht noch Graubereich ±0,25',{sym:sym.id,ind:ind.name,w:teile.w,pkt:ind.pkt});
     if(ind.name==='Retail Positioning'&&ind.pkt!==undefined&&!teile.fest)add('Retail nicht nach fester Regel',{sym:sym.id,pkt:ind.pkt});
     if(Math.abs(teile.total)>max+1e-9)add('Saisonalitaet/Retail ueber der Nutzer-Regel',
       {sym:sym.id,ind:ind.name,beitrag:teile.total,max});

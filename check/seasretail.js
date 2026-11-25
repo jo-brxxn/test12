@@ -60,16 +60,21 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
     const monat = new Date().getMonth() + 1;
     const altS = SEASONALITY_DATA, altR = SENTIMENT_DATA;
 
-    // (a) Saisonalitaet. [Schnitt, Trefferquote, erwarteter Bias]
-    [[0.50, 75, 'bull'], [0.50, 60, 'bull'], [0.50, 59, 'neu'],
-     [0.32, 38, 'neu'],                       // OIL im September
-     [0.00, 60, 'bull'],                      // 0 gilt als nicht negativ
-     [-0.50, 25, 'bear'], [-0.50, 40, 'bear'], [-0.50, 41, 'neu'],
-     [-0.59, 50, 'neu']                       // AUD im September
-    ].forEach(([avg, hit, soll]) => {
+    // (a) Saisonalitaet. [Schnitt, Trefferquote, erwarteter Bias, erwartete feste Punkte]
+    // Seit Modell 45 (2026-11-25, Nutzer-Wahl "Abgestuft"): Graubereich 40-60 %
+    // zaehlt ±0,25 (pkt) in Richtung des Schnitts, 0 nur bei Gegenrichtung.
+    [[0.50, 75, 'bull', undefined], [0.50, 60, 'bull', undefined], [0.50, 59, 'bull', 0.25],
+     [0.50, 40, 'bull', 0.25], [0.50, 39, 'neu', undefined],
+     [0.32, 38, 'neu', undefined],            // OIL im September: Gegenrichtung
+     [0.00, 60, 'bull', undefined],           // 0 gilt als nicht negativ
+     [0.00, 50, 'neu', undefined],            // flacher Schnitt im Graubereich: keine Richtung
+     [-0.50, 25, 'bear', undefined], [-0.50, 40, 'bear', undefined], [-0.50, 41, 'bear', -0.25],
+     [-0.48, 44, 'bear', -0.25],              // AUD im November (Nutzer-Screenshot)
+     [-0.50, 60, 'bear', -0.25], [-0.50, 61, 'neu', undefined]
+    ].forEach(([avg, hit, soll, sollPkt]) => {
       SEASONALITY_DATA = { updated: 'test', assets: { EUR: { proxy: 'T', inv: 0, months: [[monat, avg, hit, 15]] } } };
       const e = seasBiasFor('EUR');
-      out.seas.push({ avg, hit, soll, ist: e.bias, txt: e.txt });
+      out.seas.push({ avg, hit, soll, sollPkt, ist: e.bias, istPkt: e.pkt, txt: e.txt });
     });
     // Ohne Reihe: kein Text -> kein Indikator -> kein Beitrag.
     SEASONALITY_DATA = { updated: 'test', assets: {} };
@@ -115,8 +120,8 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
     try { applySeasRetailFeed(); } catch (e) { out.leer.reapply = String(e); }
     return out;
   });
-  r1.seas.forEach(c => { if (c.ist !== c.soll)
-    fail('SAISONALITAET-SCHWELLE', `Schnitt ${c.avg}% bei ${c.hit}% Trefferquote -> "${c.ist}" statt "${c.soll}"`); });
+  r1.seas.forEach(c => { if (c.ist !== c.soll || c.istPkt !== c.sollPkt)
+    fail('SAISONALITAET-SCHWELLE', `Schnitt ${c.avg}% bei ${c.hit}% Trefferquote -> "${c.ist}"/${c.istPkt} statt "${c.soll}"/${c.sollPkt}`); });
   r1.ret.forEach(c => { if (Math.abs(c.ist - c.soll) > 1e-9)
     fail('RETAIL-REGEL (Buch)', `${c.lang}% long (5 Tage vorher ${c.alt}%) -> ${c.ist} statt ${c.soll}`); });
   r1.paare.forEach(c => { if (Math.abs(c.ist - c.soll) > 0.006)
@@ -145,7 +150,11 @@ const fail = (t, x) => F.push(`${t}: ${x}`);
         const teile = indScoreParts(ind, rub);
         // 2) Halbgewicht und Deckel
         // Saisonalitaet: Halbgewicht. Retail: feste Punkte nach der Regel (ind.pkt).
-        if (n === 'Seasonality' && Math.abs(teile.w - 0.5) > 1e-9) out.probleme.push({ sym: s.id, ind: n, t: 'kein Halbgewicht', w: teile.w });
+        // Seit Modell 45: im Graubereich feste ±0,25 (pkt), sonst Halbgewicht.
+        if (n === 'Seasonality' && (teile.fest ? Math.abs(Math.abs(ind.pkt) - 0.25) > 1e-9 : Math.abs(teile.w - 0.5) > 1e-9))
+          out.probleme.push({ sym: s.id, ind: n, t: teile.fest ? 'Graubereich nicht ±0,25' : 'kein Halbgewicht', w: teile.w, pkt: ind.pkt });
+        if (n === 'Seasonality' && !!teile.fest !== !!(daten[n] && daten[n].grau))
+          out.probleme.push({ sym: s.id, ind: n, t: 'feste Punkte passen nicht zum Graubereich', pkt: ind.pkt, grau: daten[n] && daten[n].grau });
         if (n === 'Retail Positioning' && !teile.fest && ind.pkt !== undefined) out.probleme.push({ sym: s.id, ind: n, t: 'Retail nicht nach fester Regel', pkt: ind.pkt });
         const v = indScore(ind, rub);
         if (Math.abs(v) > NAMEN[n] + 1e-9) out.probleme.push({ sym: s.id, ind: n, t: 'Beitrag ueber der Regel', v, max: NAMEN[n] });

@@ -23427,3 +23427,17 @@ Nutzer (Foto Dashboard, Ränder links/rechts markiert): *„Auch die Abstände z
 - `scorediff`: Symbol-Score 4/43 (GBP 0.2→−0.7, AUD −3.5→−2.8, COPPER 0.2→0.7, NAS 2.9→3.9), Karten 4/215, Paare 15/42
 - Score-Fenster-Zeile, `cotRegelText`, `JR_MODELL_NOTIZ` 44; Erinnerungspflicht in `CLAUDE.md` entfernt
 - Wächter `check/regeln.js`: Tabelle mit Serie + Serie unabhängig aus dem Verlauf; Gegenprobe (Regel aus) → 2 Befunde rot
+
+
+## 2026-11-25 — Saisonalität: Graubereich zählt ±0,25 (VERSION-CHECK-819, Score-Modell 45)
+
+**Nutzer:** *„Bau mit maximal 0.5 im Score wieder seasonality ein“*, dazu iPad-Screenshot AUD (VERSION-CHECK-818): Kachel *Seasonality* −0,48 % im Nov, *Up in 44 %*, *Signal mixed*, *Score effect 0 — average and hit rate disagree*. Rückfrage mit vier Varianten → **„Abgestuft“**.
+
+**Gemessen (kein Fehler, Regel):** Seasonality stand bei 34 Assets im Score; im November lieferten 15 davon 0, weil die Doppelbedingung (Schnitt + Trefferquote ≥ 60 / ≤ 40 %) nicht erfüllt war. Ganz ohne Zeile: SOL, PLTR (< 8 Jahre, Feed-Grenze `MIN_YEARS=8`), CRWV (seit 2025), sieben Nicht-US-Renditen (kein Proxy im Feed) — unverändert.
+
+**Geändert:** `seasBiasFor` (`js/main.js`) liefert im Graubereich (Trefferquote 40–60 %, Schnitt ≠ 0) Bias in Richtung des Schnitts + `pkt` ±0,25 (`SEAS_GRAU_PKT`); einig weiter ±0,5 über das Halbgewicht; Gegenrichtung oder flacher Schnitt 0 (*hit rate points the other way* / *flat average*). Kachel: *Signal* **partial** in Bias-Farbe; ⓘ-Text und `seasRegelText()` nennen die drei Stufen; Regel-Fenster (`js/scoreregeln.js`) neue Zeile *Same direction, 40–60% up years (grey zone)* +0,25 / −0,25, Nullzeile heißt *Hit rate points the other way*. `SCORE_MODEL_VERSION` 44 → 45, `JR_MODELL_NOTIZ[45]`.
+
+**Wirkung am 2026-11-25** (Rohsumme, alter → neuer Beitrag): EUR, CHF, JPY, CAD, AUD, IRONORE 0 → −0,25; NZD, BTC, COPPER, DAX 0 → +0,25; alle übrigen unverändert. AUD-Kachel danach: *Signal partial*, *Score effect −0.25 bearish*.
+
+**Wächter:** `check/seasretail.js` Schwellen-Tabelle um die erwarteten festen Punkte erweitert (u. a. AUD Nov −0,48/44 → bear/−0,25, OIL Sep → 0, Schnitt 0 bei 50 % → 0) + neue Prüfung „feste Punkte genau im Graubereich“; `check/score.js` akzeptiert Saisonalität als Halbgewicht **oder** feste ±0,25. `node check/all.js --static` grün; die Browser-Wächter konnten in der Sitzung nicht laufen (lokaler Testserver nicht erlaubt) → CI auf `main`. Ersatzweise Vorher/Nachher in der App gemessen (Tabelle oben) und Kachel + Regel-Fenster per Screenshot geprüft.
+

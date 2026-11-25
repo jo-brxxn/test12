@@ -289,7 +289,7 @@ bleiben"*. Umsetzung: `js/journal.js`, Herleitung und Messwerte in
 | Beat/Miss gegen Forecast | ±1 | Basis. Halbgewicht ±0,5 bei Core-Paaren, Bonds, COT-Netto, CB Tone (`IND_PAIR_GROUPS`/`indPairGroupPositions()` in `index.html` zeigt die Halbgewicht-Paare zusaetzlich als gemeinsam umrandete Box in der Indikator-Tabelle, wenn sie direkt benachbart stehen - Bias/Score bleiben pro Zeile eigenstaendig) |
 | Step-Signal (Actual vs. Previous) | ±0,5 | NUR wenn kein Forecast existiert - Ersatz fuer Beat/Miss. Betrifft am Stand 2026-09-20 **61** Indikator-Instanzen (die Zahl waechst mit jedem neuen Asset - sie stand hier lange auf 38, dem Stand vor den Yield-Assets) |
 | Normierung (nur Modus `normalized`) | ×0,4 bis ×1,8 | drei gemessene Faktoren, siehe unten |
-| **Saisonalitaet** | ±0,5 | seit 2026-09-14, siehe unten |
+| **Saisonalitaet** | ±0,5 / Graubereich ±0,25 | seit 2026-09-14, Graubereich seit Modell 45 (2026-11-25), siehe unten |
 | **Retail-Positionierung** | ±0,5 / ±1 | seit 2026-09-14, gegen die Menge, siehe unten |
 | **Niveau-Block** | feste Punkte, je Zeile max ±0,75/±1 | seit Modell 22 (Stand 25): Inflation vs Ziel + Trend, Arbeitslosigkeit gegen 10-J-Normal + Trend, Löhne gegen 10-J-Normal – siehe Abschnitt oben |
 
@@ -311,13 +311,20 @@ vorher CurrencyShares-ETF gegen USD); neu **ETH** (ab 12/2017) und **US 10Y**
 nach derselben Regel ±0,5. Die **28 Paare** (`pairs`) sind **nur Anzeige**:
 der Paar-Score ist Basis minus Quote und traegt beide Waehrungen schon.
 
-**Saisonalitaet** (`seasBiasFor`, `SEAS_HIT_HOCH=60` / `SEAS_HIT_TIEF=40`):
-Monatsschnitt **und** Trefferquote muessen dasselbe sagen, sonst 0. Ein
-positiver Schnitt braucht mindestens 60 % gestiegene Jahre, ein negativer
-hoechstens 40 %. Die Doppelbedingung traegt: OIL steht im September bei
-+0,32 % Schnitt, ist aber nur in 38 % der Jahre gestiegen — der Schnitt allein
-haette Rueckenwind in den Score geschrieben. Nie `sbull`/`sbear`, also nie
-mehr als ±0,5.
+**Saisonalitaet** (`seasBiasFor`, `SEAS_HIT_HOCH=60` / `SEAS_HIT_TIEF=40` /
+`SEAS_GRAU_PKT=0.25`), abgestuft seit Modell 45 (Nutzer-Wahl 2026-11-25):
+
+| Lage | Beitrag | Kachel *Signal* |
+|---|---|---|
+| Schnitt ≥ 0 **und** ≥ 60 % gestiegene Jahre (bzw. < 0 und ≤ 40 %) | **±0,5** (Bias × Halbgewicht) | *aligned* |
+| Graubereich: Trefferquote 40–60 %, Schnitt ≠ 0 | **±0,25** in Richtung des Schnitts (feste Punkte `ind.pkt`) | *partial* |
+| Trefferquote zeigt in die Gegenrichtung (OIL Sep: +0,32 % bei 38 %) oder Schnitt genau 0 | **0** | *mixed* |
+
+Die Gegenrichtungs-Regel traegt weiter: der Schnitt allein haette bei OIL
+Rueckenwind in den Score geschrieben. Nie `sbull`/`sbear`, also nie mehr als
+±0,5. ⚠ Schwaeche: auch ein praktisch flacher Schnitt im Graubereich zaehlt
+±0,25 (CHF Nov −0,02 % bei 50 % → −0,25) — eine Mindest-Schnitt-Schwelle
+waere die naechste Stellschraube, ist aber nicht beauftragt.
 
 **Retail** (`retailBiasFor`, seit Modell 15 / 2026-09-24): gegen die Menge,
 **je Paar eine Stimme** (auf das Asset gedreht): ≥ `RETAIL_AB`=65 % long → −0,5,

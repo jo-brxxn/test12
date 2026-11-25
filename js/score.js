@@ -1950,7 +1950,10 @@ function symScoreCmp(sym){
 // Fed H.6 (vorher Rate aus TV-Bestaenden, ohne Vormonat). Regel unveraendert (Actual vs Fc/Prev).
 // 43 -> 44 (2026-11-24, Nutzer-Entscheid zur offenen COT-Regel): Wochenaenderung ab der 3. Woche in Folge
 // gleicher Richtung 0, die drehende Woche zaehlt wieder nach der Staffel (cotPunkte/cotSerie in main.js).
-const SCORE_MODEL_VERSION=44;
+// 44 -> 45 (2026-11-25, Nutzer-Screenshot AUD Nov "average and hit rate disagree" -> Wahl "Abgestuft"):
+// Saisonalitaet im Graubereich (Trefferquote 40-60 %) +/-0,25 in Richtung des Schnitts (ind.pkt), vorher 0.
+// Beide einig weiter +/-0,5, Trefferquote in Gegenrichtung 0 (seasBiasFor in main.js).
+const SCORE_MODEL_VERSION=45;
 function SCORE_MODEL_TAG(){return SCORE_MODEL_VERSION+':'+scoreMode;}
 // Stammt ein scoreHist-Eintrag aus DIESER Rechnung? Eintraege ohne Tag sind
 // alt (der Tag kam erst 2026-08-08 dazu) und zaehlen daher als fremd.

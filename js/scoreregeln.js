@@ -236,7 +236,8 @@ export function srFensterHtml(sym) {
   if (hat('seas')) html += blockHtml('seas', '15 years, this month', [
     zeile(`Up on avg + ≥ ${h.SEAS_HIT_HOCH}% up years`, 0.5, '× weight'),
     zeile(`Down on avg + ≤ ${h.SEAS_HIT_TIEF}% up years`, -0.5, '× weight'),
-    zeile('Average and hit rate disagree', 0),
+    zeile(`Same direction, ${h.SEAS_HIT_TIEF}–${h.SEAS_HIT_HOCH}% up years (grey zone)`, [h.SEAS_GRAU_PKT, -h.SEAS_GRAU_PKT]),
+    zeile('Hit rate points the other way', 0),
   ]);
 
   // Endrechnung
