@@ -27,6 +27,8 @@ import {heroArtSvg} from './heroart.js';
 // Kategorie Stocks (Nutzer 2026-11-13): Liste, Firmenprofile, Aktien-Karten.
 import {bsHelfer,bsAuf,btcSentimentScore,bsDaten,bsLaden,scoreReihe as bsScoreReihe} from './btc-sentiment.js';
 import {ordnerHelfer,notizOrdner,noSetzeAlle,noVereinen,ordnerKarteHtml,ORDNER_WINDOW,punktZustand} from './notizordner.js';
+// Checklists (Nutzer 2026-11-25, 822): eigene Kategorie, Listen mit Ordnern und Fragen.
+import {chkHelfer,checklisten,chkSetzeAlle,chkVereinen,renderChecklisten,CHK_WINDOW,chkLabel,chkZurueck,chkListeZustand,chkFrageZustand} from './checklisten.js';
 import {srHelfer,openScoreRegeln,srZahnrad,srTyp,srMax} from './scoreregeln.js';
 import {AI_MARKEN,aiMarkeMono} from './marken-icons.js';
 import {sprungLog,sprungtestStart} from './sprungtest.js';
@@ -6143,7 +6145,7 @@ function researchForSnap(){
 // (VERSION-CHECK-484): was ohnehin im Code oder im Feed steht, gehoert nicht
 // zusaetzlich auf das Geraet.
 const SNAP_REPLACER=(k,v)=>k==='chartHist'?undefined:v;
-function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte,gameplans,econThesen,profil,dataSlots,notizOrdner},SNAP_REPLACER);}
+function snap(){geloeschtFesthalten();return JSON.stringify({syms,pairCats,pairs,noteCats,research:researchForSnap(),researchFolders,researchAnalysis,calEvts,widgets,dashRemovedTypes,customIds,rubOrder,sbOrder,catOrder,rateWatchCustom,indLinkCustom,btReasons,seedNoteFlags,dashV,eventAlerts,priceAlerts,scoreLog,zbQuittung,zbEntscheid,bsGewichte,gameplans,econThesen,profil,dataSlots,notizOrdner,checklisten},SNAP_REPLACER);}
 // Banner-Quittungen der Zentralbank-Karte: nur Waehrung -> Datum, alles andere faellt raus.
 function zbEntscheidRein(v){
   const o={};
@@ -6387,7 +6389,7 @@ function applySnapRoh(s){const d=sanitizeSnapIds(JSON.parse(s));
   // haette die veralteten Indikatoren ueber Cloud-Sync/Undo-Redo/Import daher
   // nie bereinigt bekommen - dieselbe Bug-Klasse wie ensureBuiltinSyms() oben.
   (syms||[]).forEach(sy=>migrateRubInds(sy.rubrics,sy));
-  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(_mergeSync?gpVereinen(gameplans,d.gameplans):d.gameplans);econSetzeAlle(_mergeSync?econVereinen(econThesen,d.econThesen):d.econThesen);dataSlotsSetzen(_mergeSync?dataSlotsVereinen(dataSlots,d.dataSlots):d.dataSlots);if('profil' in d)profil=profilRein(d.profil);noSetzeAlle(_mergeSync?noVereinen(notizOrdner,d.notizOrdner):('notizOrdner' in d?d.notizOrdner:notizOrdner));calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
+  pairCats=d.pairCats||mkPairCats();pairs=d.pairs||[];migrateMarkedToWatchlist();noteCats=d.noteCats||mkNCs();researchFolders=Array.isArray(d.researchFolders)?d.researchFolders:[];research=migrateResearch(d.research,noteCats);research=migrateSeedNotesOut(research);research=seedAssetBehaviorNotes(research);if(_mergeSync){const z=researchVereinen({notes:_prevResNotes,folders:_prevResFolders,trash:_prevResTrash,geloescht:_prevGel},researchTeile(research,researchFolders));research.notes=z.notes;researchFolders=z.folders;research.trash=z.trash;research.geloescht=z.geloescht;}else research.geloescht=geloeschtVereinen(_prevGel,research.geloescht);researchAnalysis=(d.researchAnalysis&&typeof d.researchAnalysis==='object')?d.researchAnalysis:{};zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(_mergeSync?gpVereinen(gameplans,d.gameplans):d.gameplans);econSetzeAlle(_mergeSync?econVereinen(econThesen,d.econThesen):d.econThesen);dataSlotsSetzen(_mergeSync?dataSlotsVereinen(dataSlots,d.dataSlots):d.dataSlots);if('profil' in d)profil=profilRein(d.profil);noSetzeAlle(_mergeSync?noVereinen(notizOrdner,d.notizOrdner):('notizOrdner' in d?d.notizOrdner:notizOrdner));chkSetzeAlle(_mergeSync?chkVereinen(checklisten,d.checklisten):('checklisten' in d?d.checklisten:checklisten));calEvts=d.calEvts||[];widgets=d.widgets||mkWidgets();dashRemovedTypes=Array.isArray(d.dashRemovedTypes)?d.dashRemovedTypes:[];dashV=d.dashV||0;customIds=d.customIds||[];rubOrder=d.rubOrder&&d.rubOrder.length?d.rubOrder:mkRubOrder();sbOrder=d.sbOrder||{};catOrder=d.catOrder||[];rateWatchCustom=d.rateWatchCustom||{};indLinkCustom=d.indLinkCustom||{};btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};eventAlerts=pruneEventAlerts(d.eventAlerts||[]);priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];scoreLog=pruneScoreLog(d.scoreLog||[]);ensureRiskEnvWeg();applyRubOrder();restoreAlltimeDashboard(d.dashboards);migrateDash();applySeedNoteFlags();reapplyLiveFeeds();recomputeAuto();}
 // Markiert "der Nutzer hat gerade selbst editiert" OHNE pushU()s Stack-
 // Mutation (uStack.push+Cap+rStack-Reset) - fuer Undo/Redo selbst, die die
 // Stacks bereits direkt verwalten. Ohne diese Markierung erkannte weder
@@ -6585,6 +6587,7 @@ function trashEntryLabel(t){
   if(!t||!t.data)return t&&t.kind==='folder'?'Folder':'Note';
   if(t.kind==='gphist'){const e=t.data.e||{};return(t.data.asset||'')+' · '+(e.th||'Gameplan').slice(0,80);}
   if(t.kind==='econth')return ecThLabel(t.data);
+  if(t.kind==='chkl'||t.kind==='chkf'||t.kind==='chkq')return chkLabel(t.kind,t.data);
   if(t.kind==='dslot')return dsLabel(t.data);
   const d=t.data;
   switch(t.kind){
@@ -6653,6 +6656,7 @@ function restoreTrashItem(id){
   pushU();
   if(t.kind==='gphist'){gpHistZurueck(t.data);}
   else if(t.kind==='econth'){ecThZurueck(t.data);}
+  else if(t.kind==='chkl'||t.kind==='chkf'||t.kind==='chkq'){chkZurueck(t.kind,t.data);}
   else if(t.kind==='dslot'){dsZurueck(t.data);}
   else if(['trade','calev','pair','watch','palert','ealert','sym','rub','ind','widget'].includes(t.kind)){
     if(!trashZurueck(t)){alert('Could not restore this item - its place no longer exists.');return;}
@@ -6981,7 +6985,7 @@ function loadState(){
       // Wert ist gespeichert, kommt aber nie an. Genau so ging der Test
       // 2026-09-07 aus (angepinnte Seed-Notiz nach dem Neuladen ohne Pin).
       btReasons=(d.btReasons&&typeof d.btReasons==='object')?d.btReasons:{};
-      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(d.gameplans);econSetzeAlle(d.econThesen);dataSlotsSetzen(d.dataSlots);profil=profilRein(d.profil);noSetzeAlle(d.notizOrdner);
+      zbQuittung=zbQuittungRein(d.zbQuittung);zbEntscheid=zbEntscheidRein(d.zbEntscheid);bsGewichte=bsGewichteRein(d.bsGewichte);gpSetzeAlle(d.gameplans);econSetzeAlle(d.econThesen);dataSlotsSetzen(d.dataSlots);profil=profilRein(d.profil);noSetzeAlle(d.notizOrdner);chkSetzeAlle(d.checklisten);
       seedNoteFlags=(d.seedNoteFlags&&typeof d.seedNoteFlags==='object')?d.seedNoteFlags:{};
       eventAlerts=pruneEventAlerts(d.eventAlerts||[]);
       priceAlerts=Array.isArray(d.priceAlerts)?d.priceAlerts:[];
@@ -7469,7 +7473,7 @@ document.addEventListener('keydown',e=>{
 // die Liste. Greift NIE in einem Eingabefeld und nie mit Modifier-Taste.
 const KEY_TABS={d:['dash','Dashboard'],a:['cur','Assets'],n:['news','News'],
   c:['cal','Calendar'],s:['pairs','Set-ups'],w:['watch','Watchlist'],
-  t:['trends','Trends'],m:['mx','Matrix'],r:['notes','Trash'],
+  t:['trends','Trends'],m:['mx','Matrix'],l:['chk','Checklists'],   // Trash nur noch ueber die Settings (2026-11-25)
   y:['carry','Carry'],o:['cot','COT'],j:['journal','Journal']};
 let _keyChord='',_keyChordT=0;
 function keyNavAktiv(e){
@@ -7556,8 +7560,9 @@ function neueFelderBehalten(fremd,lokal){
   // econThesen: Thesen der Economy Map (seit 2026-11-21, 784).
   // profil: Vor- und Nachname (seit 2026-11-22, 801).
   // notizOrdner: Notes-Ordner mit Mindmap (seit 2026-11-23, 813).
+  // checklisten: Kategorie Checklists (seit 2026-11-25, 822).
   // dataSlots: Speicherplaetze der Data-Seite (seit 2026-11-22, 805).
-  ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil','dataSlots','notizOrdner'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
+  ['zbQuittung','zbEntscheid','bsGewichte','gameplans','econThesen','profil','dataSlots','notizOrdner','checklisten'].forEach(k=>{if(!(k in fremd)&&(k in lokal))fremd[k]=lokal[k];});
   // Makro-Einstufungen und ihr Verlauf (614-619; seit 620 ohne Oberflaeche, die
   // gespeicherten bleiben erhalten): researchAnalysis[ccy][karte].tags/.hist
   const fa=fremd.researchAnalysis,la=lokal.researchAnalysis;
@@ -8163,6 +8168,10 @@ function unsavedKeepEditing(){_unsavedFor=null;closeM('mUnsaved');}
 //   mEvtAlertPicker  - nur eine Auswahl, "Next" fuehrt erst zum Formular
 //   mAssetCfg/mCcyCfg und die Schalter in mCloud - wirken sofort beim Klick
 const MODAL_GUARD_TABELLE={
+  // Checklists (822): Liste (Name + Farbe), Ordnername, Frage (Titel, Erklaerung + Ordner als Zustand).
+  mChkListe:{felder:['chkLName'],extra:()=>chkListeZustand(),save:()=>CHK_WINDOW.chkListeSpeichern(),was:'This list'},
+  mChkOrdner:{felder:['chkOName'],save:()=>CHK_WINDOW.chkOrdnerSpeichern(),was:'This folder name'},
+  mChkFrage:{felder:['chkQTi','chkQTx'],extra:()=>chkFrageZustand(),save:()=>CHK_WINDOW.chkFrageSpeichern(),was:'This question'},
   // Notes-Ordner (813): Punkt (Titel, Inhalt + Bias/Ast/Ordner als Zustand) und Ordnername.
   mNoPunkt:{felder:['noPtTi','noPtTx'],extra:()=>punktZustand(),save:()=>ORDNER_WINDOW.punktSpeichern(),was:'This point'},
   mNoName:{felder:['noNameIn'],save:()=>ORDNER_WINDOW.ordnerNameSpeichern(),was:'This folder name'},
@@ -8276,7 +8285,7 @@ addEventListener('resize',nivBald);
 // Steht die Nachfrage offen, fuehrt Escape zurueck ins Fenster (der
 // harmlose Weg, wie der Klick neben die Nachfrage).
 const ESC_MODALS=['mAddSym','mAssetCfg','mHist','mAddPair','mRename','mDelSym','mInfo','mCloud','mRateWatch','mIndLink','mBackup','mTrash',
-  'mPinHist','mGpHist','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose','mNotesOrdner','mNoPunkt','mNoName'];
+  'mPinHist','mGpHist','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose','mNotesOrdner','mNoPunkt','mNoName','mChkListe','mChkOrdner','mChkFrage'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const nf=document.getElementById('mUnsaved');
@@ -16948,7 +16957,7 @@ function rerenderNotesHostRoh(){
 // (gespeicherte Tab-Stapel halten). 30 Tage, je Eintrag Restore / Delete forever.
 function datumKurz(iso){const d=new Date(iso);return isNaN(d)?'':fmtDayShort(d.toISOString().slice(0,10));}   // 768: zweistelliges Jahr wie ueberall (check/datum.js));}
 function trashArt(t){return t.kind==='note'?(t.data&&t.data.cb?'Bank note':notizIstChart(t.data)?'Chart note':'Note'):t.kind==='folder'?'Folder':(TRASH_ARTEN[t.kind]||t.kind);}
-const TRASH_ARTEN={gphist:'Gameplan',econth:'Thesis',dslot:'Saved view',trade:'Trade',calev:'Calendar event',pair:'Pair',watch:'Watchlist',palert:'Price alert',ealert:'Event alert',sym:'Asset',rub:'Card',ind:'Indicator',widget:'Dashboard card'};
+const TRASH_ARTEN={gphist:'Gameplan',econth:'Thesis',chkl:'Checklist',chkf:'Checklist folder',chkq:'Checklist question',dslot:'Saved view',trade:'Trade',calev:'Calendar event',pair:'Pair',watch:'Watchlist',palert:'Price alert',ealert:'Event alert',sym:'Asset',rub:'Card',ind:'Indicator',widget:'Dashboard card'};
 function renderResearch(){
   const wrap=document.getElementById('resWrap');if(!wrap)return;
   const l=(research.trash||[]).filter(t=>t&&t.kind!=='folder').slice().sort((a,b)=>String(b.delAt).localeCompare(String(a.delAt)));
@@ -26914,13 +26923,13 @@ function renderRateProbRoh(){
 // Tabs, die es nicht mehr gibt ('cmp' 2026-08, 'edge' 2026-09-24). Aus jedem
 // Stapel entfernen - beim Laden, beim Import und beim Cloud-Abgleich.
 // Liefert true, wenn etwas entfernt wurde.
-const ENTFERNTE_TABS=new Set(['cmp','edge']);
+const ENTFERNTE_TABS=new Set(['cmp','edge','notes']);   // 'notes' = Trash: nur noch ueber die Settings (2026-11-25)
 function tabStacksOhneEntfernte(ts){
   let weg=false;
   (ts||[]).forEach(st=>{if(st&&Array.isArray(st.members)&&st.members.some(m=>ENTFERNTE_TABS.has(m))){st.members=st.members.filter(m=>!ENTFERNTE_TABS.has(m));weg=true;}});
   return weg;
 }
-const PAGE_IDS={regime:'pgRegime',news:'pgNews',dash:'pgDash',cur:'pgCur',mx:'pgMx',trends:'pgTrends',cot:'pgCot',sent:'pgSent',seas:'pgSeas',data:'pgData',rate:'pgRate',carry:'pgCarry',pairs:'pgPairs',watch:'pgWatch',gameplan:'pgGameplan',econ:'pgEcon',journal:'pgJournal',cal:'pgCal',notes:'pgNotes'};
+const PAGE_IDS={regime:'pgRegime',news:'pgNews',dash:'pgDash',cur:'pgCur',mx:'pgMx',trends:'pgTrends',cot:'pgCot',sent:'pgSent',seas:'pgSeas',data:'pgData',rate:'pgRate',carry:'pgCarry',pairs:'pgPairs',watch:'pgWatch',gameplan:'pgGameplan',econ:'pgEcon',journal:'pgJournal',cal:'pgCal',chk:'pgChk',notes:'pgNotes'};
 // ── Tab-Leiste mit Stapeln (Gruppen) ───────────────────────────────
 // Reihenfolge + Definition aller Kategorien. FX und Non-FX sind seit
 // 2026-08-03 EIN gemeinsamer Tab (Nutzer-Wunsch "die beiden Kategorien
@@ -26929,7 +26938,9 @@ const PAGE_IDS={regime:'pgRegime',news:'pgNews',dash:'pgDash',cur:'pgCur',mx:'pg
 // Indices/Stocks), kein Modus-Filter mehr (siehe renderSidebar/moveSbCat).
 // 'over' steht bewusst VOR 'dash' (Nutzer-Wunsch 2026-09-11: "eine neue
 // Kategorie ueber Dashboard").
-const TAB_ORDER=['dash','fx','mx','trends','cot','sent','seas','data','rate','news','carry','pairs','watch','gameplan','econ','journal','cal','notes'];
+// 2026-11-25 (Nutzer): "links in der Leiste ... die Kategorie Trash wegkommt. Die soll nur in den Einstellungen
+// oeffnbar sein" -> 'notes' (Trash) steht nicht mehr in der Leiste (Seite bleibt, Knopf in mCloud), neu 'chk'.
+const TAB_ORDER=['dash','fx','mx','trends','cot','sent','seas','data','rate','news','carry','pairs','watch','gameplan','econ','journal','cal','chk'];
 const TABS={
   dash:{label:'Dashboard',tab:'dash'},
   // Label 2026-08-03 von 'FX' auf 'Assets' umbenannt (Nutzer-Wunsch, per Foto):
@@ -26966,6 +26977,7 @@ const TABS={
   econ:{label:'Economy',tab:'econ'},   // Seitenleiste einzeilig (designregeln D); Seitentitel bleibt "Economy Map"
   journal:{label:'Journal',tab:'journal'},
   cal:{label:'Calendar',tab:'cal'},
+  chk:{label:'Checklists',tab:'chk'},
   // Label 2026-08-02 von 'Notes' auf 'Research' umbenannt, 2026-09-19 auf
   // 'Archive' (beides Nutzer-Wunsch);
   // der Schluessel 'notes' bleibt bewusst, damit gespeicherte tabStacks halten.
@@ -27075,6 +27087,7 @@ const TAB_ICONS={
   watch:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
   gameplan:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
   econ:'<circle cx="12" cy="12" r="2.6"/><ellipse cx="12" cy="12" rx="10" ry="4.6" transform="rotate(-25 12 12)"/><circle cx="20.2" cy="8.3" r="1.6"/>',
+  chk:'<polyline points="3 6 4.6 7.6 7.4 4.8"/><polyline points="3 12 4.6 13.6 7.4 10.8"/><polyline points="3 18 4.6 19.6 7.4 16.8"/><line x1="11" y1="6" x2="21" y2="6"/><line x1="11" y1="12" x2="21" y2="12"/><line x1="11" y1="18" x2="21" y2="18"/>',
   journal:'<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>',
   cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   // seit 755 Papierkorb (Tab-Schluessel 'notes' bleibt fuer gespeicherte Stapel)
@@ -27392,6 +27405,7 @@ function showTab(tab,btn,fxMode){
   else if(tab==='watch')renderWatchlistTab();
   else if(tab==='gameplan')renderGameplan();
   else if(tab==='econ')renderEcon();
+  else if(tab==='chk')renderChecklisten();
   else if(tab==='journal')renderJournal();
   else if(tab==='cal')renderCalendar();
   else if(tab==='notes')rerenderNotesHost();
@@ -27412,6 +27426,7 @@ function rerender(){sprungLog('rerender');
   else if(curPage==='watch')renderWatchlistTab();
   else if(curPage==='gameplan')renderGameplan();
   else if(curPage==='econ')renderEcon();
+  else if(curPage==='chk')renderChecklisten();
   else if(curPage==='journal')renderJournal();
   else if(curPage==='cal')renderCalendar();
   else if(curPage==='notes')rerenderNotesHost();
@@ -28095,6 +28110,7 @@ document.addEventListener('visibilitychange',()=>{
 // ══ INIT ══════════════════════════════════════════════════════════
 try{sprungtestStart();}catch(e){}
 // Notes-Ordner (813).
+try{chkHelfer({pushU,save,escH,escJH,icn,openM,closeM,guardArm,trashAblegen,abInfoBtn,curPage:()=>curPage});}catch(e){}
 try{ordnerHelfer({pushU,save,BC,escH,escJH,syms:()=>syms,curPage:()=>curPage,renderDetail,openM,closeM,guardArm,
   abTileIcon:()=>abTileIcon('Pinned notes'),abInfoBtn,sbCatsOptgroups,pinnedVon:id=>abNotizen(id).filter(n=>n.pin),
   // Einsortiert = verlaesst Pinned wie "Unpin" (togResPin): landet in der History, geht nicht verloren.
