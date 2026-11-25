@@ -6,7 +6,7 @@
 //  E) Abgleich zweier Geraete (noVereinen): ein geloeschter Punkt kommt NICHT zurueck, neuerer Stand gewinnt
 //  Z) (2026-11-25) Fenster fest: Fenster/Ueberlagerung/Flaeche scrollen nicht (overflow hidden, Flaeche
 //     touch-action none); Ziehen in der Flaeche verschiebt, Strg+Rad zoomt, Fit; Zoom-Leiste verdeckt keinen Knoten
-//  F) Waehrungsordner (822): USD hat "USD" + "Old" mit Inflation/Labour market/Economy; ein bullisher USD-
+//  F) Waehrungsordner (823): USD hat "USD" + "Old" mit Inflation/Labour market/Economy; ein bullisher USD-
 //     Inflation-Punkt ist bei Gold (Inflation invers) bearish; ein bei Gold angelegter Punkt steht nicht bei USD
 //     und nicht bei Silber; "Move to Old" legt ihn in denselben Ast von Old
 // --gegenprobe: Abgleich ohne Loesch-Marker (alter Punkt gewinnt) -> E rot.

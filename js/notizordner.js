@@ -67,7 +67,7 @@ export function noVereinen(lokal, fremd) {
   return o;
 }
 const neuId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-// ── Waehrungsordner (Nutzer 2026-11-25, VERSION-CHECK-822) ──────────────────────
+// ── Waehrungsordner (Nutzer 2026-11-25, VERSION-CHECK-823) ──────────────────────
 // "in jeder Waehrung ... einen Ordner ... nach dem Asset also aud ist gleich aud ... 3 Unterpunkte ...
 // Inflation, Arbeitsmarkt und Wirtschaft ... einen Ordner der old heisst und direkt dadrunter ist und genau die
 // gleichen Unterpunkte ... anklicke ... old ... dahin verschoben". Nicht-FX-Assets zeigen die Ordner ihrer

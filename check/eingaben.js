@@ -66,6 +66,10 @@ const OEFFNER = {
   // Notes-Ordner (813): erst das Ordner-Fenster von USD (mit Ordner), dann Punkt bzw. Ordnername.
   mNoPunkt: [`(ordnerAuf('USD'),Object.values(JSON.parse(snap()).notizOrdner||{}).some(o=>!o.del&&o.assets.includes('USD'))||(ordnerNeu(),document.getElementById('noNameIn').value='WAECHTER folder',ordnerNameSpeichern()),punktNeu())`],
   mNoName: [`(ordnerAuf('USD'),ordnerNeu())`],
+  // Checklists (822): neue Liste, Ordner-Name (in einer frisch angelegten Liste), neue Frage
+  mChkListe: [`(showTab('chk'),chkListeAuf(null))`],
+  mChkOrdner: [`(showTab('chk'),chkVorlage('entry'),chkOrdnerNeu(Object.keys(JSON.parse(snap()).checklisten).pop()))`],
+  mChkFrage: [`(showTab('chk'),chkVorlage('entry'),chkFrageNeu(Object.keys(JSON.parse(snap()).checklisten).pop(),null))`],
   mResNote: [
     `newResNoteIn('USD','')`,                    // Asset-Seite "+ New note"
     `newResNoteForAsset('USD')`,                 // Watchlist + Pinned notes

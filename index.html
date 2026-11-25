@@ -2090,6 +2090,70 @@ body.compact-view .rub-summary{display:block}
 .no-share-c button{width:24px;height:24px;border:none;background:none;color:var(--t3);font-size:15px;cursor:pointer;border-radius:50%}
 .no-kopf .no-share-add{width:auto;min-width:96px;max-width:160px;flex:none;margin:0;height:28px;padding:0 10px;font-size:var(--fs-xs);font-weight:600}
 .no-kopf-r{display:flex;gap:6px;flex-wrap:wrap}
+/* ══ CHECKLISTS (Nutzer 2026-11-25, js/checklisten.js) ══ Karten zum Aufklappen, Farbe je Liste (--lc),
+   Frage = Titel + Stichpunkte, Ordner als Abschnitte. Nur lesen, kein Abhaken. */
+.chk-leiste{display:flex;justify-content:flex-end;margin:-46px 0 14px;min-height:34px}
+.chk-leiste .btn,.chk-akt .btn{display:inline-flex;align-items:center;gap:6px}
+.chk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:14px;align-items:start}
+.chk-karte{position:relative;overflow:hidden;padding-left:20px}
+.chk-karte::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--lc)}
+.chk-karte.auf{grid-column:1 / -1}
+.chk-hd{cursor:pointer;user-select:none;-webkit-user-select:none;flex-wrap:nowrap;margin-bottom:0}
+.chk-tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.chk-hd .ab-tile-t{min-width:0;overflow-wrap:anywhere}
+.chk-ic{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;border-radius:9px;color:var(--lc);background:color-mix(in srgb,var(--lc) 13%,transparent)}
+.chk-sub{font-size:var(--fs-xs);color:var(--t3)}
+.chk-sub b{color:var(--t1);font-family:var(--ff-num)}
+.chk-info{display:inline-flex;flex:none;margin-left:auto}
+.chk-info+.chk-pfeil{margin-left:0}
+.chk-pfeil{margin-left:auto;display:inline-flex;flex:none;width:34px;height:34px;align-items:center;justify-content:center;border-radius:50%;color:var(--t2);transition:transform .2s,background .15s}
+.chk-pfeil.auf{transform:rotate(180deg)}
+@media (hover:hover){.chk-hd:hover .chk-pfeil{background:var(--bg4);color:var(--t0)}}
+.chk-vor{list-style:none;margin:12px 0 2px;padding:0;display:flex;flex-direction:column;gap:6px}
+.chk-vor li{position:relative;padding-left:16px;font-size:var(--fs-sm);color:var(--t1);overflow-wrap:anywhere}
+.chk-vor li::before{content:"";position:absolute;left:2px;top:.55em;width:6px;height:6px;border-radius:50%;background:var(--lc)}
+.chk-vor .chk-mehr{color:var(--t3);font-style:italic}
+.chk-vor .chk-mehr::before{background:var(--bd2)}
+.chk-leer{font-size:var(--fs-sm);color:var(--t3);padding:10px 2px}
+.chk-akt{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:14px 0 6px;padding-bottom:12px;border-bottom:1px solid var(--bd)}
+.chk-akt-r{margin-left:auto;display:inline-flex;gap:8px}
+.chk-lose{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.chk-f{margin-top:14px;border:1px solid var(--bd);border-radius:12px;background:color-mix(in srgb,var(--lc) 4%,var(--bg1));padding:6px 10px 10px}
+.chk-f-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:40px}
+.chk-f-t{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 4px;border:none;background:none;cursor:pointer;font:800 var(--fs-xs)/1.2 var(--ff-text);letter-spacing:.12em;text-transform:uppercase;color:var(--t0)}
+.chk-f-t svg{color:var(--lc);transition:transform .2s}
+.chk-f.zu .chk-f-t svg{transform:rotate(-90deg)}
+.chk-f-t em{font-style:normal;font-family:var(--ff-num);letter-spacing:0;min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:var(--bg2);border:1px solid var(--bd);color:var(--t2);font-size:var(--fs-2xs)}
+.chk-f-akt{margin-left:auto;display:inline-flex;gap:2px}
+.chk-f-akt button,.chk-mv button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:34px;height:34px;padding:0 8px;border:none;border-radius:8px;background:none;color:var(--t2);cursor:pointer;font:600 var(--fs-xs)/1 var(--ff-text)}
+.chk-f-akt button:disabled,.chk-mv button:disabled{opacity:.3;cursor:default}
+@media (hover:hover){.chk-f-akt button:not(:disabled):hover,.chk-mv button:not(:disabled):hover{background:var(--bg4);color:var(--t0)}}
+.chk-f>.chk-q{margin-top:8px}
+.chk-q{display:flex;align-items:flex-start;gap:12px;padding:10px 6px 10px 12px;border:1px solid var(--bd);border-radius:12px;background:var(--card);box-shadow:0 1px 2px rgba(20,27,46,.05)}
+.chk-nr{flex:none;width:26px;height:26px;margin-top:1px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--lc) 14%,transparent);color:var(--lc);font:800 var(--fs-xs)/1 var(--ff-num)}
+.chk-q-x{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding:2px 0;border:none;background:none;text-align:left;cursor:pointer;font-family:var(--ff-text);color:var(--t1)}
+.chk-q-x>b{font-size:var(--fs-md);font-weight:700;color:var(--t0);line-height:1.35;overflow-wrap:anywhere}
+@media (hover:hover){.chk-q-x:hover>b{color:var(--ui-act)}}
+.chk-pk{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:3px}
+.chk-pk li{position:relative;padding-left:15px;font-size:var(--fs-sm);line-height:1.4;color:var(--t2);overflow-wrap:anywhere}
+.chk-pk li::before{content:"";position:absolute;left:3px;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--lc,var(--t3));opacity:.75}
+.chk-mv{flex:none;display:inline-flex;flex-direction:column;gap:2px}
+.chk-start{max-width:760px;padding-left:20px}
+.chk-start .chk-pk{margin:10px 0 16px;gap:6px}
+.chk-start .chk-pk li{font-size:var(--fs-base);color:var(--t1)}
+.chk-start .chk-pk li::before{background:var(--ui-act)}
+.chk-vorlagen{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.chk-vl{position:relative;display:flex;flex-direction:column;gap:4px;min-height:72px;padding:12px 14px 12px 18px;border:1px solid var(--bd);border-radius:12px;background:var(--bg1);text-align:left;cursor:pointer;font-family:var(--ff-text);overflow:hidden}
+.chk-vl::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--lc,var(--bd2))}
+.chk-vl b{font-size:var(--fs-md);color:var(--t0)}
+.chk-vl span{font-size:var(--fs-xs);color:var(--t3)}
+.chk-vl.leer{border-style:dashed}
+@media (hover:hover){.chk-vl:hover{border-color:var(--bd2);box-shadow:0 2px 8px rgba(20,27,46,.08)}}
+.chk-farben{display:flex;gap:10px;margin:4px 0 6px}
+.chk-fb{width:34px;height:34px;border-radius:50%;border:3px solid var(--card);background:var(--lc);box-shadow:0 0 0 1px var(--bd2);cursor:pointer}
+.chk-fb.on{box-shadow:0 0 0 2px var(--ui-act)}
+.chk-ta{min-height:120px;resize:vertical}
+@media (max-width:700px){.chk-leiste{margin-top:0}.chk-akt-r{margin-left:0}}
 .no-canvas{position:relative;flex:1;min-height:0;overflow:hidden;overscroll-behavior:none;touch-action:none;cursor:grab;background:var(--bg1)}
 .no-canvas:active{cursor:grabbing}
 /* Welt-Ebene: Verschieben/Zoomen per transform (Nutzer 2026-11-25: Fenster fest, nur die Flaeche zoomen + bewegen) */
@@ -2107,7 +2171,7 @@ body.compact-view .rub-summary{display:block}
 .no-pt-x b{font-size:var(--fs-sm);font-weight:700;color:var(--t0);overflow-wrap:anywhere}
 .no-pt-x i{font-style:normal;font-size:var(--fs-xs);color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .no-pt-ta{min-height:96px;resize:vertical}
-/* Waehrungsordner (822): feste Aeste, Punkte nur bei diesem Asset, Regel-Chips, Old eingerueckt */
+/* Waehrungsordner (823): feste Aeste, Punkte nur bei diesem Asset, Regel-Chips, Old eingerueckt */
 .no-pt.no-pt-ast{background:var(--ctl-bg);border-color:var(--ctl-bd)}
 .no-pt.no-pt-ast .no-pt-d{display:none}
 .no-pt.no-pt-ast .no-pt-x b{text-transform:uppercase;letter-spacing:.4px;font-size:var(--fs-xs);color:var(--t1)}
@@ -8371,11 +8435,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-822 - Notes: Ordner je Waehrung mit Inflation, Labour market, Economy und Old, bei Nicht-FX verknuepft und je Ast nach der Regel gedreht, eigene Punkte nur beim Asset"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-823 - Notes: Ordner je Waehrung mit Inflation, Labour market, Economy und Old, bei Nicht-FX verknuepft und je Ast nach der Regel gedreht, eigene Punkte nur beim Asset"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-822</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-823</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -8521,6 +8585,14 @@ window.fxLogoSvg=function(art){
     <div class="pg-titel">Gameplan</div><div class="pg-sub">One plan per asset &middot; <b>bias</b>, thesis, <b>entry</b> and <b>break</b> &middot; next high-impact events &middot; watchlist pinned on top</div>
   </div>
   <div id="gameplanBody"></div>
+</div>
+<!-- PAGE: CHECKLISTS (Nutzer 2026-11-25: Listen mit Ordnern und Fragen als Routine; Aufbau in
+     renderChecklisten(), js/checklisten.js) -->
+<div class="pc" id="pgChk" style="display:none">
+  <div style="margin-bottom:11px">
+    <div class="pg-titel">Checklists</div><div class="pg-sub">Your <b>routines</b> &middot; open a list before a <b>rate decision</b> or an <b>entry</b> &middot; nothing important gets forgotten</div>
+  </div>
+  <div id="chkBody"></div>
 </div>
 <!-- PAGE: ECONOMY MAP (Nutzer 2026-11-21: Orbit - Sektoren, Gruppen, Firmen, Thesen;
      Aufbau in renderEcon(), js/wirtschaft.js) -->
@@ -8985,6 +9057,36 @@ window.fxLogoSvg=function(art){
     <div class="no-hd"><h3 id="noTitel">Notes</h3><span class="no-sub" id="noSub"></span></div>
     <div class="no-body" id="noBody"></div>
     <div class="m-btns"><button class="btn" onclick="closeM('mNotesOrdner')">Close</button></div>
+  </div>
+</div>
+<div class="ov" id="mChkListe" style="display:none">
+  <div class="modal" style="max-width:440px">
+    <h3 id="chkLTitel">New list</h3>
+    <label class="dm-lbl" for="chkLName">Name</label>
+    <input class="m-inp" id="chkLName" maxlength="80" placeholder="e.g. Rate decision" onkeydown="if(event.key==='Enter')chkListeSpeichern()">
+    <span class="dm-lbl">Colour</span>
+    <div class="chk-farben" id="chkLFarben"></div>
+    <div class="m-btns"><button class="btn" onclick="closeMGuarded('mChkListe')">Cancel</button><button class="btn g" onclick="chkListeSpeichern()">Save</button></div>
+  </div>
+</div>
+<div class="ov" id="mChkOrdner" style="display:none">
+  <div class="modal" style="max-width:420px">
+    <h3 id="chkOTitel">New folder</h3>
+    <label class="dm-lbl" for="chkOName">Name</label>
+    <input class="m-inp" id="chkOName" maxlength="80" placeholder="e.g. Vote" onkeydown="if(event.key==='Enter')chkOrdnerSpeichern()">
+    <div class="m-btns"><button class="btn" onclick="closeMGuarded('mChkOrdner')">Cancel</button><button class="btn g" onclick="chkOrdnerSpeichern()">Save</button></div>
+  </div>
+</div>
+<div class="ov" id="mChkFrage" style="display:none">
+  <div class="modal" style="max-width:520px">
+    <h3 id="chkQTitel">New question</h3>
+    <label class="dm-lbl" for="chkQTi">Question</label>
+    <input class="m-inp" id="chkQTi" maxlength="200" placeholder="e.g. How was the vote split?">
+    <label class="dm-lbl" for="chkQTx">Explanation <i>· one point per line</i></label>
+    <textarea class="m-inp chk-ta" id="chkQTx" maxlength="4000" placeholder="Count the votes for the decision&#10;What did the dissenters want?"></textarea>
+    <label class="dm-lbl" for="chkQOrd">Folder</label>
+    <select class="m-inp" id="chkQOrd" data-nativ></select>
+    <div class="m-btns"><button class="btn" id="chkQDel" style="margin-right:auto" onclick="chkFrageLoeschen()" hidden>Delete</button><button class="btn" onclick="closeMGuarded('mChkFrage')">Cancel</button><button class="btn g" onclick="chkFrageSpeichern()">Save</button></div>
   </div>
 </div>
 <div class="ov" id="mNoPunkt" style="display:none">

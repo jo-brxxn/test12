@@ -23463,7 +23463,16 @@ Nutzer: *„Wir hatten ja die Notes Karte verändert aber ich will jetzt neben d
 - **Ordner-Fenster:** Abschnitt *Pinned notes* statt *to sort*, Knopf *Move to folder*.
 - **Wächter:** `check/eingaben.js` D prüft wieder, dass der Einstieg den Editor angepinnt öffnet. `notizordner`, `hierarchie`, `kartentitel` und `ueberlappung` sind grün.
 
-## 2026-11-25 — Notes: Währungsordner mit Old, bei Nicht-FX verknüpft und gedreht (VERSION-CHECK-822)
+
+## 2026-11-25 — Neue Kategorie Checklists, Trash nur noch über die Settings (VERSION-CHECK-822)
+- Nutzer: *„Ich will eine Neue Kategorie, die irgendwie Lists oder so heißt … Fragen … hinzufügen … Kriterien … mehrere Fragen in einen Ordner … mein ganzes Wissen … zu einer Routine … Zinsentscheid … wie viele Leute überhaupt dafür gestimmt haben und was vielleicht andere Leute wollten … Liste für eine Entry … Inflation … Fokus auf Design. Außerdem … Trash wegkommt. Die soll nur in den Einstellungen öffnbar sein“*
+- Rückfragen: Name *Checklists*; Kriterien → *„Lass die … weg. Aber mach die Frage wie eine Art Stichpunkt … unten drunter noch mehr erklären“*; Benutzung *Nur lesen*; Aufbau *Karten zum Aufklappen*
+- Umgesetzt: `js/checklisten.js` (Daten, Abgleich, Seite, Fenster Liste/Ordner/Frage, Vorlagen, Papierkorb), Seite `pgChk`, Leiste + Kürzel `g l`; Trash aus Leiste, Stapeln und Kürzel `g r` raus (Settings-Knopf existierte schon)
+- Gemessen (1180 + 390 px): Vorlage → 2 Ordner/4 Fragen, neue Frage am Ordnerende, ▲ verschiebt, Umhängen nach *Market*, Löschen → Papierkorb → zurück, nach Neuladen da; Kartentitel 17 px; nichts ragt bei 390 px heraus
+- Beim Messen behoben: Titel brach neben der Anzahl um (Anzahl jetzt unter dem Titel); Vorschau folgte nicht der Anzeige-Reihenfolge; Pflicht-ⓘ an jeder Karte (hierarchie), Esc-Schutz + Öffner für die drei Fenster (eingaben)
+- Wächter `check/checklisten.js` neu (Gegenprobe rot); `hierarchie`/`designregeln` um die Seite erweitert
+
+## 2026-11-25 — Notes: Währungsordner mit Old, bei Nicht-FX verknüpft und gedreht (VERSION-CHECK-823)
 
 Nutzer: *„in jeder Währung, in den Notizen einen Ordner … 3 Unterpunkte, Inflation, Arbeitsmarkt und … Wirtschaft … Manche Nicht-FX-Assets sind ja mit Währungen verknüpft … die Notizen dann ebenfalls verknüpft … wenn die Beziehung wieder invers ist, dass es dann auch so ist … in den Nicht-FX-Assets-Einstellungen einstellen können. Also bei Score.“*
 
