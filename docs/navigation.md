@@ -1729,3 +1729,12 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - **2. Tipp** = Notiz-Fenster (bearbeiten, Bias, löschen); Tipp daneben / Esc = abwählen
 - Maus: Kasten auch ohne Auswahl ziehbar; Finger: erst antippen, sonst scrollt die Seite
 - Wächter `check/preiskarte.js` E (Gegenprobe `--gegenprobe-verschieben`)
+
+## Notes-Ordner: Fenster fest, Mindmap verschieben/zoomen (seit 2026-11-25, 820)
+- Nutzer (Foto, Fläche rot umrandet): *„Dieses Fenster lässt sich nach rechts und links scrollen. Das soll aber fest sein wenn dann kann man in dem markierten Bereich zoomen und hin und her bewegen mehr aber nicht“*
+- Fenster + Überlagerung: `overflow:hidden`, `overscroll-behavior:none` — kein Scrollen, kein Nachfedern
+- Mindmap-Fläche `#noCanvas`: scrollt nicht (`overflow:hidden`, `touch-action:none`); Welt-Ebene `#noWelt` per `transform`
+  - Ziehen = verschieben · zwei Finger / Strg+Rad = zoomen (0,35–2,5) · Rad = verschieben · Knöpfe **− Fit +** unten rechts
+  - Start = **Fit** (ganze Karte, max. 100 %, unten Platz für die Zoom-Leiste); Ansicht je Ordner nur Sitzung
+  - Tipp auf einen Punkt = bearbeiten; Ziehen ab 6 px schluckt den Klick; ≥ 60 px der Karte bleiben immer sichtbar
+- Wächter `check/notizordner.js` Z (Gegenprobe `--gegenprobe-fest`)

@@ -127,11 +127,12 @@ function zeichnen() {
         <div class="no-share"><span class="no-share-l">Shared with</span>${teilen}${frei.length ? `<select class="m-inp no-share-add" title="Share with asset" aria-label="Share with asset" onchange="if(this.value)ordnerTeilen('${escJH(o.id)}',this.value,true)"><option value="" hidden selected>＋ Asset</option>${H.sbCatsOptgroups(frei, id => { const s = H.syms().find(x => x.id === id); return `<option value="${e(id)}">${e(s ? s.name : id)}</option>`; })}</select>` : ''}</div>
         <div class="no-kopf-r"><button type="button" class="btn" onclick="ordnerUmbenennen('${escJH(o.id)}')">Rename</button><button type="button" class="btn" onclick="ordnerLoeschen('${escJH(o.id)}')">Delete</button><button type="button" class="btn g" onclick="punktNeu()">＋ Add point</button></div>
       </div>
-      <div class="no-canvas" id="noCanvas">${baumHtml(o)}</div>
+      <div class="no-canvas" id="noCanvas"><div class="no-welt" id="noWelt">${baumHtml(o)}</div>
+        <div class="no-zoom" role="group" aria-label="Zoom"><button type="button" onclick="noZoomKnopf(-1)" aria-label="Zoom out" title="Zoom out">−</button><button type="button" onclick="noZoomKnopf(0)" title="Fit the whole map">Fit</button><button type="button" onclick="noZoomKnopf(1)" aria-label="Zoom in" title="Zoom in">+</button></div></div>
     </div>`;
   }
   el.innerHTML = rail + main;
-  if (o && !o.del) requestAnimationFrame(() => baumLayout(o));
+  if (o && !o.del) requestAnimationFrame(() => { baumLayout(o); ansichtAnwenden(o.id); });
 }
 
 // ── Baum (Entwurf B): Spalten je Ebene, Hoehen gemessen, nichts ueberlappt ──
@@ -172,7 +173,7 @@ function baumLayout(o) {
   const rh = root.offsetHeight;
   if (!oben.length) {   // leerer Ordner: nur der Name, mittig
     root.style.left = Math.max(RAND, (cv.clientWidth - ROOTW) / 2) + 'px'; root.style.top = Math.max(RAND, (cv.clientHeight - rh) / 2) + 'px';
-    svg.setAttribute('width', 0); svg.setAttribute('height', 0); return;
+    svg.setAttribute('width', 0); svg.setAttribute('height', 0); _welt = { w: cv.clientWidth, h: cv.clientHeight }; return;
   }
   const ersteM = pos[oben[0].id].y + pos[oben[0].id].h / 2, letzteM = pos[oben[oben.length - 1].id].y + pos[oben[oben.length - 1].id].h / 2;
   const gesH = Math.max(hoeheMax + RAND, cv.clientHeight), dy = Math.max(0, (cv.clientHeight - hoeheMax - RAND) / 2);
@@ -191,7 +192,95 @@ function baumLayout(o) {
     d += `<path d="M${x1},${y1} H${mx} V${y2} H${x2}" stroke="${biasFarbe(ast[p.id])}" />`;
   });
   svg.innerHTML = d;
+  _welt = { w: W, h: Hh };
 }
+
+// ── Zoomen und Verschieben NUR in der Mindmap-Flaeche (Nutzer 2026-11-25, Foto: Flaeche rot umrandet:
+// "Dieses Fenster laesst sich nach rechts und links scrollen. Das soll aber fest sein wenn dann kann man in
+// dem markierten Bereich zoomen und hin und her bewegen mehr aber nicht"). Die Flaeche scrollt nicht mehr
+// (overflow:hidden, touch-action:none); eine Welt-Ebene wird per transform verschoben/skaliert:
+// Ziehen = verschieben, zwei Finger / Strg+Rad = zoomen, Rad = verschieben, Knoepfe − Fit +.
+// Ein Tipp auf einen Punkt bleibt "bearbeiten" (Ziehen ab 6 px schluckt den Klick).
+// Ansicht je Ordner nur fuer diese Sitzung (wie andere Blickwinkel, docs/state-sync.md "nur Sitzung").
+const ZMIN = 0.35, ZMAX = 2.5;
+let _welt = { w: 0, h: 0 }, _ansicht = {}, _zieh = null, _klickWeg = false;
+const _finger = new Map();
+function flaeche() { return document.getElementById('noCanvas'); }
+function passend() {
+  const cv = flaeche(); if (!cv || !_welt.w) return { k: 1, x: 0, y: 0 };
+  // unten Platz fuer die Zoom-Leiste lassen (gemessen 2026-11-25: sie verdeckte sonst ein Blatt unten rechts)
+  const zl = document.querySelector('#noCanvas .no-zoom'), frei = cv.clientHeight - 16 - (zl ? zl.offsetHeight + 12 : 0);
+  const k = Math.max(ZMIN, Math.min(1, (cv.clientWidth - 16) / _welt.w, frei / _welt.h));
+  return { k, x: (cv.clientWidth - _welt.w * k) / 2, y: 8 + (frei - _welt.h * k) / 2 };
+}
+function begrenzen(v) {
+  // mindestens 60 px der Karte bleiben sichtbar - sie kann nicht "verloren" gehen
+  const cv = flaeche(); if (!cv) return v;
+  const w = _welt.w * v.k, h = _welt.h * v.k, R = 60;
+  v.x = Math.min(cv.clientWidth - R, Math.max(R - w, v.x));
+  v.y = Math.min(cv.clientHeight - R, Math.max(R - h, v.y));
+  return v;
+}
+function ansichtAnwenden(id) {
+  const we = document.getElementById('noWelt'); if (!we) return;
+  if (id && !_ansicht[id]) _ansicht[id] = passend();
+  const v = _ansicht[_sel] || passend();
+  we.style.transform = `translate(${v.x}px,${v.y}px) scale(${v.k})`;
+}
+function zoomUm(fx, fy, faktor) {
+  const v = _ansicht[_sel] || (_ansicht[_sel] = passend());
+  const k = Math.max(ZMIN, Math.min(ZMAX, v.k * faktor)), f = k / v.k;
+  v.x = fx - (fx - v.x) * f; v.y = fy - (fy - v.y) * f; v.k = k;
+  begrenzen(v); ansichtAnwenden();
+}
+export function noZoomKnopf(r) {
+  const cv = flaeche(); if (!cv || !_sel) return;
+  if (r === 0) { _ansicht[_sel] = passend(); ansichtAnwenden(); return; }
+  zoomUm(cv.clientWidth / 2, cv.clientHeight / 2, r > 0 ? 1.25 : 0.8);
+}
+const lokal = (cv, e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+document.addEventListener('pointerdown', e => {
+  _klickWeg = false;
+  const cv = flaeche(); if (!cv || !e.target.closest || !e.target.closest('#noCanvas') || e.target.closest('.no-zoom')) return;
+  _finger.set(e.pointerId, lokal(cv, e));
+  if (_finger.size === 1) _zieh = { x: e.clientX, y: e.clientY, bewegt: false, v0: Object.assign({}, _ansicht[_sel] || passend()) };
+  else { _zieh = null; const [a, b] = [..._finger.values()]; _finger.abstand = Math.hypot(a.x - b.x, a.y - b.y); }
+}, true);
+document.addEventListener('pointermove', e => {
+  const cv = flaeche(); if (!cv || !_finger.has(e.pointerId)) return;
+  _finger.set(e.pointerId, lokal(cv, e));
+  if (_finger.size >= 2) {
+    e.preventDefault(); _klickWeg = true;
+    const [a, b] = [..._finger.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (_finger.abstand > 0 && d > 0) zoomUm((a.x + b.x) / 2, (a.y + b.y) / 2, d / _finger.abstand);
+    _finger.abstand = d; return;
+  }
+  const z = _zieh; if (!z) return;
+  const dx = e.clientX - z.x, dy = e.clientY - z.y;
+  if (!z.bewegt && Math.abs(dx) + Math.abs(dy) < 6) return;
+  z.bewegt = true; e.preventDefault();
+  const v = _ansicht[_sel] || (_ansicht[_sel] = passend());
+  v.x = z.v0.x + dx; v.y = z.v0.y + dy; v.k = z.v0.k; begrenzen(v); ansichtAnwenden();
+}, { passive: false });
+const ende = e => {
+  if (!_finger.has(e.pointerId)) return;
+  _finger.delete(e.pointerId);
+  if (_zieh && _zieh.bewegt) _klickWeg = true;
+  if (!_finger.size) _zieh = null;
+};
+document.addEventListener('pointerup', ende, true);
+document.addEventListener('pointercancel', ende, true);
+// Der Klick nach einem Ziehen/Zoomen ist kein Tipp auf einen Punkt
+document.addEventListener('click', e => { if (_klickWeg && e.target.closest && e.target.closest('#noCanvas')) { e.stopPropagation(); e.preventDefault(); _klickWeg = false; } }, true);
+document.addEventListener('wheel', e => {
+  const cv = flaeche(); if (!cv || !e.target.closest || !e.target.closest('#noCanvas')) return;
+  e.preventDefault();
+  const p = lokal(cv, e);
+  if (e.ctrlKey || e.metaKey) zoomUm(p.x, p.y, Math.exp(-e.deltaY / 300));
+  else { const v = _ansicht[_sel] || (_ansicht[_sel] = passend()); v.x -= e.deltaX; v.y -= e.deltaY; begrenzen(v); ansichtAnwenden(); }
+}, { passive: false });
+// Safari: Zwei-Finger-Geste in der Flaeche zoomt sonst die ganze Seite
+['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, e => { if (e.target.closest && e.target.closest('#noCanvas')) e.preventDefault(); }, { passive: false }));
 
 // ── Ordner ───────────────────────────────────────────────────────────────────
 let _nameFuer = null;   // null = neuer Ordner, sonst Ordner-Id
@@ -302,6 +391,6 @@ export function punktLoeschen() {
   H.guardArm('mNoPunkt'); H.closeM('mNoPunkt');
 }
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window, { ordnerAuf, ordnerNeu, ordnerUmbenennen, ordnerNameSpeichern, ordnerWahl, ordnerLoeschen, ordnerTeilen, punktNeu, punktBearbeiten, ordnerPinEinsortieren, punktBias, punktArt, punktOrdnerWechsel, punktSpeichern, punktLoeschen });
-export const ORDNER_WINDOW = { ordnerAuf, ordnerNeu, ordnerUmbenennen, ordnerNameSpeichern, ordnerWahl, ordnerLoeschen, ordnerTeilen, punktNeu, punktBearbeiten, ordnerPinEinsortieren, punktBias, punktArt, punktOrdnerWechsel, punktSpeichern, punktLoeschen };
+Object.assign(window, { noZoomKnopf, ordnerAuf, ordnerNeu, ordnerUmbenennen, ordnerNameSpeichern, ordnerWahl, ordnerLoeschen, ordnerTeilen, punktNeu, punktBearbeiten, ordnerPinEinsortieren, punktBias, punktArt, punktOrdnerWechsel, punktSpeichern, punktLoeschen });
+export const ORDNER_WINDOW = { noZoomKnopf, ordnerAuf, ordnerNeu, ordnerUmbenennen, ordnerNameSpeichern, ordnerWahl, ordnerLoeschen, ordnerTeilen, punktNeu, punktBearbeiten, ordnerPinEinsortieren, punktBias, punktArt, punktOrdnerWechsel, punktSpeichern, punktLoeschen };
 export { offen as ordnerOffen };

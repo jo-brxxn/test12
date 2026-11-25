@@ -23441,3 +23441,11 @@ Nutzer (Foto Dashboard, Ränder links/rechts markiert): *„Auch die Abstände z
 
 **Wächter:** `check/seasretail.js` Schwellen-Tabelle um die erwarteten festen Punkte erweitert (u. a. AUD Nov −0,48/44 → bear/−0,25, OIL Sep → 0, Schnitt 0 bei 50 % → 0) + neue Prüfung „feste Punkte genau im Graubereich“; `check/score.js` akzeptiert Saisonalität als Halbgewicht **oder** feste ±0,25. `node check/all.js --static` grün; die Browser-Wächter konnten in der Sitzung nicht laufen (lokaler Testserver nicht erlaubt) → CI auf `main`. Ersatzweise Vorher/Nachher in der App gemessen (Tabelle oben) und Kachel + Regel-Fenster per Screenshot geprüft.
 
+
+## 2026-11-25 — Notes-Ordner: Fenster fest, nur die Mindmap verschieben/zoomen (VERSION-CHECK-820)
+- Nutzer, iPad-Foto (Mindmap-Fläche rot umrandet): *„Dieses Fenster lässt sich nach rechts und links scrollen. Das soll aber fest sein wenn dann kann man in dem markierten Bereich zoomen und hin und her bewegen mehr aber nicht“*
+- **Reproduktion (Chromium 1180×820, Touch):** auf keiner Ebene Überbreite (Fenster 1066 = 1066, Fläche 714 = 714), Wischen verschiebt nichts → in Chromium **nicht reproduzierbar**; Safari steht hier nicht zur Verfügung. Ursache abgeleitet, nicht gemessen: `.modal` und `.no-canvas` hatten `overflow:auto` (Safari federt solche Flächen, ein breiterer Baum scrollt wirklich)
+- **Umsetzung:** Fenster/Überlagerung `overflow:hidden` + `overscroll-behavior:none`; Fläche `overflow:hidden`, `touch-action:none`, Welt-Ebene per `transform` (Ziehen, Pinch, Strg+Rad, Rad, − Fit +), Safari-`gesturestart` in der Fläche abgefangen
+- **Gemessen danach** (Baum mit 28 Punkten): Start Fit 0,60; 1 Finger +200/−100 px verschoben; Pinch auf 1,74; Strg+Rad; Fit zurück; Ziehen auf einem Punkt öffnet nichts, Tipp öffnet das Bearbeiten-Fenster; Wischen über die Ordnerleiste: alle `scrollLeft` 0
+- Beim Messen gefunden: Zoom-Leiste verdeckte in Fit ein Blatt unten rechts → Fit lässt unten Platz (0 Überlappungen)
+- Wächter `check/notizordner.js` Z, Gegenprobe `--gegenprobe-fest` rot
