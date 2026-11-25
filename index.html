@@ -2107,6 +2107,17 @@ body.compact-view .rub-summary{display:block}
 .no-pt-x b{font-size:var(--fs-sm);font-weight:700;color:var(--t0);overflow-wrap:anywhere}
 .no-pt-x i{font-style:normal;font-size:var(--fs-xs);color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .no-pt-ta{min-height:96px;resize:vertical}
+/* Waehrungsordner (822): feste Aeste, Punkte nur bei diesem Asset, Regel-Chips, Old eingerueckt */
+.no-pt.no-pt-ast{background:var(--ctl-bg);border-color:var(--ctl-bd)}
+.no-pt.no-pt-ast .no-pt-d{display:none}
+.no-pt.no-pt-ast .no-pt-x b{text-transform:uppercase;letter-spacing:.4px;font-size:var(--fs-xs);color:var(--t1)}
+.no-pt.no-pt-nur{border-style:dashed}
+.no-f.no-f-alt{margin-left:14px}
+.no-rg{display:inline-flex;align-items:center;gap:4px;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--bd2);font-size:var(--fs-xs);color:var(--t2)}
+.no-rg b{font-weight:700}
+.no-rg-inverse b{color:var(--red)}
+.no-rg-same b{color:var(--blue)}
+.no-hw{font-size:var(--fs-xs);color:var(--t3)}
 .no-seg{display:flex;border:1px solid var(--bd2);border-radius:var(--rss);overflow:hidden;margin:2px 0 10px}
 .no-seg button{flex:1;min-height:34px;border:none;border-right:1px solid var(--bd);background:var(--bg2);color:var(--t2);font-weight:700;font-size:var(--fs-sm);font-family:inherit;cursor:pointer}
 .no-seg button:last-child{border-right:0}
@@ -8360,11 +8371,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-821 - Notes-Karte: Pinned notes wieder mit New pinned note oben, Ordner darunter, Move to folder freiwillig"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-822 - Notes: Ordner je Waehrung mit Inflation, Labour market, Economy und Old, bei Nicht-FX verknuepft und je Ast nach der Regel gedreht, eigene Punkte nur beim Asset"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-821</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-822</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -8989,7 +9000,7 @@ window.fxLogoSvg=function(art){
     <span class="dm-lbl">Place on</span>
     <div class="no-seg"><button type="button" id="noPtArtNeu" onclick="punktArt('neu')">New branch</button><button type="button" id="noPtArtAst" onclick="punktArt('ast')">Branch of a point</button></div>
     <select class="m-inp no-pt-par" id="noPtPar" data-nativ hidden aria-label="Parent point"></select>
-    <div class="m-btns"><button class="btn" id="noPtDel" style="margin-right:auto" onclick="punktLoeschen()" hidden>Delete</button><button class="btn" onclick="closeMGuarded('mNoPunkt')">Cancel</button><button class="btn g" onclick="punktSpeichern()">Save</button></div>
+    <div class="m-btns"><button class="btn" id="noPtDel" style="margin-right:auto" onclick="punktLoeschen()" hidden>Delete</button><button class="btn" id="noPtAlt" onclick="punktNachAlt()" hidden title="Move this point and its sub-points into the same branch of Old">Move to Old</button><button class="btn" onclick="closeMGuarded('mNoPunkt')">Cancel</button><button class="btn g" onclick="punktSpeichern()">Save</button></div>
   </div>
 </div>
 <div class="ov" id="mNoName" style="display:none">

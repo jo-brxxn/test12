@@ -1738,3 +1738,12 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
   - Start = **Fit** (ganze Karte, max. 100 %, unten Platz für die Zoom-Leiste); Ansicht je Ordner nur Sitzung
   - Tipp auf einen Punkt = bearbeiten; Ziehen ab 6 px schluckt den Klick; ≥ 60 px der Karte bleiben immer sichtbar
 - Wächter `check/notizordner.js` Z (Gegenprobe `--gegenprobe-fest`)
+
+## Notes: Währungsordner (seit 2026-11-25, 822)
+
+- Jede der 8 Währungen hat automatisch den Ordner **„<Währung>“** und direkt darunter **„Old“**, beide mit den festen Ästen **Inflation · Labour market · Economy** (feste Ids `fx-AUD`/`fx-AUD-old`, `b-infl`/`b-lab`/`b-eco`; Gelöschtes wird nicht neu angelegt).
+- Tipp auf einen Ast = neuer Punkt an diesem Ast. Im Punkt-Fenster **Move to Old** → Punkt samt Unterpunkten in denselben Ast von Old.
+- **Nicht-FX-Assets** zeigen die Ordner ihrer verknüpften Währung („linked via USD“). Bias je Ast nach den Einstellungen **Score → Zahnrad → Automatic bias** (Inflation / Labour Market / Economic Growth): *inverse* dreht die Farbe, *same*/*off* nicht. Gespeichert bleibt der Bias aus Sicht der Währung.
+- Punkte der Währung sind beim verknüpften Asset **nur zu lesen**. Dort angelegte Punkte stehen **nur bei diesem Asset** (`p.nur`, gestrichelt) – nicht bei der Währung, nicht bei anderen Assets.
+- Kein Teilen/Umbenennen/Löschen für Währungsordner.
+

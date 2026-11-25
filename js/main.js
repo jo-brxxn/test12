@@ -13604,7 +13604,7 @@ function renderAssetCfgBody(){
   if(lc){
     const rules=effDeriveRules(c);
     h+=`<div class="acfg-sec">${icn('gear',14)} Automatic bias (from ${escH(lc)})</div>
-      <div class="acfg-hint">Strong ${escH(lc)} data → <b style="color:${BC.bull}">Bullish</b> or <b style="color:${BC.bear}">Bearish</b> · <b>Off</b> = manual</div>`;
+      <div class="acfg-hint">Strong ${escH(lc)} data → <b style="color:${BC.bull}">Bullish</b> or <b style="color:${BC.bear}">Bearish</b> · <b>Off</b> = manual · <i>also turns the ${escH(lc)} notes (Inflation · Labour market · Economy)</i></div>`;
     const srcSym=syms.find(s=>s.id===lc);
     const arrow=b=>b==='bull'?'▲':b==='bear'?'▼':'◆';
     // NUR die 4 echten Makro-Karten sind hier sinnvoll waehlbar (Nutzer-
@@ -28095,7 +28095,7 @@ document.addEventListener('visibilitychange',()=>{
 // ══ INIT ══════════════════════════════════════════════════════════
 try{sprungtestStart();}catch(e){}
 // Notes-Ordner (813).
-try{ordnerHelfer({pushU,save,BC,escH,escJH,syms:()=>syms,curPage:()=>curPage,renderDetail,openM,closeM,guardArm,
+try{ordnerHelfer({FX,isNonFx,effLinkCcy,effDeriveRules,pushU,save,BC,escH,escJH,syms:()=>syms,curPage:()=>curPage,renderDetail,openM,closeM,guardArm,
   abTileIcon:()=>abTileIcon('Pinned notes'),abInfoBtn,sbCatsOptgroups,pinnedVon:id=>abNotizen(id).filter(n=>n.pin),
   // Einsortiert = verlaesst Pinned wie "Unpin" (togResPin): landet in der History, geht nicht verloren.
   pinEntfernen:id=>{const n=resNotes().find(x=>x.id===id);if(!n)return;n.pin=false;n.up=new Date().toISOString();delete n.hist;notizHistStempel(n,n.up);if(n.seed)setSeedNoteFlag(n.id,'pin',false);}});}catch(e){}

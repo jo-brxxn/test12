@@ -29,13 +29,17 @@ const idOk = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(v);
 function punktRein(p) {
   if (!p || !idOk(p.id)) return null;
   if (p.del) return { id: p.id, del: zeit(p.del) || 1, t: zeit(p.t) };
-  return { id: p.id, par: idOk(p.par) ? p.par : null, ti: txt(p.ti, 120), tx: txt(p.tx, 4000), b: biasOk(p.b), t: zeit(p.t) };
+  const r = { id: p.id, par: idOk(p.par) ? p.par : null, ti: txt(p.ti, 120), tx: txt(p.tx, 4000), b: biasOk(p.b), t: zeit(p.t) };
+  if (p.fest) r.fest = true;                                                        // fester Ast (Inflation/Labour/Economy)
+  if (typeof p.nur === 'string' && /^[A-Z0-9._-]{1,15}$/.test(p.nur)) r.nur = p.nur;   // nur bei diesem Asset sichtbar
+  return r;
 }
 function ordnerRein(o) {
   if (!o || !idOk(o.id)) return null;
   const r = { id: o.id, t: zeit(o.t), p: {} };
   if (o.del) { r.del = zeit(o.del) || 1; return r; }
   r.name = txt(o.name, 80) || 'Untitled folder';
+  if (typeof o.ccy === 'string' && /^[A-Z]{3}$/.test(o.ccy)) { r.ccy = o.ccy; if (o.alt) r.alt = true; }
   r.assets = Array.isArray(o.assets) ? [...new Set(o.assets.filter(a => typeof a === 'string' && /^[A-Z0-9._-]{1,15}$/.test(a)))] : [];
   Object.values(o.p && typeof o.p === 'object' ? o.p : {}).forEach(p => { const q = punktRein(p); if (q) r.p[q.id] = q; });
   return r;
@@ -63,9 +67,44 @@ export function noVereinen(lokal, fremd) {
   return o;
 }
 const neuId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const ordnerVon = asset => Object.values(notizOrdner).filter(o => !o.del && (o.assets || []).includes(asset))
-  .sort((a, b) => String(a.name).localeCompare(String(b.name)));
-const punkte = o => Object.values(o.p || {}).filter(p => !p.del).sort((a, b) => (a.t0 || a.t) - (b.t0 || b.t) || a.id.localeCompare(b.id));
+// ── Waehrungsordner (Nutzer 2026-11-25, VERSION-CHECK-822) ──────────────────────
+// "in jeder Waehrung ... einen Ordner ... nach dem Asset also aud ist gleich aud ... 3 Unterpunkte ...
+// Inflation, Arbeitsmarkt und Wirtschaft ... einen Ordner der old heisst und direkt dadrunter ist und genau die
+// gleichen Unterpunkte ... anklicke ... old ... dahin verschoben". Nicht-FX-Assets zeigen die Ordner ihrer
+// verknuepften Waehrung; je Ast gilt die Regel der Einstellungen (Automatic bias: Inflation, Labour Market,
+// Economic Growth) - invers dreht die Bias-Farbe. Punkte, die man dort anlegt, stehen "nur bei Gold" (p.nur).
+// Feste Ids (fx-AUD, fx-AUD-old, b-infl ...) -> zwei Geraete legen nie doppelte Ordner an (Abgleich je Id).
+const AESTE = [['b-infl', 'Inflation', 'Inflation'], ['b-lab', 'Labour market', 'Labour Market'], ['b-eco', 'Economy', 'Economic Growth']];
+const AST_KARTE = Object.fromEntries(AESTE.map(a => [a[0], a[2]]));
+function fxOrdnerSicher(ccy) {
+  if (!ccy || !H.FX.includes(ccy)) return;
+  [[`fx-${ccy}`, ccy, false], [`fx-${ccy}-old`, 'Old', true]].forEach(([id, name, alt]) => {
+    if (notizOrdner[id]) return;   // auch ein Loesch-Marker zaehlt: Geloeschtes nicht neu anlegen
+    const p = {}; AESTE.forEach(([pid, ti]) => { p[pid] = { id: pid, par: null, ti, tx: '', b: 'neu', fest: true, t: 0 }; });
+    notizOrdner[id] = { id, name, ccy, alt: alt || undefined, assets: [ccy], t: 0, p };
+    if (!alt) delete notizOrdner[id].alt;
+  });
+}
+function linkCcy(asset) { if (H.FX.includes(asset)) return asset; if (!H.isNonFx(asset)) return null; const s = H.syms().find(x => x.id === asset); return s ? H.effLinkCcy(s) : null; }
+const ordnerVon = asset => {
+  const lc = linkCcy(asset); fxOrdnerSicher(lc);
+  return Object.values(notizOrdner).filter(o => !o.del && ((o.assets || []).includes(asset) || (o.ccy && o.ccy === lc)))
+    .sort((a, b) => (b.ccy === lc ? 1 : 0) - (a.ccy === lc ? 1 : 0) || (a.alt ? 1 : 0) - (b.alt ? 1 : 0) || String(a.name).localeCompare(String(b.name)));
+};
+const astRang = p => { const i = AESTE.findIndex(a => a[0] === p.id); return p.fest && i >= 0 ? i : 9; };
+const alle = o => Object.values(o.p || {}).filter(p => !p.del).sort((a, b) => astRang(a) - astRang(b) || (a.t0 || a.t) - (b.t0 || b.t) || a.id.localeCompare(b.id));
+// Sichtbar fuer ein Asset: Punkte ohne "nur" ueberall, Punkte mit "nur" nur bei diesem Asset.
+const punkte = (o, asset) => alle(o).filter(p => !p.nur || p.nur === (asset || _asset));
+const gespiegelt = (o, asset) => !!(o.ccy && asset && asset !== o.ccy);
+function astVon(o, p) { let q = p, n = 0; while (q && q.par && o.p[q.par] && n++ < 50) q = o.p[q.par]; return q && q.fest ? q.id : null; }
+// Bias aus Sicht des Assets: bei der Waehrung wie gespeichert; beim verknuepften Asset je Ast nach der Regel.
+function anzeigeB(o, p, asset) {
+  if (!gespiegelt(o, asset) || p.nur) return p.b;
+  const k = AST_KARTE[astVon(o, p)]; if (!k) return p.b;
+  const s = H.syms().find(x => x.id === asset), r = s ? (H.effDeriveRules(s) || {})[k] : null;
+  return r === 'inverse' ? (p.b === 'bull' ? 'bear' : p.b === 'bear' ? 'bull' : 'neu') : p.b;
+}
+function regelVon(o, astId, asset) { const s = H.syms().find(x => x.id === asset), r = s ? (H.effDeriveRules(s) || {})[AST_KARTE[astId]] : null; return r === 'inverse' ? 'inverse' : r === 'same' ? 'same' : 'off'; }
 function schreiben(fn) {
   try { H.pushU(); fn(); H.save(); }
   catch (e) { alert('Could not save: ' + (e && e.message || e)); }
@@ -74,15 +113,15 @@ function schreiben(fn) {
 
 // ── Karte "Notes" auf der Asset-Seite ───────────────────────────────────────
 const biasFarbe = b => b === 'bull' ? H.BC.bull : b === 'bear' ? H.BC.bear : H.BC.neu;
-function biasBalken(o) {
-  const l = punkte(o), n = l.length || 1, z = k => l.filter(p => p.b === k).length;
+function biasBalken(o, asset) {
+  const l = punkte(o, asset).filter(p => !p.fest), n = l.length || 1, z = k => l.filter(p => anzeigeB(o, p, asset) === k).length;
   if (!l.length) return '<span class="no-bb no-bb-leer"></span>';
   return `<span class="no-bb">${['bear', 'bull', 'neu'].map(k => z(k) ? `<i style="width:${(z(k) / n * 100).toFixed(1)}%;background:${biasFarbe(k)}"></i>` : '').join('')}</span>`;
 }
 export function ordnerKarteHtml(c, pinnedZeilen, pinnedAnzahl) {
   const e = H.escH, l = ordnerVon(c.id);
   const zeilen = l.map(o => `<button type="button" class="no-kz" onclick="ordnerAuf('${escJH(c.id)}','${escJH(o.id)}')" title="Open ${e(o.name)}">
-      <span class="no-kz-n">${e(o.name)}${(o.assets || []).length > 1 ? `<i>shared · ${o.assets.length} assets</i>` : ''}</span>${biasBalken(o)}<span class="no-kz-c">${punkte(o).length}</span></button>`).join('');
+      <span class="no-kz-n">${e(o.name)}${gespiegelt(o, c.id) ? `<i>linked via ${e(o.ccy)}</i>` : (o.assets || []).length > 1 ? `<i>shared · ${o.assets.length} assets</i>` : ''}</span>${biasBalken(o, c.id)}<span class="no-kz-c">${punkte(o, c.id).filter(p => !p.fest).length}</span></button>`).join('');
   return `<div class="ab-ntile ab-auf no-karte" onclick="abKarteAuf(event,()=>ordnerAuf('${escJH(c.id)}'))" title="Open notes">
     <div class="ab-tile-hd">${H.abTileIcon()}<span class="ab-tile-t">Notes</span><span class="ab-tile-s">${pinnedAnzahl + l.length}</span>${H.abInfoBtn('Notes', ['Pinned notes on top, folders with a mind map below. Tap a free spot of the card to open the folders.', 'A folder can be shared with other assets: it then shows on each of them, and changes appear everywhere.', 'A pinned note can be moved into a folder in the folder window (Move to folder).'])}</div>
     ${/* Seit 2026-11-25 (Nutzer: "neben den Ordnern doch wieder die Option ... Notizen anzuheften", Rueckfrage:
@@ -111,12 +150,12 @@ function zeichnen() {
   const e = H.escH, c = H.syms().find(s => s.id === _asset), l = ordnerVon(_asset);
   if (_sel && !l.some(o => o.id === _sel)) _sel = (l[0] && l[0].id) || null;
   const t = document.getElementById('noTitel'); if (t) t.textContent = 'Notes · ' + (c ? c.name : _asset);
-  const sub = document.getElementById('noSub'); if (sub) sub.textContent = `${l.length} folder${l.length === 1 ? '' : 's'} · ${l.reduce((s, o) => s + punkte(o).length, 0)} points`;
+  const sub = document.getElementById('noSub'); if (sub) sub.textContent = `${l.length} folder${l.length === 1 ? '' : 's'} · ${l.reduce((s, o) => s + punkte(o).filter(p => !p.fest).length, 0)} points`;
   const pin = H.pinnedVon(_asset);
   const rail = `<div class="no-rail">
       <button type="button" class="no-newf" onclick="ordnerNeu()">＋ Create new folder</button>
       <div class="no-lbl">Folders</div>
-      ${l.map(o => `<button type="button" class="no-f${o.id === _sel ? ' on' : ''}" onclick="ordnerWahl('${escJH(o.id)}')"><span class="no-f-n">${e(o.name)}${biasBalken(o)}</span><span class="no-f-c">${punkte(o).length}</span></button>`).join('') || '<div class="no-leer"><i>No folders yet</i></div>'}
+      ${l.map(o => `<button type="button" class="no-f${o.id === _sel ? ' on' : ''}${o.alt ? ' no-f-alt' : ''}" onclick="ordnerWahl('${escJH(o.id)}')"><span class="no-f-n">${e(o.name)}${biasBalken(o, _asset)}</span><span class="no-f-c">${punkte(o).filter(p => !p.fest).length}</span></button>`).join('') || '<div class="no-leer"><i>No folders yet</i></div>'}
       ${pin.length ? `<div class="no-lbl">Pinned notes · ${pin.length}</div>
         ${pin.map(n => `<div class="no-pin" style="--nb:${biasFarbe(n.bias)}"><span class="no-pin-t">${e(n.title || 'Untitled note')}</span><button type="button" class="btn" onclick="ordnerPinEinsortieren('${escJH(n.id)}')" ${l.length ? 'title="Move this note into a folder as a point"' : 'disabled title="Create a folder first"'}>Move to folder</button></div>`).join('')}` : ''}
     </div>`;
@@ -126,10 +165,12 @@ function zeichnen() {
   else {
     const teilen = (o.assets || []).map(a => { const s = H.syms().find(x => x.id === a); return `<span class="no-share-c">${e(s ? s.name : a)}${o.assets.length > 1 ? `<button type="button" onclick="ordnerTeilen('${escJH(o.id)}','${escJH(a)}',false)" aria-label="Stop sharing with ${e(s ? s.name : a)}" title="Remove">×</button>` : ''}</span>`; }).join('');
     const frei = H.syms().map(s => s.id).filter(id => !(o.assets || []).includes(id));
+    const kopfFx = o.ccy ? `<div class="no-share"><span class="no-share-l">${gespiegelt(o, _asset) ? 'Linked via' : 'Currency folder'}</span><span class="no-share-c">${e(o.ccy)}${o.alt ? ' · Old' : ''}</span>${gespiegelt(o, _asset) ? AESTE.map(([id, ti]) => { const r = regelVon(o, id, _asset); return `<span class="no-rg no-rg-${r}" title="Set in Score → gear → Automatic bias">${e(ti)} <b>${r === 'inverse' ? 'inverse' : r === 'same' ? 'same' : 'off'}</b></span>`; }).join('') + '<i class="no-hw">your points here stay on ' + e(c ? c.name : _asset) + '</i>' : ''}</div>
+        <div class="no-kopf-r"><button type="button" class="btn g" onclick="punktNeu()">＋ Add point</button></div>` : '';
     main = `<div class="no-main">
-      <div class="no-kopf">
+      <div class="no-kopf">${kopfFx || `
         <div class="no-share"><span class="no-share-l">Shared with</span>${teilen}${frei.length ? `<select class="m-inp no-share-add" title="Share with asset" aria-label="Share with asset" onchange="if(this.value)ordnerTeilen('${escJH(o.id)}',this.value,true)"><option value="" hidden selected>＋ Asset</option>${H.sbCatsOptgroups(frei, id => { const s = H.syms().find(x => x.id === id); return `<option value="${e(id)}">${e(s ? s.name : id)}</option>`; })}</select>` : ''}</div>
-        <div class="no-kopf-r"><button type="button" class="btn" onclick="ordnerUmbenennen('${escJH(o.id)}')">Rename</button><button type="button" class="btn" onclick="ordnerLoeschen('${escJH(o.id)}')">Delete</button><button type="button" class="btn g" onclick="punktNeu()">＋ Add point</button></div>
+        <div class="no-kopf-r"><button type="button" class="btn" onclick="ordnerUmbenennen('${escJH(o.id)}')">Rename</button><button type="button" class="btn" onclick="ordnerLoeschen('${escJH(o.id)}')">Delete</button><button type="button" class="btn g" onclick="punktNeu()">＋ Add point</button></div>`}
       </div>
       <div class="no-canvas" id="noCanvas"><div class="no-welt" id="noWelt">${baumHtml(o)}</div>
         <div class="no-zoom" role="group" aria-label="Zoom"><button type="button" onclick="noZoomKnopf(-1)" aria-label="Zoom out" title="Zoom out">−</button><button type="button" onclick="noZoomKnopf(0)" title="Fit the whole map">Fit</button><button type="button" onclick="noZoomKnopf(1)" aria-label="Zoom in" title="Zoom in">+</button></div></div>
@@ -144,14 +185,14 @@ const KNW = 196, ROOTW = 150, GAPX = 40, GAPY = 12, RAND = 16;
 function baumHtml(o) {
   const e = H.escH;
   return `<svg class="no-svg" id="noSvg"></svg><div class="no-root" id="noRoot">${e(o.name)}</div>` +
-    punkte(o).map(p => `<button type="button" class="no-pt" data-id="${e(p.id)}" style="--c:${biasFarbe(p.b)}" onclick="punktBearbeiten('${escJH(p.id)}')" title="Edit">
+    punkte(o).map(p => `<button type="button" class="no-pt${p.fest ? ' no-pt-ast' : ''}${p.nur ? ' no-pt-nur' : ''}" data-id="${e(p.id)}" style="--c:${biasFarbe(p.fest ? 'neu' : anzeigeB(o, p, _asset))}" onclick="punktBearbeiten('${escJH(p.id)}')" title="${p.fest ? 'Add a point here' : 'Edit'}">
       <span class="no-pt-d"></span><span class="no-pt-x"><b>${e(p.ti || 'Untitled')}</b>${p.tx ? `<i>${e(kurz(p.tx))}</i>` : ''}</span></button>`).join('');
 }
 const kurz = s => { const t = String(s).replace(/\s+/g, ' ').trim(); return t.length > 70 ? t.slice(0, 68).trimEnd() + '…' : t; };
 function baumLayout(o) {
   const cv = document.getElementById('noCanvas'), root = document.getElementById('noRoot'), svg = document.getElementById('noSvg');
   if (!cv || !root || !svg) return;
-  const l = punkte(o), kinder = {}, hoehe = {};
+  const l = punkte(o), kinder = {}, hoehe = {};   // nur die fuer dieses Asset sichtbaren
   const da = new Set(l.map(p => p.id));
   l.forEach(p => { const par = p.par && da.has(p.par) ? p.par : null; (kinder[par || '_'] = kinder[par || '_'] || []).push(p); });
   cv.querySelectorAll('.no-pt').forEach(n => { hoehe[n.dataset.id] = n.offsetHeight; });
@@ -186,7 +227,8 @@ function baumLayout(o) {
   cv.querySelectorAll('.no-pt').forEach(n => { const q = pos[n.dataset.id]; if (!q) { n.style.display = 'none'; return; } n.style.left = q.x + 'px'; n.style.top = (q.y + dy) + 'px'; });
   const W = Math.max(breiteMax + RAND, cv.clientWidth), Hh = gesH;
   svg.setAttribute('width', W); svg.setAttribute('height', Hh); svg.style.width = W + 'px'; svg.style.height = Hh + 'px';
-  const ast = {}; l.forEach(p => { let q = p, n = 0; while (q.par && da.has(q.par) && n++ < 50) q = o.p[q.par]; ast[p.id] = q.b; });
+  // Linienfarbe = Bias des Hauptasts; bei den festen Aesten (Waehrungsordner) der Bias des Punkts selbst.
+  const ast = {}; l.forEach(p => { let q = p, n = 0; while (q.par && da.has(q.par) && !o.p[q.par].fest && n++ < 50) q = o.p[q.par]; ast[p.id] = p.fest ? 'neu' : anzeigeB(o, q, _asset); });
   let d = '';
   l.forEach(p => {
     const q = pos[p.id]; if (!q) return;
@@ -323,24 +365,38 @@ export function ordnerTeilen(id, asset, an) {
 
 // ── Punkte ───────────────────────────────────────────────────────────────────
 let _pt = null, _pinId = null, _bias = 'neu', _art = 'neu';   // _art: 'neu' = neuer Ast, 'ast' = an einen Punkt
-export function punktNeu() { _pt = null; _pinId = null; punktFenster({ ti: '', tx: '', b: 'neu', par: null }, _sel); }
-export function punktBearbeiten(id) { const o = notizOrdner[_sel], p = o && o.p[id]; if (!p) return; _pt = id; _pinId = null; punktFenster(p, _sel); }
+export function punktNeu(par) { const o = notizOrdner[_sel]; _pt = null; _pinId = null; _nurLesen = false; punktFenster({ ti: '', tx: '', b: 'neu', par: par || (o && o.ccy ? 'b-infl' : null) }, _sel); }
+// Tipp auf einen festen Ast = neuer Punkt an diesem Ast. Gespiegelte Punkte der Waehrung sind beim
+// verknuepften Asset nur zu lesen (Nutzer: eigene Punkte "stehen dann nur bei Gold").
+let _nurLesen = false;
+export function punktBearbeiten(id) {
+  const o = notizOrdner[_sel], p = o && o.p[id]; if (!p) return;
+  if (p.fest) { punktNeu(id); return; }
+  _pt = id; _pinId = null; _nurLesen = gespiegelt(o, _asset) && !p.nur;
+  punktFenster(Object.assign({}, p, { b: anzeigeB(o, p, _asset) }), _sel);
+}
 export function ordnerPinEinsortieren(noteId) {
   const n = H.pinnedVon(_asset).find(x => x.id === noteId); if (!n) return;
   if (!ordnerVon(_asset).length) { alert('Create a folder first.'); return; }
-  _pt = null; _pinId = noteId;
+  _pt = null; _pinId = noteId; _nurLesen = false;
   punktFenster({ ti: n.title || '', tx: n.body || '', b: biasOk(n.bias === 'sbull' ? 'bull' : n.bias === 'sbear' ? 'bear' : n.bias), par: null }, _sel || ordnerVon(_asset)[0].id);
 }
 function punktFenster(p, ordnerId) {
   const e = H.escH;
   _bias = biasOk(p.b); _art = p.par ? 'ast' : 'neu';
-  document.getElementById('noPtTitel').textContent = _pt ? 'Edit point' : _pinId ? 'Move pinned note to a folder' : 'New point';
+  const oz = notizOrdner[ordnerId];
+  document.getElementById('noPtTitel').textContent = _nurLesen ? `From ${oz.ccy} · read only` : _pt ? 'Edit point' : _pinId ? 'Move pinned note to a folder' : 'New point';
+  ['noPtTi', 'noPtTx'].forEach(i => { document.getElementById(i).readOnly = _nurLesen; });
+  document.querySelectorAll('#mNoPunkt .no-seg button').forEach(b => { b.disabled = _nurLesen; });
+  document.getElementById('noPtPar').disabled = _nurLesen;
+  const sv = document.querySelector('#mNoPunkt .m-btns .btn.g'); if (sv) sv.hidden = _nurLesen;
+  const alt = document.getElementById('noPtAlt'); if (alt) alt.hidden = !(_pt && !_nurLesen && oz && oz.ccy && !oz.alt);
   document.getElementById('noPtTi').value = p.ti || '';
   document.getElementById('noPtTx').value = p.tx || '';
   const of = document.getElementById('noPtOrdWrap'), os = document.getElementById('noPtOrd');
   of.hidden = !_pinId;
   os.innerHTML = ordnerVon(_asset).map(o => `<option value="${e(o.id)}"${o.id === ordnerId ? ' selected' : ''}>${e(o.name)}</option>`).join('');
-  document.getElementById('noPtDel').hidden = !_pt;
+  document.getElementById('noPtDel').hidden = !_pt || _nurLesen;
   parListe(p.par);
   segZeichnen();
   H.openM('mNoPunkt'); H.guardArm('mNoPunkt');
@@ -349,13 +405,13 @@ function punktFenster(p, ordnerId) {
 function zielOrdner() { return _pinId ? document.getElementById('noPtOrd').value : _sel; }
 function parListe(gewaehlt) {
   const sel = document.getElementById('noPtPar'), o = notizOrdner[zielOrdner()]; if (!sel) return;
-  const l = o ? punkte(o) : [], weg = new Set();
+  const l = o ? punkte(o) : [], weg = new Set();   // feste Aeste sind waehlbar
   if (_pt) { weg.add(_pt); let wuchs = true; while (wuchs) { wuchs = false; l.forEach(p => { if (p.par && weg.has(p.par) && !weg.has(p.id)) { weg.add(p.id); wuchs = true; } }); } }
   const tiefe = p => { let n = 0, q = p; while (q && q.par && o.p[q.par] && n < 20) { q = o.p[q.par]; n++; } return n; };
   const frei = l.filter(p => !weg.has(p.id));
   sel.innerHTML = frei.map(p => `<option value="${H.escH(p.id)}"${p.id === gewaehlt ? ' selected' : ''}>${'– '.repeat(tiefe(p))}${H.escH(p.ti || 'Untitled')}</option>`).join('');
   if (!frei.length) _art = 'neu';
-  document.getElementById('noPtArtAst').disabled = !frei.length;
+  document.getElementById('noPtArtAst').disabled = !frei.length || _nurLesen;
 }
 function segZeichnen() {
   document.querySelectorAll('#noPtBias button').forEach(b => b.classList.toggle('on', b.dataset.v === _bias));
@@ -375,16 +431,19 @@ export function punktSpeichern() {
   if (!o) { alert('Please choose a folder.'); return; }
   const par = _art === 'ast' ? (document.getElementById('noPtPar').value || null) : null;
   const pinId = _pinId;
+  if (_nurLesen) return;
+  // Beim verknuepften Asset angelegt -> "nur" dieses Asset, Bias aus seiner Sicht (keine Drehung).
+  const nur = gespiegelt(o, _asset) ? _asset : null;
   schreiben(() => {
     const t = Date.now();
     if (_pt && o.p[_pt]) Object.assign(o.p[_pt], { ti: ti.slice(0, 120), tx: tx.slice(0, 4000), b: _bias, par, t });
-    else { const id = neuId('np'); o.p[id] = { id, par, ti: ti.slice(0, 120), tx: tx.slice(0, 4000), b: _bias, t }; }
+    else { const id = neuId('np'); o.p[id] = { id, par, ti: ti.slice(0, 120), tx: tx.slice(0, 4000), b: _bias, t }; if (nur) o.p[id].nur = nur; }
     if (pinId) { _sel = oid; H.pinEntfernen(pinId); }
   });
   H.guardArm('mNoPunkt'); H.closeM('mNoPunkt');
 }
 export function punktLoeschen() {
-  const o = notizOrdner[_sel], p = o && o.p[_pt]; if (!p) return;
+  const o = notizOrdner[_sel], p = o && o.p[_pt]; if (!p || p.fest || _nurLesen) return;
   const k = punkte(o).filter(q => q.par === p.id).length;
   if (!confirm(`Delete "${p.ti || 'Untitled'}"?${k ? ` Its ${k} sub-point${k > 1 ? 's move' : ' moves'} up one level.` : ''}`)) return;
   schreiben(() => {
@@ -394,7 +453,23 @@ export function punktLoeschen() {
   });
   H.guardArm('mNoPunkt'); H.closeM('mNoPunkt');
 }
+// "Move to Old": Punkt samt Unterpunkten in denselben Ast des Ordners "Old" (gleiche Ids, gleicher Ast).
+export function punktNachAlt() {
+  const o = notizOrdner[_sel], p = o && o.p[_pt]; if (!p || p.fest || !o.ccy || o.alt || _nurLesen) return;
+  const ziel = notizOrdner[`fx-${o.ccy}-old`]; if (!ziel || ziel.del) { alert('The Old folder is missing.'); return; }
+  const l = alle(o), weg = new Set([p.id]);
+  let w = true; while (w) { w = false; l.forEach(q => { if (q.par && weg.has(q.par) && !weg.has(q.id)) { weg.add(q.id); w = true; } }); }
+  schreiben(() => {
+    const t = Date.now(), astId = astVon(o, p);
+    weg.forEach(id => {
+      const q = Object.assign({}, o.p[id], { t });
+      if (id === p.id) q.par = astId && ziel.p[astId] ? astId : null;
+      ziel.p[id] = q; o.p[id] = { id, del: t, t };
+    });
+  });
+  H.guardArm('mNoPunkt'); H.closeM('mNoPunkt');
+}
 // Inline-Handler (onclick) brauchen die Funktionen am window.
-Object.assign(window, { noZoomKnopf, ordnerAuf, ordnerNeu, ordnerUmbenennen, ordnerNameSpeichern, ordnerWahl, ordnerLoeschen, ordnerTeilen, punktNeu, punktBearbeiten, ordnerPinEinsortieren, punktBias, punktArt, punktOrdnerWechsel, punktSpeichern, punktLoeschen });
-export const ORDNER_WINDOW = { noZoomKnopf, ordnerAuf, ordnerNeu, ordnerUmbenennen, ordnerNameSpeichern, ordnerWahl, ordnerLoeschen, ordnerTeilen, punktNeu, punktBearbeiten, ordnerPinEinsortieren, punktBias, punktArt, punktOrdnerWechsel, punktSpeichern, punktLoeschen };
+Object.assign(window, { noZoomKnopf, ordnerAuf, ordnerNeu, ordnerUmbenennen, ordnerNameSpeichern, ordnerWahl, ordnerLoeschen, ordnerTeilen, punktNeu, punktBearbeiten, ordnerPinEinsortieren, punktBias, punktArt, punktOrdnerWechsel, punktSpeichern, punktLoeschen, punktNachAlt });
+export const ORDNER_WINDOW = { noZoomKnopf, ordnerAuf, ordnerNeu, ordnerUmbenennen, ordnerNameSpeichern, ordnerWahl, ordnerLoeschen, ordnerTeilen, punktNeu, punktBearbeiten, ordnerPinEinsortieren, punktBias, punktArt, punktOrdnerWechsel, punktSpeichern, punktLoeschen, punktNachAlt };
 export { offen as ordnerOffen };

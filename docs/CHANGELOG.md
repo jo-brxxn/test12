@@ -23463,3 +23463,24 @@ Nutzer: *„Wir hatten ja die Notes Karte verändert aber ich will jetzt neben d
 - **Ordner-Fenster:** Abschnitt *Pinned notes* statt *to sort*, Knopf *Move to folder*.
 - **Wächter:** `check/eingaben.js` D prüft wieder, dass der Einstieg den Editor angepinnt öffnet. `notizordner`, `hierarchie`, `kartentitel` und `ueberlappung` sind grün.
 
+## 2026-11-25 — Notes: Währungsordner mit Old, bei Nicht-FX verknüpft und gedreht (VERSION-CHECK-822)
+
+Nutzer: *„in jeder Währung, in den Notizen einen Ordner … 3 Unterpunkte, Inflation, Arbeitsmarkt und … Wirtschaft … Manche Nicht-FX-Assets sind ja mit Währungen verknüpft … die Notizen dann ebenfalls verknüpft … wenn die Beziehung wieder invers ist, dass es dann auch so ist … in den Nicht-FX-Assets-Einstellungen einstellen können. Also bei Score.“*
+
+- **Rückfragen:**
+  - Der Ordner heißt wie die Währung (*„aud ist gleich aud“*).
+  - Darunter kommt der Ordner **Old** mit denselben Ästen; *„klicke … Old … dahin verschoben“*.
+  - Die Drehung übernimmt die drei Gruppen der Einstellungen.
+  - Bei Nicht-FX angelegte Punkte *„stehen dann nur bei Gold“*.
+- **COT-Regel** (in derselben Nachricht freigegeben): war schon als Modell 44 umgesetzt (andere Session, 24.11.). Keine weitere Änderung.
+- **Umsetzung** (`js/notizordner.js`):
+  - `fxOrdnerSicher`, `linkCcy`, `anzeigeB` (Drehung nur in der Anzeige), `punktNachAlt`.
+  - Punkte bekommen `nur`; Punkte der Währung sind beim verknüpften Asset nur lesbar.
+  - Einstellungs-Hinweis bei Automatic bias: *also turns the USD notes*.
+- **Gemessen:**
+  - USD-Karte: zuerst USD, dann Old.
+  - Bullisher USD-Inflation-Punkt bei Gold `#DC2430` (bearish).
+  - Gold-eigener Punkt bei USD und Silber unsichtbar.
+  - Move to Old: Unterpunkt bleibt angehängt, Elternpunkt landet unter `b-infl`.
+- **Wächter:** `check/notizordner.js` F; Gegenprobe `--gegenprobe-f` (Drehung aus) meldet F rot.
+

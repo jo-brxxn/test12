@@ -406,5 +406,6 @@ in `seedNoteFlags` — winzig, aber gespeichert.
 - `notizOrdner` im Snapshot: `{ordnerId:{id,name,assets[],t,del?,p:{punktId:{id,par,ti,tx,b,t,del?}}}}` (`js/notizordner.js`, `noRein`).
 - Abgleich `noVereinen`: Ordnerkopf (Name, Assets, Löschen) nach neuerem `t`, **jeder Punkt einzeln** nach neuerem `t`. Gelöschtes bleibt als Marker `{del}` — ohne ihn käme es vom anderen Gerät zurück (`check/notizordner.js` E).
 - Geteilt = **ein** Ordner mit mehreren Assets in `assets[]`, keine Kopie.
+- Währungsordner (822): Ordner tragen `ccy` (+ `alt` für Old), Punkte optional `fest` (Ast) und `nur` (Asset-Id). Feste Ids → kein Doppel beim Abgleich; angelegt mit `t:0`, damit jeder echte Stand gewinnt.
 - In `neueFelderBehalten` geschützt.
 
