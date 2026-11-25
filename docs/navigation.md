@@ -1738,3 +1738,17 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
   - Start = **Fit** (ganze Karte, max. 100 %, unten Platz für die Zoom-Leiste); Ansicht je Ordner nur Sitzung
   - Tipp auf einen Punkt = bearbeiten; Ziehen ab 6 px schluckt den Klick; ≥ 60 px der Karte bleiben immer sichtbar
 - Wächter `check/notizordner.js` Z (Gegenprobe `--gegenprobe-fest`)
+
+## Checklists (seit 2026-11-25, 822) — `js/checklisten.js`
+- Nutzer: *„eine Neue Kategorie, die irgendwie Lists oder so heißt … Listen … die ich aufklappen kann, wo dann schön designt Fragen drin stehen … mehrere Fragen in einen Ordner … mein ganzes Wissen … zu einer Routine zu machen“*; Rückfragen → Name **Checklists**, **keine Kriterien** (Frage = Titel + Erklärung darunter), **nur lesen** (kein Abhaken), **Karten zum Aufklappen**
+- Leiste: **Checklists** nach Calendar (Symbol Liste mit Haken), Kürzel `g l`
+- Zugeklappt: Farbbalken der Liste, Titel, *n folders · n questions*, Vorschau der ersten 3 Fragen (Anzeige-Reihenfolge), ⓘ, Pfeil
+- Aufgeklappt: volle Breite; ＋ Question · Folder · Edit list · Delete; erst Fragen ohne Ordner, dann Ordner als Abschnitte (Name antippen = zuklappen, nur Sitzung)
+- Frage: Nummer in Listenfarbe, **Titel** + Erklärung — **jede Zeile ein Stichpunkt** (Regel 10); Antippen = Bearbeiten-Fenster (Titel, Erklärung, Ordner, Delete); ▲▼ = Reihenfolge
+- Leer: Start-Karte mit Vorlagen *Rate decision* / *Entry check* (Beispiele des Nutzers) und *Blank list*
+- Löschen → Papierkorb (Liste, Ordner mit Fragen, Frage), wiederherstellbar
+- Wächter `check/checklisten.js`
+
+## Trash nur über die Settings (seit 2026-11-25, 822)
+- Nutzer: *„links in der Leiste … die Kategorie Trash wegkommt. Die soll nur in den Einstellungen öffnbar sein“*
+- `'notes'` (Trash-Seite) nicht mehr in `TAB_ORDER`, in `ENTFERNTE_TABS` (fliegt auch aus gespeicherten Stapeln), Kürzel `g r` entfernt; Seite bleibt, geöffnet über den Knopf **Trash** in den Settings (`mCloud`)
