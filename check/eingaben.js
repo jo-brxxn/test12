@@ -63,6 +63,8 @@ const AUSNAHMEN = {
 // Die ECHTEN Oeffnungswege je Fenster. Ein neu eingetragenes Fenster ohne
 // Eintrag hier ist rot: ungetesteter Schutz ist kein Schutz.
 const OEFFNER = {
+  // Grosser Preischart (825): Marker-Fenster ueber zwei Tipps in den Chart (hier direkt).
+  mGcMark: [`(gcAuf('GOLD'),gcMarkPruef())`],
   // Notes-Ordner (813): erst das Ordner-Fenster von USD (mit Ordner), dann Punkt bzw. Ordnername.
   mNoPunkt: [`(ordnerAuf('USD'),Object.values(JSON.parse(snap()).notizOrdner||{}).some(o=>!o.del&&o.assets.includes('USD'))||(ordnerNeu(),document.getElementById('noNameIn').value='WAECHTER folder',ordnerNameSpeichern()),punktNeu())`],
   mNoName: [`(ordnerAuf('USD'),ordnerNeu())`],

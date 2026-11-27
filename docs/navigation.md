@@ -1765,3 +1765,12 @@ Teile **eingebaut**, Name **Jonathan**, Logo **im Hero-Bild**.
 - Punkte der Währung sind beim verknüpften Asset **nur zu lesen**. Dort angelegte Punkte stehen **nur bei diesem Asset** (`p.nur`, gestrichelt) – nicht bei der Währung, nicht bei anderen Assets.
 - Kein Teilen/Umbenennen/Löschen für Währungsordner.
 
+## Großer Preischart (seit 2026-11-27, 825) — `js/grosschart.js`
+
+- Price-Karte unten rechts **Open chart ⤢** (neben *Go to Trends*) → Fenster `#mPreisGross` (fast voll), Canvas statt des gestreckten Karten-SVGs.
+- Gleiche Daten wie die Karte: Kerzen/Linie (Display-Einstellung), EMA 1D/4H mit Neutralband + Schattierung, Gameplan-Linien mit Preisschild.
+- Bedienung: Ziehen = verschieben, Rad / zwei Finger = zoomen, Preisachse ziehen = strecken, Doppeltipp = zurück; Leiste 3M · 6M · 1Y · 3Y · MAX, Log, Auto, ＋ Mark, Save image.
+- **Marker (eigene Notizen mit `pm`) nur noch hier** (Nutzer: *„nur noch in dem großen Chart … damit man die dort besser anordnen kann“*): ＋ Mark → Kerze → Ort → Fenster (Text, Bias); Kasten ziehen = neue Lage (`pm.bd`, `pm.bp`), Tipp = Notiz-Fenster. In der Karte weder Marker noch ＋ Mark.
+- **Vorschläge 1–5 (eingebaut, Nutzer entscheidet, was bleibt):** V1 Legende O/H/L/C + EMA unter dem Fadenkreuz · V2 letzter Kurs als Linie + Preisschild · V3 Release-Tage als Striche an der Zeitachse, Releases des Tages in der Legende · V4 Log-Skala + Auto · V5 Tastatur (← → + − Pos1) + Bild speichern.
+- Keine Analyse-Werkzeuge (Nutzer: *„die ganzen Analyse-Sachen“* nicht).
+

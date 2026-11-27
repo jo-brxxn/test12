@@ -29,6 +29,7 @@ import {bsHelfer,bsAuf,btcSentimentScore,bsDaten,bsLaden,scoreReihe as bsScoreRe
 import {ordnerHelfer,notizOrdner,noSetzeAlle,noVereinen,ordnerKarteHtml,ORDNER_WINDOW,punktZustand} from './notizordner.js';
 // Checklists (Nutzer 2026-11-25, 822): eigene Kategorie, Listen mit Ordnern und Fragen.
 import {chkHelfer,checklisten,chkSetzeAlle,chkVereinen,renderChecklisten,CHK_WINDOW,chkLabel,chkZurueck,chkListeZustand,chkFrageZustand} from './checklisten.js';
+import {gcHelfer,gcAuf,gcStart,gcMarkSpeichern,gcMarkZustand} from './grosschart.js';
 import {srHelfer,openScoreRegeln,srZahnrad,srTyp,srMax} from './scoreregeln.js';
 import {AI_MARKEN,aiMarkeMono} from './marken-icons.js';
 import {sprungLog,sprungtestStart} from './sprungtest.js';
@@ -8168,6 +8169,8 @@ function unsavedKeepEditing(){_unsavedFor=null;closeM('mUnsaved');}
 //   mEvtAlertPicker  - nur eine Auswahl, "Next" fuehrt erst zum Formular
 //   mAssetCfg/mCcyCfg und die Schalter in mCloud - wirken sofort beim Klick
 const MODAL_GUARD_TABELLE={
+  // Grosser Preischart (825): Text des neuen Markers + Bias.
+  mGcMark:{felder:['gcMarkTi'],extra:()=>gcMarkZustand(),save:()=>gcMarkSpeichern(),was:'This mark'},
   // Checklists (822): Liste (Name + Farbe), Ordnername, Frage (Titel, Erklaerung + Ordner als Zustand).
   mChkListe:{felder:['chkLName'],extra:()=>chkListeZustand(),save:()=>CHK_WINDOW.chkListeSpeichern(),was:'This list'},
   mChkOrdner:{felder:['chkOName'],save:()=>CHK_WINDOW.chkOrdnerSpeichern(),was:'This folder name'},
@@ -8285,7 +8288,7 @@ addEventListener('resize',nivBald);
 // Steht die Nachfrage offen, fuehrt Escape zurueck ins Fenster (der
 // harmlose Weg, wie der Klick neben die Nachfrage).
 const ESC_MODALS=['mAddSym','mAssetCfg','mHist','mAddPair','mRename','mDelSym','mInfo','mCloud','mRateWatch','mIndLink','mBackup','mTrash',
-  'mPinHist','mGpHist','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose','mNotesOrdner','mNoPunkt','mNoName','mChkListe','mChkOrdner','mChkFrage'];
+  'mPinHist','mGpHist','mResNote','mPriceAlert','mEvtAlert','mEvtAlertCustom','mTrade','mTradeGp','mTradeView','mTradeDay','mTradeClose','mNotesOrdner','mNoPunkt','mNoName','mChkListe','mChkOrdner','mChkFrage','mPreisGross','mGcMark'];
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const nf=document.getElementById('mUnsaved');
@@ -12512,7 +12515,8 @@ function assetPreisKarteHtml(c){
     ${chartLeisteHtml((vergleich?kmKnopfHtml('abPreis',pkVglTeile(),'',true):YIELD_CCY[c.id]?kmKnopfHtml('abPreisRendite',[pxTypTeil()],'',true):kmKnopfHtml('abPreis',[pxTypTeil(),abTrendTeil()],'',true))
       +`<button type="button" id="pkVglBtn" class="km-klein pk-knopf${vergleich?' an':''}" onclick="pkVglAuf()" aria-haspopup="true" title="Add up to 2 prices to this chart - it switches to lines">${vergleich?`Compare <em>${pkVglListe(c.id).length}/2</em>`:'＋ Compare'}</button>`
       // Markers-Knopf + Release-Pfeile entfernt (Nutzer 2026-11-16, VERSION-CHECK-738); + Mark immer da
-      +`<button type="button" class="km-klein pk-knopf pk-add-btn${pkAddAktiv()?' on':''}" onclick="pkAddUmschalten()" aria-pressed="${pkAddAktiv()}" title="Write a note into the chart: tap a day">${pkAddAktiv()?'✕ Cancel':'＋ Mark'}</button>`,
+      // "+ Mark" seit 825 nur noch im grossen Chart (Nutzer 2026-11-27: Marker "nur noch in dem grossen Chart ... damit man die dort besser anordnen kann")
+      ,
       `<span class="ab-rgs">${regler}</span>`)}`;
   // Kerzen-Zaehler ("N daily candles · M with a measured high/low") am
   // 2026-10-06 auf Nutzer-Wunsch entfernt ("die Anzeige beim Preis wie viele
@@ -12535,7 +12539,9 @@ function assetPreisKarteHtml(c){
       <div class="pk-main"><div class="ab-pk-chart">${ch.html}</div>${fuss}</div>
     </div>
     ${/* 762 (Nutzer 2026-11-18): "Go to Trends" in die Zeile darueber (Trend score), spart eine Zeile */''}
-    ${YIELD_CCY[c.id]?abGoToHtml('trends'):abTrendScoreZeile(c,abGoToHtml('trends'))}
+    ${/* 825: "unten rechts Open Preischart" -> grosses Fenster (js/grosschart.js) */''}
+    ${(()=>{const og=`<div class="ab-goto gc-open"><button class="ab-goto-b" onclick="gcAuf('${escJH(c.id)}')" title="Open the price chart large: zoom, pan, crosshair, your marks">Open chart ⤢</button></div>`;
+      return YIELD_CCY[c.id]?`<div class="gc-open-z">${abGoToHtml('trends')}${og}</div>`:abTrendScoreZeile(c,`<div class="gc-open-z">${abGoToHtml('trends')}${og}</div>`);})()}
   </div>`;
 }
 
@@ -28114,6 +28120,11 @@ document.addEventListener('visibilitychange',()=>{
 try{sprungtestStart();}catch(e){}
 // Notes-Ordner (813).
 try{chkHelfer({pushU,save,escH,escJH,icn,openM,closeM,guardArm,trashAblegen,abInfoBtn,curPage:()=>curPage});}catch(e){}
+// Grosser Preischart (825): dieselben Daten wie die Price-Karte.
+try{gcHelfer({FX,BC,YIELD_CCY,escH,openM,closeM,guardArm,pushU,save,uid,syms:()=>syms,research:()=>research,resNotes,openResNote,
+  preisReiheAnzeige,tagesKerzen,abTrendLinien:()=>abTrendLinien,abTrendOverlayDaten,gpNiveaus,pkReleases,kerzenArchivBei,
+  pxChartTyp:()=>pxChartTyp,korbName:id=>KORB_NAME[id],kerzenWochenende:kerzenWochenendeErlaubt,
+  abChartTage:()=>{const r=AB_RANGES.find(x=>x[0]===abChartRange);return r?r[1]:90;}});gcStart();}catch(e){}
 try{ordnerHelfer({FX,isNonFx,effLinkCcy,effDeriveRules,pushU,save,BC,escH,escJH,syms:()=>syms,curPage:()=>curPage,renderDetail,openM,closeM,guardArm,
   abTileIcon:()=>abTileIcon('Pinned notes'),abInfoBtn,sbCatsOptgroups,pinnedVon:id=>abNotizen(id).filter(n=>n.pin),
   // Einsortiert = verlaesst Pinned wie "Unpin" (togResPin): landet in der History, geht nicht verloren.

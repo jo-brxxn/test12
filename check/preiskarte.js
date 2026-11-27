@@ -18,7 +18,7 @@
 //      ueber den Chart zeigt seit 2026-11-15 den Tag unter der Maus)
 //   D) AUSBLENDEN: Knopf Markers -> 0 Pfeile, aria-pressed false, Einstellung
 //      gespeichert (fxpro_pk_marken = 0); wieder an -> Pfeile da
-//   E) EIGENER PFEIL: + Mark -> Tag -> Popover; leer speichern geht nicht;
+//   E) (bis 824) EIGENER PFEIL: + Mark -> Tag -> Popover; leer speichern geht nicht;
 //      gespeichert = Notiz mit pm, Flagge mit Text im Chart (seit 2026-11-15), "Mine" in der Spalte;
 //      loeschen -> aus den Notizen, im Papierkorb
 //      (seit 2026-11-23, 815) Kasten: 1. Tipp = ausgewaehlt (Ring, Hinweis, KEIN Fenster),
@@ -94,9 +94,10 @@ const gruen = m => console.log('  ✓ ' + m);
     else if (a.knopf) rot('A: Knopf "Price chart" steht noch in der Kopfleiste');
     else gruen('A: Price volle Breite, darunter Pinned notes · History · Calendar in einer Reihe, kein "Price chart"');
     // B (seit 2026-11-16, 738: Release-Pfeile und Markers-Knopf entfernt)
-    const bb = await p.evaluate(() => ({ pf: document.querySelectorAll('.pk-pf').length, mk: !!document.querySelector('.pk-mk-btn'), add: !!document.querySelector('.pk-add-btn') }));
-    if (bb.pf || bb.mk || !bb.add) rot(`B: ${bb.pf} Pfeile, Markers-Knopf ${bb.mk}, + Mark ${bb.add} (erwartet 0 / false / true)`);
-    else gruen('B: keine Release-Pfeile, kein Markers-Knopf, + Mark da');
+    // Seit 825: "+ Mark" und die Marker nur noch im grossen Chart (check/grosschart.js), in der Karte "Open chart"
+    const bb = await p.evaluate(() => ({ pf: document.querySelectorAll('.pk-pf').length, mk: !!document.querySelector('.pk-mk-btn'), add: !!document.querySelector('.ab-ptile.pk .pk-add-btn'), nt: document.querySelectorAll('.ab-ptile.pk .pk-nt').length, open: !!document.querySelector('.ab-ptile.pk .gc-open button') }));
+    if (bb.pf || bb.mk || bb.add || bb.nt || !bb.open) rot(`B: ${bb.pf} Pfeile, Markers-Knopf ${bb.mk}, + Mark ${bb.add}, Marker ${bb.nt}, Open chart ${bb.open} (erwartet 0 / false / false / 0 / true)`);
+    else gruen('B: keine Release-Pfeile, kein Markers-Knopf, kein + Mark, keine Marker, Open chart da');
     // C/H: Maus ueber einer Kerze -> Spalte zeigt GENAU diesen Tag mit seinen Releases
     const t0 = await titel(p);
     const box = await p.locator('.ab-ptile.pk .pk-chart .chv').boundingBox();
@@ -151,6 +152,8 @@ const gruen = m => console.log('  ✓ ' + m);
     else if (d3.t !== d1.t) rot(`D2: nach pointercancel bleibt die Spalte bei "${d3.t}" statt "${d1.t}" (Tooltip laeuft weiter)`);
     else gruen(`D2: schnelles Wischen mit pointercancel -> Spalte laeuft mit bis "${d3.t}"`);
     await p.evaluate(() => pkModusSetzen('next')); await p.waitForTimeout(300);
+    // E (739-824) entfaellt seit 825: Marker setzen/verschieben/bearbeiten nur noch im grossen Chart -> check/grosschart.js
+    if (false) {
     // E (seit 739): + Mark -> Punkt (ziehen, rastet auf Kerzenmitte) -> Tipp -> Linie -> zweiter Ort
     //   -> Kasten mit Bullish/Bearish + Text, Rahmen in Bias-Farbe -> Done -> Callout im Chart;
     //   Tipp auf den Kasten -> Notiz-Fenster; loeschen -> Papierkorb
@@ -222,6 +225,7 @@ const gruen = m => console.log('  ✓ ' + m);
     else if (!e1.fenster) rot('E: 2. Tipp auf den Kasten oeffnet kein Notiz-Fenster');
     else if (e1.weg.n || !e1.weg.trash || e1.weg.kasten) rot(`E: loeschen -> ${JSON.stringify(e1.weg)}`);
     else gruen(`E: + Mark -> Punkt gezogen (Kerze ${zg.i0} -> ${zg.i}), Tipp -> Linie -> Kasten; leer nicht speicherbar; Bearish = roter Rahmen; Notiz mit Datum + Preis des Kastens, Callout mit Linie; 1. Tipp = auswaehlen, Ziehen ${e1.zug && e1.zug.dx}/${e1.zug && e1.zug.dy} px gespeichert (Kerze bleibt), 2. Tipp -> Notiz-Fenster; loeschen -> Papierkorb`);
+    }
     // F
     await p.click('#pkVglBtn'); await p.waitForTimeout(250);
     await p.evaluate(() => pkVglGruppe('Metals')); await p.waitForTimeout(200);

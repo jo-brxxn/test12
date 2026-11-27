@@ -23500,3 +23500,21 @@ Nutzer: *„in jeder Währung, in den Notizen einen Ordner … 3 Unterpunkte, In
   - Move to Old: Unterpunkt bleibt angehängt, Elternpunkt landet unter `b-infl`.
 - **Wächter:** `check/notizordner.js` F; Gegenprobe `--gegenprobe-f` (Drehung aus) meldet F rot.
 
+## 2026-11-27 — Großer Preischart „Open chart“, Marker nur noch dort (VERSION-CHECK-825)
+
+Nutzer: *„unten rechts Open Preischart … Fenster … der Preischart … größer … wie Trading View … schöner … mit der Skala … komplett interaktiv … die ganzen Analyse-Sachen [brauche ich nicht] … überleg dir noch ein paar Sachen … Bau die direkt ein. Mach Vorschlag 1 bis 5 … im kleinen Preischart … nicht mehr die Marker … nur noch in dem großen Chart“*.
+
+- **Umsetzung:** `js/grosschart.js` (Canvas, Helfer-Muster). Daten unverändert aus `preisReiheAnzeige`/`tagesKerzen`, `abTrendOverlayDaten`, `gpNiveaus`, `pkReleases`; Marker = `research.notes` mit `pm`.
+- **Karte:**
+  - `pkLageHtml` ohne `pkFlaggenHtml`;
+  - Knopf „＋ Mark“ entfernt;
+  - unten rechts „Open chart ⤢“ neben „Go to Trends“.
+- **Vorschläge V1–V5:** siehe `docs/navigation.md`.
+- **Gefunden beim Testen:**
+  - Marker-Kästen ragten in die Preisachse, dadurch griff das Strecken dort nicht. Die Ebene ist jetzt auf die Chartfläche begrenzt.
+  - Die Zeile „Go to Trends · Open chart“ war bei 390 px 11 px zu breit. Sie bricht jetzt um.
+- **Wächter:**
+  - Neu: `check/grosschart.js` A–E, Gegenprobe meldet D rot.
+  - `check/preiskarte.js` B angepasst, E entfällt.
+  - `check/eingaben.js`: Öffner für `mGcMark`.
+

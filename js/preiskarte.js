@@ -306,7 +306,7 @@ function pkLageHtml(id,api){
   // ... dass dann links in dem Kasten die Nachrichten von genau diesem Tag drinne stehen").
   // Die Ebene bleibt: sie traegt die Tages-Eimer (pkEimer) fuer Hover/Finger, das Band
   // ueber dem gewaehlten Tag und die eigenen Notizen.
-  return`<div class="pk-lage${pkSel&&pkSel.a===id?' sel':''}" data-pk="${lid}"><span class="pk-band" aria-hidden="true"></span>${pkBandHtml(id,api,tage,B,woche)}${pkFlaggenHtml(id,api,tage,B)}<span class="pk-tipp" aria-hidden="true">Tap a day</span></div>`;
+  return`<div class="pk-lage${pkSel&&pkSel.a===id?' sel':''}" data-pk="${lid}"><span class="pk-band" aria-hidden="true"></span>${pkBandHtml(id,api,tage,B,woche)}${/* Marker seit 825 nur im grossen Chart (js/grosschart.js) */''}<span class="pk-tipp" aria-hidden="true">Tap a day</span></div>`;
 }
 
 function pkKnopfBreite(breite,n,woche){const px=(breite||600)/Math.max(1,n)*(woche?5:1);return Math.max(8,Math.min(22,Math.floor(px-1)));}

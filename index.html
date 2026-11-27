@@ -2190,6 +2190,39 @@ body.compact-view .rub-summary{display:block}
 .no-seg button.b-bear.on{background:rgba(var(--red-rgb),.14);color:var(--red)}
 .no-seg button:disabled{opacity:.45;cursor:default}
 @media (max-width:700px){.no-share{flex:1 1 100%}.no-kopf-r{flex:1 1 100%;justify-content:flex-end}.no-body{flex-direction:column}.no-rail{width:100%;max-width:none;max-height:38%;border-right:0;border-bottom:1px solid var(--bd)}}
+/* ══ Grosser Preischart (825) ══ */
+.modal.gc-win{max-width:100%;width:100%;height:calc(100dvh - var(--ov-t,0px) - 24px);max-height:none;display:flex;flex-direction:column;padding-bottom:0}
+.gc-hd{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-bottom:10px}
+.gc-hd h3{margin:0;flex:1;min-width:0}
+.gc-leiste{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.gc-seg{display:inline-flex;border:1px solid var(--ctl-bd);border-radius:var(--rss);overflow:hidden}
+.gc-seg button{min-width:40px;height:34px;border:none;border-right:1px solid var(--ctl-bd);background:var(--ctl-bg);color:var(--t1);font:700 var(--fs-xs) var(--ff-num);cursor:pointer}
+.gc-seg button:last-child{border-right:0}
+.gc-seg button.on,.gc-k.on{background:var(--ui-act);color:var(--ui-act-fg);border-color:var(--ui-act)}
+.gc-k{height:34px;padding:0 12px;border:1px solid var(--ctl-bd);border-radius:var(--rss);background:var(--ctl-bg);color:var(--t1);font-weight:700;font-size:var(--fs-xs);font-family:inherit;cursor:pointer}
+.gc-flaeche{position:relative;flex:1;min-height:0;border:1px solid var(--bd);border-radius:var(--rs);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair;background:var(--bg2)}
+.gc-flaeche canvas{position:absolute;left:0;top:0;display:block}
+.gc-marker{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.gc-mk-svg{position:absolute;left:0;top:0;overflow:visible}
+.gc-dot{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--bg2);border:2px solid var(--c)}
+.gc-dot-neu{--c:var(--ui-act);background:var(--ui-act)}
+.gc-nt{position:absolute;transform:translate(0,-50%);pointer-events:auto;max-width:240px;padding:5px 10px;border:1.5px solid var(--c);border-radius:8px;background:var(--bg2);color:var(--t0);font:600 var(--fs-xs)/1.3 var(--ff-text);text-align:left;cursor:grab;box-shadow:0 2px 8px rgba(20,30,50,.12);white-space:normal;overflow-wrap:anywhere}
+.gc-nt:active{cursor:grabbing}
+.gc-hint{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);padding:7px 14px;border-radius:999px;background:var(--ui-act);color:var(--ui-act-fg);font-size:var(--fs-xs);font-weight:700;white-space:nowrap}
+.gc-leg{position:absolute;left:10px;top:8px;pointer-events:none;display:flex;flex-direction:column;gap:3px;max-width:calc(100% - 100px)}
+.gc-l-z{display:flex;flex-wrap:wrap;gap:4px 12px;font:500 var(--fs-xs)/1.4 var(--ff-num);color:var(--t2);background:color-mix(in srgb,var(--bg2) 82%,transparent);padding:1px 4px;border-radius:4px;width:max-content;max-width:100%}
+.gc-l-z .gc-l-d{color:var(--t0);font-weight:700}
+.gc-l-ema b{color:var(--t0)}
+.gc-l-ema.gc-l-d{color:#7172AC;font-weight:500}.gc-l-ema.gc-l-h{color:#8E5BE0}
+.gc-l-rel{display:inline-flex;align-items:center;gap:5px}
+.gc-l-rel i{width:8px;height:8px;border-radius:2px;flex:none}
+.gc-l-rel em{font-style:normal;color:var(--t3)}
+.gc-tipps{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px;font-size:var(--fs-xs);color:var(--t3)}
+.gc-tipps b{color:var(--t2);font-weight:600}
+.gc-open-z{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:4px 14px;margin-left:auto;min-width:0}
+.ab-scoreline-go:has(.gc-open-z){min-width:0;flex-shrink:1}
+.gc-open-z .ab-goto{margin:0}
+@media (max-width:700px){.gc-tipps{display:none}}
 /* How the score works (2026-11-22) */
 .sr-modal{max-width:620px}
 .sr-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -8434,11 +8467,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-824 - Notes: Ordner je Waehrung mit Inflation, Labour market, Economy und Old, bei Nicht-FX verknuepft und je Ast nach der Regel gedreht, eigene Punkte nur beim Asset"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-825 - Price-Karte: Open chart oeffnet einen grossen interaktiven Chart (Zoom, Verschieben, Fadenkreuz, Legende, Release-Striche, Log, Tastatur, Bild); Marker und + Mark nur noch dort"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-824</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-825</span>
     </span>
   </div>
   <div class="hdr-r">
@@ -9110,6 +9143,33 @@ window.fxLogoSvg=function(art){
     <label class="dm-lbl" for="noNameIn">Folder name</label>
     <input class="m-inp" id="noNameIn" maxlength="80" placeholder="e.g. Q1 2027 thesis" onkeydown="if(event.key==='Enter')ordnerNameSpeichern()">
     <div class="m-btns"><button class="btn" onclick="closeMGuarded('mNoName')">Cancel</button><button class="btn g" onclick="ordnerNameSpeichern()">Save</button></div>
+  </div>
+</div>
+<!-- GROSSER PREISCHART (Nutzer 2026-11-27, 825, js/grosschart.js) -->
+<div class="ov" id="mPreisGross" style="display:none">
+  <div class="modal gc-win">
+    <div class="gc-hd"><h3 id="gcTitel">Price</h3>
+      <div class="gc-leiste" id="gcLeiste">
+        <span class="gc-seg"><button type="button" data-r="3M" onclick="gcBereich('3M')">3M</button><button type="button" data-r="6M" onclick="gcBereich('6M')">6M</button><button type="button" data-r="1Y" onclick="gcBereich('1Y')">1Y</button><button type="button" data-r="3Y" onclick="gcBereich('3Y')">3Y</button><button type="button" data-r="MAX" onclick="gcBereich('MAX')">MAX</button></span>
+        <button type="button" class="gc-k" id="gcLogBtn" onclick="gcLog()" aria-pressed="false" title="Logarithmic price scale">Log</button>
+        <button type="button" class="gc-k" onclick="gcAuto()" title="Fit the price scale again after dragging it">Auto</button>
+        <button type="button" class="gc-k" id="gcMarkBtn" onclick="gcMark()" title="Write a note into the chart: tap a candle, then where the label goes">＋ Mark</button>
+        <button type="button" class="gc-k" onclick="gcBild()" title="Save the chart as an image (PNG)">Save image</button>
+      </div>
+    </div>
+    <div class="gc-flaeche" id="gcFlaeche"><canvas id="gcCanvas"></canvas><div class="gc-marker" id="gcMarker"></div><div class="gc-leg" id="gcLeg"></div></div>
+    <div class="gc-tipps"><span><b>Drag</b> pan</span><span><b>Wheel / pinch</b> zoom</span><span><b>Drag the price scale</b> stretch</span><span><b>Double-tap</b> reset</span><span><b>← →</b> candle · <b>+ −</b> zoom · <b>Home</b> latest</span></div>
+    <div class="m-btns"><button class="btn" onclick="closeM('mPreisGross')">Close</button></div>
+  </div>
+</div>
+<div class="ov" id="mGcMark" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <h3>New mark</h3>
+    <label class="dm-lbl" for="gcMarkTi">Text</label>
+    <input class="m-inp" id="gcMarkTi" maxlength="120" placeholder="e.g. CEO resigns" onkeydown="if(event.key==='Enter')gcMarkSpeichern()">
+    <span class="dm-lbl">Bias</span>
+    <div class="no-seg"><button type="button" data-b="bull" class="b-bull" onclick="gcMarkBias('bull')">Bullish</button><button type="button" data-b="neu" onclick="gcMarkBias('neu')">Neutral</button><button type="button" data-b="bear" class="b-bear" onclick="gcMarkBias('bear')">Bearish</button></div>
+    <div class="m-btns"><button class="btn" onclick="closeMGuarded('mGcMark')">Cancel</button><button class="btn g" onclick="gcMarkSpeichern()">Save</button></div>
   </div>
 </div>
 <!-- MODAL: Sentiment-Info (i-Buttons im Sentiment-Tab) -->
