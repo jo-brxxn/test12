@@ -8052,7 +8052,7 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .dx-imp.ih{background:color-mix(in srgb,var(--due) 18%,transparent);color:var(--due)}
 .dx-imp.im{background:var(--bg4);color:var(--t2)}
 /* Sentiment & COT */
-.dx-sc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;height:100%}
+.dx-sc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;align-items:start}
 .dx-sc>div{display:flex;flex-direction:column;gap:6px;padding:0 8px;cursor:pointer;min-width:0}
 .dx-sc-r{border-left:1px solid var(--bd)}
 .dx-sc-h{font:700 var(--fs-base)/1.2 var(--ff-text);color:var(--t0)}
@@ -8067,7 +8067,8 @@ html:not([data-fx-theme]) :is(.ab-tile,.ab-ptile,.ab-ntile,.ab-htile,.abc-cal,.r
 .dx-sc-f{font-size:var(--fs-sm);color:var(--t2)}
 .dx-sc-f i{color:var(--t3)}
 .dx-cot-v{font:800 var(--fs-xl)/1.1 var(--ff-num);margin-top:6px}
-.dx-sc-r .dx-spark{width:100%;margin:auto 0 0;height:52px}
+/* 826 (Nutzer 2026-11-28: "Mach die Grafik nach oben und dann da unten das Logo"): Verlauf direkt unter dem Text statt an der Unterkante */
+.dx-sc-r .dx-spark{width:100%;margin:12px 0 0;height:52px}
 /* Insights */
 .dx-ins{min-height:var(--h-l);padding-top:8px;padding-bottom:8px;gap:12px}
 .dx-ins-ic{flex:none;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:color-mix(in srgb,currentColor 14%,transparent)}
@@ -8467,11 +8468,11 @@ window.fxLogoSvg=function(art){
   <div class="hdr-status">
     <span class="saved" id="saveBadge">✓ Auto-saved</span>
     <span class="net-status" id="netStatus" style="display:none">⚠ Offline — changes save locally, sync when back online</span>
-    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-825 - Price-Karte: Open chart oeffnet einen grossen interaktiven Chart (Zoom, Verschieben, Fadenkreuz, Legende, Release-Striche, Log, Tastatur, Bild); Marker und + Mark nur noch dort"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
+    <span class="hdr-livebanner" id="verBanner" title="VERSION-CHECK-826 - Dashboard Sentiment und COT: COT-Verlauf direkt unter dem Text, Logo im freien Platz darunter, Trennlinie nur so hoch wie der Inhalt"><span class="hlb-dot-wrap"><span class="hlb-dot"></span></span>
       <span class="hlb-lbl">LIVE</span>
       <span class="hlb-clock" id="hlbClock">--:--:--</span>
       <span class="hlb-sep">·</span>
-      <span class="hlb-name" id="hlbName">VERSION-CHECK-825</span>
+      <span class="hlb-name" id="hlbName">VERSION-CHECK-826</span>
     </span>
   </div>
   <div class="hdr-r">

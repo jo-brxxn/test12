@@ -23518,3 +23518,15 @@ Nutzer: *„unten rechts Open Preischart … Fenster … der Preischart … grö
   - `check/preiskarte.js` B angepasst, E entfällt.
   - `check/eingaben.js`: Öffner für `mGcMark`.
 
+## 2026-11-28 — Dashboard „Sentiment & COT“: Verlauf nach oben, Logo darunter (VERSION-CHECK-826)
+
+Nutzer (iPad-Foto, Pfeil vom COT-Verlauf nach oben): *„Mach die Grafik nach oben und dann da unten das Logo wenn das so verändert wird“*.
+
+- **Ursache:** `.dx-sc-r .dx-spark{margin:auto 0 0}` drückte den Verlauf an die Unterkante, sobald die Reihe durch „Open trades“ (2 Trades) hoch wurde.
+- **Jetzt:**
+  - Der Verlauf hat `margin-top:12px`, also direkt unter „Net position …“.
+  - Den freien Platz füllt das vorhandene Platzhalter-Logo (`lgKarte`).
+  - `.dx-sc` ohne `height:100%`: Die Trennlinie zwischen Retail und COT ist nur so hoch wie der Inhalt und läuft nicht durchs Logo.
+- **Gemessen** (Karte auf 820 px gestreckt): Text endet bei y 183, Verlauf beginnt bei 201, Logo unten.
+- ⚠ **Ausnahme zur Regel „keine Füllfläche statt Inhalt“** (2026-11-15), hier ausdrücklich vom Nutzer gewünscht.
+
